@@ -55,6 +55,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.parser.PhraseQueryWithOffset;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
 import org.apache.solr.parser.SynonymQueryWithOffset;
@@ -1590,6 +1591,17 @@ public class ExtendedDismaxQParser extends QParser {
               }
               builder.setSlop(slop);
               query = builder.build();
+            } else if (query instanceof PhraseQueryWithOffset) {
+              PhraseQueryWithOffset pq = (PhraseQueryWithOffset) query;
+              if (minClauseSize > 1 && pq.getTerms().length < minClauseSize) return null;
+              PhraseQuery.Builder builder = new PhraseQuery.Builder();
+              Term[] terms = pq.getTerms();
+              int[] positions = pq.getPositions();
+              for (int i = 0; i < terms.length; ++i) {
+                builder.add(terms[i], positions[i]);
+              }
+              builder.setSlop(slop);
+              query = new PhraseQueryWithOffset(builder.build(), pq.getStartOffset());
             } else if (query instanceof MultiPhraseQuery) {
               MultiPhraseQuery mpq = (MultiPhraseQuery) query;
               if (minClauseSize > 1 && mpq.getTermArrays().length < minClauseSize) return null;

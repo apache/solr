@@ -120,7 +120,7 @@ public class SolrQueryBuilderTest extends SolrTestCase {
     PhraseQuery.Builder pqBuilder = new PhraseQuery.Builder();
     pqBuilder.add(new Term("field", "1"), 0);
     pqBuilder.add(new Term("field", "2"), 2);
-    PhraseQuery expected = pqBuilder.build();
+    PhraseQueryWithOffset expected = new PhraseQueryWithOffset(pqBuilder.build(), 0);
     CharacterRunAutomaton stopList =
         new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
 
@@ -262,10 +262,12 @@ public class SolrQueryBuilderTest extends SolrTestCase {
     for (BooleanClause.Occur occur :
         new BooleanClause.Occur[] {BooleanClause.Occur.SHOULD, BooleanClause.Occur.MUST}) {
       Query syn1 =
-          new PhraseQuery.Builder()
-              .add(new Term("field", "guinea"))
-              .add(new Term("field", "pig"))
-              .build();
+          new PhraseQueryWithOffset(
+              new PhraseQuery.Builder()
+                  .add(new Term("field", "guinea"))
+                  .add(new Term("field", "pig"))
+                  .build(),
+              null);
       Query syn2 = new TermQueryWithOffset(new Term("field", "cavy"), null);
 
       BooleanQuery synQuery =
@@ -351,7 +353,8 @@ public class SolrQueryBuilderTest extends SolrTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
 
-    PhraseQuery expected = new PhraseQuery("field", "中", "国");
+    PhraseQueryWithOffset expected =
+        new PhraseQueryWithOffset(new PhraseQuery("field", "中", "国"), 0);
 
     SolrQueryBuilder builder = new SolrQueryBuilder(analyzer);
     assertEquals(expected, builder.createPhraseQuery("field", "中国"));
@@ -361,7 +364,8 @@ public class SolrQueryBuilderTest extends SolrTestCase {
     // individual CJK chars as terms
     SimpleCJKAnalyzer analyzer = new SimpleCJKAnalyzer();
 
-    PhraseQuery expected = new PhraseQuery(3, "field", "中", "国");
+    PhraseQueryWithOffset expected =
+        new PhraseQueryWithOffset(new PhraseQuery(3, "field", "中", "国"), 0);
 
     SolrQueryBuilder builder = new SolrQueryBuilder(analyzer);
     assertEquals(expected, builder.createPhraseQuery("field", "中国", 3));

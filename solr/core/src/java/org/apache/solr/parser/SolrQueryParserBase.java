@@ -555,6 +555,16 @@ public abstract class SolrQueryParserBase extends SolrQueryBuilder {
         }
         builder.setSlop(slop);
         query = builder.build();
+      } else if (query instanceof PhraseQueryWithOffset) {
+        PhraseQueryWithOffset pq = (PhraseQueryWithOffset) query;
+        Term[] terms = pq.getTerms();
+        int[] positions = pq.getPositions();
+        PhraseQuery.Builder builder = new PhraseQuery.Builder();
+        for (int i = 0; i < terms.length; ++i) {
+          builder.add(terms[i], positions[i]);
+        }
+        builder.setSlop(slop);
+        query = new PhraseQueryWithOffset(builder.build(), pq.getStartOffset());
       } else if (query instanceof MultiPhraseQuery) {
         MultiPhraseQuery mpq = (MultiPhraseQuery) query;
 

@@ -48,6 +48,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.parser.PhraseQueryWithOffset;
 import org.apache.solr.parser.SynonymQueryWithOffset;
 import org.apache.solr.parser.TermQueryWithOffset;
 import org.apache.solr.request.SolrQueryRequest;
@@ -1519,7 +1520,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   @Test
   public void testStartOffsets() throws Exception {
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject")) {
-      QParser qParser = QParser.getParser("one two three fooaaa four", "edismax", req);
+      QParser qParser =
+          QParser.getParser("one two three fooaaa four wi fi jeans five", "edismax", req);
       BooleanQuery q = (BooleanQuery) qParser.getQuery();
       BooleanQuery c1 = (BooleanQuery) q.clauses().get(0).getQuery();
       assertEquals(0, getStartOffset(c1, 0));
@@ -1527,19 +1529,30 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       assertEquals(8, getStartOffset(c1, 2));
       assertEquals(14, getStartOffset(c1, 3));
       assertEquals(21, getStartOffset(c1, 4));
+      assertEquals(26, getStartOffset(c1, 5)); // wi fi => wifi
+      assertEquals(32, getStartOffset(c1, 6)); // jeans, denim pants
+      assertEquals(38, getStartOffset(c1, 7));
     }
   }
 
   /**
    * Returns the start offset of an inner TermQueryWithOffset or SynonymQueryWithOffset contained
    * inside the given Boolean Query. The Boolean Query is assumed to have clauses of type
-   * DusjunctionMaxQuery. The clause with the designated index is retrieved and the start offset of
-   * the first disjunct inside that clause is returned.
+   * DisjunctionMaxQuery. The clause with the designated index is retrieved and the start offset of
+   * the first disjunct inside that clause is returned. The disjuncts are assumed to be of type
+   * TermQueryWithOffset, SynonymQueryWithOffset, or a BooleanQuery containing a
+   * PhraseQueryWithOffset as its first clause. The latter situation arises a synonym is expanded in
+   * a way that results in a phrase (e.g. the rule could be "jeans, denim pants" where "denim pants
+   * is considered as a phrase).
    */
   private static int getStartOffset(BooleanQuery q, int index) {
     Query innerQuery =
         ((DisjunctionMaxQuery) q.clauses().get(index).getQuery())
             .getDisjuncts().stream().findFirst().get();
+    if (innerQuery instanceof BooleanQuery) {
+      BooleanQuery bq = (BooleanQuery) innerQuery;
+      return ((PhraseQueryWithOffset) bq.clauses().get(0).getQuery()).getStartOffset();
+    }
     if (innerQuery instanceof TermQueryWithOffset) {
       return ((TermQueryWithOffset) innerQuery).getStartOffset();
     }

@@ -469,12 +469,14 @@ public class SolrQueryBuilder {
     PhraseQuery.Builder builder = new PhraseQuery.Builder();
     builder.setSlop(slop);
 
+    OffsetAttribute offsetAtt = stream.getAttribute(OffsetAttribute.class);
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     BoostAttribute boostAtt = stream.addAttribute(BoostAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
     int position = -1;
     float phraseBoost = DEFAULT_BOOST;
     stream.reset();
+    int startOffset = offsetAtt.startOffset();
     while (stream.incrementToken()) {
       if (enablePositionIncrements) {
         position += posIncrAtt.getPositionIncrement();
@@ -484,7 +486,8 @@ public class SolrQueryBuilder {
       builder.add(new Term(field, termAtt.getBytesRef()), position);
       phraseBoost *= boostAtt.getBoost();
     }
-    PhraseQuery query = builder.build();
+
+    PhraseQueryWithOffset query = new PhraseQueryWithOffset(builder.build(), startOffset);
     if (phraseBoost == DEFAULT_BOOST) {
       return query;
     }
