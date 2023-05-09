@@ -31,9 +31,20 @@ teardown() {
 @test "Check help command" {
 
   run solr post
-
+  assert_output --partial 'Failed to parse command-line arguments due to: Missing required option: url'
+  
+  run solr post -h
   assert_output --partial 'usage: post'
   refute_output --partial 'ERROR'
+  
+  run solr post -help
+  assert_output --partial 'usage: post'
+  refute_output --partial 'ERROR'
+  
+  run solr post --help
+  assert_output --partial 'usage: post'
+  refute_output --partial 'ERROR'  
+  
 }
 
 

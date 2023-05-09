@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -321,12 +322,13 @@ public class SolrCLI implements CLIO {
 
     CommandLine cli = null;
     try {
-      cli = (new GnuParser()).parse(options, args);
+      cli = (new DefaultParser()).parse(options, args);
     } catch (ParseException exp) {
+      // Check if we passed in a help argument with a non parsing set of arguments.
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
-          if ("--help".equals(arg) || "-help".equals(arg)) {
+          if ("--help".equals(arg) || "-help".equals(arg) || "-h".equals(arg)) {
             hasHelpArg = true;
             break;
           }
@@ -334,10 +336,14 @@ public class SolrCLI implements CLIO {
       }
       if (!hasHelpArg) {
         CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage());
+        exit(1);
       }
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(toolName, options);
-      exit(1);
+      else {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp(toolName, options);
+        exit(0);
+      }
+
     }
 
     if (cli.hasOption("help")) {

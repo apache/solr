@@ -665,7 +665,7 @@ function print_usage() {
     echo ""
   elif [ "$CMD" == "post" ]; then
     echo ""
-    echo "Usage: solr post ........"
+    echo "Usage: solr post could come here, but we have the help docs in the java code........"
   fi
 } # end print_usage
 

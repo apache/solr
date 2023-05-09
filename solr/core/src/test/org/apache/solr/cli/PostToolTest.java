@@ -37,6 +37,30 @@ public class PostToolTest extends SolrCloudTestCase {
         .configure();
   }
 
+  //@Test
+  public void testHelpDocsAreOutput() throws Exception{
+    // Be nice to get the output of the tool and see the output
+    // However, that is covered in the test_post.bats test.
+
+    // Right now the -h causes the parseCmdLine() method to return a null cli object, which then blows up...
+    String[] args = {
+            "post",
+            "-h",
+    };
+    assertEquals(0, runTool(args));
+
+    String[] args1 = {
+            "post",
+            "--help",
+    };
+    assertEquals(0, runTool(args1));
+
+    String[] args2 = {
+            "post",
+            "bobo",
+    };
+    assertEquals(1, runTool(args2));
+  }
 
   @Test
   public void testBasicRun() throws Exception {
