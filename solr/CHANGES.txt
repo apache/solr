@@ -126,6 +126,8 @@ Bug Fixes
 
 * SOLR-16789: Fixed Admin UI dashboard "Security" panel to show the right information regarding authentication (Tomás Fernández Löbbe)
 
+* SOLR-16760: bin/solr package tool supports -h and -help command like other tools.  (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
