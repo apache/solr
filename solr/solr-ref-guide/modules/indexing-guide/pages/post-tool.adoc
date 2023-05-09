@@ -71,13 +71,13 @@ OPTIONS
     
 Examples:
 
-* JSON file: bin/solr post -c wizbang events.json
-* XML files: bin/solr post -c records article*.xml
-* CSV file: bin/solr post -c signals LATEST-signals.csv
-* Directory of files: bin/solr post -c myfiles ~/Documents
-* Web crawl: bin/solr post -c gettingstarted https://solr.apache.org/ -recursive 1 -delay 1
-* Standard input (stdin): echo '{commit: {}}' | bin/solr post -c my_collection -type application/json -out yes -d
-* Data as string: bin/solr post -c signals -type text/csv -out yes -d $'id,value\n1,0.47' 
+* JSON file: bin/solr post -url http://localhost:8983/wizbang/update events.json
+* XML files: bin/solr post -url http://localhost:8983/records/update article*.xml
+* CSV file: bin/solr post -url http://localhost:8983/signals/update LATEST-signals.csv
+* Directory of files: bin/solr post -url http://localhost:8983/myfiles/update ~/Documents
+* Web crawl: bin/solr post -url http://localhost:8983/gettingstarted/update https://solr.apache.org/ -recursive 1 -delay 1
+* Standard input (stdin): echo '{commit: {}}' | bin/solr post -url http://localhost:8983/my_collection/update -type application/json -out yes -d
+* Data as string: bin/solr post -url http://localhost:8983/signals/update -type text/csv -out yes -d $'id,value\n1,0.47' 
 
 ----
 
@@ -92,21 +92,21 @@ Add all documents with file extension `.xml` to collection or core named `gettin
 
 [source,bash]
 ----
-bin/solr post -c gettingstarted *.xml
+bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.xml
 ----
 
 Add all documents with file extension `.xml` to the `gettingstarted` collection/core on Solr running on port `8984`.
 
 [source,bash]
 ----
-bin/solr post -c gettingstarted -p 8984 *.xml
+bin/solr post -url http://localhost:8984/solr/gettingstarted/update *.xml
 ----
 
 Send XML arguments to delete a document from `gettingstarted`.
 
 [source,bash]
 ----
-bin/solr post -c gettingstarted -d '<delete><id>42</id></delete>'
+bin/solr post -url http://localhost:8983/solr/gettingstarted/update -d '<delete><id>42</id></delete>'
 ----
 
 === Indexing CSV
@@ -115,14 +115,14 @@ Index all CSV files into `gettingstarted`:
 
 [source,bash]
 ----
-bin/solr post -c gettingstarted *.csv
+bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.csv
 ----
 
 Index a tab-separated file into `gettingstarted`:
 
 [source,bash]
 ----
-bin/solr post -c signals -params "separator=%09" -type text/csv data.tsv
+bin/solr post -url http://localhost:8984/solr/signals/update -params "separator=%09" -type text/csv data.tsv
 ----
 
 The content type (`-type`) parameter is required to treat the file as the proper type, otherwise it will be ignored and a WARNING logged as it does not know what type of content a .tsv file is.
@@ -134,7 +134,7 @@ Index all JSON files into `gettingstarted`.
 
 [source,bash]
 ----
-bin/solr post -c gettingstarted *.json
+bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.json
 ----
 
 === Indexing Rich Documents (PDF, Word, HTML, etc.)
@@ -143,21 +143,21 @@ Index a PDF file into `gettingstarted`.
 
 [source,bash]
 ----
-bin/solr post -c gettingstarted a.pdf
+bin/solr post -url http://localhost:8983/solr/gettingstarted/update a.pdf
 ----
 
 Automatically detect content types in a folder, and recursively scan it for documents for indexing into `gettingstarted`.
 
 [source,bash]
 ----
-bin/solr post -c gettingstarted afolder/
+bin/solr post -url http://localhost:8983/solr/gettingstarted/update afolder/
 ----
 
 Automatically detect content types in a folder, but limit it to PPT and HTML files and index into `gettingstarted`.
 
 [source,bash]
 ----
-bin/solr post -c gettingstarted -filetypes ppt,html afolder/
+bin/solr post -url http://localhost:8983/solr/gettingstarted/update -filetypes ppt,html afolder/
 ----
 
 === Indexing to a Password Protected Solr (Basic Auth)
@@ -166,12 +166,12 @@ Index a PDF as the user "solr" with password "SolrRocks":
 
 [source,bash]
 ----
-bin/solr post -u solr:SolrRocks -c gettingstarted a.pdf
+bin/solr post -u solr:SolrRocks -url http://localhost:8983/solr/gettingstarted/update a.pdf
 ----
 
 == Post Tool Windows Support
 
-`bin/post` is a Unix shell script and as such cannot be used directly on Windows.
+`bin/solr post` is a Unix shell script and as such cannot be used directly on Windows.
 However it delegates its work to a cross-platform capable Java program called "SimplePostTool" or `post.jar`, that can be used in Windows environments.
 
 The argument syntax differs significantly from `bin/post`, so your first step should be to print the SimplePostTool help text.
@@ -188,7 +188,7 @@ Most usage involves passing both Java System properties and program arguments on
 
 [source,plain]
 ----
-$ java -jar -Dc=gettingstarted -Dauto example\exampledocs\post.jar example\exampledocs\*
+$ java -jar -Durl http://localhost:8983/solr/gettingstarted/update -Dauto example\exampledocs\post.jar example\exampledocs\*
 ----
 
 This indexes the contents of the `exampledocs` directory into a collection called `gettingstarted`.
