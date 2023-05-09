@@ -342,7 +342,7 @@ function print_usage() {
   if [ -z "${CMD:-}" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package, post"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -663,6 +663,9 @@ function print_usage() {
     echo ""
     echo "  -V                                     Enable more verbose output."
     echo ""
+  elif [ "$CMD" == "post" ]; then
+    echo ""
+    echo "Usage: solr post ........"
   fi
 } # end print_usage
 
@@ -966,12 +969,6 @@ if [ "$SCRIPT_CMD" == "status" ]; then
   fi
   get_status
   exit
-fi
-
-# assert tool
-if [ "$SCRIPT_CMD" == "assert" ]; then
-  run_tool assert "$@"
-  exit $?
 fi
 
 # run a healthcheck and exit if requested
@@ -1458,12 +1455,6 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   exit $?
 fi
 
-
-if [[ "$SCRIPT_CMD" == "export" ]]; then
-  run_tool export "$@"
-  exit $?
-fi
-
 if [[ "$SCRIPT_CMD" == "package" ]]; then
   run_package "$@"
   exit $?
@@ -1607,7 +1598,7 @@ fi
 
 
 # verify the command given is supported
-if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ] && [ "$SCRIPT_CMD" != "assert" ]; then
+if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ]; then
   # handoff this command to the SolrCLI and let it handle the option parsing and validation
   run_tool "$SCRIPT_CMD" "$@"
   exit $?
