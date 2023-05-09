@@ -551,7 +551,6 @@ public class ZkController implements Closeable {
       if (!zkClient.exists(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, true)) {
         return;
       }
-
       final byte[] data =
           zkClient.getData(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, null, null, true);
 
@@ -573,6 +572,15 @@ public class ZkController implements Closeable {
         log.error(message);
         throw new SolrException(SolrException.ErrorCode.INVALID_STATE, message);
       }
+    } catch (KeeperException.NoNodeException e) {
+      // N instances starting at the same time could attempt to delete the file, resulting in N-1
+      // NoNodeExceptions.
+      // If we get to this point, then it's OK to suppress the exception and continue assuming
+      // success.
+      log.debug(
+          "NoNodeException attempting to delete {}. Another instance must have deleted it already",
+          ZkStateReader.UNSUPPORTED_CLUSTER_STATE,
+          e);
     } catch (KeeperException e) {
       // Convert checked exception to one acceptable by the caller (see also init() further down)
       log.error("", e);

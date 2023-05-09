@@ -256,7 +256,7 @@ public class CoreDescriptor {
   }
 
   /**
-   * Create the properties object used by resource loaders, etc, for property substitution. The
+   * Create the properties object used by resource loaders, etc., for property substitution. The
    * default solr properties are prefixed with 'solr.core.', so, e.g., 'name' becomes
    * 'solr.core.name'
    */
