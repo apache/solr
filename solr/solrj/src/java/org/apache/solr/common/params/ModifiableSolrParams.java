@@ -17,6 +17,7 @@
 package org.apache.solr.common.params;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.INDENT;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -180,7 +181,7 @@ public class ModifiableSolrParams extends SolrParams {
   public void setShardAttributesToParams(int purpose, String shardUrl) {
     remove(ShardParams.SHARDS); // not a top-level request
     set(DISTRIB, Boolean.FALSE.toString()); // not a top-level request
-    remove("indent");
+    remove(INDENT);
     remove(CommonParams.HEADER_ECHO_PARAMS);
     set(ShardParams.IS_SHARD, true); // a sub (shard) request
     set(ShardParams.SHARDS_PURPOSE, purpose);

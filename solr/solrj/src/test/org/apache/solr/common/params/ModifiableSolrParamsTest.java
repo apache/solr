@@ -133,7 +133,7 @@ public class ModifiableSolrParamsTest extends SolrTestCase {
 
     modifiable.set(ShardParams.SHARDS, "dummyValue");
     modifiable.set(CommonParams.HEADER_ECHO_PARAMS, "dummyValue");
-    modifiable.set("indent", dummyIndent);
+    modifiable.set(CommonParams.INDENT, dummyIndent);
 
     modifiable.setShardAttributesToParams(2, dummyShardUrl);
 
