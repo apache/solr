@@ -18,22 +18,16 @@
 package org.apache.solr.cli;
 
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
 public class PostToolTest extends SolrCloudTestCase {
-  //private Path dir;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -51,7 +45,6 @@ public class PostToolTest extends SolrCloudTestCase {
             .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
 
-    //Path solrIncludeFile = Files.createFile(dir.resolve("solrIncludeFile.txt"));
     String[] args = {
       "post",
       "-url",
