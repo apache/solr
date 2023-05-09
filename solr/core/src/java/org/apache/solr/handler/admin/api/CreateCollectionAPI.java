@@ -187,7 +187,8 @@ public class CreateCollectionAPI extends AdminAPIBase {
     rawProperties.put(NAME, reqBody.name);
     rawProperties.put(COLL_CONF, reqBody.config);
     rawProperties.put(NUM_SLICES, reqBody.numShards);
-    rawProperties.put(CREATE_NODE_SET_SHUFFLE, reqBody.shuffleNodes);
+    if (reqBody.shuffleNodes != null)
+      rawProperties.put(CREATE_NODE_SET_SHUFFLE, reqBody.shuffleNodes);
     if (CollectionUtil.isNotEmpty(reqBody.shardNames))
       rawProperties.put(SHARDS_PROP, String.join(",", reqBody.shardNames));
     rawProperties.put(PULL_REPLICAS, reqBody.pullReplicas);
