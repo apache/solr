@@ -177,16 +177,15 @@ public class ModifiableSolrParams extends SolrParams {
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
 
-  public void setShardAttributesToParams(
-      int purpose, String shard, ModifiableSolrParams params) {
-    params.remove(ShardParams.SHARDS); // not a top-level request
-    params.set(DISTRIB, "false"); // not a top-level request
-    params.remove("indent");
-    params.remove(CommonParams.HEADER_ECHO_PARAMS);
-    params.set(ShardParams.IS_SHARD, true); // a sub (shard) request
-    params.set(ShardParams.SHARDS_PURPOSE, purpose);
-    params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
-    params.set(CommonParams.OMIT_HEADER, false);
+  public void setShardAttributesToParams(int purpose, String shard) {
+    remove(ShardParams.SHARDS); // not a top-level request
+    set(DISTRIB, "false"); // not a top-level request
+    remove("indent");
+    remove(CommonParams.HEADER_ECHO_PARAMS);
+    set(ShardParams.IS_SHARD, true); // a sub (shard) request
+    set(ShardParams.SHARDS_PURPOSE, purpose);
+    set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
+    set(CommonParams.OMIT_HEADER, false);
   }
 
   @Override
