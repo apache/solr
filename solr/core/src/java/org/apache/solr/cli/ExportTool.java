@@ -518,7 +518,7 @@ public class ExportTool extends ToolBase {
         addConsumer(consumerlatch);
         addProducers(m);
         if (output != null) {
-          output.println("NO: of shards : " + corehandlers.size());
+          output.println("Number of shards : " + corehandlers.size());
         }
         CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
         corehandlers.forEach(
@@ -551,9 +551,9 @@ public class ExportTool extends ToolBase {
         System.out.println(
             "\nTotal Docs exported: "
                 + (docsWritten.get() - 1)
-                + ". Time taken: "
+                + ". Time elapsed: "
                 + ((System.currentTimeMillis() - startTime) / 1000)
-                + "secs");
+                + "seconds");
       }
     }
 
