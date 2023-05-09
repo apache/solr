@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.packagemanager.PackageUtils.print;
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
@@ -29,7 +26,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.exec.OS;
 
 public class PostTool extends ToolBase {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -41,9 +37,6 @@ public class PostTool extends ToolBase {
     public PostTool(PrintStream stdout) {
         super(stdout);
     }
-
-    private static final boolean isWindows = (OS.isFamilyDOS() || OS.isFamilyWin9x() || OS.isFamilyWindows());
-    private static final String THIS_SCRIPT = (isWindows ? "bin\\solr.cmd post" : "bin/solr post");
 
     @Override
     public String getName() {
@@ -156,7 +149,7 @@ public class PostTool extends ToolBase {
         SimplePostTool spt = SimplePostTool.parseArgsAndInit(cli.getArgs());
         spt.execute();
     }
-    
+
 
 
 }
