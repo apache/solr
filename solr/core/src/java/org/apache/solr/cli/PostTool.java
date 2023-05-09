@@ -149,7 +149,7 @@ public class PostTool extends ToolBase {
         Boolean commit = false;
         Boolean optimize = false;
 
-        // this is werid way to pass it in!
+        // this is a weird way to pass it in!
         System.setProperty("url",solrUrl);
 
         //SimplePostTool spt = new SimplePostTool(mode, solrUrl, auto, type, format, recursive, delay, fileTypes, out, commit, optimize, args);
