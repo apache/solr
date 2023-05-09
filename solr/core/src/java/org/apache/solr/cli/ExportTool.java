@@ -607,7 +607,7 @@ public class ExportTool extends ToolBase {
       boolean exportDocsFromCore() throws IOException, SolrServerException {
 
         try (SolrClient client = new Http2SolrClient.Builder(baseurl).build()) {
-          expectedDocs = getDocCount(replica.getCoreName(), client);
+          expectedDocs = getDocCount(replica.getCoreName(), client, query);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(Q, query);
@@ -640,17 +640,18 @@ public class ExportTool extends ToolBase {
               NamedList<Object> rsp = client.request(request);
               String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
               if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
-                if (output != null)
+                if (output != null) {
                   output.println(
                       StrUtils.formatString(
-                          "\nExport complete for : {0}, docs : {1}",
-                          replica.getCoreName(), receivedDocs.get()));
+                          "\nExport complete from shard {0}, core {1}, docs received: {2}",
+                          replica.getShard(), replica.getCoreName(), receivedDocs.get()));
+                }
                 if (expectedDocs != receivedDocs.get()) {
                   if (output != null) {
                     output.println(
                         StrUtils.formatString(
-                            "Could not download all docs for core {0} , expected: {1} , actual",
-                            replica.getCoreName(), expectedDocs, receivedDocs));
+                            "Could not download all docs from core {0}, docs expected: {1}, received: {2}",
+                            replica.getCoreName(), expectedDocs, receivedDocs.get()));
                     return false;
                   }
                 }
@@ -674,9 +675,9 @@ public class ExportTool extends ToolBase {
     }
   }
 
-  static long getDocCount(String coreName, SolrClient client)
+  static long getDocCount(String coreName, SolrClient client, String query)
       throws SolrServerException, IOException {
-    SolrQuery q = new SolrQuery("*:*");
+    SolrQuery q = new SolrQuery(query);
     q.setRows(0);
     q.add("distrib", "false");
     GenericSolrRequest request =
