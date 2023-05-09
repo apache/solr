@@ -119,6 +119,21 @@ public class ResponseUtils {
    * @see #getErrorInfo(Throwable, NamedList, Logger)
    */
   public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log) {
+    return getTypedErrorInfo(ex, log, false);
+  }
+
+  /**
+   * Adds information about the given Throwable to a returned {@link ErrorInfo}
+   *
+   * <p>Primarily used by v2 API code, which can handle such typed information.
+   *
+   * <p>Status codes less than 100 are adjusted to be 500.
+   * 
+   * <p>Stack trace will not be output if hideStackTrace=true.
+   *
+   * @see #getErrorInfo(Throwable, NamedList, Logger)
+   */
+  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log, boolean hideStackTrace) {
     final ErrorInfo errorInfo = new ErrorInfo();
     int code = 500;
     if (ex instanceof SolrException) {
@@ -143,10 +158,12 @@ public class ResponseUtils {
 
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
-      StringWriter sw = new StringWriter();
-      ex.printStackTrace(new PrintWriter(sw));
-      log.error("500 Exception", ex);
-      errorInfo.trace = sw.toString();
+      if (!hideStackTrace) {
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw));
+        log.error("500 Exception", ex);
+        errorInfo.trace = sw.toString();
+      }
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
