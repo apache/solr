@@ -400,8 +400,8 @@ public class NodeConfig {
    * properties, or from the "extra" properties configured explicitly on the SolrDispatchFilter; or
    * null if not specified.
    *
-   * <p>This is the value that would have been used when attempting locate the solr.xml in ZooKeeper
-   * (regardless of wether the file was actaully loaded from ZK or from local disk)
+   * <p>This is the value that would have been used when attempting to locate the solr.xml in
+   * ZooKeeper (regardless of whether the file was actually loaded from ZK or from local disk)
    *
    * <p>(This value should only be used for "accounting" purposes to track where the node config
    * came from if it <em>was</em> loaded from zk -- ie: to check if the chroot has already been

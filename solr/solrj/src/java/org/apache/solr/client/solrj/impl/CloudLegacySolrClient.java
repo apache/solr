@@ -107,14 +107,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
 
   private void propagateLBClientConfigOptions(Builder builder) {
     final LBHttpSolrClient.Builder lbBuilder = builder.lbClientBuilder;
-
-    if (builder.connectionTimeoutMillis != null) {
-      lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
-    }
-
-    if (builder.socketTimeoutMillis != null) {
-      lbBuilder.withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
-    }
+    lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+    lbBuilder.withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -177,14 +171,9 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       Builder cloudSolrClientBuilder, HttpClient httpClient) {
     final LBHttpSolrClient.Builder lbBuilder = new LBHttpSolrClient.Builder();
     lbBuilder.withHttpClient(httpClient);
-    if (cloudSolrClientBuilder.connectionTimeoutMillis != null) {
-      lbBuilder.withConnectionTimeout(
-          cloudSolrClientBuilder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
-    }
-    if (cloudSolrClientBuilder.socketTimeoutMillis != null) {
-      lbBuilder.withSocketTimeout(
-          cloudSolrClientBuilder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
-    }
+    lbBuilder.withConnectionTimeout(
+        cloudSolrClientBuilder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+    lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
     lbBuilder.withRequestWriter(new BinaryRequestWriter());
     lbBuilder.withResponseParser(new BinaryResponseParser());
 

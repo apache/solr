@@ -14,26 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util.tracing;
 
-import io.opentracing.Span;
-import io.opentracing.noop.NoopSpan;
-import io.opentracing.tag.Tags;
-import java.util.function.Consumer;
-import org.apache.solr.request.SolrQueryRequest;
-
-/** Utilities for distributed tracing. */
-public class TraceUtils {
-
-  public static void setDbInstance(SolrQueryRequest req, String coreOrColl) {
-    if (req != null && coreOrColl != null) {
-      ifNotNoop(req.getSpan(), (span) -> span.setTag(Tags.DB_INSTANCE, coreOrColl));
-    }
-  }
-
-  public static void ifNotNoop(Span span, Consumer<Span> consumer) {
-    if (span != null && !(span instanceof NoopSpan)) {
-      consumer.accept(span);
-    }
-  }
-}
+/** Utility classes to test placement plugins. */
+package org.apache.solr.cluster.placement;
