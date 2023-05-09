@@ -550,7 +550,7 @@ public class ExportTool extends ToolBase {
         }
         System.out.println(
             "\nTotal Docs exported: "
-                + (docsWritten.get() - 1)
+                + docsWritten.get()
                 + ". Time elapsed: "
                 + ((System.currentTimeMillis() - startTime) / 1000)
                 + "seconds");
@@ -582,7 +582,9 @@ public class ExportTool extends ToolBase {
               }
               if (doc == EOFDOC) break;
               try {
-                if (docsWritten.get() > limit) continue;
+                if (docsWritten.get() >= limit) {
+                  continue;
+                }
                 sink.accept(doc);
               } catch (Exception e) {
                 if (output != null) output.println("Failed to write to file " + e.getMessage());
