@@ -82,6 +82,8 @@ Improvements
 * SOLR-16394: The v2 "restore" API has been tweaked to be more intuitive.  The top-level "restore-collection" command
   specifier has been removed, and the API now lives at the new path `POST /api/backups/backupName/restore`. (Jason Gerlowski)
 
+* SOLR-16782: bin/solr export tool now supports JSON export format as well as the existing JSON With Lines format. (Eric Pugh)
+
 Optimizations
 ---------------------
 
