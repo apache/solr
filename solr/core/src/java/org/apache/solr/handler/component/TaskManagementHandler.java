@@ -79,7 +79,7 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
         String reqPath = (String) req.getContext().get(PATH);
 
         params.set(CommonParams.QT, reqPath);
-        ModifiableSolrParams.setShardAttributesToParams(sreq.purpose, shard, params);
+        params.setShardAttributesToParams(sreq.purpose, shard, params);
 
         if (extraParams != null) {
           for (Map.Entry<String, String> entry : extraParams.entrySet()) {

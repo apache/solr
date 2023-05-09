@@ -177,7 +177,7 @@ public class ModifiableSolrParams extends SolrParams {
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
 
-  public static void setShardAttributesToParams(
+  public void setShardAttributesToParams(
       int purpose, String shard, ModifiableSolrParams params) {
     params.remove(ShardParams.SHARDS); // not a top-level request
     params.set(DISTRIB, "false"); // not a top-level request
