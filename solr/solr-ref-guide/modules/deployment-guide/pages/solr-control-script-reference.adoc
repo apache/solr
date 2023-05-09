@@ -1381,7 +1381,7 @@ Examples of this command:
 
 === Exporting Documents to a File
 
-The `export` command will allow you to export documents from a collection in either JSON or Javabin format.
+The `export` command will allow you to export documents from a collection in JSON, JSON with Lines, or Javabin format.
 All documents can be exported, or only those that match a query.
 
 NOTE: This hasn't been tested with nested child documents and your results will vary.
@@ -1409,12 +1409,12 @@ Fully-qualified address to a collection.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `jsonl`
+|Optional |Default: `json`
 |===
 +
-The file format of the export, `jsonl` or `javabin`.
-Choosing `javabin` exports in the native Solr format.
-This is compact and faster to import.
+The file format of the export, `json`, `jsonl`, or `javabin`.
+Choosing `javabin` exports in the native Solr format, and is compact and fast to import.
+`jsonl` is the Json with Lines format, learn more at https://jsonlines.org/.
 
 `-out`::
 +
@@ -1425,7 +1425,7 @@ This is compact and faster to import.
 +
 Either the path to a directory for the export to happen in, or a specific file name to populate.
 +
-If not provided, a file will be created with the name of the collection, as in `<collection>.jsonl`.
+If not provided, a file will be created with the name of the collection, as in `<collection>.json`.
 
 `-compress`::
 +
@@ -1434,7 +1434,7 @@ If not provided, a file will be created with the name of the collection, as in `
 |Optional |Default: false
 |===
 +
-If you specify `-compress` then the resulting outputting file with will be gzipped, for example `<collection>.jsonl.gz`.
+If you specify `-compress` then the resulting outputting file with will be gzipped, for example `<collection>.json.gz`.
 
 `-query`::
 +
@@ -1473,24 +1473,52 @@ Export all documents from a collection `gettingstarted`:
 [source,bash]
 bin/solr export -url http://localhost:8983/solr/gettingstarted limit -1
 
-Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a compressed JSONL file:
+Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a compressed JSON file:
 
 [source,bash]
 ----
-bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -format jsonl -compress -out 1MDocs
+bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -format json -compress -out 1MDocs
 ----
 
 === Importing Documents into a Collection
 
 Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc[/update request handler] to import them to a new Solr collection.
 
-*Example: import `jsonl` files*
+*Example: import `json` files*
 
-`curl -X POST -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json/docs?commit=true`
+First export the documents, making sure to ignore any fields that are populated via a `copyField` by specifying what fields you want to export:
+
+[,console]
+----
+$ bin/solr export -url http://localhost:8983/solr/gettingstarted -fields id,name,manu,cat,features
+----
+
+Create a new collection to import the exported documents into:
+
+[,console]
+----
+$ bin/solr create_collection -c test_collection -n techproducts
+----
+
+Now import the data with either of these methods:
+
+[,console]
+----
+$ curl -X POST -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true'
+----
+or
+[,console]
+----
+$ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update?commit=true'
+----
 
 *Example: import `javabin` files*
 
-`curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin http://localhost:8983/solr/gettingstarted/update?commit=true`
+[,console]
+----
+$ bin/solr export -url http://localhost:8983/solr/gettingstarted -format javabin -fields id,name,manu,cat,features
+$ curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin 'http://localhost:8983/solr/test_collection/update?commit=true'
+----
 
 == Interacting with API
 
