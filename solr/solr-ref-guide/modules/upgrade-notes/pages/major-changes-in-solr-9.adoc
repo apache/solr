@@ -78,7 +78,7 @@ Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site 
 * the bin/solr -i and bin/solr -info removed in favour of bin/solr status command.
 
 === Security
-* Use of `stream.file` and `stream.url` and `stream.body` params are no longer enabled via configuration in solrconfig.xml, nor dynamic equivalents with the config API.
+* Use of `stream.file`, `stream.url` and `stream.body` params are no longer enabled via configuration in solrconfig.xml, nor dynamic equivalents with the config API.
 Older configuration now does nothing.
 Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
 
