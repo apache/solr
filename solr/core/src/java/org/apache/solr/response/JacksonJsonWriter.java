@@ -28,6 +28,7 @@ import java.math.BigInteger;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.request.SolrQueryRequest;
 
+/** A JSON ResponseWriter that uses jackson. */
 public class JacksonJsonWriter extends BinaryResponseWriter {
 
   protected final JsonFactory jsonfactory;
@@ -44,9 +45,9 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
   @Override
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
       throws IOException {
-    try (WriterImpl sw = new WriterImpl(jsonfactory, out, request, response)) {
-      sw.writeResponse();
-    }
+    WriterImpl sw = new WriterImpl(jsonfactory, out, request, response);
+    sw.writeResponse();
+    sw.close();
   }
 
   public PushWriter getWriter(
