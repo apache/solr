@@ -29,10 +29,11 @@ public class MetricSamples {
 
   private final Map<String, Collector.MetricFamilySamples> samplesByMetricName;
 
-  private Set<String> sampleMetricsCache = new HashSet<String>();
+  private Set<String> sampleMetricsCache;
 
   public MetricSamples(Map<String, Collector.MetricFamilySamples> input) {
     samplesByMetricName = input;
+    sampleMetricsCache = new HashSet<>();
     for (Collector.MetricFamilySamples metricFamilySamples : input.values()) {
       addSamplesToCache(metricFamilySamples);
     }
