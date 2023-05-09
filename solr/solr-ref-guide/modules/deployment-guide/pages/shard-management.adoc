@@ -538,6 +538,15 @@ Set this to `false` to prevent the index directory from being deleted.
 +
 A flag that allows treating the collection parameter as an alias for the actual collection name to be resolved.
 
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
 === DELETESHARD Response
 
 The output will include the status of the request.

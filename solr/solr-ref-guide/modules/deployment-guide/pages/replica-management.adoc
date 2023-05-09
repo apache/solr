@@ -451,10 +451,16 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 [[deletereplica]]
 == DELETEREPLICA: Delete a Replica
 
-Deletes a named replica (or a particular number of unnamed replicas) from the specified collection and shard.
+Allows deletion of one or more replicas.  The replicas to be deleted can be specified in multiple ways:
 
-If the corresponding core is up and running the core is unloaded, the entry is removed from the clusterstate, and (by default) the instanceDir and dataDir are deleted.
-If the node/core is down, the entry is taken off the clusterstate and if the core comes up later it is automatically unregistered.
+1. A single, specific replica can be deleted by if the associated collection, shard and replica name are all provided.
+2. Multiple replicas can be deleted from a specific shard if the associated collection and shard names are provided, along with a `count` of the replicas to delete.
+3. Multiple replicas can be deleted from _all_ shards in a collection if the associated collection name is provided, along with a `count` of the replicas to delete.
+
+When deleting multiple replicas, Solr chooses replicas which are active, up to date, and not currently the leader.
+
+For each replica being deleted, if the corresponding core is up and running the core is unloaded, the entry is removed from the clusterstate, and (by default) the instanceDir and dataDir are deleted.
+If the core underlying the replica is down, the entry is taken off the clusterstate and if the core comes up later it is automatically unregistered.
 
 [.dynamic-tabs]
 --
@@ -472,7 +478,7 @@ http://localhost:8983/solr/admin/collections?action=DELETEREPLICA&collection=tec
 ====
 [.tab-label]*V2 API*
 
-The v2 API has two distinct endpoints for replica-deletion, depending on how the replicas are specified.
+The v2 API has three distinct endpoints for replica-deletion, depending on how the replicas are specified.
 
 To delete a replica by name:
 
@@ -482,11 +488,22 @@ To delete a replica by name:
 curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1/replicas/core_node2
 ----
 
-To delete a specified number of (unnamed) replicas:
+To delete a specified number of (unnamed) replicas from a single shard:
 
 [source,bash]
 ----
 curl -X DELETE "http://localhost:8983/api/collections/techproducts/shards/shard1/replicas?count=3"
+----
+
+To delete a specified number of (unnamed) replicas from all shards:
+
+[source,bash]
+----
+curl -X PUT -H "Content-type: application/json" "http://localhost:8983/api/collections/techproducts/scale" -d '
+  {
+    "count": 3
+  }
+'
 ----
 ====
 --
