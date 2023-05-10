@@ -26,7 +26,6 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREA
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
@@ -41,7 +40,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
@@ -111,9 +109,6 @@ import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_PURGE_UNUSED;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
@@ -764,16 +759,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETESHARD_OP(
         DELETESHARD,
         (req, rsp, h) -> {
-          Map<String, Object> map =
-              copy(req.getParams().required(), null, COLLECTION_PROP, SHARD_ID_PROP);
-          copy(
-              req.getParams(),
-              map,
-              DELETE_INDEX,
-              DELETE_DATA_DIR,
-              DELETE_INSTANCE_DIR,
-              FOLLOW_ALIASES);
-          return map;
+          DeleteShardAPI.invokeWithV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     FORCELEADER_OP(
         FORCELEADER,
@@ -822,19 +809,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEREPLICA_OP(
         DELETEREPLICA,
         (req, rsp, h) -> {
-          Map<String, Object> map = copy(req.getParams().required(), null, COLLECTION_PROP);
-
-          return copy(
-              req.getParams(),
-              map,
-              DELETE_INDEX,
-              DELETE_DATA_DIR,
-              DELETE_INSTANCE_DIR,
-              COUNT_PROP,
-              REPLICA_PROP,
-              SHARD_ID_PROP,
-              ONLY_IF_DOWN,
-              FOLLOW_ALIASES);
+          DeleteReplicaAPI.invokeWithV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     MIGRATE_OP(
         MIGRATE,
@@ -1725,7 +1701,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateCollectionBackupAPI.class,
         DeleteAliasAPI.class,
         DeleteCollectionAPI.class,
+        DeleteReplicaAPI.class,
         DeleteReplicaPropertyAPI.class,
+        DeleteShardAPI.class,
         InstallShardDataAPI.class,
         ListCollectionsAPI.class,
         ReplaceNodeAPI.class,
@@ -1745,10 +1723,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CreateShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new AddReplicaAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SyncShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ForceLeaderAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new DeleteReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));

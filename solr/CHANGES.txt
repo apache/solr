@@ -115,6 +115,11 @@ Improvements
 
 * SOLR-16782: bin/solr export tool now supports JSON export format as well as the existing JSON With Lines format. (Eric Pugh)
 
+* SOLR-16392: The v2 deletereplica API has been tweaked to be more intuitive: single replicas deletion now uses
+  `DELETE /api/collections/cName/shards/sName/replicas/rName`, deletion of multiple relicas in a single shard uses
+  `DELETE /api/collections/cName/shards/sName/replicas?count=123`, and deletion of multiple replicas from all shards now uses
+  `PUT /api/collections/cName/scale {"count": 123"}` (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
