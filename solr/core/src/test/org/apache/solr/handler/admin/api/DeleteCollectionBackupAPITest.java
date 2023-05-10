@@ -66,13 +66,16 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
 
     // Garbage collect unused files
     {
+        final var requestBody = new DeleteCollectionBackupAPI.PurgeUnusedFilesRequestBody();
+        requestBody.location = "someLocation";
+        requestBody.repositoryName = "someRepository";
+        requestBody.asyncId = "someAsyncId";
       final SolrException thrown =
           expectThrows(
               SolrException.class,
               () -> {
                 final var api = new DeleteCollectionBackupAPI(null, null, null);
-                api.garbageCollectUnusedBackupFiles(
-                    null, "someLocation", "someRepository", "someAsyncId");
+                api.garbageCollectUnusedBackupFiles(null, requestBody);
               });
 
       assertEquals(400, thrown.code());

@@ -34,16 +34,20 @@ import java.util.Locale;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
@@ -118,29 +122,40 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
     return response;
   }
 
-  @Path("/backups/{backupName}/unusedfiles")
-  @DELETE
+  @Path("/backups/{backupName}/purgeUnused")
+  @PUT
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse garbageCollectUnusedBackupFiles(
       @PathParam("backupName") String backupName,
-      @QueryParam(BACKUP_LOCATION) String location,
-      @QueryParam(BACKUP_REPOSITORY) String repositoryName,
-      @QueryParam(ASYNC) String asyncId)
+      PurgeUnusedFilesRequestBody requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
+    if (requestBody == null) {
+      throw new SolrException(BAD_REQUEST, "Required request body is missing");
+    }
     ensureRequiredParameterProvided(NAME, backupName);
-    location = getAndValidateBackupLocation(repositoryName, location);
+    requestBody.location = getAndValidateBackupLocation(requestBody.repositoryName, requestBody.location);
 
     final ZkNodeProps remoteMessage =
         createRemoteMessage(
-            backupName, null, null, Boolean.TRUE, location, repositoryName, asyncId);
+            backupName, null, null, Boolean.TRUE, requestBody.location, requestBody.repositoryName, requestBody.asyncId);
     submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
+        response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, requestBody.asyncId);
 
     return response;
+  }
+
+  /**
+   * Request body for the {@link DeleteCollectionBackupAPI#garbageCollectUnusedBackupFiles(String, PurgeUnusedFilesRequestBody)} API.
+   */
+  public static class PurgeUnusedFilesRequestBody implements JacksonReflectMapWriter {
+    @JsonProperty(BACKUP_LOCATION) public String location;
+    @JsonProperty(BACKUP_REPOSITORY) public String repositoryName;
+    @JsonProperty(ASYNC) public String asyncId;
+
   }
 
   public static ZkNodeProps createRemoteMessage(
@@ -200,11 +215,11 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
           params.get(BACKUP_REPOSITORY),
           params.get(ASYNC));
     } else if (params.get(BACKUP_PURGE_UNUSED) != null) {
-      return api.garbageCollectUnusedBackupFiles(
-          params.get(NAME),
-          params.get(BACKUP_LOCATION),
-          params.get(BACKUP_REPOSITORY),
-          params.get(ASYNC));
+      final var requestBody = new PurgeUnusedFilesRequestBody();
+      requestBody.location = params.get(BACKUP_LOCATION);
+      requestBody.repositoryName = params.get(BACKUP_REPOSITORY);
+      requestBody.asyncId = params.get(ASYNC);
+      return api.garbageCollectUnusedBackupFiles(params.get(NAME), requestBody);
     } else { // BACKUP_ID != null
       return api.deleteSingleBackupById(
           params.get(NAME),
