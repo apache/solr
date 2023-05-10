@@ -2005,7 +2005,7 @@ The DELETEBACKUP API does not support the deprecated format and attempts to use 
 ====
 
 Solr allows storing multiple backups for the same collection at any given logical "location".
-These backup points are each given an identifier (`backupId`) which can be used to delete them specifically with this API.
+These backup points are each given an identifier (`backupId`) which can be used to delete them individually with this API.
 Alternatively Solr can be told to keep the last `maxNumBackupPoints` backups, deleting everything else at the given location.
 Deleting backup points in these ways can orphan index files that are no longer referenced by any backup points.
 These orphaned files can be detected and deleted using the `purgeUnused` option.
@@ -2105,7 +2105,11 @@ http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupNa
 [source,bash]
 ----
 
-curl -X DELETE "http://localhost:8983/api/backups/myBackupName/unusedfiles?location=/path/to/my/shared/drive"
+curl -X PUT -H "Content-type: application/json" "http://localhost:8983/api/backups/myBackupName/purgeUnused" '
+  {
+    "location": "/path/to/my/shared/drive"
+  }
+'
 ----
 ====
 --
@@ -2158,7 +2162,7 @@ Explicitly specify a single backup-ID to delete.
 Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per v1 DELETEBACKUP request.
 Provided as a query parameter in v1 requests, and as a path parameter in v2 requests.
 
-`maxNumBackupPoints`::
+`maxNumBackupPoints` (v1), `retainLatest` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -2179,7 +2183,7 @@ Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified
 Solr's incremental backup support can orphan files if the backups referencing them are deleted.
 The `purgeUnused` flag parameter triggers a scan to detect these orphaned files and delete them.
 Administrators doing repeated backups at the same location should plan on using this parameter sporadically to reclaim disk space.
-Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per v1 DELETEBACKUP request.
 
 `async`::
 +
