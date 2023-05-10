@@ -19,19 +19,28 @@ package org.apache.solr.cluster.placement.plugins;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
+
+import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.BalancePlan;
+import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlan;
@@ -174,6 +183,139 @@ public class MinimizeCoresPlacementFactory
         replicaPlacements.add(
             placementPlanFactory.createReplicaPlacement(
                 solrCollection, shardName, node, replicaType));
+      }
+    }
+
+    @Override
+    public BalancePlan computeBalancing(
+        BalanceRequest balanceRequest, PlacementContext placementContext)
+        throws PlacementException, InterruptedException {
+      Map<Replica, Node> replicaMovements = new HashMap<>();
+
+      TreeSet<NodeWithCoreCount> orderedNodes = getCoresPerNode(placementContext, balanceRequest.getNodes());
+      int totalCores = orderedNodes.stream().mapToInt(NodeWithCoreCount::getCoreCount).sum();
+      int optimalCoresPerNode = (int)Math.floor(totalCores/(double)orderedNodes.size());
+      Map<String,Map<String,Set<Replica>>> replicasPerNode = getReplicasPerNode(placementContext, balanceRequest.getNodes());
+
+      // TODO: think about what to do if this gets stuck
+      // While the node with the least cores still has room to take a replica from the node with the most cores, loop
+      while (orderedNodes.first().getCoreCount() < optimalCoresPerNode) {
+        NodeWithCoreCount leastCores = orderedNodes.pollFirst();
+        NodeWithCoreCount mostCores = orderedNodes.pollLast();
+
+        // select a replica from the node with the most cores to move to the node with the least cores
+        Map<String, Set<Replica>> toNodeShards = replicasPerNode.get(leastCores.getNode().getName());
+        Map<String, Set<Replica>> fromNodeShards = replicasPerNode.get(mostCores.getNode().getName());
+        for (String shard : fromNodeShards.keySet()) {
+          if (!toNodeShards.containsKey(shard) || toNodeShards.get(shard).isEmpty()) {
+            Set<Replica> fromNodeShard = fromNodeShards.get(shard);
+            Optional<Replica> replica = fromNodeShard.stream().findFirst();
+            if (replica.isPresent()) {
+              mostCores.decrementCoreCount();
+              fromNodeShard.remove(replica.get());
+              leastCores.incrementCoreCount();
+              toNodeShards.put(shard, Collections.singleton(replica.get()));
+              replicaMovements.put(replica.get(), leastCores.getNode());
+            }
+            // Stop if either node has reached the optimal amount of cores
+            if (mostCores.getCoreCount() == optimalCoresPerNode || leastCores.getCoreCount() == optimalCoresPerNode) {
+              break;
+            }
+          }
+        }
+
+        // Add back the nodes into the sorted set
+        orderedNodes.add(leastCores);
+        orderedNodes.add(mostCores);
+      }
+
+      return placementContext.getBalancePlanFactory().createBalancePlan(balanceRequest, replicaMovements);
+    }
+
+    private TreeSet<NodeWithCoreCount> getCoresPerNode(PlacementContext placementContext, Set<Node> nodes) throws PlacementException {
+      // Fetch attributes for a superset of all nodes requested amongst the placementRequests
+      AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
+      attributeFetcher.requestNodeMetric(NodeMetricImpl.NUM_CORES);
+      attributeFetcher.fetchFrom(nodes);
+      AttributeValues attrValues = attributeFetcher.fetchAttributes();
+      TreeSet<NodeWithCoreCount> coresPerNodeTotal = new TreeSet<>();
+      for (Node node : nodes) {
+        if (attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).isEmpty()) {
+          throw new PlacementException("Can't get number of cores in " + node);
+        }
+        coresPerNodeTotal.add(new NodeWithCoreCount(node, attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).get()));
+      }
+
+      return coresPerNodeTotal;
+    }
+
+    private Map<String, Map<String, Set<Replica>>> getReplicasPerNode(PlacementContext placementContext, Set<Node> nodes) throws PlacementException {
+      Map<String, Map<String, Set<Replica>>> replicasPerNode =  new HashMap<>();
+      for (Node node : nodes) {
+        replicasPerNode.put(node.getName(), new HashMap<>());
+      }
+      // Fetch attributes for a superset of all nodes requested amongst the placementRequests
+      Cluster cluster = placementContext.getCluster();
+      for (SolrCollection collection : cluster.collections()) {
+        for (Shard shard : collection.shards()) {
+          for (Replica replica : shard.replicas()) {
+            if (replicasPerNode.containsKey(replica.getNode().getName())) {
+              replicasPerNode.get(replica.getNode().getName())
+                  .computeIfAbsent(collection.getName() + "%%%%%" + shard.getShardName(), (s) -> new HashSet<>(1))
+                  .add(replica);
+            }
+          }
+        }
+      }
+
+      return replicasPerNode;
+    }
+
+    private static class NodeWithCoreCount implements Comparable<NodeWithCoreCount> {
+      private final Node node;
+      private int coreCount;
+
+      public NodeWithCoreCount(Node node, int coreCount) {
+        this.node = node;
+        this.coreCount = coreCount;
+      }
+
+      public Node getNode() {
+        return node;
+      }
+
+      public void incrementCoreCount() {
+        coreCount++;
+      }
+
+      public void decrementCoreCount() {
+        coreCount--;
+      }
+
+      public int getCoreCount() {
+        return coreCount;
+      }
+
+      @Override
+      public boolean equals(Object other) {
+        if (other instanceof NodeWithCoreCount) {
+          NodeWithCoreCount otherNodeWithCoreCount = (NodeWithCoreCount) other;
+          if (this.getNode() == null) {
+            return otherNodeWithCoreCount.node == null;
+          } else if (this.getNode().equals(otherNodeWithCoreCount.getNode())) {
+            return this.getCoreCount() == otherNodeWithCoreCount.getCoreCount();
+          }
+        }
+        return false;
+      }
+
+      @Override
+      public int compareTo(NodeWithCoreCount other) {
+        if (this.getCoreCount() == other.getCoreCount()) {
+          return getNode().getName().compareTo(other.getNode().getName());
+        } else {
+          return Integer.compare(getCoreCount(), other.getCoreCount());
+        }
       }
     }
   }

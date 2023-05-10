@@ -29,6 +29,8 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
+import org.apache.solr.cluster.placement.BalancePlan;
+import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlan;
@@ -115,6 +117,15 @@ public class SimplePlacementFactory
                 .createPlacementPlan(request, replicaPlacements));
       }
       return placementPlans;
+    }
+
+    @Override
+    public BalancePlan computeBalancing(
+        BalanceRequest balanceRequest, PlacementContext placementContext)
+        throws PlacementException, InterruptedException {
+      // This is a NO-OP
+      // TODO: Implement
+      return placementContext.getBalancePlanFactory().createBalancePlan(balanceRequest, new HashMap<>());
     }
 
     private Map<Node, ReplicaCount> getNodeVsShardCount(PlacementContext placementContext) {

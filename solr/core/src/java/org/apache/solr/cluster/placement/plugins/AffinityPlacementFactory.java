@@ -46,6 +46,8 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.BalancePlan;
+import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
 import org.apache.solr.cluster.placement.DeleteShardsRequest;
@@ -364,6 +366,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       return placementPlans;
+    }
+
+    @Override
+    public BalancePlan computeBalancing(
+        BalanceRequest balanceRequest, PlacementContext placementContext)
+        throws PlacementException, InterruptedException {
+      // This is a NO-OP
+      return placementContext.getBalancePlanFactory().createBalancePlan(balanceRequest, new HashMap<>());
     }
 
     private boolean shouldSpreadAcrossDomains(Set<Node> allNodes, AttributeValues attrValues) {

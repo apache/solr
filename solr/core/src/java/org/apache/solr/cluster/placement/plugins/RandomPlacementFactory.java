@@ -20,12 +20,16 @@ package org.apache.solr.cluster.placement.plugins;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
+import org.apache.solr.cluster.placement.BalancePlan;
+import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlan;
@@ -123,6 +127,13 @@ public class RandomPlacementFactory
             placementPlanFactory.createReplicaPlacement(
                 solrCollection, shardName, node, replicaType));
       }
+    }
+
+    @Override
+    public BalancePlan computeBalancing(
+        BalanceRequest balanceRequest, PlacementContext placementContext) {
+      // This is a NO-OP, there is no reason for randomly balancing a cluster
+      return placementContext.getBalancePlanFactory().createBalancePlan(balanceRequest, new HashMap<>());
     }
   }
 }
