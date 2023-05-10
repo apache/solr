@@ -888,3 +888,101 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
   ]
  }
 ----
+
+
+
+[[clustersizing]]
+== CLUSTERSIZING: Cluster Sizing
+
+Cluster sizing is intended to estimate resource usage for a production Solr cluster. It is based on the Size Component and will perform calls to it internally in order to merge the results and compute aggregated estimations.
+
+Usage requires that the Size Component be declared and used by the `/select` handler so that the `clustersizing` action can perform requests to it.
+
+The `clustersizing` action should be performed on a sample cluster containing collection(s) created using the same configuration as the intended production cluster.  The sample collection(s) should contain representative documents.
+
+=== CLUSTERSIZING Parameters
+
+All parameters from the Size Component, except for size parameter itself, can be passed to the cluster sizing action and will be relayed to the Size Component when estimating resource usage.
+
+*xref:query-guide:size-component.adoc[]*: Size component documentation
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+|Optional |
+|===
++
+List of collections (CSV) to be included in the report, if not specified, all collections will be included.
+
+`shard`::
++
+[%autowidth,frame=none]
+|===
+|Optional |
+|===
++
+List of shards (CSV) to be included in the report, if not specified, all shards will be included.
+
+`replica`::
++
+[%autowidth,frame=none]
+|===
+|Optional |
+|===
++
+List of replicas (CSV) to be included in the report, if not specified, all replicas will be included.
+
+=== Example using CLUSTERSIZING
+
+*Input*
+----
+http://localhost:8983/solr/admin/collections?action=clustersizing&sizeUnit=bytes&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">28</int>
+  </lst>
+  <lst name="cluster">
+    <lst name="nodes">
+      <lst name="localhost:8983_solr">
+        <double name="total-lucene-RAM">3.3554431E7</double>
+        <double name="total-solr-RAM">3.3786883E7</double>
+        <double name="total-disk-size">4934.0</double>
+        <long name="estimated-num-docs">3</long>
+      </lst>
+      <!-- other nodes -->
+    </lst>
+    <lst name="collections">
+      <lst name="collextion1">
+        <lst name="shard1">
+          <lst name="core_node2">
+            <double name="total-disk-size">4934.0</double>
+            <double name="total-lucene-RAM">3.3554431E7</double>
+            <double name="total-solr-RAM">3.3786883E7</double>
+            <long name="estimated-num-docs">3</long>
+            <double name="estimated-doc-size">1644.0</double>
+            <lst name="solr-details">
+              <double name="filterCache">10432.0</double>
+              <double name="queryResultCache">217088.0</double>
+              <double name="documentCache">4932.0</double>
+              <double name="luceneRam">3.3554431E7</double>
+            </lst>
+          </lst>
+          <!-- other cores -->
+        </lst>
+        <!-- other shards -->
+      </lst>
+      <!-- other collections -->
+    </lst>
+  </lst>
+</response>
+----
+
+

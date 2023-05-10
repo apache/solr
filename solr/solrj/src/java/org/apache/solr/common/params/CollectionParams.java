@@ -111,6 +111,7 @@ public interface CollectionParams {
     BALANCESHARDUNIQUE(true, LockLevel.COLLECTION),
     REBALANCELEADERS(true, LockLevel.COLLECTION),
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
+    CLUSTERSIZING(false, LockLevel.NONE),
     BACKUP(true, LockLevel.COLLECTION),
     RESTORE(true, LockLevel.COLLECTION),
     INSTALLSHARDDATA(true, LockLevel.SHARD),

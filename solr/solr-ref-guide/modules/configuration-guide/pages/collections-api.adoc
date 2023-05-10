@@ -22,7 +22,7 @@ The Collections API is provided to allow you to control your cluster, including 
 
 Because this API has a large number of commands and options, we've grouped the commands into the following sub-sections:
 
-*xref:deployment-guide:cluster-node-management.adoc[]*: Define properties for the entire cluster; check the status of a cluster; remove replicas from a node; utilize a newly added node; add or remove roles for a node.
+*xref:deployment-guide:cluster-node-management.adoc[]*: Define properties for the entire cluster; check the status of a cluster; remove replicas from a node; utilize a newly added node; add or remove roles for a node; estimate resources for a cluster.
 
 *xref:deployment-guide:collection-management.adoc[]*: Create, list, reload and delete collections; set collection properties; migrate documents to another collection; rebalance leaders; backup and restore collections.
 
