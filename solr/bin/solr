@@ -663,6 +663,10 @@ function print_usage() {
     echo ""
     echo "  -V                                     Enable more verbose output."
     echo ""
+  elif [ "$CMD" == "package" ]; then
+    echo ""
+    run_tool package -solrUrl "http://fake.to.allow.help.to.run" "help"
+
   fi
 } # end print_usage
 
@@ -746,7 +750,6 @@ function run_tool() {
 
 # get status about any Solr nodes running on this host
 function get_status() {
-  CODE=4
   # first, see if Solr is running
   numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
   if [ "$numSolrs" != "0" ]; then
@@ -758,11 +761,9 @@ function get_status() {
         if [ "$port" != "" ]; then
           echo -e "\nSolr process $ID running on port $port"
           run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-          CODE=$?
           echo ""
         else
           echo -e "\nSolr process $ID from $PIDF not found."
-          CODE=1
         fi
     done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
   else
@@ -778,17 +779,14 @@ function get_status() {
             echo ""
             echo "Solr process $ID running on port $port"
             run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-            CODE=$?
             echo ""
           fi
       done
     else
       echo -e "\nNo Solr nodes are running.\n"
-      CODE=3
     fi
   fi
 
-  return $CODE
 } # end get_status
 
 function run_package() {
@@ -1408,7 +1406,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
       print_short_zk_usage "<source> and <destination> must be specified when using either the 'mv' or 'cp' commands."
     fi
     if [[ "$ZK_OP" == "cp" && "${ZK_SRC:0:3}" != "zk:" && "${ZK_DST:0:3}" != "zk:" ]]; then
-      print_short_zk_usage "One of the source or desintation paths must be prefixed by 'zk:' for the 'cp' command."
+      print_short_zk_usage "One of the source or destination paths must be prefixed by 'zk:' for the 'cp' command."
     fi
   fi
 
@@ -1465,6 +1463,24 @@ if [[ "$SCRIPT_CMD" == "export" ]]; then
 fi
 
 if [[ "$SCRIPT_CMD" == "package" ]]; then
+  if [ $# -gt 0 ]; then
+    while true; do
+      case "$1" in
+          -help|-h)
+              print_usage "$SCRIPT_CMD"
+              exit 0
+          ;;
+          --)
+              shift
+              break
+          ;;
+          *)
+              break # out-of-args, stop looping
+
+          ;;
+      esac
+    done
+  fi
   run_package "$@"
   exit $?
 fi
@@ -1652,7 +1668,7 @@ if [[ "${SOLR_ULIMIT_CHECKS:-}" != "false" ]]; then
       echo "     max processes:   $SOLR_RECOMMENDED_MAX_PROCESSES "
       echo "     open files:      $SOLR_RECOMMENDED_OPEN_FILES"
       echo "     virtual memory:  unlimited"
-      echo "     max memorh size: unlimited"
+      echo "     max memory size: unlimited"
     fi
   fi
 fi

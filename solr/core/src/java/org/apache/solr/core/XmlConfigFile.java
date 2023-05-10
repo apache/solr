@@ -399,7 +399,7 @@ public class XmlConfigFile { // formerly simply "Config"
     return val != null ? Double.parseDouble(val) : def;
   }
 
-  /** If this config is loaded from zk the version is relevant other wise -1 is returned */
+  /** If this config is loaded from zk the version is relevant otherwise -1 is returned */
   public int getZnodeVersion() {
     return zkVersion;
   }
