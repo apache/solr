@@ -16,8 +16,6 @@
  */
 package org.apache.solr.request;
 
-import static org.apache.solr.core.TestSolrConfigHandler.runConfigCommand;
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.SortedMap;
@@ -28,10 +26,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.RestTestBase;
-import org.apache.solr.util.RestTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +37,7 @@ public class TestStreamBody extends RestTestBase {
 
   private static final String collection = "collection1";
 
-  @Before
-  public void before() throws Exception {
+  public void startSolr() throws Exception {
     File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
@@ -84,7 +79,9 @@ public class TestStreamBody extends RestTestBase {
   // SOLR-3161
   @Test
   public void testQtUpdateFails() throws Exception {
-    enableStreamBody();
+    System.setProperty("solr.enableStreamBody", "true");
+    startSolr();
+
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*"); // for anything
     query.add("echoHandler", "true");
@@ -109,9 +106,10 @@ public class TestStreamBody extends RestTestBase {
     }
   }
 
-  // Tests that stream.body is disabled by default, and can be edited through Config API
+  // Tests that stream.body is disabled by default
   @Test
-  public void testStreamBodyDefaultAndConfigApi() throws Exception {
+  public void testStreamBodyDefault() throws Exception {
+    startSolr();
     SolrQuery query = new SolrQuery();
     query.add(CommonParams.STREAM_BODY, "<delete><query>*:*</query></delete>");
     query.add("commit", "true");
@@ -126,15 +124,5 @@ public class TestStreamBody extends RestTestBase {
     SolrException se =
         expectThrows(SolrException.class, () -> queryRequest.process(getSolrClient()));
     assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
-    enableStreamBody();
-    queryRequest.process(getSolrClient());
-  }
-
-  // Enables stream.body through Config API
-  private void enableStreamBody() throws Exception {
-    RestTestHarness harness = restTestHarness;
-    String payload =
-        "{ 'set-property' : { 'requestDispatcher.requestParsers.enableStreamBody':" + true + "} }";
-    runConfigCommand(harness, "/config?wt=json", payload);
   }
 }

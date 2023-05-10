@@ -1850,6 +1850,14 @@ if [[ -n "${SOLR_PLACEMENTPLUGIN_DEFAULT:-}" ]] ; then
   SOLR_OPTS+=("-Dsolr.placementplugin.default=$SOLR_PLACEMENTPLUGIN_DEFAULT")
 fi
 
+# Remote streaming and stream body
+if [ "${SOLR_ENABLE_REMOTE_STREAMING:-false}" == "true" ]; then
+  SOLR_OPTS+=("-Dsolr.enableRemoteStreaming=true")
+fi
+if [ "${SOLR_ENABLE_STREAM_BODY:-false}" == "true" ]; then
+  SOLR_OPTS+=("-Dsolr.enableStreamBody=true")
+fi
+
 : ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
 
 if [ ! -e "$SOLR_SERVER_DIR" ]; then
