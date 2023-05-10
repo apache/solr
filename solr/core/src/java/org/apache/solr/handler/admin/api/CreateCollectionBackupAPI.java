@@ -193,7 +193,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
   public static class CreateCollectionBackupResponseBody
       extends SubResponseAccumulatingJerseyResponse {
     @JsonProperty("response")
-    public CollectionBackupData backupDataResponse;
+    public CollectionBackupDetails backupDataResponse;
 
     @JsonProperty("deleted")
     public List<BackupDeletionData> deleted;
@@ -201,7 +201,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     @JsonProperty public String collection;
   }
 
-  public static class CollectionBackupData implements JacksonReflectMapWriter {
+  public static class CollectionBackupDetails implements JacksonReflectMapWriter {
     @JsonProperty public String collection;
     @JsonProperty public Integer numShards;
     @JsonProperty public Integer backupId;
