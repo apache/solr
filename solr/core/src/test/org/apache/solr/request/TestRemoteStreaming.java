@@ -35,7 +35,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,14 +47,13 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    System.setProperty("solr.enableRemoteStreaming", "true");
+    System.setProperty("solr.enableStreamBody", "true");
     // this one has handleSelect=true which a test here needs
     File solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     jettySolrRunner = createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
-
-  @AfterClass
-  public static void afterTest() {}
 
   @Before
   public void doBefore() throws IOException, SolrServerException {
