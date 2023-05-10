@@ -30,7 +30,7 @@ import org.apache.lucene.search.Weight;
  * Wraps a PhraseQuery and stores an Integer startOffset taken from the Token that gave rise to the
  * contained Terms.
  */
-public final class PhraseQueryWithOffset extends Query {
+public final class PhraseQueryWithOffset extends Query implements OffsetHolder {
 
   private final PhraseQuery query;
 

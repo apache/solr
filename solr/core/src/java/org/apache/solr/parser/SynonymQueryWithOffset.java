@@ -29,7 +29,7 @@ import org.apache.lucene.search.Weight;
  * Wraps a SynonymQuery and stores an Integer startOffset taken from the Token that gave rise to the
  * contained Terms.
  */
-public final class SynonymQueryWithOffset extends Query {
+public final class SynonymQueryWithOffset extends Query implements OffsetHolder {
 
   private final SynonymQuery query;
 

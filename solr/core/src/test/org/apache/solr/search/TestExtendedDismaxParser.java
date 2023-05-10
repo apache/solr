@@ -48,9 +48,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.parser.PhraseQueryWithOffset;
-import org.apache.solr.parser.SynonymQueryWithOffset;
-import org.apache.solr.parser.TermQueryWithOffset;
+import org.apache.solr.parser.OffsetHolder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.SolrPluginUtils;
@@ -1519,7 +1517,25 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
    */
   @Test
   public void testStartOffsets() throws Exception {
+
+    // the subject field has autgeneratePhraseQueries=true
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject")) {
+      QParser qParser =
+          QParser.getParser("one two three fooaaa four wi fi jeans five", "edismax", req);
+      BooleanQuery q = (BooleanQuery) qParser.getQuery();
+      BooleanQuery c1 = (BooleanQuery) q.clauses().get(0).getQuery();
+      assertEquals(0, getStartOffset(c1, 0));
+      assertEquals(4, getStartOffset(c1, 1));
+      assertEquals(8, getStartOffset(c1, 2));
+      assertEquals(14, getStartOffset(c1, 3));
+      assertEquals(21, getStartOffset(c1, 4));
+      assertEquals(26, getStartOffset(c1, 5)); // wi fi => wifi
+      assertEquals(32, getStartOffset(c1, 6)); // jeans, denim pants
+      assertEquals(38, getStartOffset(c1, 7));
+    }
+
+    // the text_sw field has autgeneratePhraseQueries defaulting to false
+    try (SolrQueryRequest req = req("sow", "false", "qf", "text_sw")) {
       QParser qParser =
           QParser.getParser("one two three fooaaa four wi fi jeans five", "edismax", req);
       BooleanQuery q = (BooleanQuery) qParser.getQuery();
@@ -1536,27 +1552,16 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /**
-   * Returns the start offset of an inner TermQueryWithOffset or SynonymQueryWithOffset contained
-   * inside the given Boolean Query. The Boolean Query is assumed to have clauses of type
-   * DisjunctionMaxQuery. The clause with the designated index is retrieved and the start offset of
-   * the first disjunct inside that clause is returned. The disjuncts are assumed to be of type
-   * TermQueryWithOffset, SynonymQueryWithOffset, or a BooleanQuery containing a
-   * PhraseQueryWithOffset as its first clause. The latter situation arises a synonym is expanded in
-   * a way that results in a phrase (e.g. the rule could be "jeans, denim pants" where "denim pants
-   * is considered as a phrase).
+   * Returns the start offset of an inner query contained inside the given Boolean Query. The
+   * Boolean Query is assumed to have clauses of type DisjunctionMaxQuery. The clause with the
+   * designated index is retrieved and the start offset of the first disjunct inside that clause is
+   * returned.
    */
   private static int getStartOffset(BooleanQuery q, int index) {
     Query innerQuery =
         ((DisjunctionMaxQuery) q.clauses().get(index).getQuery())
             .getDisjuncts().stream().findFirst().get();
-    if (innerQuery instanceof BooleanQuery) {
-      BooleanQuery bq = (BooleanQuery) innerQuery;
-      return ((PhraseQueryWithOffset) bq.clauses().get(0).getQuery()).getStartOffset();
-    }
-    if (innerQuery instanceof TermQueryWithOffset) {
-      return ((TermQueryWithOffset) innerQuery).getStartOffset();
-    }
-    return ((SynonymQueryWithOffset) innerQuery).getStartOffset();
+    return OffsetHolder.getStartOffset(innerQuery);
   }
 
   /** Repeating some of test cases as direct calls to splitIntoClauses */
@@ -2586,6 +2591,68 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             containsString("((text_sw:other | title:other))"),
             containsString("((title:other | text_sw:other))")));
 
+    // Similar to above:
+    // When the *structure* of produced queries is different in each field,
+    // sow=true produces boolean-of-dismax query structure;
+    // sow=false also produces boolean-of-dismax query structure if startOffsets are available;
+    // but now we add "jeans" as a query term, which expands via the synonym rule "jeans, denim
+    // pants"
+    // furthermore, we search against text instead ot text_sw
+    // text has autoGeneratePhraseQueries=true
+    // when jeans is expanded to "denim pants" these two terms will be treated as a phrase
+    // here, we are testing that boolean-of-dismax query structure can still be generated when
+    // phrase queries
+    // are involved
+    parsedquery =
+        getParsedQuery(
+            req(
+                "qf",
+                "text title",
+                "q",
+                "olive the other jeans",
+                "defType",
+                "edismax",
+                "sow",
+                "true",
+                "debugQuery",
+                "true"));
+    MatcherAssert.assertThat(
+        parsedquery,
+        anyOf(
+            containsString("((text:oliv | title:olive))"),
+            containsString("((title:olive | text:oliv))")));
+    MatcherAssert.assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
+    MatcherAssert.assertThat(
+        parsedquery,
+        anyOf(
+            containsString("((text:other | title:other))"),
+            containsString("((title:other | text:other))")));
+
+    parsedquery =
+        getParsedQuery(
+            req(
+                "qf",
+                "text title",
+                "q",
+                "olive the other jeans",
+                "defType",
+                "edismax",
+                "sow",
+                "false",
+                "debugQuery",
+                "true"));
+    MatcherAssert.assertThat(
+        parsedquery,
+        anyOf(
+            containsString("((text:oliv | title:olive))"),
+            containsString("((title:olive | text:oliv))")));
+    MatcherAssert.assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
+    MatcherAssert.assertThat(
+        parsedquery,
+        anyOf(
+            containsString("((text:other | title:other))"),
+            containsString("((title:other | text:other))")));
+
     // When field's analysis produce different query structures, mm processing is always done on the
     // boolean query.
     // sow=true produces (boolean-of-dismax)~<mm> query structure;
@@ -3095,14 +3162,18 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
         qParser = QParser.getParser("grackle wi fi", "edismax", req);
         q = qParser.getQuery();
+
         MatcherAssert.assertThat(
-            q,
-            booleanQuery(
-                disjunctionOf(
-                    stringQuery("(text:\"crow blackbird\" text:grackl) text:wifi"),
-                    stringQuery(
-                        "((+text_sw:crow +text_sw:blackbird) text_sw:grackl) text_sw:wifi")),
-                BooleanClause.Occur.MUST));
+            q.toString(),
+            allOf(
+                anyOf(
+                    containsString("(text:wifi | text_sw:wifi)"),
+                    containsString("(text_sw:wifi | text:wifi)")),
+                anyOf(
+                    containsString(
+                        "(((+text_sw:crow +text_sw:blackbird) text_sw:grackl) | (text:\"crow blackbird\" text:grackl))"),
+                    containsString(
+                        "((text:\"crow blackbird\" text:grackl) | ((+text_sw:crow +text_sw:blackbird) text_sw:grackl))"))));
       }
     }
 

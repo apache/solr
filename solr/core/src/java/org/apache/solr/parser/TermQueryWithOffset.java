@@ -23,7 +23,7 @@ import org.apache.lucene.search.TermQuery;
  * A TermQuery that also has an Integer startOffset taken from the Token that gave rise to the
  * contained Term.
  */
-public class TermQueryWithOffset extends TermQuery {
+public class TermQueryWithOffset extends TermQuery implements OffsetHolder {
 
   private final Integer startOffset;
 

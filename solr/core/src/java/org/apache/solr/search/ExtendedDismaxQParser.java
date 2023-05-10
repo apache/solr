@@ -55,11 +55,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.parser.OffsetHolder;
 import org.apache.solr.parser.PhraseQueryWithOffset;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
 import org.apache.solr.parser.SynonymQueryWithOffset;
-import org.apache.solr.parser.TermQueryWithOffset;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -1291,11 +1291,7 @@ public class ExtendedDismaxQParser extends QParser {
 
         for (BooleanClause clause : bq.clauses()) {
           Query innerQuery = clause.getQuery();
-
-          if (!(((innerQuery instanceof TermQueryWithOffset)
-                  && ((TermQueryWithOffset) innerQuery).hasStartOffset())
-              || ((innerQuery instanceof SynonymQueryWithOffset)
-                  && ((SynonymQueryWithOffset) innerQuery).hasStartOffset()))) {
+          if (OffsetHolder.getStartOffset(innerQuery) == null) {
             return false;
           }
         }
@@ -1328,16 +1324,7 @@ public class ExtendedDismaxQParser extends QParser {
 
         for (BooleanClause bc : bq.clauses()) {
           Query innerQuery = bc.getQuery();
-          int offset;
-
-          if (innerQuery instanceof SynonymQueryWithOffset) {
-            SynonymQueryWithOffset sq = (SynonymQueryWithOffset) innerQuery;
-            offset = sq.getStartOffset();
-          } else {
-            TermQueryWithOffset tq = (TermQueryWithOffset) innerQuery;
-            offset = tq.getStartOffset();
-          }
-
+          int offset = OffsetHolder.getStartOffset(innerQuery);
           Query boostedInnerQuery = innerQuery;
           if (boost != null) {
             boostedInnerQuery = new BoostQuery(innerQuery, boost);
