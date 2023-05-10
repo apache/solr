@@ -1324,7 +1324,12 @@ public class ExtendedDismaxQParser extends QParser {
 
         for (BooleanClause bc : bq.clauses()) {
           Query innerQuery = bc.getQuery();
-          int offset = OffsetHolder.getStartOffset(innerQuery);
+          Integer offset = OffsetHolder.getStartOffset(innerQuery);
+          if (offset == null) {
+            // offset should always be non-null because this rewriting method should only
+            // be called when canRewriteUsingStartOffset() returns true
+            throw new RuntimeException("startOffset expected but not found");
+          }
           Query boostedInnerQuery = innerQuery;
           if (boost != null) {
             boostedInnerQuery = new BoostQuery(innerQuery, boost);
