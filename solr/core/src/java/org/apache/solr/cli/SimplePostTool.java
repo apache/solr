@@ -88,7 +88,7 @@ public class SimplePostTool {
   private static final String DEFAULT_RECURSIVE = "0";
   private static final int DEFAULT_WEB_DELAY = 10;
   private static final int MAX_WEB_DEPTH = 10;
-  public static final String DEFAULT_CONTENT_TYPE = "application/xml";
+  public static final String DEFAULT_CONTENT_TYPE = "application/json";
   private static final String DEFAULT_FILE_TYPES =
       "xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log";
   private static final String BASIC_AUTH = "basicauth";
@@ -417,11 +417,13 @@ public class SimplePostTool {
   //
   // USAGE
   //
+  //ERIC candidate for removale
   private static void usageShort() {
     CLIO.out(
         USAGE_STRING_SHORT + "\n" + "       Please invoke with -h option for extended usage help.");
   }
 
+  //ERIC candidate for removale
   private static void usage() {
     CLIO.out(
         USAGE_STRING_SHORT

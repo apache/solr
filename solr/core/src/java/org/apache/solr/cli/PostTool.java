@@ -19,9 +19,8 @@ package org.apache.solr.cli;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.net.URL;
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.slf4j.Logger;
@@ -52,35 +51,15 @@ public class PostTool extends ToolBase {
                         .required(true)
                         .desc("<base Solr update URL>")
                         .build(),
-                Option.builder("host")
-                        .argName("host")
-                        .hasArg()
-                        .required(false)
-                        .desc("<host> (default: localhost)")
-                        .build(),
-                Option.builder("p")
-                        .argName("port")
-                        .hasArg()
-                        .required(false)
-                        .desc("Number of shards; default is 1")
-                        //.withLongOpt("port")
-                        .build(),
                 Option.builder("commit")
-                        .argName("yes|no")
-                        .hasArg(true)
                         .required(false)
-                        .desc("Whether to commit at end of post (default: yes)")
+                        .desc("Issue a commit at end of post")
                         .build(),
-                Option.builder("h")
-                        .argName("help")
-                        .hasArg(false)
+                Option.builder("optimize")
                         .required(false)
-                        .desc("prints tool help")
-                        //.withLongOpt("help")
+                        .desc("Issue an optimize at end of post")
                         .build(),
                 Option.builder("recursive")
-                        .argName("depth")
-                        .hasArg(true)
                         .required(false)
                         .desc("default: 1")
                         .build(),
@@ -94,7 +73,7 @@ public class PostTool extends ToolBase {
                         .argName("content-type")
                         .hasArg(true)
                         .required(false)
-                        .desc("default: application/xml")
+                        .desc("default: application/json")
                         .build(),
                 Option.builder("filetypes")
                         .argName("<type>[,<type>,...]")
@@ -109,14 +88,10 @@ public class PostTool extends ToolBase {
                         .desc("values must be URL-encoded; these pass through to Solr update request")
                         .build(),
                 Option.builder("out")
-                        .argName("yes|no")
-                        .hasArg(true)
                         .required(false)
-                        .desc("default: no; yes outputs Solr response to console")
+                        .desc("sends Solr response outputs to console")
                         .build(),
                 Option.builder("format")
-                        .argName("solr")
-                        .hasArg(true)
                         .required(false)
                         .desc("sends application/json content as Solr commands to /update instead of /update/json/docs")
                         .build());
@@ -127,26 +102,42 @@ public class PostTool extends ToolBase {
     public void runImpl(CommandLine cli) throws Exception {
         SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-        String solrUrl = cli.getOptionValue("url");
+        String url = cli.getOptionValue("url");
+        URL solrUrl = new URL(url);
 
-        Map<String,String> props = Collections.singletonMap("-Dauto", "yes");
-        boolean recursive = false;
-        String[] args = cli.getArgs();
+        //Map<String,String> props = Collections.singletonMap("-Dauto", "yes");
         String mode = SimplePostTool.DEFAULT_DATA_MODE;
         boolean auto = true;
         String type = SimplePostTool.DEFAULT_CONTENT_TYPE;
-        String format = ""; // i.e not solr formatted json commands
+        if (cli.hasOption("type")){
+            type = cli.getOptionValue("type");
+        }
+        String format = cli.hasOption("format") ? "solr": ""; // i.e not solr formatted json commands
         int delay = 0;
         String fileTypes ="";
-        OutputStream out;
-        Boolean commit = false;
-        Boolean optimize = false;
+        int recursive = 0;
+        String r = cli.getOptionValue("recursive","1");
+        try {
+            recursive = Integer.parseInt(r);
+        } catch (Exception e) {
+            if (cli.hasOption("recursive")) {
+                recursive = SimplePostTool.DATA_MODE_WEB.equals(mode) ? 1 : 999;
+            }
+        }
 
-        // this is a weird way to pass it in!
-        System.setProperty("url",solrUrl);
 
-        //SimplePostTool spt = new SimplePostTool(mode, solrUrl, auto, type, format, recursive, delay, fileTypes, out, commit, optimize, args);
-        SimplePostTool spt = SimplePostTool.parseArgsAndInit(cli.getArgs());
+        OutputStream out = cli.hasOption("out") ? CLIO.getOutStream() : null;
+        Boolean commit = cli.hasOption("commit");
+        Boolean optimize = cli.hasOption("optimize");;
+
+        //String[] args = {"fake_to_pass_check_in_execute_method"};
+        String[] args = cli.getArgs();
+
+        System.out.println("ERIC HERE ARE ARGS");
+        System.out.println(cli.getArgs().toString());
+        //SimplePostTool spt2 = SimplePostTool.parseArgsAndInit(cli.getArgs());
+        SimplePostTool spt = new SimplePostTool(mode, solrUrl, auto, type, format, recursive, delay, fileTypes, out, commit, optimize, args);
+
         spt.execute();
     }
 

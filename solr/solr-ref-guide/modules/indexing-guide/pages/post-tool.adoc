@@ -25,9 +25,9 @@ NOTE: This tool is meant for use by new users exploring Solr's capabilities, and
 
 To run it, open a window and enter:
 
-[source,bash]
+[,console]
 ----
-bin/solr post -url http://localhost:8983/gettingstarted/update example/films/films.json
+$ bin/solr post -url http://localhost:8983/gettingstarted/update example/films/films.json
 ----
 
 This will contact the server at `localhost:8983`.

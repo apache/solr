@@ -55,7 +55,7 @@ teardown() {
   run solr create_collection -c monitors -d _default
   assert_output --partial "Created collection 'monitors'"
   
-  run solr post -url http://localhost:8983/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -url http://localhost:8983/solr/monitors/update -type application/xml -commit ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   assert_output --partial 'COMMITting Solr index'
