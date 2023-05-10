@@ -121,13 +121,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/modify", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
-    api =
-        V2HttpCall.getApiInfo(
-            containerHandlers, "/collections/hello/shards/shard1/replica1", "DELETE", null, parts);
-    assertEquals("hello", parts.get("collection"));
-    assertEquals("shard1", parts.get("shard"));
-    assertEquals("replica1", parts.get("replica"));
-
     SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", mockCC);
 
     Set<String> methodNames = new HashSet<>();
