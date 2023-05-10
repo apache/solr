@@ -25,11 +25,16 @@ import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_PURGE_UNUSED;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
+import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.inject.Inject;
@@ -39,16 +44,17 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
@@ -61,19 +67,23 @@ import org.apache.solr.response.SolrQueryResponse;
  */
 public class DeleteCollectionBackupAPI extends BackupAPIBase {
 
+  private final ObjectMapper objectMapper;
+
   @Inject
   public DeleteCollectionBackupAPI(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
+
+    this.objectMapper = SolrJacksonMapper.getObjectMapper();
   }
 
   @Path("/backups/{backupName}/versions/{backupId}")
   @DELETE
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
-  public SubResponseAccumulatingJerseyResponse deleteSingleBackupById(
+  public BackupDeletionResponseBody deleteSingleBackupById(
       @PathParam("backupName") String backupName,
       @PathParam(BACKUP_ID) String backupId,
       // Optional parameters below
@@ -81,7 +91,7 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
       @QueryParam(BACKUP_REPOSITORY) String repositoryName,
       @QueryParam(ASYNC) String asyncId)
       throws Exception {
-    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    final var response = instantiateJerseyResponse(BackupDeletionResponseBody.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     ensureRequiredParameterProvided(NAME, backupName);
@@ -90,8 +100,11 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
 
     final ZkNodeProps remoteMessage =
         createRemoteMessage(backupName, backupId, null, null, location, repositoryName, asyncId);
-    submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
+    final var remoteResponse =
+        submitRemoteMessageAndHandleResponse(
+            response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
+    response.deleted = fromRemoteResponse(objectMapper, remoteResponse);
+    response.collection = (String) remoteResponse.getResponse().get(COLLECTION);
     return response;
   }
 
@@ -99,7 +112,7 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
   @DELETE
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
-  public SubResponseAccumulatingJerseyResponse deleteMultipleBackupsByRecency(
+  public BackupDeletionResponseBody deleteMultipleBackupsByRecency(
       @PathParam("backupName") String backupName,
       @QueryParam("retainLatest") Integer versionsToRetain,
       // Optional parameters below
@@ -107,7 +120,7 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
       @QueryParam(BACKUP_REPOSITORY) String repositoryName,
       @QueryParam(ASYNC) String asyncId)
       throws Exception {
-    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    final var response = instantiateJerseyResponse(BackupDeletionResponseBody.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     ensureRequiredParameterProvided(NAME, backupName);
@@ -117,8 +130,11 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
     final ZkNodeProps remoteMessage =
         createRemoteMessage(
             backupName, null, versionsToRetain, null, location, repositoryName, asyncId);
-    submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
+    final var remoteResponse =
+        submitRemoteMessageAndHandleResponse(
+            response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
+    response.deleted = fromRemoteResponse(objectMapper, remoteResponse);
+    response.collection = (String) remoteResponse.getResponse().get(COLLECTION);
     return response;
   }
 
@@ -126,36 +142,50 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
   @PUT
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
-  public SubResponseAccumulatingJerseyResponse garbageCollectUnusedBackupFiles(
-      @PathParam("backupName") String backupName,
-      PurgeUnusedFilesRequestBody requestBody)
+  public PurgeUnusedResponse garbageCollectUnusedBackupFiles(
+      @PathParam("backupName") String backupName, PurgeUnusedFilesRequestBody requestBody)
       throws Exception {
-    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    final var response = instantiateJerseyResponse(PurgeUnusedResponse.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     if (requestBody == null) {
       throw new SolrException(BAD_REQUEST, "Required request body is missing");
     }
     ensureRequiredParameterProvided(NAME, backupName);
-    requestBody.location = getAndValidateBackupLocation(requestBody.repositoryName, requestBody.location);
+    requestBody.location =
+        getAndValidateBackupLocation(requestBody.repositoryName, requestBody.location);
 
     final ZkNodeProps remoteMessage =
         createRemoteMessage(
-            backupName, null, null, Boolean.TRUE, requestBody.location, requestBody.repositoryName, requestBody.asyncId);
-    submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, requestBody.asyncId);
+            backupName,
+            null,
+            null,
+            Boolean.TRUE,
+            requestBody.location,
+            requestBody.repositoryName,
+            requestBody.asyncId);
+    final var remoteResponse =
+        submitRemoteMessageAndHandleResponse(
+            response,
+            CollectionParams.CollectionAction.DELETEBACKUP,
+            remoteMessage,
+            requestBody.asyncId);
 
+    final Object remoteDeleted = remoteResponse.getResponse().get("deleted");
+    if (remoteDeleted != null) {
+      response.deleted = objectMapper.convertValue(remoteDeleted, PurgeUnusedStats.class);
+    }
     return response;
   }
 
-  /**
-   * Request body for the {@link DeleteCollectionBackupAPI#garbageCollectUnusedBackupFiles(String, PurgeUnusedFilesRequestBody)} API.
-   */
-  public static class PurgeUnusedFilesRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty(BACKUP_LOCATION) public String location;
-    @JsonProperty(BACKUP_REPOSITORY) public String repositoryName;
-    @JsonProperty(ASYNC) public String asyncId;
+  public static class PurgeUnusedResponse extends SubResponseAccumulatingJerseyResponse {
+    @JsonProperty public PurgeUnusedStats deleted;
+  }
 
+  public static class PurgeUnusedStats implements JacksonReflectMapWriter {
+    @JsonProperty public Integer numBackupIds;
+    @JsonProperty public Integer numShardBackupIds;
+    @JsonProperty public Integer numIndexFiles;
   }
 
   public static ZkNodeProps createRemoteMessage(
@@ -203,6 +233,43 @@ public class DeleteCollectionBackupAPI extends BackupAPIBase {
 
     final var deleteApi = new DeleteCollectionBackupAPI(coreContainer, req, rsp);
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, invokeApi(deleteApi, req.getParams()));
+  }
+
+  public static class BackupDeletionResponseBody extends SubResponseAccumulatingJerseyResponse {
+    @JsonProperty public String collection;
+    @JsonProperty public List<CreateCollectionBackupAPI.BackupDeletionData> deleted;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static List<CreateCollectionBackupAPI.BackupDeletionData> fromRemoteResponse(
+      ObjectMapper objectMapper, SolrResponse response) {
+    final var deleted = (List<SimpleOrderedMap<Object>>) response.getResponse().get("deleted");
+    if (deleted == null) {
+      return null;
+    }
+
+    final List<CreateCollectionBackupAPI.BackupDeletionData> statList = new ArrayList<>();
+    for (SimpleOrderedMap<Object> remoteStat : deleted) {
+      statList.add(
+          objectMapper.convertValue(
+              remoteStat, CreateCollectionBackupAPI.BackupDeletionData.class));
+    }
+    return statList;
+  }
+
+  /**
+   * Request body for the {@link DeleteCollectionBackupAPI#garbageCollectUnusedBackupFiles(String,
+   * PurgeUnusedFilesRequestBody)} API.
+   */
+  public static class PurgeUnusedFilesRequestBody implements JacksonReflectMapWriter {
+    @JsonProperty(BACKUP_LOCATION)
+    public String location;
+
+    @JsonProperty(BACKUP_REPOSITORY)
+    public String repositoryName;
+
+    @JsonProperty(ASYNC)
+    public String asyncId;
   }
 
   private static SolrJerseyResponse invokeApi(DeleteCollectionBackupAPI api, SolrParams params)
