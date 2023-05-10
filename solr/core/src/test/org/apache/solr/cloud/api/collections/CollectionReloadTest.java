@@ -25,6 +25,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
+import org.apache.lucene.tests.util.LuceneTestCase.BadApple;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 /** Verifies cluster state remains consistent after collection reload. */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-16784")
 public class CollectionReloadTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

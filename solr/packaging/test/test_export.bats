@@ -35,11 +35,11 @@ teardown() {
   refute_output --partial 'Unrecognized option'
   assert_output --partial 'Export complete'
 
-  assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl ]
+  assert [ -e ${BATS_TEST_TMPDIR}/output.json ]
 
   run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test"
-  assert [ -e techproducts.jsonl ]
-  rm techproducts.jsonl
+  assert [ -e techproducts.json ]
+  rm techproducts.json
 
   run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -format javabin
   assert [ -e techproducts.javabin ]
@@ -47,22 +47,16 @@ teardown() {
 
   # old pattern of putting a suffix on the out that controlled the format no longer supported ;-).
   run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output.javabin"
-  assert [ -e ${BATS_TEST_TMPDIR}/output.javabin.jsonl ]
+  assert [ -e ${BATS_TEST_TMPDIR}/output.javabin.json ]
 
   run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}"
-  assert [ -e ${BATS_TEST_TMPDIR}/techproducts.jsonl ]
+  assert [ -e ${BATS_TEST_TMPDIR}/techproducts.json ]
 
   run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -format jsonl -out "${BATS_TEST_TMPDIR}/output"
   assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl ]
 
   run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -compress -format jsonl -out "${BATS_TEST_TMPDIR}/output"
   assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl.gz ]
-
-  # Confirm we don't properly support json right now.
-  run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -format json -out "${BATS_TEST_TMPDIR}/output.json"
-  assert_output --partial 'format must be one of:'
-  refute [ -e ${BATS_TEST_TMPDIR}/output.json ]
-
 
 }
 
