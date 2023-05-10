@@ -115,6 +115,8 @@ Improvements
 
 * SOLR-16782: bin/solr export tool now supports JSON export format as well as the existing JSON With Lines format. (Eric Pugh)
 
+* SOLR-16766: Remove -usage as option from bin/solr, and ensure both -help and -h work. (Bence Szabo via Eric Pugh)
+
 Optimizations
 ---------------------
 
