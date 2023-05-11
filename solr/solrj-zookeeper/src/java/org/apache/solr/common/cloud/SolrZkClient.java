@@ -100,6 +100,7 @@ public class SolrZkClient implements Closeable {
   private ZkACLProvider zkACLProvider;
   private ZkCredentialsInjector zkCredentialsInjector;
   private String zkServerAddress;
+  private SolrClassLoader solrClassLoader;
 
   private IsClosed higherLevelIsClosed;
 
@@ -146,6 +147,7 @@ public class SolrZkClient implements Closeable {
     }
     this.zkClientConnectionStrategy = strat;
 
+    this.solrClassLoader = solrClassLoader;
     if (!strat.hasZkCredentialsToAddAutomatically()) {
       zkCredentialsInjector = createZkCredentialsInjector(solrClassLoader);
       ZkCredentialsProvider zkCredentialsToAddAutomatically =
@@ -238,10 +240,13 @@ public class SolrZkClient implements Closeable {
       try {
         log.info("Using ZkCredentialsProvider: {}", zkCredentialsProviderClassName);
         ZkCredentialsProvider zkCredentialsProvider =
-            Class.forName(zkCredentialsProviderClassName)
-                .asSubclass(ZkCredentialsProvider.class)
-                .getConstructor()
-                .newInstance();
+            solrClassLoader == null
+                ? Class.forName(zkCredentialsProviderClassName)
+                    .asSubclass(ZkCredentialsProvider.class)
+                    .getConstructor()
+                    .newInstance()
+                : solrClassLoader.newInstance(
+                    zkCredentialsProviderClassName, ZkCredentialsProvider.class);
         zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
         return zkCredentialsProvider;
       } catch (Exception e) {
@@ -263,16 +268,21 @@ public class SolrZkClient implements Closeable {
       try {
         log.info("Using ZkACLProvider: {}", zkACLProviderClassName);
         ZkACLProvider zkACLProvider =
-            Class.forName(zkACLProviderClassName)
-                .asSubclass(ZkACLProvider.class)
-                .getConstructor()
-                .newInstance();
+            solrClassLoader == null
+                ? Class.forName(zkACLProviderClassName)
+                    .asSubclass(ZkACLProvider.class)
+                    .getConstructor()
+                    .newInstance()
+                : solrClassLoader.newInstance(zkACLProviderClassName, ZkACLProvider.class);
         zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
         return zkACLProvider;
       } catch (Exception e) {
-        // just ignore - go default
-        log.warn(
-            "VM param zkACLProvider does not point to a class implementing ZkACLProvider and with a non-arg constructor",
+        // Fail-fast. If the instantiation fails better fail-fast rather than use the default unsafe
+        // ZkACLProvider
+       throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "VM param zkACLProvider does not point to a class implementing "
+                + "ZkACLProvider and with a non-arg constructor",
             e);
       }
     }
@@ -298,9 +308,12 @@ public class SolrZkClient implements Closeable {
             : solrClassLoader.newInstance(
                 zkCredentialsInjectorClassName, ZkCredentialsInjector.class);
       } catch (Exception e) {
-        // just ignore - go default
-        log.warn(
-            "VM param ZkCredentialsInjector does not point to a class implementing ZkCredentialsInjector and with a non-arg constructor",
+        // Fail-fast. If the instantiation fails better fail-fast rather than use the default unsafe
+        // ZkCredentialsInjector
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "VM param zkCredentialsInjector does not point to a class implementing "
+                + "ZkCredentialsInjector and with a non-arg constructor",
             e);
       }
     }
