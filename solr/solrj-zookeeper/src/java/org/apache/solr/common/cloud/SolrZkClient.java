@@ -279,7 +279,7 @@ public class SolrZkClient implements Closeable {
       } catch (Exception e) {
         // Fail-fast. If the instantiation fails better fail-fast rather than use the default unsafe
         // ZkACLProvider
-       throw new SolrException(
+        throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "VM param zkACLProvider does not point to a class implementing "
                 + "ZkACLProvider and with a non-arg constructor",
