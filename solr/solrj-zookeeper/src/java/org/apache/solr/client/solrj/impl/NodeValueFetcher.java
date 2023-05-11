@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,13 +27,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 
 /**
  * This class is responsible for fetching metrics and other attributes from a given node in Solr
@@ -46,14 +43,13 @@ public class NodeValueFetcher {
   public static final String PORT = "port";
   public static final String HOST = "host";
   public static final String CORES = "cores";
-  public static final String ROLE = "role";
-  public static final String NODEROLE = "nodeRole";
   public static final String SYSPROP = "sysprop.";
   public static final Set<String> tags =
-      Set.of(NODE, PORT, HOST, CORES, Tags.FREEDISK.tagName, ROLE, Tags.HEAPUSAGE.tagName);
+      Set.of(NODE, PORT, HOST, CORES, Tags.FREEDISK.tagName, Tags.HEAPUSAGE.tagName);
   public static final Pattern hostAndPortPattern = Pattern.compile("(?:https?://)?([^:]+):(\\d+)");
   public static final String METRICS_PREFIX = "metrics:";
 
+  /** Various well known tags that can be fetched from a node */
   public enum Tags {
     FREEDISK(
         "freedisk", "solr.node", "CONTAINER.fs.usableSpace", "solr.node/CONTAINER.fs.usableSpace"),
@@ -73,7 +69,13 @@ public class NodeValueFetcher {
     },
     SYSLOADAVG("sysLoadAvg", "solr.jvm", "os.systemLoadAverage", "solr.jvm/os.systemLoadAverage"),
     HEAPUSAGE("heapUsage", "solr.jvm", "memory.heap.usage", "solr.jvm/memory.heap.usage");
-    public final String group, prefix, tagName, path;
+    // the metrics group
+    public final String group;
+    // the metrics prefix
+    public final String prefix;
+    public final String tagName;
+    // the json path in the response
+    public final String path;
 
     Tags(String name, String group, String prefix, String path) {
       this.group = group;
@@ -100,7 +102,7 @@ public class NodeValueFetcher {
     }
   }
 
-  protected void getRemoteInfo(
+  private void getRemoteInfo(
       String solrNode, Set<String> requestedTags, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
     if (!(ctx).isNodeAlive(solrNode)) return;
     Map<String, Set<Object>> metricsKeyVsTag = new HashMap<>();
@@ -160,9 +162,9 @@ public class NodeValueFetcher {
         Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
         if (hostAndPortMatcher.find()) ctx.tags.put(PORT, hostAndPortMatcher.group(2));
       }
-      if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx, ROLE);
-      if (requestedTags.contains(NODEROLE))
-        fillRole(solrNode, ctx, NODEROLE); // for new policy framework
+      /*if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx, ROLE);*/
+      /*      if (requestedTags.contains(NODEROLE))
+      fillRole(solrNode, ctx, NODEROLE); // for new policy framework*/
 
       getRemoteInfo(solrNode, requestedTags, ctx);
     } catch (Exception e) {
@@ -170,7 +172,7 @@ public class NodeValueFetcher {
     }
   }
 
-  private void fillRole(String solrNode, SolrClientNodeStateProvider.RemoteCallCtx ctx, String key)
+  /*  private void fillRole(String solrNode, SolrClientNodeStateProvider.RemoteCallCtx ctx, String key)
       throws KeeperException, InterruptedException {
     Map<?, ?> roles =
         (Map<?, ?>)
@@ -184,9 +186,9 @@ public class NodeValueFetcher {
     } catch (KeeperException.NoNodeException e) {
       cacheRoles(solrNode, ctx, key, Collections.emptyMap());
     }
-  }
+  }*/
 
-  private void cacheRoles(
+  /*  private void cacheRoles(
       String solrNode, SolrClientNodeStateProvider.RemoteCallCtx ctx, String key, Map<?, ?> roles) {
     if (ctx.session != null) ctx.session.put(ZkStateReader.ROLES, roles);
     if (roles != null) {
@@ -199,5 +201,5 @@ public class NodeValueFetcher {
         }
       }
     }
-  }
+  }*/
 }

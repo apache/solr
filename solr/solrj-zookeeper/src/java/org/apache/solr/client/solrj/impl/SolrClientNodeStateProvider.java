@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static java.util.Collections.emptyMap;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -49,7 +47,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +57,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   private final CloudLegacySolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<Replica>>>>
       nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
-  private Map<String, Object> session = new HashMap<>();
 
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
@@ -118,7 +114,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   protected Map<String, Object> fetchTagValues(String node, Collection<String> tags) {
     NodeValueFetcher nodeValueFetcher = new NodeValueFetcher();
-    RemoteCallCtx ctx = new RemoteCallCtx(node, session, solrClient);
+    RemoteCallCtx ctx = new RemoteCallCtx(node, solrClient);
     nodeValueFetcher.getTags(node, new HashSet<>(tags), ctx);
     return ctx.tags;
   }
@@ -184,7 +180,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     Map<String, Set<Object>> collect =
         metricsKeyVsTagReplica.entrySet().stream()
             .collect(Collectors.toMap(e -> e.getKey(), e -> Set.of(e.getKey())));
-    RemoteCallCtx ctx = new RemoteCallCtx(null, emptyMap(), solrClient);
+    RemoteCallCtx ctx = new RemoteCallCtx(null, solrClient);
     fetchReplicaMetrics(node, ctx, collect);
     return ctx.tags;
   }
@@ -222,6 +218,10 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     return Utils.toJSONString(this);
   }
 
+  /**
+   * Mostly an info object that stores all the values for a given session to fetch various values
+   * from a node
+   */
   static class RemoteCallCtx {
 
     ZkClientClusterStateProvider zkClientClusterStateProvider;
@@ -237,30 +237,11 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       return true;
     }
 
-    public RemoteCallCtx(
-        String node, Map<String, Object> session, CloudLegacySolrClient solrClient) {
+    public RemoteCallCtx(String node, CloudLegacySolrClient solrClient) {
       this.node = node;
-      this.session = session;
       this.solrClient = solrClient;
       this.zkClientClusterStateProvider =
           (ZkClientClusterStateProvider) solrClient.getClusterStateProvider();
-    }
-
-    @SuppressWarnings({"unchecked"})
-    public Map<?, ?> getZkJson(String path) throws KeeperException, InterruptedException {
-      try {
-        byte[] bytes =
-            zkClientClusterStateProvider
-                .getZkStateReader()
-                .getZkClient()
-                .getData(path, null, null, true);
-        if (bytes != null && bytes.length > 0) {
-          return (Map<String, Object>) Utils.fromJSON(bytes);
-        }
-      } catch (KeeperException.NoNodeException e) {
-        return emptyMap();
-      }
-      return emptyMap();
     }
 
     /**
