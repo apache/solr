@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
@@ -90,28 +89,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     }
 
     compareOutput(
-        apiBag,
-        "/aliases",
-        POST,
-        "{create-alias:{name: aliasName , collections:[c1,c2] }}",
-        "{operation : createalias, name: aliasName, collections:\"c1,c2\" }");
-
-    compareOutput(
         apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards/shard1",
-        DELETE,
-        null,
-        "{collection:collName, shard: shard1 , operation :deleteshard }");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards/shard1/replica1?deleteDataDir=true&onlyIfDown=true",
-        DELETE,
-        null,
-        "{collection:collName, shard: shard1, replica :replica1 , deleteDataDir:'true', onlyIfDown: 'true', operation :deletereplica }");
 
     compareOutput(
         apiBag,
@@ -263,9 +241,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     protected CoreContainer checkErrors() {
       return null;
     }
-
-    @Override
-    protected void copyFromClusterProp(Map<String, Object> props, String prop) {}
 
     @Override
     void invokeAction(

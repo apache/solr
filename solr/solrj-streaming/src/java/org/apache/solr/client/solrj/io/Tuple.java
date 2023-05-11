@@ -48,24 +48,9 @@ public class Tuple implements Cloneable, MapWriter {
    */
   public boolean EXCEPTION;
 
-  /**
-   * Tuple fields.
-   *
-   * @deprecated use {@link #getFields()} instead of this public field.
-   */
-  @Deprecated public Map<String, Object> fields = CollectionUtil.newHashMap(2);
-  /**
-   * External serializable field names.
-   *
-   * @deprecated use {@link #getFieldNames()} instead of this public field.
-   */
-  @Deprecated public List<String> fieldNames;
-  /**
-   * Mapping of external field names to internal tuple field names.
-   *
-   * @deprecated use {@link #getFieldLabels()} instead of this public field.
-   */
-  @Deprecated public Map<String, String> fieldLabels;
+  private final Map<String, Object> fields = CollectionUtil.newHashMap(2);
+  private List<String> fieldNames;
+  private Map<String, String> fieldLabels;
 
   public Tuple() {
     // just an empty tuple
@@ -241,16 +226,6 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   /**
-   * Return all tuple fields.
-   *
-   * @deprecated use {@link #getFields()} instead.
-   */
-  @Deprecated(since = "8.6.0")
-  public Map<String, Object> getMap() {
-    return this.fields;
-  }
-
-  /**
    * This represents the mapping of external field labels to the tuple's internal field names if
    * they are different from field names.
    *
@@ -299,8 +274,7 @@ public class Tuple implements Cloneable, MapWriter {
 
   @Override
   public Tuple clone() {
-    Tuple clone = new Tuple(this);
-    return clone;
+    return new Tuple(this);
   }
 
   /**

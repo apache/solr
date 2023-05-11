@@ -228,9 +228,7 @@ IF "%1"=="-usage" goto usage
 IF "%1"=="-h" goto usage
 IF "%1"=="--help" goto usage
 IF "%1"=="/?" goto usage
-IF "%1"=="-i" goto get_info
-IF "%1"=="-info" goto get_info
-IF "%1"=="status" goto get_info
+IF "%1"=="status" goto get_status
 IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
 IF "%1"=="-version" goto get_version
@@ -995,6 +993,14 @@ IF DEFINED SOLR_PLACEMENTPLUGIN_DEFAULT (
   set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.placementplugin.default=%SOLR_PLACEMENTPLUGIN_DEFAULT%"
 )
 
+REM Remote streaming and stream body
+IF "%SOLR_ENABLE_REMOTE_STREAMING%"=="true" (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.enableRemoteStreaming=true"
+)
+IF "%SOLR_ENABLE_STREAM_BODY%"=="true" (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.enableStreamBody=true"
+)
+
 IF "%SOLR_SERVER_DIR%"=="" set "SOLR_SERVER_DIR=%DEFAULT_SERVER_DIR%"
 
 IF NOT EXIST "%SOLR_SERVER_DIR%" (
@@ -1454,7 +1460,7 @@ REM Run the requested example
 REM End of run_example
 goto done
 
-:get_info
+:get_status
 REM Find all Java processes, correlate with those listening on a port
 REM and then try to contact via that port using the status tool
 for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port$"`) do (
