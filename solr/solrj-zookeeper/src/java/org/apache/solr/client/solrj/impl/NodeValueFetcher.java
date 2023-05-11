@@ -162,44 +162,9 @@ public class NodeValueFetcher {
         Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
         if (hostAndPortMatcher.find()) ctx.tags.put(PORT, hostAndPortMatcher.group(2));
       }
-      /*if (requestedTags.contains(ROLE)) fillRole(solrNode, ctx, ROLE);*/
-      /*      if (requestedTags.contains(NODEROLE))
-      fillRole(solrNode, ctx, NODEROLE); // for new policy framework*/
-
       getRemoteInfo(solrNode, requestedTags, ctx);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
-
-  /*  private void fillRole(String solrNode, SolrClientNodeStateProvider.RemoteCallCtx ctx, String key)
-      throws KeeperException, InterruptedException {
-    Map<?, ?> roles =
-        (Map<?, ?>)
-            (ctx.session != null
-                ? ctx.session.get(ZkStateReader.ROLES)
-                : null); // we don't want to hit the ZK for each node
-    // so cache and reuse
-    try {
-      if (roles == null) roles = ctx.getZkJson(ZkStateReader.ROLES);
-      cacheRoles(solrNode, ctx, key, roles);
-    } catch (KeeperException.NoNodeException e) {
-      cacheRoles(solrNode, ctx, key, Collections.emptyMap());
-    }
-  }*/
-
-  /*  private void cacheRoles(
-      String solrNode, SolrClientNodeStateProvider.RemoteCallCtx ctx, String key, Map<?, ?> roles) {
-    if (ctx.session != null) ctx.session.put(ZkStateReader.ROLES, roles);
-    if (roles != null) {
-      for (Map.Entry<?, ?> e : roles.entrySet()) {
-        if (e.getValue() instanceof List) {
-          if (((List<?>) e.getValue()).contains(solrNode)) {
-            ctx.tags.put(key, e.getKey());
-            break;
-          }
-        }
-      }
-    }
-  }*/
 }
