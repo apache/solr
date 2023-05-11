@@ -1820,14 +1820,7 @@ http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=myBackupName
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d '
-  {
-    "list-backups" : {
-      "name": "myBackupName",
-      "location": "/path/to/my/shared/drive"
-    }
-  }
-'
+curl -X GET "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
 ----
 ====
 --
