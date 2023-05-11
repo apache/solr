@@ -128,9 +128,6 @@ public class SolrConfig implements MapSerializable {
 
   private int formUploadLimitKB;
 
-  private boolean enableRemoteStreams;
-  private boolean enableStreamBody;
-
   private boolean handleSelect;
 
   private boolean addHttpRequestToContext;
@@ -360,27 +357,25 @@ public class SolrConfig implements MapSerializable {
 
       updateHandlerInfo = loadUpdatehandlerInfo();
 
+      final var requestParsersNode = get("requestDispatcher").get("requestParsers");
+
       multipartUploadLimitKB =
-          get("requestDispatcher")
-              .get("requestParsers")
-              .intAttr("multipartUploadLimitInKB", Integer.MAX_VALUE);
+          requestParsersNode.intAttr("multipartUploadLimitInKB", Integer.MAX_VALUE);
       if (multipartUploadLimitKB == -1) multipartUploadLimitKB = Integer.MAX_VALUE;
 
-      formUploadLimitKB =
-          get("requestDispatcher")
-              .get("requestParsers")
-              .intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
+      formUploadLimitKB = requestParsersNode.intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
       if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
 
-      enableRemoteStreams =
-          get("requestDispatcher").get("requestParsers").boolAttr("enableRemoteStreaming", false);
+      if (requestParsersNode.attr("enableRemoteStreaming") != null) {
+        log.warn("Ignored deprecated enableRemoteStreaming in config; use sys-prop");
+      }
 
-      enableStreamBody =
-          get("requestDispatcher").get("requestParsers").boolAttr("enableStreamBody", false);
+      if (requestParsersNode.attr("enableStreamBody") != null) {
+        log.warn("Ignored deprecated enableStreamBody in config; use sys-prop");
+      }
 
       handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
-      addHttpRequestToContext =
-          get("requestDispatcher").get("requestParsers").boolAttr("addHttpRequestToContext", false);
+      addHttpRequestToContext = requestParsersNode.boolAttr("addHttpRequestToContext", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -996,14 +991,6 @@ public class SolrConfig implements MapSerializable {
 
   public boolean isAddHttpRequestToContext() {
     return addHttpRequestToContext;
-  }
-
-  public boolean isEnableRemoteStreams() {
-    return enableRemoteStreams;
-  }
-
-  public boolean isEnableStreamBody() {
-    return enableStreamBody;
   }
 
   @Override
