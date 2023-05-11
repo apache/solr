@@ -149,7 +149,7 @@ public class SolrZkClient implements Closeable {
 
     this.solrClassLoader = solrClassLoader;
     if (!strat.hasZkCredentialsToAddAutomatically()) {
-      zkCredentialsInjector = createZkCredentialsInjector(solrClassLoader);
+      zkCredentialsInjector = createZkCredentialsInjector();
       ZkCredentialsProvider zkCredentialsToAddAutomatically =
           createZkCredentialsToAddAutomatically();
       strat.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
@@ -294,7 +294,7 @@ public class SolrZkClient implements Closeable {
   public static final String ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME =
       "zkCredentialsInjector";
 
-  protected ZkCredentialsInjector createZkCredentialsInjector(SolrClassLoader solrClassLoader) {
+  protected ZkCredentialsInjector createZkCredentialsInjector() {
     String zkCredentialsInjectorClassName =
         System.getProperty(ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME);
     if (StrUtils.isNotNullOrEmpty(zkCredentialsInjectorClassName)) {

@@ -33,7 +33,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
-import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkACLProvider;
@@ -340,7 +339,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected ZkCredentialsInjector createZkCredentialsInjector(SolrClassLoader solrClassLoader) {
+    protected ZkCredentialsInjector createZkCredentialsInjector() {
       return vmParamsZkCredentialsInjector;
     }
 
