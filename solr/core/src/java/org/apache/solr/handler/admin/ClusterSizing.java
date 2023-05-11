@@ -42,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -101,8 +101,8 @@ public class ClusterSizing {
               String node = replica.getNodeName();
               QueryRequest req = new QueryRequest(sizeParams);
               req.setMethod(METHOD.POST);
-              Http2SolrClient.Builder httpBuilder = new Http2SolrClient.Builder(url);
-              try (Http2SolrClient solrClient = httpBuilder.build()) {
+              HttpSolrClient.Builder httpBuilder = new HttpSolrClient.Builder(url);
+              try (HttpSolrClient solrClient = httpBuilder.build()) {
                 @SuppressWarnings("unchecked")
                 NamedList<Object> size = (NamedList<Object>) solrClient.request(req).get(SIZE);
                 sizePerReplica.add(replica.getName(), size);
