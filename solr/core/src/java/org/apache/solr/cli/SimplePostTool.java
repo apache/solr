@@ -89,7 +89,7 @@ public class SimplePostTool {
   private static final int DEFAULT_WEB_DELAY = 10;
   private static final int MAX_WEB_DEPTH = 10;
   public static final String DEFAULT_CONTENT_TYPE = "application/json";
-  private static final String DEFAULT_FILE_TYPES =
+  public static final String DEFAULT_FILE_TYPES =
       "xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log";
   private static final String BASIC_AUTH = "basicauth";
 
@@ -235,15 +235,12 @@ public class SimplePostTool {
 
       String params = System.getProperty("params", "");
 
-
-
       urlStr = System.getProperty("url");
 
       // With bin/solr post you can't get here without a url string!
-      //if (urlStr == null ) {
+      // if (urlStr == null ) {
       //  fatal("Specifying  url is mandatory.\n" + USAGE_STRING_SHORT);
-      //}
-
+      // }
 
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
@@ -392,7 +389,7 @@ public class SimplePostTool {
         }
         if (delay < DEFAULT_WEB_DELAY) {
           warn(
-                  "Never crawl an external web site faster than every 10 seconds, your IP will probably be blocked");
+              "Never crawl an external web site faster than every 10 seconds, your IP will probably be blocked");
         }
         info("Entering recursive mode, depth=" + recursive + ", delay=" + delay + "s");
       }
@@ -417,13 +414,13 @@ public class SimplePostTool {
   //
   // USAGE
   //
-  //ERIC candidate for removale
+  // ERIC candidate for removale
   private static void usageShort() {
     CLIO.out(
         USAGE_STRING_SHORT + "\n" + "       Please invoke with -h option for extended usage help.");
   }
 
-  //ERIC candidate for removale
+  // ERIC candidate for removale
   private static void usage() {
     CLIO.out(
         USAGE_STRING_SHORT
@@ -923,13 +920,13 @@ public class SimplePostTool {
           String urlStr = appendUrlPath(solrUrl, suffix).toString();
           if (!urlStr.contains("resource.name")) {
             urlStr =
-                    appendParam(
-                            urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
+                appendParam(
+                    urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
           }
           if (!urlStr.contains("literal.id")) {
             urlStr =
-                    appendParam(
-                            urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
+                appendParam(
+                    urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
           }
           url = new URL(urlStr);
         }
@@ -1174,8 +1171,9 @@ public class SimplePostTool {
     String glob;
     if (fileTypes.equals("*")) {
       glob = ".*";
+    } else {
+      glob = "^.*\\.(" + fileTypes.replace(",", "|") + ")$";
     }
-    else glob = "^.*\\.(" + fileTypes.replace(",", "|") + ")$";
     return new GlobFileFilter(glob, true);
   }
 

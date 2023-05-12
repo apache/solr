@@ -17,15 +17,14 @@
 
 package org.apache.solr.cli;
 
+import static org.apache.solr.cli.SolrCLI.findTool;
+import static org.apache.solr.cli.SolrCLI.parseCmdLine;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
 public class PostToolTest extends SolrCloudTestCase {
 
@@ -37,27 +36,25 @@ public class PostToolTest extends SolrCloudTestCase {
         .configure();
   }
 
-  //@Test
-  public void testHelpDocsAreOutput() throws Exception{
+  // @Test
+  public void testHelpDocsAreOutput() throws Exception {
     // Be nice to get the output of the tool and see the output
     // However, that is covered in the test_post.bats test.
 
-    // Right now the -h causes the parseCmdLine() method to return a null cli object, which then blows up...
+    // Right now the -h causes the parseCmdLine() method to return a null cli object, which then
+    // blows up...
     String[] args = {
-            "post",
-            "-h",
+      "post", "-h",
     };
     assertEquals(0, runTool(args));
 
     String[] args1 = {
-            "post",
-            "--help",
+      "post", "--help",
     };
     assertEquals(0, runTool(args1));
 
     String[] args2 = {
-            "post",
-            "bobo",
+      "post", "bobo",
     };
     assertEquals(1, runTool(args2));
   }
@@ -66,15 +63,10 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testBasicRun() throws Exception {
     final String collection = "aliasedCollection";
     CollectionAdminRequest.createCollection(collection, "config", 1, 1)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-            .process(cluster.getSolrClient());
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
 
-    String[] args = {
-      "post",
-      "-url",
-      "http://localhost:8983/solr/aliasedCollection",
-      "blah.json"
-    };
+    String[] args = {"post", "-url", "http://localhost:8983/solr/aliasedCollection", "blah.json"};
     assertEquals(0, runTool(args));
   }
 
