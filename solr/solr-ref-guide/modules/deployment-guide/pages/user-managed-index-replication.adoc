@@ -393,7 +393,7 @@ http://_host:port_/solr/_core_name_/replication?command=indexversion
 
 [source,bash]
 ----
-http://_host:port_/api/_core_name_/replication/indexversion
+http://_host:port_/api/cores/_core_name_/replication/indexversion
 
 ----
 ====
