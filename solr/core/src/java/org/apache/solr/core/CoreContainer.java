@@ -299,9 +299,9 @@ public class CoreContainer {
 
   private final Set<Path> allowPaths;
 
-  private final boolean hideStackTrace;
-
   private final AllowListUrlChecker allowListUrlChecker;
+
+  private final boolean hideStackTrace;
 
   // Bits for the state variable.
   public static final long LOAD_COMPLETE = 0x1L;
