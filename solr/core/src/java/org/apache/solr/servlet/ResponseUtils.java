@@ -22,6 +22,8 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.jersey.ErrorInfo;
 import org.slf4j.Logger;
 
 /** Response helper methods. */
@@ -42,7 +44,7 @@ public class ResponseUtils {
    * @see #getTypedErrorInfo(Throwable, Logger)
    */
   public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log) {
-    return getErrorInfo(ex, info, log, false);
+    return getErrorInfo(ex, info, log, null);
   }
 
   /**
@@ -56,12 +58,12 @@ public class ResponseUtils {
    *
    * <p>Status codes less than 100 are adjusted to be 500.
    *
-   * <p>Stack trace will not be output if hideStackTrace=true.
+   * <p>Stack trace will not be output if hideTrace=true OR system property
+   * solr.hideStackTrace=true.
    *
    * @see #getTypedErrorInfo(Throwable, Logger)
    */
-  public static int getErrorInfo(
-      Throwable ex, NamedList<Object> info, Logger log, boolean hideStackTrace) {
+  public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log, SolrCore core) {
     int code = 500;
     if (ex instanceof SolrException) {
       SolrException solrExc = (SolrException) ex;
@@ -91,12 +93,12 @@ public class ResponseUtils {
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
       // hide all stack traces, as configured
-      if (!hideStackTrace) {
+      if (!hideStackTrace(core)) {
         StringWriter sw = new StringWriter();
         ex.printStackTrace(new PrintWriter(sw));
-        log.error("500 Exception", ex);
         info.add("trace", sw.toString());
       }
+      log.error("500 Exception", ex);
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
@@ -119,7 +121,7 @@ public class ResponseUtils {
    * @see #getErrorInfo(Throwable, NamedList, Logger)
    */
   public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log) {
-    return getTypedErrorInfo(ex, log, false);
+    return getTypedErrorInfo(ex, log, null);
   }
 
   /**
@@ -128,12 +130,13 @@ public class ResponseUtils {
    * <p>Primarily used by v2 API code, which can handle such typed information.
    *
    * <p>Status codes less than 100 are adjusted to be 500.
-   * 
-   * <p>Stack trace will not be output if hideStackTrace=true.
+   *
+   * <p>Stack trace will not be output if hideTrace=true OR system property
+   * solr.hideStackTrace=true.
    *
    * @see #getErrorInfo(Throwable, NamedList, Logger)
    */
-  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log, boolean hideStackTrace) {
+  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log, SolrCore core) {
     final ErrorInfo errorInfo = new ErrorInfo();
     int code = 500;
     if (ex instanceof SolrException) {
@@ -158,12 +161,12 @@ public class ResponseUtils {
 
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
-      if (!hideStackTrace) {
+      if (!hideStackTrace(core)) {
         StringWriter sw = new StringWriter();
         ex.printStackTrace(new PrintWriter(sw));
-        log.error("500 Exception", ex);
         errorInfo.trace = sw.toString();
       }
+      log.error("500 Exception", ex);
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
@@ -174,5 +177,11 @@ public class ResponseUtils {
 
     errorInfo.code = code;
     return errorInfo;
+  }
+
+  private static boolean hideStackTrace(SolrCore core) {
+    return core != null
+        ? core.getCoreContainer().hideStackTrace()
+        : Boolean.parseBoolean(System.getProperty("solr.hideStackTrace"));
   }
 }

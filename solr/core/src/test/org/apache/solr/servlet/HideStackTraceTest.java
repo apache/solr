@@ -57,7 +57,8 @@ public class HideStackTraceTest extends SolrJettyTestBase {
     Path top = Paths.get(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf");
     Files.copy(
         top.resolve("solrconfig-errorComponent.xml"),
-        Paths.get(solrHome.toString() + "/collection1/conf").resolve("solrconfig.xml"));
+        Paths.get(solrHome.toString() + "/collection1/conf").resolve("solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
     createAndStartJetty(solrHome.toAbsolutePath().toString());
   }
 
