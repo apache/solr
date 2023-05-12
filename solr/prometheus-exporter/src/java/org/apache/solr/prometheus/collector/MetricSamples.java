@@ -29,7 +29,7 @@ public class MetricSamples {
 
   private final Map<String, Collector.MetricFamilySamples> samplesByMetricName;
 
-  private Set<String> sampleMetricsCache;
+  private final Set<String> sampleMetricsCache;
 
   public MetricSamples(Map<String, Collector.MetricFamilySamples> input) {
     samplesByMetricName = input;
