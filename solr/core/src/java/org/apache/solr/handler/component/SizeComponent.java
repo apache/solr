@@ -68,7 +68,9 @@ public class SizeComponent extends SearchComponent {
       Directory dir = indexReader.directory();
       long size = DirectoryFactory.sizeOfDirectory(dir);
       counters.totalDiskSize = (long) (size * settings.estimationRatio);
-      counters.totalLuceneRam += getIndexHeapUsed(indexReader) * settings.estimationRatio;
+      counters.totalLuceneRam =
+          (long)
+              (counters.totalLuceneRam + getIndexHeapUsed(indexReader) * settings.estimationRatio);
 
       String sizeUnit = params.get(SizeParams.SIZE_UNIT);
       counters.computeRam(settings);
@@ -144,7 +146,7 @@ public class SizeComponent extends SearchComponent {
     private long totalNumDocs;
 
     public void computeRam(Settings settings) {
-      totalLuceneRam += settings.deletedDocsForEstimation / 8;
+      totalLuceneRam = (long) (totalLuceneRam + settings.deletedDocsForEstimation / 8);
       totalLuceneRam += 32 * 1024 * 1024; // 32MB RAM buffer size
       filterCacheRam =
           (long)
