@@ -128,7 +128,6 @@ import org.apache.solr.handler.admin.ZookeeperStatusHandler;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.designer.SchemaDesignerAPI;
-import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;

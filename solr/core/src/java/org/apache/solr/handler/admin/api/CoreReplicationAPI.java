@@ -35,8 +35,7 @@ import org.apache.solr.response.SolrQueryResponse;
 public class CoreReplicationAPI extends ReplicationAPIBase {
 
   @Inject
-  public CoreReplicationAPI(
-          SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
+  public CoreReplicationAPI(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(solrCore, req, rsp);
   }
 
@@ -44,8 +43,7 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
   @Path("/indexversion")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
-  public IndexVersionResponse IndexVersionResponse()
-      throws IOException {
+  public IndexVersionResponse IndexVersionResponse() throws IOException {
 
     return fetchIndexVersion();
   }

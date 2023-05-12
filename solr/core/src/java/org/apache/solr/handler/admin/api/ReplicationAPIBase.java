@@ -18,8 +18,6 @@ package org.apache.solr.handler.admin.api;
 
 import java.io.IOException;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -33,20 +31,16 @@ public abstract class ReplicationAPIBase extends JerseyResource {
   protected final SolrQueryResponse solrQueryResponse;
 
   public ReplicationAPIBase(
-      SolrCore solrCore,
-      SolrQueryRequest solrQueryRequest,
-      SolrQueryResponse solrQueryResponse) {
+      SolrCore solrCore, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
     this.solrCore = solrCore;
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
   }
 
-  protected CoreReplicationAPI.IndexVersionResponse fetchIndexVersion()
-      throws IOException {
+  protected CoreReplicationAPI.IndexVersionResponse fetchIndexVersion() throws IOException {
 
     ReplicationHandler replicationHandler =
-        (ReplicationHandler)
-                solrCore.getRequestHandler(ReplicationHandler.PATH);
+        (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
 
     return replicationHandler.getIndexVersionResponse();
   }
