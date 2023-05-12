@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler.replication;
+package org.apache.solr.handler.admin.api;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,9 +65,9 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
     CoreReplicationAPI.IndexVersionResponse response =
         coreReplicationAPI.IndexVersionResponse(coreName);
-    assertEquals(response.indexVersion, expected.indexVersion);
-    assertEquals(response.generation, expected.generation);
-    assertEquals(response.status, expected.status);
+    assertEquals(expected.indexVersion, response.indexVersion);
+    assertEquals(expected.generation, response.generation);
+    assertEquals(expected.status, response.status);
   }
 
   private void setUpMocks() {
