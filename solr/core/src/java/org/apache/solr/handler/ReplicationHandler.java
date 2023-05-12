@@ -1480,6 +1480,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return List.of(CoreReplicationAPI.class);
   }
 
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
+  }
+
   // check leader or follower is enabled
   private boolean isEnabled(NamedList<?> params) {
     if (params == null) return false;

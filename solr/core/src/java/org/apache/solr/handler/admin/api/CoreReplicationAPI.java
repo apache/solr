@@ -20,14 +20,12 @@ import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONT
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.Parameter;
 import java.io.IOException;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
@@ -38,23 +36,18 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
 
   @Inject
   public CoreReplicationAPI(
-      CoreContainer coreContainer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    super(coreContainer, req, rsp);
+          SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
+    super(solrCore, req, rsp);
   }
 
   @GET
   @Path("/indexversion")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
-  public IndexVersionResponse IndexVersionResponse(
-      @Parameter(
-              description = "The name of the core for which to retrieve the index version",
-              required = true)
-          @PathParam("coreName")
-          String coreName)
+  public IndexVersionResponse IndexVersionResponse()
       throws IOException {
 
-    return fetchIndexVersion(coreName);
+    return fetchIndexVersion();
   }
 
   /** Response for {@link CoreReplicationAPI}. */

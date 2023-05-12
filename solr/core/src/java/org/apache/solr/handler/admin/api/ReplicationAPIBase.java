@@ -20,6 +20,7 @@ import java.io.IOException;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -27,30 +28,25 @@ import org.apache.solr.response.SolrQueryResponse;
 /** A common parent for "replication" (i.e. replication-level) APIs. */
 public abstract class ReplicationAPIBase extends JerseyResource {
 
-  protected final CoreContainer coreContainer;
+  protected final SolrCore solrCore;
   protected final SolrQueryRequest solrQueryRequest;
   protected final SolrQueryResponse solrQueryResponse;
 
   public ReplicationAPIBase(
-      CoreContainer coreContainer,
+      SolrCore solrCore,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
-    this.coreContainer = coreContainer;
+    this.solrCore = solrCore;
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
   }
 
-  protected CoreReplicationAPI.IndexVersionResponse fetchIndexVersion(String coreName)
+  protected CoreReplicationAPI.IndexVersionResponse fetchIndexVersion()
       throws IOException {
-
-    if (coreContainer.getCore(coreName) == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Solr core " + coreName + " does not exist");
-    }
 
     ReplicationHandler replicationHandler =
         (ReplicationHandler)
-            coreContainer.getCore(coreName).getRequestHandler(ReplicationHandler.PATH);
+                solrCore.getRequestHandler(ReplicationHandler.PATH);
 
     return replicationHandler.getIndexVersionResponse();
   }

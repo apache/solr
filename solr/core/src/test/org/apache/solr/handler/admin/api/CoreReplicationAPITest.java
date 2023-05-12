@@ -22,10 +22,8 @@ import static org.mockito.Mockito.when;
 
 import io.opentracing.noop.NoopSpan;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
@@ -36,7 +34,7 @@ import org.junit.Test;
 public class CoreReplicationAPITest extends SolrTestCaseJ4 {
 
   private CoreReplicationAPI coreReplicationAPI;
-  private CoreContainer mockCoreContainer;
+  private SolrCore mockCore;
   private ReplicationHandler mockReplicationHandler;
   private static final String coreName = "test";
   private SolrQueryRequest mockQueryRequest;
@@ -54,7 +52,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     mockQueryRequest = mock(SolrQueryRequest.class);
     when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
     queryResponse = new SolrQueryResponse();
-    coreReplicationAPI = new CoreReplicationAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+    coreReplicationAPI = new CoreReplicationAPI(mockCore, mockQueryRequest, queryResponse);
   }
 
   @Test
@@ -64,17 +62,15 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     when(mockReplicationHandler.getIndexVersionResponse()).thenReturn(expected);
 
     CoreReplicationAPI.IndexVersionResponse response =
-        coreReplicationAPI.IndexVersionResponse(coreName);
+        coreReplicationAPI.IndexVersionResponse();
     assertEquals(expected.indexVersion, response.indexVersion);
     assertEquals(expected.generation, response.generation);
     assertEquals(expected.status, response.status);
   }
 
   private void setUpMocks() {
-    mockCoreContainer = mock(CoreContainer.class);
-    final SolrCore mockCore = mock(SolrCore.class);
+    mockCore = mock(SolrCore.class);
     mockReplicationHandler = mock(ReplicationHandler.class);
-    when(mockCoreContainer.getCore(coreName)).thenReturn(mockCore);
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
   }
 }

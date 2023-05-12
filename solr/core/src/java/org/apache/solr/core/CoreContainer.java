@@ -814,7 +814,6 @@ public class CoreContainer {
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().readAPI);
       registerV2ApiIfEnabled(ZookeeperReadAPI.class);
     }
-    registerV2ApiIfEnabled(CoreReplicationAPI.class);
 
     MDCLoggingContext.setNode(this);
 
