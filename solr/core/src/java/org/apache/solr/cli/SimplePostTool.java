@@ -141,7 +141,7 @@ public class SimplePostTool {
     mimeMap.put("xml", "application/xml");
     mimeMap.put("csv", "text/csv");
     mimeMap.put("json", "application/json");
-    mimeMap.put("jsonl", "application/json");
+    mimeMap.put("jsonl", "application/jsonl");
     mimeMap.put("pdf", "application/pdf");
     mimeMap.put("rtf", "text/rtf");
     mimeMap.put("html", "text/html");

@@ -107,6 +107,9 @@ public class PostTool extends ToolBase {
     String format = cli.hasOption("format") ? "solr" : ""; // i.e not solr formatted json commands
     int delay = 0;
     String fileTypes = SimplePostTool.DEFAULT_FILE_TYPES;
+    if (cli.hasOption("filetypes")) {
+      fileTypes = cli.getOptionValue("filetypes");
+    }
     int recursive = 0;
     String r = cli.getOptionValue("recursive", "1");
     try {

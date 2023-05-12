@@ -61,7 +61,7 @@ teardown() {
   run solr create_collection -c monitors -d _default
   assert_output --partial "Created collection 'monitors'"
   
-  run solr post -url http://localhost:8983/solr/monitors/update -type application/xml ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -type application/xml -url http://localhost:8983/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -86,6 +86,28 @@ teardown() {
   refute_output --partial 'ERROR'
   run curl 'http://localhost:8983/solr/books_no_type/select?q=*:*'
   assert_output --partial '"numFound":4'
+  
+  solr create_collection -c books_csv_no_type -d _default
+  
+  run solr post -url http://localhost:8983/solr/books_csv_no_type/update -commit ${SOLR_TIP}/example/exampledocs/books.csv
+
+  assert_output --partial '1 files indexed.'
+  refute_output --partial 'ERROR'
+  run curl 'http://localhost:8983/solr/books_csv_no_type/select?q=*:*'
+  assert_output --partial '"numFound":10'  
+}
+
+@test "crawling a directory" {
+  
+  solr create_collection -c mixed_content -d _default
+  
+  # We filter to xml,json,and csv as we don't want to invoke the Extract handler.
+  run solr post -filetypes xml,json,csv -url http://localhost:8983/solr/mixed_content/update -commit ${SOLR_TIP}/example/exampledocs
+
+  assert_output --partial '16 files indexed.'
+  refute_output --partial 'ERROR'
+  run curl 'http://localhost:8983/solr/mixed_content/select?q=*:*'
+  assert_output --partial '"numFound":46'
 }
 
 @test "commit and optimize" {
