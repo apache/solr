@@ -31,6 +31,8 @@ Deprecation Removals
 
 * SOLR-15703: Removed deprecated SolrException#log methods (Kevin Risden)
 
+* SOLR-16661: Removed deprecated 'analytics' component (janhoy)
+
 Dependency Upgrades
 ---------------------
 (No changes)
