@@ -113,8 +113,9 @@ public class SolrRequestParsers {
 
       formUploadLimitKB = globalConfig.getFormUploadLimitKB();
 
-      enableRemoteStreams = globalConfig.isEnableRemoteStreams();
-      enableStreamBody = globalConfig.isEnableStreamBody();
+      // security risks; disabled by default
+      enableRemoteStreams = Boolean.getBoolean("solr.enableRemoteStreaming");
+      enableStreamBody = Boolean.getBoolean("solr.enableStreamBody");
 
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.isHandleSelect();
@@ -523,6 +524,10 @@ public class SolrRequestParsers {
 
   public void setAddRequestHeadersToContext(boolean addRequestHeadersToContext) {
     this.addHttpRequestToContext = addRequestHeadersToContext;
+  }
+
+  public boolean isEnableRemoteStreams() {
+    return enableRemoteStreams;
   }
 
   // -----------------------------------------------------------------

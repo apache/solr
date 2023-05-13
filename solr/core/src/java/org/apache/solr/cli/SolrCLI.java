@@ -325,7 +325,7 @@ public class SolrCLI implements CLIO {
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
-          if ("--help".equals(arg) || "-help".equals(arg)) {
+          if ("-h".equals(arg) || "-help".equals(arg)) {
             hasHelpArg = true;
             break;
           }

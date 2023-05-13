@@ -37,6 +37,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.schema.AbstractSpatialFieldType;
 import org.apache.solr.schema.SchemaField;
@@ -134,7 +135,8 @@ public class GeoTransformerFactory extends TransformerFactory
 
     QueryResponseWriter qw = req.getCore().getQueryResponseWriter(req);
     updater.isJSON =
-        (qw.getClass() == JSONResponseWriter.class) && (updater.writer instanceof GeoJSONWriter);
+        (qw.getClass() == JSONResponseWriter.class || qw.getClass() == JacksonJsonWriter.class)
+            && (updater.writer instanceof GeoJSONWriter);
 
     // Using ValueSource
     if (shapes != null) {

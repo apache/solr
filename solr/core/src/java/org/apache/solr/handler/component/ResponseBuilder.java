@@ -60,7 +60,6 @@ public class ResponseBuilder {
   public boolean doExpand;
   public boolean doStats;
   public boolean doTerms;
-  public boolean doAnalytics;
   public MergeStrategy mergeFieldHandler;
 
   public String queryID;
@@ -181,8 +180,6 @@ public class ResponseBuilder {
   StatsInfo _statsInfo;
   TermsComponent.TermsHelper _termsHelper;
   SimpleOrderedMap<List<NamedList<Object>>> _pivots;
-  Object _analyticsRequestManager;
-  boolean _isOlapAnalytics;
 
   // Context fields for grouping
   public final Map<String, Collection<SearchGroup<BytesRef>>> mergedSearchGroups = new HashMap<>();
@@ -490,30 +487,6 @@ public class ResponseBuilder {
 
   public void setNextCursorMark(CursorMark nextCursorMark) {
     this.nextCursorMark = nextCursorMark;
-  }
-
-  public void setAnalytics(boolean doAnalytics) {
-    this.doAnalytics = doAnalytics;
-  }
-
-  public boolean isAnalytics() {
-    return this.doAnalytics;
-  }
-
-  public void setAnalyticsRequestManager(Object analyticsRequestManager) {
-    this._analyticsRequestManager = analyticsRequestManager;
-  }
-
-  public Object getAnalyticsRequestManager() {
-    return this._analyticsRequestManager;
-  }
-
-  public void setOlapAnalytics(boolean isOlapAnalytics) {
-    this._isOlapAnalytics = isOlapAnalytics;
-  }
-
-  public boolean isOlapAnalytics() {
-    return this._isOlapAnalytics;
   }
 
   public void setCancellation(boolean isCancellation) {
