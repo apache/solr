@@ -18,12 +18,14 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
@@ -63,7 +65,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
               + ": "
               + singleReplicas.toString());
     } else {
-      cleanupReplicas(results, state, sourceReplicas, ccc, node, message.getStr(ASYNC));
+      cleanupReplicas(results, state, sourceReplicas, ccc, message.getStr(ASYNC));
     }
   }
 
@@ -113,9 +115,8 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
   static void cleanupReplicas(
       NamedList<Object> results,
       ClusterState clusterState,
-      List<ZkNodeProps> sourceReplicas,
+      Collection<? extends ZkNodeProps> sourceReplicas,
       CollectionCommandContext ccc,
-      String node,
       String async)
       throws IOException, InterruptedException {
     CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
@@ -123,6 +124,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
       String coll = sourceReplica.getStr(COLLECTION_PROP);
       String shard = sourceReplica.getStr(SHARD_ID_PROP);
       String type = sourceReplica.getStr(ZkStateReader.REPLICA_TYPE);
+      String node = sourceReplica.getStr(NODE_NAME_PROP);
       log.info(
           "Deleting replica type={} for collection={} shard={} on node={}",
           type,

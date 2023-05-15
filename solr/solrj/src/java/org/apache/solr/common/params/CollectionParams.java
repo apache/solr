@@ -38,6 +38,8 @@ public interface CollectionParams {
   String SOURCE_NODE = "sourceNode";
   String TARGET_NODE = "targetNode";
 
+  String NODES = "nodes";
+
   enum LockLevel {
     NONE(10, null),
     REPLICA(3, null),

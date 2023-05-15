@@ -36,14 +36,6 @@ import java.util.Set;
  * being equal to the set returned by {@link Cluster#getLiveNodes()}).
  */
 public interface BalanceRequest extends ModificationRequest {
-  /**
-   * Shard(s) for which replicas eviction should be computed.
-   *
-   * <p>Note the Collection API allows specifying the shard name or a {@code _route_} parameter. The
-   * Solr implementation will convert either specification into the relevant shard so the
-   * plugin code doesn't have to worry about this.
-   */
-  Set<Shard> getShardNames();
 
   /**
    * Replicas should only be balanced on nodes in the set returned by this method.

@@ -39,6 +39,8 @@ import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
@@ -450,6 +452,19 @@ public class Assign {
     List<ReplicaPosition> assign(
         SolrCloudManager solrCloudManager, List<AssignRequest> assignRequests)
         throws AssignmentException, IOException, InterruptedException;
+
+    /**
+     * Balance replicas across nodes.
+     *
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param assignRequest that will help build the balance request.
+     * @return Map from Replica to the Node where that Replica should be moved.
+     * @throws AssignmentException when balance request cannot produce any valid assignments.
+     */
+    default Map<Replica, Node> balanceReplicas(SolrCloudManager solrCloudManager, Assign.AssignRequest assignRequest)
+        throws AssignmentException, IOException, InterruptedException {
+      return Collections.emptyMap();
+    }
 
     /**
      * Verify that deleting a collection doesn't violate the replica assignment constraints.
