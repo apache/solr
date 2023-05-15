@@ -74,9 +74,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   // used inside fl to specify to log (all|model only) features
   private static final String FV_LOG_ALL = "logAll";
 
-  private static String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
+  private static final String DEFAULT_LOGGING_MODEL_NAME = "logging-model";
 
-  private static boolean DEFAULT_NO_RERANKING_LOGGING_ALL = true;
+  private static final boolean DEFAULT_NO_RERANKING_LOGGING_ALL = true;
 
   private String fvCacheName;
   private String loggingModelName = DEFAULT_LOGGING_MODEL_NAME;
