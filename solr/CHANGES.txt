@@ -171,6 +171,8 @@ Bug Fixes
 
 * SOLR-16760: bin/solr package tool supports -h and -help command like other tools.  (Eric Pugh)
 
+* SOLR-14630: When querying a single collection, SolrJ targets directly a replica of the collection (and not the collection it self) to avoid useless forwarding. (Pierre Salagnac)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
