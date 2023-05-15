@@ -127,6 +127,8 @@ Improvements
 
 * SOLR-16766: Remove -usage as option from bin/solr, and ensure both -help and -h work. (Bence Szabo via Eric Pugh)
 
+* SOLR-16759: Introducing logAll parameter in the feature logger (Anna Ruggero, Alessandro Benedetti)
+
 Optimizations
 ---------------------
 
