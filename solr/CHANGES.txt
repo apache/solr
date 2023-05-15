@@ -115,6 +115,8 @@ Improvements
 
 * SOLR-16782: bin/solr export tool now supports JSON export format as well as the existing JSON With Lines format. (Eric Pugh)
 
+* SOLR-16765: bin/solr export tool limit property was off by 1.  Now limit results exported to the exact number. (Eric Pugh) 
+
 Optimizations
 ---------------------
 
