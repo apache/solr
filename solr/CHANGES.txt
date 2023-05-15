@@ -129,6 +129,8 @@ Improvements
 
 * SOLR-16759: Introducing logAll parameter in the feature logger (Anna Ruggero, Alessandro Benedetti)
 
+* SOLR-16687: Add support of SolrClassLoader to SolrZkClient (Lamine Idjeraoui via Jason Gerlowski & Houston Putman)
+
 Optimizations
 ---------------------
 

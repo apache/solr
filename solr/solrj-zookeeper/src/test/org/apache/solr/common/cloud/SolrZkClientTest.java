@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +43,10 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +62,8 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   SolrZkClient credentialsClient;
   SolrZkClient defaultClient;
   private CloudSolrClient solrClient;
+
+  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @Override
   public void setUp() throws Exception {
@@ -284,8 +290,8 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testWithSolrResourceLoader() {
-    setupSystemProperties();
+  public void testInstantiationWithSolrResourceLoader() {
+    enableCustomCredentialsProvider();
     SolrResourceLoader solrResourceLoader =
         new SolrResourceLoader(Path.of("."), ClassLoader.getSystemClassLoader());
     new SolrZkClient.Builder()
@@ -294,10 +300,9 @@ public class SolrZkClientTest extends SolrCloudTestCase {
         .withSolrClassLoader(solrResourceLoader)
         .build()
         .close(); // no more tests needed. We only test class instantiation
-    clearSystemProperties();
   }
 
-  private static void setupSystemProperties() {
+  private static void enableCustomCredentialsProvider() {
     System.setProperty(
         SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
         DigestZkCredentialsProvider.class.getName());
@@ -305,16 +310,10 @@ public class SolrZkClientTest extends SolrCloudTestCase {
         SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, DigestZkACLProvider.class.getName());
     System.setProperty(
         SolrZkClient.ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME,
-        CustomCredentialZkCredentialsInjector.class.getName());
+        CustomZkCredentialsInjector.class.getName());
   }
 
-  private static void clearSystemProperties() {
-    System.clearProperty(SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
-    System.clearProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
-    System.clearProperty(SolrZkClient.ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME);
-  }
-
-  public static class CustomCredentialZkCredentialsInjector implements ZkCredentialsInjector {
+  public static class CustomZkCredentialsInjector implements ZkCredentialsInjector {
     @Override
     public List<ZkCredential> getZkCredentials() {
       return List.of(new ZkCredential("someuser", "somepass", ZkCredential.Perms.READ));
