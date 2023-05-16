@@ -560,16 +560,9 @@ public class CoreContainer {
                       new Object[] {this}));
     }
     if (authenticationPlugin != null) {
-      final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-      try {
-        // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
-        Thread.currentThread().setContextClassLoader(loader.getClassLoader());
-        authenticationPlugin.plugin.init(authenticationConfig);
-        setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
-        authenticationPlugin.plugin.initializeMetrics(solrMetricsContext, "/authentication");
-      } finally {
-        Thread.currentThread().setContextClassLoader(contextClassLoader);
-      }
+      authenticationPlugin.plugin.init(authenticationConfig);
+      setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
+      authenticationPlugin.plugin.initializeMetrics(solrMetricsContext, "/authentication");
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -752,6 +745,19 @@ public class CoreContainer {
       reason =
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void load() {
+    final ClassLoader originalContextClassLoader = Thread.currentThread().getContextClassLoader();
+    try {
+      // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
+      // and have dependencies that use the thread's contextClassLoader
+      Thread.currentThread().setContextClassLoader(loader.getClassLoader());
+      loadInternal();
+    } finally {
+      Thread.currentThread().setContextClassLoader(originalContextClassLoader);
+    }
+  }
+
+  /** Load the cores defined for this CoreContainer */
+  private void loadInternal() {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
