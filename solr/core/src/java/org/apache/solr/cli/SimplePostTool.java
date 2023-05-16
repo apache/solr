@@ -78,6 +78,8 @@ import org.xml.sax.SAXException;
  * example built with an explicit purpose of not having external jar dependencies.
  */
 public class SimplePostTool {
+  private static final String DEFAULT_POST_HOST = "localhost";
+  private static final String DEFAULT_POST_PORT = "8983";
   private static final String VERSION_OF_THIS_TOOL =
       "5.0.0"; // TODO: hardcoded for now, but eventually to sync with actual Solr version
 
@@ -234,13 +236,24 @@ public class SimplePostTool {
       }
 
       String params = System.getProperty("params", "");
+      String host = System.getProperty("host", DEFAULT_POST_HOST);
+      String port = System.getProperty("port", DEFAULT_POST_PORT);
+      String core = System.getProperty("c");
 
       urlStr = System.getProperty("url");
 
+      if (urlStr == null && core == null) {
+        fatal("Specifying either url or core/collection is mandatory.\n" + USAGE_STRING_SHORT);
+      }
+
+      if (urlStr == null) {
+        urlStr = String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", host, port, core);
+      }
+
       // With bin/solr post you can't get here without a url string!
-      // if (urlStr == null ) {
-      //  fatal("Specifying  url is mandatory.\n" + USAGE_STRING_SHORT);
-      // }
+      if (urlStr == null ) {
+        fatal("Specifying  url is mandatory.\n" + USAGE_STRING_SHORT);
+       }
 
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
@@ -433,6 +446,12 @@ public class SimplePostTool {
             + ")\n"
             + "  -Dtype=<content-type> (default="
             + DEFAULT_CONTENT_TYPE
+            + "  -Dhost=<host> (default: "
+                + ")\n"
+            + DEFAULT_POST_HOST
+            + ")\n"
+            + "  -Dport=<port> (default: "
+            + DEFAULT_POST_PORT
             + ")\n"
             + "  -Dbasicauth=<user:pass> (sets Basic Authentication credentials)\n"
             + "  -Dauto=yes|no (default="
