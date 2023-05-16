@@ -67,6 +67,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.SolrVersion;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -80,8 +81,7 @@ import org.xml.sax.SAXException;
 public class SimplePostTool {
   private static final String DEFAULT_POST_HOST = "localhost";
   private static final String DEFAULT_POST_PORT = "8983";
-  private static final String VERSION_OF_THIS_TOOL =
-      "5.0.0"; // TODO: hardcoded for now, but eventually to sync with actual Solr version
+  private static final String VERSION_OF_THIS_TOOL = SolrVersion.LATEST_STRING;
 
   private static final String DEFAULT_COMMIT = "yes";
   private static final String DEFAULT_OPTIMIZE = "no";
@@ -251,9 +251,9 @@ public class SimplePostTool {
       }
 
       // With bin/solr post you can't get here without a url string!
-      if (urlStr == null ) {
+      if (urlStr == null) {
         fatal("Specifying  url is mandatory.\n" + USAGE_STRING_SHORT);
-       }
+      }
 
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
@@ -447,7 +447,7 @@ public class SimplePostTool {
             + "  -Dtype=<content-type> (default="
             + DEFAULT_CONTENT_TYPE
             + "  -Dhost=<host> (default: "
-                + ")\n"
+            + ")\n"
             + DEFAULT_POST_HOST
             + ")\n"
             + "  -Dport=<port> (default: "
