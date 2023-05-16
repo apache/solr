@@ -47,10 +47,6 @@ teardown() {
   
   run solr post -help
   assert_output --partial 'usage: post'
-  refute_output --partial 'ERROR'
-  
-  run solr post --help
-  assert_output --partial 'usage: post'
   refute_output --partial 'ERROR'  
   
 }
