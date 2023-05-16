@@ -26,7 +26,6 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import io.opentracing.noop.NoopTracerFactory;
 import io.opentracing.util.GlobalTracer;
 import java.io.File;
@@ -156,9 +155,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.noggit.CharArr;
 import org.noggit.JSONUtil;
 import org.noggit.ObjectBuilder;
@@ -257,8 +253,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // these are meant to be accessed sequentially, but are volatile just to ensure any test
   // thread will read the latest value
   public static volatile SSLTestConfig sslConfig;
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   @BeforeClass
   public static void setupTestCases() {
