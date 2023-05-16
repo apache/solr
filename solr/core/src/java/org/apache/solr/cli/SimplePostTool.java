@@ -431,13 +431,11 @@ public class SimplePostTool {
   //
   // USAGE
   //
-  // ERIC candidate for removale
   private static void usageShort() {
     CLIO.out(
         USAGE_STRING_SHORT + "\n" + "       Please invoke with -h option for extended usage help.");
   }
 
-  // ERIC candidate for removale
   private static void usage() {
     CLIO.out(
         USAGE_STRING_SHORT
