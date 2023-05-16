@@ -253,7 +253,7 @@ public class SimplePostTool {
       if (urlStr == null) {
         urlStr = String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", host, port, core);
       }
-      
+
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       String user = null;

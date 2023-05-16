@@ -97,14 +97,13 @@ public class PostTool extends ToolBase {
     String url = cli.getOptionValue("url");
     URL solrUrl = new URL(url);
 
-    // Map<String,String> props = Collections.singletonMap("-Dauto", "yes");
     String mode = SimplePostTool.DEFAULT_DATA_MODE;
     boolean auto = true;
     String type = null;
     if (cli.hasOption("type")) {
       type = cli.getOptionValue("type");
     }
-    String format = cli.hasOption("format") ? "solr" : ""; // i.e not solr formatted json commands
+    String format = cli.hasOption("format") ? SimplePostTool.FORMAT_SOLR : ""; // i.e not solr formatted json commands
     int delay = 0;
     String fileTypes = SimplePostTool.DEFAULT_FILE_TYPES;
     if (cli.hasOption("filetypes")) {
@@ -126,9 +125,6 @@ public class PostTool extends ToolBase {
 
     String[] args = cli.getArgs();
 
-    System.out.println("ERIC HERE ARE ARGS");
-    System.out.println(cli.getArgs().toString());
-    // SimplePostTool spt2 = SimplePostTool.parseArgsAndInit(cli.getArgs());
     SimplePostTool spt =
         new SimplePostTool(
             mode, solrUrl, auto, type, format, recursive, delay, fileTypes, out, commit, optimize,
