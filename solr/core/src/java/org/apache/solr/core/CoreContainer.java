@@ -560,9 +560,16 @@ public class CoreContainer {
                       new Object[] {this}));
     }
     if (authenticationPlugin != null) {
-      authenticationPlugin.plugin.init(authenticationConfig);
-      setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
-      authenticationPlugin.plugin.initializeMetrics(solrMetricsContext, "/authentication");
+      final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+      try {
+        // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
+        Thread.currentThread().setContextClassLoader(loader.getClassLoader());
+        authenticationPlugin.plugin.init(authenticationConfig);
+        setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
+        authenticationPlugin.plugin.initializeMetrics(solrMetricsContext, "/authentication");
+      } finally {
+        Thread.currentThread().setContextClassLoader(contextClassLoader);
+      }
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -748,9 +755,6 @@ public class CoreContainer {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
-    // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
-    Thread.currentThread().setContextClassLoader(loader.getClassLoader());
-
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
