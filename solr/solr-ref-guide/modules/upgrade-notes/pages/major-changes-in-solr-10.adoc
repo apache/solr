@@ -34,6 +34,3 @@ Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like Zoo
 
 The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.
 
-=== Solr CLI
-
-The classic `SimplePostTool` and associated `post.jar` have been replaced with a modernized `bin/solr post` command.  Please update any scripts accordingly.
