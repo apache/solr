@@ -253,12 +253,7 @@ public class SimplePostTool {
       if (urlStr == null) {
         urlStr = String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", host, port, core);
       }
-
-      // With bin/solr post you can't get here without a url string!
-      if (urlStr == null ) {
-        fatal("Specifying  url is mandatory.\n" + USAGE_STRING_SHORT);
-       }
-
+      
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       String user = null;
