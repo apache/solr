@@ -77,7 +77,11 @@ import org.xml.sax.SAXException;
  * A simple utility class for posting raw updates to a Solr server. It has a main method, so it can
  * be run on the command line. View this not as a best-practice code example, but as a standalone
  * example built with an explicit purpose of not having external jar dependencies.
+ *
+ *  @deprecated This class is being replaced with bin/solr tool. Please use {@link PostTool} instead.
  */
+
+@Deprecated(since = "9.2")
 public class SimplePostTool {
   private static final String DEFAULT_POST_HOST = "localhost";
   private static final String DEFAULT_POST_PORT = "8983";
