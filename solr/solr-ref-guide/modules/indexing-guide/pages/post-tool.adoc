@@ -23,6 +23,9 @@ The bin/solr post tool is a Unix shell script; for Windows (non-Cygwin) usage, s
 
 NOTE: This tool is meant for use by new users exploring Solr's capabilities, and is not intended as a robust solution to be used for indexing documents into production systems.
 
+NOTE: You may be familiar with SimplePostTool and the bin/post Unix shell script.  While this is still available, it is deprecated and will be removed in Solr 10.
+
+
 To run it, open a window and enter:
 
 [,console]
@@ -168,28 +171,3 @@ Index a PDF as the user "solr" with password "SolrRocks":
 ----
 bin/solr post -u solr:SolrRocks -url http://localhost:8983/solr/gettingstarted/update a.pdf
 ----
-
-== Post Tool Windows Support
-
-`bin/solr post` is a Unix shell script and as such cannot be used directly on Windows.
-However it delegates its work to a cross-platform capable Java program called "SimplePostTool" or `post.jar`, that can be used in Windows environments.
-
-The argument syntax differs significantly from `bin/post`, so your first step should be to print the SimplePostTool help text.
-
-[source,plain]
-----
-$ java -jar example\exampledocs\post.jar -h
-----
-
-This command prints information about all the arguments and System properties available to SimplePostTool users.
-There are also examples showing how to post files, crawl a website or file system folder, and send update commands (deletes, etc.) directly to Solr.
-
-Most usage involves passing both Java System properties and program arguments on the command line.  Consider the example below:
-
-[source,plain]
-----
-$ java -jar -Durl http://localhost:8983/solr/gettingstarted/update -Dauto example\exampledocs\post.jar example\exampledocs\*
-----
-
-This indexes the contents of the `exampledocs` directory into a collection called `gettingstarted`.
-The `-Dauto` System property governs whether or not Solr sends the document type to Solr during extraction.
