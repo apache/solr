@@ -586,17 +586,7 @@ public class SolrConfig implements MapSerializable {
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
-    ConfigNode updateHandler = get("updateHandler");
-    ConfigNode autoCommit = updateHandler.get("autoCommit");
-    return new UpdateHandlerInfo(
-        updateHandler.attr("class"),
-        autoCommit.get("maxDocs").intVal(-1),
-        autoCommit.get("maxTime").intVal(-1),
-        convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt()),
-        autoCommit.get("openSearcher").boolVal(true),
-        updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1),
-        updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1),
-        updateHandler.get("commitWithin").get("softCommit").boolVal(true));
+    return new UpdateHandlerInfo(get("updateHandler"));
   }
 
   /**
@@ -815,6 +805,7 @@ public class SolrConfig implements MapSerializable {
     public final long autoCommitMaxSizeBytes;
     public final boolean openSearcher; // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
+    public final boolean aggregateNodeLevelMetricsEnabled;
 
     /**
      * @param autoCommmitMaxDocs set -1 as default
@@ -840,6 +831,23 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
+      this.aggregateNodeLevelMetricsEnabled = false;
+    }
+
+    public UpdateHandlerInfo(ConfigNode updateHandler) {
+      ConfigNode autoCommit = updateHandler.get("autoCommit");
+      this.className = updateHandler.attr("class");
+      this.autoCommmitMaxDocs = autoCommit.get("maxDocs").intVal(-1);
+      this.autoCommmitMaxTime = autoCommit.get("maxTime").intVal(-1);
+      this.autoCommitMaxSizeBytes =
+          convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt());
+      this.openSearcher = autoCommit.get("openSearcher").boolVal(true);
+      this.autoSoftCommmitMaxDocs = updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1);
+      this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
+      this.commitWithinSoftCommit =
+          updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.aggregateNodeLevelMetricsEnabled =
+          updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
 
     @Override

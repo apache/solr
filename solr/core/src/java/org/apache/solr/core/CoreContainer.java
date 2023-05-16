@@ -108,7 +108,6 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.ClusterAPI;
-import org.apache.solr.handler.CollectionBackupsAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -842,8 +841,6 @@ public class CoreContainer {
     collectionsHandler =
         createHandler(
             COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
-    final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
-    registerV2ApiIfEnabled(collectionBackupsAPI);
     configSetsHandler =
         createHandler(
             CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
