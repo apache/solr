@@ -231,7 +231,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     byPathCache.remove(v.path);
   }
 
-  // be sure this is called with the this sync lock
+  // be sure the method is called with the sync lock on this object
   // returns true if we closed the cacheValue, false if it will be closed later
   private boolean closeCacheValue(CacheValue cacheValue) {
     log.debug("looking to close {} {}", cacheValue.path, cacheValue.closeEntries);
@@ -441,7 +441,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       throw new NullPointerException();
     }
     synchronized (this) {
-      // don't check if already closed here - we need to able to release
+      // don't check if already closed here - we need to be able to release
       // while #close() waits.
 
       CacheValue cacheValue = byDirectoryCache.get(directory);

@@ -71,11 +71,16 @@ The xref:deployment-guide:installing-solr.adoc#available-solr-packages[Installin
 Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site for information on how to download these offerings.
 
 === Shard Management
-* Solr now provides an xref:deployment-guide:shard-management.adoc#installshard[INSTALLSHARD] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
+* Solr now provides an xref:deployment-guide:shard-management.adoc#installsharddata["Install Shard"] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
 
 == Solr 9.3
-=== Improvements to Solr CLI
+=== Solr CLI
 * the bin/solr -i and bin/solr -info removed in favour of bin/solr status command.
+
+=== Security
+* Use of `stream.file`, `stream.url` and `stream.body` params are no longer enabled via configuration in solrconfig.xml, nor dynamic equivalents with the config API.
+Older configuration now does nothing.
+Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
 
 == Solr 9.2
 === Upgrade to Jetty 10.x
@@ -108,7 +113,7 @@ the `solrj-streaming` artifacts under the `org.apache.solr` groupId.
 
 === Deprecations
 * Loading solr.xml from Zookeeper is deprecated. See xref:configuration-guide:configuring-solr-xml.adoc[Configuring solr.xml].
-* The xref:query-guide:analytics.adoc[Analytics Component] has been deprecated. Consider using xref:query-guide:json-facet-api.adoc[JSON Facet API] as a substitute. Please notify the project if there's functionality you need that isn't currently covered by JSON facets.
+* The Analytics Component has been deprecated. Consider using xref:query-guide:json-facet-api.adoc[JSON Facet API] as a substitute. Please notify the project if there's functionality you need that isn't currently covered by JSON facets.
 * The `jaegertracer-configurator` module is deprecated for removal in Solr 10. Users should start migrating to the new `opentelemetry` module.
 
 == Solr 9.1.1

@@ -993,6 +993,14 @@ IF DEFINED SOLR_PLACEMENTPLUGIN_DEFAULT (
   set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.placementplugin.default=%SOLR_PLACEMENTPLUGIN_DEFAULT%"
 )
 
+REM Remote streaming and stream body
+IF "%SOLR_ENABLE_REMOTE_STREAMING%"=="true" (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.enableRemoteStreaming=true"
+)
+IF "%SOLR_ENABLE_STREAM_BODY%"=="true" (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.enableStreamBody=true"
+)
+
 IF "%SOLR_SERVER_DIR%"=="" set "SOLR_SERVER_DIR=%DEFAULT_SERVER_DIR%"
 
 IF NOT EXIST "%SOLR_SERVER_DIR%" (
