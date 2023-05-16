@@ -55,8 +55,9 @@ teardown() {
   run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -format jsonl -out "${BATS_TEST_TMPDIR}/output"
   assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl ]
 
-  run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -compress -format jsonl -out "${BATS_TEST_TMPDIR}/output"
+  run solr export -url "http://localhost:8983/solr/techproducts" -query "*:* -id:test" -limit 10 -compress -format jsonl -out "${BATS_TEST_TMPDIR}/output"
   assert [ -e ${BATS_TEST_TMPDIR}/output.jsonl.gz ]
+  assert_output --partial 'Total Docs exported: 10'
 
 }
 

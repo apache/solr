@@ -38,8 +38,6 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.io.IOException;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -55,7 +53,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
@@ -70,7 +67,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * <p>This API is analogous to the v1 /admin/collections?action=RESTORE command.
  */
 @Path("/backups/{backupName}/restore")
-public class RestoreCollectionAPI extends AdminAPIBase {
+public class RestoreCollectionAPI extends BackupAPIBase {
 
   private static final Set<String> CREATE_PARAM_ALLOWLIST =
       Set.of(
@@ -119,23 +116,8 @@ public class RestoreCollectionAPI extends AdminAPIBase {
           "Collection '" + collectionName + "' is an existing alias, no action taken.");
     }
 
-    final BackupRepository repository = coreContainer.newBackupRepository(requestBody.repository);
     requestBody.location =
-        CreateCollectionBackupAPI.getLocation(coreContainer, repository, requestBody.location);
-
-    // Check if the specified location is valid for this repository.
-    final URI uri = repository.createDirectoryURI(requestBody.location);
-    try {
-      if (!repository.exists(uri)) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
-      }
-    } catch (IOException ex) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Failed to check the existence of " + uri + ". Is it valid?",
-          ex);
-    }
+        getAndValidateBackupLocation(requestBody.repository, requestBody.location);
 
     final var createRequestBody = requestBody.createCollectionParams;
     if (createRequestBody != null) {
