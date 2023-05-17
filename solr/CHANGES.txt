@@ -125,6 +125,9 @@ Improvements
 
 * SOLR-16766: Remove -usage as option from bin/solr, and ensure both -help and -h work. (Bence Szabo via Eric Pugh)
 
+* SOLR-16470: `/coreName/replication?commit=indexversion` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/replication/indexversion` (Matthew Biscocho via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
