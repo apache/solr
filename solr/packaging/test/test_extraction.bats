@@ -30,7 +30,7 @@ teardown() {
   SOLR_STOP_WAIT=1 solr stop -all >/dev/null 2>&1
 }
 
-@test "extract a single pdf file" {
+@test "using curl to extract a single pdf file" {
 
   # Disable security manager to allow extraction
   # This appears to be a bug.
@@ -55,7 +55,7 @@ teardown() {
   assert_output --partial '"numFound":1'
 }
 
-@test "crawling a directory and indexing pdf" {
+@test "using the bin/solr post tool to crawl and extract content" {
 
   # Disable security manager to allow extraction
   # This appears to be a bug.
@@ -78,8 +78,6 @@ teardown() {
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
   
-  
-  # the post command with a -commit fails with a -url.  
   run curl 'http://localhost:8983/solr/content_extraction/select?q=*:*'
   assert_output --partial '"numFound":1'
 }
