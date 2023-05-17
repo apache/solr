@@ -53,12 +53,12 @@ public class PostTool extends ToolBase {
             .build(),
         Option.builder("commit").required(false).desc("Issue a commit at end of post").build(),
         Option.builder("optimize").required(false).desc("Issue an optimize at end of post").build(),
-            Option.builder("mode")
-                    .argName("mode")
-                    .hasArg(true)
-                    .required(false)
-                    .desc("default: files.  files, web, args, stdin are options.  Files crawls files, web crawls directory.  Args posts parts to Solr, and stdin feeds from standard in.")
-                    .build(),
+        Option.builder("mode")
+            .argName("mode")
+            .hasArg(true)
+            .required(false)
+            .desc("default: files.  files, web.  Files crawls files, web crawls directory.")
+            .build(),
         Option.builder("recursive").required(false).desc("default: 1").build(),
         Option.builder("delay")
             .argName("seconds")
