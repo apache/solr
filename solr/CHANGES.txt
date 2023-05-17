@@ -46,6 +46,8 @@ Other Changes
 
 * PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
 
+* SOLR-16798: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command. (Bence Szabo via Eric Pugh)
+
 ==================  9.3.0 ==================
 
 New Features
