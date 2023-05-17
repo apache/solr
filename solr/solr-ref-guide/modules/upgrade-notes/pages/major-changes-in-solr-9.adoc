@@ -113,7 +113,7 @@ the `solrj-streaming` artifacts under the `org.apache.solr` groupId.
 
 === Deprecations
 * Loading solr.xml from Zookeeper is deprecated. See xref:configuration-guide:configuring-solr-xml.adoc[Configuring solr.xml].
-* The xref:query-guide:analytics.adoc[Analytics Component] has been deprecated. Consider using xref:query-guide:json-facet-api.adoc[JSON Facet API] as a substitute. Please notify the project if there's functionality you need that isn't currently covered by JSON facets.
+* The Analytics Component has been deprecated. Consider using xref:query-guide:json-facet-api.adoc[JSON Facet API] as a substitute. Please notify the project if there's functionality you need that isn't currently covered by JSON facets.
 * The `jaegertracer-configurator` module is deprecated for removal in Solr 10. Users should start migrating to the new `opentelemetry` module.
 
 == Solr 9.1.1

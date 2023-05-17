@@ -104,20 +104,15 @@ import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STA
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
-import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
-import static org.apache.solr.common.params.CoreAdminParams.BACKUP_PURGE_UNUSED;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -180,11 +175,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.backup.BackupFilePaths;
-import org.apache.solr.core.backup.BackupId;
-import org.apache.solr.core.backup.BackupManager;
-import org.apache.solr.core.backup.BackupProperties;
-import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -202,6 +192,7 @@ import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAliasAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.DeleteNodeAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
@@ -210,6 +201,7 @@ import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
 import org.apache.solr.handler.admin.api.InstallShardDataAPI;
 import org.apache.solr.handler.admin.api.ListAliasesAPI;
+import org.apache.solr.handler.admin.api.ListCollectionBackupsAPI;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
 import org.apache.solr.handler.admin.api.ListCollectionsAPI;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
@@ -1200,153 +1192,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEBACKUP_OP(
         DELETEBACKUP,
         (req, rsp, h) -> {
-          req.getParams().required().check(NAME);
-
-          CoreContainer cc = h.coreContainer;
-          String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-          try (BackupRepository repository = cc.newBackupRepository(repo)) {
-
-            String location =
-                repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
-            if (location == null) {
-              // Refresh the cluster property file to make sure the value set for location is the
-              // latest. Check if the location is specified in the cluster property.
-              location =
-                  new ClusterProperties(h.coreContainer.getZkController().getZkClient())
-                      .getClusterProperty("location", null);
-              if (location == null) {
-                throw new SolrException(
-                    ErrorCode.BAD_REQUEST,
-                    "'location' is not specified as a query"
-                        + " parameter or as a default repository property or as a cluster property.");
-              }
-            }
-
-            // Check if the specified location is valid for this repository.
-            URI uri = repository.createDirectoryURI(location);
-            try {
-              if (!repository.exists(uri)) {
-                throw new SolrException(
-                    ErrorCode.BAD_REQUEST, "specified location " + uri + " does not exist.");
-              }
-            } catch (IOException ex) {
-              throw new SolrException(
-                  ErrorCode.SERVER_ERROR,
-                  "Failed to check the existence of " + uri + ". Is it valid?",
-                  ex);
-            }
-
-            int deletionModesProvided = 0;
-            if (req.getParams().get(MAX_NUM_BACKUP_POINTS) != null) deletionModesProvided++;
-            if (req.getParams().get(BACKUP_PURGE_UNUSED) != null) deletionModesProvided++;
-            if (req.getParams().get(BACKUP_ID) != null) deletionModesProvided++;
-            if (deletionModesProvided != 1) {
-              throw new SolrException(
-                  BAD_REQUEST,
-                  String.format(
-                      Locale.ROOT,
-                      "Exactly one of %s, %s, and %s parameters must be provided",
-                      MAX_NUM_BACKUP_POINTS,
-                      BACKUP_PURGE_UNUSED,
-                      BACKUP_ID));
-            }
-
-            final Map<String, Object> params =
-                copy(
-                    req.getParams(),
-                    null,
-                    NAME,
-                    BACKUP_REPOSITORY,
-                    BACKUP_LOCATION,
-                    BACKUP_ID,
-                    MAX_NUM_BACKUP_POINTS,
-                    BACKUP_PURGE_UNUSED);
-            params.put(BACKUP_LOCATION, location);
-            if (repo != null) {
-              params.put(CoreAdminParams.BACKUP_REPOSITORY, repo);
-            }
-            return params;
-          }
+          DeleteCollectionBackupAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     LISTBACKUP_OP(
         LISTBACKUP,
         (req, rsp, h) -> {
           req.getParams().required().check(NAME);
-
-          CoreContainer cc = h.coreContainer;
-          String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-          try (BackupRepository repository = cc.newBackupRepository(repo)) {
-
-            String location =
-                repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
-            if (location == null) {
-              // Refresh the cluster property file to make sure the value set for location is the
-              // latest. Check if the location is specified in the cluster property.
-              location =
-                  new ClusterProperties(h.coreContainer.getZkController().getZkClient())
-                      .getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
-              if (location == null) {
-                throw new SolrException(
-                    ErrorCode.BAD_REQUEST,
-                    "'location' is not specified as a query"
-                        + " parameter or as a default repository property or as a cluster property.");
-              }
-            }
-
-            String backupName = req.getParams().get(NAME);
-            final URI locationURI = repository.createDirectoryURI(location);
-            try {
-              if (!repository.exists(locationURI)) {
-                throw new SolrException(
-                    ErrorCode.BAD_REQUEST,
-                    "specified location " + locationURI + " does not exist.");
-              }
-            } catch (IOException ex) {
-              throw new SolrException(
-                  ErrorCode.SERVER_ERROR,
-                  "Failed to check the existence of " + locationURI + ". Is it valid?",
-                  ex);
-            }
-            URI backupLocation =
-                BackupFilePaths.buildExistingBackupLocationURI(repository, locationURI, backupName);
-            if (repository.exists(
-                repository.resolve(backupLocation, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {
-              throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "The backup name ["
-                      + backupName
-                      + "] at "
-                      + "location ["
-                      + location
-                      + "] holds a non-incremental (legacy) backup, but "
-                      + "backup-listing is only supported on incremental backups");
-            }
-
-            String[] subFiles = repository.listAllOrEmpty(backupLocation);
-            List<BackupId> propsFiles = BackupFilePaths.findAllBackupIdsFromFileListing(subFiles);
-
-            NamedList<Object> results = new NamedList<>();
-            ArrayList<Map<Object, Object>> backups = new ArrayList<>();
-            String collectionName = null;
-            for (BackupId backupId : propsFiles) {
-              BackupProperties properties =
-                  BackupProperties.readFrom(
-                      repository, backupLocation, BackupFilePaths.getBackupPropsName(backupId));
-              if (collectionName == null) {
-                collectionName = properties.getCollection();
-                results.add(BackupManager.COLLECTION_NAME_PROP, collectionName);
-              }
-
-              Map<Object, Object> details = properties.getDetails();
-              details.put("backupId", backupId.id);
-              backups.add(details);
-            }
-
-            results.add("backups", backups);
-            SolrResponse response = new OverseerSolrResponse(results);
-            rsp.getValues().addAll(response.getResponse());
-            return null;
-          }
+          ListCollectionBackupsAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     CREATESNAPSHOT_OP(
         CREATESNAPSHOT,
@@ -1700,12 +1554,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateCollectionAPI.class,
         CreateCollectionBackupAPI.class,
         DeleteAliasAPI.class,
+        DeleteCollectionBackupAPI.class,
         DeleteCollectionAPI.class,
         DeleteReplicaAPI.class,
         DeleteReplicaPropertyAPI.class,
         DeleteShardAPI.class,
         InstallShardDataAPI.class,
         ListCollectionsAPI.class,
+        ListCollectionBackupsAPI.class,
         ReplaceNodeAPI.class,
         RestoreCollectionAPI.class,
         CollectionPropertyAPI.class,

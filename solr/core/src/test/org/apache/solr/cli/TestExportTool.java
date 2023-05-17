@@ -180,7 +180,7 @@ public class TestExportTool extends SolrCloudTestCase {
       for (Slice slice : coll.getSlices()) {
         Replica replica = slice.getLeader();
         try (SolrClient client = new Http2SolrClient.Builder(replica.getBaseUrl()).build()) {
-          long count = ExportTool.getDocCount(replica.getCoreName(), client);
+          long count = ExportTool.getDocCount(replica.getCoreName(), client, "*:*");
           docCounts.put(replica.getCoreName(), count);
           totalDocsFromCores += count;
         }

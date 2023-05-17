@@ -280,7 +280,7 @@ class BatsTask extends Exec {
 
     // Note: tests to run must be listed after all other arguments
     // Additional debugging output: -x, --verbose-run
-    setArgs(['--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+    setArgs(['-T', '--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
 
     super.exec()
   }
