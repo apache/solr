@@ -46,6 +46,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   }
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     setUpMocks();
