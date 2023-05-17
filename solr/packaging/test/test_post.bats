@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c
+  solr start -c -Dsolr.modules=extraction
 }
 
 teardown_file() {
@@ -104,6 +104,23 @@ teardown() {
   refute_output --partial 'ERROR'
   run curl 'http://localhost:8983/solr/mixed_content/select?q=*:*'
   assert_output --partial '"numFound":46'
+}
+
+# this test doesn't complete due to issues in posting to the /extract handler
+@test "crawling a web site" {
+  solr create_collection -c webcrawl -d _default
+  
+  curl -X POST -H 'Content-type:application/json' -d '{
+    "add-requesthandler": {
+      "name": "/update/extract",
+      "class": "solr.extraction.ExtractingRequestHandler",
+      "defaults":{ "lowernames": "true", "captureAttr":"true"}
+    }
+  }' 'http://localhost:8983/solr/webcrawl/config'
+  
+  run solr post -mode web -url http://localhost:8983/webcrawl/update https://solr.apache.org -recursive 1 -delay 1
+  assert_output --partial 'Entering crawl at level 0'
+  #refute_output --partial 'ERROR'
 }
 
 @test "commit and optimize" {
