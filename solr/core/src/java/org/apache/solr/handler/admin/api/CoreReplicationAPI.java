@@ -31,6 +31,11 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
+/**
+ * V2 APIs for inspecting and replicating indices
+ *
+ * <p>These APIs are analogous to the v1 /coreName/replication APIs.
+ */
 @Path("/cores/{coreName}/replication")
 public class CoreReplicationAPI extends ReplicationAPIBase {
 
@@ -43,12 +48,11 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
   @Path("/indexversion")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
-  public IndexVersionResponse IndexVersionResponse() throws IOException {
-
+  public IndexVersionResponse fetchIndexVersion() throws IOException {
     return fetchIndexVersion();
   }
 
-  /** Response for {@link CoreReplicationAPI}. */
+  /** Response for {@link CoreReplicationAPI#fetchIndexVersion()}. */
   public static class IndexVersionResponse extends SolrJerseyResponse {
 
     @JsonProperty("indexversion")
