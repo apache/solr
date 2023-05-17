@@ -136,6 +136,9 @@ Improvements
   recency now uses `DELETE /api/backups/bName/versions?retainLatest=3`, and index-file "garbage collection" now uses
   `PUT /api/backups/backupName/purgeUnused` (Jason Gerlowski)
 
+* SOLR-16470: `/coreName/replication?commit=indexversion` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/replication/indexversion` (Matthew Biscocho via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
