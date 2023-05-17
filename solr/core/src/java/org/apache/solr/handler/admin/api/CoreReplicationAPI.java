@@ -49,10 +49,10 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
   public IndexVersionResponse fetchIndexVersion() throws IOException {
-    return fetchIndexVersion();
+    return doFetchIndexVersion();
   }
 
-  /** Response for {@link CoreReplicationAPI#fetchIndexVersion()}. */
+  /** Response for {@link CoreReplicationAPI#()}. */
   public static class IndexVersionResponse extends SolrJerseyResponse {
 
     @JsonProperty("indexversion")
