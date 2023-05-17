@@ -52,7 +52,7 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
     return doFetchIndexVersion();
   }
 
-  /** Response for {@link CoreReplicationAPI#()}. */
+  /** Response for {@link CoreReplicationAPI#fetchIndexVersion()}. */
   public static class IndexVersionResponse extends SolrJerseyResponse {
 
     @JsonProperty("indexversion")
