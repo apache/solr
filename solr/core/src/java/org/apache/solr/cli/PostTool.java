@@ -103,7 +103,10 @@ public class PostTool extends ToolBase {
     if (cli.hasOption("type")) {
       type = cli.getOptionValue("type");
     }
-    String format = cli.hasOption("format") ? SimplePostTool.FORMAT_SOLR : ""; // i.e not solr formatted json commands
+    String format =
+        cli.hasOption("format")
+            ? SimplePostTool.FORMAT_SOLR
+            : ""; // i.e not solr formatted json commands
     int delay = 0;
     String fileTypes = SimplePostTool.DEFAULT_FILE_TYPES;
     if (cli.hasOption("filetypes")) {

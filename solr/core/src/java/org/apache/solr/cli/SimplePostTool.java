@@ -78,9 +78,8 @@ import org.xml.sax.SAXException;
  * be run on the command line. View this not as a best-practice code example, but as a standalone
  * example built with an explicit purpose of not having external jar dependencies.
  *
- *  @deprecated This class is being replaced with bin/solr tool. Please use {@link PostTool} instead.
+ * @deprecated This class is being replaced with bin/solr tool. Please use {@link PostTool} instead.
  */
-
 @Deprecated(since = "9.2")
 public class SimplePostTool {
   private static final String DEFAULT_POST_HOST = "localhost";
@@ -444,7 +443,7 @@ public class SimplePostTool {
             + "  -Dtype=<content-type> (default="
             + DEFAULT_CONTENT_TYPE
             + "  -Dhost=<host> (default: "
-                + ")\n"
+            + ")\n"
             + DEFAULT_POST_HOST
             + ")\n"
             + "  -Dport=<port> (default: "
