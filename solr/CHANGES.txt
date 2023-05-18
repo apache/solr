@@ -142,6 +142,8 @@ Bug Fixes
 
 * SOLR-16765: bin/solr export tool limit property was off by 1.  Now limit results exported to the exact number. (Eric Pugh)
 
+* SOLR-16801: Reset the thread's contextClassloader after loading the CoreContainer (Thomas Wöckinger, Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
