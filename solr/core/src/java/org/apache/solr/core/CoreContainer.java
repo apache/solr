@@ -745,12 +745,22 @@ public class CoreContainer {
       reason =
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void load() {
+    final ClassLoader originalContextClassLoader = Thread.currentThread().getContextClassLoader();
+    try {
+      // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
+      // and have dependencies that use the thread's contextClassLoader
+      Thread.currentThread().setContextClassLoader(loader.getClassLoader());
+      loadInternal();
+    } finally {
+      Thread.currentThread().setContextClassLoader(originalContextClassLoader);
+    }
+  }
+
+  /** Load the cores defined for this CoreContainer */
+  private void loadInternal() {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
-    // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
-    Thread.currentThread().setContextClassLoader(loader.getClassLoader());
-
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
