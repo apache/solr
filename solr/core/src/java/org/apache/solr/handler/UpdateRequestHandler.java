@@ -156,7 +156,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
     pathVsLoaders.put(DOC_PATH, registry.get("application/json"));
     pathVsLoaders.put(CSV_PATH, registry.get("application/csv"));
     pathVsLoaders.put(BIN_PATH, registry.get("application/javabin"));
-    pathVsLoaders.put(BIN_PATH, registry.get("application/cbor"));
+    pathVsLoaders.put(CBOR_PATH, registry.get("application/cbor"));
     return registry;
   }
 
