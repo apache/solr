@@ -13,6 +13,8 @@ Bug Fixes
 
 * SOLR-16789: Fixed Admin UI dashboard "Security" panel to show the right information regarding authentication (Tomás Fernández Löbbe)
 
+* SOLR-16808: Stop publishing environment variables via the Metrics API (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
