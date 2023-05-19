@@ -17,32 +17,52 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 
-import org.apache.solr.api.EndPoint;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SchemaHandler;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
 /**
  * V2 API for getting the name of the unique-key field for an in-use schema.
  *
- * <p>This API (GET /v2/collections/collectionName/schema/uniquekey) is analogous to the v1
+ * <p>This API (GET /api/collections/collectionName/schema/uniquekey) is analogous to the v1
  * /solr/collectionName/schema/uniquekey API.
  */
-public class SchemaUniqueKeyAPI {
-  private final SchemaHandler schemaHandler;
+public class SchemaUniqueKeyAPI extends JerseyResource {
 
-  public SchemaUniqueKeyAPI(SchemaHandler schemaHandler) {
-    this.schemaHandler = schemaHandler;
+  private SolrCore solrCore;
+
+  @Inject
+  public SchemaUniqueKeyAPI(SolrCore solrCore){
+    this.solrCore = solrCore;
+  }
+  @GET
+  @Path("/schema/uniquekey")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaUniqueKeyResponse getSchemaUniqueKey() {
+    SchemaUniqueKeyResponse response = instantiateJerseyResponse(SchemaUniqueKeyResponse.class);
+
+    response.uniqueKey = solrCore.getLatestSchema().getUniqueKeyField().getName();
+
+    return response;
   }
 
-  @EndPoint(
-      path = {"/schema/uniquekey"},
-      method = GET,
-      permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
-  public void getSchemaUniqueKey(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    schemaHandler.handleRequestBody(req, rsp);
+  public static  class SchemaUniqueKeyResponse extends SolrJerseyResponse {
+    @JsonProperty("uniqueKey")
+    public String uniqueKey;
   }
 }

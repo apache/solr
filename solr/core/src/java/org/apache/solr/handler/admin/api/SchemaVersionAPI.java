@@ -17,13 +17,23 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-
-import org.apache.solr.api.EndPoint;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SchemaHandler;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 
 /**
  * V2 API for getting the version of an in-use schema.
@@ -31,18 +41,29 @@ import org.apache.solr.security.PermissionNameProvider;
  * <p>This API (GET /v2/collections/collectionName/schema/version) is analogous to the v1
  * /solr/collectionName/schema/version API.
  */
-public class SchemaVersionAPI {
-  private final SchemaHandler schemaHandler;
+public class SchemaVersionAPI extends JerseyResource {
 
-  public SchemaVersionAPI(SchemaHandler schemaHandler) {
-    this.schemaHandler = schemaHandler;
+  private SolrCore solrCore;
+
+  @Inject
+  public SchemaVersionAPI(SolrCore solrCore){
+    this.solrCore = solrCore;
   }
 
-  @EndPoint(
-      path = {"/schema/version"},
-      method = GET,
-      permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
-  public void getSchemaVersion(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    schemaHandler.handleRequestBody(req, rsp);
+  @GET
+  @Path("/schema/version")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaVersionResponse getSchemaVersion() {
+    SchemaVersionResponse response = instantiateJerseyResponse(SchemaVersionResponse.class);
+
+    response.version = solrCore.getLatestSchema().getVersion();
+
+    return response;
+  }
+
+  public static class SchemaVersionResponse extends SolrJerseyResponse {
+    @JsonProperty("version")
+    public float version;
   }
 }

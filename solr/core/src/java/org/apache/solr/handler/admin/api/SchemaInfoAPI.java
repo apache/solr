@@ -17,13 +17,25 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-
-import org.apache.solr.api.EndPoint;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SchemaHandler;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import java.util.Map;
+
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 
 /**
  * V2 API for getting basic information about an in-use schema
@@ -31,18 +43,29 @@ import org.apache.solr.security.PermissionNameProvider;
  * <p>This API (GET /v2/collections/collectionName/schema) is analogous to the v1
  * /solr/collectionName/schema API.
  */
-public class SchemaInfoAPI {
-  private final SchemaHandler schemaHandler;
+public class SchemaInfoAPI extends JerseyResource {
 
-  public SchemaInfoAPI(SchemaHandler schemaHandler) {
-    this.schemaHandler = schemaHandler;
+  private SolrCore solrCore;
+
+  @Inject
+  public SchemaInfoAPI(SolrCore solrCore){
+    this.solrCore = solrCore;
   }
 
-  @EndPoint(
-      path = {"/schema"},
-      method = GET,
-      permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
-  public void getSchemaInfo(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    schemaHandler.handleRequestBody(req, rsp);
+  @GET
+  @Path("/schema")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaInfoResponse getSchemaInfo() {
+    final SchemaInfoResponse response = instantiateJerseyResponse(SchemaInfoResponse.class);
+
+    response.schema = solrCore.getLatestSchema().getNamedPropertyValues();
+
+    return response;
+  }
+
+  public static class SchemaInfoResponse extends SolrJerseyResponse {
+    @JsonProperty("schema")
+    public Map<String, Object> schema;
   }
 }

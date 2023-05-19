@@ -62,6 +62,7 @@ import org.apache.solr.handler.admin.api.SchemaUniqueKeyAPI;
 import org.apache.solr.handler.admin.api.SchemaVersionAPI;
 import org.apache.solr.handler.admin.api.SchemaZkVersionAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -140,19 +141,25 @@ public class SchemaHandler extends RequestHandlerBase
       String path = (String) req.getContext().get("path");
       switch (path) {
         case "/schema":
-          rsp.add(IndexSchema.SCHEMA, req.getSchema().getNamedPropertyValues());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, new SchemaInfoAPI(req.getCore()).getSchemaInfo());
+            break;
+          }
         case "/schema/version":
-          rsp.add(IndexSchema.VERSION, req.getSchema().getVersion());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, new SchemaVersionAPI(req.getCore()).getSchemaVersion());
+            break;
+          }
         case "/schema/uniquekey":
-          rsp.add(IndexSchema.UNIQUE_KEY, req.getSchema().getUniqueKeyField().getName());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, new SchemaUniqueKeyAPI(req.getCore()).getSchemaUniqueKey());
+            break;
+          }
         case "/schema/similarity":
-          rsp.add(
-              IndexSchema.SIMILARITY,
-              req.getSchema().getSimilarityFactory().getNamedPropertyValues());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, new SchemaSimilarityAPI(req.getCore()).getSchemaSimilarity());
+            break;
+          }
         case "/schema/name":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
@@ -313,10 +320,6 @@ public class SchemaHandler extends RequestHandlerBase
   public Collection<Api> getApis() {
 
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SchemaSimilarityAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaListAllFieldsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaGetFieldAPI(this)));
