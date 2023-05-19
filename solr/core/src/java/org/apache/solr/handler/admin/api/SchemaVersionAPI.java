@@ -17,23 +17,19 @@
 
 package org.apache.solr.handler.admin.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.api.JerseyResource;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.SchemaHandler;
-import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.PermissionNameProvider;
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
+import org.apache.solr.security.PermissionNameProvider;
 
 /**
  * V2 API for getting the version of an in-use schema.
@@ -46,7 +42,7 @@ public class SchemaVersionAPI extends JerseyResource {
   private SolrCore solrCore;
 
   @Inject
-  public SchemaVersionAPI(SolrCore solrCore){
+  public SchemaVersionAPI(SolrCore solrCore) {
     this.solrCore = solrCore;
   }
 
