@@ -322,9 +322,7 @@ public class DocumentBuilder {
       // Dense Vector Fields can only be copied to same field type
       if (originalFieldType instanceof DenseVectorField
           && !(destinationField.getType() instanceof DenseVectorField)) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "The copy field destination must be a DenseVectorField: " + destinationField.getName());
+        continue; //We'll skip DenseVectorFields rather then throw Exception.
       }
 
       // check if the copy field is a multivalued or not

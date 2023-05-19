@@ -32,6 +32,21 @@
   <field name="string_field" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
+  <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
+  <copyField source="*" dest="_text_"/>
+  <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="true">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
 
   <uniqueKey>id</uniqueKey>
 </schema>
