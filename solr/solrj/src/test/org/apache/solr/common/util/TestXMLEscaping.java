@@ -27,6 +27,10 @@ public class TestXMLEscaping extends SolrTestCase {
     XML.escapeCharData(input, sw);
     final String result = sw.toString();
     assertEquals("Escaped output does not match expected value", expectedOutput, result);
+    assertEquals(
+        "Unescape does not reverse the effect of escape",
+        input,
+        XML.unescapeAttributeValue(result));
   }
 
   public void testNoEscape() throws IOException {
@@ -64,5 +68,23 @@ public class TestXMLEscaping extends SolrTestCase {
 
   public void testGt() throws IOException {
     doSimpleTest("a ]]> b", "a ]]&gt; b");
+  }
+
+  public void testCtrl() throws IOException {
+    doSimpleTest("\u0014", "#20;");
+    doSimpleTest("a\u0014b", "a#20;b");
+    doSimpleTest("#\u0014", "###20;");
+    doSimpleTest("#15;a#\u0014#b\u0015c#20;d", "##15;a###20;#b#21;c##20;d");
+  }
+
+  public void testLiteralPound() throws IOException {
+    doSimpleTest("a#1;", "a##1;");
+    doSimpleTest("a#12;", "a##12;");
+    doSimpleTest("a#b", "a#b");
+    doSimpleTest("a#;", "a#;"); // No digits
+    doSimpleTest("a#15", "a#15"); // no semicolon
+    doSimpleTest("a#32;", "a#32;"); // value more than 31
+    doSimpleTest("a#023;", "a#023;"); // more than 2 digits
+    doSimpleTest("a##b", "a##b");
   }
 }

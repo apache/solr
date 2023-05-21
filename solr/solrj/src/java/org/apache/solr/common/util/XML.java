@@ -19,6 +19,8 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /** */
@@ -80,6 +82,52 @@ public class XML {
 
   public static void escapeAttributeValue(String str, Writer out) throws IOException {
     escape(str, out, attribute_escapes);
+  }
+
+  private static final Pattern ctrlEscPattern =
+      Pattern.compile("([^#]|^)((?:##)*)(#([0-9]{1,2});)");
+  private static final Pattern literalEscPattern = Pattern.compile("([^#]|^)((?:##)+)([0-9])");
+
+  public static String unescapeAttributeValue(String str) {
+    {
+      Matcher m1 = ctrlEscPattern.matcher(str);
+      if (m1.find()) {
+        StringBuilder sb = new StringBuilder();
+        do {
+          m1.appendReplacement(sb, m1.group(1));
+          String g2 = m1.group(2);
+          String g4 = m1.group(4);
+          int c = Integer.parseInt(g4);
+          if (c < 32) {
+            sb.append(g2.substring(g2.length() / 2));
+            sb.append((char) c);
+          } else {
+            sb.append(g2);
+            sb.append(m1.group(3));
+          }
+        } while (m1.find());
+        m1.appendTail(sb);
+        str = sb.toString();
+      }
+    }
+    {
+      Matcher m2 = literalEscPattern.matcher(str);
+      if (m2.find()) {
+        StringBuilder sb = new StringBuilder();
+        do {
+          m2.appendReplacement(sb, m2.group(1));
+          String g2 = m2.group(2);
+          sb.append(g2.substring(g2.length() / 2));
+          sb.append(m2.group(3));
+        } while (m2.find());
+        m2.appendTail(sb);
+        str = sb.toString();
+      }
+    }
+    return str.replace("&quot;", "\"")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">");
   }
 
   public static void escapeAttributeValue(char[] chars, int start, int length, Writer out)
@@ -164,7 +212,44 @@ public class XML {
     }
   }
 
+  private static final Pattern toEscPattern =
+      Pattern.compile("([^#]|^)(#*)(?:(([0-9]{1,2});)|([\0-\37]))");
+
+  /**
+   * Replace any character control c with value less than 32 #nn; where nn is the decimal
+   * representation of c. Since this encoding will be ambiguous with literal '#nn;', any occurrence
+   * of '#' is repeated. Now this will become ambiguous with '#'s preceding control characters. They
+   * are also repeated. Thus, when the number of consecutive '#' is even then they are literal '#'s
+   * and when it is odd, the last '#' should be considered encoding of control characters.
+   *
+   * <p>Also replace characters like '#' into "&qout;" etc.
+   *
+   * @param str Input string
+   * @param out Output writer to write into
+   * @param escapes Escape character map
+   * @throws IOException If write operation fails
+   */
   private static void escape(String str, Writer out, String[] escapes) throws IOException {
+    Matcher m = toEscPattern.matcher(str);
+    if (m.find()) {
+      StringBuilder sb = new StringBuilder();
+      do {
+        m.appendReplacement(sb, m.group(1));
+        sb.append(m.group(2));
+        String g3 = m.group(3);
+        if (g3 != null) {
+          if (Integer.parseInt(m.group(4)) < 32) {
+            sb.append(m.group(2));
+          }
+          sb.append(g3);
+        } else {
+          sb.append(m.group(2));
+          sb.append(escapes[m.group(5).charAt(0)]);
+        }
+      } while (m.find());
+      m.appendTail(sb);
+      str = sb.toString();
+    }
     for (int i = 0; i < str.length(); i++) {
       char ch = str.charAt(i);
       if (ch < escapes.length) {
