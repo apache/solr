@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -361,7 +362,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       }
       assertEquals("1", doc1.getFieldValue("id"));
       if (idOnly) {
-        assertEquals(Arrays.asList("1", "b"), doc1.getFieldValues("_catch_all"));
+        assertEquals(Arrays.asList("1", "b"), new ArrayList<>(doc1.getFieldValues("_catch_all")));
         assertFalse(doc1.containsKey("a"));
       } else {
         assertEquals("b", doc1.getFieldValue("a"));
@@ -381,7 +382,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       }
       assertEquals("2", doc2.getFieldValue("id"));
       if (idOnly) {
-        assertEquals(Arrays.asList("2", "d"), doc2.getFieldValues("_catch_all"));
+        assertEquals(Arrays.asList("2", "d"), new ArrayList<>(doc2.getFieldValues("_catch_all")));
         assertFalse(doc2.containsKey("c"));
       } else {
         assertEquals("d", doc2.getFieldValue("c"));
