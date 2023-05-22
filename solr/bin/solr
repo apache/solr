@@ -949,14 +949,8 @@ if [ $# -eq 1 ]; then
 fi
 
 if [ $# -gt 0 ]; then
-  # if first arg starts with a dash (and it's not -help or -info),
-  # then assume they are starting Solr, such as: solr -f
-  if [[ $1 == -* ]]; then
-    SCRIPT_CMD="start"
-  else
-    SCRIPT_CMD="$1"
-    shift
-  fi
+  SCRIPT_CMD="$1"
+  shift
 else
   # no args - just show usage and exit
   print_usage ""
@@ -1645,12 +1639,21 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
   exit $?
 fi
 
+if [[ "$SCRIPT_CMD" == "api" ]]; then
+  run_tool api "$@"
+  exit $?
+fi
 
 # verify the command given is supported
 if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ] && [ "$SCRIPT_CMD" != "assert" ]; then
   # handoff this command to the SolrCLI and let it handle the option parsing and validation
   run_tool "$SCRIPT_CMD" "$@"
-  exit $?
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    print_usage ""
+    exit $ret
+  fi
+  exit 0
 fi
 
 #Check current Ulimits for Open Files and Max Processes.  Warn if they are below the recommended values.
