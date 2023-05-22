@@ -457,11 +457,12 @@ public class Assign {
      * Balance replicas across nodes.
      *
      * @param solrCloudManager current instance of {@link SolrCloudManager}.
-     * @param assignRequest that will help build the balance request.
+     * @param nodes to compute replica balancing across.
+     * @param maxBalanceSkew to ensure strictness of replica balancing.
      * @return Map from Replica to the Node where that Replica should be moved.
      * @throws AssignmentException when balance request cannot produce any valid assignments.
      */
-    default Map<Replica, Node> balanceReplicas(SolrCloudManager solrCloudManager, Assign.AssignRequest assignRequest)
+    default Map<Replica, Node> balanceReplicas(SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
         throws AssignmentException, IOException, InterruptedException {
       return Collections.emptyMap();
     }

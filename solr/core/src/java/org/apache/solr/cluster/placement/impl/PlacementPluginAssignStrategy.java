@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,9 +41,17 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /** This assign strategy delegates placement computation to "plugin" code. */
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final PlacementPlugin plugin;
 
@@ -94,11 +103,11 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
   }
 
   @Override
-  public Map<Replica, Node> balanceReplicas(SolrCloudManager solrCloudManager, Assign.AssignRequest request)
+  public Map<Replica, Node> balanceReplicas(SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
       throws Assign.AssignmentException, IOException, InterruptedException {
     PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);
 
-    BalanceRequest balanceRequest = BalanceRequestImpl.toPlacementRequest(placementContext.getCluster(), null, request);
+    BalanceRequest balanceRequest = BalanceRequestImpl.create(placementContext.getCluster(), nodes, maxBalanceSkew);
     try {
       Map<org.apache.solr.cluster.Replica, Node> rawReplicaMovements = plugin.computeBalancing(balanceRequest, placementContext).getReplicaMovements();
       Map<Replica, Node> replicaMovements = new HashMap<>(rawReplicaMovements.size());

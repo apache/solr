@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.lang.invoke.MethodHandles;
@@ -89,14 +87,14 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
               + source
               + " are live, therefore replicas cannot be moved");
     }
-    List<ZkNodeProps> sourceReplicas = getReplicasOfNode(source, clusterState);
+    List<Replica> sourceReplicas = getReplicasOfNode(source, clusterState);
     // how many leaders are we moving? for these replicas we have to make sure that either:
     // * another existing replica can become a leader, or
     // * we wait until the newly created replica completes recovery (and can become the new leader)
     // If waitForFinalState=true we wait for all replicas
     int numLeaders = 0;
-    for (ZkNodeProps props : sourceReplicas) {
-      if (props.getBool(ZkStateReader.LEADER_PROP, false) || waitForFinalState) {
+    for (Replica replica : sourceReplicas) {
+      if (replica.isLeader() || waitForFinalState) {
         numLeaders++;
       }
     }
@@ -114,16 +112,15 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     List<ReplicaPosition> replicaPositions = null;
     if (target == null || target.isEmpty()) {
       List<Assign.AssignRequest> assignRequests = new ArrayList<>(sourceReplicas.size());
-      for (ZkNodeProps sourceReplica : sourceReplicas) {
-        Replica.Type replicaType =
-            Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
+      for (Replica sourceReplica : sourceReplicas) {
+        Replica.Type replicaType = sourceReplica.getType();
         int numNrtReplicas = replicaType == Replica.Type.NRT ? 1 : 0;
         int numTlogReplicas = replicaType == Replica.Type.TLOG ? 1 : 0;
         int numPullReplicas = replicaType == Replica.Type.PULL ? 1 : 0;
         Assign.AssignRequest assignRequest =
             new Assign.AssignRequestBuilder()
-                .forCollection(sourceReplica.getStr(COLLECTION_PROP))
-                .forShard(Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)))
+                .forCollection(sourceReplica.getCollection())
+                .forShard(Collections.singletonList(sourceReplica.getShard()))
                 .assignNrtReplicas(numNrtReplicas)
                 .assignTlogReplicas(numTlogReplicas)
                 .assignPullReplicas(numPullReplicas)
@@ -138,13 +135,13 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
       replicaPositions = assignStrategy.assign(ccc.getSolrCloudManager(), assignRequests);
     }
     int replicaPositionIdx = 0;
-    for (ZkNodeProps sourceReplica : sourceReplicas) {
-      String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
+    for (Replica sourceReplica : sourceReplicas) {
+      String sourceCollection = sourceReplica.getCollection();
       if (log.isInfoEnabled()) {
         log.info(
             "Going to create replica for collection={} shard={} on node={}",
             sourceCollection,
-            sourceReplica.getStr(SHARD_ID_PROP),
+            sourceReplica.getShard(),
             target);
       }
       String targetNode;
@@ -157,6 +154,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
       }
       ZkNodeProps msg =
           sourceReplica
+              .toFullProps()
               .plus("parallel", String.valueOf(parallel))
               .plus(CoreAdminParams.NODE, targetNode);
       if (async != null) msg.getProperties().put(ASYNC, async);
@@ -175,7 +173,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
                               Locale.ROOT,
                               "Failed to create replica for collection=%s shard=%s" + " on node=%s",
                               sourceCollection,
-                              sourceReplica.getStr(SHARD_ID_PROP),
+                              sourceReplica.getShard(),
                               target);
                       log.warn(errorString);
                       // one replica creation failed. Make the best attempt to
@@ -190,7 +188,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
                         log.debug(
                             "Successfully created replica for collection={} shard={} on node={}",
                             sourceCollection,
-                            sourceReplica.getStr(SHARD_ID_PROP),
+                            sourceReplica.getShard(),
                             target);
                       }
                     }
@@ -199,9 +197,9 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
 
       if (addedReplica != null) {
         createdReplicas.add(addedReplica);
-        if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false) || waitForFinalState) {
-          String shardName = sourceReplica.getStr(SHARD_ID_PROP);
-          String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
+        if (sourceReplica.isLeader() || waitForFinalState) {
+          String shardName = sourceReplica.getShard();
+          String replicaName = sourceReplica.getName();
           String collectionName = sourceCollection;
           String key = collectionName + "_" + replicaName;
           CollectionStateWatcher watcher;
@@ -296,29 +294,13 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
         "REPLACENODE action completed successfully from  : " + source + " to : " + target);
   }
 
-  static List<ZkNodeProps> getReplicasOfNode(String source, ClusterState state) {
-    List<ZkNodeProps> sourceReplicas = new ArrayList<>();
+  static List<Replica> getReplicasOfNode(String source, ClusterState state) {
+    List<Replica> sourceReplicas = new ArrayList<>();
     for (Map.Entry<String, DocCollection> e : state.getCollectionsMap().entrySet()) {
       for (Slice slice : e.getValue().getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           if (source.equals(replica.getNodeName())) {
-            ZkNodeProps props =
-                new ZkNodeProps(
-                    COLLECTION_PROP,
-                    e.getKey(),
-                    SHARD_ID_PROP,
-                    slice.getName(),
-                    ZkStateReader.CORE_NAME_PROP,
-                    replica.getCoreName(),
-                    ZkStateReader.REPLICA_PROP,
-                    replica.getName(),
-                    ZkStateReader.REPLICA_TYPE,
-                    replica.getType().name(),
-                    ZkStateReader.LEADER_PROP,
-                    String.valueOf(replica.equals(slice.getLeader())),
-                    CoreAdminParams.NODE,
-                    source);
-            sourceReplicas.add(props);
+            sourceReplicas.add(replica);
           }
         }
       }

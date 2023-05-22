@@ -17,9 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.io.IOException;
@@ -35,7 +32,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -55,7 +51,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
       throws Exception {
     CollectionHandlingUtils.checkRequired(message, "node");
     String node = message.getStr("node");
-    List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
+    List<Replica> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
     List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, state);
     if (!singleReplicas.isEmpty()) {
       results.add(
@@ -63,7 +59,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
           "Can't delete the only existing non-PULL replica(s) on node "
               + node
               + ": "
-              + singleReplicas.toString());
+              + singleReplicas);
     } else {
       cleanupReplicas(results, state, sourceReplicas, ccc, message.getStr(ASYNC));
     }
@@ -71,12 +67,12 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
 
   // collect names of replicas that cannot be deleted
   static List<String> verifyReplicaAvailability(
-      List<ZkNodeProps> sourceReplicas, ClusterState state) {
+      List<Replica> sourceReplicas, ClusterState state) {
     List<String> res = new ArrayList<>();
-    for (ZkNodeProps sourceReplica : sourceReplicas) {
-      String coll = sourceReplica.getStr(COLLECTION_PROP);
-      String shard = sourceReplica.getStr(SHARD_ID_PROP);
-      String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
+    for (Replica sourceReplica : sourceReplicas) {
+      String coll = sourceReplica.getCollection();
+      String shard = sourceReplica.getShard();
+      String replicaName = sourceReplica.getName();
       DocCollection collection = state.getCollection(coll);
       Slice slice = collection.getSlice(shard);
       if (slice.getReplicas().size() < 2) {
@@ -88,7 +84,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
                 + "/"
                 + replicaName
                 + ", type="
-                + sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
+                + sourceReplica.getType());
       } else { // check replica types
         int otherNonPullReplicas = 0;
         for (Replica r : slice.getReplicas()) {
@@ -105,7 +101,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
                   + "/"
                   + replicaName
                   + ", type="
-                  + sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
+                  + sourceReplica.getType());
         }
       }
     }
@@ -115,16 +111,16 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
   static void cleanupReplicas(
       NamedList<Object> results,
       ClusterState clusterState,
-      Collection<? extends ZkNodeProps> sourceReplicas,
+      Collection<Replica> sourceReplicas,
       CollectionCommandContext ccc,
       String async)
       throws IOException, InterruptedException {
     CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
-    for (ZkNodeProps sourceReplica : sourceReplicas) {
-      String coll = sourceReplica.getStr(COLLECTION_PROP);
-      String shard = sourceReplica.getStr(SHARD_ID_PROP);
-      String type = sourceReplica.getStr(ZkStateReader.REPLICA_TYPE);
-      String node = sourceReplica.getStr(NODE_NAME_PROP);
+    for (Replica sourceReplica : sourceReplicas) {
+      String coll = sourceReplica.getCollection();
+      String shard = sourceReplica.getShard();
+      String type = sourceReplica.getType().toString();
+      String node = sourceReplica.getNodeName();
       log.info(
           "Deleting replica type={} for collection={} shard={} on node={}",
           type,
@@ -133,11 +129,12 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
           node);
       NamedList<Object> deleteResult = new NamedList<>();
       try {
-        if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
+        ZkNodeProps cmdMessage = sourceReplica.toFullProps();
+        if (async != null) cmdMessage = cmdMessage.plus(ASYNC, async);
         new DeleteReplicaCmd(ccc)
             .deleteReplica(
                 clusterState,
-                sourceReplica.plus("parallel", "true"),
+                cmdMessage.plus("parallel", "true"),
                 deleteResult,
                 () -> {
                   cleanupLatch.countDown();

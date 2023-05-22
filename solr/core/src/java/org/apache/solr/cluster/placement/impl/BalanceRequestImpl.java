@@ -62,39 +62,32 @@ public class BalanceRequestImpl implements BalanceRequest {
   }
 
   /**
-   * Returns a {@link PlacementRequest} that can be consumed by a plugin based on an internal
-   * Assign.AssignRequest for adding replicas + additional info (upon creation of a new collection
-   * or adding replicas to an existing one).
+   * Returns a {@link BalanceRequest} that can be consumed by a plugin to balance replicas
    */
-  static BalanceRequestImpl toPlacementRequest(
-      Cluster cluster, SolrCollection solrCollection, Assign.AssignRequest assignRequest)
+  static BalanceRequestImpl create(Cluster cluster, Set<String> nodeNames, int maximumBalanceSkew)
       throws Assign.AssignmentException {
     final Set<Node> nodes;
-    // If no nodes specified, use all live nodes. If nodes are specified, use specified list.
-    if (assignRequest.nodes != null) {
-      nodes = SimpleClusterAbstractionsImpl.NodeImpl.getNodes(assignRequest.nodes);
+    // If no nodes specified, use all live data nodes. If nodes are specified, use specified list.
+    if (nodeNames != null && !nodeNames.isEmpty()) {
+      if (nodeNames.size() == 1) {
+        throw new Assign.AssignmentException(
+            "Bad balance request: cannot balance across a single node: " + nodeNames.stream().findAny().get());
+      }
+      nodes = SimpleClusterAbstractionsImpl.NodeImpl.getNodes(nodeNames);
 
       for (Node n : nodes) {
         if (!cluster.getLiveDataNodes().contains(n)) {
           throw new Assign.AssignmentException(
-              "Bad assign request: specified node is a non-data hosting node ("
-                  + n.getName()
-                  + ") for collection "
-                  + solrCollection.getName());
+              "Bad balance request: specified node is a non-data hosting node:" + n.getName());
         }
-      }
-      if (nodes.isEmpty()) {
-        throw new Assign.AssignmentException(
-            "Bad assign request: empty list of nodes for collection " + solrCollection.getName());
       }
     } else {
       nodes = cluster.getLiveDataNodes();
       if (nodes.isEmpty()) {
-        throw new Assign.AssignmentException(
-            "Impossible assign request: no live nodes for collection " + solrCollection.getName());
+        throw new Assign.AssignmentException("Impossible balance request: no live data nodes");
       }
     }
 
-    return new BalanceRequestImpl(nodes);
+    return new BalanceRequestImpl(nodes, maximumBalanceSkew);
   }
 }

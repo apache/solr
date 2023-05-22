@@ -19,15 +19,11 @@ package org.apache.solr.cloud.api.collections;
 
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.cluster.Node;
-import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ReplicaPosition;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -40,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,10 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
@@ -64,35 +58,42 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
     this.ccc = ccc;
   }
 
+  @SuppressWarnings({"unchecked"})
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
-    String nodesString = message.getStr(CollectionParams.NODES);
-    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
-    List<String> nodes = null;
-    if (nodesString != null && !nodesString.isEmpty()) {
-      nodes = List.of(nodesString.split(","));
+    Set<String> nodes;
+    Object nodesRaw = message.get(CollectionParams.NODES);
+    if (nodesRaw == null) {
+      nodes = Collections.emptySet();
+    } else if (nodesRaw instanceof Set) {
+      nodes = (Set<String>)nodesRaw;
+    } else if (nodesRaw instanceof Collection) {
+      nodes = new HashSet<>((Collection<String>)nodesRaw);
+    } else if (nodesRaw instanceof String) {
+      nodes = Set.of(((String) nodesRaw).split(","));
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "'nodes' was not passed as a correct type (Set/List/String): "
+              + nodesRaw.getClass().getName());
     }
+    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
     String async = message.getStr(ASYNC);
     int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
     ClusterState clusterState = zkStateReader.getClusterState();
 
-    if (nodes != null && nodes.size() == 1) {
+    if (nodes.size() == 1) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Cannot balance across a single node: "
               + nodes.stream().findAny().get());
     }
 
-
-    Assign.AssignRequest balanceRequest =
-        new Assign.AssignRequestBuilder()
-            .onNodes(nodes)
-            .build();
     Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
-    Map<Replica, Node> replicaMovements = assignStrategy.balanceReplicas(ccc.getSolrCloudManager(), balanceRequest);
+    Map<Replica, Node> replicaMovements = assignStrategy.balanceReplicas(ccc.getSolrCloudManager(), nodes, message.getInt(CollectionParams.MAX_BALANCE_SKEW, -1));
 
     // TODO: Move the below logic out and share with ReplaceNodeCmd
 
@@ -122,15 +123,17 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
       Replica sourceReplica = movement.getKey();
       Node targetNode = movement.getValue();
       String sourceCollection = sourceReplica.getCollection();
+      String sourceShard = sourceReplica.getShard();
       if (log.isInfoEnabled()) {
         log.info(
             "Going to create replica for collection={} shard={} on node={}",
             sourceCollection,
-            sourceReplica.getShard(),
+            sourceShard,
             targetNode.getName());
       }
       ZkNodeProps msg =
           sourceReplica
+              .toFullProps()
               .plus("parallel", String.valueOf(parallel))
               .plus(CoreAdminParams.NODE, targetNode.getName());
       if (async != null) msg.getProperties().put(ASYNC, async);
@@ -149,7 +152,7 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
                               Locale.ROOT,
                               "Failed to create replica for collection=%s shard=%s" + " on node=%s",
                               sourceCollection,
-                              sourceReplica.getStr(SHARD_ID_PROP),
+                              sourceShard,
                               targetNode.getName());
                       log.warn(errorString);
                       // one replica creation failed. Make the best attempt to
@@ -164,7 +167,7 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
                         log.debug(
                             "Successfully created replica for collection={} shard={} on node={}",
                             sourceCollection,
-                            sourceReplica.getStr(SHARD_ID_PROP),
+                            sourceShard,
                             targetNode.getName());
                       }
                     }
@@ -174,30 +177,28 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
       if (addedReplica != null) {
         createdReplicas.add(addedReplica);
         if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false) || waitForFinalState) {
-          String shardName = sourceReplica.getStr(SHARD_ID_PROP);
           String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
-          String collectionName = sourceCollection;
-          String key = collectionName + "_" + replicaName;
+          String key = sourceCollection + "_" + replicaName;
           CollectionStateWatcher watcher;
           if (waitForFinalState) {
             watcher =
                 new ActiveReplicaWatcher(
-                    collectionName,
+                    sourceCollection,
                     null,
                     Collections.singletonList(addedReplica.getStr(ZkStateReader.CORE_NAME_PROP)),
                     replicasToRecover);
           } else {
             watcher =
                 new LeaderRecoveryWatcher(
-                    collectionName,
-                    shardName,
+                    sourceCollection,
+                    sourceShard,
                     replicaName,
                     addedReplica.getStr(ZkStateReader.CORE_NAME_PROP),
                     replicasToRecover);
           }
           watchers.put(key, watcher);
           log.debug("--- adding {}, {}", key, watcher);
-          zkStateReader.registerCollectionStateWatcher(collectionName, watcher);
+          zkStateReader.registerCollectionStateWatcher(sourceCollection, watcher);
         } else {
           log.debug("--- not waiting for {}", addedReplica);
         }
@@ -267,6 +268,6 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
     DeleteNodeCmd.cleanupReplicas(results, state, replicaMovements.keySet(), ccc, async);
     results.add(
         "success",
-        "BalanceReplicas action completed successfully across nodes  : [" + nodesString + "]");
+        "BalanceReplicas action completed successfully across nodes  : [" + String.join(", ", nodes) + "]");
   }
 }

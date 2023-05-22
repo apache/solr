@@ -425,6 +425,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public interface ReplicaStateProps {
     String COLLECTION = "collection";
     String SHARD_ID = "shard";
+    String REPLICA_ID = "replica";
     String LEADER = "leader";
     String STATE = "state";
     String CORE_NAME = "core";
@@ -437,5 +438,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Set<String> WELL_KNOWN_PROPS =
         Set.of(
             LEADER, STATE, CORE_NAME, CORE_NODE_NAME, TYPE, NODE_NAME, BASE_URL, FORCE_SET_STATE);
+  }
+
+  public ZkNodeProps toFullProps() {
+    return new ZkNodeProps()
+        .plus(propMap)
+        .plus(ReplicaStateProps.COLLECTION, getCollection())
+        .plus(ReplicaStateProps.SHARD_ID, getShard())
+        .plus(ReplicaStateProps.REPLICA_ID, getName());
   }
 }

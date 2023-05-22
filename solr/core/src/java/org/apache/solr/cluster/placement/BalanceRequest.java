@@ -27,13 +27,10 @@ import java.util.Set;
 
 /**
  * A cluster related placement request that Solr asks a {@link PlacementPlugin} plugin to resolve
- * and compute a {@link PlacementPlan} placing one or more {@link Replica}'s of one or more {@link
- * Shard}'s of an existing {@link SolrCollection}. The shard might or might not already exist,
- * plugin code can easily find out by calling {@link SolrCollection#getShard(String)} with the shard
- * name(s) returned by {@link #getShardNames()}.
+ * and compute replica balancing plan for replicas that already exist across a set of Nodes.
  *
- * <p>The set of {@link Node}s on which the replicas should be placed is specified (defaults to
- * being equal to the set returned by {@link Cluster#getLiveNodes()}).
+ * <p>The set of {@link Node}s on which the replicas should be balanced across is specified (defaults to
+ * being equal to the set returned by {@link Cluster#getLiveDataNodes()}).
  */
 public interface BalanceRequest extends ModificationRequest {
 
