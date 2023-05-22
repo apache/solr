@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -49,6 +50,7 @@ import org.apache.solr.response.XMLResponseWriter;
 
 public class TestCborDataFormat extends SolrCloudTestCase {
 
+  @SuppressWarnings("unchecked")
   public void testRoundTrip() throws Exception {
     String testCollection = "testRoundTrip";
 
@@ -92,10 +94,18 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       NamedList<Object> result =
           cluster
               .getSolrClient()
-              .request(new QueryRequest(new SolrQuery("*:*").setRows(1100)), testCollection);
+              .request(new QueryRequest(new SolrQuery("*:*").setRows(1111)), testCollection);
       SolrDocumentList sdl = (SolrDocumentList) result.get("response");
       assertEquals(1100, sdl.size());
-      System.out.println();
+
+      QueryRequest qr = new QueryRequest(new SolrQuery("*:*").setRows(1111));
+      qr.setResponseParser(new InputStreamResponseParser("cbor"));
+      result = cluster.getSolrClient().request(qr, testCollection);
+      InputStream is = (InputStream) result.get("stream");
+      ObjectMapper objectMapper = new ObjectMapper(new CBORFactory());
+      Object o = objectMapper.readValue(is, Object.class);
+      List<Object> l = (List<Object>) Utils.getObjectByPath(o, false, "response/docs");
+      assertEquals(1100, l.size());
     } finally {
       cluster.shutdown();
       System.clearProperty("managed.schema.mutable");
@@ -106,9 +116,8 @@ public class TestCborDataFormat extends SolrCloudTestCase {
   public void test() throws Exception {
     Path filmsJson = new File(ExternalPaths.SOURCE_HOME, "example/films/films.json").toPath();
 
-    System.out.println(filmsJson);
     long sz = Files.size(filmsJson);
-    System.out.println("json_sz : " + sz);
+    assertEquals(633600, sz);
 
     List<Object> films = null;
     try (InputStream is = Files.newInputStream(filmsJson)) {
@@ -117,22 +126,15 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     new JavaBinCodec().marshal(Map.of("films", films), baos);
-
-    System.out.println("sz_javabin : " + baos.toByteArray().length);
+    assertEquals(234520, baos.toByteArray().length);
 
     try (InputStream is = Files.newInputStream(filmsJson)) {
       byte[] bytes = readAsCbor(is);
-      System.out.println("sz_cbor : " + bytes.length);
-
+      assertEquals(290672, bytes.length);
       LongAdder docsSz = new LongAdder();
-      new CborStream(
-              null,
-              (document) -> {
-                docsSz.increment();
-              })
+      new CborStream(null, (document) -> docsSz.increment())
           .stream(new ByteArrayInputStream(bytes));
       assertEquals(films.size(), docsSz.intValue());
-      System.out.println("films_sz : " + films.size());
     }
   }
 

@@ -29,14 +29,16 @@ import org.apache.solr.request.SolrQueryRequest;
 public class CborResponseWriter extends BinaryResponseWriter {
   final CBORFactory cborFactory;
 
-  CborResponseWriter() {
+  public CborResponseWriter() {
     cborFactory = new CBORFactory();
   }
 
   @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
       throws IOException {
-    new WriterImpl(cborFactory, out, req, response);
+    WriterImpl writer = new WriterImpl(cborFactory, out, req, response);
+    writer.writeResponse();
+    writer.gen.flush();
   }
 
   @Override
