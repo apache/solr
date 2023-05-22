@@ -243,8 +243,11 @@ public class XML {
           }
           sb.append(g3);
         } else {
-          sb.append(m.group(2));
-          sb.append(escapes[m.group(5).charAt(0)]);
+          String g5 = m.group(5);
+          if (g5 != null) { // Always true, just to keep Sonatype-lift silent.
+            sb.append(m.group(2));
+            sb.append(escapes[g5.charAt(0)]);
+          }
         }
       } while (m.find());
       m.appendTail(sb);
