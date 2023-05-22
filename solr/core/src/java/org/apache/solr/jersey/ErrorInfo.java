@@ -37,11 +37,11 @@ public class ErrorInfo implements JacksonReflectMapWriter {
   @JsonProperty("msg")
   public String msg;
 
-  @JsonProperty("trace")
-  public String trace;
-
   @JsonProperty("code")
   public Integer code;
+
+  @JsonProperty("trace")
+  public ErrorStackTrace trace;
 
   public static class ErrorMetadata implements JacksonReflectMapWriter {
     @JsonProperty(SolrException.ERROR_CLASS)
@@ -49,5 +49,24 @@ public class ErrorInfo implements JacksonReflectMapWriter {
 
     @JsonProperty(SolrException.ROOT_ERROR_CLASS)
     public String rootErrorClass;
+  }
+
+  public static class ErrorStackTrace implements JacksonReflectMapWriter {
+    @JsonProperty("stackTrace")
+    public List<String> stackTrace;
+
+    @JsonProperty("causedBy")
+    public ErrorCausedBy causedBy;
+  }
+
+  public static class ErrorCausedBy implements JacksonReflectMapWriter {
+    @JsonProperty(SolrException.ERROR_CLASS)
+    public String errorClass;
+
+    @JsonProperty("msg")
+    public String msg;
+
+    @JsonProperty("trace")
+    public ErrorStackTrace trace;
   }
 }
