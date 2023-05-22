@@ -19,27 +19,16 @@ package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private final CollectionCommandContext ccc;
 
   public DeleteNodeCmd(CollectionCommandContext ccc) {
@@ -61,7 +50,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
               + ": "
               + singleReplicas);
     } else {
-      cleanupReplicas(results, state, sourceReplicas, ccc, message.getStr(ASYNC));
+      ReplicaMigrationUtils.cleanupReplicas(results, state, sourceReplicas, ccc, message.getStr(ASYNC));
     }
   }
 
@@ -106,61 +95,5 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
     return res;
-  }
-
-  static void cleanupReplicas(
-      NamedList<Object> results,
-      ClusterState clusterState,
-      Collection<Replica> sourceReplicas,
-      CollectionCommandContext ccc,
-      String async)
-      throws IOException, InterruptedException {
-    CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
-    for (Replica sourceReplica : sourceReplicas) {
-      String coll = sourceReplica.getCollection();
-      String shard = sourceReplica.getShard();
-      String type = sourceReplica.getType().toString();
-      String node = sourceReplica.getNodeName();
-      log.info(
-          "Deleting replica type={} for collection={} shard={} on node={}",
-          type,
-          coll,
-          shard,
-          node);
-      NamedList<Object> deleteResult = new NamedList<>();
-      try {
-        ZkNodeProps cmdMessage = sourceReplica.toFullProps();
-        if (async != null) cmdMessage = cmdMessage.plus(ASYNC, async);
-        new DeleteReplicaCmd(ccc)
-            .deleteReplica(
-                clusterState,
-                cmdMessage.plus("parallel", "true"),
-                deleteResult,
-                () -> {
-                  cleanupLatch.countDown();
-                  if (deleteResult.get("failure") != null) {
-                    synchronized (results) {
-                      results.add(
-                          "failure",
-                          String.format(
-                              Locale.ROOT,
-                              "Failed to delete replica for collection=%s shard=%s" + " on node=%s",
-                              coll,
-                              shard,
-                              node));
-                    }
-                  }
-                });
-      } catch (KeeperException e) {
-        log.warn("Error deleting ", e);
-        cleanupLatch.countDown();
-      } catch (Exception e) {
-        log.warn("Error deleting ", e);
-        cleanupLatch.countDown();
-        throw e;
-      }
-    }
-    log.debug("Waiting for delete node action to complete");
-    cleanupLatch.await(5, TimeUnit.MINUTES);
   }
 }

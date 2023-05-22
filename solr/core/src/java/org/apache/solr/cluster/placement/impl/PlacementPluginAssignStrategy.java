@@ -103,20 +103,20 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
   }
 
   @Override
-  public Map<Replica, Node> balanceReplicas(SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
+  public Map<Replica, String> balanceReplicas(SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
       throws Assign.AssignmentException, IOException, InterruptedException {
     PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);
 
     BalanceRequest balanceRequest = BalanceRequestImpl.create(placementContext.getCluster(), nodes, maxBalanceSkew);
     try {
       Map<org.apache.solr.cluster.Replica, Node> rawReplicaMovements = plugin.computeBalancing(balanceRequest, placementContext).getReplicaMovements();
-      Map<Replica, Node> replicaMovements = new HashMap<>(rawReplicaMovements.size());
+      Map<Replica, String> replicaMovements = new HashMap<>(rawReplicaMovements.size());
       for (Map.Entry<org.apache.solr.cluster.Replica, Node> movement : rawReplicaMovements.entrySet()) {
         Replica converted = findReplica(solrCloudManager, movement.getKey());
         if (converted == null) {
           throw new Assign.AssignmentException("Could not find replica when balancing: " + movement.getKey().toString());
         }
-        replicaMovements.put(converted, movement.getValue());
+        replicaMovements.put(converted, movement.getValue().getName());
       }
       return replicaMovements;
     } catch (PlacementException pe) {
