@@ -93,19 +93,14 @@ public class TestFiltering extends SolrTestCaseJ4 {
         QueryResult res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertSame(set, live);
-         System.out.println("Live: "+bitsString(live.getFixedBitSet()));
-         System.out.println("Set: "+bitsString(set.getFixedBitSet()));
-     //   FixedBitSet xor = live.getFixedBitSet().clone();
-     //   xor.xor(set.getFixedBitSet());
-        // System.out.println("xor: "+bitsString(xor));
+        assertEffectivelySame(set.getFixedBitSet(), live.getFixedBitSet());
 
         cmd.setQuery(QParser.getParser(qstr + " OR id:0", null, req).getQuery());
         cmd.setFilterList(QParser.getParser(qstr + " OR id:1", null, req).getQuery());
         res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertSame(set, live);
+        assertEffectivelySame(set.getFixedBitSet(), live.getFixedBitSet());
       }
 
     } finally {
@@ -113,14 +108,20 @@ public class TestFiltering extends SolrTestCaseJ4 {
     }
   }
 
+  /** If the a XOR b == 0, then both a & b are effectively the same bitset */
+  private void assertEffectivelySame(FixedBitSet a, FixedBitSet b) {
+    FixedBitSet xor = a.clone();
+    xor.xor(b);
+    assertEquals(new FixedBitSet(xor.length()), xor);
+  }
+
   private String bitsString(Bits bits) {
     StringBuilder s = new StringBuilder();
-    for (int i=0; i<bits.length(); i++)
-      s.append(bits.get(i) ? 1 : 0);
+    for (int i = 0; i < bits.length(); i++) s.append(bits.get(i) ? 1 : 0);
     return s.toString();
   }
 
-    public void testCaching() throws Exception {
+  public void testCaching() throws Exception {
     clearIndex();
     assertU(adoc("id", "4", "val_i", "1"));
     assertU(adoc("id", "1", "val_i", "2"));

@@ -21,7 +21,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.CollectorManager;
+import org.apache.lucene.search.FilterScorable;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
 
 /**
  * A {@link CollectorManager} implements which wrap a set of {@link CollectorManager} as {@link
@@ -100,7 +106,8 @@ public class SolrMultiCollectorManager
       private final LeafCollector[] leafCollectors;
       private final boolean skipNonCompetitiveScores;
 
-      private LeafCollectors(final LeafReaderContext context, boolean skipNonCompetitiveScores) throws IOException {
+      private LeafCollectors(final LeafReaderContext context, boolean skipNonCompetitiveScores)
+          throws IOException {
         this.skipNonCompetitiveScores = skipNonCompetitiveScores;
         leafCollectors = new LeafCollector[collectors.length];
         for (int i = 0; i < collectors.length; i++)
@@ -114,14 +121,14 @@ public class SolrMultiCollectorManager
             if (leafCollector != null) leafCollector.setScorer(scorer);
         } else {
           FilterScorable fScorer =
-                  new FilterScorable(scorer) {
-                    @Override
-                    public void setMinCompetitiveScore(float minScore) throws IOException {
-                      // Ignore calls to setMinCompetitiveScore so that if we wrap two
-                      // collectors and one of them wants to skip low-scoring hits, then
-                      // the other collector still sees all hits.
-                    }
-                  };
+              new FilterScorable(scorer) {
+                @Override
+                public void setMinCompetitiveScore(float minScore) throws IOException {
+                  // Ignore calls to setMinCompetitiveScore so that if we wrap two
+                  // collectors and one of them wants to skip low-scoring hits, then
+                  // the other collector still sees all hits.
+                }
+              };
           for (LeafCollector leafCollector : leafCollectors) {
             if (leafCollector != null) {
               leafCollector.setScorer(fScorer);

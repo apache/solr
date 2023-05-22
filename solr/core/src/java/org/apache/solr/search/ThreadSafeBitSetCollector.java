@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
@@ -24,13 +26,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-
-/**
- *
- */
-
+/** */
 public class ThreadSafeBitSetCollector extends SimpleCollector {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   final ThreadSafeBitSet bits;
@@ -38,21 +34,19 @@ public class ThreadSafeBitSetCollector extends SimpleCollector {
 
   int base;
 
-
-
   public ThreadSafeBitSetCollector(ThreadSafeBitSet bits, int maxDoc) {
     this.bits = bits;
     this.maxDoc = maxDoc;
   }
 
-
   @Override
   public void collect(int doc) throws IOException {
 
     doc += base;
-    log.error("collect doc {} {}", (doc + base), this);
-      bits.set(doc);
-
+    if (log.isErrorEnabled()) {
+      log.error("collect doc: {}, base: {}", doc, base, this);
+    }
+    bits.set(doc);
   }
 
   /** The number of documents that have been collected */
@@ -67,7 +61,7 @@ public class ThreadSafeBitSetCollector extends SimpleCollector {
     int cnt = 0;
     int i = -1;
     while (true) {
-      i = bits.nextSetBit(i+1);
+      i = bits.nextSetBit(i + 1);
       if (i == -1) {
         break;
       }
@@ -76,12 +70,10 @@ public class ThreadSafeBitSetCollector extends SimpleCollector {
     }
 
     return new BitDocSet(fixedBitSet, cnt);
-
   }
 
   @Override
-  public void setScorer(Scorable scorer) throws IOException {
-  }
+  public void setScorer(Scorable scorer) throws IOException {}
 
   @Override
   public ScoreMode scoreMode() {
@@ -91,7 +83,8 @@ public class ThreadSafeBitSetCollector extends SimpleCollector {
   @Override
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
     this.base = context.docBase;
-    log.error("next reader base=" + base);
+    if (log.isErrorEnabled()) {
+      log.error("next reader base={}", base);
+    }
   }
-
 }

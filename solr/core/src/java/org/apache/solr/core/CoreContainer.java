@@ -177,11 +177,11 @@ public class CoreContainer {
 
   final SolrCores solrCores;
 
-    public Executor getCollectorExecutor() {
-      return collectorExecutor;
-    }
+  public Executor getCollectorExecutor() {
+    return collectorExecutor;
+  }
 
-    public static class CoreLoadFailure {
+  public static class CoreLoadFailure {
 
     public final CoreDescriptor cd;
     public final Exception exception;
@@ -440,8 +440,9 @@ public class CoreContainer {
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
-    this.collectorExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(6,
-        new SolrNamedThreadFactory("searcherCollector"));
+    this.collectorExecutor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            6, new SolrNamedThreadFactory("searcherCollector"));
   }
 
   @SuppressWarnings({"unchecked"})
