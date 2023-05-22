@@ -336,7 +336,7 @@ public class DocumentBuilder {
       }
 
       // check if the copy field is a multivalued or not
-      if (!destinationField.multiValued() & destHasValues) {
+      if (!destinationField.multiValued() && destHasValues) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Multiple values encountered for non multiValued copy field "
