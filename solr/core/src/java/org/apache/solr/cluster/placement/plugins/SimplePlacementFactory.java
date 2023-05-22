@@ -125,7 +125,9 @@ public class SimplePlacementFactory
         throws PlacementException, InterruptedException {
       // This is a NO-OP
       // TODO: Implement
-      return placementContext.getBalancePlanFactory().createBalancePlan(balanceRequest, new HashMap<>());
+      return placementContext
+          .getBalancePlanFactory()
+          .createBalancePlan(balanceRequest, new HashMap<>());
     }
 
     private Map<Node, ReplicaCount> getNodeVsShardCount(PlacementContext placementContext) {

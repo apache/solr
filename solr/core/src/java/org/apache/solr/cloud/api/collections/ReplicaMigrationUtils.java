@@ -1,17 +1,6 @@
 package org.apache.solr.cloud.api.collections;
 
-import org.apache.solr.cloud.ActiveReplicaWatcher;
-import org.apache.solr.common.SolrCloseableLatch;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.CollectionStateWatcher;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -25,30 +14,46 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import org.apache.solr.cloud.ActiveReplicaWatcher;
+import org.apache.solr.common.SolrCloseableLatch;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CollectionStateWatcher;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReplicaMigrationUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Code to migrate replicas to already chosen nodes.
-   * This will create new replicas, and delete the old replicas after the creation is done.
-   * <p>
-   * If an error occurs during the creation of new replicas, all new replicas will be deleted.
+   * Code to migrate replicas to already chosen nodes. This will create new replicas, and delete the
+   * old replicas after the creation is done.
+   *
+   * <p>If an error occurs during the creation of new replicas, all new replicas will be deleted.
    *
    * @param ccc The collection command context to use from the API that calls this method
    * @param movements a map from replica to the new node that the replica should live on
    * @param parallel whether the replica creations should be done in parallel
-   * @param waitForFinalState wait for the final state of all newly created replicas before continuing
+   * @param waitForFinalState wait for the final state of all newly created replicas before
+   *     continuing
    * @param timeout the amount of time to wait for new replicas to be created
    * @param asyncId If provided, the command will be run under the given asyncId
    * @param results push results (successful and failure) onto this list
    * @return whether the command was successful
    */
   static boolean migrateReplicas(
-      CollectionCommandContext ccc, Map<Replica, String> movements, boolean parallel,
-      boolean waitForFinalState, int timeout, String asyncId, NamedList<Object> results)
+      CollectionCommandContext ccc,
+      Map<Replica, String> movements,
+      boolean parallel,
+      boolean waitForFinalState,
+      int timeout,
+      String asyncId,
+      NamedList<Object> results)
       throws IOException, InterruptedException, KeeperException {
     // how many leaders are we moving? for these replicas we have to make sure that either:
     // * another existing replica can become a leader, or
@@ -221,11 +226,7 @@ public class ReplicaMigrationUtils {
     // we have reached this far, meaning all replicas should have been recreated.
     // now cleanup the original replicas
     return cleanupReplicas(
-        results,
-        ccc.getZkStateReader().getClusterState(),
-        movements.keySet(),
-        ccc,
-        asyncId);
+        results, ccc.getZkStateReader().getClusterState(), movements.keySet(), ccc, asyncId);
   }
 
   static boolean cleanupReplicas(

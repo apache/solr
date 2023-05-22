@@ -373,7 +373,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         BalanceRequest balanceRequest, PlacementContext placementContext)
         throws PlacementException, InterruptedException {
       // This is a NO-OP
-      return placementContext.getBalancePlanFactory().createBalancePlan(balanceRequest, new HashMap<>());
+      return placementContext
+          .getBalancePlanFactory()
+          .createBalancePlan(balanceRequest, new HashMap<>());
     }
 
     private boolean shouldSpreadAcrossDomains(Set<Node> allNodes, AttributeValues attrValues) {

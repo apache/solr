@@ -39,8 +39,6 @@ import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
-import org.apache.solr.cluster.Node;
-import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
@@ -462,7 +460,8 @@ public class Assign {
      * @return Map from Replica to the Node where that Replica should be moved.
      * @throws AssignmentException when balance request cannot produce any valid assignments.
      */
-    default Map<Replica, String> balanceReplicas(SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
+    default Map<Replica, String> balanceReplicas(
+        SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
         throws AssignmentException, IOException, InterruptedException {
       return Collections.emptyMap();
     }

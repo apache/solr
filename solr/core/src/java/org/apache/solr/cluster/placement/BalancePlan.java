@@ -17,14 +17,12 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Map;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 
-import java.util.Map;
-
 /**
- * A fully specified plan or instructions for replica balancing to be applied to the
- * cluster.
+ * A fully specified plan or instructions for replica balancing to be applied to the cluster.
  *
  * <p>Fully specified means the actual {@link Node}'s on which to place replicas have been decided.
  *
@@ -35,13 +33,14 @@ import java.util.Map;
  */
 public interface BalancePlan {
   /**
-   * @return the {@link BalanceRequest} at the origin of this {@link BalancePlan}, as passed to
-   *     the {@link BalancePlanFactory} method that created this instance.
+   * @return the {@link BalanceRequest} at the origin of this {@link BalancePlan}, as passed to the
+   *     {@link BalancePlanFactory} method that created this instance.
    */
   BalanceRequest getRequest();
 
   /**
-   * @return the map of {@link Replica}'s to the {@link ReplicaPlacement}'s that describe where the replica should be placed.
+   * @return the map of {@link Replica}'s to the {@link ReplicaPlacement}'s that describe where the
+   *     replica should be placed.
    */
   Map<Replica, Node> getReplicaMovements();
 }

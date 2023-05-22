@@ -20,7 +20,6 @@ package org.apache.solr.cluster.placement.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,12 +40,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 /** This assign strategy delegates placement computation to "plugin" code. */
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
@@ -103,18 +98,23 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
   }
 
   @Override
-  public Map<Replica, String> balanceReplicas(SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
+  public Map<Replica, String> balanceReplicas(
+      SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
       throws Assign.AssignmentException, IOException, InterruptedException {
     PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);
 
-    BalanceRequest balanceRequest = BalanceRequestImpl.create(placementContext.getCluster(), nodes, maxBalanceSkew);
+    BalanceRequest balanceRequest =
+        BalanceRequestImpl.create(placementContext.getCluster(), nodes, maxBalanceSkew);
     try {
-      Map<org.apache.solr.cluster.Replica, Node> rawReplicaMovements = plugin.computeBalancing(balanceRequest, placementContext).getReplicaMovements();
+      Map<org.apache.solr.cluster.Replica, Node> rawReplicaMovements =
+          plugin.computeBalancing(balanceRequest, placementContext).getReplicaMovements();
       Map<Replica, String> replicaMovements = new HashMap<>(rawReplicaMovements.size());
-      for (Map.Entry<org.apache.solr.cluster.Replica, Node> movement : rawReplicaMovements.entrySet()) {
+      for (Map.Entry<org.apache.solr.cluster.Replica, Node> movement :
+          rawReplicaMovements.entrySet()) {
         Replica converted = findReplica(solrCloudManager, movement.getKey());
         if (converted == null) {
-          throw new Assign.AssignmentException("Could not find replica when balancing: " + movement.getKey().toString());
+          throw new Assign.AssignmentException(
+              "Could not find replica when balancing: " + movement.getKey().toString());
         }
         replicaMovements.put(converted, movement.getValue().getName());
       }
@@ -124,12 +124,17 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
     }
   }
 
-  private Replica findReplica(SolrCloudManager solrCloudManager, org.apache.solr.cluster.Replica replica) {
+  private Replica findReplica(
+      SolrCloudManager solrCloudManager, org.apache.solr.cluster.Replica replica) {
     DocCollection collection = null;
     try {
-      collection = solrCloudManager.getClusterState().getCollection(replica.getShard().getCollection().getName());
+      collection =
+          solrCloudManager
+              .getClusterState()
+              .getCollection(replica.getShard().getCollection().getName());
     } catch (IOException e) {
-      throw new Assign.AssignmentException("Could not load cluster state when balancing replicas", e);
+      throw new Assign.AssignmentException(
+          "Could not load cluster state when balancing replicas", e);
     }
     if (collection != null) {
       Slice slice = collection.getSlice(replica.getShard().getShardName());

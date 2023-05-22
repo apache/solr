@@ -17,16 +17,11 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import java.util.Map;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.placement.BalancePlan;
 import org.apache.solr.cluster.placement.BalanceRequest;
-import org.apache.solr.cluster.placement.PlacementPlan;
-import org.apache.solr.cluster.placement.PlacementRequest;
-import org.apache.solr.cluster.placement.ReplicaPlacement;
-
-import java.util.Map;
-import java.util.Set;
 
 class BalancePlanImpl implements BalancePlan {
 
@@ -52,7 +47,10 @@ class BalancePlanImpl implements BalancePlan {
   public String toString() {
     StringBuilder sb = new StringBuilder("BalancePlan{");
     for (Map.Entry<Replica, Node> movement : replicaMovements.entrySet()) {
-      sb.append("\n").append(movement.getKey().getReplicaName()).append(" : ").append(movement.getValue().getName());
+      sb.append("\n")
+          .append(movement.getKey().getReplicaName())
+          .append(" : ")
+          .append(movement.getValue().getName());
     }
     sb.append("\n}");
     return sb.toString();

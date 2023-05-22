@@ -17,17 +17,15 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Map;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
-
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Allows plugins to create {@link BalancePlan}s telling the Solr layer how to balance replicas
  * following the processing of a {@link BalanceRequest}. The Solr layer can (and will) check that
- * the {@link BalancePlan} conforms to the {@link BalanceRequest} (and if it does not, the
- * requested operation will fail).
+ * the {@link BalancePlan} conforms to the {@link BalanceRequest} (and if it does not, the requested
+ * operation will fail).
  */
 public interface BalancePlanFactory {
   /**
@@ -36,6 +34,5 @@ public interface BalancePlanFactory {
    * <p>This is in support (directly or indirectly) of {@link
    * org.apache.solr.cloud.api.collections.BalanceReplicasCmd}}.
    */
-  BalancePlan createBalancePlan(
-      BalanceRequest request, Map<Replica, Node> replicaMovements);
+  BalancePlan createBalancePlan(BalanceRequest request, Map<Replica, Node> replicaMovements);
 }

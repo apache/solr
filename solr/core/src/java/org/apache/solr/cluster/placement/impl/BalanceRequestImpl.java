@@ -17,24 +17,18 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import java.util.Set;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
-import org.apache.solr.cluster.Replica;
-import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.BalanceRequest;
-import org.apache.solr.cluster.placement.PlacementRequest;
-
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.Set;
 
 public class BalanceRequestImpl implements BalanceRequest {
 
   private final SolrCollection solrCollection;
-  final private Set<Node> nodes;
-  final private int maximumBalanceSkew;
+  private final Set<Node> nodes;
+  private final int maximumBalanceSkew;
 
   public BalanceRequestImpl(Set<Node> nodes) {
     this(nodes, -1);
@@ -61,9 +55,7 @@ public class BalanceRequestImpl implements BalanceRequest {
     return solrCollection;
   }
 
-  /**
-   * Returns a {@link BalanceRequest} that can be consumed by a plugin to balance replicas
-   */
+  /** Returns a {@link BalanceRequest} that can be consumed by a plugin to balance replicas */
   static BalanceRequestImpl create(Cluster cluster, Set<String> nodeNames, int maximumBalanceSkew)
       throws Assign.AssignmentException {
     final Set<Node> nodes;
@@ -71,7 +63,8 @@ public class BalanceRequestImpl implements BalanceRequest {
     if (nodeNames != null && !nodeNames.isEmpty()) {
       if (nodeNames.size() == 1) {
         throw new Assign.AssignmentException(
-            "Bad balance request: cannot balance across a single node: " + nodeNames.stream().findAny().get());
+            "Bad balance request: cannot balance across a single node: "
+                + nodeNames.stream().findAny().get());
       }
       nodes = SimpleClusterAbstractionsImpl.NodeImpl.getNodes(nodeNames);
 

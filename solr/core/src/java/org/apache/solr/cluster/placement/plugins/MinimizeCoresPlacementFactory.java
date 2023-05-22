@@ -23,16 +23,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
@@ -193,20 +190,26 @@ public class MinimizeCoresPlacementFactory
         throws PlacementException, InterruptedException {
       Map<Replica, Node> replicaMovements = new HashMap<>();
 
-      TreeSet<NodeWithCoreCount> orderedNodes = getCoresPerNode(placementContext, balanceRequest.getNodes());
+      TreeSet<NodeWithCoreCount> orderedNodes =
+          getCoresPerNode(placementContext, balanceRequest.getNodes());
       int totalCores = orderedNodes.stream().mapToInt(NodeWithCoreCount::getCoreCount).sum();
-      int optimalCoresPerNode = (int)Math.floor(totalCores/(double)orderedNodes.size());
-      Map<String,Map<String,Set<Replica>>> replicasPerNode = getReplicasPerNode(placementContext, balanceRequest.getNodes());
+      int optimalCoresPerNode = (int) Math.floor(totalCores / (double) orderedNodes.size());
+      Map<String, Map<String, Set<Replica>>> replicasPerNode =
+          getReplicasPerNode(placementContext, balanceRequest.getNodes());
 
       // TODO: think about what to do if this gets stuck
-      // While the node with the least cores still has room to take a replica from the node with the most cores, loop
+      // While the node with the least cores still has room to take a replica from the node with the
+      // most cores, loop
       while (orderedNodes.first().getCoreCount() < optimalCoresPerNode) {
         NodeWithCoreCount leastCores = orderedNodes.pollFirst();
         NodeWithCoreCount mostCores = orderedNodes.pollLast();
 
-        // select a replica from the node with the most cores to move to the node with the least cores
-        Map<String, Set<Replica>> toNodeShards = replicasPerNode.get(leastCores.getNode().getName());
-        Map<String, Set<Replica>> fromNodeShards = replicasPerNode.get(mostCores.getNode().getName());
+        // select a replica from the node with the most cores to move to the node with the least
+        // cores
+        Map<String, Set<Replica>> toNodeShards =
+            replicasPerNode.get(leastCores.getNode().getName());
+        Map<String, Set<Replica>> fromNodeShards =
+            replicasPerNode.get(mostCores.getNode().getName());
         for (String shard : fromNodeShards.keySet()) {
           if (!toNodeShards.containsKey(shard) || toNodeShards.get(shard).isEmpty()) {
             Set<Replica> fromNodeShard = fromNodeShards.get(shard);
@@ -219,7 +222,8 @@ public class MinimizeCoresPlacementFactory
               replicaMovements.put(replica.get(), leastCores.getNode());
             }
             // Stop if either node has reached the optimal amount of cores
-            if (mostCores.getCoreCount() == optimalCoresPerNode || leastCores.getCoreCount() == optimalCoresPerNode) {
+            if (mostCores.getCoreCount() == optimalCoresPerNode
+                || leastCores.getCoreCount() == optimalCoresPerNode) {
               break;
             }
           }
@@ -230,10 +234,13 @@ public class MinimizeCoresPlacementFactory
         orderedNodes.add(mostCores);
       }
 
-      return placementContext.getBalancePlanFactory().createBalancePlan(balanceRequest, replicaMovements);
+      return placementContext
+          .getBalancePlanFactory()
+          .createBalancePlan(balanceRequest, replicaMovements);
     }
 
-    private TreeSet<NodeWithCoreCount> getCoresPerNode(PlacementContext placementContext, Set<Node> nodes) throws PlacementException {
+    private TreeSet<NodeWithCoreCount> getCoresPerNode(
+        PlacementContext placementContext, Set<Node> nodes) throws PlacementException {
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
       AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
       attributeFetcher.requestNodeMetric(NodeMetricImpl.NUM_CORES);
@@ -244,14 +251,17 @@ public class MinimizeCoresPlacementFactory
         if (attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).isEmpty()) {
           throw new PlacementException("Can't get number of cores in " + node);
         }
-        coresPerNodeTotal.add(new NodeWithCoreCount(node, attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).get()));
+        coresPerNodeTotal.add(
+            new NodeWithCoreCount(
+                node, attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).get()));
       }
 
       return coresPerNodeTotal;
     }
 
-    private Map<String, Map<String, Set<Replica>>> getReplicasPerNode(PlacementContext placementContext, Set<Node> nodes) throws PlacementException {
-      Map<String, Map<String, Set<Replica>>> replicasPerNode =  new HashMap<>();
+    private Map<String, Map<String, Set<Replica>>> getReplicasPerNode(
+        PlacementContext placementContext, Set<Node> nodes) throws PlacementException {
+      Map<String, Map<String, Set<Replica>>> replicasPerNode = new HashMap<>();
       for (Node node : nodes) {
         replicasPerNode.put(node.getName(), new HashMap<>());
       }
@@ -261,8 +271,11 @@ public class MinimizeCoresPlacementFactory
         for (Shard shard : collection.shards()) {
           for (Replica replica : shard.replicas()) {
             if (replicasPerNode.containsKey(replica.getNode().getName())) {
-              replicasPerNode.get(replica.getNode().getName())
-                  .computeIfAbsent(collection.getName() + "%%%%%" + shard.getShardName(), (s) -> new HashSet<>(1))
+              replicasPerNode
+                  .get(replica.getNode().getName())
+                  .computeIfAbsent(
+                      collection.getName() + "%%%%%" + shard.getShardName(),
+                      (s) -> new HashSet<>(1))
                   .add(replica);
             }
           }

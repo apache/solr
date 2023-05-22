@@ -17,19 +17,12 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import java.util.Map;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
-import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.BalancePlan;
 import org.apache.solr.cluster.placement.BalancePlanFactory;
 import org.apache.solr.cluster.placement.BalanceRequest;
-import org.apache.solr.cluster.placement.PlacementPlan;
-import org.apache.solr.cluster.placement.PlacementPlanFactory;
-import org.apache.solr.cluster.placement.PlacementRequest;
-import org.apache.solr.cluster.placement.ReplicaPlacement;
-
-import java.util.Map;
-import java.util.Set;
 
 /** Simple implementation of {@link BalancePlanFactory}. */
 public class BalancePlanFactoryImpl implements BalancePlanFactory {

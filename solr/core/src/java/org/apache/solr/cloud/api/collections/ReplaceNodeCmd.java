@@ -100,7 +100,8 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
         assignRequests.add(assignRequest);
       }
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
-      List<ReplicaPosition> replicaPositions = assignStrategy.assign(ccc.getSolrCloudManager(), assignRequests);
+      List<ReplicaPosition> replicaPositions =
+          assignStrategy.assign(ccc.getSolrCloudManager(), assignRequests);
       int position = 0;
       for (Replica sourceReplica : sourceReplicas) {
         replicaMovements.put(sourceReplica, replicaPositions.get(position++).node);
@@ -111,15 +112,9 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    boolean migrationSuccessful = ReplicaMigrationUtils.migrateReplicas(
-        ccc,
-        replicaMovements,
-        parallel,
-        waitForFinalState,
-        timeout,
-        async,
-        results
-    );
+    boolean migrationSuccessful =
+        ReplicaMigrationUtils.migrateReplicas(
+            ccc, replicaMovements, parallel, waitForFinalState, timeout, async, results);
     if (migrationSuccessful) {
       results.add(
           "success",

@@ -75,18 +75,17 @@ public interface PlacementPlugin {
       throws PlacementException, InterruptedException;
 
   /**
-   * Request from plugin code to compute a balancing of replicas.
-   * Note this method must be reentrant as a
-   * plugin instance may (read will) get multiple such calls in parallel.
+   * Request from plugin code to compute a balancing of replicas. Note this method must be reentrant
+   * as a plugin instance may (read will) get multiple such calls in parallel.
    *
    * <p>Configuration is passed upon creation of a new instance of this class by {@link
    * PlacementPluginFactory#createPluginInstance}.
    *
-   * @param balanceRequest request for selecting replicas that should be moved to aid in balancing the replicas across the desired nodes.
+   * @param balanceRequest request for selecting replicas that should be moved to aid in balancing
+   *     the replicas across the desired nodes.
    * @return plan satisfying all extraction requests.
    */
-  BalancePlan computeBalancing(
-      BalanceRequest balanceRequest, PlacementContext placementContext)
+  BalancePlan computeBalancing(BalanceRequest balanceRequest, PlacementContext placementContext)
       throws PlacementException, InterruptedException;
 
   /**

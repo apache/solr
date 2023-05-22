@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.apache.solr.cluster.Node;
@@ -133,7 +132,9 @@ public class RandomPlacementFactory
     public BalancePlan computeBalancing(
         BalanceRequest balanceRequest, PlacementContext placementContext) {
       // This is a NO-OP, there is no reason for randomly balancing a cluster
-      return placementContext.getBalancePlanFactory().createBalancePlan(balanceRequest, new HashMap<>());
+      return placementContext
+          .getBalancePlanFactory()
+          .createBalancePlan(balanceRequest, new HashMap<>());
     }
   }
 }

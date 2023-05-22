@@ -17,6 +17,13 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -24,14 +31,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.NamedList;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
   private final CollectionCommandContext ccc;
@@ -49,9 +48,9 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
     if (nodesRaw == null) {
       nodes = Collections.emptySet();
     } else if (nodesRaw instanceof Set) {
-      nodes = (Set<String>)nodesRaw;
+      nodes = (Set<String>) nodesRaw;
     } else if (nodesRaw instanceof Collection) {
-      nodes = new HashSet<>((Collection<String>)nodesRaw);
+      nodes = new HashSet<>((Collection<String>) nodesRaw);
     } else if (nodesRaw instanceof String) {
       nodes = Set.of(((String) nodesRaw).split(","));
     } else {
@@ -68,26 +67,25 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
     if (nodes.size() == 1) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Cannot balance across a single node: "
-              + nodes.stream().findAny().get());
+          "Cannot balance across a single node: " + nodes.stream().findAny().get());
     }
 
     Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
-    Map<Replica, String> replicaMovements = assignStrategy.balanceReplicas(ccc.getSolrCloudManager(), nodes, message.getInt(CollectionParams.MAX_BALANCE_SKEW, -1));
+    Map<Replica, String> replicaMovements =
+        assignStrategy.balanceReplicas(
+            ccc.getSolrCloudManager(),
+            nodes,
+            message.getInt(CollectionParams.MAX_BALANCE_SKEW, -1));
 
-    boolean migrationSuccessful = ReplicaMigrationUtils.migrateReplicas(
-        ccc,
-        replicaMovements,
-        parallel,
-        waitForFinalState,
-        timeout,
-        async,
-        results
-    );
+    boolean migrationSuccessful =
+        ReplicaMigrationUtils.migrateReplicas(
+            ccc, replicaMovements, parallel, waitForFinalState, timeout, async, results);
     if (migrationSuccessful) {
       results.add(
           "success",
-          "BalanceReplicas action completed successfully across nodes  : [" + String.join(", ", nodes) + "]");
+          "BalanceReplicas action completed successfully across nodes  : ["
+              + String.join(", ", nodes)
+              + "]");
     }
   }
 }

@@ -50,13 +50,13 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
               + ": "
               + singleReplicas);
     } else {
-      ReplicaMigrationUtils.cleanupReplicas(results, state, sourceReplicas, ccc, message.getStr(ASYNC));
+      ReplicaMigrationUtils.cleanupReplicas(
+          results, state, sourceReplicas, ccc, message.getStr(ASYNC));
     }
   }
 
   // collect names of replicas that cannot be deleted
-  static List<String> verifyReplicaAvailability(
-      List<Replica> sourceReplicas, ClusterState state) {
+  static List<String> verifyReplicaAvailability(List<Replica> sourceReplicas, ClusterState state) {
     List<String> res = new ArrayList<>();
     for (Replica sourceReplica : sourceReplicas) {
       String coll = sourceReplica.getCollection();
@@ -66,14 +66,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
       Slice slice = collection.getSlice(shard);
       if (slice.getReplicas().size() < 2) {
         // can't delete the only replica in existence
-        res.add(
-            coll
-                + "/"
-                + shard
-                + "/"
-                + replicaName
-                + ", type="
-                + sourceReplica.getType());
+        res.add(coll + "/" + shard + "/" + replicaName + ", type=" + sourceReplica.getType());
       } else { // check replica types
         int otherNonPullReplicas = 0;
         for (Replica r : slice.getReplicas()) {
@@ -83,14 +76,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
         }
         // can't delete - there are no other non-pull replicas
         if (otherNonPullReplicas == 0) {
-          res.add(
-              coll
-                  + "/"
-                  + shard
-                  + "/"
-                  + replicaName
-                  + ", type="
-                  + sourceReplica.getType());
+          res.add(coll + "/" + shard + "/" + replicaName + ", type=" + sourceReplica.getType());
         }
       }
     }
