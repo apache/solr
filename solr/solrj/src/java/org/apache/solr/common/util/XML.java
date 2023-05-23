@@ -25,16 +25,11 @@ import java.util.stream.Stream;
 public class XML {
 
   public static void escapeCharData(String str, Writer out) throws IOException {
-    escape(str, out);
+    escape(str, out, false);
   }
 
   public static void escapeAttributeValue(String str, Writer out) throws IOException {
-    escape(str, out);
-  }
-
-  public static void escapeAttributeValue(char[] chars, int start, int length, Writer out)
-      throws IOException {
-    escape(chars, start, length, out);
+    escape(str, out, true);
   }
 
   /**
@@ -99,47 +94,46 @@ public class XML {
     void write(Writer w) throws IOException;
   }
 
-  private static void escape(char[] chars, int offset, int length, Writer out) throws IOException {
-    for (int i = 0; i < length; i++) {
-      writeEscaped(out, chars[offset + i]);
-    }
-  }
-
-  private static void writeEscaped(Writer out, char ch) throws IOException {
-    switch (ch) {
-      case 0x09:
-        out.write("&#09;");
-        break;
-      case 0x0a:
-        out.write("&#0a;");
-        break;
-      case 0x0d:
-        out.write("&#0d;");
-        break;
-      case '&':
-        out.write("&amp;");
-        break;
-      case '"':
-        out.write("&quot;");
-        break;
-      case '<':
-        out.write("&lt;");
-        break;
-      case '>':
-        out.write("&gt;");
-        break;
-      default:
-        if (ch < 0x20) {
-          throw new IllegalArgumentException(
-              "Invalid character in XML attribute: " + Integer.toHexString(ch));
-        }
-        out.write(ch);
-    }
-  }
-
-  private static void escape(String str, Writer out) throws IOException {
+  private static void escape(String str, Writer out, boolean attrValue) throws IOException {
     for (int i = 0; i < str.length(); i++) {
-      writeEscaped(out, str.charAt(i));
+      char ch = str.charAt(i);
+      switch (ch) {
+        case 0x09:
+          out.write("&#09;");
+          break;
+        case 0x0a:
+          out.write("&#0a;");
+          break;
+        case 0x0d:
+          out.write("&#0d;");
+          break;
+        case '&':
+          out.write("&amp;");
+          break;
+        case '"':
+          if (attrValue) {
+            out.write("&quot;");
+          } else {
+            out.write(ch);
+          }
+          break;
+        case '<':
+          out.write("&lt;");
+          break;
+        case '>':
+          if (attrValue) {
+            out.write("&gt;");
+          } else {
+            out.write(ch);
+          }
+          break;
+        default:
+          if (ch < 0x20) {
+            throw new IllegalArgumentException(
+                "Invalid character in XML attribute: " + Integer.toHexString(ch));
+          }
+          out.write(ch);
+      }
     }
   }
 }
