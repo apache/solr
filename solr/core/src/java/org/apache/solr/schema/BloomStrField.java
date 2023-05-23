@@ -119,7 +119,7 @@ public final class BloomStrField extends StrField implements SchemaAware {
     props.put("termVectors", "false");
     props.put("omitNorms", "true");
     props.put("omitTermFreqAndPositions", "false");
-    props.put("uninvertible", "true");
+    props.put("uninvertible", "false");
     props.put("postingsFormat", pf.getName());
     FieldType ret = new TextField();
     ret.setTypeName("ngram_bloom_filter_" + pf.getBloomAnalyzerId());
