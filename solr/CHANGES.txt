@@ -149,6 +149,8 @@ Bug Fixes
 
 * SOLR-16808: Stop publishing environment variables via the Metrics API (Houston Putman)
 
+* SOLR-16811: /update/json/docs?echo and mapUniqueKeyOnly params doesn't work (Mikhail Khludnev)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
