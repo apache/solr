@@ -31,8 +31,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.hamcrest.MatcherAssert;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,16 +41,6 @@ public class DocumentBuilderVectorCatchAllCopyTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema-vector-catchall.xml");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST = save_min_len;
-  }
-
-  @After
-  public void afterTest() {
-    DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST = save_min_len;
   }
 
   @Test
