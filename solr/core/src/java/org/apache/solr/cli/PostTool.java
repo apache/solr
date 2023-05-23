@@ -18,16 +18,11 @@ package org.apache.solr.cli;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class PostTool extends ToolBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public PostTool() {
     this(CLIO.getOutStream());
@@ -57,19 +52,19 @@ public class PostTool extends ToolBase {
             .argName("mode")
             .hasArg(true)
             .required(false)
-            .desc("default: files.  files, web.  Files crawls files, web crawls directory.")
+            .desc("Files crawls files, web crawls website. default: files.")
             .build(),
         Option.builder("recursive")
             .argName("recursive")
             .hasArg(true)
             .required(false)
-            .desc("default: 1")
+            .desc("For web crawl, how deep to go. default: 1")
             .build(),
         Option.builder("delay")
             .argName("delay")
             .hasArg(true)
             .required(false)
-            .desc("default: 10 for web, 0 for files")
+            .desc("If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
             .build(),
         Option.builder("type")
             .argName("content-type")
