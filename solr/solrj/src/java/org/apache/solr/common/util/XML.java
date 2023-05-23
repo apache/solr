@@ -130,7 +130,8 @@ public class XML {
         break;
       default:
         if (ch < 0x20) {
-          throw new RuntimeException("Invalid character in XML attribute: " + "");
+          throw new IllegalArgumentException(
+              String.format("Invalid character in XML attribute: %02x", Character.valueOf(ch)));
         }
         out.write(ch);
     }
