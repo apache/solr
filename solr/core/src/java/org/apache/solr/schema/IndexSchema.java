@@ -67,7 +67,6 @@ import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.XML;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -699,9 +698,9 @@ public class IndexSchema {
     }
 
     for (ConfigNode node : nodes) {
-      String name = XML.unescapeAttributeValue(DOMUtil.getAttr(node, NAME, "field definition"));
+      String name = DOMUtil.getAttr(node, NAME, "field definition");
       log.trace("reading field def {}", name);
-      String type = XML.unescapeAttributeValue(DOMUtil.getAttr(node, TYPE, "field " + name));
+      String type = DOMUtil.getAttr(node, TYPE, "field " + name);
 
       FieldType ft = fieldTypes.get(type);
       if (ft == null) {

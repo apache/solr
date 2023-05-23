@@ -19,120 +19,22 @@ package org.apache.solr.common.util;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /** */
 public class XML {
 
-  //
-  // copied from some of my personal code...  -YCS
-  // table created from python script.
-  // only have to escape quotes in attribute values, and don't really have to escape '>'
-  // many chars less than 0x20 are *not* valid XML, even when escaped!
-  // for example, <foo>&#0;<foo> is invalid XML.
-  private static final String[] chardata_escapes = {
-    "#0;", "#1;", "#2;", "#3;", "#4;", "#5;", "#6;", "#7;", "#8;", null, null, "#11;", "#12;", null,
-    "#14;", "#15;", "#16;", "#17;", "#18;", "#19;", "#20;", "#21;", "#22;", "#23;", "#24;", "#25;",
-    "#26;", "#27;", "#28;", "#29;", "#30;", "#31;", null, null, null, null, null, null, "&amp;",
-    null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-    null, null, null, null, null, "&lt;", null, "&gt;"
-  };
-
-  private static final String[] attribute_escapes = {
-    "#0;", "#1;", "#2;", "#3;", "#4;", "#5;", "#6;", "#7;", "#8;", null, null, "#11;", "#12;", null,
-    "#14;", "#15;", "#16;", "#17;", "#18;", "#19;", "#20;", "#21;", "#22;", "#23;", "#24;", "#25;",
-    "#26;", "#27;", "#28;", "#29;", "#30;", "#31;", null, null, "&quot;", null, null, null, "&amp;",
-    null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-    null, null, null, null, null, "&lt;"
-  };
-
-  /*
-   #Simple python script used to generate the escape table above.  -YCS
-   #
-   #use individual char arrays or one big char array for better efficiency
-   # or byte array?
-   #other={'&':'amp', '<':'lt', '>':'gt', "'":'apos', '"':'quot'}
-   #
-   other={'&':'amp', '<':'lt'}
-
-   maxi=ord(max(other.keys()))+1
-   table=[None] * maxi
-   #NOTE: invalid XML chars are "escaped" as #nn; *not* &#nn; because
-   #a real XML escape would cause many strict XML parsers to choke.
-   for i in range(0x20): table[i]='#%d;' % i
-   for i in '\n\r\t ': table[ord(i)]=None
-   for k,v in other.items():
-    table[ord(k)]='&%s;' % v
-
-   result=""
-   for i in range(maxi):
-     val=table[i]
-     if not val: val='null'
-     else: val='"%s"' % val
-     result += val + ','
-
-   print result
-  */
-
   public static void escapeCharData(String str, Writer out) throws IOException {
-    escape(str, out, chardata_escapes);
+    escape(str, out);
   }
 
   public static void escapeAttributeValue(String str, Writer out) throws IOException {
-    escape(str, out, attribute_escapes);
-  }
-
-  private static final Pattern ctrlEscPattern =
-      Pattern.compile("([^#]|^)((?:##)*)(#([0-9]{1,2});)");
-  private static final Pattern literalEscPattern = Pattern.compile("([^#]|^)((?:##)+)([0-9])");
-
-  public static String unescapeAttributeValue(String str) {
-    {
-      Matcher m1 = ctrlEscPattern.matcher(str);
-      if (m1.find()) {
-        StringBuilder sb = new StringBuilder();
-        do {
-          m1.appendReplacement(sb, m1.group(1));
-          String g2 = m1.group(2);
-          String g4 = m1.group(4);
-          int c = Integer.parseInt(g4);
-          if (c < 32) {
-            sb.append(g2.substring(g2.length() / 2));
-            sb.append((char) c);
-          } else {
-            sb.append(g2);
-            sb.append(m1.group(3));
-          }
-        } while (m1.find());
-        m1.appendTail(sb);
-        str = sb.toString();
-      }
-    }
-    {
-      Matcher m2 = literalEscPattern.matcher(str);
-      if (m2.find()) {
-        StringBuilder sb = new StringBuilder();
-        do {
-          m2.appendReplacement(sb, m2.group(1));
-          String g2 = m2.group(2);
-          sb.append(g2.substring(g2.length() / 2));
-          sb.append(m2.group(3));
-        } while (m2.find());
-        m2.appendTail(sb);
-        str = sb.toString();
-      }
-    }
-    return str.replace("&quot;", "\"")
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">");
+    escape(str, out);
   }
 
   public static void escapeAttributeValue(char[] chars, int start, int length, Writer out)
       throws IOException {
-    escape(chars, start, length, out, attribute_escapes);
+    escape(chars, start, length, out);
   }
 
   /**
@@ -197,72 +99,46 @@ public class XML {
     void write(Writer w) throws IOException;
   }
 
-  private static void escape(char[] chars, int offset, int length, Writer out, String[] escapes)
-      throws IOException {
-    for (int i = offset; i < length; i++) {
-      char ch = chars[i];
-      if (ch < escapes.length) {
-        String replacement = escapes[ch];
-        if (replacement != null) {
-          out.write(replacement);
-          continue;
-        }
-      }
-      out.write(ch);
+  private static void escape(char[] chars, int offset, int length, Writer out) throws IOException {
+    for (int i = 0; i < length; i++) {
+      writeEscaped(out, chars[offset + i]);
     }
   }
 
-  private static final Pattern toEscPattern =
-      Pattern.compile("([^#]|^)(#*)(?:(([0-9]{1,2});)|([\0-\37]))");
-
-  /**
-   * Replace any character control c with value less than 32 #nn; where nn is the decimal
-   * representation of c. Since this encoding will be ambiguous with literal '#nn;', any occurrence
-   * of '#' is repeated. Now this will become ambiguous with '#'s preceding control characters. They
-   * are also repeated. Thus, when the number of consecutive '#' is even then they are literal '#'s
-   * and when it is odd, the last '#' should be considered encoding of control characters.
-   *
-   * <p>Also replace characters like '#' into "&qout;" etc.
-   *
-   * @param str Input string
-   * @param out Output writer to write into
-   * @param escapes Escape character map
-   * @throws IOException If write operation fails
-   */
-  private static void escape(String str, Writer out, String[] escapes) throws IOException {
-    Matcher m = toEscPattern.matcher(str);
-    if (m.find()) {
-      StringBuilder sb = new StringBuilder();
-      do {
-        m.appendReplacement(sb, m.group(1));
-        sb.append(m.group(2));
-        String g3 = m.group(3);
-        if (g3 != null) {
-          if (Integer.parseInt(m.group(4)) < 32) {
-            sb.append(m.group(2));
-          }
-          sb.append(g3);
-        } else {
-          String g5 = m.group(5);
-          if (g5 != null) { // Always true, just to keep Sonatype-lift silent.
-            sb.append(m.group(2));
-            sb.append(escapes[g5.charAt(0)]);
-          }
+  private static void writeEscaped(Writer out, char ch) throws IOException {
+    switch (ch) {
+      case 0x09:
+        out.write("&#09;");
+        break;
+      case 0x0a:
+        out.write("&#0a;");
+        break;
+      case 0x0d:
+        out.write("&#0d;");
+        break;
+      case '&':
+        out.write("&amp;");
+        break;
+      case '"':
+        out.write("&quot;");
+        break;
+      case '<':
+        out.write("&lt;");
+        break;
+      case '>':
+        out.write("&gt;");
+        break;
+      default:
+        if (ch < 0x20) {
+          throw new RuntimeException("Invalid character in XML attribute: " + "");
         }
-      } while (m.find());
-      m.appendTail(sb);
-      str = sb.toString();
+        out.write(ch);
     }
+  }
+
+  private static void escape(String str, Writer out) throws IOException {
     for (int i = 0; i < str.length(); i++) {
-      char ch = str.charAt(i);
-      if (ch < escapes.length) {
-        String replacement = escapes[ch];
-        if (replacement != null) {
-          out.write(replacement);
-          continue;
-        }
-      }
-      out.write(ch);
+      writeEscaped(out, str.charAt(i));
     }
   }
 }

@@ -38,6 +38,7 @@ public class TestIndexSchema {
           + " </schema>\n";
 
   private static IndexSchema newIndexSchema(String xml) {
+    System.out.println("XML: " + xml);
     SolrResourceLoader loader = new SolrResourceLoader(FileSystems.getDefault().getPath("."));
     return new IndexSchema(
         "test",
@@ -58,25 +59,14 @@ public class TestIndexSchema {
   }
 
   @Test
-  public void testDuplicateFields() throws IOException {
-    IndexSchema sch = newIndexSchema(schemaXML);
-    Assert.assertNotNull(sch);
-    addIntField(sch, "a#20;b");
-    addIntField(sch, "a\u0014b");
-    String xml = toXml(sch);
-    IndexSchema sch2 = newIndexSchema(xml);
-    Assert.assertEquals(2, sch2.fields.size());
-  }
-
-  @Test
   public void testFieldNameFidelity() throws IOException {
     IndexSchema sch = newIndexSchema(schemaXML);
     Assert.assertNotNull(sch);
-    addIntField(sch, "a\u0014b");
+    addIntField(sch, "a&b");
     String xml = toXml(sch);
     IndexSchema sch2 = newIndexSchema(xml);
     Assert.assertEquals(1, sch2.fields.size());
-    Assert.assertNotNull(sch2.fields.get("a\u0014b"));
+    Assert.assertNotNull(sch2.fields.get("a&b"));
   }
 
   private static ReaderInputStream asInputStream(String xml) {
