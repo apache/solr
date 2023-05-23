@@ -1397,11 +1397,12 @@ public class SimplePostTool {
      * @return a set of URIs parsed from the page
      */
     protected Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
-      Set<URI> l = new HashSet<>();
+      Set<URI> linksFromPage = new HashSet<>();
       URL url = null;
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         URL extractUrl = new URL(appendParam(postUrl.toString(), "extractOnly=true"));
+        extractUrl = new URL(appendParam(extractUrl.toString(), "wt=xml"));
         boolean success = postData(is, null, os, type, extractUrl);
         if (success) {
           Document d = makeDom(os.toByteArray());
@@ -1411,10 +1412,12 @@ public class SimplePostTool {
           for (int i = 0; i < links.getLength(); i++) {
             String link = links.item(i).getTextContent();
             link = computeFullUrl(u, link);
-            if (link == null) continue;
+            if (link == null) {
+              continue;
+            }
             URI newUri = new URI(link);
             if (newUri.getAuthority() == null || !newUri.getAuthority().equals(u.getAuthority())) {
-              l.add(newUri);
+              linksFromPage.add(newUri);
             }
           }
         }
@@ -1426,7 +1429,7 @@ public class SimplePostTool {
         throw new RuntimeException(e);
       }
 
-      return l;
+      return linksFromPage;
     }
   }
 

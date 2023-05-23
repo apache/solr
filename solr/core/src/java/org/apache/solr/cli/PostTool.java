@@ -59,9 +59,14 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("default: files.  files, web.  Files crawls files, web crawls directory.")
             .build(),
-        Option.builder("recursive").required(false).desc("default: 1").build(),
+        Option.builder("recursive")
+            .argName("recursive")
+            .hasArg(true)
+            .required(false)
+            .desc("default: 1")
+            .build(),
         Option.builder("delay")
-            .argName("seconds")
+            .argName("delay")
             .hasArg(true)
             .required(false)
             .desc("default: 10 for web, 0 for files")
@@ -76,8 +81,7 @@ public class PostTool extends ToolBase {
             .argName("<type>[,<type>,...]")
             .hasArg(true)
             .required(false)
-            .desc(
-                "default: xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log")
+            .desc("default: " + SimplePostTool.DEFAULT_FILE_TYPES)
             .build(),
         Option.builder("params")
             .argName("<key>=<value>[&<key>=<value>...]")
@@ -116,20 +120,15 @@ public class PostTool extends ToolBase {
         cli.hasOption("format")
             ? SimplePostTool.FORMAT_SOLR
             : ""; // i.e not solr formatted json commands
-    int delay = 0;
+
     String fileTypes = SimplePostTool.DEFAULT_FILE_TYPES;
     if (cli.hasOption("filetypes")) {
       fileTypes = cli.getOptionValue("filetypes");
     }
-    int recursive = 0;
-    String r = cli.getOptionValue("recursive", "1");
-    try {
-      recursive = Integer.parseInt(r);
-    } catch (Exception e) {
-      if (cli.hasOption("recursive")) {
-        recursive = SimplePostTool.DATA_MODE_WEB.equals(mode) ? 1 : 999;
-      }
-    }
+
+    int defaultDelay = (mode.equals((SimplePostTool.DATA_MODE_WEB)) ? 10 : 0);
+    int delay = Integer.parseInt(cli.getOptionValue("delay", String.valueOf(defaultDelay)));
+    int recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     OutputStream out = cli.hasOption("out") ? CLIO.getOutStream() : null;
     boolean commit = cli.hasOption("commit");
