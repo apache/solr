@@ -131,7 +131,7 @@ public class XML {
       default:
         if (ch < 0x20) {
           throw new IllegalArgumentException(
-              String.format("Invalid character in XML attribute: %02x", Character.valueOf(ch)));
+              "Invalid character in XML attribute: " + Integer.toHexString(ch));
         }
         out.write(ch);
     }
