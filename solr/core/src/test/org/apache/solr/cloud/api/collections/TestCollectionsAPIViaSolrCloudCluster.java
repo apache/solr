@@ -318,8 +318,8 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     switch (random().nextInt(3)) {
       case 0:
-        CollectionAdminRequest.Create createOp = CollectionAdminRequest.createCollection(
-            collectionName, confName, 1, 2);
+        CollectionAdminRequest.Create createOp =
+            CollectionAdminRequest.createCollection(collectionName, confName, 1, 2);
         createOp.withProperty("my.custom.prop", "customProp");
         CollectionAdminResponse rsp = createOp.process(cluster.getSolrClient());
         assertNull(rsp.getErrorMessages());
