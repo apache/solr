@@ -149,6 +149,11 @@ Optimizations
 * SOLR-16764: Clarify that ExportTool exports documents in JSON with Lines format, not standard JSON.  Add explicit -compress option for gzipping output.
   Add ability to specific a directory for output along with a specific file when using -out. (Eric Pugh)
 
+* SOLR-14630: When querying a single collection with `_route_` parameter or `shards.preference`
+  specified, SolrJ targets directly a replica of the collection (and not the
+  collection it self) to save a needless HTTP hop. (Pierre Salagnac)
+
+
 Bug Fixes
 ---------------------
 
@@ -179,8 +184,6 @@ Bug Fixes
 * SOLR-16760: bin/solr package tool supports -h and -help command like other tools.  (Eric Pugh)
 
 * SOLR-16765: bin/solr export tool limit property was off by 1.  Now limit results exported to the exact number. (Eric Pugh)
-
-* SOLR-14630: When querying a single collection, SolrJ targets directly a replica of the collection (and not the collection it self) to avoid useless forwarding. (Pierre Salagnac)
 
 Dependency Upgrades
 ---------------------
