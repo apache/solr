@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+
 public class PostTool extends ToolBase {
 
   public PostTool() {
@@ -64,7 +65,8 @@ public class PostTool extends ToolBase {
             .argName("delay")
             .hasArg(true)
             .required(false)
-            .desc("If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
+            .desc(
+                "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
             .build(),
         Option.builder("type")
             .argName("content-type")

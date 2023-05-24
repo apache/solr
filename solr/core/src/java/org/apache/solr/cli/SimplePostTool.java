@@ -1039,29 +1039,32 @@ public class SimplePostTool {
     if (mockMode) {
       return true;
     }
+
     boolean success = true;
-    if (type == null) type = DEFAULT_CONTENT_TYPE;
-    HttpURLConnection urlc = null;
+    if (type == null) {
+      type = DEFAULT_CONTENT_TYPE;
+    }
+    HttpURLConnection urlConnection = null;
     try {
       try {
-        urlc = (HttpURLConnection) url.openConnection();
+        urlConnection = (HttpURLConnection) url.openConnection();
         try {
-          urlc.setRequestMethod("POST");
+          urlConnection.setRequestMethod("POST");
         } catch (ProtocolException e) {
           fatal("Shouldn't happen: HttpURLConnection doesn't support POST??" + e);
         }
-        urlc.setDoOutput(true);
-        urlc.setDoInput(true);
-        urlc.setUseCaches(false);
-        urlc.setAllowUserInteraction(false);
-        urlc.setRequestProperty("Content-type", type);
-        basicAuth(urlc);
+        urlConnection.setDoOutput(true);
+        urlConnection.setDoInput(true);
+        urlConnection.setUseCaches(false);
+        urlConnection.setAllowUserInteraction(false);
+        urlConnection.setRequestProperty("Content-type", type);
+        basicAuth(urlConnection);
         if (null != length) {
-          urlc.setFixedLengthStreamingMode(length);
+          urlConnection.setFixedLengthStreamingMode(length);
         } else {
-          urlc.setChunkedStreamingMode(-1); // use JDK default chunkLen, 4k in Java 8.
+          urlConnection.setChunkedStreamingMode(-1); // use JDK default chunkLen, 4k in Java 8.
         }
-        urlc.connect();
+        urlConnection.connect();
       } catch (IOException e) {
         fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
         success = false;
@@ -1069,15 +1072,15 @@ public class SimplePostTool {
         fatal("POST failed with error " + e.getMessage());
       }
 
-      try (final OutputStream out = urlc.getOutputStream()) {
+      try (final OutputStream out = urlConnection.getOutputStream()) {
         pipe(data, out);
       } catch (IOException e) {
         fatal("IOException while posting data: " + e);
       }
 
       try {
-        success &= checkResponseCode(urlc);
-        try (final InputStream in = urlc.getInputStream()) {
+        success &= checkResponseCode(urlConnection);
+        try (final InputStream in = urlConnection.getInputStream()) {
           pipe(in, output);
         }
       } catch (IOException e) {
@@ -1088,8 +1091,8 @@ public class SimplePostTool {
             "Looks like Solr is secured and would not let us in. Try with another user in '-u' parameter");
       }
     } finally {
-      if (urlc != null) {
-        urlc.disconnect();
+      if (urlConnection != null) {
+        urlConnection.disconnect();
       }
     }
     return success;

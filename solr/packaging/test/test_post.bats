@@ -118,12 +118,11 @@ teardown() {
     }
   }' 'http://localhost:8983/solr/webcrawl/config'
   
-  run solr post -mode web -url http://localhost:8983/webcrawl/update https://solr.apache.org -recursive 1 -delay 1
+  run solr post -mode web -url http://localhost:8983/webcrawl/update -recursive 1 -delay 1 https://solr.apache.org
   assert_output --partial 'Entering crawl at level 0'
-  #refute_output --partial 'ERROR'
 }
 
-@test "commit and optimize" {
+@test "commit and optimize and delete" {
   
   run solr create_collection -c monitors2 -d _default
   assert_output --partial "Created collection 'monitors2'"
@@ -134,4 +133,41 @@ teardown() {
   assert_output --partial 'COMMITting Solr index'
   assert_output --partial 'Performing an OPTIMIZE'
   refute_output --partial 'ERROR'
+
+}
+
+@test "args mode" {
+  
+  run solr create_collection -c test_args -d _default
+  assert_output --partial "Created collection 'test_args'"
+  
+  run solr post -url http://localhost:8983/solr/test_args/update -mode args -type application/xml -out -commit "<delete><query>*:*</query></delete>"
+  assert_output --partial '<int name="status">0</int>'
+  
+  # confirm default type
+  run solr post -url http://localhost:8983/solr/test_args/update -mode args -out -commit "{'delete': {'query': '*:*'}}"
+  assert_output --partial '"status":0'
+  
+  # confirm we don't get back output without -out
+  run solr post -url http://localhost:8983/solr/test_args/update -mode args -commit "{'delete': {'query': '*:*'}}"
+  refute_output --partial '"status":0'
+  
+  run solr post -url http://localhost:8983/solr/test_args/update -mode args -commit -type text/csv -out $'id,value\nROW1,0.47' 
+  assert_output --partial '"status":0'
+  run curl 'http://localhost:8983/solr/test_args/select?q=id:ROW1'
+  assert_output --partial '"numFound":1'
+}
+
+# function used because run echo | solr ends up being (run echo) | solr and we loose the output capture.
+capture_echo_to_solr() {
+    echo "{'commit': {}}" | solr post -url http://localhost:8983/solr/test_stdin/update -mode stdin -type application/json -out
+}
+
+@test "stdin mode" {
+  
+  run solr create_collection -c test_stdin -d _default
+  assert_output --partial "Created collection 'test_stdin'"
+  
+  run capture_echo_to_solr
+  assert_output --partial '"status":0'
 }

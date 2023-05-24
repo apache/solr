@@ -52,7 +52,7 @@ OPTIONS
 =======
   Solr options:
     -url <base Solr update URL>
-    -commit yes|no (default: yes)
+    -commit issue a commit
     -u or -user <user:pass> (sets BasicAuth credentials)
 
   Web crawl options:
@@ -63,13 +63,13 @@ OPTIONS
     -delay <seconds> (default: 0)
 
   stdin/args options:
-    -type <content/type> (default: application/xml)
+    -type <content/type> (default: application/json)
 
 
   Other options:
     -filetypes <type>[,<type>,...] (default: xml,json,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log)
     -params "<key>=<value>[&<key>=<value>...]" (values must be URL-encoded; these pass through to Solr update request)
-    -out yes|no (default: no; yes outputs Solr response to console)
+    -out output the Solr responses to console
     -format solr (sends application/json content as Solr commands to /update instead of /update/json/docs
     
 Examples:
@@ -77,10 +77,10 @@ Examples:
 * JSON file: bin/solr post -url http://localhost:8983/wizbang/update events.json
 * XML files: bin/solr post -url http://localhost:8983/records/update article*.xml
 * CSV file: bin/solr post -url http://localhost:8983/signals/update LATEST-signals.csv
-* Directory of files: bin/solr post -url http://localhost:8983/myfiles/update ~/Documents
-* Web crawl: bin/solr post -url http://localhost:8983/gettingstarted/update https://solr.apache.org/ -recursive 1 -delay 1
-* Standard input (stdin): echo '{commit: {}}' | bin/solr post -url http://localhost:8983/my_collection/update -type application/json -out yes -d
-* Data as string: bin/solr post -url http://localhost:8983/signals/update -type text/csv -out yes -d $'id,value\n1,0.47' 
+* Directory of files: bin/solr post -filetypes xml,json,csv -url http://localhost:8983/myfiles/update ~/Documents
+* Web crawl: bin/solr post -mode web -url http://localhost:8983/gettingstarted/update -recursive 1 -delay 1 https://solr.apache.org/ 
+* Standard input (stdin): echo '{commit: {}}' | bin/solr post -mode stdin -url http://localhost:8983/my_collection/update -out
+* Data as string: bin/solr post -url http://localhost:8983/signals/update -mode args -type text/csv -out $'id,value\n1,0.47' 
 
 ----
 
@@ -91,14 +91,14 @@ This section presents several examples.
 
 === Indexing XML
 
-Add all documents with file extension `.xml` to collection or core named `gettingstarted`.
+Add all documents with file extension `.xml` to the collection named `gettingstarted`.
 
 [source,bash]
 ----
 bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.xml
 ----
 
-Add all documents with file extension `.xml` to the `gettingstarted` collection/core on Solr running on port `8984`.
+Add all documents with file extension `.xml` to the `gettingstarted` collection on Solr running on port `8984`.
 
 [source,bash]
 ----
@@ -109,16 +109,16 @@ Send XML arguments to delete a document from `gettingstarted`.
 
 [source,bash]
 ----
-bin/solr post -url http://localhost:8983/solr/gettingstarted/update -d '<delete><id>42</id></delete>'
+bin/solr post -url http://localhost:8983/solr/gettingstarted/update -mode args -type application/xml '<delete><id>42</id></delete>'
 ----
 
-=== Indexing CSV
+=== Indexing CSV and JSON
 
-Index all CSV files into `gettingstarted`:
+Index all CSV and JSON files into `gettingstarted` from current directory:
 
 [source,bash]
 ----
-bin/solr post -url http://localhost:8983/solr/gettingstarted/update *.csv
+bin/solr post -url http://localhost:8983/solr/gettingstarted/update -filetypes json,csv .
 ----
 
 Index a tab-separated file into `gettingstarted`:
