@@ -1708,6 +1708,20 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
         return null;
+      } catch (PerReplicaStatesFetcher.PrsZkNodeNotFoundException e) {
+        CommonTestInjection.injectBreakpoint(ZkStateReader.class.getName() + "/exercised", e);
+        // could be a race condition that state.json and PRS entries are deleted between the
+        // state.json fetch and PRS entry fetch
+        Stat exists = zkClient.exists(collectionPath, watcher, true);
+        if (exists == null) {
+          log.info(
+              "PRS entry for collection {} not found in ZK. It was probably deleted between state.json read and PRS entry read.",
+              coll);
+
+          return null;
+        } else {
+          throw e; // unexpected, PRS node not found but the collection state.json still exists
+        }
       }
     }
   }

@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -35,6 +36,8 @@ public class PerReplicaStatesFetcher {
   public static PerReplicaStates fetch(
       String path, SolrZkClient zkClient, PerReplicaStates current) {
     try {
+      assert CommonTestInjection.injectBreakpoint(
+          PerReplicaStatesFetcher.class.getName() + "/beforePrsFetch");
       if (current != null) {
         Stat stat = zkClient.exists(current.path, null, true);
         if (stat == null) return new PerReplicaStates(path, 0, Collections.emptyList());
@@ -43,6 +46,11 @@ public class PerReplicaStatesFetcher {
       Stat stat = new Stat();
       List<String> children = zkClient.getChildren(path, null, stat, true);
       return new PerReplicaStates(path, stat.getCversion(), Collections.unmodifiableList(children));
+    } catch (KeeperException.NoNodeException e) {
+      throw new PrsZkNodeNotFoundException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error fetching per-replica states. The node [" + path + "] is not found",
+          e);
     } catch (KeeperException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Error fetching per-replica states", e);
@@ -58,6 +66,12 @@ public class PerReplicaStatesFetcher {
   public static class LazyPrsSupplier extends DocCollection.PrsSupplier {
     public LazyPrsSupplier(SolrZkClient zkClient, String collectionPath) {
       super(() -> PerReplicaStatesFetcher.fetch(collectionPath, zkClient, null));
+    }
+  }
+
+  public static class PrsZkNodeNotFoundException extends SolrException {
+    private PrsZkNodeNotFoundException(ErrorCode code, String msg, Throwable cause) {
+      super(code, msg, cause);
     }
   }
 }

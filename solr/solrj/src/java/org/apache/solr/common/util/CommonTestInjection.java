@@ -19,6 +19,8 @@ package org.apache.solr.common.util;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +34,7 @@ public class CommonTestInjection {
 
   private static volatile Map<String, String> additionalSystemProps = null;
   private static volatile Integer delay = null;
+  private static final ConcurrentMap<String, Breakpoint> breakpoints = new ConcurrentHashMap<>();
 
   public static void reset() {
     additionalSystemProps = null;
@@ -72,5 +75,67 @@ public class CommonTestInjection {
       }
     }
     return true;
+  }
+
+  /**
+   * This is usually set by the test cases.
+   *
+   * <p>If defined, code execution would break at certain code execution point at the invocation of
+   * injectBreakpoint with matching key until the provided method in the {@link Breakpoint}
+   * implementation is executed.
+   *
+   * <p>Setting the breakpoint to null would remove the breakpoint
+   *
+   * @see CommonTestInjection#injectBreakpoint(String, Object...)
+   * @param key could simply be the fully qualified class name or more granular like class name +
+   *     other id (such as method name). This should batch the key used in injectBreakpoint
+   * @param breakpoint The Breakpoint implementation, null to remove the breakpoint
+   */
+  public static void setBreakpoint(String key, Breakpoint breakpoint) {
+    if (breakpoint != null) {
+      breakpoints.put(key, breakpoint);
+    } else {
+      breakpoints.remove(key);
+    }
+  }
+
+  /**
+   * Injects a breakpoint that pauses the existing code execution, executes the code defined in the
+   * breakpoint implementation and then resumes afterwards. The breakpoint implementation is looked
+   * up by the corresponding key used in {@link CommonTestInjection#setBreakpoint(String,
+   * Breakpoint)}
+   *
+   * <p>An example usages :
+   *
+   * <ol>
+   *   <li>Inject a precise wait until a race condition is fulfilled before proceeding with original
+   *       code execution
+   *   <li>Inject a flag to catch exception statement which handles the exception without
+   *       re-throwing. This could verify caught exception does get triggered
+   * </ol>
+   *
+   * <p>This should always be a part of an assert statement (ie assert injectBreakpoint(key)) such
+   * that it will be skipped for normal code execution
+   *
+   * @see CommonTestInjection#setBreakpoint(String, Breakpoint)
+   * @param key could simply be the fully qualified class name or more granular like class name +
+   *     other id (such as method name). This should only be set by corresponding unit test cases
+   *     with CommonTestInjection#setBreakpoint
+   * @param args optional arguments list to be passed to the Breakpoint
+   */
+  public static boolean injectBreakpoint(String key, Object... args) {
+    Breakpoint breakpoint = breakpoints.get(key);
+    if (breakpoint != null) {
+      breakpoint.executeAndResume(args);
+    }
+    return true;
+  }
+
+  public interface Breakpoint {
+    /**
+     * Code execution should break at where the breakpoint was injected, then it would execute this
+     * method and resumes the execution afterwards.
+     */
+    void executeAndResume(Object... args);
   }
 }
