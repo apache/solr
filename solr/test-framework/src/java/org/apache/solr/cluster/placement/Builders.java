@@ -31,8 +31,8 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
+import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
 import org.apache.solr.cluster.placement.impl.CollectionMetricsBuilder;
-import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.apache.solr.common.util.Pair;
@@ -144,17 +144,17 @@ public class Builders {
 
         if (nodeBuilder.getCoreCount() != null) {
           metrics
-              .computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>())
+              .computeIfAbsent(BuiltInMetrics.NODE_NUM_CORES, n -> new HashMap<>())
               .put(node, nodeBuilder.getCoreCount());
         }
         if (nodeBuilder.getFreeDiskGB() != null) {
           metrics
-              .computeIfAbsent(NodeMetricImpl.FREE_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(BuiltInMetrics.NODE_FREE_DISK_GB, n -> new HashMap<>())
               .put(node, nodeBuilder.getFreeDiskGB());
         }
         if (nodeBuilder.getTotalDiskGB() != null) {
           metrics
-              .computeIfAbsent(NodeMetricImpl.TOTAL_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(BuiltInMetrics.NODE_TOTAL_DISK_GB, n -> new HashMap<>())
               .put(node, nodeBuilder.getTotalDiskGB());
         }
         if (nodeBuilder.getSysprops() != null) {
@@ -177,7 +177,7 @@ public class Builders {
 
       if (!collectionBuilders.isEmpty()) {
         Map<Node, Object> nodeToCoreCount =
-            metrics.computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>());
+            metrics.computeIfAbsent(BuiltInMetrics.NODE_NUM_CORES, n -> new HashMap<>());
         collectionBuilders.forEach(
             builder -> {
               collectionMetrics.put(
@@ -411,7 +411,7 @@ public class Builders {
             shardMetricsBuilder.getReplicaMetricsBuilders().put(replicaName, replicaMetricsBuilder);
             if (initialSizeGBPerShard != null) {
               replicaMetricsBuilder.addMetric(
-                  ReplicaMetricImpl.INDEX_SIZE_GB,
+                  BuiltInMetrics.REPLICA_INDEX_SIZE_GB,
                   initialSizeGBPerShard.get(shardNumber - 1) * ReplicaMetricImpl.GB);
             }
             if (leader == null && type != Replica.ReplicaType.PULL) {

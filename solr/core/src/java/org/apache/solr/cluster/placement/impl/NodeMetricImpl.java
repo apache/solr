@@ -20,38 +20,12 @@ package org.apache.solr.cluster.placement.impl;
 import java.util.Objects;
 import java.util.function.Function;
 import org.apache.solr.cluster.placement.NodeMetric;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 /**
  * Node metric identifier, corresponding to a node-level metric registry and the internal metric
  * name.
  */
-public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
-
-  /** Total disk space in GB. */
-  public static final NodeMetricImpl<Double> TOTAL_DISK_GB =
-      new NodeMetricImpl<>(
-          "totalDisk", Registry.SOLR_NODE, "CONTAINER.fs.totalSpace", BYTES_TO_GB_CONVERTER);
-
-  /** Free (usable) disk space in GB. */
-  public static final NodeMetricImpl<Double> FREE_DISK_GB =
-      new NodeMetricImpl<>(
-          "freeDisk", Registry.SOLR_NODE, "CONTAINER.fs.usableSpace", BYTES_TO_GB_CONVERTER);
-
-  /** Number of all cores. */
-  public static final NodeMetricImpl<Integer> NUM_CORES =
-      new NodeMetricImpl<>(ImplicitSnitch.CORES);
-
-  public static final NodeMetricImpl<Double> HEAP_USAGE =
-      new NodeMetricImpl<>(ImplicitSnitch.HEAPUSAGE);
-
-  /** System load average. */
-  public static final NodeMetricImpl<Double> SYSLOAD_AVG =
-      new NodeMetricImpl<>("sysLoadAvg", Registry.SOLR_JVM, "os.systemLoadAverage");
-
-  /** Number of available processors. */
-  public static final NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =
-      new NodeMetricImpl<>("availableProcessors", Registry.SOLR_JVM, "os.availableProcessors");
+public abstract class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
   private final Registry registry;
 
@@ -117,6 +91,120 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
           + '}';
     } else {
       return "NodeMetricImpl{key=" + internalName + "}";
+    }
+  }
+
+  static class IntNodeMetricImpl extends NodeMetricImpl<Integer> {
+
+    public IntNodeMetricImpl(String name, Registry registry, String internalName) {
+      super(name, registry, internalName);
+    }
+
+    public IntNodeMetricImpl(
+        String name, Registry registry, String internalName, Function<Object, Integer> converter) {
+      super(name, registry, internalName, converter);
+    }
+
+    public IntNodeMetricImpl(String key) {
+      super(key);
+    }
+
+    public IntNodeMetricImpl(String key, Function<Object, Integer> converter) {
+      super(key, converter);
+    }
+
+    @Override
+    public Integer increase(Integer a, Integer b) {
+      if (b == null) {
+        return a;
+      } else if (a == null) {
+        return b;
+      } else {
+        return a + b;
+      }
+    }
+
+    @Override
+    public Integer decrease(Integer a, Integer b) {
+      if (b == null) {
+        return a;
+      } else if (a == null) {
+        return b * -1;
+      } else {
+        return a - b;
+      }
+    }
+  }
+
+  static class DoubleNodeMetricImpl extends NodeMetricImpl<Double> {
+
+    public DoubleNodeMetricImpl(String name, Registry registry, String internalName) {
+      super(name, registry, internalName);
+    }
+
+    public DoubleNodeMetricImpl(
+        String name, Registry registry, String internalName, Function<Object, Double> converter) {
+      super(name, registry, internalName, converter);
+    }
+
+    public DoubleNodeMetricImpl(String key) {
+      super(key);
+    }
+
+    public DoubleNodeMetricImpl(String key, Function<Object, Double> converter) {
+      super(key, converter);
+    }
+
+    @Override
+    public Double increase(Double a, Double b) {
+      if (b == null) {
+        return a;
+      } else if (a == null) {
+        return b;
+      } else {
+        return a + b;
+      }
+    }
+
+    @Override
+    public Double decrease(Double a, Double b) {
+      if (b == null) {
+        return a;
+      } else if (a == null) {
+        return b * -1;
+      } else {
+        return a - b;
+      }
+    }
+  }
+
+  static class StaticNodeMetricImpl<T> extends NodeMetricImpl<T> {
+
+    public StaticNodeMetricImpl(String name, Registry registry, String internalName) {
+      super(name, registry, internalName);
+    }
+
+    public StaticNodeMetricImpl(
+        String name, Registry registry, String internalName, Function<Object, T> converter) {
+      super(name, registry, internalName, converter);
+    }
+
+    public StaticNodeMetricImpl(String key) {
+      super(key);
+    }
+
+    public StaticNodeMetricImpl(String key, Function<Object, T> converter) {
+      super(key, converter);
+    }
+
+    @Override
+    public T increase(T a, T b) {
+      return a;
+    }
+
+    @Override
+    public T decrease(T a, T b) {
+      return a;
     }
   }
 }
