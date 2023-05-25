@@ -149,7 +149,7 @@ public class TestOriginalScoreFeature extends TestRerankBase {
     }
 
     query.remove("fl");
-    query.add("fl", "*, score, fv:[fv]");
+    query.add("fl", "*, score, fv:[fv logAll=true]");
     query.add("rq", "{!ltr model=" + modelName + " reRankDocs=4}");
 
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");

@@ -85,9 +85,6 @@ public class SolrTestCase extends LuceneTestCase {
       RuleChain.outerRule(new SystemPropertiesRestoreRule())
           .around(
               new VerifyTestClassNamingConvention(
-                  "org.apache.solr.analytics", NAMING_CONVENTION_TEST_SUFFIX))
-          .around(
-              new VerifyTestClassNamingConvention(
                   "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
           .around(new RevertDefaultThreadHandlerRule())
           .around(

@@ -31,6 +31,8 @@ Deprecation Removals
 
 * SOLR-15703: Removed deprecated SolrException#log methods (Kevin Risden)
 
+* SOLR-16661: Removed deprecated 'analytics' component (janhoy)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -43,6 +45,8 @@ Other Changes
   (David Smiley)
 
 * PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
+
+* SOLR-16798: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command. (Bence Szabo via Eric Pugh)
 
 ==================  9.3.0 ==================
 
@@ -125,6 +129,21 @@ Improvements
 
 * SOLR-16766: Remove -usage as option from bin/solr, and ensure both -help and -h work. (Bence Szabo via Eric Pugh)
 
+* SOLR-16759: Introducing logAll parameter in the feature logger (Anna Ruggero, Alessandro Benedetti)
+
+* SOLR-16394: The v2 list and delete (collection) backup APIs have been tweaked to be more intuitive: backup listing now uses
+  `GET /api/backups/bName/versions`, backup deletion by ID now uses `DELETE /api/backups/bName/versions/1`, backup deletion by
+  recency now uses `DELETE /api/backups/bName/versions?retainLatest=3`, and index-file "garbage collection" now uses
+  `PUT /api/backups/backupName/purgeUnused` (Jason Gerlowski)
+
+* SOLR-16470: `/coreName/replication?commit=indexversion` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/replication/indexversion` (Matthew Biscocho via Jason Gerlowski)
+
+* SOLR-16687: Add support of SolrClassLoader to SolrZkClient (Lamine Idjeraoui via Jason Gerlowski & Houston Putman)
+
+* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
+  only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
+
 Optimizations
 ---------------------
 
@@ -168,6 +187,14 @@ Bug Fixes
 * SOLR-16789: Fixed Admin UI dashboard "Security" panel to show the right information regarding authentication (Tomás Fernández Löbbe)
 
 * SOLR-16760: bin/solr package tool supports -h and -help command like other tools.  (Eric Pugh)
+
+* SOLR-16765: bin/solr export tool limit property was off by 1.  Now limit results exported to the exact number. (Eric Pugh)
+
+* SOLR-16801: Reset the thread's contextClassloader after loading the CoreContainer (Thomas Wöckinger, Houston Putman)
+
+* SOLR-16808: Stop publishing environment variables via the Metrics API (Houston Putman)
+
+* SOLR-16811: /update/json/docs?echo and mapUniqueKeyOnly params doesn't work (Mikhail Khludnev)
 
 Dependency Upgrades
 ---------------------

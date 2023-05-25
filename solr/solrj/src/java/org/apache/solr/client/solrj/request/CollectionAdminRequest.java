@@ -40,8 +40,6 @@ import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
-import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -3068,13 +3066,18 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
    * "incremental=false" flag).
    */
   public static class DeleteBackup extends CollectionAdminRequest<CollectionAdminResponse> {
-    private final DeleteBackupPayload deleteBackupPayload;
+
+    private final String name;
+    private String repository;
+    private String location;
+    private Integer backupId;
+    private Integer maxNumBackupPoints;
+    private Boolean purgeUnused;
 
     private DeleteBackup(String backupName) {
       super(CollectionAction.DELETEBACKUP);
 
-      deleteBackupPayload = new DeleteBackupPayload();
-      deleteBackupPayload.name = backupName;
+      this.name = backupName;
     }
 
     /**
@@ -3082,7 +3085,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     information. Defaults to 'LocalFileSystemRepository' if not specified.
      */
     public DeleteBackup setRepositoryName(String backupRepository) {
-      deleteBackupPayload.repository = backupRepository;
+      this.repository = backupRepository;
       return this;
     }
 
@@ -3094,7 +3097,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     thrown.
      */
     public DeleteBackup setLocation(String backupLocation) {
-      deleteBackupPayload.location = backupLocation;
+      location = backupLocation;
       return this;
     }
 
@@ -3105,7 +3108,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @see #deleteBackupById(String, int)
      */
     protected DeleteBackup setBackupId(int backupId) {
-      deleteBackupPayload.backupId = backupId;
+      this.backupId = backupId;
       return this;
     }
 
@@ -3116,7 +3119,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @see #deleteBackupByRecency(String, int)
      */
     protected DeleteBackup setMaxNumBackupPoints(int backupPointsToRetain) {
-      deleteBackupPayload.maxNumBackupPoints = backupPointsToRetain;
+      this.maxNumBackupPoints = backupPointsToRetain;
       return this;
     }
 
@@ -3129,20 +3132,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @see #deleteBackupPurgeUnusedFiles(String)
      */
     protected DeleteBackup setPurgeUnused() {
-      deleteBackupPayload.purgeUnused = true;
+      this.purgeUnused = true;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CoreAdminParams.NAME, deleteBackupPayload.name);
-      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, deleteBackupPayload.location);
-      params.setNonNull(BACKUP_REPOSITORY, deleteBackupPayload.repository);
-      params.setNonNull(CoreAdminParams.BACKUP_ID, deleteBackupPayload.backupId);
-      params.setNonNull(
-          CoreAdminParams.MAX_NUM_BACKUP_POINTS, deleteBackupPayload.maxNumBackupPoints);
-      params.setNonNull(CoreAdminParams.BACKUP_PURGE_UNUSED, deleteBackupPayload.purgeUnused);
+      params.set(CoreAdminParams.NAME, name);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, location);
+      params.setNonNull(BACKUP_REPOSITORY, repository);
+      params.setNonNull(CoreAdminParams.BACKUP_ID, backupId);
+      params.setNonNull(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints);
+      params.setNonNull(CoreAdminParams.BACKUP_PURGE_UNUSED, purgeUnused);
       return params;
     }
 
@@ -3171,13 +3173,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
    * "incremental=false" flag).
    */
   public static class ListBackup extends CollectionAdminRequest<CollectionAdminResponse> {
-    private final ListBackupPayload listPayload;
+    private final String backupName;
+    private String location;
+    private String repositoryName;
 
     private ListBackup(String backupName) {
       super(CollectionAction.LISTBACKUP);
 
-      this.listPayload = new ListBackupPayload();
-      this.listPayload.name = backupName;
+      this.backupName = backupName;
     }
 
     /**
@@ -3185,7 +3188,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     information. Defaults to 'LocalFileSystemRepository' if not specified.
      */
     public ListBackup setBackupRepository(String backupRepository) {
-      listPayload.repository = backupRepository;
+      this.repositoryName = backupRepository;
       return this;
     }
 
@@ -3197,16 +3200,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     thrown.
      */
     public ListBackup setBackupLocation(String backupLocation) {
-      listPayload.location = backupLocation;
+      this.location = backupLocation;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CoreAdminParams.NAME, listPayload.name);
-      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, listPayload.location);
-      params.setNonNull(BACKUP_REPOSITORY, listPayload.repository);
+      params.set(CoreAdminParams.NAME, backupName);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, this.location);
+      params.setNonNull(BACKUP_REPOSITORY, this.repositoryName);
 
       return params;
     }

@@ -124,7 +124,7 @@ public abstract class AdminAPIBase extends JerseyResource {
     solrQueryResponse.setHttpCaching(false);
   }
 
-  protected SubResponseAccumulatingJerseyResponse submitRemoteMessageAndHandleResponse(
+  protected SolrResponse submitRemoteMessageAndHandleResponse(
       SubResponseAccumulatingJerseyResponse response,
       CollectionParams.CollectionAction action,
       ZkNodeProps remoteMessage,
@@ -149,7 +149,7 @@ public abstract class AdminAPIBase extends JerseyResource {
     response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
     response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
 
-    return response;
+    return remoteResponse;
   }
 
   protected static void insertIfNotNull(Map<String, Object> destination, String key, Object value) {
