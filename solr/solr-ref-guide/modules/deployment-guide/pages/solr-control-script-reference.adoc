@@ -1460,9 +1460,9 @@ Choosing `javabin` exports in the native Solr format, and is compact and fast to
 |Optional |Default: _see description_
 |===
 +
-Either the path to a directory for the export to happen in, or a specific file name to populate.
+Either the path to the directory for the exported data to be written to, or a specific file to be written out.
 +
-If not provided, a file will be created with the name of the collection, as in `<collection>.json`.
+If only a directory is specified then the file will be created with the name of the collection, as in `<collection>.json`.
 
 `-compress`::
 +
@@ -1490,8 +1490,9 @@ The default is `\*:*` which will export all documents.
 |Optional |Default: none
 |===
 +
-A comma separated list of fields to be exported.
-If not provided, all fields will be included.
+Comma separated list of fields to be exported.
+By default all fields are fetched.
+
 
 `-limit <number of documents>`::
 +
@@ -1500,7 +1501,7 @@ If not provided, all fields will be included.
 |Optional |Default: `100`
 |===
 +
-The number of documents to export.
+Maximum number of docs to download.
 The value `-1` will export all documents.
 
 *Examples*
