@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import com.google.common.collect.Ordering;
-import com.google.common.collect.TreeMultimap;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -37,6 +35,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.cluster.Cluster;
@@ -171,7 +171,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         config.minimalFreeDiskGB,
         config.prioritizedFreeDiskGB,
         config.withCollection,
-        config.collectionNodeType);
+        config.collectionNodeType,
+        config.spreadAcrossDomains);
   }
 
   @Override
@@ -205,6 +206,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     private final Random replicaPlacementRandom =
         new Random(); // ok even if random sequence is predictable.
 
+    private final boolean spreadAcrossDomains;
+
     /**
      * The factory has decoded the configuration for the plugin instance and passes it the
      * parameters it needs.
@@ -213,11 +216,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         long minimalFreeDiskGB,
         long prioritizedFreeDiskGB,
         Map<String, String> withCollections,
-        Map<String, String> collectionNodeTypes) {
+        Map<String, String> collectionNodeTypes,
+        boolean spreadAcrossDomains) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
       this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
       Objects.requireNonNull(withCollections, "withCollections must not be null");
       Objects.requireNonNull(collectionNodeTypes, "collectionNodeTypes must not be null");
+      this.spreadAcrossDomains = spreadAcrossDomains;
       this.withCollections = withCollections;
       if (withCollections.isEmpty()) {
         colocatedWith = Map.of();
@@ -266,7 +271,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       attributeFetcher
           .requestNodeSystemProperty(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP)
           .requestNodeSystemProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP)
-          .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP);
+          .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP)
+          .requestNodeSystemProperty(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
       attributeFetcher
           .requestNodeMetric(NodeMetricImpl.NUM_CORES)
           .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB);
@@ -275,6 +281,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       // Get the number of currently existing cores per node, so we can update as we place new cores
       // to not end up always selecting the same node(s). This is used across placement requests
       Map<Node, Integer> allCoresOnNodes = getCoreCountPerNode(allNodes, attrValues);
+
+      boolean doSpreadAcrossDomains = shouldSpreadAcrossDomains(allNodes, attrValues);
 
       // Keep track with nodesWithReplicas across requests
       Map<String, Map<String, Set<Node>>> allNodesWithReplicas = new HashMap<>();
@@ -345,7 +353,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                 nodesWithReplicas,
                 allCoresOnNodes,
                 placementContext.getPlacementPlanFactory(),
-                replicaPlacements);
+                replicaPlacements,
+                doSpreadAcrossDomains);
           }
         }
         placementPlans.add(
@@ -355,6 +364,27 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       return placementPlans;
+    }
+
+    private boolean shouldSpreadAcrossDomains(Set<Node> allNodes, AttributeValues attrValues) {
+      boolean doSpreadAcrossDomains =
+          spreadAcrossDomains && spreadDomainPropPresent(allNodes, attrValues);
+      if (spreadAcrossDomains && !doSpreadAcrossDomains) {
+        log.warn(
+            "AffinityPlacementPlugin configured to spread across domains, but there are nodes in the cluster without the {} system property. Ignoring spreadAcrossDomains.",
+            AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
+      }
+      return doSpreadAcrossDomains;
+    }
+
+    private boolean spreadDomainPropPresent(Set<Node> allNodes, AttributeValues attrValues) {
+      // We can only use spread domains if all nodes have the system property
+      return allNodes.stream()
+          .noneMatch(
+              n ->
+                  attrValues
+                      .getSystemProperty(n, AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
+                      .isEmpty());
     }
 
     @Override
@@ -504,15 +534,187 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      */
     private static class AzWithNodes {
       final String azName;
-      List<Node> availableNodesForPlacement;
-      boolean hasBeenSorted;
+      private final boolean useSpreadDomains;
+      private boolean listIsSorted = false;
+      private final Comparator<Node> nodeComparator;
+      private final Random random;
+      private final List<Node> availableNodesForPlacement;
+      private final AttributeValues attributeValues;
+      private TreeSet<SpreadDomainWithNodes> sortedSpreadDomains;
+      private final Map<String, Integer> currentSpreadDomainUsageUsage;
+      private int numNodesForPlacement;
 
-      AzWithNodes(String azName, List<Node> availableNodesForPlacement) {
+      AzWithNodes(
+          String azName,
+          List<Node> availableNodesForPlacement,
+          boolean useSpreadDomains,
+          Comparator<Node> nodeComparator,
+          Random random,
+          AttributeValues attributeValues,
+          Map<String, Integer> currentSpreadDomainUsageUsage) {
         this.azName = azName;
         this.availableNodesForPlacement = availableNodesForPlacement;
-        // Once the list is sorted to an order we're happy with, this flag is set to true to avoid
-        // sorting multiple times unnecessarily.
-        this.hasBeenSorted = false;
+        this.useSpreadDomains = useSpreadDomains;
+        this.nodeComparator = nodeComparator;
+        this.random = random;
+        this.attributeValues = attributeValues;
+        this.currentSpreadDomainUsageUsage = currentSpreadDomainUsageUsage;
+        this.numNodesForPlacement = availableNodesForPlacement.size();
+      }
+
+      private boolean hasBeenSorted() {
+        return (useSpreadDomains && sortedSpreadDomains != null)
+            || (!useSpreadDomains && listIsSorted);
+      }
+
+      void ensureSorted() {
+        if (!hasBeenSorted()) {
+          sort();
+        }
+      }
+
+      private void sort() {
+        assert !listIsSorted && sortedSpreadDomains == null
+            : "We shouldn't be sorting this list again";
+
+        // Make sure we do not tend to use always the same nodes (within an AZ) if all
+        // conditions are identical (well, this likely is not the case since after having added
+        // a replica to a node its number of cores increases for the next placement decision,
+        // but let's be defensive here, given that multiple concurrent placement decisions might
+        // see the same initial cluster state, and we want placement to be reasonable even in
+        // that case without creating an unnecessary imbalance). For example, if all nodes have
+        // 0 cores and same amount of free disk space, ideally we want to pick a random node for
+        // placement, not always the same one due to some internal ordering.
+        Collections.shuffle(availableNodesForPlacement, random);
+
+        if (useSpreadDomains) {
+          // When we use spread domains, we don't just sort the list of nodes, instead we generate a
+          // TreeSet of SpreadDomainWithNodes,
+          // sorted by the number of times the domain has been used. Each
+          // SpreadDomainWithNodes internally contains the list of nodes that belong to that
+          // particular domain,
+          // and it's sorted internally by the comparator passed to this
+          // class (which is the same that's used when not using spread domains).
+          // Whenever a node from a particular SpreadDomainWithNodes is selected as the best
+          // candidate, the call to "removeBestNode" will:
+          // 1. Remove the SpreadDomainWithNodes instance from the TreeSet
+          // 2. Remove the best node from the list within the SpreadDomainWithNodes
+          // 3. Increment the count of times the domain has been used
+          // 4. Re-add the SpreadDomainWithNodes instance to the TreeSet if there are still nodes
+          // available
+          HashMap<String, List<Node>> spreadDomainToListOfNodesMap = new HashMap<>();
+          for (Node node : availableNodesForPlacement) {
+            spreadDomainToListOfNodesMap
+                .computeIfAbsent(
+                    attributeValues
+                        .getSystemProperty(node, AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
+                        .get(),
+                    k -> new ArrayList<>())
+                .add(node);
+          }
+          sortedSpreadDomains =
+              new TreeSet<>(new SpreadDomainComparator(currentSpreadDomainUsageUsage));
+
+          int i = 0;
+          for (Map.Entry<String, List<Node>> entry : spreadDomainToListOfNodesMap.entrySet()) {
+            // Sort the nodes within the spread domain by the provided comparator
+            entry.getValue().sort(nodeComparator);
+            sortedSpreadDomains.add(
+                new SpreadDomainWithNodes(entry.getKey(), entry.getValue(), i++, nodeComparator));
+          }
+        } else {
+          availableNodesForPlacement.sort(nodeComparator);
+          listIsSorted = true;
+        }
+      }
+
+      Node getBestNode() {
+        assert hasBeenSorted();
+        if (useSpreadDomains) {
+          return sortedSpreadDomains.first().sortedNodesForPlacement.get(0);
+        } else {
+          return availableNodesForPlacement.get(0);
+        }
+      }
+
+      public Node removeBestNode() {
+        assert hasBeenSorted();
+        this.numNodesForPlacement--;
+        if (useSpreadDomains) {
+          // Since this SpreadDomainWithNodes needs to be re-sorted in the sortedSpreadDomains, we
+          // remove it and then re-add it, once the best node has been removed.
+          SpreadDomainWithNodes group = sortedSpreadDomains.pollFirst();
+          Node n = group.sortedNodesForPlacement.remove(0);
+          this.currentSpreadDomainUsageUsage.merge(group.spreadDomainName, 1, Integer::sum);
+          if (!group.sortedNodesForPlacement.isEmpty()) {
+            sortedSpreadDomains.add(group);
+          }
+          return n;
+        } else {
+          return availableNodesForPlacement.remove(0);
+        }
+      }
+
+      public int numNodes() {
+        return this.numNodesForPlacement;
+      }
+    }
+
+    /**
+     * This class represents group of nodes with the same {@link
+     * AffinityPlacementConfig#SPREAD_DOMAIN_SYSPROP} label.
+     */
+    static class SpreadDomainWithNodes implements Comparable<SpreadDomainWithNodes> {
+
+      /**
+       * This is the label that all nodes in this group have in {@link
+       * AffinityPlacementConfig#SPREAD_DOMAIN_SYSPROP} label.
+       */
+      final String spreadDomainName;
+
+      /**
+       * The list of all nodes that contain the same {@link
+       * AffinityPlacementConfig#SPREAD_DOMAIN_SYSPROP} label. They must be sorted before creating
+       * this class.
+       */
+      private final List<Node> sortedNodesForPlacement;
+
+      /**
+       * This is used for tie breaking the sort of {@link SpreadDomainWithNodes}, when the
+       * nodeComparator between the top nodes of each group return 0.
+       */
+      private final int tieBreaker;
+
+      /**
+       * This is the comparator that is used to compare the top nodes in the {@link
+       * #sortedNodesForPlacement} lists. Must be the same that was used to sort {@link
+       * #sortedNodesForPlacement}.
+       */
+      private final Comparator<Node> nodeComparator;
+
+      public SpreadDomainWithNodes(
+          String spreadDomainName,
+          List<Node> sortedNodesForPlacement,
+          int tieBreaker,
+          Comparator<Node> nodeComparator) {
+        this.spreadDomainName = spreadDomainName;
+        this.sortedNodesForPlacement = sortedNodesForPlacement;
+        this.tieBreaker = tieBreaker;
+        this.nodeComparator = nodeComparator;
+      }
+
+      @Override
+      public int compareTo(SpreadDomainWithNodes o) {
+        if (o == this) {
+          return 0;
+        }
+        int result =
+            nodeComparator.compare(
+                this.sortedNodesForPlacement.get(0), o.sortedNodesForPlacement.get(0));
+        if (result == 0) {
+          return Integer.compare(this.tieBreaker, o.tieBreaker);
+        }
+        return result;
       }
     }
 
@@ -659,7 +861,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Set<Node> nodesWithReplicas,
         Map<Node, Integer> coresOnNodes,
         PlacementPlanFactory placementPlanFactory,
-        Set<ReplicaPlacement> replicaPlacements)
+        Set<ReplicaPlacement> replicaPlacements,
+        boolean doSpreadAcrossDomains)
         throws PlacementException {
       // Count existing replicas per AZ. We count only instances of the type of replica for which we
       // need to do placement. If we ever want to balance replicas of any type across AZ's (and not
@@ -680,6 +883,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       // be put on same node)
       candidateNodes.removeAll(nodesWithReplicas);
 
+      // This Map will include the affinity labels for the nodes that are currently hosting replicas
+      // of this shard. It will be modified with new placement decisions.
+      Map<String, Integer> spreadDomainsInUse = new HashMap<>();
       Shard shard = solrCollection.getShard(shardName);
       if (shard != null) {
         // shard is non null if we're adding replicas to an already existing collection.
@@ -695,6 +901,15 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               // the dereferencing below can't be assumed as the entry will not exist in the map.
               azToNumReplicas.put(az, azToNumReplicas.get(az) + 1);
             }
+            if (doSpreadAcrossDomains) {
+              spreadDomainsInUse.merge(
+                  attrValues
+                      .getSystemProperty(
+                          replica.getNode(), AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
+                      .get(),
+                  1,
+                  Integer::sum);
+            }
           }
         }
       }
@@ -704,27 +919,43 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       // consideration how many replicas were per AZ, so we can place (or try to place) replicas on
       // AZ's that have fewer replicas
 
-      // Get the candidate nodes per AZ in order to build (further down) a mapping of AZ to
-      // placement candidates.
       Map<String, List<Node>> nodesPerAz = new HashMap<>();
-      for (Node node : candidateNodes) {
-        String nodeAz = getNodeAZ(node, attrValues);
-        List<Node> nodesForAz = nodesPerAz.computeIfAbsent(nodeAz, k -> new ArrayList<>());
-        nodesForAz.add(node);
+      if (availabilityZones.size() == 1) {
+        // If AZs are not being used (all undefined for example) or a single AZ exists, we add all
+        // nodes
+        // to the same entry
+        nodesPerAz.put(availabilityZones.iterator().next(), new ArrayList<>(candidateNodes));
+      } else {
+        // Get the candidate nodes per AZ in order to build (further down) a mapping of AZ to
+        // placement candidates.
+        for (Node node : candidateNodes) {
+          String nodeAz = getNodeAZ(node, attrValues);
+          List<Node> nodesForAz = nodesPerAz.computeIfAbsent(nodeAz, k -> new ArrayList<>());
+          nodesForAz.add(node);
+        }
       }
+
+      Comparator<Node> interGroupNodeComparator =
+          new CoresAndDiskComparator(attrValues, coresOnNodes, prioritizedFreeDiskGB);
 
       // Build a treeMap sorted by the number of replicas per AZ and including candidates nodes
       // suitable for placement on the AZ, so we can easily select the next AZ to get a replica
       // assignment and quickly (constant time) decide if placement on this AZ is possible or not.
-      TreeMultimap<Integer, AzWithNodes> azByExistingReplicas =
-          TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
+      Map<Integer, Set<AzWithNodes>> azByExistingReplicas =
+          new TreeMap<>(Comparator.naturalOrder());
       for (Map.Entry<String, List<Node>> e : nodesPerAz.entrySet()) {
-        azByExistingReplicas.put(
-            azToNumReplicas.get(e.getKey()), new AzWithNodes(e.getKey(), e.getValue()));
+        azByExistingReplicas
+            .computeIfAbsent(azToNumReplicas.get(e.getKey()), k -> new HashSet<>())
+            .add(
+                new AzWithNodes(
+                    e.getKey(),
+                    e.getValue(),
+                    doSpreadAcrossDomains,
+                    interGroupNodeComparator,
+                    replicaPlacementRandom,
+                    attrValues,
+                    spreadDomainsInUse));
       }
-
-      CoresAndDiskComparator coresAndDiskComparator =
-          new CoresAndDiskComparator(attrValues, coresOnNodes, prioritizedFreeDiskGB);
 
       for (int i = 0; i < numReplicas; i++) {
         // We have for each AZ on which we might have a chance of placing a replica, the list of
@@ -741,27 +972,29 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // things: 1. remove those AZ's that have no nodes, no use iterating over these again and
         // again (as we compute placement for more replicas), and 2. collect all those AZ with a
         // minimal number of replicas.
-        for (Iterator<Map.Entry<Integer, AzWithNodes>> it =
-                azByExistingReplicas.entries().iterator();
-            it.hasNext(); ) {
-          Map.Entry<Integer, AzWithNodes> entry = it.next();
-          int numberOfNodes = entry.getValue().availableNodesForPlacement.size();
-          if (numberOfNodes == 0) {
-            it.remove();
-          } else { // AZ does have node(s) for placement
-            if (candidateAzEntries == null) {
-              // First AZ with nodes that can take the replica. Initialize tracking structures
-              minNumberOfReplicasPerAz = numberOfNodes;
-              candidateAzEntries = new HashSet<>();
+        for (Map.Entry<Integer, Set<AzWithNodes>> mapEntry : azByExistingReplicas.entrySet()) {
+          Iterator<AzWithNodes> it = mapEntry.getValue().iterator();
+          while (it.hasNext()) {
+            Map.Entry<Integer, AzWithNodes> entry = Map.entry(mapEntry.getKey(), it.next());
+            int numberOfNodes = entry.getValue().numNodes();
+            if (numberOfNodes == 0) {
+              it.remove();
+            } else { // AZ does have node(s) for placement
+              if (candidateAzEntries == null) {
+                // First AZ with nodes that can take the replica. Initialize tracking structures
+                minNumberOfReplicasPerAz = numberOfNodes;
+                candidateAzEntries = new HashSet<>();
+              }
+              if (minNumberOfReplicasPerAz != numberOfNodes) {
+                // AZ's with more replicas than the minimum number seen are not placement candidates
+                break;
+              }
+              candidateAzEntries.add(entry);
+              // We remove all entries that are candidates: the "winner" will be modified, all
+              // entries
+              // might also be sorted, so we'll insert back the updated versions later.
+              it.remove();
             }
-            if (minNumberOfReplicasPerAz != numberOfNodes) {
-              // AZ's with more replicas than the minimum number seen are not placement candidates
-              break;
-            }
-            candidateAzEntries.add(entry);
-            // We remove all entries that are candidates: the "winner" will be modified, all entries
-            // might also be sorted, so we'll insert back the updated versions later.
-            it.remove();
           }
         }
 
@@ -786,50 +1019,36 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Node selectedAzBestNode = null;
         for (Map.Entry<Integer, AzWithNodes> candidateAzEntry : candidateAzEntries) {
           AzWithNodes azWithNodes = candidateAzEntry.getValue();
-          List<Node> nodes = azWithNodes.availableNodesForPlacement;
-
-          if (!azWithNodes.hasBeenSorted) {
-            // Make sure we do not tend to use always the same nodes (within an AZ) if all
-            // conditions are identical (well, this likely is not the case since after having added
-            // a replica to a node its number of cores increases for the next placement decision,
-            // but let's be defensive here, given that multiple concurrent placement decisions might
-            // see the same initial cluster state, and we want placement to be reasonable even in
-            // that case without creating an unnecessary imbalance). For example, if all nodes have
-            // 0 cores and same amount of free disk space, ideally we want to pick a random node for
-            // placement, not always the same one due to some internal ordering.
-            Collections.shuffle(nodes, replicaPlacementRandom);
-
-            // Sort by increasing number of cores but pushing nodes with low free disk space to the
-            // end of the list
-            nodes.sort(coresAndDiskComparator);
-
-            azWithNodes.hasBeenSorted = true;
-          }
+          azWithNodes.ensureSorted();
 
           // Which one is better, the new one or the previous best?
           if (selectedAz == null
-              || coresAndDiskComparator.compare(nodes.get(0), selectedAzBestNode) < 0) {
+              || interGroupNodeComparator.compare(azWithNodes.getBestNode(), selectedAzBestNode)
+                  < 0) {
             selectedAz = candidateAzEntry;
-            selectedAzBestNode = nodes.get(0);
+            selectedAzBestNode = azWithNodes.getBestNode();
           }
         }
 
         // Now actually remove the selected node from the winning AZ
         AzWithNodes azWithNodes = selectedAz.getValue();
-        List<Node> nodes = selectedAz.getValue().availableNodesForPlacement;
-        Node assignTarget = nodes.remove(0);
+        Node assignTarget = azWithNodes.removeBestNode();
 
         // Insert back all the qualifying but non winning AZ's removed while searching for the one
         for (Map.Entry<Integer, AzWithNodes> removedAzs : candidateAzEntries) {
           if (removedAzs != selectedAz) {
-            azByExistingReplicas.put(removedAzs.getKey(), removedAzs.getValue());
+            azByExistingReplicas
+                .computeIfAbsent(removedAzs.getKey(), k -> new HashSet<>())
+                .add(removedAzs.getValue());
           }
         }
 
         // Insert back a corrected entry for the winning AZ: one more replica living there and one
         // less node that can accept new replicas (the remaining candidate node list might be empty,
         // in which case it will be cleaned up on the next iteration).
-        azByExistingReplicas.put(selectedAz.getKey() + 1, azWithNodes);
+        azByExistingReplicas
+            .computeIfAbsent(selectedAz.getKey() + 1, k -> new HashSet<>())
+            .add(azWithNodes);
 
         // Do not assign that node again for replicas of other replica type for this shard (this
         // update of the set is not useful in the current execution of this method but for following
@@ -963,6 +1182,30 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
         // The ordering on the number of cores is the natural order.
         return Integer.compare(coresOnNodes.get(a), coresOnNodes.get(b));
+      }
+    }
+
+    static class SpreadDomainComparator implements Comparator<SpreadDomainWithNodes> {
+      private final Map<String, Integer> spreadDomainUsage;
+
+      SpreadDomainComparator(Map<String, Integer> spreadDomainUsage) {
+        this.spreadDomainUsage = spreadDomainUsage;
+      }
+
+      @Override
+      public int compare(SpreadDomainWithNodes group1, SpreadDomainWithNodes group2) {
+        // This comparator will compare groups by:
+        // 1. The number of usages for the domain they represent: We want groups that are
+        // less used to be the best ones
+        // 2. On equal number of usages, by the internal comparator (which uses core count and disk
+        // space) on the best node for each group (which, since the list is sorted, it's always the
+        // one in the position 0)
+        Integer usagesLabel1 = spreadDomainUsage.getOrDefault(group1.spreadDomainName, 0);
+        Integer usagesLabel2 = spreadDomainUsage.getOrDefault(group2.spreadDomainName, 0);
+        if (usagesLabel1.equals(usagesLabel2)) {
+          return group1.compareTo(group2);
+        }
+        return usagesLabel1.compareTo(usagesLabel2);
       }
     }
   }

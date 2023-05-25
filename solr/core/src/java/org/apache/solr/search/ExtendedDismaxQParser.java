@@ -16,19 +16,15 @@
  */
 package org.apache.solr.search;
 
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
@@ -52,7 +48,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
 import org.apache.solr.request.SolrQueryRequest;
@@ -128,7 +126,7 @@ public class ExtendedDismaxQParser extends QParser {
     parsedUserQuery = null;
     String userQuery = getString();
     altUserQuery = null;
-    if (StringUtils.isBlank(userQuery)) {
+    if (StrUtils.isBlank(userQuery)) {
       // If no query is specified, we may have an alternate
       if (config.altQ != null) {
         QParser altQParser = subQuery(config.altQ, null);
@@ -307,22 +305,29 @@ public class ExtendedDismaxQParser extends QParser {
       }
 
       // create a map of {wordGram, [phraseField]}
-      Multimap<Integer, FieldParams> phraseFieldsByWordGram =
-          Multimaps.index(allPhraseFields, FieldParams::getWordGrams);
+      final Map<Integer, List<FieldParams>> phraseFieldsByWordGram = new HashMap<>();
+      for (FieldParams fieldParams : allPhraseFields) {
+        phraseFieldsByWordGram
+            .computeIfAbsent(fieldParams.getWordGrams(), k -> new ArrayList<>())
+            .add(fieldParams);
+      }
 
       // for each {wordGram, [phraseField]} entry, create and add shingled field queries to the main
       // user query
-      for (Map.Entry<Integer, Collection<FieldParams>> phraseFieldsByWordGramEntry :
-          phraseFieldsByWordGram.asMap().entrySet()) {
-
+      for (Map.Entry<Integer, List<FieldParams>> phraseFieldsByWordGramEntry :
+          phraseFieldsByWordGram.entrySet()) {
         // group the fields within this wordGram collection by their associated slop (it's possible
         // that the same field appears multiple times for the same wordGram count but with different
         // slop values. In this case, we should take the *sum* of those phrase queries, rather than
         // the max across them).
-        Multimap<Integer, FieldParams> phraseFieldsBySlop =
-            Multimaps.index(phraseFieldsByWordGramEntry.getValue(), FieldParams::getSlop);
-        for (Map.Entry<Integer, Collection<FieldParams>> phraseFieldsBySlopEntry :
-            phraseFieldsBySlop.asMap().entrySet()) {
+        final Map<Integer, List<FieldParams>> phraseFieldsBySlop = new HashMap<>();
+        for (FieldParams fieldParams : phraseFieldsByWordGramEntry.getValue()) {
+          phraseFieldsBySlop
+              .computeIfAbsent(fieldParams.getSlop(), k -> new ArrayList<>())
+              .add(fieldParams);
+        }
+        for (Map.Entry<Integer, List<FieldParams>> phraseFieldsBySlopEntry :
+            phraseFieldsBySlop.entrySet()) {
           addShingledPhraseQueries(
               query,
               normalClauses,
@@ -546,7 +551,7 @@ public class ExtendedDismaxQParser extends QParser {
     List<Query> boostFunctions = new ArrayList<>();
     if (config.hasBoostFunctions()) {
       for (String boostFunc : config.boostFuncs) {
-        if (null == boostFunc || "".equals(boostFunc)) continue;
+        if (null == boostFunc || boostFunc.isEmpty()) continue;
         Map<String, Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
         for (Map.Entry<String, Float> entry : ff.entrySet()) {
           Query fq = subQuery(entry.getKey(), FunctionQParserPlugin.NAME).getQuery();
@@ -669,7 +674,7 @@ public class ExtendedDismaxQParser extends QParser {
    * @return a {fieldName, fieldBoost} map for the given fields.
    */
   private Map<String, Float> getFieldBoosts(Collection<FieldParams> fields) {
-    Map<String, Float> fieldBoostMap = new LinkedHashMap<>(fields.size());
+    Map<String, Float> fieldBoostMap = CollectionUtil.newLinkedHashMap(fields.size());
 
     for (FieldParams field : fields) {
       fieldBoostMap.put(field.getField(), field.getBoost());
@@ -977,7 +982,7 @@ public class ExtendedDismaxQParser extends QParser {
      * Where we store a map from field name we expect to see in our query string, to Alias object
      * containing the fields to use in our DisjunctionMaxQuery and the tiebreaker to use.
      */
-    protected Map<String, Alias> aliases = new HashMap<>(3);
+    protected Map<String, Alias> aliases = CollectionUtil.newHashMap(3);
 
     private QType type;
     private String field;
@@ -1070,7 +1075,7 @@ public class ExtendedDismaxQParser extends QParser {
 
     @Override
     protected Query getPrefixQuery(String field, String val) throws SyntaxError {
-      if (val.equals("") && field.equals("*")) {
+      if (val.isEmpty() && field.equals("*")) {
         return new MatchAllDocsQuery();
       }
       this.type = QType.PREFIX;

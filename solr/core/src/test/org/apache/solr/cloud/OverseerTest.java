@@ -1031,8 +1031,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                   .build());
       overseers.add(overseer);
       ElectionContext ec =
-          new OverseerElectionContext(
-              zkClient, overseer, server.getZkAddress().replaceAll("/", "_"));
+          new OverseerElectionContext(zkClient, overseer, server.getZkAddress().replace("/", "_"));
       overseerElector.setup(ec);
       overseerElector.joinElection(ec, false);
 
@@ -1868,8 +1867,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 .setUseDistributedClusterStateUpdates(false)
                 .build());
     overseers.add(overseer);
-    ElectionContext ec =
-        new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
+    ElectionContext ec = new OverseerElectionContext(zkClient, overseer, address.replace("/", "_"));
     overseerElector.setup(ec);
     overseerElector.joinElection(ec, false);
     return zkClient;
@@ -1945,8 +1943,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private SolrCloudManager getCloudDataProvider(String zkAddress, SolrZkClient zkClient) {
     var client =
         new CloudLegacySolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
-            .withSocketTimeout(30000)
-            .withConnectionTimeout(15000)
+            .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .build();
     solrClients.add(client);
     SolrClientCloudManager sccm =

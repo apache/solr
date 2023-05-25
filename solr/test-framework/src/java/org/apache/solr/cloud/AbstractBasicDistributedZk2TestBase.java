@@ -325,8 +325,6 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
 
     query("q", "*:*", "sort", "n_tl1 desc");
 
-    cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
-
     long numFound2 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
 
     assertEquals(numFound1 + 1, numFound2);

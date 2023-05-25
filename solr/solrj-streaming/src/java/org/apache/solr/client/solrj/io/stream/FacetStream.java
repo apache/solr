@@ -19,12 +19,12 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -51,6 +51,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -126,7 +127,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     String collectionName = factory.getValueOperand(expression, 0);
 
     if (collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = collectionName.replace("\"", "").replace(" ", "");
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -663,8 +664,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       hosts.add(zkHost);
       cloudSolrClient =
           new CloudLegacySolrClient.Builder(hosts, Optional.empty())
-              .withSocketTimeout(30000)
-              .withConnectionTimeout(15000)
+              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
               .build();
     }
 
@@ -1060,7 +1061,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
    * @return A mapping of fields produced by the rollup stream to their output name.
    */
   protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
-    Map<String, String> map = new HashMap<>(rollupMetrics.length * 2);
+    Map<String, String> map = CollectionUtil.newHashMap(rollupMetrics.length * 2);
     for (Bucket b : buckets) {
       String key = b.toString();
       map.put(key, key);

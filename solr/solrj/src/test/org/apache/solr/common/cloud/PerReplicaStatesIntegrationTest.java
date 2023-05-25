@@ -105,7 +105,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       new V2Request.Builder("/collections")
           .withMethod(POST)
           .withPayload(
-              "{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true, maxShardsPerNode : 5}}")
+              "{\"name\": \"perReplicaState_testv2\", \"config\" : \"conf\", \"numShards\" : 2, \"nrtReplicas\" : 2, \"perReplicaState\" : true}")
           .build()
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);
@@ -187,6 +187,30 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
                 collectionPath, SolrCloudTestCase.cluster.getZkClient(), null);
         PerReplicaStates.State st = prs.get(replicaName);
         assertNotEquals(Replica.State.ACTIVE, st.state);
+        CollectionAdminResponse rsp =
+            new CollectionAdminRequest.ClusterStatus()
+                .setCollectionName(testCollection)
+                .process(cluster.getSolrClient());
+        assertEquals(
+            "true",
+            rsp._get(
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/leader",
+                null));
+        assertEquals(
+            "active",
+            rsp._get(
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/state",
+                null));
+        assertNull(
+            rsp._get(
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/leader",
+                null));
+        assertEquals(
+            "down",
+            rsp._get(
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/state",
+                null));
+
         jsr.start();
         cluster.waitForActiveCollection(testCollection, 1, 2);
         prs =
@@ -260,11 +284,6 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
               });
 
     } finally {
-      System.out.println("prs1 : " + original);
-      System.out.println(
-          "prs2 : "
-              + PerReplicaStatesFetcher.fetch(
-                  DocCollection.getCollectionPath(COLL), cluster.getZkClient(), null));
       cluster.shutdown();
     }
   }
@@ -300,7 +319,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // +1 after all replica are added with on state.json write to CreateCollectionCmd.setData()
-      assertEquals(11, stat.getVersion());
+      assertEquals(1, stat.getVersion());
       // For each replica:
       // +1 for ZkController#preRegister, in ZkController#publish, direct write PRS to down
       // +2 for runLeaderProcess, flip the replica to leader
@@ -345,7 +364,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
         stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
         // ensure restart does not update the state.json, after addReplica/deleteReplica, 2 more
         // updates hence at version 3 on state.json version
-        assertEquals(14, stat.getVersion());
+        assertEquals(3, stat.getVersion());
       }
     } finally {
       cluster.shutdown();

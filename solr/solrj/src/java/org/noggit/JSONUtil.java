@@ -17,11 +17,12 @@
 package org.noggit;
 
 public class JSONUtil {
-  public static final char[] TRUE_CHARS = new char[] {'t', 'r', 'u', 'e'};
-  public static final char[] FALSE_CHARS = new char[] {'f', 'a', 'l', 's', 'e'};
-  public static final char[] NULL_CHARS = new char[] {'n', 'u', 'l', 'l'};
-  public static final char[] HEX_CHARS =
+  static final char[] TRUE_CHARS = new char[] {'t', 'r', 'u', 'e'};
+  static final char[] FALSE_CHARS = new char[] {'f', 'a', 'l', 's', 'e'};
+  static final char[] NULL_CHARS = new char[] {'n', 'u', 'l', 'l'};
+  static final char[] HEX_CHARS =
       new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
   public static final char VALUE_SEPARATOR = ',';
   public static final char NAME_SEPARATOR = ':';
   public static final char OBJECT_START = '{';

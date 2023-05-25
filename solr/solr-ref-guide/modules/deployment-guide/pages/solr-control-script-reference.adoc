@@ -129,7 +129,7 @@ You cannot use this option when running examples with the `-e` option.
 +
 *Example*: `bin/solr start -f`
 
-`-h <hostname>`::
+`-host <hostname>` or `-h <hostname>`::
 +
 [%autowidth,frame=none]
 |===
@@ -202,7 +202,7 @@ This parameter is ignored when running examples (`-e`), as the `solr.solr.home` 
 |===
 +
 Be more verbose.
-This changes the logging level of Log4j from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml`.
+This changes the logging level of Log4j in Solr from `INFO` to `DEBUG`, having the same effect as if you edited `log4j2.xml`.
 +
 *Example*: `bin/solr start -f -v`
 
@@ -214,12 +214,12 @@ This changes the logging level of Log4j from `INFO` to `DEBUG`, having the same 
 |===
 +
 Be more quiet.
-This changes the logging level of Log4j from `INFO` to `WARN`, having the same effect as if you edited `log4j2.xml`.
+This changes the logging level of Log4j in Solr from `INFO` to `WARN`, having the same effect as if you edited `log4j2.xml`.
 This can be useful in a production setting where you want to limit logging to warnings and errors.
 +
 *Example*: `bin/solr start -f -q`
 
-`-V`::
+`-V` or `-verbose`::
 +
 [%autowidth,frame=none]
 |===
@@ -230,7 +230,7 @@ Start Solr with verbose messages from the start script.
 +
 *Example*: `bin/solr start -V`
 
-`-z <zkHost>`::
+`-z <zkHost>` or `-zkHost <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -386,6 +386,16 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 +
 *Example*: `bin/solr stop -k solrrocks`
 
+`-V` or `-verbose`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Stop Solr with verbose messages from the stop script.
++
+*Example*: `bin/solr stop -V`
 
 == System Information
 
@@ -478,7 +488,7 @@ s|Required |Default: none
 +
 *Example*: `bin/solr healthcheck -c gettingstarted`
 
-`-z <zkhost>`::
+`-z <zkhost>` or `-zkHost <zkhost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -596,7 +606,7 @@ This defaults to the same name as the core or collection.
 +
 *Example*: `bin/solr create -n basic`
 
-`-p <port>`::
+`-p <port>` or `-port <port>`::
 +
 [%autowidth,frame=none]
 |===
@@ -610,7 +620,7 @@ This option is useful if you are running multiple Solr instances on the same hos
 +
 *Example*: `bin/solr create -p 8983`
 
-`-s <shards>` or `-shards`::
+`-s <shards>` or `-shards <shards>`::
 +
 [%autowidth,frame=none]
 |===
@@ -622,7 +632,7 @@ Only applies when Solr is running in SolrCloud mode.
 +
 *Example*: `bin/solr create -s 2`
 
-`-rf <replicas>` or `-replicationFactor`::
+`-rf <replicas>` or `-replicationFactor <replicas>`::
 +
 [%autowidth,frame=none]
 |===
@@ -728,7 +738,7 @@ If the configuration directory is being used by another collection, then it will
 +
 *Example*: `bin/solr delete -deleteConfig false`
 
-`-p <port>`::
+`-p <port>` or `-port <port>`::
 +
 [%autowidth,frame=none]
 |===
@@ -791,7 +801,7 @@ SOLR_AUTHENTICATION_OPTS="-Dsolr.httpclient.config=/path/to/solr-{solr-full-vers
 
 The command takes the following parameters:
 
-`-credentials`::
+`-credentials <user:pass>`::
 +
 [%autowidth,frame=none]
 |===
@@ -803,7 +813,7 @@ The username and password in the format of `username:password` of the initial us
 If you prefer not to pass the username and password as an argument to the script, you can choose the `-prompt` option.
 Either `-credentials` or `-prompt` *must* be specified.
 
-`-prompt`::
+`-prompt <true|false>`::
 +
 [%autowidth,frame=none]
 |===
@@ -814,7 +824,7 @@ If prompt is preferred, pass `true` as a parameter to request the script to prom
 +
 Either `-credentials` or `-prompt` *must* be specified.
 
-`-blockUnknown`::
+`-blockUnknown <true|false>`::
 +
 [%autowidth,frame=none]
 |===
@@ -824,7 +834,24 @@ Either `-credentials` or `-prompt` *must* be specified.
 When `true`, blocks all unauthenticated users from accessing Solr.
 When `false`, unauthenticated users will still be able to access Solr, but only for operations not explicitly requiring a user role in the Authorization plugin configuration.
 
-`-updateIncludeFileOnly`::
+`-solrIncludeFile <includeFilePath>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Specify the full path to the include file in the environment.
+If not specified this script looks for an include file named solr.in.sh to set environment variables. Specifically, the following locations are searched in this order:
+    <script location>/.
+    $HOME/.solr.in.sh
+    /usr/share/solr
+    /usr/local/share/solr
+    /etc/default
+    /var/solr
+    /opt/solr
+
+`-updateIncludeFileOnly <true|false>`::
 +
 [%autowidth,frame=none]
 |===
@@ -833,7 +860,7 @@ When `false`, unauthenticated users will still be able to access Solr, but only 
 +
 When `true`, only the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will not be created.
 
-`-z`::
+`-z <zkHost>` or `-zkHost <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -844,7 +871,7 @@ Defines the ZooKeeper connect string.
 This is useful if you want to enable authentication before all your Solr nodes have come up.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-d`::
+`-d <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -854,7 +881,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 Defines the Solr server directory, by default `$SOLR_TIP/server`.
 It is not common to need to override the default, and is only needed if you have customized the `$SOLR_HOME` directory path.
 
-`-s`::
+`-s <dir>` or `-solr.home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -907,7 +934,7 @@ To unset a previously set user-defined property, specify `-action unset-user-pro
 
 === Config Parameters
 
-`-c <name>`::
+`-c <name>` or `-collection <name>`::
 +
 [%autowidth,frame=none]
 |===
@@ -943,7 +970,7 @@ Name of the property to change.
 +
 Set the property to this value.
 
-`-z <zkHost>`::
+`-z <zkHost>` or `-zkHost <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -953,7 +980,7 @@ Set the property to this value.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-p <port>`::
+`-p <port>` or `-port <port>`::
 +
 [%autowidth,frame=none]
 |===
@@ -970,6 +997,16 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 |===
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
+`-s <scheme>` or `-scheme <scheme>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http`
+|===
++
+The scheme for accessing Solr. Accepted values: http or https.  Default is 'http'
+
 
 == ZooKeeper Operations
 
@@ -1377,10 +1414,16 @@ Examples of this command:
 
 `bin/solr zk mkroot /solr/production`
 
-== Exporting Documents to a File
+== Exporting and Importing
 
-The `export` command will allow you to export documents from a collection in either JSON or Javabin format.
+=== Exporting Documents to a File
+
+The `export` command will allow you to export documents from a collection in JSON, JSON with Lines, or Javabin format.
 All documents can be exported, or only those that match a query.
+
+NOTE: This hasn't been tested with nested child documents and your results will vary.
+
+NOTE: The `export` command only works with in a Solr running in cloud mode.
 
 `bin/solr export [options]`
 
@@ -1388,7 +1431,7 @@ All documents can be exported, or only those that match a query.
 
 The `bin/solr export` command takes the following parameters:
 
-`url`::
+`-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1399,30 +1442,38 @@ Fully-qualified address to a collection.
 +
 *Example*: `-url http://localhost:8983/solr/techproducts`
 
-`format`::
+`-format <format>`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `jsonl`
+|Optional |Default: `json`
 |===
 +
-The file format of the export, `jsonl` or `javabin`.
-Choosing `javabin` exports to a file with extension `.javabin` which is the native Solr format.
-This is compact and faster to import.
+The file format of the export, `json`, `jsonl`, or `javabin`.
+Choosing `javabin` exports in the native Solr format, and is compact and fast to import.
+`jsonl` is the Json with Lines format, learn more at https://jsonlines.org/.
 
-`-out`::
+`-out <path>`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: _see description_
 |===
 +
-The file name of the export.
-If the file name ends with `json.gz` the output will be compressed into a .gz file.
+Either the path to a directory for the export to happen in, or a specific file name to populate.
 +
 If not provided, a file will be created with the name of the collection, as in `<collection>.json`.
 
-`query`::
+`-compress`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+If you specify `-compress` then the resulting outputting file with will be gzipped, for example `<collection>.json.gz`.
+
+`-query <query string>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1432,7 +1483,7 @@ If not provided, a file will be created with the name of the collection, as in `
 A custom query.
 The default is `\*:*` which will export all documents.
 
-`fields`::
+`-fields <fields>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1442,7 +1493,7 @@ The default is `\*:*` which will export all documents.
 A comma separated list of fields to be exported.
 If not provided, all fields will be included.
 
-`limit`::
+`-limit <number of documents>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1459,21 +1510,86 @@ Export all documents from a collection `gettingstarted`:
 [source,bash]
 bin/solr export -url http://localhost:8983/solr/gettingstarted limit -1
 
-Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a zipped JSON file:
+Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a compressed JSON file:
 
 [source,bash]
 ----
-bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.json.gz
+bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -format json -compress -out 1MDocs
 ----
 
-=== Importing Documents to a Collection
+=== Importing Documents into a Collection
 
 Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc[/update request handler] to import them to a new Solr collection.
 
-*Example: import `jsonl` files*
+*Example: import `json` files*
 
-`curl -X POST -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json/docs?commit=true`
+First export the documents, making sure to ignore any fields that are populated via a `copyField` by specifying what fields you want to export:
+
+[,console]
+----
+$ bin/solr export -url http://localhost:8983/solr/gettingstarted -fields id,name,manu,cat,features
+----
+
+Create a new collection to import the exported documents into:
+
+[,console]
+----
+$ bin/solr create_collection -c test_collection -n techproducts
+----
+
+Now import the data with either of these methods:
+
+[,console]
+----
+$ curl -X POST -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true'
+----
+or
+[,console]
+----
+$ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update?commit=true'
+----
 
 *Example: import `javabin` files*
 
-`curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin http://localhost:8983/solr/gettingstarted/update?commit=true`
+[,console]
+----
+$ bin/solr export -url http://localhost:8983/solr/gettingstarted -format javabin -fields id,name,manu,cat,features
+$ curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin 'http://localhost:8983/solr/test_collection/update?commit=true'
+----
+
+== Interacting with API
+
+The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
+
+`bin/solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
+
+`bin/solr api -help`
+
+The `bin/solr api` command takes the following parameters:
+
+`-get <url>`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+Fully-qualified address to a collection.
++
+*Example*: `bin/solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
+
+=== API
+
+The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
+If you have configured basicAuth or TLS with your Solr you may find this easier than using a separate tool like `curl`.
+
+[source,bash]
+$ bin/solr api api -get http://localhost:8983/solr/techproducts/select?q=*:*
+
+
+Here is an example of sending a SQL query to the techproducts /sql end point (assumes you started Solr in Cloud mode with the SQL module enabled):
+
+[source,bash]
+$ bin/solr api api -get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
+
+Results are streamed to the terminal.

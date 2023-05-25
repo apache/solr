@@ -17,11 +17,10 @@
 package org.apache.solr.handler;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
@@ -69,13 +68,8 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     }
   }
 
-  void makeFile(String contents) {
-    try (Writer out =
-        new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
-      out.write(contents);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  void makeFile(String contents) throws IOException {
+    Files.writeString(Path.of(filename), contents, StandardCharsets.UTF_8);
   }
 
   void cleanup() {

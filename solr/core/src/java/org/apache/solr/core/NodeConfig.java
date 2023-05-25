@@ -32,11 +32,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -202,13 +202,15 @@ public class NodeConfig {
    * @return the NodeConfig
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
-    if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
+    if (StrUtils.isNotNullOrEmpty(System.getProperty("solr.solrxml.location"))) {
       log.warn(
           "Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
     }
+    final SolrResourceLoader loader = new SolrResourceLoader(solrHome);
+    initModules(loader, null);
     nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
-    if (!StringUtils.isEmpty(zkHost)) {
+    if (StrUtils.isNotNullOrEmpty(zkHost)) {
       int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
       startUpZkTimeOut *= 1000;
       try (SolrZkClient zkClient =
@@ -216,6 +218,7 @@ public class NodeConfig {
               .withUrl(zkHost)
               .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
               .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withSolrClassLoader(loader)
               .build()) {
         if (zkClient.exists("/solr.xml", true)) {
           log.info("solr.xml found in ZooKeeper. Loading...");
@@ -259,7 +262,7 @@ public class NodeConfig {
    *
    * @return path to install dir or null if solr.install.dir not set.
    */
-  public Path getSolrInstallDir() {
+  public static Path getSolrInstallDir() {
     String prop = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
     if (prop == null || prop.isBlank()) {
       log.debug("solr.install.dir property not initialized.");
@@ -400,8 +403,8 @@ public class NodeConfig {
    * properties, or from the "extra" properties configured explicitly on the SolrDispatchFilter; or
    * null if not specified.
    *
-   * <p>This is the value that would have been used when attempting locate the solr.xml in ZooKeeper
-   * (regardless of wether the file was actaully loaded from ZK or from local disk)
+   * <p>This is the value that would have been used when attempting to locate the solr.xml in
+   * ZooKeeper (regardless of whether the file was actually loaded from ZK or from local disk)
    *
    * <p>(This value should only be used for "accounting" purposes to track where the node config
    * came from if it <em>was</em> loaded from zk -- ie: to check if the chroot has already been
@@ -446,7 +449,7 @@ public class NodeConfig {
       libDirs.add(solrInstallDir.resolve("lib").toAbsolutePath().normalize().toString());
     }
 
-    if (!StringUtils.isBlank(getSharedLibDirectory())) {
+    if (StrUtils.isNotBlank(getSharedLibDirectory())) {
       List<String> sharedLibs = Arrays.asList(getSharedLibDirectory().split("\\s*,\\s*"));
       libDirs.addAll(sharedLibs);
     }
@@ -483,7 +486,12 @@ public class NodeConfig {
 
   // Adds modules to shared classpath
   private void initModules() {
-    var moduleNames = ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(getModules());
+    initModules(loader, getModules());
+  }
+
+  // can't we move this to ModuleUtils?
+  public static void initModules(SolrResourceLoader loader, String modules) {
+    var moduleNames = ModuleUtils.resolveModulesFromStringOrSyspropOrEnv(modules);
     boolean modified = false;
 
     Path solrInstallDir = getSolrInstallDir();

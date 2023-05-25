@@ -36,8 +36,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
@@ -78,7 +78,7 @@ public class S3BackupRepository implements BackupRepository {
 
   @Override
   public URI createURI(String location) {
-    if (StringUtils.isEmpty(location)) {
+    if (StrUtils.isNullOrEmpty(location)) {
       throw new IllegalArgumentException("cannot create URI with an empty location");
     }
 
@@ -99,7 +99,7 @@ public class S3BackupRepository implements BackupRepository {
 
   @Override
   public URI createDirectoryURI(String location) {
-    if (StringUtils.isEmpty(location)) {
+    if (StrUtils.isNullOrEmpty(location)) {
       throw new IllegalArgumentException("cannot create URI with an empty location");
     }
 
@@ -202,7 +202,7 @@ public class S3BackupRepository implements BackupRepository {
   @Override
   public IndexInput openInput(URI path, String fileName, IOContext ctx) throws IOException {
     Objects.requireNonNull(path, "cannot open a input stream without a valid URI path");
-    if (StringUtils.isEmpty(fileName)) {
+    if (StrUtils.isNullOrEmpty(fileName)) {
       throw new IllegalArgumentException("need a valid file name to read from S3");
     }
 
@@ -272,10 +272,10 @@ public class S3BackupRepository implements BackupRepository {
   public void copyIndexFileFrom(
       Directory sourceDir, String sourceFileName, URI dest, String destFileName)
       throws IOException {
-    if (StringUtils.isEmpty(sourceFileName)) {
+    if (StrUtils.isNullOrEmpty(sourceFileName)) {
       throw new IllegalArgumentException("must have a valid source file name to copy");
     }
-    if (StringUtils.isEmpty(destFileName)) {
+    if (StrUtils.isNullOrEmpty(destFileName)) {
       throw new IllegalArgumentException("must have a valid destination file name to copy");
     }
 
@@ -329,10 +329,10 @@ public class S3BackupRepository implements BackupRepository {
   public void copyIndexFileTo(
       URI sourceDir, String sourceFileName, Directory dest, String destFileName)
       throws IOException {
-    if (StringUtils.isEmpty(sourceFileName)) {
+    if (StrUtils.isNullOrEmpty(sourceFileName)) {
       throw new IllegalArgumentException("must have a valid source file name to copy");
     }
-    if (StringUtils.isEmpty(destFileName)) {
+    if (StrUtils.isNullOrEmpty(destFileName)) {
       throw new IllegalArgumentException("must have a valid destination file name to copy");
     }
 

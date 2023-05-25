@@ -179,6 +179,7 @@ public abstract class CoreAdminParams {
     // Internal APIs to backup and restore a core
     BACKUPCORE,
     RESTORECORE,
+    INSTALLCOREDATA,
     CREATESNAPSHOT,
     DELETESNAPSHOT,
     LISTSNAPSHOTS;

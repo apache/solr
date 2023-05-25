@@ -397,7 +397,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
           {
             final Map<String, String> ps = ((MapSolrParams) req.getParams()).getMap();
             final String q = ps.get("q");
-            ps.put("q", q.replaceAll("join score=none", "join"));
+            ps.put("q", q.replace("join score=none", "join"));
             log.error("plain join: {}", h.query(req));
             ps.put("q", q);
           }
@@ -405,7 +405,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
             // re-execute the request... good for putting a breakpoint here for debugging
             final Map<String, String> ps = ((MapSolrParams) req.getParams()).getMap();
             final String q = ps.get("q");
-            ps.put("q", q.replaceAll("\\}", " cache=false\\}"));
+            ps.put("q", q.replace("}", " cache=false}"));
             h.query(req);
           }
           fail(err);

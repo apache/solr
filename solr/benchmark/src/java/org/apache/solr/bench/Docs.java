@@ -21,7 +21,6 @@ import static org.apache.solr.bench.BaseBenchState.log;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
@@ -34,6 +33,7 @@ import org.apache.solr.bench.generators.MultiString;
 import org.apache.solr.bench.generators.SolrGen;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.quicktheories.core.Gen;
@@ -55,7 +55,8 @@ public class Docs {
   private final ThreadLocal<SolrRandomnessSource> random;
   private final Queue<SolrInputDocument> docs = new ConcurrentLinkedQueue<>();
 
-  private final Map<String, Gen<?>> fields = Collections.synchronizedMap(new HashMap<>(16));
+  private final Map<String, Gen<?>> fields =
+      Collections.synchronizedMap(CollectionUtil.newHashMap(16));
 
   private ExecutorService executorService;
   private int stringFields;

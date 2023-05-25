@@ -130,11 +130,11 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
       throw new IllegalArgumentException("zkClient required");
     }
     String zkHost = zkClient.getZkServerAddress();
-    String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : "";
+    String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf('/')) : "";
     String zkNamespace = zkChroot + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH;
     zkNamespace = zkNamespace.startsWith("/") ? zkNamespace.substring(1) : zkNamespace;
     String zkConnectionString =
-        zkHost.contains("/") ? zkHost.substring(0, zkHost.indexOf("/")) : zkHost;
+        zkHost.contains("/") ? zkHost.substring(0, zkHost.indexOf('/')) : zkHost;
     SolrZkToCuratorCredentialsACLs curatorToSolrZk = new SolrZkToCuratorCredentialsACLs(zkClient);
     final int connectionTimeoutMs = 30000; // this value is currently hard coded, see SOLR-7561.
 
@@ -175,7 +175,7 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
       this.aclProvider = createACLProvider(zkClient);
       this.authInfos = createAuthInfo(zkClient);
       String zkHost = zkClient.getZkServerAddress();
-      this.zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : null;
+      this.zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf('/')) : null;
     }
 
     public ACLProvider getACLProvider() {

@@ -238,8 +238,8 @@ public class CollectionHandlingUtils {
 
     try (SolrClient client =
         new HttpSolrClient.Builder(url)
-            .withConnectionTimeout(30000)
-            .withSocketTimeout(120000)
+            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
             .build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
