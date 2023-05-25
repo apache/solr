@@ -1574,7 +1574,7 @@ The `bin/solr api` command takes the following parameters:
 |Required |Default: none
 |===
 +
-Fully-qualified address to a collection.
+Send a GET request to a Solr API endpoint.
 +
 *Example*: `bin/solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
 
