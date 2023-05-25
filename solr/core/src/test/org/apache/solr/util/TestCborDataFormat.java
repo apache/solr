@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.MapSolrParams;
@@ -69,16 +70,14 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       byte[] b =
           Files.readAllBytes(
               new File(ExternalPaths.SOURCE_HOME, "example/films/films.json").toPath());
-      //      GenericSolrRequest r = createJsonReq(b);
-      //      GenericSolrRequest r = createJavabinReq(b);
-      GenericSolrRequest r = createCborReq(b);
-      long start = System.currentTimeMillis();
-      client.request(r, testCollection);
-      System.out.println(
-          "INDEX_TIME: "
-              + r.contentWriter.getContentType()
-              + " : "
-              + (System.currentTimeMillis() - start));
+      index(testCollection, client, createJsonReq(b), true);
+      index(testCollection, client, createJsonReq(b), true);
+
+      index(testCollection, client, createJavabinReq(b), true);
+      index(testCollection, client, createJavabinReq(b), true);
+
+      index(testCollection, client, createCborReq(b), true);
+      index(testCollection, client, createCborReq(b), false);
 
       runQuery(testCollection, client, "javabin");
       runQuery(testCollection, client, "javabin");
@@ -93,6 +92,23 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     } finally {
       System.clearProperty("managed.schema.mutable");
       cluster.shutdown();
+    }
+  }
+
+  private void index(
+      String testCollection, CloudSolrClient client, GenericSolrRequest r, boolean del)
+      throws Exception {
+    long start = System.currentTimeMillis();
+    client.request(r, testCollection);
+    System.out.println(
+        "INDEX_TIME: "
+            + r.contentWriter.getContentType()
+            + " : "
+            + (System.currentTimeMillis() - start));
+    if (del) {
+      UpdateRequest req = new UpdateRequest().deleteByQuery("*:*");
+      req.setParam("commit", "true");
+      client.request(req, testCollection);
     }
   }
 
