@@ -959,7 +959,7 @@ Config API action, one of: `set-property`, `unset-property`, `set-user-property`
 s|Required |Default: none
 |===
 +
-Name of the property to change.
+Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.
 
 `-value <new-value>`::
 +
@@ -968,13 +968,13 @@ Name of the property to change.
 |Optional |Default: none
 |===
 +
-Set the property to this value.
+Set the property to this value; accepts JSON objects and strings.
 
 `-z <zkHost>` or `-zkHost <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: `localhost:9983`
 |===
 +
 The ZooKeeper connection string, usable in SolrCloud mode.
@@ -993,7 +993,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: `http://localhost:8983/solr`
 |===
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
