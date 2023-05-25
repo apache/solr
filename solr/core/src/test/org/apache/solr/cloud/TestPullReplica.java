@@ -128,7 +128,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   @Repeat(iterations = 30)
   public void testCreateDelete() throws Exception {
     try {
-      switch (2 /*random().nextInt(3)*/) {
+      switch (random().nextInt(3)) {
         case 0:
           // Sometimes use SolrJ
           CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
