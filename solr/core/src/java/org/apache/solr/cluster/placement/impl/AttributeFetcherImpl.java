@@ -181,8 +181,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
                               collectionMetricsBuilder
                                   .getShardMetricsBuilders()
                                   .computeIfAbsent(
-                                      shardName,
-                                      CollectionMetricsBuilder.ShardMetricsBuilder::new);
+                                      shardName, CollectionMetricsBuilder.ShardMetricsBuilder::new);
                           replicas.forEach(
                               replica -> {
                                 CollectionMetricsBuilder.ReplicaMetricsBuilder
@@ -191,7 +190,8 @@ public class AttributeFetcherImpl implements AttributeFetcher {
                                             .getReplicaMetricsBuilders()
                                             .computeIfAbsent(
                                                 replica.getName(),
-                                                CollectionMetricsBuilder.ReplicaMetricsBuilder::new);
+                                                CollectionMetricsBuilder.ReplicaMetricsBuilder
+                                                    ::new);
                                 replicaMetricsBuilder.setLeader(replica.isLeader());
                                 if (replica.isLeader()) {
                                   shardMetricsBuilder.setLeaderMetrics(replicaMetricsBuilder);
@@ -199,8 +199,9 @@ public class AttributeFetcherImpl implements AttributeFetcher {
                                 Set<ReplicaMetric<?>> requestedMetrics =
                                     requestedCollectionNamesMetrics.get(replica.getCollection());
                                 requestedMetrics.forEach(
-                                    metric -> replicaMetricsBuilder.addMetric(
-                                        metric, replica.get(metric.getInternalName())));
+                                    metric ->
+                                        replicaMetricsBuilder.addMetric(
+                                            metric, replica.get(metric.getInternalName())));
                               });
                         });
               });
