@@ -41,7 +41,6 @@ import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
-import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**

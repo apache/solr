@@ -363,20 +363,23 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           // that should lead to replica placement computation failure. Current code does fail if
           // placement is impossible (constraint is at most one replica of a shard on any node).
           for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-            makePlacementDecisions(
-                solrCollection,
-                shardName,
-                availabilityZones,
-                replicaType,
-                request.getCountReplicasToCreate(replicaType),
-                attrValues,
-                leaderMetrics,
-                replicaTypeToNodes,
-                nodesWithReplicas,
-                allCoresOnNodes,
-                placementContext.getPlacementPlanFactory(),
-                replicaPlacements,
-                doSpreadAcrossDomains);
+            int numReplicasToCreate = request.getCountReplicasToCreate(replicaType);
+            if (numReplicasToCreate > 0) {
+              makePlacementDecisions(
+                  solrCollection,
+                  shardName,
+                  availabilityZones,
+                  replicaType,
+                  numReplicasToCreate,
+                  attrValues,
+                  leaderMetrics,
+                  replicaTypeToNodes,
+                  nodesWithReplicas,
+                  allCoresOnNodes,
+                  placementContext.getPlacementPlanFactory(),
+                  replicaPlacements,
+                  doSpreadAcrossDomains);
+            }
           }
         }
         placementPlans.add(
@@ -484,10 +487,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                           .replicas()
                           .forEach(
                               replica ->
-                                colocatingNodes
-                                    .computeIfAbsent(replica.getNode(), n -> new HashSet<>())
-                                    .add(coll.getName())
-                              ));
+                                  colocatingNodes
+                                      .computeIfAbsent(replica.getNode(), n -> new HashSet<>())
+                                      .add(coll.getName())));
         }
       } catch (IOException ioe) {
         throw new PlacementModificationException(
@@ -786,9 +788,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      *     node.
      */
     private EnumMap<Replica.ReplicaType, Set<Node>> getAvailableNodesForReplicaTypes(
-        Set<Node> nodes,
-        final AttributeValues attrValues,
-        final ReplicaMetrics leaderMetrics) {
+        Set<Node> nodes, final AttributeValues attrValues, final ReplicaMetrics leaderMetrics) {
       EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes =
           new EnumMap<>(Replica.ReplicaType.class);
 
@@ -815,13 +815,12 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                 .flatMap(lm -> lm.getReplicaMetric(BuiltInMetrics.REPLICA_INDEX_SIZE_GB))
                 .orElse(0D);
         double projectedFreeDiskIfPlaced =
-            BuiltInMetrics.NODE_FREE_DISK_GB.decrease(
-                nodeFreeDiskGB.get(), replicaIndexSize);
+            BuiltInMetrics.NODE_FREE_DISK_GB.decrease(nodeFreeDiskGB.get(), replicaIndexSize);
         if (projectedFreeDiskIfPlaced < minimalFreeDiskGB) {
           if (log.isWarnEnabled()) {
             log.warn(
-                "Node {} free disk ({}GB) minus the projected replica size ({}GB) islower than configured"
-                    + "minimum {}GB, excluding it from placement decisions.",
+                "Node {} free disk ({}GB) minus the projected replica size ({}GB) is lower than configured"
+                    + " minimum {}GB, excluding it from placement decisions.",
                 node.getName(),
                 nodeFreeDiskGB.get(),
                 replicaIndexSize,
