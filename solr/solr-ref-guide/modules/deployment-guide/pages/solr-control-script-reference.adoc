@@ -464,7 +464,39 @@ Results in the output below:
 [source,plain]
 ERROR: Directory /opt/bin/solr does not exist.
 
-Use `bin/solr assert -help` for a full list of options.
+The basic usage of `bin/solr assert` is:
+
+[source, plain]
+----
+$ bin/solr assert -h
+usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
+                <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]
+ -c,--cloud <url>              Asserts that Solr is running in cloud mode.
+                               Also fails if Solr not running.  URL should
+                               be for root Solr path.
+ -C,--not-cloud <url>          Asserts that Solr is not running in cloud
+                               mode.  Also fails if Solr not running.  URL
+                               should be for root Solr path.
+ -e,--exitcode                 Return an exit code instead of printing
+                               error message on assert fail.
+ -help                         Print this message
+ -m,--message <message>        Exception message to be used in place of
+                               the default error message.
+ -R,--not-root                 Asserts that we are NOT the root user.
+ -r,--root                     Asserts that we are the root user.
+ -S,--not-started <url>        Asserts that Solr is NOT running on a
+                               certain URL. Default timeout is 1000ms.
+ -s,--started <url>            Asserts that Solr is running on a certain
+                               URL. Default timeout is 1000ms.
+ -t,--timeout <ms>             Timeout in ms for commands supporting a
+                               timeout.
+ -u,--same-user <directory>    Asserts that we run as same user that owns
+                               <directory>.
+ -verbose                      Enable more verbose command output.
+ -x,--exists <directory>       Asserts that directory <directory> exists.
+ -X,--not-exists <directory>   Asserts that directory <directory> does NOT
+                               exist.
+----
 
 === Healthcheck
 
