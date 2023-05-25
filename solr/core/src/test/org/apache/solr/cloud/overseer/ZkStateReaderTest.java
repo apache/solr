@@ -786,7 +786,8 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       assertTrue(prsZkNodeNotFoundExceptionThrown.get());
     } finally {
       // clear breakpoints
-      CommonTestInjection.setBreakpoint(ZkStateReader.class.getName() + "/beforePrsFetch", null);
+      CommonTestInjection.setBreakpoint(
+          PerReplicaStatesFetcher.class.getName() + "/beforePrsFetch", null);
       CommonTestInjection.setBreakpoint(ZkStateReader.class.getName() + "/exercised", null);
     }
   }
