@@ -47,7 +47,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.api.GetSchemaEntitiesAPI;
+import org.apache.solr.handler.admin.api.GetSchemaAPI;
 import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
 import org.apache.solr.handler.admin.api.SchemaGetDynamicFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaGetFieldAPI;
@@ -139,27 +139,27 @@ public class SchemaHandler extends RequestHandlerBase
         case "/schema":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaEntitiesAPI(req.getCore().getLatestSchema()).getSchemaInfo());
+                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaInfo());
             break;
           }
         case "/schema/version":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaEntitiesAPI(req.getCore().getLatestSchema()).getSchemaVersion());
+                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaVersion());
             break;
           }
         case "/schema/uniquekey":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                 rsp,
-                new GetSchemaEntitiesAPI(req.getCore().getLatestSchema()).getSchemaUniqueKey());
+                new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaUniqueKey());
             break;
           }
         case "/schema/similarity":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                 rsp,
-                new GetSchemaEntitiesAPI(req.getCore().getLatestSchema()).getSchemaSimilarity());
+                new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaSimilarity());
             break;
           }
         case "/schema/name":
@@ -337,7 +337,7 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(SchemaNameAPI.class, GetSchemaEntitiesAPI.class);
+    return List.of(SchemaNameAPI.class, GetSchemaAPI.class);
   }
 
   @Override

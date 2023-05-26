@@ -13,18 +13,18 @@ import org.apache.solr.schema.StrField;
 import org.junit.Before;
 import org.junit.Test;
 
-/** Unit tests for {@link GetSchemaEntitiesAPI} */
-public class GetSchemaEntitiesAPITest extends SolrTestCaseJ4 {
+/** Unit tests for {@link GetSchemaAPI} */
+public class GetSchemaAPITest extends SolrTestCaseJ4 {
 
   private IndexSchema mockSchema;
-  private GetSchemaEntitiesAPI api;
+  private GetSchemaAPI api;
 
   @Before
   public void setUpMocks() {
     assumeWorkingMockito();
 
     mockSchema = mock(IndexSchema.class);
-    api = new GetSchemaEntitiesAPI(mockSchema);
+    api = new GetSchemaAPI(mockSchema);
   }
 
   @Test

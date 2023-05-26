@@ -34,12 +34,12 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
 
 @Path("/collections/{collectionName}/schema")
-public class GetSchemaEntitiesAPI extends JerseyResource {
+public class GetSchemaAPI extends JerseyResource {
 
   private IndexSchema indexSchema;
 
   @Inject
-  public GetSchemaEntitiesAPI(IndexSchema indexSchema) {
+  public GetSchemaAPI(IndexSchema indexSchema) {
     this.indexSchema = indexSchema;
   }
 
