@@ -17,8 +17,8 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import org.apache.solr.client.solrj.impl.NodeValueFetcher;
 import org.apache.solr.cluster.placement.NodeMetric;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 /** Node and Replica Metrics available to the placement plugins */
 public class BuiltInMetrics {
@@ -45,15 +45,17 @@ public class BuiltInMetrics {
 
   /** Number of all cores. */
   public static final NodeMetricImpl<Integer> NODE_NUM_CORES =
-      new NodeMetricImpl.IntNodeMetricImpl(ImplicitSnitch.CORES);
+      new NodeMetricImpl.IntNodeMetricImpl(NodeValueFetcher.CORES);
 
   public static final NodeMetricImpl<Double> NODE_HEAP_USAGE =
-      new NodeMetricImpl.DoubleNodeMetricImpl(ImplicitSnitch.HEAPUSAGE);
+      new NodeMetricImpl.DoubleNodeMetricImpl(NodeValueFetcher.Tags.HEAPUSAGE.tagName);
 
   /** System load average. */
   public static final NodeMetricImpl<Double> NODE_SYSLOAD_AVG =
       new NodeMetricImpl.DoubleNodeMetricImpl(
-          "sysLoadAvg", NodeMetric.Registry.SOLR_JVM, "os.systemLoadAverage");
+          NodeValueFetcher.Tags.SYSLOADAVG.tagName,
+          NodeMetric.Registry.SOLR_JVM,
+          NodeValueFetcher.Tags.SYSLOADAVG.prefix);
 
   /** Number of available processors. */
   public static final NodeMetricImpl<Integer> NODE_AVAILABLE_PROCESSORS =
