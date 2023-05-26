@@ -738,11 +738,10 @@ The `delete` command detects the mode that Solr is running in and then deletes t
 
 `bin/solr delete -help`
 
-If running in SolrCloud mode, the `delete` command checks if the configuration directory used by the collection you are deleting is being used by other collections.
-If not, then the configuration directory is also deleted from ZooKeeper.
+If you're deleting a collection in SolrCloud mode, the default behavior is to also delete the configuration directory from Zookeeper so long as it is not being used by another collection.
 
 For example, if you created a collection with `bin/solr create -c contacts`, then the delete command `bin/solr delete -c contacts` will check to see if the `/configs/contacts` configuration directory is being used by any other collections.
-If not, then the `/configs/contacts` directory is removed from ZooKeeper.
+If not, then the `/configs/contacts` directory is removed from ZooKeeper.  You can override this behavior by passing -deleteConfig false when running this command.atom
 
 ==== Delete Core or Collection Parameters
 
@@ -778,7 +777,7 @@ If the configuration directory is being used by another collection, then it will
 |===
 +
 The port of a local Solr instance to send the delete command to.
-By default the script tries to detect the port by looking for running Solr instances.
+If not specified, the script will search the local system for a running Solr instance and will use the port of the first server it finds.
 +
 This option is useful if you are running multiple Solr instances on the same host, thus requiring you to be specific about which instance to delete the core from.
 +
