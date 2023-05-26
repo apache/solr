@@ -1363,11 +1363,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
     List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-    // The first node needs to have 2 fewer cores than the second node, because unfortunately the metrics will be altered
-    // when computing the first placementRequest. If the metrics were copied when fetched, then this wouldn't be
-    // necessary. However, for now this is acceptable, because it's only a testing issue. The real AttributeFetcher
-    // does not share maps across the AttributeValues that it creates. So a placementPlugin gets a clean set of metrics
-    // for each placementRequest, that the placementPlugin can edit however it wants to.
+    // The first node needs to have 2 fewer cores than the second node, because unfortunately the
+    // metrics will be altered when computing the first placementRequest. If the metrics were copied
+    // when fetched, then this wouldn't be necessary. However, for now this is acceptable, because
+    // it's only a testing issue. The real AttributeFetcher does not share maps across the
+    // AttributeValues that it creates. So a placementPlugin gets a clean set of metrics for each
+    // placementRequest, that the placementPlugin can edit however it wants to.
     nodeBuilders
         .get(0)
         .setCoreCount(1)
