@@ -139,25 +139,27 @@ public class SchemaHandler extends RequestHandlerBase
         case "/schema":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaEntitiesAPI(req.getCore()).getSchemaInfo());
+                rsp, new GetSchemaEntitiesAPI(req.getCore().getLatestSchema()).getSchemaInfo());
             break;
           }
         case "/schema/version":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaEntitiesAPI(req.getCore()).getSchemaVersion());
+                rsp, new GetSchemaEntitiesAPI(req.getCore().getLatestSchema()).getSchemaVersion());
             break;
           }
         case "/schema/uniquekey":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaEntitiesAPI(req.getCore()).getSchemaUniqueKey());
+                rsp,
+                new GetSchemaEntitiesAPI(req.getCore().getLatestSchema()).getSchemaUniqueKey());
             break;
           }
         case "/schema/similarity":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp, new GetSchemaEntitiesAPI(req.getCore()).getSchemaSimilarity());
+                rsp,
+                new GetSchemaEntitiesAPI(req.getCore().getLatestSchema()).getSchemaSimilarity());
             break;
           }
         case "/schema/name":

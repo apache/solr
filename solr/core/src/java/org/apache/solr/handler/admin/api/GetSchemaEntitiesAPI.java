@@ -28,19 +28,19 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
 
 @Path("/collections/{collectionName}/schema")
 public class GetSchemaEntitiesAPI extends JerseyResource {
 
-  private SolrCore solrCore;
+  private IndexSchema indexSchema;
 
   @Inject
-  public GetSchemaEntitiesAPI(SolrCore solrCore) {
-    this.solrCore = solrCore;
+  public GetSchemaEntitiesAPI(IndexSchema indexSchema) {
+    this.indexSchema = indexSchema;
   }
 
   @GET
@@ -49,7 +49,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
   public SchemaInfoResponse getSchemaInfo() {
     final var response = instantiateJerseyResponse(SchemaInfoResponse.class);
 
-    response.schema = solrCore.getLatestSchema().getNamedPropertyValues();
+    response.schema = indexSchema.getNamedPropertyValues();
 
     return response;
   }
@@ -70,8 +70,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
   public SchemaSimilarityResponse getSchemaSimilarity() {
     final var response = instantiateJerseyResponse(SchemaSimilarityResponse.class);
 
-    response.similarity =
-        solrCore.getLatestSchema().getSimilarityFactory().getNamedPropertyValues();
+    response.similarity = indexSchema.getSimilarityFactory().getNamedPropertyValues();
 
     return response;
   }
@@ -92,7 +91,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
   public SchemaUniqueKeyResponse getSchemaUniqueKey() {
     final var response = instantiateJerseyResponse(SchemaUniqueKeyResponse.class);
 
-    response.uniqueKey = solrCore.getLatestSchema().getUniqueKeyField().getName();
+    response.uniqueKey = indexSchema.getUniqueKeyField().getName();
 
     return response;
   }
@@ -109,7 +108,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
   public SchemaVersionResponse getSchemaVersion() {
     final var response = instantiateJerseyResponse(SchemaVersionResponse.class);
 
-    response.version = solrCore.getLatestSchema().getVersion();
+    response.version = indexSchema.getVersion();
 
     return response;
   }
