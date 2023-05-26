@@ -411,7 +411,7 @@ X.Y.0
 
 === Status
 
-The `status` command displays basic JSON-formatted information for any Solr nodes found running on the local system.
+The `status` command displays basic JSON-formatted status information for all locally running Solr servers.
 
 The `status` command uses the `SOLR_PID_DIR` environment variable to locate Solr process ID files to find running Solr instances, which defaults to the `bin` directory.
 
