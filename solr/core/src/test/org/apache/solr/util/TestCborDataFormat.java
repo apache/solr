@@ -46,6 +46,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.loader.CborStream;
 import org.apache.solr.response.XMLResponseWriter;
@@ -95,6 +96,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     }
   }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis for perf test")
   private void index(
       String testCollection, CloudSolrClient client, GenericSolrRequest r, boolean del)
       throws Exception {
@@ -112,6 +114,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     }
   }
 
+  @SuppressForbidden(reason = "Needs currentTimeMillis for perf tests")
   private byte[] runQuery(String testCollection, CloudSolrClient client, String wt)
       throws SolrServerException, IOException {
     long start;
