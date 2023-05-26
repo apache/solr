@@ -151,15 +151,13 @@ public class SchemaHandler extends RequestHandlerBase
         case "/schema/uniquekey":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp,
-                new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaUniqueKey());
+                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaUniqueKey());
             break;
           }
         case "/schema/similarity":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                rsp,
-                new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaSimilarity());
+                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaSimilarity());
             break;
           }
         case "/schema/name":
