@@ -516,7 +516,7 @@ The health report provides information about the state of every replica for all 
 s|Required |Default: none
 |===
 +
- Name of the collection to run a healthcheck against.
+Name of the collection to run a healthcheck against.
 +
 *Example*: `bin/solr healthcheck -c gettingstarted`
 
