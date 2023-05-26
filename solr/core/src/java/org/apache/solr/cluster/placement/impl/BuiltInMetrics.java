@@ -61,7 +61,7 @@ public class BuiltInMetrics {
           "availableProcessors", NodeMetric.Registry.SOLR_JVM, "os.availableProcessors");
 
   /*
-   * Node Metrics
+   * Replica Metrics
    */
 
   /** Replica index size in GB. */
