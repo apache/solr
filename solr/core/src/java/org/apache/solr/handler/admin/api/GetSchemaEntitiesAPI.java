@@ -65,7 +65,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
 
   @GET
   @Path("/similarity")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaSimilarityResponse getSchemaSimilarity() {
     final var response = instantiateJerseyResponse(SchemaSimilarityResponse.class);
@@ -86,7 +86,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
 
   @GET
   @Path("/uniquekey")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaUniqueKeyResponse getSchemaUniqueKey() {
     final var response = instantiateJerseyResponse(SchemaUniqueKeyResponse.class);
@@ -103,7 +103,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
 
   @GET
   @Path("/version")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaVersionResponse getSchemaVersion() {
     final var response = instantiateJerseyResponse(SchemaVersionResponse.class);
