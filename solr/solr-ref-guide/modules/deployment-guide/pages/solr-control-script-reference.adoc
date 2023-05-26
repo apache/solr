@@ -51,7 +51,7 @@ If no nodes are already running, restart will skip the step to stop and proceed 
 The `bin/solr` script provides many options to allow you to customize the server in common ways, such as changing the listening port.
 However, most of the defaults are adequate for most Solr installations, especially when just getting started.
 
-`-a "<string>"`::
+`-a "<jvmParams>"`::
 +
 [%autowidth,frame=none]
 |===
@@ -59,12 +59,26 @@ However, most of the defaults are adequate for most Solr installations, especial
 |===
 +
 Start Solr with additional JVM parameters, such as those starting with `-X`.
+For example setting up Java debugger to attach to the Solr JVM you could pass: `-a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983"`.
+In most cases, you should wrap the additional parameters in double quotes.
++
 If you are passing JVM parameters that begin with `-D`, you can omit the `-a` option.
 +
 *Example*:
 +
 [source,bash]
 bin/solr start -a "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
+
+`-j "<jettyParams>"`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Additional parameters to pass to Jetty when starting Solr.
+For example, to add configuration folder that Jetty should read you could pass: `-j "--include-jetty-dir=/etc/jetty/custom/server/"`.
+In most cases, you should wrap the additional parameters in double quotes.
 
 `-cloud` or `-c`::
 +
@@ -74,8 +88,7 @@ bin/solr start -a "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,add
 |===
 +
 Start Solr in SolrCloud mode, which will also launch the embedded ZooKeeper instance included with Solr.
-+
-This option can be shortened to simply `-c`.
+The embedded ZooKeeper instance is started on Solr port+1000, so 9983 if Solr is bound to 8983.
 +
 If you are already running a ZooKeeper ensemble that you want to use instead of the embedded (single-node) ZooKeeper, you should also either specify `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble.adoc#updating-solr-include-files[Updating Solr Include Files]) or pass the `-z` parameter.
 +
@@ -108,10 +121,10 @@ These examples are provided to help you get started faster with Solr generally, 
 +
 The available options are:
 
-* `cloud`
-* `techproducts`
-* `schemaless`
-* `films`
+* `cloud`: SolrCloud example
+* `techproducts`: Comprehensive example illustrating many of Solr's core capabilities
+* `schemaless`: Schema-less example (schema is inferred from data during indexing)
+* `films`: Example of starting with _default configset and adding explicit fields dynamically
 +
 See the section <<Running with Example Configurations>> below for more details on the example configurations.
 +
@@ -124,7 +137,7 @@ See the section <<Running with Example Configurations>> below for more details o
 |Optional |Default: none
 |===
 +
-Start Solr in the foreground.
+Start Solr in the foreground and sends stdout / stderr to `solr-PORT-console.log`.
 You cannot use this option when running examples with the `-e` option.
 +
 *Example*: `bin/solr start -f`
@@ -136,7 +149,7 @@ You cannot use this option when running examples with the `-e` option.
 |Optional |Default: `localhost`
 |===
 +
-Start Solr with the defined hostname.
+Specify the hostname for this Solr instance.
 If this is not specified, `localhost` is assumed.
 +
 *Example*: `bin/solr start -h search.mysolr.com`
@@ -145,12 +158,12 @@ If this is not specified, `localhost` is assumed.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: 512m
 |===
 +
-Start Solr with the defined value as the min (`-Xms`) and max (`-Xmx`) heap size for the JVM.
+Sets the min (`-Xms`) and max (`-Xmx`) heap size for the JVM running Solr.
 +
-*Example*: `bin/solr start -m 1g`
+*Example*: `bin/solr start -m 4g` results in `-Xms4g -Xmx4g` settings.
 
 `-noprompt`::
 +
@@ -159,8 +172,7 @@ Start Solr with the defined value as the min (`-Xms`) and max (`-Xmx`) heap size
 |Optional |Default: none
 |===
 +
-Start Solr and suppress any prompts that may be seen with another option.
-This would have the side effect of accepting all defaults implicitly.
+Don't prompt for input; accept all defaults when running examples that accept user input.
 +
 For example, when using the "cloud" example, an interactive session guides you through several options for your SolrCloud cluster.
 If you want to accept all of the defaults, you can simply add the `-noprompt` option to your request.
@@ -174,7 +186,10 @@ If you want to accept all of the defaults, you can simply add the `-noprompt` op
 |Optional |Default: `8983`
 |===
 +
-Start Solr on the defined port.
+Specify the port to start the Solr HTTP listener on; with the classic default port for Solr being 8983.
+The specified port (SOLR_PORT) will also be used to determine the stop port.
+The stop port is defined as STOP_PORT=($SOLR_PORT-1000) and JMX RMI listen port is defined as RMI_PORT=($SOLR_PORT+10000). 
+For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985.
 If this is not specified, `8983` will be used.
 +
 *Example*: `bin/solr start -p 8655`
@@ -189,10 +204,24 @@ If this is not specified, `8983` will be used.
 Sets the `solr.solr.home` system property.
 Solr will create core directories under this directory.
 This allows you to run multiple Solr instances on the same host while reusing the same server directory set using the `-d` parameter.
+If set, the specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper.
 +
 This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
 +
+The default value is `server/solr`. 
+If passed relative dir, validation with current dir will be done, before trying default `server/<dir>`.
++
 *Example*: `bin/solr start -s newHome`
+
+`-t <dir>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `solr.solr.home`
+|===
++
+Sets the `solr.data.home` system property, where Solr will store index data in <instance_dir>/data subdirectories.
+If not set, Solr uses solr.solr.home for config and data.
 
 `-v`::
 +
@@ -226,7 +255,7 @@ This can be useful in a production setting where you want to limit logging to wa
 |Optional |Default: none
 |===
 +
-Start Solr with verbose messages from the start script.
+Verbose messages from this script.
 +
 *Example*: `bin/solr start -V`
 
@@ -237,10 +266,10 @@ Start Solr with verbose messages from the start script.
 |Optional |Default: _see description_
 |===
 +
-Start Solr with the defined ZooKeeper connection string.
-+
-This option is only used with the `-c` option, to start Solr in SolrCloud mode.
+Zookeeper connection string, this option is only used with the `-c` option, to start Solr in SolrCloud mode.
 If `ZK_HOST` is not specified in `solr.in.sh`/`solr.in.cmd` and this option is not provided, Solr will start the embedded ZooKeeper instance and use that instance for SolrCloud operations.
++
+Set the `ZK_CREATE_CHROOT` environment variable to true if your ZK host has a chroot path, and you want to create it automatically.
 +
 *Example*: `bin/solr start -c -z server1:2181,server2:2181`
 
