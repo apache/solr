@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.NodeValueFetcher;
+import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
@@ -37,6 +37,7 @@ import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.ReplicaMetric;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -115,7 +116,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     for (NodeMetric<?> metric : requestedNodeMetricSnitchTags) {
       final Map<Node, Object> metricMap = new HashMap<>();
       metricSnitchToNodeToValue.put(metric, metricMap);
-      String metricSnitch = getMetricTag(metric);
+      String metricSnitch = getMetricSnitchTag(metric);
       allSnitchTagsToInsertion.put(
           metricSnitch, (node, value) -> metricMap.put(node, metric.convert(value)));
     }
@@ -230,23 +231,23 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     }
   }
 
-  public static String getMetricTag(NodeMetric<?> metric) {
+  public static String getMetricSnitchTag(NodeMetric<?> metric) {
     if (metric.getRegistry() != NodeMetric.Registry.UNSPECIFIED) {
       // regular registry + metricName
-      return NodeValueFetcher.METRICS_PREFIX
+      return SolrClientNodeStateProvider.METRICS_PREFIX
           + SolrMetricManager.getRegistryName(getGroupFromMetricRegistry(metric.getRegistry()))
           + ":"
           + metric.getInternalName();
-    } else if (NodeValueFetcher.tags.contains(metric.getInternalName())) {
+    } else if (ImplicitSnitch.tags.contains(metric.getInternalName())) {
       // "special" well-known tag
       return metric.getInternalName();
     } else {
       // a fully-qualified metric key
-      return NodeValueFetcher.METRICS_PREFIX + metric.getInternalName();
+      return SolrClientNodeStateProvider.METRICS_PREFIX + metric.getInternalName();
     }
   }
 
   public static String getSystemPropertySnitchTag(String name) {
-    return NodeValueFetcher.SYSPROP + name;
+    return ImplicitSnitch.SYSPROP + name;
   }
 }
