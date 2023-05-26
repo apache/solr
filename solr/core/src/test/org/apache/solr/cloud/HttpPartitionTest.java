@@ -338,7 +338,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     String testCollectionName = "c8n_1x3";
     createCollectionRetry(testCollectionName, "conf1", 1, 3);
 
-    sendDoc(1);
+    sendDoc(testCollectionName, 1);
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
@@ -382,7 +382,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, maxWaitSecsToSeeAllActive);
 
-    sendDoc(4);
+    sendDoc(testCollectionName, 4);
 
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, 4);
 
@@ -553,10 +553,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         new HttpSolrClient.Builder(leaderJetty.getBaseUrl().toString()).build()) {
       return sendDoc(docId, solrClient, collectionName);
     }
-  }
-
-  protected int sendDoc(int docId) throws Exception {
-    return sendDoc(docId, cloudClient, cloudClient.getDefaultCollection());
   }
 
   protected int sendDoc(String collectionName, int docId) throws Exception {

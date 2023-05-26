@@ -250,8 +250,6 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
             implicitCluster,
             "distrib",
             "false",
-            "shard.url",
-            getShardUrl("shard2", explicitCluster),
             "shards.purpose",
             "64",
             "isShard",
