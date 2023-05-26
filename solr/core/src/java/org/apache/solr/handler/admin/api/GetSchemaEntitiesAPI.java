@@ -33,6 +33,7 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.security.PermissionNameProvider;
 
+@Path("/collections/{collectionName}/schema")
 public class GetSchemaEntitiesAPI extends JerseyResource {
 
   private SolrCore solrCore;
@@ -43,7 +44,6 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
   }
 
   @GET
-  @Path("/schema")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaInfoResponse getSchemaInfo() {
@@ -64,7 +64,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
   }
 
   @GET
-  @Path("/schema/similarity")
+  @Path("/similarity")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaSimilarityResponse getSchemaSimilarity() {
@@ -86,7 +86,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
   }
 
   @GET
-  @Path("/schema/uniquekey")
+  @Path("/uniquekey")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaUniqueKeyResponse getSchemaUniqueKey() {
@@ -103,7 +103,7 @@ public class GetSchemaEntitiesAPI extends JerseyResource {
   }
 
   @GET
-  @Path("/schema/version")
+  @Path("/version")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaVersionResponse getSchemaVersion() {
