@@ -400,7 +400,7 @@ If you are running more than one instance, or are running in SolrCloud mode, you
 |Optional |Default: none
 |===
 +
-Stop all running Solr instances that have a valid PID.
+Find and stop all running Solr servers on this host that have a valid PID.
 +
 *Example*: `bin/solr stop -all`
 
@@ -422,7 +422,7 @@ Stop key used to protect from stopping Solr inadvertently; default is "solrrocks
 |Optional |Default: none
 |===
 +
-Stop Solr with verbose messages from the stop script.
+Stop Solr with verbose messages from this script.
 +
 *Example*: `bin/solr stop -V`
 
