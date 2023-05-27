@@ -1262,12 +1262,25 @@ The operations are available as sub-commands, which each have their own set of o
 
 `bin/solr zk -help`
 
+The basic usage of bin/solr zk is:
+
+[source,plain]
+----
+$ bin/solr zk -h
+Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost]
+         solr zk cp [-r] <src> <dest> [-z zkHost]
+         solr zk rm [-r] <path> [-z zkHost]
+         solr zk mv <src> <dest> [-z zkHost]
+         solr zk ls [-r] <path> [-z zkHost]
+         solr zk mkroot <path> [-z zkHost]
+----
+
 NOTE: Solr should have been started at least once before issuing these commands to initialize ZooKeeper with the znodes Solr expects.
 Once ZooKeeper is initialized, Solr doesn't need to be running on any node to use these commands.
 
 === Upload a Configuration Set
 
-Use the `zk upconfig` command to upload one of the pre-configured configuration set or a customized configuration set to ZooKeeper.
+Use the `zk upconfig` command to upload one of the pre-configured configuration sets or a customized configuration set to ZooKeeper.
 
 ==== ZK Upload Parameters
 
@@ -1297,7 +1310,7 @@ If a pre-existing configuration set is specified, it will be overwritten in ZooK
 s|Required |Default: none
 |===
 +
-The path of the configuration set to upload.
+The local directory of the configuration set to upload.
 It should have a `conf` directory immediately below it that in turn contains `solrconfig.xml` etc.
 +
 If just a name is supplied, `$SOLR_TIP/server/solr/configsets` will be checked for this name.
@@ -1405,8 +1418,8 @@ This command will copy from the local drive to ZooKeeper, from ZooKeeper to the 
 |Optional |Default: none
 |===
 +
-Do a recursive copy.
-The command will fail if the `<src>` has children unless `-r` is specified.
+Recursively copy <src> to <dst>.
+The command will fail if the `<src>` has children and `-r` is not specified.
 +
 *Example*: `-r`
 
@@ -1419,8 +1432,8 @@ s|Required |Default: none
 +
 The file or path to copy from.
 If prefixed with `zk:` then the source is presumed to be ZooKeeper.
-If no prefix or the prefix is `file`: this is the local drive.
-At least one of `<src>` or `<dest>` must be prefixed by `'zk:'` or the command will fail.
+If no prefix or the prefix is `file:` then it is presumed to be the local drive.
+At least one of `<src>` or `<dest>` must be prefixed by `zk:` or the command will fail.
 +
 *Examples*:
 
@@ -1436,7 +1449,7 @@ s|Required |Default: none
 +
 The file or path to copy to.
 If prefixed with `zk:` then the source is presumed to be ZooKeeper.
-If no prefix or the prefix is `file:` this is the local drive.
+If no prefix or the prefix is `file:` then it is presumed to be the local drive.
 +
 At least one of `<src>` or `<dest>` must be prefixed by `zk:` or the command will fail.
 If `<dest>` ends in a slash character it names a directory.
@@ -1458,15 +1471,30 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-An example of this command with the parameters is:
+When `<src>` is a zk resource, `<dest>` may be '.'. 
+If `<dest>` ends with '/', then `<dest>` will be a local folder or parent znode and the last element of the <src> path will be appended unless `<src>` also ends in a slash. 
+`<dest>` may be `zk:`, which may be useful when using the `cp -r` form to backup/restore the entire zk state.
+You must enclose local paths that end in a wildcard in quotes or just end the local path in a slash. 
+That is, `bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181` is equivalent to `bin/solr zk cp -r "/some/dir/*" zk:/ -z localhost:2181` but `bin/solr zk cp -r /some/dir/\* zk:/ -z localhost:2181` will throw an error.
 
-Recursively copy a directory from local to ZooKeeper.
+Here's an example of backup/restore for a ZK configuration:
 
-`bin/solr zk cp -r file:/apache/confgs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
+*To copy to local*: `bin/solr zk cp -r zk:/ /some/dir -z localhost:2181`
 
-Copy a single file from ZooKeeper to local.
+*To restore to ZK*: `bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181`
 
-`bin/solr zk cp zk:/configs/myconf/managed_schema /configs/myconf/managed_schema -z 111.222.333.444:2181`
+The `file:` prefix is stripped, thus `file:/wherever` specifies an absolute local path and `file:somewhere` specifies a relative local path.
+All paths on Zookeeper are absolute.
+
+Zookeeper nodes CAN have data, so moving a single file to a parent znode will overlay the data on the parent Znode so specifying the trailing slash can be important.
+
+Trailing wildcards are supported when copying from localand must be quoted.
+
+Other examples are:
+
+*Recursively copy a directory from local to ZooKeeper*: `bin/solr zk cp -r file:/apache/confgs/whatever/conf zk:/configs/myconf -z 111.222.333.444:2181`
+
+*Copy a single file from ZooKeeper to local*: `bin/solr zk cp zk:/configs/myconf/managed_schema /configs/myconf/managed_schema -z 111.222.333.444:2181`
 
 === Remove a znode from ZooKeeper
 
@@ -1481,8 +1509,8 @@ Use the `zk rm` command to remove a znode (and optionally all child nodes) from 
 |Optional |Default: none
 |===
 +
-Do a recursive removal.
-The command will fail if the `<path>` has children unless `-r` is specified.
+Recursively delete if `<path>` is a directory.
+Command will fail if `<path>` has children and `-r` is not specified.
 +
 *Example*: `-r`
 
@@ -1585,6 +1613,7 @@ Use the `zk ls` command to see the children of a znode.
 |===
 +
 Recursively list all descendants of a znode.
+Only the node names are listed, not the data.
 +
 *Example*: `-r`
 
@@ -1620,7 +1649,7 @@ An example of this command with the parameters is:
 
 === Create a znode (supports chroot)
 
-Use the `zk mkroot` command to create a znode.
+Use the `zk mkroot` command to create a znode with no data.
 The primary use-case for this command to support ZooKeeper's "chroot" concept.
 However, it can also be used to create arbitrary paths.
 
@@ -1635,7 +1664,7 @@ s|Required |Default: none
 +
 The path on ZooKeeper to create.
 Intermediate znodes will be created if necessary.
-A leading slash is assumed even if not specified.
+A leading slash is assumed if not present.
 +
 *Example*: `/solr`
 
