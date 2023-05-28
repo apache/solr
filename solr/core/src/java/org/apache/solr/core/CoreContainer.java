@@ -517,6 +517,11 @@ public class CoreContainer {
     authenticationConfig = Utils.getDeepCopy(authenticationConfig, 4);
     int newVersion = readVersion(authenticationConfig);
     String pluginClassName = null;
+    ArrayList<String> authPluginList = new ArrayList<String>(Arrays.asList(
+            "solr.BasicAuthPlugin", "solr.JWTAuthPlugin", "solr.HadoopAuthPlugin",
+            "solr.ConfigurableInternodeAuthHadoopPlugin", "solr.CertAuthPlugin",
+            "solr.MultiAuthPlugin", "solr.KerberosPlugin"
+    ));
     if (authenticationConfig != null) {
       if (authenticationConfig.containsKey("class")) {
         pluginClassName = String.valueOf(authenticationConfig.get("class"));
@@ -547,7 +552,12 @@ public class CoreContainer {
 
     // Initialize the plugin
     if (pluginClassName != null) {
-      log.info("Initializing authentication plugin: {}", pluginClassName);
+      if (authPluginList.contains(pluginClassName)) {
+        log.info("Initializing authentication plugin: {}", pluginClassName);
+      } else {
+        log.warn("Wrong Authentication plugin {} configured." +
+                "Please refer Solr 9+ documentation for correct Authentication plugin", pluginClassName);
+      }
       authenticationPlugin =
           new SecurityPluginHolder<>(
               newVersion,
