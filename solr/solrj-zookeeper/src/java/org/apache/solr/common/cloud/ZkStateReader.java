@@ -326,16 +326,16 @@ public class ZkStateReader implements SolrCloseable {
               log.debug("Removing cached collection state for [{}]", collection);
               watch.currentState = null;
             } else { // both new and old states are non-null
-              long oldCVersion =
+              long oldPzxid =
                   oldState.getPerReplicaStates() == null
                       ? -1
                       : oldState.getPerReplicaStates().pzxid;
-              long newCVersion =
+              long newPzxid =
                   newState.getPerReplicaStates() == null
                       ? -1
                       : newState.getPerReplicaStates().pzxid;
               if (oldState.getZNodeVersion() < newState.getZNodeVersion()
-                  || oldCVersion < newCVersion) {
+                  || oldPzxid < newPzxid) {
                 watch.currentState = newState;
                 if (log.isDebugEnabled()) {
                   log.debug(
@@ -431,8 +431,8 @@ public class ZkStateReader implements SolrCloseable {
             if (event.getType() == EventType.NodeCreated) {
               if (oldState != null && newState.version < oldState.version) {
                 // we got a notification out of order? . Shouldn't happen
-                if (log.isTraceEnabled()) {
-                  log.trace("newState {} < oldState {}", newState, oldState);
+                if (log.isInfoEnabled()) {
+                  log.info("newState {} < oldState {}", newState, oldState);
                 }
                 return;
               }
