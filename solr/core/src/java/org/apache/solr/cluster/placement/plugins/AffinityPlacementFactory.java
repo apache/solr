@@ -364,7 +364,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
             // type
             Set<Node> candidateNodes =
                 nodePicker.getCandidateNodes(
-                    shardName, replicaType); // new HashSet<>(replicaTypeToNodes.get(replicaType));
+                    shardName,
+                    replicaType,
+                    leaderMetrics); // new HashSet<>(replicaTypeToNodes.get(replicaType));
 
             int numReplicasToCreate = request.getCountReplicasToCreate(replicaType);
             if (numReplicasToCreate > 0) {
@@ -420,14 +422,15 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           }
 
           @Override
-          public Set<Node> getCandidateNodes(String shardName, Replica.ReplicaType replicaType) {
+          public Set<Node> getCandidateNodes(
+              String shardName, Replica.ReplicaType replicaType, ReplicaMetrics leaderMetrics) {
             return byShards
                 .computeIfAbsent(
                     shardName,
                     s -> {
                       throw new IllegalArgumentException("unknown shard: " + s);
                     })
-                .getCandidateNodes(shardName, replicaType);
+                .getCandidateNodes(shardName, replicaType, leaderMetrics);
           }
         };
       } else {
@@ -1302,7 +1305,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     private class DefaultNodePicker implements NodePicker {
 
       private final AttributeValues attrValues;
-      private final EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes;
+      private EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes;
       private Set<Node> nodes;
 
       public DefaultNodePicker(
@@ -1318,7 +1321,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           PlacementContext placementContext,
           PlacementRequest request,
           Map<String, String> collectionRelation,
-          String shardName,
+          String shardNameOrNull,
           AttributeValues attrValues)
           throws PlacementException {
         this.nodes = request.getTargetNodes();
@@ -1326,20 +1329,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // filter out nodes that don't meet the `withCollection` constraint
         nodes =
             filterNodesWithCollection(
-                placementContext.getCluster(), request, collectionRelation, shardName, nodes);
+                placementContext.getCluster(), request, collectionRelation, shardNameOrNull, nodes);
         // filter out nodes that don't match the "node types" specified in the collection props
         nodes = filterNodesByNodeType(placementContext.getCluster(), request, attrValues, nodes);
-
-        ReplicaMetrics leaderMetrics =
-            attrValues
-                .getCollectionMetrics(request.getCollection().getName())
-                .flatMap(colMetrics -> colMetrics.getShardMetrics(shardName))
-                .flatMap(ShardMetrics::getLeaderMetrics)
-                .orElse(null);
-        // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap
-        // if nodes accept multiple replica types). These subsets sets are actually maps, because we
-        // capture the number of cores (of any replica type) present on each node.
-        this.replicaTypeToNodes = getAvailableNodesForReplicaTypes(nodes, attrValues, leaderMetrics);
       }
 
       @Override
@@ -1348,7 +1340,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       @Override
-      public Set<Node> getCandidateNodes(String shardName, Replica.ReplicaType replicaType) {
+      public Set<Node> getCandidateNodes(
+          String shardName, Replica.ReplicaType replicaType, ReplicaMetrics leaderMetrics) {
+        // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap
+        // if nodes accept multiple replica types). These subsets sets are actually maps, because we
+        // capture the number of cores (of any replica type) present on each node.
+        // TODO once per shard
+        replicaTypeToNodes = getAvailableNodesForReplicaTypes(nodes, attrValues, leaderMetrics);
         return new HashSet<>(replicaTypeToNodes.get(replicaType));
       }
     }
@@ -1356,7 +1354,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     public interface NodePicker {
       Set<String> getZonesFromNodes(String shardName);
 
-      Set<Node> getCandidateNodes(String shardName, Replica.ReplicaType replicaType);
+      Set<Node> getCandidateNodes(
+          String shardName, Replica.ReplicaType replicaType, ReplicaMetrics leaderMetrics);
     }
 
     static class SpreadDomainComparator implements Comparator<SpreadDomainWithNodes> {
