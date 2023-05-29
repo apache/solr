@@ -75,8 +75,9 @@ public class HealthcheckTool extends SolrCloudTool {
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String collection = cli.getOptionValue("collection");
-    if (collection == null)
+    if (collection == null) {
       throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
+    }
 
     log.debug("Running healthcheck for {}", collection);
 
@@ -85,8 +86,9 @@ public class HealthcheckTool extends SolrCloudTool {
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (docCollection == null || docCollection.getSlices() == null)
+    if (docCollection == null || docCollection.getSlices() == null) {
       throw new IllegalArgumentException("Collection " + collection + " not found!");
+    }
 
     Collection<Slice> slices = docCollection.getSlices();
 
@@ -187,7 +189,7 @@ public class HealthcheckTool extends SolrCloudTool {
     new JSONWriter(arr, 2).write(report);
     echo(arr.toString());
   }
-} // end HealthcheckTool
+}
 
 class ReplicaHealth implements Comparable<ReplicaHealth> {
   String shard;
