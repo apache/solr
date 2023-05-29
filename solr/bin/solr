@@ -38,7 +38,7 @@
 # Note: This is particularly handy for running multiple instances on a
 # single installation, or for quick tests.
 #
-# Finally, developers and enthusiasts who frequently run from an SVN
+# Finally, developers and enthusiasts who frequently run from an Git
 # checkout, and do not want to locally modify bin/solr.in.sh, can put
 # a customized include file at ~/.solr.in.sh.
 #
@@ -990,66 +990,9 @@ if [ "$SCRIPT_CMD" == "assert" ]; then
   exit $?
 fi
 
-# run a healthcheck and exit if requested
+# healthcheck tool
 if [ "$SCRIPT_CMD" == "healthcheck" ]; then
-
-  VERBOSE=""
-
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "$1" in
-          -c|-collection)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Collection name is required when using the $1 option!"
-                exit 1
-              fi
-              HEALTHCHECK_COLLECTION="$2"
-              shift 2
-          ;;
-          -z|-zkhost|-zkHost)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
-                exit 1
-              fi
-              ZK_HOST="$2"
-              shift 2
-          ;;
-          -help|-h)
-              print_usage "$SCRIPT_CMD"
-              exit 0
-          ;;
-          -V|-verbose)
-              VERBOSE="-verbose"
-              shift
-          ;;
-          --)
-              shift
-              break
-          ;;
-          *)
-              if [ "$1" != "" ]; then
-                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
-                exit 1
-              else
-                break # out-of-args, stop looping
-              fi
-          ;;
-      esac
-    done
-  fi
-
-  if [ -z "$ZK_HOST" ]; then
-    ZK_HOST=localhost:9983
-  fi
-
-  if [ -z "$HEALTHCHECK_COLLECTION" ]; then
-    echo "collection parameter is required!"
-    print_usage "healthcheck"
-    exit 1
-  fi
-
-  run_tool healthcheck -zkHost "$ZK_HOST" -collection "$HEALTHCHECK_COLLECTION" $VERBOSE
-
+  run_tool healthcheck "$@"
   exit $?
 fi
 
