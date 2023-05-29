@@ -82,7 +82,7 @@ public class SolrCLI implements CLIO {
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST)
+          .desc("Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to " + ZK_HOST)
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
@@ -113,7 +113,7 @@ public class SolrCLI implements CLIO {
               .argName("COLLECTION")
               .hasArg()
               .required(false)
-              .desc("Name of collection; no default.")
+              .desc("Name of collection")
               .longOpt("collection")
               .build(),
           OPTION_VERBOSE);
