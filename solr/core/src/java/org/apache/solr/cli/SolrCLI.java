@@ -83,9 +83,7 @@ public class SolrCLI implements CLIO {
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc(
-              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + ZK_HOST)
+          .desc("Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to " + ZK_HOST)
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
