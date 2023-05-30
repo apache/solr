@@ -82,7 +82,9 @@ public class SolrCLI implements CLIO {
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc("Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to " + ZK_HOST)
+          .desc(
+              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
+                  + ZK_HOST)
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
@@ -142,7 +144,7 @@ public class SolrCLI implements CLIO {
       if (args.length != 1) {
         CLIO.err("Version tool does not accept any parameters!");
       }
-      CLIO.out("Solr version is: " + SolrVersion.LATEST.toString());
+      CLIO.out("Solr version is: " + SolrVersion.LATEST);
       exit(0);
     }
 
@@ -466,52 +468,6 @@ public class SolrCLI implements CLIO {
         numSeconds);
   }
 
-  public static final List<Option> CREATE_COLLECTION_OPTIONS =
-      List.of(
-          OPTION_ZKHOST,
-          OPTION_SOLRURL,
-          Option.builder(NAME)
-              .argName("NAME")
-              .hasArg()
-              .required(true)
-              .desc("Name of collection to create.")
-              .build(),
-          Option.builder("shards")
-              .argName("#")
-              .hasArg()
-              .required(false)
-              .desc("Number of shards; default is 1.")
-              .build(),
-          Option.builder("replicationFactor")
-              .argName("#")
-              .hasArg()
-              .required(false)
-              .desc(
-                  "Number of copies of each document across the collection (replicas per shard); default is 1.")
-              .build(),
-          Option.builder("confdir")
-              .argName("NAME")
-              .hasArg()
-              .required(false)
-              .desc(
-                  "Configuration directory to copy when creating the new collection; default is "
-                      + DEFAULT_CONFIG_SET
-                      + '.')
-              .build(),
-          Option.builder("confname")
-              .argName("NAME")
-              .hasArg()
-              .required(false)
-              .desc("Configuration name; default is the collection name.")
-              .build(),
-          Option.builder("configsetsDir")
-              .argName("DIR")
-              .hasArg()
-              .required(true)
-              .desc("Path to configsets directory on the local system.")
-              .build(),
-          OPTION_VERBOSE);
-
   /**
    * Get the base URL of a live Solr instance from either the solrUrl command-line option from
    * ZooKeeper.
@@ -554,7 +510,9 @@ public class SolrCLI implements CLIO {
       throw new IllegalStateException(
           "Must provide either the -zkHost or -solrUrl parameters to use the create_collection command!");
 
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
+    if (!solrUrl.endsWith("/")) {
+      solrUrl += "/";
+    }
 
     try (var solrClient = getSolrClient(solrUrl)) {
       // hit Solr to get system info

@@ -1041,6 +1041,10 @@ fi
 
 # create a core or collection
 if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]]; then
+  run_tool $SCRIPT_CMD $@
+  exit $?
+fi
+if [[ "$SCRIPT_CMD" == "create2" || "$SCRIPT_CMD" == "create_core2" || "$SCRIPT_CMD" == "create_collection2" ]]; then
 
   CREATE_NUM_SHARDS=1
   CREATE_REPFACT=1

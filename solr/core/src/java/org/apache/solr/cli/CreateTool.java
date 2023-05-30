@@ -43,7 +43,7 @@ public class CreateTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return SolrCLI.CREATE_COLLECTION_OPTIONS;
+    return CreateCollectionTool.CREATE_COLLECTION_OPTIONS;
   }
 
   @Override
