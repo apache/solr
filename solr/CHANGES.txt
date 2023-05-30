@@ -199,6 +199,8 @@ Bug Fixes
 
 * SOLR-16811: /update/json/docs?echo and mapUniqueKeyOnly params doesn't work (Mikhail Khludnev)
 
+* SOLR-16807: DenseVectorField breaks catch-all copyFields (Joel Bernstein)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
