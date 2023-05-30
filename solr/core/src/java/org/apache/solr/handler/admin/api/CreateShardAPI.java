@@ -95,7 +95,8 @@ public class CreateShardAPI extends AdminAPIBase {
     ensureRequiredParameterProvided(SHARD_ID_PROP, requestBody.shardName);
     SolrIdentifierValidator.validateShardName(requestBody.shardName);
     final String resolvedCollectionName =
-        resolveAndValidateAliasIfEnabled(collectionName, requestBody.followAliases);
+        resolveAndValidateAliasIfEnabled(
+            collectionName, Boolean.TRUE.equals(requestBody.followAliases));
     ensureCollectionUsesImplicitRouter(resolvedCollectionName);
 
     final ZkNodeProps remoteMessage = createRemoteMessage(resolvedCollectionName, requestBody);
