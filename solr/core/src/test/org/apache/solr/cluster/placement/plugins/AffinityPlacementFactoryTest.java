@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -989,9 +990,11 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         .shards()
         .forEach(s -> s.replicas().forEach(r -> secondaryNodes.add(r.getNode())));
 
+    final List<Node> liveNodes = new ArrayList<>(cluster.getLiveNodes());
+    Collections.shuffle(liveNodes, random());
     PlacementRequestImpl placementRequest =
         new PlacementRequestImpl(
-            primaryCollection, inOrderSet("shard2", "shard1"), cluster.getLiveNodes(), 1, 0, 0);
+            primaryCollection, inOrderSet("shard2", "shard1"), new LinkedHashSet<>(liveNodes), 1, 0, 0);
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(2, pp.getReplicaPlacements().size());

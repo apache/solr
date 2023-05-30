@@ -28,6 +28,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -63,7 +64,6 @@ import org.apache.solr.cluster.placement.ReplicaMetrics;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.ShardMetrics;
 import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
-import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
@@ -308,28 +308,35 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       for (PlacementRequest request : requests) {
         SolrCollection solrCollection = request.getCollection();
 
-        NodePicker nodePicker = createNodePicker(placementContext, request, attrValues);
-
+        final NodeFilter nodeTypeNodeFilter = createNodeTypeNodeFilter(request, attrValues);
+        final TriNodeFilter withCollectionShardsNodeFilter = createWithCollectionShardsNodeFilter(placementContext, request, nodeTypeNodeFilter);
         // Build the replica placement decisions here
         Set<ReplicaPlacement> replicaPlacements = new HashSet<>();
 
         // Let's now iterate on all shards to create replicas for and start finding home sweet homes
         // for the replicas
+        Set<Node> nodesSubSet=null;
         for (String shardName : request.getShardNames()) {
+          nodesSubSet = withCollectionShardsNodeFilter.filterNodes(request.getTargetNodes(), shardName, nodesSubSet);
           // All available zones of live nodes. Due to some nodes not being candidates for
           // placement,
           // and some existing replicas being one availability zones that might be offline (i.e.
           // their
           // nodes are not live), this set might contain zones on which it is impossible to place
           // replicas. That's ok.
-          Set<String> availabilityZones =
-              nodePicker.getZonesFromNodes(shardName); // nodes, attrValues);
+          Set<String> availabilityZones = getZonesFromNodes(nodesSubSet,attrValues);
           ReplicaMetrics leaderMetrics =
               attrValues
                   .getCollectionMetrics(solrCollection.getName())
                   .flatMap(colMetrics -> colMetrics.getShardMetrics(shardName))
                   .flatMap(ShardMetrics::getLeaderMetrics)
                   .orElse(null);
+
+          // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap
+          // if nodes accept multiple replica types). These subsets sets are actually maps, because we
+          // capture the number of cores (of any replica type) present on each node.
+          EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes =
+              getAvailableNodesForReplicaTypes(nodesSubSet, attrValues, leaderMetrics);
 
           // Inventory nodes (if any) that already have a replica of any type for the shard, because
           // we can't be placing additional replicas on these. This data structure is updated after
@@ -362,11 +369,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
             // Build the set of candidate nodes for the placement, i.e. nodes that can accept the
             // replica
             // type
-            Set<Node> candidateNodes =
-                nodePicker.getCandidateNodes(
-                    shardName,
-                    replicaType,
-                    leaderMetrics); // new HashSet<>(replicaTypeToNodes.get(replicaType));
 
             int numReplicasToCreate = request.getCountReplicasToCreate(replicaType);
             if (numReplicasToCreate > 0) {
@@ -378,7 +380,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                   numReplicasToCreate,
                   attrValues,
                   leaderMetrics,
-                  candidateNodes,
+                  replicaTypeToNodes.get(replicaType),
                   nodesWithReplicas,
                   allCoresOnNodes,
                   placementContext.getPlacementPlanFactory(),
@@ -396,47 +398,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       return placementPlans;
     }
 
-    private NodePicker createNodePicker(
-        PlacementContext placementContext, PlacementRequest request, AttributeValues attrValues)
-        throws PlacementException {
-      if (withCollectionShards.containsKey(request.getCollection().getName())) {
-
-        final Set<String> shardNames = request.getShardNames();
-        Map<String, NodePicker> byShards = CollectionUtil.newLinkedHashMap(shardNames.size());
-        for (String shardName : shardNames) {
-          byShards.put(
-              shardName,
-              new DefaultNodePicker(
-                  placementContext, request, withCollectionShards, shardName, attrValues));
-        }
-        return new NodePicker() {
-          @Override
-          public Set<String> getZonesFromNodes(String shardName) {
-            return byShards
-                .computeIfAbsent(
-                    shardName,
-                    s -> {
-                      throw new IllegalArgumentException("unknown shard: " + s);
-                    })
-                .getZonesFromNodes(shardName);
-          }
-
-          @Override
-          public Set<Node> getCandidateNodes(
-              String shardName, Replica.ReplicaType replicaType, ReplicaMetrics leaderMetrics) {
-            return byShards
-                .computeIfAbsent(
-                    shardName,
-                    s -> {
-                      throw new IllegalArgumentException("unknown shard: " + s);
-                    })
-                .getCandidateNodes(shardName, replicaType, leaderMetrics);
-          }
-        };
-      } else {
-        return new DefaultNodePicker(placementContext, request, withCollections, attrValues);
-      }
-    }
 
     private boolean shouldSpreadAcrossDomains(Set<Node> allNodes, AttributeValues attrValues) {
       boolean doSpreadAcrossDomains =
@@ -1170,92 +1131,108 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                 solrCollection, shardName, assignTarget, replicaType));
       }
     }
-
-    private Set<Node> filterNodesWithCollection(
-        Cluster cluster,
-        PlacementRequest request,
-        Map<String, String> collectionRelation,
-        String shardNameOrAll,
-        Set<Node> initialNodes)
-        throws PlacementException {
-      // if there's a `withCollection` constraint for this collection then remove nodes
-      // that are not eligible
-      String withCollectionName = collectionRelation.get(request.getCollection().getName());
-      if (withCollectionName == null) {
-        return initialNodes;
-      }
-      SolrCollection withCollection;
-      try {
-        withCollection = cluster.getCollection(withCollectionName);
-      } catch (Exception e) {
-        throw new PlacementException(
-            "Error getting info of withCollection(Shards)=" + withCollectionName, e);
-      }
-      Set<Node> withCollectionNodes = new HashSet<>();
-      final Iterable<Shard> secondaryShards;
-      if (shardNameOrAll == null) {
-        secondaryShards = withCollection.shards();
-      } else {
-        final Shard secondaryShard = withCollection.getShard(shardNameOrAll);
-        if (secondaryShard != null) {
-          secondaryShards = Collections.singleton(secondaryShard);
-        } else {
-          secondaryShards = Collections.emptyList();
-        }
-      }
-      secondaryShards.forEach(s -> s.replicas().forEach(r -> withCollectionNodes.add(r.getNode())));
-      if (withCollectionNodes.isEmpty()) {
-        throw new PlacementException(
-            "Collection "
-                + withCollection.getName()
-                + " required via `withCollection(Shards)` has no replicas on eligible nodes.");
-      }
-      HashSet<Node> filteredNodes = new HashSet<>(initialNodes);
-      filteredNodes.retainAll(withCollectionNodes);
-      if (filteredNodes.isEmpty()) {
-        throw new PlacementException(
-            "Collection "
-                + withCollection.getName()
-                + " required via `withCollection(Shards)` has no replicas on eligible nodes.");
-      }
-      return filteredNodes;
+    @FunctionalInterface
+    private interface NodeFilter{
+      Set<Node> filterNodes(Set<Node> nodes) throws PlacementException;
     }
 
-    private Set<Node> filterNodesByNodeType(
-        Cluster cluster,
-        PlacementRequest request,
-        AttributeValues attributeValues,
-        Set<Node> initialNodes)
-        throws PlacementException {
+    @FunctionalInterface
+    private interface TriNodeFilter{
+      Set<Node> filterNodes(Set<Node> initial, String shardName, Set<Node> previous) throws PlacementException;
+    }
+
+    private TriNodeFilter createWithCollectionShardsNodeFilter(PlacementContext placementContext, PlacementRequest request, NodeFilter nextFilter) throws PlacementException {
+      String requiredCollectionName;
+      SolrCollection requiredCollection;
+      final boolean shardWiseRestriction;
+      final String creatingCollection = request.getCollection().getName();
+      if ((requiredCollectionName = withCollectionShards.get(creatingCollection))!=null) {
+        shardWiseRestriction = true;
+      } else {
+        if ((requiredCollectionName = withCollections.get(creatingCollection))!=null) {
+          shardWiseRestriction = false;
+        } else {
+          return (nodes, shard, prevNodes) -> prevNodes!=null ? prevNodes : nextFilter.filterNodes(nodes);
+        }
+      }
+      final String propertyName = "`withCollection" + (shardWiseRestriction ? "Shard" : "") + "s`";
+      try {
+        requiredCollection = placementContext.getCluster().getCollection(requiredCollectionName);
+      } catch (Exception e) {
+        throw new PlacementException(
+            "Error getting info of required " + propertyName + "=" + requiredCollectionName, e);
+      }
+
+      return (nodes, shard, previousNodes) -> {
+        // cache if shortcut is valid
+        if (!shardWiseRestriction && previousNodes!=null) {
+          return previousNodes;
+        }
+
+        Set<Node> withCollectionNodes = new HashSet<>();
+        final Iterable<Shard> secondaryShards;
+        if (!shardWiseRestriction) {
+          secondaryShards = requiredCollection.shards();
+        } else {
+          final Shard secondaryShard = requiredCollection.getShard(shard);
+          if (secondaryShard != null) {
+            secondaryShards = Collections.singleton(secondaryShard);
+          } else {
+            secondaryShards = Collections.emptyList();
+          }
+        }
+        secondaryShards.forEach(s -> s.replicas().forEach(r -> withCollectionNodes.add(r.getNode())));
+        if (withCollectionNodes.isEmpty()) {
+          throw new PlacementException(
+              "Collection "
+                  + requiredCollection.getName()
+                  + " required via "+propertyName+" has no replicas on eligible nodes.");
+        }
+        Set<Node> filteredNodes = new LinkedHashSet<>(nodes);
+        filteredNodes.retainAll(withCollectionNodes);
+        if (filteredNodes.isEmpty()) {
+          throw new PlacementException(
+              "Collection "
+                  + requiredCollection.getName()
+                  + " required via "+propertyName+" has no replicas on eligible nodes.");
+        }
+        return nextFilter.filterNodes(filteredNodes);
+      };
+    }
+
+    private NodeFilter createNodeTypeNodeFilter(PlacementRequest request,
+                                                AttributeValues attributeValues) throws PlacementException {
       Set<String> collNodeTypes = nodeTypes.get(request.getCollection().getName());
       if (collNodeTypes == null) {
         // no filtering by node type
-        return initialNodes;
+        return (nodes)->nodes;
       }
-      Set<Node> filteredNodes =
-          initialNodes.stream()
-              .filter(
-                  n -> {
-                    Optional<String> nodePropOpt =
-                        attributeValues.getSystemProperty(
-                            n, AffinityPlacementConfig.NODE_TYPE_SYSPROP);
-                    if (nodePropOpt.isEmpty()) {
-                      return false;
-                    }
-                    Set<String> nodeTypes =
-                        new HashSet<>(StrUtils.splitSmart(nodePropOpt.get(), ','));
-                    nodeTypes.retainAll(collNodeTypes);
-                    return !nodeTypes.isEmpty();
-                  })
-              .collect(Collectors.toSet());
-      if (filteredNodes.isEmpty()) {
-        throw new PlacementException(
-            "There are no nodes with types: "
-                + collNodeTypes
-                + " expected by collection "
-                + request.getCollection().getName());
-      }
-      return filteredNodes;
+      return (nodes)-> {
+        Set<Node> filteredNodes =
+            nodes.stream()
+                .filter(
+                    n -> {
+                      Optional<String> nodePropOpt =
+                          attributeValues.getSystemProperty(
+                              n, AffinityPlacementConfig.NODE_TYPE_SYSPROP);
+                      if (nodePropOpt.isEmpty()) {
+                        return false;
+                      }
+                      Set<String> nodeTypes =
+                          new HashSet<>(StrUtils.splitSmart(nodePropOpt.get(), ','));
+                      nodeTypes.retainAll(collNodeTypes);
+                      return !nodeTypes.isEmpty();
+                    })
+                .collect(Collectors.toSet());
+        if (filteredNodes.isEmpty()) {
+          throw new PlacementException(
+              "There are no nodes with types: "
+                  + collNodeTypes
+                  + " expected by collection "
+                  + request.getCollection().getName());
+        }
+        return filteredNodes;
+      };
     }
     /**
      * Comparator implementing the placement strategy based on free space and number of cores: we
@@ -1300,62 +1277,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // The ordering on the number of cores is the natural order.
         return Integer.compare(coresOnNodes.get(a), coresOnNodes.get(b));
       }
-    }
-
-    private class DefaultNodePicker implements NodePicker {
-
-      private final AttributeValues attrValues;
-      private EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes;
-      private Set<Node> nodes;
-
-      public DefaultNodePicker(
-          PlacementContext placementContext,
-          PlacementRequest request,
-          Map<String, String> collectionRelation,
-          AttributeValues attrValues)
-          throws PlacementException {
-        this(placementContext, request, collectionRelation, null, attrValues);
-      }
-
-      public DefaultNodePicker(
-          PlacementContext placementContext,
-          PlacementRequest request,
-          Map<String, String> collectionRelation,
-          String shardNameOrNull,
-          AttributeValues attrValues)
-          throws PlacementException {
-        this.nodes = request.getTargetNodes();
-        this.attrValues = attrValues;
-        // filter out nodes that don't meet the `withCollection` constraint
-        nodes =
-            filterNodesWithCollection(
-                placementContext.getCluster(), request, collectionRelation, shardNameOrNull, nodes);
-        // filter out nodes that don't match the "node types" specified in the collection props
-        nodes = filterNodesByNodeType(placementContext.getCluster(), request, attrValues, nodes);
-      }
-
-      @Override
-      public Set<String> getZonesFromNodes(String shardName) {
-        return AffinityPlacementPlugin.this.getZonesFromNodes(nodes, attrValues);
-      }
-
-      @Override
-      public Set<Node> getCandidateNodes(
-          String shardName, Replica.ReplicaType replicaType, ReplicaMetrics leaderMetrics) {
-        // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap
-        // if nodes accept multiple replica types). These subsets sets are actually maps, because we
-        // capture the number of cores (of any replica type) present on each node.
-        // TODO once per shard
-        replicaTypeToNodes = getAvailableNodesForReplicaTypes(nodes, attrValues, leaderMetrics);
-        return new HashSet<>(replicaTypeToNodes.get(replicaType));
-      }
-    }
-
-    public interface NodePicker {
-      Set<String> getZonesFromNodes(String shardName);
-
-      Set<Node> getCandidateNodes(
-          String shardName, Replica.ReplicaType replicaType, ReplicaMetrics leaderMetrics);
     }
 
     static class SpreadDomainComparator implements Comparator<SpreadDomainWithNodes> {
