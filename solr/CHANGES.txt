@@ -33,6 +33,8 @@ Deprecation Removals
 
 * SOLR-16661: Removed deprecated 'analytics' component (janhoy)
 
+* SOLR-16823: Remove backcompatiblity of -upconfig and -downconfig for bin/solr zk upconfig and downconfig commands.  (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
