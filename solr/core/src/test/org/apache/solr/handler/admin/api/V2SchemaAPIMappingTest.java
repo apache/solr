@@ -49,7 +49,6 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
 
   @Test
   public void testGetSchemaInfoApis() {
-    assertAnnotatedApiExistsFor("GET", "/schema");
     assertAnnotatedApiExistsFor("GET", "/schema/dynamicfields");
     assertAnnotatedApiExistsFor("GET", "/schema/dynamicfields/someDynamicField");
     assertAnnotatedApiExistsFor("GET", "/schema/fieldtypes");
@@ -57,9 +56,6 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
     assertAnnotatedApiExistsFor("GET", "/schema/fields");
     assertAnnotatedApiExistsFor("GET", "/schema/fields/someField");
     assertAnnotatedApiExistsFor("GET", "/schema/copyfields");
-    assertAnnotatedApiExistsFor("GET", "/schema/similarity");
-    assertAnnotatedApiExistsFor("GET", "/schema/uniquekey");
-    assertAnnotatedApiExistsFor("GET", "/schema/version");
     assertAnnotatedApiExistsFor("GET", "/schema/zkversion");
   }
 
