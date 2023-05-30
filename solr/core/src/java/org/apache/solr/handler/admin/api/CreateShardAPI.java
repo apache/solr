@@ -66,10 +66,8 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * V2 API for creating a new shard in a collection.
  *
- * <p>This API (POST /v2/collections/collectionName/shards {'create': {...}}) is analogous to the v1
+ * <p>This API (POST /v2/collections/collectionName/shards {...}) is analogous to the v1
  * /admin/collections?action=CREATESHARD command.
- *
- * @see CreateShardAPI
  */
 @Path("/collections/{collectionName}/shards")
 public class CreateShardAPI extends AdminAPIBase {
