@@ -994,7 +994,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     Collections.shuffle(liveNodes, random());
     PlacementRequestImpl placementRequest =
         new PlacementRequestImpl(
-            primaryCollection, inOrderSet("shard2", "shard1"), new LinkedHashSet<>(liveNodes), 1, 0, 0);
+            primaryCollection,
+            inOrderSet("shard2", "shard1"),
+            new LinkedHashSet<>(liveNodes),
+            1,
+            0,
+            0);
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(2, pp.getReplicaPlacements().size());
