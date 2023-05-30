@@ -164,6 +164,8 @@ Optimizations
 * SOLR-16764: Clarify that ExportTool exports documents in JSON with Lines format, not standard JSON.  Add explicit -compress option for gzipping output.
   Add ability to specific a directory for output along with a specific file when using -out. (Eric Pugh)
 
+* SOLR-14630: When querying with the `_route_` or `shards.preference` parameter and if there are multiple replicas for a collection on the receiving node, there was sometimes an extra HTTP hop or the non-intended replica may receive the request. SolrJ will now form the URL directly to the intended replica of the collection (and not the collection itself). (Pierre Salagnac, Ivan Djurasevic)
+
 Bug Fixes
 ---------------------
 
