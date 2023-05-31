@@ -20,16 +20,27 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrClassLoader;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
+import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
 
@@ -117,4 +128,134 @@ public class GetSchemaAPI extends JerseyResource {
     @JsonProperty("version")
     public float version;
   }
+
+  @GET
+  @Path("/fields")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaListFieldsResponse listSchemaFields(SchemaGetFieldRequestBody requestBody) {
+    SchemaListFieldsResponse response = instantiateJerseyResponse(SchemaListFieldsResponse.class);
+    final String realName = "fields";
+
+    response.fields = listAllFieldsOfType(realName, requestBody);
+
+    return response;
+  }
+
+  public static class SchemaListFieldsResponse extends SolrJerseyResponse {
+    @JsonProperty("fields")
+    public Object fields;
+  }
+
+  @GET
+  @Path("/fields/{fieldName}")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaGetFieldInfoResponse getFieldInfo(@PathParam("fieldName") String fieldName, SchemaGetFieldRequestBody requestBody) throws Exception {
+    SchemaGetFieldInfoResponse response = instantiateJerseyResponse(SchemaGetFieldInfoResponse.class);
+    final String realName = "fields";
+
+    SimpleOrderedMap<Object> fieldInfo = retrieveFieldInfoOfType(realName, fieldName, requestBody);
+    if (fieldInfo != null) {
+      response.fieldInfo = fieldInfo;
+      return response;
+    }
+    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path /fields/" + fieldName);
+  }
+
+  public static class SchemaGetFieldInfoResponse extends SolrJerseyResponse {
+    @JsonProperty("field")
+    public SimpleOrderedMap<?> fieldInfo;
+  }
+
+  @GET
+  @Path("/copyfields")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaListCopyFieldsResponse listCopyFields(SchemaGetFieldRequestBody requestBody) {
+    SchemaListCopyFieldsResponse response = instantiateJerseyResponse(SchemaListCopyFieldsResponse.class);
+    final String realName = "copyfields";
+
+    response.copyFields = listAllFieldsOfType(realName, requestBody);
+
+    return response;
+  }
+
+
+  public static class SchemaListCopyFieldsResponse extends SolrJerseyResponse {
+    @JsonProperty("copyFields")
+    public Object copyFields;
+  }
+
+  public static class SchemaGetFieldRequestBody implements JacksonReflectMapWriter {
+    @JsonProperty("params")
+    public SolrParams params;
+
+    public SchemaGetFieldRequestBody(SolrParams params) {
+      this.params = params;
+    }
+  }
+  private Object listAllFieldsOfType(String realName, SchemaGetFieldRequestBody requestBody) {
+    String singularRealName = IndexSchema.nameMapping.get(realName);
+    Map<String, Object> propertyValues =
+      indexSchema.getNamedPropertyValues(realName, requestBody.params);
+    Object o = propertyValues.get(singularRealName);
+    if (requestBody.params.getBool("meta", false)) {
+      if (o instanceof NamedList) {
+        @SuppressWarnings("unchecked")
+        NamedList<Object> nl = (NamedList<Object>) o;
+        String klas = (String) nl.get("class");
+        PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
+        if (parsedClassName.pkg != null) {
+          SolrClassLoader solrClassLoader = indexSchema.getSolrClassLoader();
+          MapWriter mw =
+            solrClassLoader instanceof PackageListeningClassLoader
+              ? ((PackageListeningClassLoader) solrClassLoader)
+              .getPackageVersion(parsedClassName)
+              : null;
+          if (mw != null) {
+            nl.add("_packageinfo_", mw);
+          }
+        }
+      }
+    }
+    return o;
+  }
+
+  @SuppressWarnings("unchecked")
+  private SimpleOrderedMap<Object> retrieveFieldInfoOfType(String realName, String fieldName, SchemaGetFieldRequestBody requestBody){
+    SimpleOrderedMap<Object> fieldInfo = null;
+    String singularRealName = IndexSchema.nameMapping.get(realName);
+    Map<String, Object> propertyValues =
+      indexSchema.getNamedPropertyValues(realName, requestBody.params);
+    Object o = propertyValues.get(singularRealName);
+    if (o instanceof List) {
+      List<?> list = (List<?>) o;
+      for (Object obj : list) {
+        if (obj instanceof SimpleOrderedMap) {
+          fieldInfo = (SimpleOrderedMap<Object>) obj;
+          if (fieldName.equals(fieldInfo.get("name"))) {
+            if (requestBody.params.getBool("meta", false)) {
+              String klas = (String) fieldInfo.get("class");
+              PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
+              if (parsedClassName.pkg != null) {
+                SolrClassLoader solrClassLoader = indexSchema.getSolrClassLoader();
+                MapWriter mw =
+                  solrClassLoader instanceof PackageListeningClassLoader
+                    ? ((PackageListeningClassLoader) solrClassLoader)
+                    .getPackageVersion(parsedClassName)
+                    : null;
+                if (mw != null) {
+                  fieldInfo.add("_packageinfo_", mw);
+                }
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+    return fieldInfo;
+  }
+
 }
