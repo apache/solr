@@ -124,8 +124,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + fromIndex);
       }
-      RefCounted<SolrIndexSearcher> fromHolder = null;
-      fromHolder = fromCore.getRegisteredSearcher();
+      RefCounted<SolrIndexSearcher> fromHolder = fromCore.getRegisteredSearcher();
       final Query joinQuery;
       try {
         joinQuery =
@@ -248,16 +247,13 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
         final String v = localParams.get(CommonParams.VALUE);
 
-        final Query q =
-            createQuery(
-                fromField,
-                v,
-                fromIndex,
-                toField,
-                scoreMode,
-                CommonParams.TRUE.equals(localParams.get("TESTenforceSameCoreAsAnotherOne")));
-
-        return q;
+        return createQuery(
+            fromField,
+            v,
+            fromIndex,
+            toField,
+            scoreMode,
+            CommonParams.TRUE.equals(localParams.get("TESTenforceSameCoreAsAnotherOne")));
       }
 
       private Query createQuery(
@@ -379,7 +375,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
   }
 
-  @SuppressWarnings("unchecked")
   private static String findLocalReplicaForFromIndex(
       ZkController zkController,
       String fromIndex,
@@ -469,11 +464,9 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         return collocatedFrom.getCoreName();
       }
       final String shards =
-          String.join(
-              ",",
-              fromShardReplicas.getReplicas().stream()
-                  .map(r -> r.getShard() + ":" + r.getCoreName() + "@" + r.getNodeName())
-                  .collect(Collectors.toList()));
+          fromShardReplicas.getReplicas().stream()
+              .map(r -> r.getShard() + ":" + r.getCoreName() + "@" + r.getNodeName())
+              .collect(Collectors.joining(","));
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Unable to find collocated \"from\" replica: "
@@ -487,7 +480,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
   }
 
-  /* @TODO it may also support some multiple numbers */
   private static void checkShardNumber(
       DocCollection toCollection, DocCollection fromCollection, String hitTheRoad) {
     final boolean shardsNumberCheck =
@@ -504,7 +496,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
   }
 
-  /* @TODO test fallback to schema */
   private static void checkRouterField(
       SolrCore toCore, DocCollection fromCollection, String fromField, String hitTheRoad) {
     String routeField = fromCollection.getRouter().getRouteField(fromCollection);
@@ -523,7 +514,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
               + hitTheRoad);
     }
   }
-  /* @TODO we can support some other ones as well. What about Implicit one picking shard per request?*/
+
   private static String checkRouters(
       DocCollection collection, DocCollection fromCollection, String hitTheRoad) {
 
