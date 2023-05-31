@@ -74,4 +74,4 @@ org.slf4j:*=2.0.7
 org.springframework.boot:spring-boot*=2.5.14
 org.springframework:spring*=5.3.23
 org.xerial.snappy:snappy-java=1.1.9.1
-software.amazon.awssdk:*=2.17.63
+software.amazon.awssdk:*=2.20.63

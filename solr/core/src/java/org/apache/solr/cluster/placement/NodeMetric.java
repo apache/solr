@@ -43,4 +43,20 @@ public interface NodeMetric<T> extends Metric<T> {
      */
     UNSPECIFIED
   }
+
+  /**
+   * Increase the metric by the given amount. This will be used while computing placements.
+   *
+   * @param a the original metric value
+   * @param b the amount to increase the metric by
+   */
+  T increase(T a, T b);
+
+  /**
+   * Decrease the metric by the given amount. This will be used while computing placements.
+   *
+   * @param a the original metric value
+   * @param b the amount to decrease the metric by
+   */
+  T decrease(T a, T b);
 }

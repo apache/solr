@@ -18,7 +18,6 @@ package org.apache.solr.util;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -209,7 +208,10 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public String update(String xml) {
     try {
-      return query("/update?stream.body=" + URLEncoder.encode(xml, "UTF-8"));
+      HttpPost httpPost = new HttpPost(getBaseURL() + "/update");
+      httpPost.setEntity(
+          new StringEntity(xml, ContentType.create("application/xml", StandardCharsets.UTF_8)));
+      return getResponse(httpPost);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

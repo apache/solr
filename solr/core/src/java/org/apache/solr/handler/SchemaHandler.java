@@ -47,19 +47,16 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.GetSchemaAPI;
 import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
 import org.apache.solr.handler.admin.api.SchemaGetDynamicFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaGetFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaGetFieldTypeAPI;
-import org.apache.solr.handler.admin.api.SchemaInfoAPI;
 import org.apache.solr.handler.admin.api.SchemaListAllCopyFieldsAPI;
 import org.apache.solr.handler.admin.api.SchemaListAllDynamicFieldsAPI;
 import org.apache.solr.handler.admin.api.SchemaListAllFieldTypesAPI;
 import org.apache.solr.handler.admin.api.SchemaListAllFieldsAPI;
 import org.apache.solr.handler.admin.api.SchemaNameAPI;
-import org.apache.solr.handler.admin.api.SchemaSimilarityAPI;
-import org.apache.solr.handler.admin.api.SchemaUniqueKeyAPI;
-import org.apache.solr.handler.admin.api.SchemaVersionAPI;
 import org.apache.solr.handler.admin.api.SchemaZkVersionAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.pkg.PackageListeningClassLoader;
@@ -140,19 +137,29 @@ public class SchemaHandler extends RequestHandlerBase
       String path = (String) req.getContext().get("path");
       switch (path) {
         case "/schema":
-          rsp.add(IndexSchema.SCHEMA, req.getSchema().getNamedPropertyValues());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaInfo());
+            break;
+          }
         case "/schema/version":
-          rsp.add(IndexSchema.VERSION, req.getSchema().getVersion());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaVersion());
+            break;
+          }
         case "/schema/uniquekey":
-          rsp.add(IndexSchema.UNIQUE_KEY, req.getSchema().getUniqueKeyField().getName());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaUniqueKey());
+            break;
+          }
         case "/schema/similarity":
-          rsp.add(
-              IndexSchema.SIMILARITY,
-              req.getSchema().getSimilarityFactory().getNamedPropertyValues());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getSchemaSimilarity());
+            break;
+          }
         case "/schema/name":
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
@@ -313,10 +320,6 @@ public class SchemaHandler extends RequestHandlerBase
   public Collection<Api> getApis() {
 
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SchemaSimilarityAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaListAllFieldsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaGetFieldAPI(this)));
@@ -332,7 +335,7 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(SchemaNameAPI.class);
+    return List.of(SchemaNameAPI.class, GetSchemaAPI.class);
   }
 
   @Override

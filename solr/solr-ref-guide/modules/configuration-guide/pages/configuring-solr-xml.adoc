@@ -80,6 +80,7 @@ Unless the `-DzkHost` or `-DzkRun` are specified at startup time, this section i
 
 == Solr.xml Parameters
 
+[#the-solr-element]
 === The <solr> Element
 
 There are no attributes that you can specify in the `<solr>` tag, which is the root element of `solr.xml`.
