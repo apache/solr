@@ -36,7 +36,6 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
@@ -54,7 +53,6 @@ import org.apache.solr.handler.admin.api.SchemaGetFieldTypeAPI;
 import org.apache.solr.handler.admin.api.SchemaListAllDynamicFieldsAPI;
 import org.apache.solr.handler.admin.api.SchemaListAllFieldTypesAPI;
 import org.apache.solr.handler.admin.api.SchemaNameAPI;
-import org.apache.solr.handler.admin.api.SchemaZkVersionAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -62,9 +60,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
-import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -165,26 +161,12 @@ public class SchemaHandler extends RequestHandlerBase
           }
         case "/schema/zkversion":
           {
-            int refreshIfBelowVersion = req.getParams().getInt("refreshIfBelowVersion", -1);
-            int zkVersion = -1;
-            IndexSchema schema = req.getSchema();
-            if (schema instanceof ManagedIndexSchema) {
-              ManagedIndexSchema managed = (ManagedIndexSchema) schema;
-              zkVersion = managed.getSchemaZkVersion();
-              if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
-                log.info(
-                    "REFRESHING SCHEMA (refreshIfBelowVersion={}, currentVersion={}) before returning version!",
-                    refreshIfBelowVersion,
-                    zkVersion);
-                ZkSolrResourceLoader zkSolrResourceLoader =
-                    (ZkSolrResourceLoader) req.getCore().getResourceLoader();
-                ZkIndexSchemaReader zkIndexSchemaReader =
-                    zkSolrResourceLoader.getZkIndexSchemaReader();
-                managed = zkIndexSchemaReader.refreshSchemaFromZk(refreshIfBelowVersion);
-                zkVersion = managed.getSchemaZkVersion();
-              }
-            }
-            rsp.add("zkversion", zkVersion);
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+              rsp,
+              new GetSchemaAPI(req.getCore().getLatestSchema())
+                .getSchemaZkVersion(
+                  new GetSchemaAPI.SchemaZkVersionRequestBody(
+                    req.getParams().getInt("refreshIfBelowVersion", -1), req.getCore().getResourceLoader())));
             break;
           }
         default:
@@ -338,7 +320,6 @@ public class SchemaHandler extends RequestHandlerBase
   public Collection<Api> getApis() {
 
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaListAllDynamicFieldsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaGetDynamicFieldAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaListAllFieldTypesAPI(this)));
