@@ -42,16 +42,11 @@ import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetSchemaAPI;
 import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
-import org.apache.solr.handler.admin.api.SchemaGetDynamicFieldAPI;
-import org.apache.solr.handler.admin.api.SchemaGetFieldTypeAPI;
-import org.apache.solr.handler.admin.api.SchemaListAllDynamicFieldsAPI;
-import org.apache.solr.handler.admin.api.SchemaListAllFieldTypesAPI;
 import org.apache.solr.handler.admin.api.SchemaNameAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.pkg.PackageListeningClassLoader;
@@ -200,32 +195,31 @@ public class SchemaHandler extends RequestHandlerBase
                     rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).listCopyFields(new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
                   return;
                 }
+                case "dynamicfields":
+                {
+                  if (parts.size() > 2) {
+                    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getDynamicFieldInfo(parts.get(2), new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                  } else {
+                    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).listDynamicFields(new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                  }
+                  return;
+                }
+                case "fieldtypes":
+                {
+                  if (parts.size() > 2) {
+                    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getFieldTypeInfo(parts.get(2), new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                  } else {
+                    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).listSchemaFieldTypes(new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                  }
+                  return;
+                }
                 default:
                 {
-                  Map<String, Object> propertyValues =
-                    req.getSchema().getNamedPropertyValues(realName, req.getParams());
-                  Object o = propertyValues.get(fieldName);
-                  if (parts.size() > 2) {
-                    String name = parts.get(2);
-                    if (o instanceof List) {
-                      List<?> list = (List<?>) o;
-                      for (Object obj : list) {
-                        if (obj instanceof SimpleOrderedMap) {
-                          SimpleOrderedMap<?> simpleOrderedMap = (SimpleOrderedMap<?>) obj;
-                          if (name.equals(simpleOrderedMap.get("name"))) {
-                            rsp.add(fieldName.substring(0, realName.length() - 1), simpleOrderedMap);
-                            insertPackageInfo(rsp.getValues(), req);
-                            return;
-                          }
-                        }
-                      }
-                    }
-                    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path " + path);
-                  } else {
-                    rsp.add(fieldName, o);
-                  }
-                  insertPackageInfo(rsp.getValues(), req);
-                  return;
+                  break;
                 }
               }
             }
@@ -320,10 +314,6 @@ public class SchemaHandler extends RequestHandlerBase
   public Collection<Api> getApis() {
 
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SchemaListAllDynamicFieldsAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SchemaGetDynamicFieldAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SchemaListAllFieldTypesAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SchemaGetFieldTypeAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SchemaBulkModifyAPI(this)));
 
     return apis;

@@ -215,7 +215,7 @@ public class GetSchemaAPI extends JerseyResource {
       response.fieldInfo = fieldInfo;
       return response;
     }
-    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path /fields/" + fieldName);
+    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path /" + realName + "/" + fieldName);
   }
 
   public static class SchemaGetFieldInfoResponse extends SolrJerseyResponse {
@@ -242,6 +242,84 @@ public class GetSchemaAPI extends JerseyResource {
     public Object copyFields;
   }
 
+  @GET
+  @Path("/dynamicfields")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaListDynamicFieldsResponse listDynamicFields(SchemaGetFieldRequestBody requestBody) {
+    SchemaListDynamicFieldsResponse response = instantiateJerseyResponse(SchemaListDynamicFieldsResponse.class);
+    final String realName = "dynamicfields";
+
+    response.dynamicFields = listAllFieldsOfType(realName, requestBody);
+
+    return response;
+  }
+
+  public static class SchemaListDynamicFieldsResponse extends SolrJerseyResponse {
+    @JsonProperty("dynamicFields")
+    public Object dynamicFields;
+  }
+
+  @GET
+  @Path("/dynamicfields/{fieldName}")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaGetDynamicFieldInfoResponse getDynamicFieldInfo(@PathParam("fieldName") String fieldName, SchemaGetFieldRequestBody requestBody) throws Exception {
+    SchemaGetDynamicFieldInfoResponse response = instantiateJerseyResponse(SchemaGetDynamicFieldInfoResponse.class);
+    final String realName = "dynamicfields";
+
+    SimpleOrderedMap<Object> dynamicFieldInfo = retrieveFieldInfoOfType(realName, fieldName, requestBody);
+    if (dynamicFieldInfo != null) {
+      response.dynamicFieldInfo = dynamicFieldInfo;
+      return response;
+    }
+    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path /" + realName + "/" + fieldName);
+  }
+
+  public static class SchemaGetDynamicFieldInfoResponse extends SolrJerseyResponse {
+    @JsonProperty("dynamicField")
+    public SimpleOrderedMap<?> dynamicFieldInfo;
+  }
+
+  @GET
+  @Path("/fieldtypes")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaListFieldTypesResponse listSchemaFieldTypes(SchemaGetFieldRequestBody requestBody) {
+    SchemaListFieldTypesResponse response = instantiateJerseyResponse(SchemaListFieldTypesResponse.class);
+    final String realName = "fieldtypes";
+
+    response.fieldTypes = listAllFieldsOfType(realName, requestBody);
+
+    return response;
+  }
+
+  public static class SchemaListFieldTypesResponse extends SolrJerseyResponse {
+    @JsonProperty("fieldTypes")
+    public Object fieldTypes;
+  }
+
+  @GET
+  @Path("/fieldtypes/{fieldTypeName}")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaGetFieldTypeInfoResponse getFieldTypeInfo(@PathParam("fieldTypeName") String fieldTypeName, SchemaGetFieldRequestBody requestBody) throws Exception {
+    SchemaGetFieldTypeInfoResponse response = instantiateJerseyResponse(SchemaGetFieldTypeInfoResponse.class);
+    final String realName = "fieldtypes";
+
+    SimpleOrderedMap<Object> fieldTypeInfo = retrieveFieldInfoOfType(realName, fieldTypeName, requestBody);
+    if (fieldTypeInfo != null) {
+      response.fieldTypeInfo = fieldTypeInfo;
+      return response;
+    }
+    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path /" + realName + "/" + fieldTypeName);
+  }
+
+  public static class SchemaGetFieldTypeInfoResponse extends SolrJerseyResponse {
+    @JsonProperty("fieldType")
+    public SimpleOrderedMap<?> fieldTypeInfo;
+  }
+
   public static class SchemaGetFieldRequestBody implements JacksonReflectMapWriter {
     @JsonProperty("params")
     public SolrParams params;
@@ -250,11 +328,12 @@ public class GetSchemaAPI extends JerseyResource {
       this.params = params;
     }
   }
+
   private Object listAllFieldsOfType(String realName, SchemaGetFieldRequestBody requestBody) {
-    String singularRealName = IndexSchema.nameMapping.get(realName);
+    String camelCaseRealName = IndexSchema.nameMapping.get(realName);
     Map<String, Object> propertyValues =
       indexSchema.getNamedPropertyValues(realName, requestBody.params);
-    Object o = propertyValues.get(singularRealName);
+    Object o = propertyValues.get(camelCaseRealName);
     if (requestBody.params.getBool("meta", false)) {
       if (o instanceof NamedList) {
         @SuppressWarnings("unchecked")
@@ -279,17 +358,18 @@ public class GetSchemaAPI extends JerseyResource {
 
   @SuppressWarnings("unchecked")
   private SimpleOrderedMap<Object> retrieveFieldInfoOfType(String realName, String fieldName, SchemaGetFieldRequestBody requestBody){
-    SimpleOrderedMap<Object> fieldInfo = null;
-    String singularRealName = IndexSchema.nameMapping.get(realName);
+    SimpleOrderedMap<Object> returnFieldInfo = null;
+    String camelCaseRealName = IndexSchema.nameMapping.get(realName);
     Map<String, Object> propertyValues =
       indexSchema.getNamedPropertyValues(realName, requestBody.params);
-    Object o = propertyValues.get(singularRealName);
+    Object o = propertyValues.get(camelCaseRealName);
     if (o instanceof List) {
       List<?> list = (List<?>) o;
       for (Object obj : list) {
         if (obj instanceof SimpleOrderedMap) {
-          fieldInfo = (SimpleOrderedMap<Object>) obj;
+          SimpleOrderedMap<Object> fieldInfo = (SimpleOrderedMap<Object>) obj;
           if (fieldName.equals(fieldInfo.get("name"))) {
+            returnFieldInfo = fieldInfo;
             if (requestBody.params.getBool("meta", false)) {
               String klas = (String) fieldInfo.get("class");
               PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
@@ -301,7 +381,7 @@ public class GetSchemaAPI extends JerseyResource {
                     .getPackageVersion(parsedClassName)
                     : null;
                 if (mw != null) {
-                  fieldInfo.add("_packageinfo_", mw);
+                  returnFieldInfo.add("_packageinfo_", mw);
                 }
               }
             }
@@ -310,7 +390,7 @@ public class GetSchemaAPI extends JerseyResource {
         }
       }
     }
-    return fieldInfo;
+    return returnFieldInfo;
   }
 
 }

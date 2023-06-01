@@ -26,10 +26,6 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
 
   @Override
   public void populateApiBag() {
-    apiBag.registerObject(new SchemaListAllDynamicFieldsAPI(getRequestHandler()));
-    apiBag.registerObject(new SchemaGetDynamicFieldAPI(getRequestHandler()));
-    apiBag.registerObject(new SchemaListAllFieldTypesAPI(getRequestHandler()));
-    apiBag.registerObject(new SchemaGetFieldTypeAPI(getRequestHandler()));
     apiBag.registerObject(new SchemaBulkModifyAPI(getRequestHandler()));
   }
 
@@ -45,8 +41,6 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
 
   @Test
   public void testGetSchemaInfoApis() {
-    assertAnnotatedApiExistsFor("GET", "/schema/dynamicfields");
-    assertAnnotatedApiExistsFor("GET", "/schema/dynamicfields/someDynamicField");
     assertAnnotatedApiExistsFor("GET", "/schema/fieldtypes");
     assertAnnotatedApiExistsFor("GET", "/schema/fieldtypes/someFieldType");
   }
