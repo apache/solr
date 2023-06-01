@@ -136,7 +136,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
 import org.apache.solr.cloud.OverseerTaskQueue;
@@ -152,8 +151,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
@@ -768,40 +765,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATESHARD_OP(
         CREATESHARD,
         (req, rsp, h) -> {
-          Map<String, Object> map =
-              copy(req.getParams().required(), null, COLLECTION_PROP, SHARD_ID_PROP);
-          ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
-          final String newShardName =
-              SolrIdentifierValidator.validateShardName(req.getParams().get(SHARD_ID_PROP));
-          boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
-          String extCollectionName = req.getParams().get(COLLECTION_PROP);
-          String collectionName =
-              followAliases
-                  ? h.coreContainer
-                      .getZkController()
-                      .getZkStateReader()
-                      .getAliases()
-                      .resolveSimpleAlias(extCollectionName)
-                  : extCollectionName;
-          if (!ImplicitDocRouter.NAME.equals(
-              ((Map<?, ?>)
-                      clusterState
-                          .getCollection(collectionName)
-                          .get(CollectionStateProps.DOC_ROUTER))
-                  .get(NAME)))
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
-          copy(
-              req.getParams(),
-              map,
-              REPLICATION_FACTOR,
-              NRT_REPLICAS,
-              TLOG_REPLICAS,
-              PULL_REPLICAS,
-              CREATE_NODE_SET,
-              WAIT_FOR_FINAL_STATE,
-              FOLLOW_ALIASES);
-          return copyPropertiesWithPrefix(req.getParams(), map, PROPERTY_PREFIX);
+          CreateShardAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
     DELETEREPLICA_OP(
         DELETEREPLICA,
@@ -1558,6 +1523,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateAliasAPI.class,
         CreateCollectionAPI.class,
         CreateCollectionBackupAPI.class,
+        CreateShardAPI.class,
         DeleteAliasAPI.class,
         DeleteCollectionBackupAPI.class,
         DeleteCollectionAPI.class,
@@ -1582,7 +1548,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new CreateShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new AddReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SyncShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ForceLeaderAPI(this)));
