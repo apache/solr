@@ -17,11 +17,7 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -59,7 +55,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
   public void populateApiBag() {
     final CollectionsHandler collectionsHandler = getRequestHandler();
     apiBag.registerObject(new SplitShardAPI(collectionsHandler));
-    apiBag.registerObject(new CreateShardAPI(collectionsHandler));
     apiBag.registerObject(new AddReplicaAPI(collectionsHandler));
     apiBag.registerObject(new SyncShardAPI(collectionsHandler));
     apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
@@ -133,42 +128,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     assertEquals("rewrite", v1Params.get(SPLIT_METHOD));
     assertEquals("some_async_id", v1Params.get(ASYNC));
     assertTrue(v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
-    assertEquals("foo1", v1Params.get("property.foo"));
-    assertEquals("bar1", v1Params.get("property.bar"));
-  }
-
-  @Test
-  public void testCreateShardAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName/shards",
-            "POST",
-            "{ 'create': {"
-                + "'shard': 'shard1', "
-                + "'nodeSet': ['foo', 'bar', 'baz'], "
-                + "'followAliases': true, "
-                + "'async': 'some_async_id', "
-                + "'waitForFinalState': true, "
-                + "'replicationFactor': 123, "
-                + "'nrtReplicas': 456, "
-                + "'tlogReplicas': 789, "
-                + "'pullReplicas': 101, "
-                + "'coreProperties': {"
-                + "    'foo': 'foo1', "
-                + "    'bar': 'bar1', "
-                + "}}}");
-
-    assertEquals(CollectionParams.CollectionAction.CREATESHARD.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("shard1", v1Params.get(SHARD_ID_PROP));
-    assertEquals("foo,bar,baz", v1Params.get(CREATE_NODE_SET_PARAM));
-    assertTrue(v1Params.getPrimitiveBool(FOLLOW_ALIASES));
-    assertEquals("some_async_id", v1Params.get(ASYNC));
-    assertTrue(v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
-    assertEquals(123, v1Params.getPrimitiveInt(REPLICATION_FACTOR));
-    assertEquals(456, v1Params.getPrimitiveInt(NRT_REPLICAS));
-    assertEquals(789, v1Params.getPrimitiveInt(TLOG_REPLICAS));
-    assertEquals(101, v1Params.getPrimitiveInt(PULL_REPLICAS));
     assertEquals("foo1", v1Params.get("property.foo"));
     assertEquals("bar1", v1Params.get("property.bar"));
   }
