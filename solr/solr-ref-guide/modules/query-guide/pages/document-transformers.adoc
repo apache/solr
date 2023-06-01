@@ -212,8 +212,20 @@ When paths do not start with a `/` they are treated as "path suffixes":
 
 This transformer adds information about what shard each individual document came from in a distributed request.
 
-ShardAugmenterFactory does not support any request parameters, or configuration options.
+[source,plain]
+----
+q=fl=id,[shard]
+----
 
+A `style` local parameter can be specified as either `id` (the default) or `urls` which returns a pipe delimited list of all replica urls for backcompat reasons.
+
+The default style can be changed by specifying an `args` parameter in your `solrconfig.xml` configuration:
+[source,xml]
+----
+<transformer name="shard" class="org.apache.solr.response.transform.ShardAugmenterFactory" >
+  <str name="args">urls</str>
+</transformer>
+----
 
 === [docid] - DocIdAugmenterFactory
 

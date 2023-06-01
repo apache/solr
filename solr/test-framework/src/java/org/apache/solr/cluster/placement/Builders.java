@@ -31,8 +31,8 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
+import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
 import org.apache.solr.cluster.placement.impl.CollectionMetricsBuilder;
-import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.apache.solr.common.util.Pair;
@@ -56,7 +56,7 @@ public class Builders {
     /** {@link NodeBuilder} for the live nodes of the cluster. */
     private List<NodeBuilder> nodeBuilders = new ArrayList<>();
 
-    private final List<CollectionBuilder> collectionBuilders = new ArrayList<>();
+    private final Map<String, CollectionBuilder> collectionBuilders = new HashMap<>();
 
     public ClusterBuilder initializeLiveNodes(int countNodes) {
       nodeBuilders = new ArrayList<>();
@@ -76,7 +76,7 @@ public class Builders {
     }
 
     public ClusterBuilder addCollection(CollectionBuilder collectionBuilder) {
-      collectionBuilders.add(collectionBuilder);
+      collectionBuilders.put(collectionBuilder.collectionName, collectionBuilder);
       return this;
     }
 
@@ -97,7 +97,7 @@ public class Builders {
 
     Map<String, SolrCollection> buildClusterCollections() {
       Map<String, SolrCollection> clusterCollections = new LinkedHashMap<>();
-      for (CollectionBuilder collectionBuilder : collectionBuilders) {
+      for (CollectionBuilder collectionBuilder : collectionBuilders.values()) {
         SolrCollection solrCollection = collectionBuilder.build();
         clusterCollections.put(solrCollection.getName(), solrCollection);
       }
@@ -144,17 +144,17 @@ public class Builders {
 
         if (nodeBuilder.getCoreCount() != null) {
           metrics
-              .computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>())
+              .computeIfAbsent(BuiltInMetrics.NODE_NUM_CORES, n -> new HashMap<>())
               .put(node, nodeBuilder.getCoreCount());
         }
         if (nodeBuilder.getFreeDiskGB() != null) {
           metrics
-              .computeIfAbsent(NodeMetricImpl.FREE_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(BuiltInMetrics.NODE_FREE_DISK_GB, n -> new HashMap<>())
               .put(node, nodeBuilder.getFreeDiskGB());
         }
         if (nodeBuilder.getTotalDiskGB() != null) {
           metrics
-              .computeIfAbsent(NodeMetricImpl.TOTAL_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(BuiltInMetrics.NODE_TOTAL_DISK_GB, n -> new HashMap<>())
               .put(node, nodeBuilder.getTotalDiskGB());
         }
         if (nodeBuilder.getSysprops() != null) {
@@ -177,11 +177,13 @@ public class Builders {
 
       if (!collectionBuilders.isEmpty()) {
         Map<Node, Object> nodeToCoreCount =
-            metrics.computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>());
+            metrics.computeIfAbsent(BuiltInMetrics.NODE_NUM_CORES, n -> new HashMap<>());
+        Map<Node, Object> nodeToFreeDisk =
+            metrics.computeIfAbsent(BuiltInMetrics.NODE_FREE_DISK_GB, n -> new HashMap<>());
         collectionBuilders.forEach(
-            builder -> {
-              collectionMetrics.put(
-                  builder.collectionName, builder.collectionMetricsBuilder.build());
+            (collName, builder) -> {
+              CollectionMetrics thisCollMetrics = builder.collectionMetricsBuilder.build();
+              collectionMetrics.put(collName, thisCollMetrics);
               SolrCollection collection = builder.build();
               collection
                   .iterator()
@@ -195,6 +197,23 @@ public class Builders {
                                         replica.getNode(),
                                         (node, count) ->
                                             (count == null) ? 1 : ((Number) count).intValue() + 1);
+                                    nodeToFreeDisk.computeIfPresent(
+                                        replica.getNode(),
+                                        (node, freeDisk) ->
+                                            BuiltInMetrics.NODE_FREE_DISK_GB.decrease(
+                                                (Double) freeDisk,
+                                                thisCollMetrics
+                                                    .getShardMetrics(shard.getShardName())
+                                                    .flatMap(
+                                                        m ->
+                                                            m.getReplicaMetrics(
+                                                                replica.getReplicaName()))
+                                                    .flatMap(
+                                                        m ->
+                                                            m.getReplicaMetric(
+                                                                BuiltInMetrics
+                                                                    .REPLICA_INDEX_SIZE_GB))
+                                                    .orElse(0D)));
                                   }));
             });
       }
@@ -411,7 +430,7 @@ public class Builders {
             shardMetricsBuilder.getReplicaMetricsBuilders().put(replicaName, replicaMetricsBuilder);
             if (initialSizeGBPerShard != null) {
               replicaMetricsBuilder.addMetric(
-                  ReplicaMetricImpl.INDEX_SIZE_GB,
+                  BuiltInMetrics.REPLICA_INDEX_SIZE_GB,
                   initialSizeGBPerShard.get(shardNumber - 1) * ReplicaMetricImpl.GB);
             }
             if (leader == null && type != Replica.ReplicaType.PULL) {
