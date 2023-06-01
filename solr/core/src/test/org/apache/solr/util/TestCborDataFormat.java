@@ -48,7 +48,7 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.loader.CborStream;
+import org.apache.solr.handler.loader.CborLoader;
 import org.apache.solr.response.XMLResponseWriter;
 
 public class TestCborDataFormat extends SolrCloudTestCase {
@@ -204,7 +204,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     byte[] bytes = serializeToCbor(b);
     assertEquals(290672, bytes.length);
     LongAdder docsSz = new LongAdder();
-    new CborStream(null, (document) -> docsSz.increment()).stream(new ByteArrayInputStream(bytes));
+    new CborLoader(null, (document) -> docsSz.increment()).stream(new ByteArrayInputStream(bytes));
     assertEquals(films.size(), docsSz.intValue());
   }
 

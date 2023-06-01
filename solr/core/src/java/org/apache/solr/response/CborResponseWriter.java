@@ -26,6 +26,10 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
+/**
+ * A response writer impl that can write results in CBOR (cbor.io) format when wt=cbor. It uses the
+ * jackson library to write the stream out
+ */
 public class CborResponseWriter extends BinaryResponseWriter {
   final CBORFactory cborFactory;
 

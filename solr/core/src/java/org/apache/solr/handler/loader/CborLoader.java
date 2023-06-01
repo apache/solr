@@ -34,11 +34,15 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
-public class CborStream {
+/**
+ * This class can load a single document or a stream of documents in CBOR format this is equivalent
+ * of loading a single json documet or an array of json documents
+ */
+public class CborLoader {
   final CBORFactory cborFactory;
   private final Consumer<SolrInputDocument> sink;
 
-  public CborStream(CBORFactory cborFactory, Consumer<SolrInputDocument> sink) {
+  public CborLoader(CBORFactory cborFactory, Consumer<SolrInputDocument> sink) {
     this.cborFactory = cborFactory == null ? new CBORFactory() : cborFactory;
     this.sink = sink;
   }
@@ -130,7 +134,7 @@ public class CborStream {
           throws IOException {
         int commitWithin = req.getParams().getInt(UpdateParams.COMMIT_WITHIN, -1);
         boolean overwrite = req.getParams().getBool(UpdateParams.OVERWRITE, true);
-        new CborStream(
+        new CborLoader(
                 factory,
                 doc -> {
                   AddUpdateCommand add = new AddUpdateCommand(req);

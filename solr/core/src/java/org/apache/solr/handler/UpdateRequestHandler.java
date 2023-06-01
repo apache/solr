@@ -32,7 +32,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.loader.CSVLoader;
-import org.apache.solr.handler.loader.CborStream;
+import org.apache.solr.handler.loader.CborLoader;
 import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.handler.loader.JsonLoader;
@@ -147,7 +147,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase
     registry.put("application/json", new JsonLoader().init(p));
     registry.put("application/csv", new CSVLoader().init(p));
     registry.put("application/javabin", new JavabinLoader(instance).init(p));
-    registry.put("application/cbor", CborStream.createLoader(p));
+    registry.put("application/cbor", CborLoader.createLoader(p));
     registry.put("text/csv", registry.get("application/csv"));
     registry.put("text/xml", registry.get("application/xml"));
     registry.put("text/json", registry.get("application/json"));
