@@ -94,8 +94,7 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
     plugin.config =
         new AffinityPlacementConfig(
             1, 2, Collections.emptyMap(), Map.of(toColl, fromColl), Map.of());
-    // plugin.config = new AffinityPlacementConfig(1, 2,Map.of(toColl,fromColl),
-    // Collections.emptyMap(),  Map.of());
+
     V2Request req =
         new V2Request.Builder("/cluster/plugin")
             .forceV2(true)
@@ -107,9 +106,6 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
     // version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     Map<String, String> collectionProperties = new HashMap<>();
-    // collectionProperties.put("config", "solrconfig-tlog.xml");
-    // collectionProperties.put("schema", "schema15.xml");
-    // collectionProperties.put("router.name", "implicit");
 
     // create a collection holding data for the "to" side of the JOIN
 
@@ -156,19 +152,7 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
         CollectionAdminRequest.getClusterStatus().process(cluster.getSolrClient());
     // System.out.println(process.toString());
   }
-  /*
-    @Test
-    public void testScore() throws Exception {
-      // without score
-      testJoins(toColl, fromColl, toDocId, true);
-    }
 
-    @Test
-    public void testNoScore() throws Exception {
-      // with score
-      testJoins(toColl, fromColl, toDocId, false);
-    }
-  */
   @AfterClass
   public static void shutdown() {
     System.clearProperty("solr.test.sys.prop1");
