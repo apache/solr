@@ -115,8 +115,8 @@ public class BalanceReplicasAPI extends AdminAPIBase {
 
     @Schema(
         description =
-            "The set of nodes across which replicas will be balanced. This option is required.")
-    @JsonProperty(value = "nodes", required = true)
+            "The set of nodes across which replicas will be balanced.")
+    @JsonProperty(value = "nodes")
     public Set<String> nodes;
 
     @Schema(

@@ -270,10 +270,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         throws PlacementException {
       List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
       Set<Node> allNodes = new HashSet<>();
-      Set<SolrCollection> allCollections = new HashSet<>();
+      Map<String, SolrCollection> allCollections = new HashMap<>();
       for (PlacementRequest request : requests) {
         allNodes.addAll(request.getTargetNodes());
-        allCollections.add(request.getCollection());
+        allCollections.putIfAbsent(request.getCollection().getName(), request.getCollection());
       }
 
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
@@ -287,7 +287,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           .requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES)
           .requestNodeMetric(BuiltInMetrics.NODE_FREE_DISK_GB);
       Set<ReplicaMetric<?>> replicaMetrics = Set.of(BuiltInMetrics.REPLICA_INDEX_SIZE_GB);
-      for (SolrCollection collection : allCollections) {
+      for (SolrCollection collection : allCollections.values()) {
         attributeFetcher.requestCollectionMetrics(collection, replicaMetrics);
       }
       attributeFetcher.fetchFrom(allNodes);
@@ -1298,22 +1298,35 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           .requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES)
           .requestNodeMetric(BuiltInMetrics.NODE_FREE_DISK_GB);
       Set<ReplicaMetric<?>> replicaMetrics = Set.of(BuiltInMetrics.REPLICA_INDEX_SIZE_GB);
+      Set<String> requestedCollections = new HashSet<>();
       for (SolrCollection collection : relevantCollections) {
-        attributeFetcher.requestCollectionMetrics(collection, replicaMetrics);
+        if (requestedCollections.add(collection.getName())) {
+          attributeFetcher.requestCollectionMetrics(collection, replicaMetrics);
+        }
       }
       attributeFetcher.fetchFrom(nodes);
       final AttributeValues attrValues = attributeFetcher.fetchAttributes();
 
       final AtomicBoolean doSpreadAcrossDomains = new AtomicBoolean(spreadAcrossDomains);
-      TreeSet<AffinityNode> availableNodes = new TreeSet<>();
+      Map<Node, AffinityNode> affinityNodeMap = new HashMap<>(nodes.size());
       for (Node node : nodes) {
         AffinityNode affinityNode = newNodeFromMetrics(node, attrValues, doSpreadAcrossDomains);
         if (affinityNode != null) {
-          availableNodes.add(affinityNode);
+          affinityNodeMap.put(node, affinityNode);
+        }
+      }
+      for (SolrCollection collection : placementContext.getCluster().collections()) {
+        for (Shard shard : collection.shards()) {
+          for (Replica replica : shard.replicas()) {
+            AffinityNode an = affinityNodeMap.get(replica.getNode());
+            if (an != null) {
+              an.addReplica(replica, false);
+            }
+          }
         }
       }
 
-      return availableNodes;
+      return new TreeSet<>(affinityNodeMap.values());
     }
 
     AffinityNode newNodeFromMetrics(Node node, AttributeValues attrValues, AtomicBoolean doSpreadAcrossDomains) throws PlacementException {
@@ -1408,7 +1421,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                 Optional.ofNullable(withCollections.get(replica.getShard().getCollection().getName()))
                     .map(withColl -> this.getCollections().contains(withColl))
                     .orElse(true) &&
-                getProjectedSizeOfReplica(replica) - nodeFreeDiskGB > minimalFreeDiskGB;
+                (minimalFreeDiskGB <= 0 || nodeFreeDiskGB - getProjectedSizeOfReplica(replica)  > minimalFreeDiskGB);
       }
 
       @Override
@@ -1450,7 +1463,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       private int calculateWeight(int cores, double freeDiskGB, int deltaReplicas) {
         return
             cores +
-                100 * (freeDiskGB < prioritizedFreeDiskGB ? 1 : 0) +
+                100 * (prioritizedFreeDiskGB > 0 && freeDiskGB < prioritizedFreeDiskGB ? 1 : 0) +
                 10000 * (doSpreadAcrossDomains.getAsBoolean() ? (getSpreadDomainReplicas() + deltaReplicas) : 0);
       }
 
