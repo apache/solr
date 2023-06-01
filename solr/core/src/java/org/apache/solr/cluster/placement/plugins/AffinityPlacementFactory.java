@@ -37,7 +37,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
@@ -397,11 +399,19 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     @Override
     public BalancePlan computeBalancing(
         BalanceRequest balanceRequest, PlacementContext placementContext)
-        throws PlacementException, InterruptedException {
+        throws PlacementException {
+      TreeSet<AffinityNode> weightedNodes = getWeightedNodes(
+          placementContext,
+          balanceRequest.getNodes(),
+          placementContext.getCluster().collections()
+      );
       // This is a NO-OP
       return placementContext
           .getBalancePlanFactory()
-          .createBalancePlan(balanceRequest, new HashMap<>());
+          .createBalancePlan(
+              balanceRequest,
+              WeightedNodeSelection.computeBalancingMovements(placementContext, weightedNodes)
+            );
     }
 
     private boolean shouldSpreadAcrossDomains(Set<Node> allNodes, AttributeValues attrValues) {
@@ -1269,30 +1279,44 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         return usagesLabel1.compareTo(usagesLabel2);
       }
     }
-  }
 
-  private static class AffinityNodeContext {
 
-    private final AttributeValues attrValues;
 
-    private final boolean useSpreadDomains;
-    private final Map<String, Integer> spreadDomainUsage;
+    private final Map<String, Integer> spreadDomainUsage = new HashMap<>();
 
-    private final long minimalFreeDiskGB;
+    private TreeSet<AffinityNode> getWeightedNodes(
+        PlacementContext placementContext, Set<Node> nodes,
+        Iterable<SolrCollection> relevantCollections) throws PlacementException {
+      // Fetch attributes for a superset of all nodes requested amongst the placementRequests
+      AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
+      attributeFetcher
+          .requestNodeSystemProperty(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP)
+          .requestNodeSystemProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP)
+          .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP)
+          .requestNodeSystemProperty(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
+      attributeFetcher
+          .requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES)
+          .requestNodeMetric(BuiltInMetrics.NODE_FREE_DISK_GB);
+      Set<ReplicaMetric<?>> replicaMetrics = Set.of(BuiltInMetrics.REPLICA_INDEX_SIZE_GB);
+      for (SolrCollection collection : relevantCollections) {
+        attributeFetcher.requestCollectionMetrics(collection, replicaMetrics);
+      }
+      attributeFetcher.fetchFrom(nodes);
+      final AttributeValues attrValues = attributeFetcher.fetchAttributes();
 
-    private final long prioritizedFreeDiskGB;
+      final AtomicBoolean doSpreadAcrossDomains = new AtomicBoolean(spreadAcrossDomains);
+      TreeSet<AffinityNode> availableNodes = new TreeSet<>();
+      for (Node node : nodes) {
+        AffinityNode affinityNode = newNodeFromMetrics(node, attrValues, doSpreadAcrossDomains);
+        if (affinityNode != null) {
+          availableNodes.add(affinityNode);
+        }
+      }
 
-    private AffinityNodeContext(
-        AttributeValues attrValues, boolean useSpreadDomains, Map<String, Integer> spreadDomainUsage,
-        long minimalFreeDiskGB, long prioritizedFreeDiskGB) {
-      this.attrValues = attrValues;
-      this.useSpreadDomains = useSpreadDomains;
-      this.spreadDomainUsage = spreadDomainUsage;
-      this.minimalFreeDiskGB = minimalFreeDiskGB;
-      this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
+      return availableNodes;
     }
 
-    AffinityNode newNodeFromMetrics(Node node) {
+    AffinityNode newNodeFromMetrics(Node node, AttributeValues attrValues, AtomicBoolean doSpreadAcrossDomains) throws PlacementException {
       Set<Replica.ReplicaType> supportedReplicaTypes =
           attrValues
               .getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP)
@@ -1311,19 +1335,20 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           attrValues.getNodeMetric(node, BuiltInMetrics.NODE_FREE_DISK_GB);
       Optional<Integer> nodeNumCores =
           attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES);
-      String spreadDomain = null;
-      if (useSpreadDomains) {
+      String spreadDomain;
+      if (doSpreadAcrossDomains.get()) {
         spreadDomain = attrValues.getSystemProperty(node, AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP).orElse(null);
         if (spreadDomain == null) {
-          if (nodeFreeDiskGB.isEmpty()) {
-            if (log.isWarnEnabled()) {
-              log.warn(
-                  "Unknown spreadDomain on node {}, excluding it from placement decisions.",
-                  node.getName());
-            }
+          if (log.isWarnEnabled()) {
+            log.warn(
+                "AffinityPlacementPlugin configured to spread across domains, but node {} does not have the {} system property. Ignoring spreadAcrossDomains.",
+                node.getName(),
+                AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
           }
-          return null;
+          doSpreadAcrossDomains.set(false);
         }
+      } else {
+        spreadDomain = null;
       }
       if (nodeFreeDiskGB.isEmpty()) {
         if (log.isWarnEnabled()) {
@@ -1340,24 +1365,32 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
         return null;
       } else {
-        return new AffinityNode(node, supportedReplicaTypes, nodeNumCores.get(), nodeFreeDiskGB.get(), spreadDomain);
+        return new AffinityNode(node, attrValues, supportedReplicaTypes, nodeNumCores.get(), nodeFreeDiskGB.get(), doSpreadAcrossDomains::get, spreadDomain);
       }
     }
 
     private class AffinityNode extends WeightedNodeSelection.WeightedNode {
 
+      private final AttributeValues attrValues;
+
       private final Set<Replica.ReplicaType> supportedReplicaTypes;
 
       private int coresOnNode;
       private double nodeFreeDiskGB;
+
+      private final BooleanSupplier doSpreadAcrossDomains;
       private final String spreadDomain;
 
-      AffinityNode(Node node, Set<Replica.ReplicaType> supportedReplicaTypes,
-                   int coresOnNode, double nodeFreeDiskGB, String spreadDomain) {
+      AffinityNode(Node node, AttributeValues attrValues,
+                   Set<Replica.ReplicaType> supportedReplicaTypes,
+                   int coresOnNode, double nodeFreeDiskGB,
+                   BooleanSupplier doSpreadAcrossDomains, String spreadDomain) {
         super(node);
+        this.attrValues = attrValues;
         this.supportedReplicaTypes = supportedReplicaTypes;
         this.coresOnNode = coresOnNode;
         this.nodeFreeDiskGB = nodeFreeDiskGB;
+        this.doSpreadAcrossDomains = doSpreadAcrossDomains;
         this.spreadDomain = spreadDomain;
       }
 
@@ -1371,8 +1404,11 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         return
             // By default, do not allow two replicas of the same shard on a node
             super.canAddReplica(replica) &&
-            supportedReplicaTypes.contains(replica.getType()) &&
-            getProjectedSizeOfReplica(replica) - nodeFreeDiskGB > minimalFreeDiskGB;
+                supportedReplicaTypes.contains(replica.getType()) &&
+                Optional.ofNullable(withCollections.get(replica.getShard().getCollection().getName()))
+                    .map(withColl -> this.getCollections().contains(withColl))
+                    .orElse(true) &&
+                getProjectedSizeOfReplica(replica) - nodeFreeDiskGB > minimalFreeDiskGB;
       }
 
       @Override
@@ -1388,7 +1424,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       protected void addProjectedReplicaWeights(Replica replica) {
         nodeFreeDiskGB -= getProjectedSizeOfReplica(replica);
         coresOnNode += 1;
-        if (useSpreadDomains) {
+        if (doSpreadAcrossDomains.getAsBoolean()) {
           spreadDomainUsage.merge(spreadDomain, 1, Integer::sum);
         }
       }
@@ -1406,7 +1442,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       protected void removeProjectedReplicaWeights(Replica replica) {
         nodeFreeDiskGB += getProjectedSizeOfReplica(replica);
         coresOnNode -= 1;
-        if (useSpreadDomains) {
+        if (doSpreadAcrossDomains.getAsBoolean()) {
           spreadDomainUsage.computeIfPresent(spreadDomain, (k,v) -> v - 1);
         }
       }
@@ -1414,8 +1450,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       private int calculateWeight(int cores, double freeDiskGB, int deltaReplicas) {
         return
             cores +
-            100 * (freeDiskGB < prioritizedFreeDiskGB ? 1 : 0) +
-            10000 * (useSpreadDomains ? (getSpreadDomainReplicas() + deltaReplicas) : 0);
+                100 * (freeDiskGB < prioritizedFreeDiskGB ? 1 : 0) +
+                10000 * (doSpreadAcrossDomains.getAsBoolean() ? (getSpreadDomainReplicas() + deltaReplicas) : 0);
       }
 
       private double getProjectedSizeOfReplica(Replica replica) {
@@ -1429,9 +1465,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       private int getSpreadDomainReplicas() {
         return Optional.ofNullable(spreadDomain)
-              .map(spreadDomainUsage::get)
-              .orElse(0);
+            .map(spreadDomainUsage::get)
+            .orElse(0);
       }
     }
   }
+
 }

@@ -7,6 +7,7 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.PlacementContext;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class WeightedNodeSelection {
@@ -38,12 +40,7 @@ public class WeightedNodeSelection {
 
       // select a replica from the node with the most cores to move to the node with the least
       // cores
-      Set<Replica> availableReplicasToMove =
-          highestWeight
-              .getReplicasByShard().values()
-              .stream()
-              .flatMap(Set::stream)
-              .collect(Collectors.toSet());
+      Set<Replica> availableReplicasToMove = highestWeight.getAllReplicas();
       int combinedNodeWeights = highestWeight.getWeight() + lowestWeight.getWeight();
       for (Replica r : availableReplicasToMove) {
         // Only continue if the replica can be removed from the old node and moved to the new node
@@ -131,23 +128,39 @@ public class WeightedNodeSelection {
 
   public static abstract class WeightedNode implements Comparable<WeightedNode> {
     private final Node node;
-    private final Map<String, Set<Replica>> replicasByShard;
+    private final Map<String, Map<String, Set<Replica>>> replicas;
 
     public WeightedNode(Node node) {
       this.node = node;
-      this.replicasByShard = new HashMap<>();
+      this.replicas = new HashMap<>();
     }
 
     public Node getNode() {
       return node;
     }
 
-    public Map<String, Set<Replica>> getReplicasByShard() {
-      return replicasByShard;
+    public Set<Replica> getAllReplicas() {
+      return
+          replicas.values()
+              .stream()
+              .flatMap(shard -> shard.values().stream())
+              .flatMap(Collection::stream)
+              .collect(Collectors.toSet());
+    }
+
+    public Set<String> getCollections() {
+      return replicas.keySet();
+    }
+
+    public Set<String> getShards(String collection) {
+      return replicas.getOrDefault(collection, Collections.emptyMap()).keySet();
     }
 
     public Set<Replica> getReplicasForShard(Shard shard) {
-      return replicasByShard.getOrDefault(shardKey(shard), Collections.emptySet());
+      return
+          Optional.ofNullable(replicas.get(shard.getCollection().getName()))
+              .map(m -> m.get(shard.getShardName()))
+              .orElseGet(Collections::emptySet);
     }
 
     public abstract int getWeight();
@@ -160,7 +173,12 @@ public class WeightedNodeSelection {
     }
 
     final public void addReplica(Replica replica, boolean includeProjectedWeights) {
-      if (replicasByShard.computeIfAbsent(shardKey(replica.getShard()), k -> new HashSet<>(1)).add(replica) && includeProjectedWeights) {
+      boolean didAddReplica =
+          replicas
+              .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
+              .computeIfAbsent(replica.getShard().getShardName(), k -> new HashSet<>(1))
+              .add(replica);
+      if (didAddReplica && includeProjectedWeights) {
         addProjectedReplicaWeights(replica);
       }
     }
@@ -175,7 +193,23 @@ public class WeightedNodeSelection {
 
     final public void removeReplica(Replica replica, boolean includeProjectedWeights) {
       // Only remove the projected replicaWeight if the node has this replica
-      if (replicasByShard.getOrDefault(shardKey(replica.getShard()), Collections.emptySet()).remove(replica) && includeProjectedWeights) {
+      AtomicBoolean hasReplica = new AtomicBoolean(false);
+      replicas.computeIfPresent(
+          replica.getShard().getCollection().getName(),
+          (col, shardReps) -> {
+            shardReps.computeIfPresent(
+                replica.getShard().getShardName(),
+                (shard, reps) -> {
+                  if (reps.remove(replica)) {
+                    hasReplica.set(true);
+                  }
+                  return reps.isEmpty() ? null : reps;
+                }
+            );
+            return shardReps.isEmpty() ? null : shardReps;
+          }
+      );
+      if (hasReplica.get() && includeProjectedWeights) {
         removeProjectedReplicaWeights(replica);
       }
     }
@@ -204,10 +238,6 @@ public class WeightedNodeSelection {
           return this.node.equals(on.node);
         }
       }
-    }
-
-    private static String shardKey(Shard s) {
-      return s.getCollection().getName() + "%%%%%" + s.getShardName();
     }
   }
 
