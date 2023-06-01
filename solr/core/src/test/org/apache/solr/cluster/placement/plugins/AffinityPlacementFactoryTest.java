@@ -18,7 +18,6 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -1043,7 +1041,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   private static <T> Set<T> shuffle(List<T> nodes) {
-    Collections.shuffle(nodes,random());
+    Collections.shuffle(nodes, random());
     return new LinkedHashSet<>(nodes);
   }
 
