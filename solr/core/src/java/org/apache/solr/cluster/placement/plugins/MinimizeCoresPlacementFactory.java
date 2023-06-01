@@ -19,13 +19,11 @@ package org.apache.solr.cluster.placement.plugins;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -48,6 +46,7 @@ import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
+import org.apache.solr.cluster.placement.impl.WeightedNodeSelection;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -187,73 +186,33 @@ public class MinimizeCoresPlacementFactory
     @Override
     public BalancePlan computeBalancing(
         BalanceRequest balanceRequest, PlacementContext placementContext)
-        throws PlacementException, InterruptedException {
-      Map<Replica, Node> replicaMovements = new HashMap<>();
-
-      TreeSet<NodeWithCoreCount> orderedNodes =
-          getCoresPerNode(placementContext, balanceRequest.getNodes());
-      int totalCores = orderedNodes.stream().mapToInt(NodeWithCoreCount::getCoreCount).sum();
-      int optimalCoresPerNode = (int) Math.floor(totalCores / (double) orderedNodes.size());
-      Map<String, Map<String, Set<Replica>>> replicasPerNode =
-          getReplicasPerNode(placementContext, balanceRequest.getNodes());
-
-      // TODO: think about what to do if this gets stuck
-      // While the node with the least cores still has room to take a replica from the node with the
-      // most cores, loop
-      while (orderedNodes.first().getCoreCount() < optimalCoresPerNode) {
-        NodeWithCoreCount leastCores = orderedNodes.pollFirst();
-        NodeWithCoreCount mostCores = orderedNodes.pollLast();
-
-        // select a replica from the node with the most cores to move to the node with the least
-        // cores
-        Map<String, Set<Replica>> toNodeShards =
-            replicasPerNode.get(leastCores.getNode().getName());
-        Map<String, Set<Replica>> fromNodeShards =
-            replicasPerNode.get(mostCores.getNode().getName());
-        for (String shard : fromNodeShards.keySet()) {
-          if (!toNodeShards.containsKey(shard) || toNodeShards.get(shard).isEmpty()) {
-            Set<Replica> fromNodeShard = fromNodeShards.get(shard);
-            Optional<Replica> replica = fromNodeShard.stream().findFirst();
-            if (replica.isPresent()) {
-              mostCores.decrementCoreCount();
-              fromNodeShard.remove(replica.get());
-              leastCores.incrementCoreCount();
-              toNodeShards.put(shard, Collections.singleton(replica.get()));
-              replicaMovements.put(replica.get(), leastCores.getNode());
-            }
-            // Stop if either node has reached the optimal amount of cores
-            if (mostCores.getCoreCount() == optimalCoresPerNode
-                || leastCores.getCoreCount() == optimalCoresPerNode) {
-              break;
-            }
-          }
-        }
-
-        // Add back the nodes into the sorted set
-        orderedNodes.add(leastCores);
-        orderedNodes.add(mostCores);
-      }
-
+        throws PlacementException {
       return placementContext
           .getBalancePlanFactory()
-          .createBalancePlan(balanceRequest, replicaMovements);
+          .createBalancePlan(
+              balanceRequest,
+              WeightedNodeSelection.computeBalancingMovements(
+                  placementContext,
+                  getWeightedNodes(placementContext, balanceRequest.getNodes())
+              )
+          );
     }
 
-    private TreeSet<NodeWithCoreCount> getCoresPerNode(
+    private TreeSet<NodeWithCoreCount> getWeightedNodes(
         PlacementContext placementContext, Set<Node> nodes) throws PlacementException {
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
       AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
-      attributeFetcher.requestNodeMetric(NodeMetricImpl.NUM_CORES);
+      attributeFetcher.requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES);
       attributeFetcher.fetchFrom(nodes);
       AttributeValues attrValues = attributeFetcher.fetchAttributes();
       TreeSet<NodeWithCoreCount> coresPerNodeTotal = new TreeSet<>();
       for (Node node : nodes) {
-        if (attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).isEmpty()) {
+        if (attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).isEmpty()) {
           throw new PlacementException("Can't get number of cores in " + node);
         }
         coresPerNodeTotal.add(
             new NodeWithCoreCount(
-                node, attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).get()));
+                node, attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).get()));
       }
 
       return coresPerNodeTotal;
@@ -285,56 +244,37 @@ public class MinimizeCoresPlacementFactory
       return replicasPerNode;
     }
 
-    private static class NodeWithCoreCount implements Comparable<NodeWithCoreCount> {
-      private final Node node;
+    private static class NodeWithCoreCount extends WeightedNodeSelection.WeightedNode {
       private int coreCount;
 
       public NodeWithCoreCount(Node node, int coreCount) {
-        this.node = node;
+        super(node);
         this.coreCount = coreCount;
       }
 
-      public Node getNode() {
-        return node;
-      }
-
-      public void incrementCoreCount() {
-        coreCount++;
-      }
-
-      public void decrementCoreCount() {
-        coreCount--;
-      }
-
-      public int getCoreCount() {
+      @Override
+      public int getWeight() {
         return coreCount;
       }
 
       @Override
-      public boolean equals(Object other) {
-        if (other instanceof NodeWithCoreCount) {
-          NodeWithCoreCount otherNodeWithCoreCount = (NodeWithCoreCount) other;
-          if (this.getNode() == null) {
-            return otherNodeWithCoreCount.node == null;
-          } else if (this.getNode().equals(otherNodeWithCoreCount.getNode())) {
-            return this.getCoreCount() == otherNodeWithCoreCount.getCoreCount();
-          }
-        }
-        return false;
+      public int getWeightWithReplica(Replica replica) {
+        return coreCount + 1;
       }
 
       @Override
-      public int hashCode() {
-        return node.hashCode();
+      public void addProjectedReplicaWeights(Replica replica) {
+        coreCount += 1;
       }
 
       @Override
-      public int compareTo(NodeWithCoreCount other) {
-        if (this.getCoreCount() == other.getCoreCount()) {
-          return getNode().getName().compareTo(other.getNode().getName());
-        } else {
-          return Integer.compare(getCoreCount(), other.getCoreCount());
-        }
+      public int getWeightWithoutReplica(Replica replica) {
+        return coreCount - 1;
+      }
+
+      @Override
+      public void removeProjectedReplicaWeights(Replica replica) {
+        coreCount -= 1;
       }
     }
   }

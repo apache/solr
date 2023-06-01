@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
@@ -38,6 +39,7 @@ import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
+import org.apache.solr.cluster.placement.impl.WeightedNodeSelection;
 import org.apache.solr.common.util.CollectionUtil;
 
 /**
@@ -61,7 +63,7 @@ public class SimplePlacementFactory
         Collection<PlacementRequest> requests, PlacementContext placementContext)
         throws PlacementException {
       List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
-      Map<Node, ReplicaCount> nodeVsShardCount = getNodeVsShardCount(placementContext);
+      Map<Node, ReplicaCount> nodeVsShardCount = getNodeVsShardCount(placementContext, placementContext.getCluster().getLiveDataNodes());
       for (PlacementRequest request : requests) {
         int totalReplicasPerShard = 0;
         for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
@@ -76,7 +78,7 @@ public class SimplePlacementFactory
         if (request.getTargetNodes().size() < replicaCounts.size()) {
           replicaCounts =
               replicaCounts.stream()
-                  .filter(rc -> request.getTargetNodes().contains(rc.node()))
+                  .filter(rc -> request.getTargetNodes().contains(rc.getNode()))
                   .collect(Collectors.toList());
         }
 
@@ -86,10 +88,8 @@ public class SimplePlacementFactory
           List<Node> nodeList =
               replicaCounts.stream()
                   .sorted(
-                      Comparator.<ReplicaCount>comparingInt(
-                              rc -> rc.weight(request.getCollection().getName()))
-                          .thenComparing(ReplicaCount::nodeName))
-                  .map(ReplicaCount::node)
+                      Comparator.comparingInt(ReplicaCount::getWeight))
+                  .map(ReplicaCount::getNode)
                   .collect(Collectors.toList());
           int replicaNumOfShard = 0;
           for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
@@ -104,9 +104,10 @@ public class SimplePlacementFactory
 
               ReplicaCount replicaCount =
                   nodeVsShardCount.computeIfAbsent(assignedNode, ReplicaCount::new);
-              replicaCount.totalReplicas++;
-              replicaCount.collectionReplicas.merge(
-                  request.getCollection().getName(), 1, Integer::sum);
+              replicaCount.addReplica(
+                  PlacementPlugin.createProjectedReplica(request.getCollection(), shard, replicaType, assignedNode),
+                  true
+              );
             }
           }
         }
@@ -120,20 +121,21 @@ public class SimplePlacementFactory
     }
 
     @Override
-    public BalancePlan computeBalancing(
-        BalanceRequest balanceRequest, PlacementContext placementContext)
-        throws PlacementException, InterruptedException {
-      // This is a NO-OP
-      // TODO: Implement
+    public BalancePlan computeBalancing(BalanceRequest balanceRequest, PlacementContext placementContext) {
+      TreeSet<ReplicaCount> orderedNodes =
+          new TreeSet<>(getNodeVsShardCount(placementContext, balanceRequest.getNodes()).values());
       return placementContext
           .getBalancePlanFactory()
-          .createBalancePlan(balanceRequest, new HashMap<>());
+          .createBalancePlan(
+              balanceRequest,
+              WeightedNodeSelection.computeBalancingMovements(placementContext, orderedNodes)
+          );
     }
 
-    private Map<Node, ReplicaCount> getNodeVsShardCount(PlacementContext placementContext) {
+    private Map<Node, ReplicaCount> getNodeVsShardCount(PlacementContext placementContext, Set<Node> nodes) {
       HashMap<Node, ReplicaCount> nodeVsShardCount = new HashMap<>();
 
-      for (Node s : placementContext.getCluster().getLiveDataNodes()) {
+      for (Node s : nodes) {
         nodeVsShardCount.computeIfAbsent(s, ReplicaCount::new);
       }
 
@@ -144,7 +146,7 @@ public class SimplePlacementFactory
           for (Replica replica : shard.replicas()) {
             ReplicaCount count = nodeVsShardCount.get(replica.getNode());
             if (count != null) {
-              count.addReplica(collection.getName(), shard.getShardName());
+              count.addReplica(replica, true);
             }
           }
         }
@@ -153,31 +155,43 @@ public class SimplePlacementFactory
     }
   }
 
-  static class ReplicaCount {
-    public final Node node;
+  static class ReplicaCount extends WeightedNodeSelection.WeightedNode {
+    private static final int SAME_COL_MULT = 5;
     public Map<String, Integer> collectionReplicas;
-    public int totalReplicas = 0;
+    public int totalWeight = 0;
 
     ReplicaCount(Node node) {
-      this.node = node;
+      super(node);
       this.collectionReplicas = new HashMap<>();
     }
 
-    public int weight(String collection) {
-      return (collectionReplicas.getOrDefault(collection, 0) * 5) + totalReplicas;
+    @Override
+    public int getWeight() {
+      return totalWeight;
     }
 
-    public void addReplica(String collection, String shard) {
-      // Used to "weigh" whether this node should be used later.
-      collectionReplicas.merge(collection, 1, Integer::sum);
+    @Override
+    public int getWeightWithReplica(Replica replica) {
+      int replicaCount = collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0);
+      return totalWeight + (replicaCount > 0 ? SAME_COL_MULT : 1);
     }
 
-    public Node node() {
-      return node;
+    @Override
+    protected void addProjectedReplicaWeights(Replica replica) {
+      int replicaCount = collectionReplicas.merge(replica.getShard().getCollection().getName(), 1, Integer::sum);
+      totalWeight += replicaCount > 1 ? SAME_COL_MULT : 1;
     }
 
-    public String nodeName() {
-      return node.getName();
+    @Override
+    public int getWeightWithoutReplica(Replica replica) {
+      int replicaCount = collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0);
+      return totalWeight - (replicaCount > 1 ? SAME_COL_MULT : 1);
+    }
+
+    @Override
+    protected void removeProjectedReplicaWeights(Replica replica) {
+      int replicaCount = collectionReplicas.computeIfPresent(replica.getShard().getCollection().getName(), (k, v) -> v - 1);
+      totalWeight -= replicaCount > 0 ? SAME_COL_MULT : 1;
     }
   }
 }
