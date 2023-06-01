@@ -995,8 +995,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementRequestImpl placementRequest =
         new PlacementRequestImpl(
             primaryCollection,
-            inOrderSet("shard2", "shard1"),
-            new LinkedHashSet<>(liveNodes),
+            shuffle(Arrays.asList("shard2", "shard1")),
+            shuffle(cluster.getLiveNodes()),
             1,
             0,
             0);
@@ -1037,18 +1037,14 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     }
   }
 
-  private static Set<String> inOrderSet(String... abc) {
-    return new AbstractSet<>() {
-      @Override
-      public Iterator<String> iterator() {
-        return Spliterators.iterator(Arrays.spliterator(abc));
-      }
+  private <T> Set<T> shuffle(Set<T> liveNodes) {
+    final List<T> nodes = new ArrayList<>(liveNodes);
+    return shuffle(nodes);
+  }
 
-      @Override
-      public int size() {
-        return abc.length;
-      }
-    };
+  private static <T> Set<T> shuffle(List<T> nodes) {
+    Collections.shuffle(nodes,random());
+    return new LinkedHashSet<>(nodes);
   }
 
   @Test

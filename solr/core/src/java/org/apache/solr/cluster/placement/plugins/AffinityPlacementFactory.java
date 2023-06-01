@@ -1165,7 +1165,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           return new DefaultNodePicker(request, request.getTargetNodes(), attrValues);
         }
       }
-      final String propertyName = "`withCollection" + (shardWiseRestriction ? "Shard" : "") + "s`";
+      final String propertyName = "`withCollection" + (shardWiseRestriction ? "Shards" : "") + "`";
       try {
         requiredCollection = placementContext.getCluster().getCollection(requiredCollectionName);
       } catch (Exception e) {
