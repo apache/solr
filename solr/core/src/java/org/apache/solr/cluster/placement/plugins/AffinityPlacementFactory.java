@@ -65,6 +65,7 @@ import org.apache.solr.cluster.placement.ReplicaMetrics;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.ShardMetrics;
 import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
+import org.apache.solr.cluster.placement.impl.WeightedNodeSelection;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
@@ -1266,6 +1267,170 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           return group1.compareTo(group2);
         }
         return usagesLabel1.compareTo(usagesLabel2);
+      }
+    }
+  }
+
+  private static class AffinityNodeContext {
+
+    private final AttributeValues attrValues;
+
+    private final boolean useSpreadDomains;
+    private final Map<String, Integer> spreadDomainUsage;
+
+    private final long minimalFreeDiskGB;
+
+    private final long prioritizedFreeDiskGB;
+
+    private AffinityNodeContext(
+        AttributeValues attrValues, boolean useSpreadDomains, Map<String, Integer> spreadDomainUsage,
+        long minimalFreeDiskGB, long prioritizedFreeDiskGB) {
+      this.attrValues = attrValues;
+      this.useSpreadDomains = useSpreadDomains;
+      this.spreadDomainUsage = spreadDomainUsage;
+      this.minimalFreeDiskGB = minimalFreeDiskGB;
+      this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
+    }
+
+    AffinityNode newNodeFromMetrics(Node node) {
+      Set<Replica.ReplicaType> supportedReplicaTypes =
+          attrValues
+              .getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP)
+              .stream()
+              .flatMap(s -> Arrays.stream(s.split(",")))
+              .map(String::trim)
+              .map(s -> s.toUpperCase(Locale.ROOT))
+              .map(Replica.ReplicaType::valueOf)
+              .collect(Collectors.toSet());
+      if (supportedReplicaTypes.isEmpty()) {
+        // If property not defined or is only whitespace on a node, assuming node can take any
+        // replica type
+        supportedReplicaTypes = Set.of(Replica.ReplicaType.values());
+      }
+      Optional<Double> nodeFreeDiskGB =
+          attrValues.getNodeMetric(node, BuiltInMetrics.NODE_FREE_DISK_GB);
+      Optional<Integer> nodeNumCores =
+          attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES);
+      String spreadDomain = null;
+      if (useSpreadDomains) {
+        spreadDomain = attrValues.getSystemProperty(node, AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP).orElse(null);
+        if (spreadDomain == null) {
+          if (nodeFreeDiskGB.isEmpty()) {
+            if (log.isWarnEnabled()) {
+              log.warn(
+                  "Unknown spreadDomain on node {}, excluding it from placement decisions.",
+                  node.getName());
+            }
+          }
+          return null;
+        }
+      }
+      if (nodeFreeDiskGB.isEmpty()) {
+        if (log.isWarnEnabled()) {
+          log.warn(
+              "Unknown free disk on node {}, excluding it from placement decisions.",
+              node.getName());
+        }
+        return null;
+      } else if (nodeNumCores.isEmpty()) {
+        if (log.isWarnEnabled()) {
+          log.warn(
+              "Unknown number of cores on node {}, excluding it from placement decisions.",
+              node.getName());
+        }
+        return null;
+      } else {
+        return new AffinityNode(node, supportedReplicaTypes, nodeNumCores.get(), nodeFreeDiskGB.get(), spreadDomain);
+      }
+    }
+
+    private class AffinityNode extends WeightedNodeSelection.WeightedNode {
+
+      private final Set<Replica.ReplicaType> supportedReplicaTypes;
+
+      private int coresOnNode;
+      private double nodeFreeDiskGB;
+      private final String spreadDomain;
+
+      AffinityNode(Node node, Set<Replica.ReplicaType> supportedReplicaTypes,
+                   int coresOnNode, double nodeFreeDiskGB, String spreadDomain) {
+        super(node);
+        this.supportedReplicaTypes = supportedReplicaTypes;
+        this.coresOnNode = coresOnNode;
+        this.nodeFreeDiskGB = nodeFreeDiskGB;
+        this.spreadDomain = spreadDomain;
+      }
+
+      @Override
+      public int getWeight() {
+        return calculateWeight(coresOnNode, nodeFreeDiskGB, 0);
+      }
+
+      @Override
+      public boolean canAddReplica(Replica replica) {
+        return
+            // By default, do not allow two replicas of the same shard on a node
+            super.canAddReplica(replica) &&
+            supportedReplicaTypes.contains(replica.getType()) &&
+            getProjectedSizeOfReplica(replica) - nodeFreeDiskGB > minimalFreeDiskGB;
+      }
+
+      @Override
+      public int getWeightWithReplica(Replica replica) {
+        return calculateWeight(
+            coresOnNode + 1,
+            nodeFreeDiskGB - getProjectedSizeOfReplica(replica),
+            1
+        );
+      }
+
+      @Override
+      protected void addProjectedReplicaWeights(Replica replica) {
+        nodeFreeDiskGB -= getProjectedSizeOfReplica(replica);
+        coresOnNode += 1;
+        if (useSpreadDomains) {
+          spreadDomainUsage.merge(spreadDomain, 1, Integer::sum);
+        }
+      }
+
+      @Override
+      public int getWeightWithoutReplica(Replica replica) {
+        return calculateWeight(
+            coresOnNode - 1,
+            nodeFreeDiskGB + getProjectedSizeOfReplica(replica),
+            -1
+        );
+      }
+
+      @Override
+      protected void removeProjectedReplicaWeights(Replica replica) {
+        nodeFreeDiskGB += getProjectedSizeOfReplica(replica);
+        coresOnNode -= 1;
+        if (useSpreadDomains) {
+          spreadDomainUsage.computeIfPresent(spreadDomain, (k,v) -> v - 1);
+        }
+      }
+
+      private int calculateWeight(int cores, double freeDiskGB, int deltaReplicas) {
+        return
+            cores +
+            100 * (freeDiskGB < prioritizedFreeDiskGB ? 1 : 0) +
+            10000 * (useSpreadDomains ? (getSpreadDomainReplicas() + deltaReplicas) : 0);
+      }
+
+      private double getProjectedSizeOfReplica(Replica replica) {
+        return attrValues
+            .getCollectionMetrics(replica.getShard().getCollection().getName())
+            .flatMap(colMetrics -> colMetrics.getShardMetrics(replica.getShard().getShardName()))
+            .flatMap(ShardMetrics::getLeaderMetrics)
+            .flatMap(lrm -> lrm.getReplicaMetric(BuiltInMetrics.REPLICA_INDEX_SIZE_GB))
+            .orElse(0D);
+      }
+
+      private int getSpreadDomainReplicas() {
+        return Optional.ofNullable(spreadDomain)
+              .map(spreadDomainUsage::get)
+              .orElse(0);
       }
     }
   }

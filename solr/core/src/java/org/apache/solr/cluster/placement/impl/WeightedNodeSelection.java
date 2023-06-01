@@ -154,7 +154,7 @@ public class WeightedNodeSelection {
 
     public abstract int getWeightWithReplica(Replica replica);
 
-    final public boolean canAddReplica(Replica replica) {
+    public boolean canAddReplica(Replica replica) {
       // By default, do not allow two replicas of the same shard on a node
       return getReplicasForShard(replica.getShard()).isEmpty();
     }
