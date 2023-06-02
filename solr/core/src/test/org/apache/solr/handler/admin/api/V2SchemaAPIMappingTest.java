@@ -26,10 +26,6 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
 
   @Override
   public void populateApiBag() {
-    apiBag.registerObject(new SchemaInfoAPI(getRequestHandler()));
-    apiBag.registerObject(new SchemaUniqueKeyAPI(getRequestHandler()));
-    apiBag.registerObject(new SchemaVersionAPI(getRequestHandler()));
-    apiBag.registerObject(new SchemaSimilarityAPI(getRequestHandler()));
     apiBag.registerObject(new SchemaZkVersionAPI(getRequestHandler()));
     apiBag.registerObject(new SchemaListAllFieldsAPI(getRequestHandler()));
     apiBag.registerObject(new SchemaGetFieldAPI(getRequestHandler()));
@@ -53,7 +49,6 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
 
   @Test
   public void testGetSchemaInfoApis() {
-    assertAnnotatedApiExistsFor("GET", "/schema");
     assertAnnotatedApiExistsFor("GET", "/schema/dynamicfields");
     assertAnnotatedApiExistsFor("GET", "/schema/dynamicfields/someDynamicField");
     assertAnnotatedApiExistsFor("GET", "/schema/fieldtypes");
@@ -61,9 +56,6 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
     assertAnnotatedApiExistsFor("GET", "/schema/fields");
     assertAnnotatedApiExistsFor("GET", "/schema/fields/someField");
     assertAnnotatedApiExistsFor("GET", "/schema/copyfields");
-    assertAnnotatedApiExistsFor("GET", "/schema/similarity");
-    assertAnnotatedApiExistsFor("GET", "/schema/uniquekey");
-    assertAnnotatedApiExistsFor("GET", "/schema/version");
     assertAnnotatedApiExistsFor("GET", "/schema/zkversion");
   }
 

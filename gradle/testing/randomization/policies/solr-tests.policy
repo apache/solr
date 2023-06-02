@@ -231,4 +231,6 @@ grant {
   permission java.io.FilePermission "${gradle.user.home}${/}-", "read";
   // Allow read access to Lucene jars if "-Plucene.dev.version=" or "-Plucene.dev.path=" is used
   permission java.io.FilePermission "${lucene-dev-path.dir}${/}-", "read";
+  // Allow testing effects of customized or bug-fixed dependencies locally (also need to add mavenLocal() to build)
+  permission java.io.FilePermission "${user.home}${/}.m2${/}repository${/}-", "read";
 };
