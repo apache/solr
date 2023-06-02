@@ -73,16 +73,15 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
    * Test the v2 to v1 response mapping for /schema/name
    *
    * <p>{@link SchemaHandler} uses the v2 {@link GetSchemaAPI} (and its response class {@link
-   * GetSchemaAPI.SchemaNameResponse}) internally to serve the v1 version of this functionality.
-   * So it's important to make sure that our response stays compatible with SolrJ - both because
-   * that's important in its own right and because that ensures we haven't accidentally changed the
-   * v1 response format.
+   * GetSchemaAPI.SchemaNameResponse}) internally to serve the v1 version of this functionality. So
+   * it's important to make sure that our response stays compatible with SolrJ - both because that's
+   * important in its own right and because that ensures we haven't accidentally changed the v1
+   * response format.
    */
   @Test
   public void testResponseCanBeParsedBySolrJ() {
     final NamedList<Object> squashedResponse = new NamedList<>();
-    final GetSchemaAPI.SchemaNameResponse typedResponse =
-      new GetSchemaAPI.SchemaNameResponse();
+    final GetSchemaAPI.SchemaNameResponse typedResponse = new GetSchemaAPI.SchemaNameResponse();
     typedResponse.name = "someName";
 
     V2ApiUtils.squashIntoNamedList(squashedResponse, typedResponse);

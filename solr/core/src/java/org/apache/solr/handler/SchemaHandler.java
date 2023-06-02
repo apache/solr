@@ -291,10 +291,7 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(
-        GetSchemaAPI.class,
-        GetSchemaFieldAPI.class,
-        GetSchemaZkVersionAPI.class);
+    return List.of(GetSchemaAPI.class, GetSchemaFieldAPI.class, GetSchemaZkVersionAPI.class);
   }
 
   @Override
