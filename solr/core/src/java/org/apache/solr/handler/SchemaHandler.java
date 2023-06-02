@@ -170,7 +170,6 @@ public class SchemaHandler extends RequestHandlerBase
             List<String> parts = StrUtils.splitSmart(path, '/', true);
             if (parts.size() > 1 && level2.containsKey(parts.get(1))) {
               String realName = parts.get(1);
-              String fieldName = IndexSchema.nameMapping.get(realName);
 
               String pathParam = level2.get(realName); // Might be null
               if (parts.size() > 2) {
@@ -230,42 +229,6 @@ public class SchemaHandler extends RequestHandlerBase
 
     } catch (Exception e) {
       rsp.setException(e);
-    }
-  }
-
-  /**
-   * If a plugin is loaded from a package, the version of the package being used should be added to
-   * the response
-   */
-  private void insertPackageInfo(Object o, SolrQueryRequest req) {
-    if (!req.getParams().getBool("meta", false)) return;
-    if (o instanceof List) {
-      List<?> l = (List<?>) o;
-      for (Object o1 : l) {
-        if (o1 instanceof NamedList || o1 instanceof List) insertPackageInfo(o1, req);
-      }
-
-    } else if (o instanceof NamedList) {
-      @SuppressWarnings("unchecked")
-      NamedList<Object> nl = (NamedList<Object>) o;
-      nl.forEach(
-          (n, v) -> {
-            if (v instanceof NamedList || v instanceof List) insertPackageInfo(v, req);
-          });
-      Object v = nl.get("class");
-      if (v instanceof String) {
-        String klas = (String) v;
-        PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
-        if (parsedClassName.pkg != null) {
-          SolrClassLoader solrClassLoader = req.getCore().getLatestSchema().getSolrClassLoader();
-          MapWriter mw =
-              solrClassLoader instanceof PackageListeningClassLoader
-                  ? ((PackageListeningClassLoader) solrClassLoader)
-                      .getPackageVersion(parsedClassName)
-                  : null;
-          if (mw != null) nl.add("_packageinfo_", mw);
-        }
-      }
     }
   }
 

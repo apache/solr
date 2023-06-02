@@ -180,23 +180,7 @@ public class GetSchemaFieldAPI extends GetSchemaAPI{
       indexSchema.getNamedPropertyValues(realName, params);
     Object o = propertyValues.get(camelCaseRealName);
     if (params.getBool("meta", false)) {
-      if (o instanceof NamedList) {
-        @SuppressWarnings("unchecked")
-        NamedList<Object> nl = (NamedList<Object>) o;
-        String klas = (String) nl.get("class");
-        PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
-        if (parsedClassName.pkg != null) {
-          SolrClassLoader solrClassLoader = indexSchema.getSolrClassLoader();
-          MapWriter mw =
-            solrClassLoader instanceof PackageListeningClassLoader
-              ? ((PackageListeningClassLoader) solrClassLoader)
-              .getPackageVersion(parsedClassName)
-              : null;
-          if (mw != null) {
-            nl.add("_packageinfo_", mw);
-          }
-        }
-      }
+      insertPackageInfo(o);
     }
     return o;
   }
@@ -216,19 +200,7 @@ public class GetSchemaFieldAPI extends GetSchemaAPI{
           if (fieldName.equals(fieldInfo.get("name"))) {
             returnFieldInfo = fieldInfo;
             if (params.getBool("meta", false)) {
-              String klas = (String) fieldInfo.get("class");
-              PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
-              if (parsedClassName.pkg != null) {
-                SolrClassLoader solrClassLoader = indexSchema.getSolrClassLoader();
-                MapWriter mw =
-                  solrClassLoader instanceof PackageListeningClassLoader
-                    ? ((PackageListeningClassLoader) solrClassLoader)
-                    .getPackageVersion(parsedClassName)
-                    : null;
-                if (mw != null) {
-                  returnFieldInfo.add("_packageinfo_", mw);
-                }
-              }
+              insertPackageInfo(returnFieldInfo);
             }
             break;
           }
@@ -236,5 +208,40 @@ public class GetSchemaFieldAPI extends GetSchemaAPI{
       }
     }
     return returnFieldInfo;
+  }
+
+  /**
+   * If a plugin is loaded from a package, the version of the package being used should be added to
+   * the response
+   */
+  private void insertPackageInfo(Object o) {
+    if (o instanceof List) {
+      List<?> l = (List<?>) o;
+      for (Object o1 : l) {
+        if (o1 instanceof NamedList || o1 instanceof List) insertPackageInfo(o1);
+      }
+
+    } else if (o instanceof NamedList) {
+      @SuppressWarnings("unchecked")
+      NamedList<Object> nl = (NamedList<Object>) o;
+      nl.forEach(
+        (n, v) -> {
+          if (v instanceof NamedList || v instanceof List) insertPackageInfo(v);
+        });
+      Object v = nl.get("class");
+      if (v instanceof String) {
+        String klas = (String) v;
+        PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
+        if (parsedClassName.pkg != null) {
+          SolrClassLoader solrClassLoader = indexSchema.getSolrClassLoader();
+          MapWriter mw =
+            solrClassLoader instanceof PackageListeningClassLoader
+              ? ((PackageListeningClassLoader) solrClassLoader)
+              .getPackageVersion(parsedClassName)
+              : null;
+          if (mw != null) nl.add("_packageinfo_", mw);
+        }
+      }
+    }
   }
 }
