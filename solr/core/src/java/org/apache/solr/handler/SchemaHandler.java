@@ -46,6 +46,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetSchemaAPI;
+import org.apache.solr.handler.admin.api.GetSchemaFieldAPI;
 import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
 import org.apache.solr.handler.admin.api.SchemaNameAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -182,27 +183,27 @@ public class SchemaHandler extends RequestHandlerBase
                 {
                   if (parts.size() > 2) {
                     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getFieldInfo(parts.get(2), new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                      rsp, new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams()).getFieldInfo(parts.get(2)));
                   } else {
                     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).listSchemaFields(new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                      rsp, new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams()).listSchemaFields());
                   }
                   return;
                 }
                 case "copyfields":
                 {
                   V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                    rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).listCopyFields(new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                    rsp, new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams()).listCopyFields());
                   return;
                 }
                 case "dynamicfields":
                 {
                   if (parts.size() > 2) {
                     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getDynamicFieldInfo(parts.get(2), new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                      rsp, new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams()).getDynamicFieldInfo(parts.get(2)));
                   } else {
                     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).listDynamicFields(new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                      rsp, new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams()).listDynamicFields());
                   }
                   return;
                 }
@@ -210,10 +211,10 @@ public class SchemaHandler extends RequestHandlerBase
                 {
                   if (parts.size() > 2) {
                     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).getFieldTypeInfo(parts.get(2), new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                      rsp, new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams()).getFieldTypeInfo(parts.get(2)));
                   } else {
                     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-                      rsp, new GetSchemaAPI(req.getCore().getLatestSchema()).listSchemaFieldTypes(new GetSchemaAPI.SchemaGetFieldRequestBody(req.getParams())));
+                      rsp, new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams()).listSchemaFieldTypes());
                   }
                   return;
                 }
@@ -321,7 +322,7 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(SchemaNameAPI.class, GetSchemaAPI.class);
+    return List.of(SchemaNameAPI.class, GetSchemaAPI.class, GetSchemaFieldAPI.class);
   }
 
   @Override
