@@ -27,6 +27,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -63,6 +64,25 @@ public class GetSchemaAPI extends JerseyResource {
     // without lots of map fetching and casting.
     @JsonProperty("schema")
     public Map<String, Object> schema;
+  }
+
+  @GET
+  @Path("/name")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaNameResponse getSchemaName() throws Exception {
+    final SchemaNameResponse response = instantiateJerseyResponse(SchemaNameResponse.class);
+    if (null == indexSchema.getSchemaName()) {
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Schema has no name");
+    }
+
+    response.name = indexSchema.getSchemaName();
+    return response;
+  }
+
+  public static class SchemaNameResponse extends SolrJerseyResponse {
+    @JsonProperty("name")
+    public String name;
   }
 
   @GET
