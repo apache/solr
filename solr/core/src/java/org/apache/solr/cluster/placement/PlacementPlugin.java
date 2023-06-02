@@ -105,7 +105,7 @@ public interface PlacementPlugin {
    */
   default void verifyAllowedModification(
       ModificationRequest modificationRequest, PlacementContext placementContext)
-      throws PlacementModificationException, InterruptedException {}
+      throws PlacementException, InterruptedException {}
 
   static Replica createProjectedReplica(final SolrCollection collection, final String shardName, final Replica.ReplicaType type, final Node node) {
     final Shard shard = new Shard() {

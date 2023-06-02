@@ -48,8 +48,6 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
-import org.apache.solr.cluster.placement.BalancePlan;
-import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
 import org.apache.solr.cluster.placement.DeleteShardsRequest;
@@ -67,7 +65,6 @@ import org.apache.solr.cluster.placement.ReplicaMetrics;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.ShardMetrics;
 import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
-import org.apache.solr.cluster.placement.impl.WeightedNodeSelection;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
@@ -198,7 +195,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
    * See {@link AffinityPlacementFactory} for instructions on how to configure a cluster to use this
    * plugin and details on what the plugin does.
    */
-  static class AffinityPlacementPlugin implements PlacementPlugin {
+  static class AffinityPlacementPlugin extends OrderedNodePlacementPlugin<AffinityPlacementPlugin.AffinityNode> {
 
     private final long minimalFreeDiskGB;
 
@@ -261,11 +258,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
-    @Override
     @SuppressForbidden(
         reason =
             "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-    public List<PlacementPlan> computePlacements(
+    public List<PlacementPlan> computePlacementsOld(
         Collection<PlacementRequest> requests, PlacementContext placementContext)
         throws PlacementException {
       List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
@@ -396,24 +392,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       return placementPlans;
     }
 
-    @Override
-    public BalancePlan computeBalancing(
-        BalanceRequest balanceRequest, PlacementContext placementContext)
-        throws PlacementException {
-      TreeSet<AffinityNode> weightedNodes = getWeightedNodes(
-          placementContext,
-          balanceRequest.getNodes(),
-          placementContext.getCluster().collections()
-      );
-      // This is a NO-OP
-      return placementContext
-          .getBalancePlanFactory()
-          .createBalancePlan(
-              balanceRequest,
-              WeightedNodeSelection.computeBalancingMovements(placementContext, weightedNodes)
-            );
-    }
-
     private boolean shouldSpreadAcrossDomains(Set<Node> allNodes, AttributeValues attrValues) {
       boolean doSpreadAcrossDomains =
           spreadAcrossDomains && spreadDomainPropPresent(allNodes, attrValues);
@@ -438,7 +416,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     @Override
     public void verifyAllowedModification(
         ModificationRequest modificationRequest, PlacementContext placementContext)
-        throws PlacementModificationException {
+        throws PlacementException {
       if (modificationRequest instanceof DeleteShardsRequest) {
         log.warn("DeleteShardsRequest not implemented yet, skipping: {}", modificationRequest);
       } else if (modificationRequest instanceof DeleteCollectionRequest) {
@@ -450,7 +428,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
-    private void verifyDeleteCollection(
+    @Override
+    protected void verifyDeleteCollection(
         DeleteCollectionRequest deleteCollectionRequest, PlacementContext placementContext)
         throws PlacementModificationException {
       Cluster cluster = placementContext.getCluster();
@@ -474,7 +453,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
-    private void verifyDeleteReplicas(
+    protected void verifyDeleteReplicasOld(
         DeleteReplicasRequest deleteReplicasRequest, PlacementContext placementContext)
         throws PlacementModificationException {
       Cluster cluster = placementContext.getCluster();
@@ -1284,7 +1263,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     private final Map<String, Integer> spreadDomainUsage = new HashMap<>();
 
-    private TreeSet<AffinityNode> getWeightedNodes(
+    @Override
+    protected Map<Node, AffinityNode> getBaseWeightedNodes(
         PlacementContext placementContext, Set<Node> nodes,
         Iterable<SolrCollection> relevantCollections) throws PlacementException {
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
@@ -1315,18 +1295,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           affinityNodeMap.put(node, affinityNode);
         }
       }
-      for (SolrCollection collection : placementContext.getCluster().collections()) {
-        for (Shard shard : collection.shards()) {
-          for (Replica replica : shard.replicas()) {
-            AffinityNode an = affinityNodeMap.get(replica.getNode());
-            if (an != null) {
-              an.addReplica(replica, false);
-            }
-          }
-        }
-      }
 
-      return new TreeSet<>(affinityNodeMap.values());
+      return affinityNodeMap;
     }
 
     AffinityNode newNodeFromMetrics(Node node, AttributeValues attrValues, AtomicBoolean doSpreadAcrossDomains) throws PlacementException {
@@ -1337,7 +1307,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               .flatMap(s -> Arrays.stream(s.split(",")))
               .map(String::trim)
               .map(s -> s.toUpperCase(Locale.ROOT))
-              .map(Replica.ReplicaType::valueOf)
+              .map(s -> {
+                try {
+                  return Replica.ReplicaType.valueOf(s);
+                } catch (IllegalArgumentException e) {
+                  log.warn("Node {} has an invalid value for the {} systemProperty: {}", node.getName(), AffinityPlacementConfig.REPLICA_TYPE_SYSPROP, s);
+                  return null;
+                }
+              })
               .collect(Collectors.toSet());
       if (supportedReplicaTypes.isEmpty()) {
         // If property not defined or is only whitespace on a node, assuming node can take any
@@ -1382,7 +1359,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
-    private class AffinityNode extends WeightedNodeSelection.WeightedNode {
+    private class AffinityNode extends WeightedNode {
 
       private final AttributeValues attrValues;
 
