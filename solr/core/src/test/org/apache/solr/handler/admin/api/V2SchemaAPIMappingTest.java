@@ -40,12 +40,6 @@ public class V2SchemaAPIMappingTest extends V2ApiMappingTest<SchemaHandler> {
   }
 
   @Test
-  public void testGetSchemaInfoApis() {
-    assertAnnotatedApiExistsFor("GET", "/schema/fieldtypes");
-    assertAnnotatedApiExistsFor("GET", "/schema/fieldtypes/someFieldType");
-  }
-
-  @Test
   public void testSchemaBulkModificationApiMapping() {
     assertAnnotatedApiExistsFor("POST", "/schema");
   }
