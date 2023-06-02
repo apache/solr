@@ -43,6 +43,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.GetSchemaAPI;
 import org.apache.solr.handler.admin.api.GetSchemaFieldAPI;
+import org.apache.solr.handler.admin.api.GetSchemaZkVersionAPI;
 import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
 import org.apache.solr.handler.admin.api.SchemaNameAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -153,11 +154,8 @@ public class SchemaHandler extends RequestHandlerBase
           {
             V2ApiUtils.squashIntoSolrResponseWithoutHeader(
                 rsp,
-                new GetSchemaAPI(req.getCore().getLatestSchema())
-                    .getSchemaZkVersion(
-                        new GetSchemaAPI.SchemaZkVersionRequestBody(
-                            req.getParams().getInt("refreshIfBelowVersion", -1),
-                            req.getCore().getResourceLoader())));
+                new GetSchemaZkVersionAPI(req.getCore())
+                    .getSchemaZkVersion(req.getParams().getInt("refreshIfBelowVersion", -1)));
             break;
           }
         default:
@@ -294,7 +292,11 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(SchemaNameAPI.class, GetSchemaAPI.class, GetSchemaFieldAPI.class);
+    return List.of(
+        SchemaNameAPI.class,
+        GetSchemaAPI.class,
+        GetSchemaFieldAPI.class,
+        GetSchemaZkVersionAPI.class);
   }
 
   @Override
