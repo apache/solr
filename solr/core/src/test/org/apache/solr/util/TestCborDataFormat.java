@@ -46,7 +46,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.loader.CborLoader;
 import org.apache.solr.response.XMLResponseWriter;
@@ -71,6 +70,8 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       byte[] b =
           Files.readAllBytes(
               new File(ExternalPaths.SOURCE_HOME, "example/films/films.json").toPath());
+      // every operation is performed twice. We should only take the second number
+      // so that we give JVM a chance to optimize that code
       index(testCollection, client, createJsonReq(b), true);
       index(testCollection, client, createJsonReq(b), true);
 
@@ -96,17 +97,12 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     }
   }
 
-  @SuppressForbidden(reason = "Needs currentTimeMillis for perf test")
   private void index(
       String testCollection, CloudSolrClient client, GenericSolrRequest r, boolean del)
       throws Exception {
-    long start = System.currentTimeMillis();
+    RTimer timer = new RTimer();
     client.request(r, testCollection);
-    System.out.println(
-        "INDEX_TIME: "
-            + r.contentWriter.getContentType()
-            + " : "
-            + (System.currentTimeMillis() - start));
+    System.out.println("INDEX_TIME: " + r.contentWriter.getContentType() + " : " + timer.getTime());
     if (del) {
       UpdateRequest req = new UpdateRequest().deleteByQuery("*:*");
       req.setParam("commit", "true");
@@ -114,18 +110,16 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     }
   }
 
-  @SuppressForbidden(reason = "Needs currentTimeMillis for perf tests")
   private byte[] runQuery(String testCollection, CloudSolrClient client, String wt)
       throws SolrServerException, IOException {
-    long start;
     NamedList<Object> result;
     QueryRequest request;
-    start = System.currentTimeMillis();
+    RTimer timer = new RTimer();
     request = new QueryRequest(new SolrQuery("*:*").setRows(1111));
     request.setResponseParser(new InputStreamResponseParser(wt));
     result = client.request(request, testCollection);
     byte[] b = copyStream((InputStream) result.get("stream"));
-    System.out.println(wt + "_time : " + (System.currentTimeMillis() - start));
+    System.out.println(wt + "_time : " + timer.getTime());
     return b;
   }
 
