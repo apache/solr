@@ -195,7 +195,7 @@ public class DenseVectorField extends FloatPointField {
         if (dimension > FloatVectorValues.MAX_DIMENSIONS) {
           if (log.isWarnEnabled()) {
             log.warn(
-                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of  {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
+                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
                 dimension,
                 field.getName(),
                 FloatVectorValues.MAX_DIMENSIONS);
@@ -206,7 +206,7 @@ public class DenseVectorField extends FloatPointField {
         if (dimension > ByteVectorValues.MAX_DIMENSIONS) {
           if (log.isWarnEnabled()) {
             log.warn(
-                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of  {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
+                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
                 dimension,
                 field.getName(),
                 ByteVectorValues.MAX_DIMENSIONS);
@@ -268,6 +268,13 @@ public class DenseVectorField extends FloatPointField {
     }
   }
 
+  /**
+   * This is needed at the moment to support dimensions higher than a hard-coded arbitrary Lucene
+   * max dimension. N.B. this may stop working and need changes when adopting future Lucene
+   * releases.
+   *
+   * @return a FieldType compatible with Dense vectors
+   */
   private FieldType getDenseVectorFieldType() {
     FieldType vectorFieldType =
         new FieldType() {
