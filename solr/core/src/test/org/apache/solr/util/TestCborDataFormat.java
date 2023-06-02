@@ -216,7 +216,6 @@ public class TestCborDataFormat extends SolrCloudTestCase {
 
     jsonGenerator.writeTree(jsonNode);
     jsonGenerator.close();
-    byte[] bytes = baos.toByteArray();
-    return bytes;
+    return baos.toByteArray();
   }
 }
