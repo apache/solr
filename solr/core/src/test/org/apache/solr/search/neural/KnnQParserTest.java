@@ -269,13 +269,13 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     }
 
     for (int i = 0; i < docsCount; i++) {
-      List<Float> highDimensionalityVector = new ArrayList<>();
+      List<Integer> highDimensionalityVector = new ArrayList<>();
       for (int j = i * highDimension; j < highDimension; j++) {
-        highDimensionalityVector.add(new Float(j));
+        highDimensionalityVector.add(j);
       }
       docs.get(i).addField(field, highDimensionalityVector);
     }
-    Collections.shuffle(docs);
+    Collections.reverse(docs);
     return docs;
   }
 
@@ -297,7 +297,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
       }
       docs.get(i).addField(field, highDimensionalityVector);
     }
-    Collections.shuffle(docs);
+    Collections.reverse(docs);
     return docs;
   }
 
