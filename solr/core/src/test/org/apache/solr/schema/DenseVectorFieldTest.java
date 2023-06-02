@@ -464,7 +464,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       initCore("solrconfig-basic.xml", "schema-densevector-high-dimensionality.xml");
 
       List<Float> highDimensionalityVector = new ArrayList<>();
-      for(float i=0; i< 2048f; i++){
+      for (float i = 0; i < 2048f; i++) {
         highDimensionalityVector.add(i);
       }
       SolrInputDocument correctDoc = new SolrInputDocument();

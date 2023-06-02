@@ -25,10 +25,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.KnnByteVectorField;
 import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexableField;
@@ -193,12 +193,24 @@ public class DenseVectorField extends FloatPointField {
     switch (vectorEncoding) {
       case FLOAT32:
         if (dimension > FloatVectorValues.MAX_DIMENSIONS) {
-          log.warn("The vector dimension "+ dimension +" specified for field "+ field.getName() +" exceeds the current Lucene default max dimension of "+ FloatVectorValues.MAX_DIMENSIONS +". It's un-tested territory, extra caution and benchmarks are recommended for production systems.");
+          if (log.isWarnEnabled()) {
+            log.warn(
+                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of  {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
+                dimension,
+                field.getName(),
+                FloatVectorValues.MAX_DIMENSIONS);
+          }
         }
         break;
       case BYTE:
         if (dimension > ByteVectorValues.MAX_DIMENSIONS) {
-          log.warn("The vector dimension "+ dimension +" specified for field "+ field.getName() +" exceeds the current Lucene default max dimension of "+ ByteVectorValues.MAX_DIMENSIONS +". It's un-tested territory, extra caution and benchmarks are recommended for production systems.");
+          if (log.isWarnEnabled()) {
+            log.warn(
+                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of  {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
+                dimension,
+                field.getName(),
+                ByteVectorValues.MAX_DIMENSIONS);
+          }
         }
         break;
     }
@@ -240,7 +252,6 @@ public class DenseVectorField extends FloatPointField {
   public IndexableField createField(SchemaField field, Object vectorValue) {
     FieldType denseVectorFieldType = getDenseVectorFieldType();
 
-
     if (vectorValue == null) return null;
     DenseVectorParser vectorBuilder = (DenseVectorParser) vectorValue;
     switch (vectorEncoding) {
@@ -258,23 +269,24 @@ public class DenseVectorField extends FloatPointField {
   }
 
   private FieldType getDenseVectorFieldType() {
-    FieldType vectorFieldType = new FieldType() {
-      @Override
-      public int vectorDimension() {
-        return dimension;
-      }
+    FieldType vectorFieldType =
+        new FieldType() {
+          @Override
+          public int vectorDimension() {
+            return dimension;
+          }
 
-      @Override
-      public VectorEncoding vectorEncoding() {
-        return vectorEncoding;
-      }
+          @Override
+          public VectorEncoding vectorEncoding() {
+            return vectorEncoding;
+          }
 
-      @Override
-      public VectorSimilarityFunction vectorSimilarityFunction() {
-        return similarityFunction;
-      }
-    };
-    
+          @Override
+          public VectorSimilarityFunction vectorSimilarityFunction() {
+            return similarityFunction;
+          }
+        };
+
     return vectorFieldType;
   }
 
