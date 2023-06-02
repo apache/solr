@@ -29,8 +29,6 @@ import javax.ws.rs.core.MediaType;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -138,19 +136,5 @@ public class GetSchemaAPI extends JerseyResource {
   public static class SchemaVersionResponse extends SolrJerseyResponse {
     @JsonProperty("version")
     public float version;
-  }
-
-  public static class SchemaZkVersionRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty(value = "refreshIfBelowVersion")
-    public int refreshIfBelowVersion;
-
-    @JsonProperty(value = "resourceLoader")
-    public SolrResourceLoader resourceLoader;
-
-    public SchemaZkVersionRequestBody(
-        int refreshIfBelowVersion, SolrResourceLoader resourceLoader) {
-      this.refreshIfBelowVersion = refreshIfBelowVersion;
-      this.resourceLoader = resourceLoader;
-    }
   }
 }
