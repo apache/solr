@@ -43,12 +43,6 @@ public class MetricSamples {
     this(new HashMap<>());
   }
 
-  private void addSamplesToCache(Collector.MetricFamilySamples metricFamilySamples) {
-    for (Collector.MetricFamilySamples.Sample sample : metricFamilySamples.samples) {
-      sampleMetricsCache.add(sample.toString());
-    }
-  }
-
   public void addSamplesIfNotPresent(
       String metricName, Collector.MetricFamilySamples metricFamilySamples) {
     if (!samplesByMetricName.containsKey(metricName)) {
@@ -91,4 +85,11 @@ public class MetricSamples {
         .filter(value -> !value.samples.isEmpty())
         .collect(Collectors.toList());
   }
+
+  private void addSamplesToCache(Collector.MetricFamilySamples metricFamilySamples) {
+    for (Collector.MetricFamilySamples.Sample sample : metricFamilySamples.samples) {
+      sampleMetricsCache.add(sample.toString());
+    }
+  }
+
 }
