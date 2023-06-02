@@ -18,7 +18,9 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -449,6 +451,25 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SolrInputDocument correctDoc = new SolrInputDocument();
       correctDoc.addField("id", "0");
       correctDoc.addField("vector", Arrays.asList(1, 2, 3, 4));
+
+      assertU(adoc(correctDoc));
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void indexing_highDimensionalityVectorDocument_shouldBeIndexed() throws Exception {
+    try {
+      initCore("solrconfig-basic.xml", "schema-densevector-high-dimensionality.xml");
+
+      List<Float> highDimensionalityVector = new ArrayList<>();
+      for(float i=0; i< 2048f; i++){
+        highDimensionalityVector.add(i);
+      }
+      SolrInputDocument correctDoc = new SolrInputDocument();
+      correctDoc.addField("id", "0");
+      correctDoc.addField("vector", highDimensionalityVector);
 
       assertU(adoc(correctDoc));
     } finally {
