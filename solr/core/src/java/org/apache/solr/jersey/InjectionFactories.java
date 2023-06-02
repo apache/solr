@@ -22,7 +22,6 @@ import static org.apache.solr.jersey.RequestContextKeys.SOLR_PARAMS;
 
 import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
-
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;

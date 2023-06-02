@@ -21,7 +21,6 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
 import java.util.Map;
-
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -123,8 +122,8 @@ public class JerseyApplications {
                   .to(IndexSchema.class)
                   .in(RequestScoped.class);
               bindFactory(InjectionFactories.ReuseFromContextSolrParamsFactory.class)
-                .to(SolrParams.class)
-                .in(RequestScoped.class);
+                  .to(SolrParams.class)
+                  .in(RequestScoped.class);
             }
           });
     }
