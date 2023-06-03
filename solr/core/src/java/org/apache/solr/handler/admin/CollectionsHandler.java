@@ -129,11 +129,8 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
@@ -147,13 +144,11 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -616,27 +611,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     SYNCSHARD_OP(
         SYNCSHARD,
         (req, rsp, h) -> {
-          String extCollection = req.getParams().required().get("collection");
-          String collection = h.coreContainer.getAliases().resolveSimpleAlias(extCollection);
-          String shard = req.getParams().required().get("shard");
-
-          ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
-
-          DocCollection docCollection = clusterState.getCollection(collection);
-          ZkNodeProps leaderProps = docCollection.getLeader(shard);
-          ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
-
-          try (SolrClient client =
-              new Builder(nodeProps.getBaseUrl())
-                  .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-                  .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
-                  .build()) {
-            RequestSyncShard reqSyncShard = new RequestSyncShard();
-            reqSyncShard.setCollection(collection);
-            reqSyncShard.setShard(shard);
-            reqSyncShard.setCoreName(nodeProps.getCoreName());
-            client.request(reqSyncShard);
-          }
+          SyncShardAPI.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
 
@@ -1440,6 +1415,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ReloadCollectionAPI.class,
         ReplaceNodeAPI.class,
         RestoreCollectionAPI.class,
+        SyncShardAPI.class,
         CollectionPropertyAPI.class,
         DeleteNodeAPI.class,
         ListAliasesAPI.class,
@@ -1454,7 +1430,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new AddReplicaAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SyncShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));

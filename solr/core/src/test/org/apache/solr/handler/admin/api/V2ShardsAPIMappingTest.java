@@ -31,7 +31,6 @@ import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.TIMING;
-import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -56,7 +55,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     final CollectionsHandler collectionsHandler = getRequestHandler();
     apiBag.registerObject(new SplitShardAPI(collectionsHandler));
     apiBag.registerObject(new AddReplicaAPI(collectionsHandler));
-    apiBag.registerObject(new SyncShardAPI(collectionsHandler));
   }
 
   @Override
@@ -67,17 +65,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
   @Override
   public boolean isCoreSpecific() {
     return false;
-  }
-
-  @Test
-  public void testSyncShardAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName/shards/shardName", "POST", "{ 'sync-shard': {}}");
-
-    assertEquals(CollectionParams.CollectionAction.SYNCSHARD.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("shardName", v1Params.get(SHARD));
   }
 
   @Test
