@@ -57,7 +57,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     apiBag.registerObject(new SplitShardAPI(collectionsHandler));
     apiBag.registerObject(new AddReplicaAPI(collectionsHandler));
     apiBag.registerObject(new SyncShardAPI(collectionsHandler));
-    apiBag.registerObject(new ForceLeaderAPI(collectionsHandler));
   }
 
   @Override
@@ -68,17 +67,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
   @Override
   public boolean isCoreSpecific() {
     return false;
-  }
-
-  @Test
-  public void testForceLeaderAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName/shards/shardName", "POST", "{ 'force-leader': {}}");
-
-    assertEquals(CollectionParams.CollectionAction.FORCELEADER.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("shardName", v1Params.get(SHARD));
   }
 
   @Test
