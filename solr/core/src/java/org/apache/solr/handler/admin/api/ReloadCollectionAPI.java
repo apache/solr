@@ -24,6 +24,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -41,6 +42,8 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * V2 API for reloading collections.
@@ -50,6 +53,8 @@ import org.apache.solr.response.SolrQueryResponse;
  */
 @Path("/collections/{collectionName}/reload")
 public class ReloadCollectionAPI extends AdminAPIBase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Inject
   public ReloadCollectionAPI(
