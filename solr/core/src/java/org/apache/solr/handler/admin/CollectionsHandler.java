@@ -1413,6 +1413,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListCollectionsAPI.class,
         ListCollectionBackupsAPI.class,
         ReloadCollectionAPI.class,
+        RenameCollectionAPI.class,
         ReplaceNodeAPI.class,
         RestoreCollectionAPI.class,
         SyncShardAPI.class,
@@ -1436,7 +1437,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new RenameCollectionAPI(this)));
     return apis;
   }
 

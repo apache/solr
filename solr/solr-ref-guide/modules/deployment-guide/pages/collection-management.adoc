@@ -529,7 +529,7 @@ Aliases that refer to more than 1 collection are not supported.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=renamedCollection
+http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=newName
 ----
 ====
 
@@ -541,7 +541,7 @@ http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
   {
-    "to": "new_name"
+    "to": "newName"
   }
 '
 ----
