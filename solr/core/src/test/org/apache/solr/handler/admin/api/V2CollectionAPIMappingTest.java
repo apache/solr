@@ -59,7 +59,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     apiBag.registerObject(new ModifyCollectionAPI(collectionsHandler));
     apiBag.registerObject(new MoveReplicaAPI(collectionsHandler));
     apiBag.registerObject(new RebalanceLeadersAPI(collectionsHandler));
-    apiBag.registerObject(new ReloadCollectionAPI(collectionsHandler));
     apiBag.registerObject(new CollectionStatusAPI(collectionsHandler));
     apiBag.registerObject(new RenameCollectionAPI(collectionsHandler));
   }
@@ -126,17 +125,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals("requestTrackingId", v1Params.get(ASYNC));
     assertEquals("bar", v1Params.get("property.foo"));
     assertEquals(456, v1Params.getPrimitiveInt("property.baz"));
-  }
-
-  @Test
-  public void testReloadCollectionAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName", "POST", "{ 'reload': {'async': 'requestTrackingId'}}");
-
-    assertEquals(CollectionParams.CollectionAction.RELOAD.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(NAME));
-    assertEquals("requestTrackingId", v1Params.get(ASYNC));
   }
 
   @Test

@@ -569,8 +569,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     RELOAD_OP(
         RELOAD,
         (req, rsp, h) -> {
-          Map<String, Object> map = copy(req.getParams().required(), null, NAME);
-          return copy(req.getParams(), map);
+          ReloadCollectionAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          return null;
         }),
 
     RENAME_OP(
@@ -1437,6 +1437,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         InstallShardDataAPI.class,
         ListCollectionsAPI.class,
         ListCollectionBackupsAPI.class,
+        ReloadCollectionAPI.class,
         ReplaceNodeAPI.class,
         RestoreCollectionAPI.class,
         CollectionPropertyAPI.class,
@@ -1459,7 +1460,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RebalanceLeadersAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new ReloadCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new CollectionStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RenameCollectionAPI(this)));
     return apis;
