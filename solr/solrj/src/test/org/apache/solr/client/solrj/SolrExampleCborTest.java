@@ -36,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * This test only tests a subset of tests specified in the parent class. It's because we do not
@@ -58,66 +59,79 @@ public class SolrExampleCborTest extends SolrExampleTests {
   }
 
   @Override
+  @Ignore
   public void testQueryPerf() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testExampleConfig() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testAugmentFields() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testRawFields() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testUpdateRequestWithParameters() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testContentStreamRequest() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testStreamingRequest() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testMultiContentWriterRequest() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testMultiContentStreamRequest() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testLukeHandler() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testStatistics() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testFaceting() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testPivotFacets() {
     /*Ignore*/
   }
@@ -128,81 +142,97 @@ public class SolrExampleCborTest extends SolrExampleTests {
   }
 
   @Override
+  @Ignore
   public void testPivotFacetsStatsNotSupported() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testPivotFacetsQueries() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testPivotFacetsRanges() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testPivotFacetsMissing() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testUpdateField() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testUpdateMultiValuedField() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testSetNullUpdates() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testSetNullUpdateOrder() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testQueryWithParams() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testChildDoctransformer() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testExpandComponent() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testMoreLikeThis() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testAddChildToChildFreeDoc() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testDeleteParentDoc() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testCommitWithinOnAdd() {
     /*Ignore*/
   }
 
   @Override
+  @Ignore
   public void testAddDelete() {
     /*Ignore*/
   }
