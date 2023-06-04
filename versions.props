@@ -73,5 +73,5 @@ org.semver4j:semver4j=4.3.0
 org.slf4j:*=2.0.7
 org.springframework.boot:spring-boot*=2.5.14
 org.springframework:spring*=5.3.23
-org.xerial.snappy:snappy-java=1.1.9.1
+org.xerial.snappy:snappy-java=1.1.10.0
 software.amazon.awssdk:*=2.20.63
