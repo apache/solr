@@ -129,6 +129,10 @@ Improvements
   then uses the weights to decide the optimal strategy for placing new replicas or balancing existing replicas.
   (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
+* SOLR-16392: The v2 "add-replica" API has been tweaked to be more intuitive, by removing the top-level command specifier and
+  changing the path.  The v2 functionality can now be accessed at: `POST /api/collections/cName/shards/sName/replicas {...}`
+  (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
