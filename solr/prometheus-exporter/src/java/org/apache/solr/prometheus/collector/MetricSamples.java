@@ -58,10 +58,10 @@ public class MetricSamples {
       return;
     }
 
-    if (!sampleMetricsCache.contains(sample.toString())) {
-      sampleMetricsCache.add(sample.toString());
-      sampleFamily.samples.add(sample);
+    if(sampleMetricsCache.add(sample.toString())) {
+        sampleFamily.samples.add(sample);
     }
+
   }
 
   public void addAll(MetricSamples other) {
