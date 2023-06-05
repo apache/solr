@@ -29,13 +29,13 @@ public class MetricSamples {
 
   private final Map<String, Collector.MetricFamilySamples> samplesByMetricName;
 
-  private final Set<String> sampleMetricsCache;
+  private final Set<Collector.MetricFamilySamples.Sample> seenSamples;
 
   public MetricSamples(Map<String, Collector.MetricFamilySamples> input) {
     samplesByMetricName = input;
-    sampleMetricsCache = new HashSet<>();
+    seenSamples = new HashSet<>();
     for (Collector.MetricFamilySamples metricFamilySamples : input.values()) {
-      addSamplesToCache(metricFamilySamples);
+      addUnseenSamples(metricFamilySamples);
     }
   }
 
@@ -46,7 +46,7 @@ public class MetricSamples {
   public void addSamplesIfNotPresent(
       String metricName, Collector.MetricFamilySamples metricFamilySamples) {
     if (samplesByMetricName.putIfAbsent(metricName, metricFamilySamples) == null) {
-      addSamplesToCache(metricFamilySamples);
+      addUnseenSamples(metricFamilySamples);
     }
   }
 
@@ -58,7 +58,7 @@ public class MetricSamples {
       return;
     }
 
-    if(sampleMetricsCache.add(sample.toString())) {
+    if(seenSamples.add(sample)) {
         sampleFamily.samples.add(sample);
     }
 
@@ -74,7 +74,7 @@ public class MetricSamples {
         }
       } else {
         this.samplesByMetricName.put(key, entry.getValue());
-        addSamplesToCache(entry.getValue());
+        addUnseenSamples(entry.getValue());
       }
     }
   }
@@ -85,10 +85,8 @@ public class MetricSamples {
         .collect(Collectors.toList());
   }
 
-  private void addSamplesToCache(Collector.MetricFamilySamples metricFamilySamples) {
-    for (Collector.MetricFamilySamples.Sample sample : metricFamilySamples.samples) {
-      sampleMetricsCache.add(sample.toString());
-    }
+  private void addUnseenSamples(Collector.MetricFamilySamples metricFamilySamples) {
+    seenSamples.addAll(metricFamilySamples.samples);
   }
 
 }
