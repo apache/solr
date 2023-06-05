@@ -45,8 +45,7 @@ public class MetricSamples {
 
   public void addSamplesIfNotPresent(
       String metricName, Collector.MetricFamilySamples metricFamilySamples) {
-    if (!samplesByMetricName.containsKey(metricName)) {
-      samplesByMetricName.put(metricName, metricFamilySamples);
+    if (samplesByMetricName.putIfAbsent(metricName, metricFamilySamples) == null) {
       addSamplesToCache(metricFamilySamples);
     }
   }
