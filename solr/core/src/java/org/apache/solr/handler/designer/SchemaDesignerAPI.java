@@ -20,7 +20,6 @@ package org.apache.solr.handler.designer;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
-import static org.apache.solr.common.StringUtils.isEmpty;
 import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
@@ -69,6 +68,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -147,7 +147,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = GET, path = "/schema-designer/info", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
   public void getInfo(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
 
@@ -183,7 +182,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = POST, path = "/schema-designer/prep", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
   public void prepNewSchema(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
@@ -213,7 +211,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = GET, path = "/schema-designer/file", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
   public void getFileContents(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String file = getRequiredParam("file", req);
@@ -230,7 +227,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = POST, path = "/schema-designer/file", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
   public void updateFileContents(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
@@ -315,7 +311,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = GET, path = "/schema-designer/sample", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
   public void getSampleValue(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String fieldName = getRequiredParam(FIELD_PARAM, req);
@@ -324,7 +319,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     final List<SolrInputDocument> docs = configSetHelper.getStoredSampleDocs(configSet);
     String textValue = null;
-    if (isEmpty(docId)) {
+    if (StrUtils.isNullOrEmpty(docId)) {
       // no doc ID from client ... find the first doc with a non-empty string value for fieldName
       Optional<SolrInputDocument> doc =
           docs.stream()
@@ -359,7 +354,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       method = GET,
       path = "/schema-designer/collectionsForConfig",
       permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
   public void listCollectionsForConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     rsp.getValues()
@@ -371,7 +365,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   // CONFIG_EDIT_PERM is required here since this endpoint is used by the UI to determine if the
   // user has access to the Schema Designer UI
   @EndPoint(method = GET, path = "/schema-designer/configs", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
   public void listConfigs(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     rsp.getValues().addAll(Collections.singletonMap("configSets", listEnabledConfigs()));
   }
@@ -422,7 +415,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = POST, path = "/schema-designer/add", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
   public void addSchemaObject(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
@@ -442,7 +434,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = PUT, path = "/schema-designer/update", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
   public void updateSchemaObject(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
@@ -451,7 +442,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // Updated field definition is in the request body as JSON
     Map<String, Object> updateField = readJsonFromRequest(req);
     String name = (String) updateField.get("name");
-    if (isEmpty(name)) {
+    if (StrUtils.isNullOrEmpty(name)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Invalid update request! JSON payload is missing the required name property: "
@@ -515,7 +506,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = PUT, path = "/schema-designer/publish", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
   public void publish(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
@@ -542,7 +532,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     }
 
     String newCollection = req.getParams().get(NEW_COLLECTION_PARAM);
-    if (!isEmpty(newCollection) && zkStateReader().getClusterState().hasCollection(newCollection)) {
+    if (StrUtils.isNotNullOrEmpty(newCollection)
+        && zkStateReader().getClusterState().hasCollection(newCollection)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Collection '" + newCollection + "' already exists!");
@@ -573,7 +564,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     // create new collection
     Map<Object, Throwable> errorsDuringIndexing = null;
-    if (!isEmpty(newCollection)) {
+    if (StrUtils.isNotNullOrEmpty(newCollection)) {
       int numShards = req.getParams().getInt("numShards", 1);
       int rf = req.getParams().getInt("replicationFactor", 1);
       configSetHelper.createCollection(newCollection, configSet, numShards, rf);
@@ -602,7 +593,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     Map<String, Object> response = new HashMap<>();
     response.put(CONFIG_SET_PARAM, configSet);
     response.put(SCHEMA_VERSION_PARAM, configSetHelper.getCurrentSchemaVersion(configSet));
-    if (!isEmpty(newCollection)) {
+    if (StrUtils.isNotNullOrEmpty(newCollection)) {
       response.put(NEW_COLLECTION_PARAM, newCollection);
     }
 
@@ -612,7 +603,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = POST, path = "/schema-designer/analyze", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
   public void analyze(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
     final int schemaVersion = req.getParams().getInt(SCHEMA_VERSION_PARAM, -1);
@@ -647,7 +637,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     ManagedIndexSchema schema = settings.getSchema();
 
     String uniqueKeyFieldParam = req.getParams().get(UNIQUE_KEY_FIELD_PARAM);
-    if (!isEmpty(uniqueKeyFieldParam)) {
+    if (StrUtils.isNotNullOrEmpty(uniqueKeyFieldParam)) {
       String uniqueKeyField =
           schema.getUniqueKeyField() != null ? schema.getUniqueKeyField().getName() : null;
       if (!uniqueKeyFieldParam.equals(uniqueKeyField)) {
@@ -753,7 +743,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = GET, path = "/schema-designer/query", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
   public void query(SolrQueryRequest req, SolrQueryResponse rsp)
       throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
@@ -813,7 +802,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
    * copyFrom).
    */
   @EndPoint(method = GET, path = "/schema-designer/diff", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
   public void getSchemaDiff(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
 
@@ -1264,7 +1252,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   protected Map<String, Object> readJsonFromRequest(SolrQueryRequest req) throws IOException {
     ContentStream stream = extractSingleContentStream(req, true);
     String contentType = stream.getContentType();
-    if (isEmpty(contentType) || !contentType.toLowerCase(Locale.ROOT).contains(JSON_MIME)) {
+    if (StrUtils.isNullOrEmpty(contentType)
+        || !contentType.toLowerCase(Locale.ROOT).contains(JSON_MIME)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Expected JSON in request!");
     }
     final Object json;
@@ -1323,7 +1312,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
   protected String getRequiredParam(final String param, final SolrQueryRequest req) {
     final String paramValue = req.getParams().get(param);
-    if (isEmpty(paramValue)) {
+    if (StrUtils.isNullOrEmpty(paramValue)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           param + " is a required parameter for the " + req.getPath() + " endpoint!");

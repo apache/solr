@@ -41,18 +41,18 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.solr.cli.CLIO;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Compressor;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.util.CLIO;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.xml.sax.SAXException;
@@ -239,7 +239,7 @@ public class ZkCLI implements CLIO {
       // start up a tmp zk server first
       String zkServerAddress = line.getOptionValue(ZKHOST);
       String solrHome = line.getOptionValue(SOLRHOME);
-      if (StringUtils.isEmpty(solrHome)) {
+      if (StrUtils.isNullOrEmpty(solrHome)) {
         solrHome = System.getProperty("solr.home");
       }
 
@@ -277,7 +277,7 @@ public class ZkCLI implements CLIO {
           minStateByteLenForCompression =
               nodeConfig.getCloudConfig().getMinStateByteLenForCompression();
           String stateCompressorClass = nodeConfig.getCloudConfig().getStateCompressorClass();
-          if (!StringUtils.isEmpty(stateCompressorClass)) {
+          if (StrUtils.isNotNullOrEmpty(stateCompressorClass)) {
             Class<? extends Compressor> compressionClass =
                 Class.forName(stateCompressorClass).asSubclass(Compressor.class);
             compressor = compressionClass.getDeclaredConstructor().newInstance();

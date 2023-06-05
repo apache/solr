@@ -511,7 +511,8 @@ public class DistributedClusterStateUpdater {
             // Transpose the per replica states into the cluster state
             updatedState =
                 updatedState.copyWith(
-                    updater.getCollectionName(), docCollection.copyWith(fetchedPerReplicaStates));
+                    updater.getCollectionName(),
+                    docCollection.setPerReplicaStates(fetchedPerReplicaStates));
           }
         }
 

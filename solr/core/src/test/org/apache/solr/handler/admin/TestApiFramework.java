@@ -57,7 +57,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
-import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.SolrConfigHandler;
@@ -79,7 +78,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     TestCollectionAPIs.MockCollectionsHandler collectionsHandler =
         new TestCollectionAPIs.MockCollectionsHandler();
     containerHandlers.put(COLLECTIONS_HANDLER_PATH, collectionsHandler);
-    containerHandlers.getApiBag().registerObject(new CollectionsAPI(collectionsHandler));
     for (Api api : collectionsHandler.getApis()) {
       containerHandlers.getApiBag().register(api);
     }
@@ -97,7 +95,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     String fullPath = "/collections/hello/shards";
     Api api = V2HttpCall.getApiInfo(containerHandlers, fullPath, "POST", fullPath, parts);
     assertNotNull(api);
-    assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/create", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
     parts = new HashMap<>();
@@ -124,13 +121,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/modify", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
-    api =
-        V2HttpCall.getApiInfo(
-            containerHandlers, "/collections/hello/shards/shard1/replica1", "DELETE", null, parts);
-    assertEquals("hello", parts.get("collection"));
-    assertEquals("shard1", parts.get("shard"));
-    assertEquals("replica1", parts.get("replica"));
-
     SolrQueryResponse rsp = invoke(containerHandlers, null, "/collections/_introspect", mockCC);
 
     Set<String> methodNames = new HashSet<>();
@@ -148,7 +138,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
-    assertTrue(methodNames.contains("GET"));
   }
 
   public void testPayload() {

@@ -37,7 +37,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.DelegatedSolrQueryRequest;
+import org.apache.solr.request.DelegatingSolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -188,7 +188,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     CloudDescriptor cloudDescriptor =
         new CloudDescriptor(
             delegate.getCore().getCoreDescriptor(), delegate.getCore().getName(), p);
-    return new DelegatedSolrQueryRequest(delegate) {
+    return new DelegatingSolrQueryRequest(delegate) {
       @Override
       public HttpSolrCall getHttpSolrCall() {
         return httpSolrCall;

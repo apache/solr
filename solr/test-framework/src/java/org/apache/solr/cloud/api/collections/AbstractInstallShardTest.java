@@ -105,9 +105,9 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   private List<String> collectionsToDelete;
 
   public static void bootstrapBackupRepositoryData(String baseRepositoryLocation) throws Exception {
-    final int numShards = random().nextInt(3) + 2;
+    final int numShards = /*random().nextInt(3) + 2*/ 4;
     multiShardUris = new URI[numShards];
-    replicasPerShard = random().nextInt(3) + 1;
+    replicasPerShard = /*random().nextInt(3) + 1;*/ 3;
     CloudSolrClient solrClient = cluster.getSolrClient();
 
     // Create collections and index docs
@@ -362,22 +362,27 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     final ExecutorService executor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             multiShardUris.length, new SolrNamedThreadFactory("shardinstall"));
-    final List<Future<Exception>> futures = executor.invokeAll(tasks, 10, TimeUnit.SECONDS);
-    futures.stream()
-        .forEach(
-            future -> {
-              assertTrue("Shard installation exceeded the test timeout", future.isDone());
-              try {
-                assertNull(
-                    "Expected shard installation to complete successfully but failed with exception "
-                        + future.get(),
-                    future.get());
-              } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-              }
-            });
+    // TODO Reduce timeout once PR #1545 is merged to fix S3Mock slowness
+    final List<Future<Exception>> futures = executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
+    try {
+      futures.stream()
+          .forEach(
+              future -> {
+                assertTrue("Shard installation exceeded the test timeout", future.isDone());
+                try {
+                  assertFalse(
+                      "Shard installation was cancelled after timing out.", future.isCancelled());
+                  final Exception e = future.get();
+                  assertNull("Shard installation failed with exception " + e, e);
+                } catch (InterruptedException | ExecutionException e) {
+                  throw new RuntimeException(e);
+                }
+              });
 
-    executor.shutdown();
-    executor.awaitTermination(10, TimeUnit.SECONDS);
+      executor.shutdown();
+      executor.awaitTermination(10, TimeUnit.SECONDS);
+    } finally {
+      executor.shutdownNow();
+    }
   }
 }

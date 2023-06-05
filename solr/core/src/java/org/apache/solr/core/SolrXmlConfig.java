@@ -37,7 +37,6 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
@@ -71,24 +70,24 @@ public class SolrXmlConfig {
   private static final Pattern COMMA_SEPARATED_PATTERN = Pattern.compile("\\s*,\\s*");
 
   /**
-   * Given some node Properties, checks if non-null and a 'zkHost' is alread included. If so, the
+   * Given some node Properties, checks if non-null and a 'zkHost' is already included. If so, the
    * Properties are returned as is. If not, then the returned value will be a new Properties,
    * wrapping the original Properties, with the 'zkHost' value set based on the value of the
-   * corispond System property (if set)
+   * corresponding System property (if set)
    *
    * <p>In theory we only need this logic once, ideally in SolrDispatchFilter, but we put it here to
-   * re-use redundently because of how much surface area our API has for various tests to poke at
+   * re-use redundantly because of how much surface area our API has for various tests to poke at
    * us.
    */
   public static Properties wrapAndSetZkHostFromSysPropIfNeeded(final Properties props) {
-    if (null != props && !StringUtils.isEmpty(props.getProperty(ZK_HOST))) {
+    if (null != props && StrUtils.isNotNullOrEmpty(props.getProperty(ZK_HOST))) {
       // nothing to do...
       return props;
     }
     // we always wrap if we might set a property -- never mutate the original props
     final Properties results = (null == props ? new Properties() : new Properties(props));
     final String sysprop = System.getProperty(ZK_HOST);
-    if (!StringUtils.isEmpty(sysprop)) {
+    if (StrUtils.isNotNullOrEmpty(sysprop)) {
       results.setProperty(ZK_HOST, sysprop);
     }
     return results;
@@ -134,7 +133,7 @@ public class SolrXmlConfig {
     String nodeName = (String) entries.remove("nodeName");
     if (StrUtils.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
 
-    // It should goes inside the fillSolrSection method but
+    // It should go inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
     Map<String, String> coreAdminHandlerActions =
         readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
@@ -728,7 +727,7 @@ public class SolrXmlConfig {
     Set<String> props = new HashSet<>();
     p.forEachChild(
         it -> {
-          if (it.name().equals("str") && !StringUtils.isEmpty(it.txt())) props.add(it.txt());
+          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt())) props.add(it.txt());
           return Boolean.TRUE;
         });
     if (props.isEmpty()) {

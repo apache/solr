@@ -31,6 +31,9 @@ Deprecation Removals
 
 * SOLR-15703: Removed deprecated SolrException#log methods (Kevin Risden)
 
+* SOLR-16661: Removed deprecated 'analytics' component (janhoy)
+
+Dependency Upgrades
 ---------------------
 (No changes)
 
@@ -41,13 +44,24 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
+* PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
+
+* SOLR-16798: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command. (Bence Szabo via Eric Pugh)
+
 ==================  9.3.0 ==================
 
 New Features
 ---------------------
-* Solr now provides an "Install Shard"  API that allows users who have built (per-shard) indices offline to import
+* SOLR-16697: Solr now provides an "Install Shard"  API that allows users who have built (per-shard) indices offline to import
   them into SolrCloud shards.  The API is available at `POST /api/collections/collName/shards/shardName/install`
-  (v2), or at `GET /solr/admin/collections?action=INSTALLSHARD` (v1). (Jason Gerlowski)
+  (v2), or at `GET /solr/admin/collections?action=INSTALLSHARDDATA` (v1). (Jason Gerlowski)
+
+* SOLR-16742: Produce a slim Solr binary and docker image, without the Prometheus Exporter and Solr Modules. (Houston Putman)
+
+* SOLR-16674: Introduced support for byte vector encoding in DenseVectorField and KnnQParser (Elia Porciani via Alessandro Benedetti).
+
+* SOLR-16719: AffinityPlacementFactory now supports spreading replicas across domains within the availablity zone and
+  optionally fail the request if more than a configurable number of replicas need to be placed in a single domain. (Houston Putman, Tomás Fernández Löbbe)
 
 Improvements
 ---------------------
@@ -71,6 +85,71 @@ Improvements
   available under the `PUT` and `DELETE` verbs at `/api/collections/collName/properties/propName` depending on whether the property is
   being upserted or deleted. (Jason Gerlowski)
 
+* SOLR-16394: The path of the v2 "collection backup" API has been tweaked slightly to be more intuitive, and is now available at
+  `POST /api/collections/backups/backupName/versions`. (Jason Gerlowski)
+
+* SOLR-16458: Solr's v2 "logging" APIs have been tweaked slightly to be more intuitive.  The single v2 endpoint that existing previously
+  (GET /api/node/logging) has been split into several different APIs.  Logger levels can be fetched or modified at
+  `GET /api/node/logging/levels` and `PUT /api/node/logging/levels`, respectively.  Log messages can be returned from a "listener" at
+  `GET /api/node/logging/messages`.  And the threshold for the log "listener" can be modified with
+  `PUT /api/node/logging/messages/threshold`.  (Jason Gerlowski, Calvince Otieno)
+
+* SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)
+
+* SOLR-15737: Solr's collection-level "snapshot" APIs now have v2 equivalents.  Snapshots can be created at `POST
+  /api/collections/collName/snapshots/snapshotName`, listed at `GET /api/collections/collName/snapshots`, and deleted at
+  `DELETE /api/collections/collName/snapshots/snapshotName`. (John Durham via Jason Gerlowski)
+
+* SOLR-16391: Solr's v2 "create collection" API has been tweaked slightly to be more intuitive.  It remains available under
+  `POST /api/collections`, but the top level "create" command-name key has been removed. (Jason Gerlowski)
+
+* SOLR-16752: Docker: Leave out optional apt packages, slightly reducing image size and lowering attack surface (Quang-Cuong Bui)
+
+* SOLR-16711: Extract SolrCLI tool implementations into their own classes and reorganize CLI related classes into new org.apache.solr.cli package. (Eric Pugh)
+
+* SOLR-15493: Throw an error message if the feature store doesn't exist.  (Ilaria Petreti via Alessandro Benedetti)
+
+* SOLR-16393: The v2 "create alias" API has been tweaked to be more intuitive.  The format of the request body has changed
+  slightly: the "create-alias" command specifier has been removed, the "name" field for individual routers has been renamed
+  to "type", and the routers themselves are now always grouped into a list. Additionally the v2 API has moved to the new path
+  `POST /api/aliases`. (Jason Gerlowski)
+
+* SOLR-16394: The v2 "restore" API has been tweaked to be more intuitive.  The top-level "restore-collection" command
+  specifier has been removed, and the API now lives at the new path `POST /api/backups/backupName/restore`. (Jason Gerlowski)
+
+* SOLR-16782: bin/solr export tool now supports JSON export format as well as the existing JSON With Lines format. (Eric Pugh)
+
+* SOLR-16392: The v2 deletereplica API has been tweaked to be more intuitive: single replicas deletion now uses
+  `DELETE /api/collections/cName/shards/sName/replicas/rName`, deletion of multiple relicas in a single shard uses
+  `DELETE /api/collections/cName/shards/sName/replicas?count=123`, and deletion of multiple replicas from all shards now uses
+  `PUT /api/collections/cName/scale {"count": 123"}` (Jason Gerlowski)
+
+* SOLR-14853: Security: Converted enableRemoteStreaming and enableStreamBody solrconfig options into system properties and env vars.
+  Attempts to set them the old way are no-op and log a warning. (David Smiley, janhoy, Ishan Chattopadhyaya)
+
+* SOLR-16766: Remove -usage as option from bin/solr, and ensure both -help and -h work. (Bence Szabo via Eric Pugh)
+
+* SOLR-16759: Introducing logAll parameter in the feature logger (Anna Ruggero, Alessandro Benedetti)
+
+* SOLR-16394: The v2 list and delete (collection) backup APIs have been tweaked to be more intuitive: backup listing now uses
+  `GET /api/backups/bName/versions`, backup deletion by ID now uses `DELETE /api/backups/bName/versions/1`, backup deletion by
+  recency now uses `DELETE /api/backups/bName/versions?retainLatest=3`, and index-file "garbage collection" now uses
+  `PUT /api/backups/backupName/purgeUnused` (Jason Gerlowski)
+
+* SOLR-16470: `/coreName/replication?commit=indexversion` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/replication/indexversion` (Matthew Biscocho via Jason Gerlowski)
+
+* SOLR-16687: Add support of SolrClassLoader to SolrZkClient (Lamine Idjeraoui via Jason Gerlowski & Houston Putman)
+
+* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
+  only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
+
+* SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster
+  information after the previous selections are implemented. (Houston Putman)
+
+* SOLR-16392: The v2 "create shard" API has been tweaked to be more intuitive, by removing the top-level "create"
+  command specifier.  The rest of the API remains unchanged. (Jason Gerlowski)
+
 * SOLR-13396: Add property to control the deletion of unknown cores.  Solr can be started with the system property
   `solr.deleteUnknownCores` set to `false` to disable automatic deletion of cores without corresponding ZooKeeper entries. (Colvin Cowie)
 
@@ -84,21 +163,60 @@ Optimizations
   Solr can also be started with the system property `solr.http.disableCookies` set to `true`, so that the internal clients
   that Solr uses to communicate between nodes use `HttpCookieStore.Empty`. (Tomás Fernández Löbbe)
 
+* SOLR-16693: For query timeAllowed, switch from ExitableDirectoryReader to TimeLimitingBulkScorer (David Smiley)
+
+* SOLR-16764: Clarify that ExportTool exports documents in JSON with Lines format, not standard JSON.  Add explicit -compress option for gzipping output.
+  Add ability to specific a directory for output along with a specific file when using -out. (Eric Pugh)
+
+* SOLR-14630: When querying with the `_route_` or `shards.preference` parameter and if there are multiple replicas for a
+  collection on the receiving node, there was sometimes an extra HTTP hop or the non-intended replica may receive the
+  request. SolrJ will now form the URL directly to the intended replica of the collection (and not the collection itself).
+  (Pierre Salagnac, Ivan Djurasevic, Jason Baik)
+
 Bug Fixes
 ---------------------
 
 * SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
 
-* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong, Andy Webb)
-
 * SOLR-16723: Http2SolrClient should not use Apache Http client classes (Kevin Risden)
 
-* SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
+* SOLR-9775: NPE in QueryResultKey when running clustering search query in some cases.  (Roman Kagan, Christine Poerschke via Eric Pugh)
+
+* SOLR-15083: Fix default solr-exporter-config.xml metrics with incorrect time unit conversions. (Matthew Biscocho via janhoy)
+
+* SOLR-16773: UI: Cloud>Nodes screen - fix display of cores with non-standard shard names (janhoy, hossman)
+
+* SOLR-7609: Internal update requests should fail back to the client in some edge cases for shard splits. Use HTTP status 510 so the client can retry the operation. (Alex Deparvu, David Smiley, Tomás Fernández Löbbe)
+
+* SOLR-16737: Http2SolrClient needs to inherit all properties when initialized with another http2 client (Alex Deparvu, Tomás Fernández Löbbe)
+
+* SOLR-13605: Fix setting client scoped socket and connect timeouts when using HttpSolrClient.Builder.withHttpClient() method.  (Eric Pugh, Alex Deparvu)
+
+* SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets (Ishan Chattopadhyaya, Skay)
+
+* SOLR-16771: Fixed behavior and handling of 'unset' logging levels in /admin/info/logging API and related Admin UI (hossman)
+
+* SOLR-16783: Fixed race condition deleting empty `clusterstate.json` file that could prevent Solr 9 instances from starting with a NoNodeException (Tomás Fernández Löbbe)
+
+* SOLR-16789: Fixed Admin UI dashboard "Security" panel to show the right information regarding authentication (Tomás Fernández Löbbe)
+
+* SOLR-16760: bin/solr package tool supports -h and -help command like other tools.  (Eric Pugh)
+
+* SOLR-16765: bin/solr export tool limit property was off by 1.  Now limit results exported to the exact number. (Eric Pugh)
+
+* SOLR-16801: Reset the thread's contextClassloader after loading the CoreContainer (Thomas Wöckinger, Houston Putman)
+
+* SOLR-16808: Stop publishing environment variables via the Metrics API (Houston Putman)
+
+* SOLR-16811: /update/json/docs?echo and mapUniqueKeyOnly params doesn't work (Mikhail Khludnev)
+
+* SOLR-16807: DenseVectorField breaks catch-all copyFields (Joel Bernstein)
 
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
 
+* SOLR-16642: Upgrade to Lucene 9.5.0 (Vinayak Hegde, David Smiley)
 
 Other Changes
 ---------------------
@@ -118,6 +236,48 @@ Other Changes
 * SOLR-16507: Change SplitShardCmd to not use NodeStateProvider (Vinayak Hegde, David Smiley)
 
 * SOLR-15703: replace all SolrException.log usage in Solr to just call log.error(...) directly (Kevin Risden)
+
+* PR#1567: Remove deprecated constructor in MetricsMap (janhoy)
+
+* SOLR-16745: Consolidate DelegatedSolrQueryRequest and DelegatingSolrQueryRequest (Kevin Risden)
+
+* PR#1566: Removed deprecated members from Tuple class (janhoy)
+
+==================  9.2.1 ==================
+
+Bug Fixes
+---------------------
+* SOLR-16731: Use the right cluster property for displaying if TLS is enabled (Tomás Fernández Löbbe)
+
+* SOLR-16730: Fix NPE in SystemInfoHandler for inter-node requests that would cause the Nodes page not to load.
+  SystemInfoHandler no longer populates the username, roles and permissions in inter-node requests. (Tomás Fernández Löbbe)
+
+* SOLR-16728: Fix Classloading Exception for inter-node requests when using SSL and HTTP2.
+  All Jetty classes are able to be shared between the Jetty server and webApp now. (Houston Putman)
+
+* SOLR-16734: SOLR_DATA_HOME is only honored in verbode mode (Kevin Risden)
+
+* SOLR-16721: Java version detection fails when `_JAVA_OPTIONS` is set (janhoy, Ruoyu Zhong, Andy Webb)
+
+* SOLR-16649: Http2SolrClient.processErrorsAndResponse uses wrong instance of ResponseParser (Andrzej Białecki)
+
+* SOLR-16240: Fix KerberosPlugin module classloading when using the hadoop-auth module.
+  Plugins in modules/packages that require the Thread contextClassLoader on startup should now work. (Houston Putman)
+
+* SOLR-16755: bin/solr's '-noprompt' option no longer works for examples (hossman, janhoy, Houston Putman)
+
+* SOLR-16741: CLUSTERSTATUS API returns wrong value for state ,leader for PRS collections (noble)
+
+Other Changes
+---------------------
+* SOLR-16735: Allow custom configuration of Jetty's SecureRequestCustomizer (Tomás Fernández Löbbe)
+
+* SOLR-16747: The Solr source release can now be built/checked using gradle.
+  The solr-ref-guide tasks will not be included by default if the root directory is not a github repository. (Houston Putman)
+
+Dependency Upgrades
+---------------------
+(No changes)
 
 ==================  9.2.0 ==================
 

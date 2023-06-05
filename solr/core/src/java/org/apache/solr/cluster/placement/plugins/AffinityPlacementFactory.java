@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.cluster.Cluster;
@@ -57,8 +58,11 @@ import org.apache.solr.cluster.placement.PlacementPlanFactory;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.cluster.placement.ReplicaMetric;
+import org.apache.solr.cluster.placement.ReplicaMetrics;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
-import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
+import org.apache.solr.cluster.placement.ShardMetrics;
+import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
@@ -170,7 +174,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         config.minimalFreeDiskGB,
         config.prioritizedFreeDiskGB,
         config.withCollection,
-        config.collectionNodeType);
+        config.collectionNodeType,
+        config.spreadAcrossDomains);
   }
 
   @Override
@@ -204,6 +209,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     private final Random replicaPlacementRandom =
         new Random(); // ok even if random sequence is predictable.
 
+    private final boolean spreadAcrossDomains;
+
     /**
      * The factory has decoded the configuration for the plugin instance and passes it the
      * parameters it needs.
@@ -212,11 +219,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         long minimalFreeDiskGB,
         long prioritizedFreeDiskGB,
         Map<String, String> withCollections,
-        Map<String, String> collectionNodeTypes) {
+        Map<String, String> collectionNodeTypes,
+        boolean spreadAcrossDomains) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
       this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
       Objects.requireNonNull(withCollections, "withCollections must not be null");
       Objects.requireNonNull(collectionNodeTypes, "collectionNodeTypes must not be null");
+      this.spreadAcrossDomains = spreadAcrossDomains;
       this.withCollections = withCollections;
       if (withCollections.isEmpty()) {
         colocatedWith = Map.of();
@@ -256,8 +265,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         throws PlacementException {
       List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
       Set<Node> allNodes = new HashSet<>();
+      Set<SolrCollection> allCollections = new HashSet<>();
       for (PlacementRequest request : requests) {
         allNodes.addAll(request.getTargetNodes());
+        allCollections.add(request.getCollection());
       }
 
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
@@ -265,15 +276,22 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       attributeFetcher
           .requestNodeSystemProperty(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP)
           .requestNodeSystemProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP)
-          .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP);
+          .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP)
+          .requestNodeSystemProperty(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
       attributeFetcher
-          .requestNodeMetric(NodeMetricImpl.NUM_CORES)
-          .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB);
+          .requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES)
+          .requestNodeMetric(BuiltInMetrics.NODE_FREE_DISK_GB);
+      Set<ReplicaMetric<?>> replicaMetrics = Set.of(BuiltInMetrics.REPLICA_INDEX_SIZE_GB);
+      for (SolrCollection collection : allCollections) {
+        attributeFetcher.requestCollectionMetrics(collection, replicaMetrics);
+      }
       attributeFetcher.fetchFrom(allNodes);
       final AttributeValues attrValues = attributeFetcher.fetchAttributes();
       // Get the number of currently existing cores per node, so we can update as we place new cores
       // to not end up always selecting the same node(s). This is used across placement requests
       Map<Node, Integer> allCoresOnNodes = getCoreCountPerNode(allNodes, attrValues);
+
+      boolean doSpreadAcrossDomains = shouldSpreadAcrossDomains(allNodes, attrValues);
 
       // Keep track with nodesWithReplicas across requests
       Map<String, Map<String, Set<Node>>> allNodesWithReplicas = new HashMap<>();
@@ -287,12 +305,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // filter out nodes that don't match the "node types" specified in the collection props
         nodes = filterNodesByNodeType(placementContext.getCluster(), request, attrValues, nodes);
 
-        // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap
-        // if nodes accept multiple replica types). These subsets sets are actually maps, because we
-        // capture the number of cores (of any replica type) present on each node.
-        EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes =
-            getAvailableNodesForReplicaTypes(nodes, attrValues);
-
         // All available zones of live nodes. Due to some nodes not being candidates for placement,
         // and some existing replicas being one availability zones that might be offline (i.e. their
         // nodes are not live), this set might contain zones on which it is impossible to place
@@ -305,6 +317,24 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // Let's now iterate on all shards to create replicas for and start finding home sweet homes
         // for the replicas
         for (String shardName : request.getShardNames()) {
+          ReplicaMetrics leaderMetrics =
+              attrValues
+                  .getCollectionMetrics(solrCollection.getName())
+                  .flatMap(colMetrics -> colMetrics.getShardMetrics(shardName))
+                  .flatMap(ShardMetrics::getLeaderMetrics)
+                  .orElse(null);
+
+          // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can
+          // overlap
+          // if nodes accept multiple replica types). These subsets sets are actually maps, because
+          // we
+          // capture the number of cores (of any replica type) present on each node.
+          //
+          // This also filters out nodes that will not satisfy the rules if the replica is placed
+          // there
+          EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes =
+              getAvailableNodesForReplicaTypes(nodes, attrValues, leaderMetrics);
+
           // Inventory nodes (if any) that already have a replica of any type for the shard, because
           // we can't be placing additional replicas on these. This data structure is updated after
           // each replica to node assign and is used to make sure different replica types are not
@@ -333,18 +363,23 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           // that should lead to replica placement computation failure. Current code does fail if
           // placement is impossible (constraint is at most one replica of a shard on any node).
           for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-            makePlacementDecisions(
-                solrCollection,
-                shardName,
-                availabilityZones,
-                replicaType,
-                request.getCountReplicasToCreate(replicaType),
-                attrValues,
-                replicaTypeToNodes,
-                nodesWithReplicas,
-                allCoresOnNodes,
-                placementContext.getPlacementPlanFactory(),
-                replicaPlacements);
+            int numReplicasToCreate = request.getCountReplicasToCreate(replicaType);
+            if (numReplicasToCreate > 0) {
+              makePlacementDecisions(
+                  solrCollection,
+                  shardName,
+                  availabilityZones,
+                  replicaType,
+                  numReplicasToCreate,
+                  attrValues,
+                  leaderMetrics,
+                  replicaTypeToNodes,
+                  nodesWithReplicas,
+                  allCoresOnNodes,
+                  placementContext.getPlacementPlanFactory(),
+                  replicaPlacements,
+                  doSpreadAcrossDomains);
+            }
           }
         }
         placementPlans.add(
@@ -356,10 +391,31 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       return placementPlans;
     }
 
+    private boolean shouldSpreadAcrossDomains(Set<Node> allNodes, AttributeValues attrValues) {
+      boolean doSpreadAcrossDomains =
+          spreadAcrossDomains && spreadDomainPropPresent(allNodes, attrValues);
+      if (spreadAcrossDomains && !doSpreadAcrossDomains) {
+        log.warn(
+            "AffinityPlacementPlugin configured to spread across domains, but there are nodes in the cluster without the {} system property. Ignoring spreadAcrossDomains.",
+            AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
+      }
+      return doSpreadAcrossDomains;
+    }
+
+    private boolean spreadDomainPropPresent(Set<Node> allNodes, AttributeValues attrValues) {
+      // We can only use spread domains if all nodes have the system property
+      return allNodes.stream()
+          .noneMatch(
+              n ->
+                  attrValues
+                      .getSystemProperty(n, AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
+                      .isEmpty());
+    }
+
     @Override
     public void verifyAllowedModification(
         ModificationRequest modificationRequest, PlacementContext placementContext)
-        throws PlacementModificationException, InterruptedException {
+        throws PlacementModificationException {
       if (modificationRequest instanceof DeleteShardsRequest) {
         log.warn("DeleteShardsRequest not implemented yet, skipping: {}", modificationRequest);
       } else if (modificationRequest instanceof DeleteCollectionRequest) {
@@ -373,7 +429,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     private void verifyDeleteCollection(
         DeleteCollectionRequest deleteCollectionRequest, PlacementContext placementContext)
-        throws PlacementModificationException, InterruptedException {
+        throws PlacementModificationException {
       Cluster cluster = placementContext.getCluster();
       Set<String> colocatedCollections =
           colocatedWith.getOrDefault(deleteCollectionRequest.getCollection().getName(), Set.of());
@@ -397,7 +453,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     private void verifyDeleteReplicas(
         DeleteReplicasRequest deleteReplicasRequest, PlacementContext placementContext)
-        throws PlacementModificationException, InterruptedException {
+        throws PlacementModificationException {
       Cluster cluster = placementContext.getCluster();
       SolrCollection secondaryCollection = deleteReplicasRequest.getCollection();
       Set<String> colocatedCollections = colocatedWith.get(secondaryCollection.getName());
@@ -412,13 +468,12 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                   shard
                       .replicas()
                       .forEach(
-                          replica -> {
-                            secondaryNodeShardReplicas
-                                .computeIfAbsent(replica.getNode(), n -> new HashMap<>())
-                                .computeIfAbsent(
-                                    replica.getShard().getShardName(), s -> new AtomicInteger())
-                                .incrementAndGet();
-                          }));
+                          replica ->
+                              secondaryNodeShardReplicas
+                                  .computeIfAbsent(replica.getNode(), n -> new HashMap<>())
+                                  .computeIfAbsent(
+                                      replica.getShard().getShardName(), s -> new AtomicInteger())
+                                  .incrementAndGet()));
 
       // find the colocated-with collections
       Map<Node, Set<String>> colocatingNodes = new HashMap<>();
@@ -431,11 +486,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                       shard
                           .replicas()
                           .forEach(
-                              replica -> {
-                                colocatingNodes
-                                    .computeIfAbsent(replica.getNode(), n -> new HashSet<>())
-                                    .add(coll.getName());
-                              }));
+                              replica ->
+                                  colocatingNodes
+                                      .computeIfAbsent(replica.getNode(), n -> new HashSet<>())
+                                      .add(coll.getName())));
         }
       } catch (IOException ioe) {
         throw new PlacementModificationException(
@@ -503,15 +557,198 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      */
     private static class AzWithNodes {
       final String azName;
-      List<Node> availableNodesForPlacement;
-      boolean hasBeenSorted;
+      private final boolean useSpreadDomains;
+      private boolean listIsSorted = false;
+      private final Comparator<Node> nodeComparator;
+      private final Random random;
+      private final List<Node> availableNodesForPlacement;
+      private final AttributeValues attributeValues;
+      private final ReplicaMetrics leaderMetrics;
+      private TreeSet<SpreadDomainWithNodes> sortedSpreadDomains;
+      private final Map<String, Integer> currentSpreadDomainUsageUsage;
+      private int numNodesForPlacement;
 
-      AzWithNodes(String azName, List<Node> availableNodesForPlacement) {
+      AzWithNodes(
+          String azName,
+          List<Node> availableNodesForPlacement,
+          boolean useSpreadDomains,
+          Comparator<Node> nodeComparator,
+          Random random,
+          AttributeValues attributeValues,
+          ReplicaMetrics leaderMetrics,
+          Map<String, Integer> currentSpreadDomainUsageUsage) {
         this.azName = azName;
         this.availableNodesForPlacement = availableNodesForPlacement;
-        // Once the list is sorted to an order we're happy with, this flag is set to true to avoid
-        // sorting multiple times unnecessarily.
-        this.hasBeenSorted = false;
+        this.useSpreadDomains = useSpreadDomains;
+        this.nodeComparator = nodeComparator;
+        this.random = random;
+        this.attributeValues = attributeValues;
+        this.leaderMetrics = leaderMetrics;
+        this.currentSpreadDomainUsageUsage = currentSpreadDomainUsageUsage;
+        this.numNodesForPlacement = availableNodesForPlacement.size();
+      }
+
+      private boolean hasBeenSorted() {
+        return (useSpreadDomains && sortedSpreadDomains != null)
+            || (!useSpreadDomains && listIsSorted);
+      }
+
+      void ensureSorted() {
+        if (!hasBeenSorted()) {
+          sort();
+        }
+      }
+
+      private void sort() {
+        assert !listIsSorted && sortedSpreadDomains == null
+            : "We shouldn't be sorting this list again";
+
+        // Make sure we do not tend to use always the same nodes (within an AZ) if all
+        // conditions are identical (well, this likely is not the case since after having added
+        // a replica to a node its number of cores increases for the next placement decision,
+        // but let's be defensive here, given that multiple concurrent placement decisions might
+        // see the same initial cluster state, and we want placement to be reasonable even in
+        // that case without creating an unnecessary imbalance). For example, if all nodes have
+        // 0 cores and same amount of free disk space, ideally we want to pick a random node for
+        // placement, not always the same one due to some internal ordering.
+        Collections.shuffle(availableNodesForPlacement, random);
+
+        if (useSpreadDomains) {
+          // When we use spread domains, we don't just sort the list of nodes, instead we generate a
+          // TreeSet of SpreadDomainWithNodes,
+          // sorted by the number of times the domain has been used. Each
+          // SpreadDomainWithNodes internally contains the list of nodes that belong to that
+          // particular domain,
+          // and it's sorted internally by the comparator passed to this
+          // class (which is the same that's used when not using spread domains).
+          // Whenever a node from a particular SpreadDomainWithNodes is selected as the best
+          // candidate, the call to "removeBestNode" will:
+          // 1. Remove the SpreadDomainWithNodes instance from the TreeSet
+          // 2. Remove the best node from the list within the SpreadDomainWithNodes
+          // 3. Increment the count of times the domain has been used
+          // 4. Re-add the SpreadDomainWithNodes instance to the TreeSet if there are still nodes
+          // available
+          HashMap<String, List<Node>> spreadDomainToListOfNodesMap = new HashMap<>();
+          for (Node node : availableNodesForPlacement) {
+            spreadDomainToListOfNodesMap
+                .computeIfAbsent(
+                    attributeValues
+                        .getSystemProperty(node, AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
+                        .get(),
+                    k -> new ArrayList<>())
+                .add(node);
+          }
+          sortedSpreadDomains =
+              new TreeSet<>(new SpreadDomainComparator(currentSpreadDomainUsageUsage));
+
+          int i = 0;
+          for (Map.Entry<String, List<Node>> entry : spreadDomainToListOfNodesMap.entrySet()) {
+            // Sort the nodes within the spread domain by the provided comparator
+            entry.getValue().sort(nodeComparator);
+            sortedSpreadDomains.add(
+                new SpreadDomainWithNodes(entry.getKey(), entry.getValue(), i++, nodeComparator));
+          }
+        } else {
+          availableNodesForPlacement.sort(nodeComparator);
+          listIsSorted = true;
+        }
+      }
+
+      Node getBestNode() {
+        assert hasBeenSorted();
+        if (useSpreadDomains) {
+          return sortedSpreadDomains.first().sortedNodesForPlacement.get(0);
+        } else {
+          return availableNodesForPlacement.get(0);
+        }
+      }
+
+      public Node removeBestNode() {
+        assert hasBeenSorted();
+        this.numNodesForPlacement--;
+        Node n;
+        if (useSpreadDomains) {
+          // Since this SpreadDomainWithNodes needs to be re-sorted in the sortedSpreadDomains, we
+          // remove it and then re-add it, once the best node has been removed.
+          SpreadDomainWithNodes group = sortedSpreadDomains.pollFirst();
+          n = group.sortedNodesForPlacement.remove(0);
+          this.currentSpreadDomainUsageUsage.merge(group.spreadDomainName, 1, Integer::sum);
+          if (!group.sortedNodesForPlacement.isEmpty()) {
+            sortedSpreadDomains.add(group);
+          }
+        } else {
+          n = availableNodesForPlacement.remove(0);
+        }
+        Optional.ofNullable(leaderMetrics)
+            .flatMap(lrm -> lrm.getReplicaMetric(BuiltInMetrics.REPLICA_INDEX_SIZE_GB))
+            .ifPresent(
+                indexSize ->
+                    attributeValues.decreaseNodeMetric(
+                        n, BuiltInMetrics.NODE_FREE_DISK_GB, indexSize));
+        attributeValues.increaseNodeMetric(n, BuiltInMetrics.NODE_NUM_CORES, 1);
+        return n;
+      }
+
+      public int numNodes() {
+        return this.numNodesForPlacement;
+      }
+    }
+
+    /**
+     * This class represents group of nodes with the same {@link
+     * AffinityPlacementConfig#SPREAD_DOMAIN_SYSPROP} label.
+     */
+    static class SpreadDomainWithNodes implements Comparable<SpreadDomainWithNodes> {
+
+      /**
+       * This is the label that all nodes in this group have in {@link
+       * AffinityPlacementConfig#SPREAD_DOMAIN_SYSPROP} label.
+       */
+      final String spreadDomainName;
+
+      /**
+       * The list of all nodes that contain the same {@link
+       * AffinityPlacementConfig#SPREAD_DOMAIN_SYSPROP} label. They must be sorted before creating
+       * this class.
+       */
+      private final List<Node> sortedNodesForPlacement;
+
+      /**
+       * This is used for tie breaking the sort of {@link SpreadDomainWithNodes}, when the
+       * nodeComparator between the top nodes of each group return 0.
+       */
+      private final int tieBreaker;
+
+      /**
+       * This is the comparator that is used to compare the top nodes in the {@link
+       * #sortedNodesForPlacement} lists. Must be the same that was used to sort {@link
+       * #sortedNodesForPlacement}.
+       */
+      private final Comparator<Node> nodeComparator;
+
+      public SpreadDomainWithNodes(
+          String spreadDomainName,
+          List<Node> sortedNodesForPlacement,
+          int tieBreaker,
+          Comparator<Node> nodeComparator) {
+        this.spreadDomainName = spreadDomainName;
+        this.sortedNodesForPlacement = sortedNodesForPlacement;
+        this.tieBreaker = tieBreaker;
+        this.nodeComparator = nodeComparator;
+      }
+
+      @Override
+      public int compareTo(SpreadDomainWithNodes o) {
+        if (o == this) {
+          return 0;
+        }
+        int result =
+            nodeComparator.compare(
+                this.sortedNodesForPlacement.get(0), o.sortedNodesForPlacement.get(0));
+        if (result == 0) {
+          return Integer.compare(this.tieBreaker, o.tieBreaker);
+        }
+        return result;
       }
     }
 
@@ -531,7 +768,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       for (Node node : nodes) {
         attrValues
-            .getNodeMetric(node, NodeMetricImpl.NUM_CORES)
+            .getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES)
             .ifPresent(count -> coresOnNodes.put(node, count));
       }
 
@@ -551,7 +788,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      *     node.
      */
     private EnumMap<Replica.ReplicaType, Set<Node>> getAvailableNodesForReplicaTypes(
-        Set<Node> nodes, final AttributeValues attrValues) {
+        Set<Node> nodes, final AttributeValues attrValues, final ReplicaMetrics leaderMetrics) {
       EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes =
           new EnumMap<>(Replica.ReplicaType.class);
 
@@ -561,7 +798,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       for (Node node : nodes) {
         // Exclude nodes with unknown or too small disk free space
-        if (attrValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB).isEmpty()) {
+        Optional<Double> nodeFreeDiskGB =
+            attrValues.getNodeMetric(node, BuiltInMetrics.NODE_FREE_DISK_GB);
+        if (nodeFreeDiskGB.isEmpty()) {
           if (log.isWarnEnabled()) {
             log.warn(
                 "Unknown free disk on node {}, excluding it from placement decisions.",
@@ -571,18 +810,26 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           // CoresAndDiskComparator), be careful it you change anything here.
           continue;
         }
-        if (attrValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB).get() < minimalFreeDiskGB) {
+        double replicaIndexSize =
+            Optional.ofNullable(leaderMetrics)
+                .flatMap(lm -> lm.getReplicaMetric(BuiltInMetrics.REPLICA_INDEX_SIZE_GB))
+                .orElse(0D);
+        double projectedFreeDiskIfPlaced =
+            BuiltInMetrics.NODE_FREE_DISK_GB.decrease(nodeFreeDiskGB.get(), replicaIndexSize);
+        if (projectedFreeDiskIfPlaced < minimalFreeDiskGB) {
           if (log.isWarnEnabled()) {
             log.warn(
-                "Node {} free disk ({}GB) lower than configured minimum {}GB, excluding it from placement decisions.",
+                "Node {} free disk ({}GB) minus the projected replica size ({}GB) is lower than configured"
+                    + " minimum {}GB, excluding it from placement decisions.",
                 node.getName(),
-                attrValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB).get(),
+                nodeFreeDiskGB.get(),
+                replicaIndexSize,
                 minimalFreeDiskGB);
           }
           continue;
         }
 
-        if (attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).isEmpty()) {
+        if (attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).isEmpty()) {
           if (log.isWarnEnabled()) {
             log.warn(
                 "Unknown number of cores on node {}, excluding it from placement decisions.",
@@ -636,9 +883,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      *   <li>Place replicas if possible on nodes having more than a certain amount of free disk
      *       space (note that nodes with a too small amount of free disk space were eliminated as
      *       placement targets earlier, in {@link #getAvailableNodesForReplicaTypes(Set,
-     *       AttributeValues)}). There's a threshold here rather than sorting on the amount of free
-     *       disk space, because sorting on that value would in practice lead to never considering
-     *       the number of cores on a node.
+     *       AttributeValues, ReplicaMetrics)}). There's a threshold here rather than sorting on the
+     *       amount of free disk space, because sorting on that value would in practice lead to
+     *       never considering the number of cores on a node.
      *   <li>Place replicas on nodes having a smaller number of cores (the number of cores
      *       considered for this decision includes previous placement decisions made during the
      *       processing of the placement request)
@@ -654,11 +901,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Replica.ReplicaType replicaType,
         int numReplicas,
         final AttributeValues attrValues,
+        final ReplicaMetrics leaderMetrics,
         EnumMap<Replica.ReplicaType, Set<Node>> replicaTypeToNodes,
         Set<Node> nodesWithReplicas,
         Map<Node, Integer> coresOnNodes,
         PlacementPlanFactory placementPlanFactory,
-        Set<ReplicaPlacement> replicaPlacements)
+        Set<ReplicaPlacement> replicaPlacements,
+        boolean doSpreadAcrossDomains)
         throws PlacementException {
       // Count existing replicas per AZ. We count only instances of the type of replica for which we
       // need to do placement. If we ever want to balance replicas of any type across AZ's (and not
@@ -679,6 +928,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       // be put on same node)
       candidateNodes.removeAll(nodesWithReplicas);
 
+      // This Map will include the affinity labels for the nodes that are currently hosting replicas
+      // of this shard. It will be modified with new placement decisions.
+      Map<String, Integer> spreadDomainsInUse = new HashMap<>();
       Shard shard = solrCollection.getShard(shardName);
       if (shard != null) {
         // shard is non null if we're adding replicas to an already existing collection.
@@ -694,6 +946,15 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               // the dereferencing below can't be assumed as the entry will not exist in the map.
               azToNumReplicas.put(az, azToNumReplicas.get(az) + 1);
             }
+            if (doSpreadAcrossDomains) {
+              spreadDomainsInUse.merge(
+                  attrValues
+                      .getSystemProperty(
+                          replica.getNode(), AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
+                      .get(),
+                  1,
+                  Integer::sum);
+            }
           }
         }
       }
@@ -703,14 +964,24 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       // consideration how many replicas were per AZ, so we can place (or try to place) replicas on
       // AZ's that have fewer replicas
 
-      // Get the candidate nodes per AZ in order to build (further down) a mapping of AZ to
-      // placement candidates.
       Map<String, List<Node>> nodesPerAz = new HashMap<>();
-      for (Node node : candidateNodes) {
-        String nodeAz = getNodeAZ(node, attrValues);
-        List<Node> nodesForAz = nodesPerAz.computeIfAbsent(nodeAz, k -> new ArrayList<>());
-        nodesForAz.add(node);
+      if (availabilityZones.size() == 1) {
+        // If AZs are not being used (all undefined for example) or a single AZ exists, we add all
+        // nodes
+        // to the same entry
+        nodesPerAz.put(availabilityZones.iterator().next(), new ArrayList<>(candidateNodes));
+      } else {
+        // Get the candidate nodes per AZ in order to build (further down) a mapping of AZ to
+        // placement candidates.
+        for (Node node : candidateNodes) {
+          String nodeAz = getNodeAZ(node, attrValues);
+          List<Node> nodesForAz = nodesPerAz.computeIfAbsent(nodeAz, k -> new ArrayList<>());
+          nodesForAz.add(node);
+        }
       }
+
+      Comparator<Node> interGroupNodeComparator =
+          new CoresAndDiskComparator(attrValues, coresOnNodes, prioritizedFreeDiskGB);
 
       // Build a treeMap sorted by the number of replicas per AZ and including candidates nodes
       // suitable for placement on the AZ, so we can easily select the next AZ to get a replica
@@ -720,11 +991,17 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       for (Map.Entry<String, List<Node>> e : nodesPerAz.entrySet()) {
         azByExistingReplicas
             .computeIfAbsent(azToNumReplicas.get(e.getKey()), k -> new HashSet<>())
-            .add(new AzWithNodes(e.getKey(), e.getValue()));
+            .add(
+                new AzWithNodes(
+                    e.getKey(),
+                    e.getValue(),
+                    doSpreadAcrossDomains,
+                    interGroupNodeComparator,
+                    replicaPlacementRandom,
+                    attrValues,
+                    leaderMetrics,
+                    spreadDomainsInUse));
       }
-
-      CoresAndDiskComparator coresAndDiskComparator =
-          new CoresAndDiskComparator(attrValues, coresOnNodes, prioritizedFreeDiskGB);
 
       for (int i = 0; i < numReplicas; i++) {
         // We have for each AZ on which we might have a chance of placing a replica, the list of
@@ -745,7 +1022,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           Iterator<AzWithNodes> it = mapEntry.getValue().iterator();
           while (it.hasNext()) {
             Map.Entry<Integer, AzWithNodes> entry = Map.entry(mapEntry.getKey(), it.next());
-            int numberOfNodes = entry.getValue().availableNodesForPlacement.size();
+            int numberOfNodes = entry.getValue().numNodes();
             if (numberOfNodes == 0) {
               it.remove();
             } else { // AZ does have node(s) for placement
@@ -788,38 +1065,20 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Node selectedAzBestNode = null;
         for (Map.Entry<Integer, AzWithNodes> candidateAzEntry : candidateAzEntries) {
           AzWithNodes azWithNodes = candidateAzEntry.getValue();
-          List<Node> nodes = azWithNodes.availableNodesForPlacement;
-
-          if (!azWithNodes.hasBeenSorted) {
-            // Make sure we do not tend to use always the same nodes (within an AZ) if all
-            // conditions are identical (well, this likely is not the case since after having added
-            // a replica to a node its number of cores increases for the next placement decision,
-            // but let's be defensive here, given that multiple concurrent placement decisions might
-            // see the same initial cluster state, and we want placement to be reasonable even in
-            // that case without creating an unnecessary imbalance). For example, if all nodes have
-            // 0 cores and same amount of free disk space, ideally we want to pick a random node for
-            // placement, not always the same one due to some internal ordering.
-            Collections.shuffle(nodes, replicaPlacementRandom);
-
-            // Sort by increasing number of cores but pushing nodes with low free disk space to the
-            // end of the list
-            nodes.sort(coresAndDiskComparator);
-
-            azWithNodes.hasBeenSorted = true;
-          }
+          azWithNodes.ensureSorted();
 
           // Which one is better, the new one or the previous best?
           if (selectedAz == null
-              || coresAndDiskComparator.compare(nodes.get(0), selectedAzBestNode) < 0) {
+              || interGroupNodeComparator.compare(azWithNodes.getBestNode(), selectedAzBestNode)
+                  < 0) {
             selectedAz = candidateAzEntry;
-            selectedAzBestNode = nodes.get(0);
+            selectedAzBestNode = azWithNodes.getBestNode();
           }
         }
 
         // Now actually remove the selected node from the winning AZ
         AzWithNodes azWithNodes = selectedAz.getValue();
-        List<Node> nodes = selectedAz.getValue().availableNodesForPlacement;
-        Node assignTarget = nodes.remove(0);
+        Node assignTarget = azWithNodes.removeBestNode();
 
         // Insert back all the qualifying but non winning AZ's removed while searching for the one
         for (Map.Entry<Integer, AzWithNodes> removedAzs : candidateAzEntries) {
@@ -911,7 +1170,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                     Optional<String> nodePropOpt =
                         attributeValues.getSystemProperty(
                             n, AffinityPlacementConfig.NODE_TYPE_SYSPROP);
-                    if (!nodePropOpt.isPresent()) {
+                    if (nodePropOpt.isEmpty()) {
                       return false;
                     }
                     Set<String> nodeTypes =
@@ -959,9 +1218,11 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       public int compare(Node a, Node b) {
         // Note all nodes do have free disk defined. This has been verified earlier.
         boolean aHasLowFreeSpace =
-            attrValues.getNodeMetric(a, NodeMetricImpl.FREE_DISK_GB).get() < prioritizedFreeDiskGB;
+            attrValues.getNodeMetric(a, BuiltInMetrics.NODE_FREE_DISK_GB).orElse(0D)
+                < prioritizedFreeDiskGB;
         boolean bHasLowFreeSpace =
-            attrValues.getNodeMetric(b, NodeMetricImpl.FREE_DISK_GB).get() < prioritizedFreeDiskGB;
+            attrValues.getNodeMetric(b, BuiltInMetrics.NODE_FREE_DISK_GB).orElse(0D)
+                < prioritizedFreeDiskGB;
         if (aHasLowFreeSpace != bHasLowFreeSpace) {
           // A node with low free space should be considered > node with high free space since it
           // needs to come later in sort order
@@ -969,6 +1230,30 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
         // The ordering on the number of cores is the natural order.
         return Integer.compare(coresOnNodes.get(a), coresOnNodes.get(b));
+      }
+    }
+
+    static class SpreadDomainComparator implements Comparator<SpreadDomainWithNodes> {
+      private final Map<String, Integer> spreadDomainUsage;
+
+      SpreadDomainComparator(Map<String, Integer> spreadDomainUsage) {
+        this.spreadDomainUsage = spreadDomainUsage;
+      }
+
+      @Override
+      public int compare(SpreadDomainWithNodes group1, SpreadDomainWithNodes group2) {
+        // This comparator will compare groups by:
+        // 1. The number of usages for the domain they represent: We want groups that are
+        // less used to be the best ones
+        // 2. On equal number of usages, by the internal comparator (which uses core count and disk
+        // space) on the best node for each group (which, since the list is sorted, it's always the
+        // one in the position 0)
+        Integer usagesLabel1 = spreadDomainUsage.getOrDefault(group1.spreadDomainName, 0);
+        Integer usagesLabel2 = spreadDomainUsage.getOrDefault(group2.spreadDomainName, 0);
+        if (usagesLabel1.equals(usagesLabel2)) {
+          return group1.compareTo(group2);
+        }
+        return usagesLabel1.compareTo(usagesLabel2);
       }
     }
   }

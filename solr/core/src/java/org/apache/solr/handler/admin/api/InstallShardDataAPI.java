@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -44,7 +45,6 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.zookeeper.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +84,7 @@ public class InstallShardDataAPI extends AdminAPIBase {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Required request body missing");
     }
 
-    if (StringUtils.isBlank(requestBody.location)) {
+    if (StrUtils.isBlank(requestBody.location)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The Install Shard Data API requires a 'location' indicating the index data to install");

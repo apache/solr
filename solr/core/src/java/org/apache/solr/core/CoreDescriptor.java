@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.PropertiesUtil;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -211,9 +211,11 @@ public class CoreDescriptor {
       if (isUserDefinedProperty(propname)) originalExtraProperties.put(propname, propvalue);
       else originalCoreProperties.put(propname, propvalue);
 
-      if (!requiredProperties.contains(propname)) // Required props are already dealt with
-      coreProperties.setProperty(
+      // Required props are already dealt with
+      if (!requiredProperties.contains(propname)) {
+        coreProperties.setProperty(
             propname, PropertiesUtil.substituteProperty(propvalue, containerProperties));
+      }
     }
 
     loadExtraProperties();
@@ -254,7 +256,7 @@ public class CoreDescriptor {
   }
 
   /**
-   * Create the properties object used by resource loaders, etc, for property substitution. The
+   * Create the properties object used by resource loaders, etc., for property substitution. The
    * default solr properties are prefixed with 'solr.core.', so, e.g., 'name' becomes
    * 'solr.core.name'
    */
@@ -279,7 +281,7 @@ public class CoreDescriptor {
   }
 
   public static String checkPropertyIsNotEmpty(String value, String propName) {
-    if (StringUtils.isEmpty(value)) {
+    if (StrUtils.isNullOrEmpty(value)) {
       String message =
           String.format(Locale.ROOT, "Cannot create core with empty %s value", propName);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
