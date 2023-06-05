@@ -87,7 +87,7 @@
 # set to "false" to disable that behavior and preserve unknown cores so that you can
 # delete them manually. This may protect against misconfiguration (e.g. connecting
 # to the wrong Zookeeper instance or chroot).
-#SOLR_DELETE_UNKNOWN_CORES="true"
+#SOLR_DELETE_UNKNOWN_CORES=true
 
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"
@@ -273,12 +273,12 @@
 # When using this feature, it is recommended to have an external service monitoring the given dir.
 # If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
 # See https://docs.oracle.com/en/java/javase/11/troubleshoot/command-line-options1.html
-# You can test this behaviour by setting SOLR_HEAP=25m
+# You can test this behavior by setting SOLR_HEAP=25m
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps
 
 # Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
-# To restore the old behaviour, set the variable below to true
+# To restore the old behavior, set the variable below to true
 #SOLR_SOLRXML_REQUIRED=false
 
 # Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
