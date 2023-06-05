@@ -150,6 +150,10 @@ Improvements
 * SOLR-16392: The v2 "create shard" API has been tweaked to be more intuitive, by removing the top-level "create"
   command specifier.  The rest of the API remains unchanged. (Jason Gerlowski)
 
+* SOLR-16392: The v2 "add-replica" API has been tweaked to be more intuitive, by removing the top-level command specifier and
+  changing the path.  The v2 functionality can now be accessed at: `POST /api/collections/cName/shards/sName/replicas {...}`
+  (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
