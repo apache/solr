@@ -36,7 +36,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
@@ -46,7 +45,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
 import static org.apache.solr.common.params.CollectionAdminParams.SHARD;
-import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
@@ -106,9 +104,6 @@ import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
-import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
@@ -175,7 +170,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.AddReplicaAPI;
 import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasPropertyAPI;
@@ -186,6 +180,7 @@ import org.apache.solr.handler.admin.api.CreateAliasAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
+import org.apache.solr.handler.admin.api.CreateReplicaAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAliasAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
@@ -970,27 +965,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     ADDREPLICA_OP(
         ADDREPLICA,
         (req, rsp, h) -> {
-          Map<String, Object> props =
-              copy(
-                  req.getParams(),
-                  null,
-                  COLLECTION_PROP,
-                  "node",
-                  SHARD_ID_PROP,
-                  _ROUTE_,
-                  CoreAdminParams.NAME,
-                  INSTANCE_DIR,
-                  DATA_DIR,
-                  ULOG_DIR,
-                  REPLICA_TYPE,
-                  WAIT_FOR_FINAL_STATE,
-                  NRT_REPLICAS,
-                  TLOG_REPLICAS,
-                  PULL_REPLICAS,
-                  CREATE_NODE_SET,
-                  FOLLOW_ALIASES,
-                  SKIP_NODE_ASSIGNMENT);
-          return copyPropertiesWithPrefix(req.getParams(), props, PROPERTY_PREFIX);
+          final var params = req.getParams();
+          params.required().check(COLLECTION_PROP, SHARD_ID_PROP);
+
+          final var api = new CreateReplicaAPI(h.coreContainer, req, rsp);
+          final var requestBody =
+              CreateReplicaAPI.AddReplicaRequestBody.fromV1Params(req.getParams());
+          final var response =
+              api.createReplica(
+                  params.get(COLLECTION_PROP), params.get(SHARD_ID_PROP), requestBody);
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+          return null;
         }),
     OVERSEERSTATUS_OP(OVERSEERSTATUS, (req, rsp, h) -> new LinkedHashMap<>()),
     DISTRIBUTEDAPIPROCESSING_OP(
@@ -1514,6 +1499,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
+        CreateReplicaAPI.class,
         AddReplicaPropertyAPI.class,
         CreateAliasAPI.class,
         CreateCollectionAPI.class,
@@ -1543,7 +1529,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new AddReplicaAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SyncShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ForceLeaderAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new BalanceShardUniqueAPI(this)));
