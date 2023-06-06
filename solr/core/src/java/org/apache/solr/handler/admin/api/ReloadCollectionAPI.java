@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 /**
  * V2 API for reloading collections.
  *
- * <p>The new API (POST /v2/collections/collectionName {'reload': {...}}) is analogous to the v1
+ * <p>The new API (POST /v2/collections/collectionName/reload {...}) is analogous to the v1
  * /admin/collections?action=RELOAD command.
  */
 @Path("/collections/{collectionName}/reload")

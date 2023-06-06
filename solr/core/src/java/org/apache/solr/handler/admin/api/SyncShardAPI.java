@@ -48,10 +48,10 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * V2 API for triggering a shard-sync operation within a particular collection and shard.
  *
- * <p>This API (POST /v2/collections/collectionName/shards/shardName {'sync-shard': {}}) is
+ * <p>This API (POST /v2/collections/cName/shards/sName/sync {...}) is
  * analogous to the v1 /admin/collections?action=SYNCSHARD command.
  */
-@Path("/collections/{collectionName}/shards/{shardName}/sync-shard")
+@Path("/collections/{collectionName}/shards/{shardName}/sync")
 public class SyncShardAPI extends AdminAPIBase {
 
   @Inject
