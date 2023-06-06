@@ -212,7 +212,8 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     // Create a CBOR ObjectMapper
     baos = new ByteArrayOutputStream();
 
-    ObjectMapper cborMapper = new ObjectMapper(CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build());
+    ObjectMapper cborMapper =
+        new ObjectMapper(CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build());
     JsonGenerator jsonGenerator = cborMapper.createGenerator(baos);
 
     jsonGenerator.writeTree(jsonNode);
