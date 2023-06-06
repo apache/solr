@@ -257,9 +257,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
                 mapDocs.add(doc.toMap(new LinkedHashMap<>()));
               }
 
-              CBORFactory cborFactory =
-                  CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build();
-              ObjectMapper cborMapper = new ObjectMapper(cborFactory);
+              ObjectMapper cborMapper = new ObjectMapper(CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build());
               cborMapper.writeValue(os, mapDocs);
             }
 
@@ -303,9 +301,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
       @Override
       @SuppressWarnings({"rawtypes", "unchecked"})
       public NamedList<Object> processResponse(InputStream b, String encoding) {
-        CBORFactory cborFactory =
-            CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build();
-        ObjectMapper objectMapper = new ObjectMapper(cborFactory);
+        ObjectMapper objectMapper = new ObjectMapper(CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build());
         try {
           Map m = (Map) objectMapper.readValue(b, Object.class);
           NamedList nl = new NamedList();
