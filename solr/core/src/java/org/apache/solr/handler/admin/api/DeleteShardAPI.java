@@ -49,7 +49,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * <p>This API (DELETE /v2/collections/collectionName/shards/shardName) is analogous to the v1
  * /admin/collections?action=DELETESHARD command.
  */
-@Path("/collections/{collectionName}/shards/{shardName}/replicas")
+@Path("/collections/{collectionName}/shards/{shardName}")
 public class DeleteShardAPI extends AdminAPIBase {
 
   @Inject
