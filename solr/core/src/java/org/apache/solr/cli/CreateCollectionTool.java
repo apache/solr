@@ -257,7 +257,7 @@ public class CreateCollectionTool extends ToolBase {
       final String curlCommand =
           String.format(
               Locale.ROOT,
-              "curl %s/%s//config -d "
+              "curl %s/%s/config -d "
                   + "'{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'",
               solrUrl,
               collectionName);
