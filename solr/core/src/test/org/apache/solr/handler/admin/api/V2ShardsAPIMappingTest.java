@@ -19,9 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CollectionParams.NAME;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_BY_PREFIX;
@@ -54,7 +52,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
   public void populateApiBag() {
     final CollectionsHandler collectionsHandler = getRequestHandler();
     apiBag.registerObject(new SplitShardAPI(collectionsHandler));
-    apiBag.registerObject(new AddReplicaAPI(collectionsHandler));
   }
 
   @Override
@@ -103,50 +100,6 @@ public class V2ShardsAPIMappingTest extends V2ApiMappingTest<CollectionsHandler>
     assertEquals("rewrite", v1Params.get(SPLIT_METHOD));
     assertEquals("some_async_id", v1Params.get(ASYNC));
     assertTrue(v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
-    assertEquals("foo1", v1Params.get("property.foo"));
-    assertEquals("bar1", v1Params.get("property.bar"));
-  }
-
-  @Test
-  public void testAddReplicaAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName/shards",
-            "POST",
-            "{ 'add-replica': {"
-                + "'shard': 'shard1', "
-                + "'_route_': 'someRouteValue', "
-                + "'node': 'someNodeValue', "
-                + "'name': 'someName', "
-                + "'instanceDir': 'dir1', "
-                + "'dataDir': 'dir2', "
-                + "'ulogDir': 'dir3', "
-                + "'createNodeSet': ['foo', 'bar', 'baz'], "
-                + "'followAliases': true, "
-                + "'async': 'some_async_id', "
-                + "'waitForFinalState': true, "
-                + "'skipNodeAssignment': true, "
-                + "'type': 'tlog', "
-                + "'coreProperties': {"
-                + "    'foo': 'foo1', "
-                + "    'bar': 'bar1', "
-                + "}}}");
-
-    assertEquals(CollectionParams.CollectionAction.ADDREPLICA.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("shard1", v1Params.get(SHARD_ID_PROP));
-    assertEquals("someRouteValue", v1Params.get("_route_"));
-    assertEquals("someNodeValue", v1Params.get("node"));
-    assertEquals("foo,bar,baz", v1Params.get(CREATE_NODE_SET_PARAM));
-    assertEquals("someName", v1Params.get(NAME));
-    assertEquals("dir1", v1Params.get("instanceDir"));
-    assertEquals("dir2", v1Params.get("dataDir"));
-    assertEquals("dir3", v1Params.get("ulogDir"));
-    assertTrue(v1Params.getPrimitiveBool(FOLLOW_ALIASES));
-    assertEquals("some_async_id", v1Params.get(ASYNC));
-    assertTrue(v1Params.getPrimitiveBool(WAIT_FOR_FINAL_STATE));
-    assertTrue(v1Params.getPrimitiveBool("skipNodeAssignment"));
-    assertEquals("tlog", v1Params.get("type"));
     assertEquals("foo1", v1Params.get("property.foo"));
     assertEquals("bar1", v1Params.get("property.bar"));
   }
