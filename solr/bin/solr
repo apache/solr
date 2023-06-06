@@ -1337,6 +1337,10 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   if [ $# -gt 0 ]; then
     while true; do
       case "${1:-}" in
+        upconfig|downconfig|cp|rm|mv|ls|mkroot)
+            ZK_OP=$1
+            shift 1
+        ;;      
         -z|-zkhost|-zkHost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
