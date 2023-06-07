@@ -38,6 +38,18 @@ public abstract class AbstractReRankQuery extends RankQuery {
   protected final int reRankDocs;
   protected final Rescorer reRankQueryRescorer;
   protected Set<BytesRef> boostedPriority;
+  protected String mainScale;
+  protected String reRankScale;
+  protected ReRankOperator reRankOperator;
+
+  public AbstractReRankQuery(Query mainQuery, int reRankDocs, Rescorer reRankQueryRescorer, String mainScale, String reRankScale, ReRankOperator reRankOperator) {
+    this.mainQuery = mainQuery;
+    this.reRankDocs = reRankDocs;
+    this.reRankQueryRescorer = reRankQueryRescorer;
+    this.mainScale = mainScale;
+    this.reRankScale = reRankScale;
+    this.reRankOperator = reRankOperator;
+  }
 
   public AbstractReRankQuery(Query mainQuery, int reRankDocs, Rescorer reRankQueryRescorer) {
     this.mainQuery = mainQuery;
@@ -71,7 +83,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
     }
 
     return new ReRankCollector(
-        reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority);
+        reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority, mainScale, reRankScale, reRankOperator);
   }
 
   @Override

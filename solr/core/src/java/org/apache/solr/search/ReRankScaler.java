@@ -79,8 +79,8 @@ public class ReRankScaler {
                                 ScoreDoc[] rescoredDocs,
                                 int howMany) {
 
-    Map<Integer, Float> originalScoreMap = new HashMap();
-    Map<Integer, Float> rescoredMap = new HashMap();
+    Map<Integer, Float> originalScoreMap = new HashMap<>();
+    Map<Integer, Float> rescoredMap = new HashMap<>();
 
     Map<Integer, Float> scaledOriginalScoreMap = null;
     Map<Integer, Float> scaledRescoredMap = null;
@@ -99,7 +99,7 @@ public class ReRankScaler {
       scaledOriginalScoreMap = originalScoreMap;
     }
 
-    Map<Integer, Float> rescoreMap = new HashMap();
+    Map<Integer, Float> rescoreMap = new HashMap<>();
     for(int i=0; i<howMany; i++) {
       ScoreDoc rescoredDoc = rescoredDocs[i];
       int doc = rescoredDoc.doc;
@@ -179,7 +179,7 @@ public class ReRankScaler {
   }
 
   public static Map<Integer, Float> minMaxScaleScores(Map<Integer, Float> docScoreMap, float min, float max) {
-    Map<Integer, Float> scaledScores = new HashMap();
+    Map<Integer, Float> scaledScores = new HashMap<>();
     float localMin = Float.MAX_VALUE;
     float localMax = Float.MIN_VALUE;
 

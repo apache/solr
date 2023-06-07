@@ -47,6 +47,9 @@ public class ReRankQParserPlugin extends QParserPlugin {
   public static final String RERANK_OPERATOR = "reRankOperator";
   public static final String RERANK_OPERATOR_DEFAULT = "add";
 
+  public static final String RERANK_SCALE = "reRankScale";
+  public static final String RERANK_MAIN_SCALE = "reRankMainScale";
+
   @Override
   public QParser createParser(
       String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -78,7 +81,10 @@ public class ReRankQParserPlugin extends QParserPlugin {
       ReRankOperator reRankOperator =
           ReRankOperator.get(localParams.get(RERANK_OPERATOR, RERANK_OPERATOR_DEFAULT));
 
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator);
+      String mainScale = localParams.get(RERANK_MAIN_SCALE);
+      String reRankScale = localParams.get(RERANK_SCALE);
+
+      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator, mainScale, reRankQueryString);
     }
   }
 
@@ -126,6 +132,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
     private final double reRankWeight;
     private final ReRankOperator reRankOperator;
 
+
     @Override
     public int hashCode() {
       return 31 * classHash()
@@ -150,11 +157,11 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
 
     public ReRankQuery(
-        Query reRankQuery, int reRankDocs, double reRankWeight, ReRankOperator reRankOperator) {
+        Query reRankQuery, int reRankDocs, double reRankWeight, ReRankOperator reRankOperator, String mainScale, String reRankScale) {
       super(
           defaultQuery,
           reRankDocs,
-          new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator));
+          new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator), mainScale, reRankScale, reRankOperator);
       this.reRankQuery = reRankQuery;
       this.reRankWeight = reRankWeight;
       this.reRankOperator = reRankOperator;
@@ -175,7 +182,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator)
+      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator, mainScale, reRankScale)
           .wrap(rewrittenMainQuery);
     }
   }

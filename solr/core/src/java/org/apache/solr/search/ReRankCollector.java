@@ -51,6 +51,26 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
   private final Rescorer reRankQueryRescorer;
   private final Sort sort;
   private final Query query;
+  private String mainScale;
+  private String reRankScale;
+  private ReRankOperator reRankOperator;
+
+  public ReRankCollector(
+      int reRankDocs,
+      int length,
+      Rescorer reRankQueryRescorer,
+      QueryCommand cmd,
+      IndexSearcher searcher,
+      Set<BytesRef> boostedPriority,
+      String mainScale,
+      String reRankScale,
+      ReRankOperator reRankOperator)
+      throws IOException {
+    this(reRankDocs, length, reRankQueryRescorer, cmd, searcher, boostedPriority);
+    this.mainScale = mainScale;
+    this.reRankScale = reRankScale;
+    this.reRankOperator = reRankOperator;
+  }
 
   public ReRankCollector(
       int reRankDocs,
@@ -140,6 +160,10 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       if (howMany == rescoredDocs.scoreDocs.length) {
+        if(mainScale != null || reRankScale != null) {
+          ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
+          rescoredDocs.scoreDocs = reRankScaler.scaleScores(mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+        }
         return rescoredDocs; // Just return the rescoredDocs
       } else if (howMany > rescoredDocs.scoreDocs.length) {
         // We need to return more then we've reRanked, so create the combined page.
@@ -153,18 +177,27 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
             0,
             rescoredDocs.scoreDocs.length); // overlay the re-ranked docs.
         rescoredDocs.scoreDocs = scoreDocs;
+        if(mainScale != null || reRankScale != null) {
+          ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
+          rescoredDocs.scoreDocs = reRankScaler.scaleScores(mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+        }
         return rescoredDocs;
       } else {
         // We've rescored more then we need to return.
         ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
         System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
         rescoredDocs.scoreDocs = scoreDocs;
+        if(mainScale != null || reRankScale != null) {
+          ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
+          rescoredDocs.scoreDocs = reRankScaler.scaleScores(mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+        }
         return rescoredDocs;
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
+
 
   public static class BoostedComp implements Comparator<ScoreDoc> {
     IntFloatHashMap boostedMap;
