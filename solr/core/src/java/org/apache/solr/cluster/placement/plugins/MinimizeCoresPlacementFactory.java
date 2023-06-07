@@ -59,17 +59,17 @@ public class MinimizeCoresPlacementFactory
     return new MinimizeCoresPlacementPlugin();
   }
 
-  private static class MinimizeCoresPlacementPlugin extends OrderedNodePlacementPlugin<NodeWithCoreCount> {
+  private static class MinimizeCoresPlacementPlugin extends OrderedNodePlacementPlugin {
 
     @Override
-    protected Map<Node, NodeWithCoreCount> getBaseWeightedNodes(
+    protected Map<Node, WeightedNode> getBaseWeightedNodes(
         PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) throws PlacementException {
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
       AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
       attributeFetcher.requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES);
       attributeFetcher.fetchFrom(nodes);
       AttributeValues attrValues = attributeFetcher.fetchAttributes();
-      HashMap<Node, NodeWithCoreCount> nodeMap = new HashMap<>();
+      HashMap<Node, WeightedNode> nodeMap = new HashMap<>();
       for (Node node : nodes) {
         if (attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).isEmpty()) {
           throw new PlacementException("Can't get number of cores in " + node);
@@ -105,11 +105,6 @@ public class MinimizeCoresPlacementFactory
     @Override
     public void addProjectedReplicaWeights(Replica replica) {
       coreCount += 1;
-    }
-
-    @Override
-    public int getWeightWithoutReplica(Replica replica) {
-      return coreCount - 1;
     }
 
     @Override

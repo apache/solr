@@ -254,6 +254,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
             List.of("NRT 1", "NRT 3", "TLOG 2")); // shard 2
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
@@ -429,6 +430,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
     List<List<String>> shardsReplicas = List.of(List.of());
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
@@ -439,15 +441,15 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             Set.of("1 NRT 0"),
             Set.of("1 NRT 0", "1 NRT 3"),
             Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6"),
-            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1"),
-            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4"),
-            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7"),
-            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7", "1 NRT 2"),
+            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7"),
+            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2"),
+            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2", "1 NRT 4"),
+            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2", "1 NRT 4", "1 NRT 1"),
             Set.of(
-                "1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7", "1 NRT 2",
+                "1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2", "1 NRT 4", "1 NRT 1",
                 "1 NRT 5"),
             Set.of(
-                "1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7", "1 NRT 2",
+                "1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2", "1 NRT 4", "1 NRT 1",
                 "1 NRT 5", "1 NRT 8"));
 
     for (int countNrtToPlace = 1; countNrtToPlace <= 9; countNrtToPlace++) {
@@ -1266,11 +1268,11 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     int perNode = TOTAL_REPLICAS > numNodes ? TOTAL_REPLICAS / numNodes : 1;
     replicasPerNode.forEach(
         (node, count) -> {
-          assertEquals(perNode, count.get());
+          assertEquals("Wrong number of replicas for node: " + node.getName(), perNode, count.get());
         });
     shardsPerNode.forEach(
         (node, names) -> {
-          assertEquals(perNode, names.size());
+          assertEquals("Wrong number of shards for node: " + node.getName(), perNode, names.size());
         });
 
     replicasPerShard.forEach(

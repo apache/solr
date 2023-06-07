@@ -43,7 +43,7 @@ public class RandomPlacementFactory
     return new RandomPlacementPlugin();
   }
 
-  public static class RandomPlacementPlugin extends OrderedNodePlacementPlugin<RandomPlacementPlugin.RandomNode> {
+  public static class RandomPlacementPlugin extends OrderedNodePlacementPlugin {
     private final Random replicaPlacementRandom =
         new Random(); // ok even if random sequence is predictable.
 
@@ -56,8 +56,8 @@ public class RandomPlacementFactory
     }
 
     @Override
-    protected Map<Node, RandomNode> getBaseWeightedNodes(PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) {
-      HashMap<Node, RandomNode> nodeMap = new HashMap<>();
+    protected Map<Node, WeightedNode> getBaseWeightedNodes(PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) {
+      HashMap<Node, WeightedNode> nodeMap = new HashMap<>();
 
       for (Node node : nodes) {
         nodeMap.put(node, new RandomNode(node));
@@ -93,11 +93,6 @@ public class RandomPlacementFactory
       @Override
       public void addProjectedReplicaWeights(Replica replica) {
         randomTiebreaker = replicaPlacementRandom.nextInt();
-      }
-
-      @Override
-      public int getWeightWithoutReplica(Replica replica) {
-        return getWeight();
       }
 
       @Override

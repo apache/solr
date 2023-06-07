@@ -42,11 +42,11 @@ public class SimplePlacementFactory
     return new SimplePlacementPlugin();
   }
 
-  public static class SimplePlacementPlugin extends OrderedNodePlacementPlugin<SameCollWeightedNode> {
+  public static class SimplePlacementPlugin extends OrderedNodePlacementPlugin {
 
     @Override
-    protected Map<Node, SameCollWeightedNode> getBaseWeightedNodes(PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) {
-      HashMap<Node, SameCollWeightedNode> nodeVsShardCount = new HashMap<>();
+    protected Map<Node, WeightedNode> getBaseWeightedNodes(PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) {
+      HashMap<Node, WeightedNode> nodeVsShardCount = new HashMap<>();
 
       for (Node n : nodes) {
         nodeVsShardCount.computeIfAbsent(n, SameCollWeightedNode::new);
@@ -84,9 +84,8 @@ public class SimplePlacementFactory
     }
 
     @Override
-    public int getWeightWithoutReplica(Replica replica) {
-      int replicaCount = collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0);
-      return totalWeight - (replicaCount > 1 ? SAME_COL_MULT : 1);
+    protected void initReplicaWeights(Replica replica) {
+      addProjectedReplicaWeights(replica);
     }
 
     @Override

@@ -195,7 +195,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
    * See {@link AffinityPlacementFactory} for instructions on how to configure a cluster to use this
    * plugin and details on what the plugin does.
    */
-  static class AffinityPlacementPlugin extends OrderedNodePlacementPlugin<AffinityPlacementPlugin.AffinityNode> {
+  static class AffinityPlacementPlugin extends OrderedNodePlacementPlugin {
 
     private final long minimalFreeDiskGB;
 
@@ -1259,12 +1259,16 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
-
-
-    private final Map<String, Integer> spreadDomainUsage = new HashMap<>();
+    private static final class AffinityPlacementContext {
+      private final Set<String> allSpreadDomains = new HashSet<>();
+      private final Map<String, Map<String, ReplicaSpread>> spreadDomainUsage = new HashMap<>();
+      private final Set<String> allAvailabilityZones = new HashSet<>();
+      private final Map<String, Map<String, Map<Replica.ReplicaType, ReplicaSpread>>> availabilityZoneUsage = new HashMap<>();
+      private boolean doSpreadAcrossDomains;
+    }
 
     @Override
-    protected Map<Node, AffinityNode> getBaseWeightedNodes(
+    protected Map<Node, WeightedNode> getBaseWeightedNodes(
         PlacementContext placementContext, Set<Node> nodes,
         Iterable<SolrCollection> relevantCollections) throws PlacementException {
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
@@ -1287,10 +1291,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       attributeFetcher.fetchFrom(nodes);
       final AttributeValues attrValues = attributeFetcher.fetchAttributes();
 
-      final AtomicBoolean doSpreadAcrossDomains = new AtomicBoolean(spreadAcrossDomains);
-      Map<Node, AffinityNode> affinityNodeMap = new HashMap<>(nodes.size());
+
+      AffinityPlacementContext affinityPlacementContext = new AffinityPlacementContext();
+      affinityPlacementContext.doSpreadAcrossDomains = spreadAcrossDomains;
+
+      Map<Node, WeightedNode> affinityNodeMap = new HashMap<>(nodes.size());
       for (Node node : nodes) {
-        AffinityNode affinityNode = newNodeFromMetrics(node, attrValues, doSpreadAcrossDomains);
+        AffinityNode affinityNode = newNodeFromMetrics(node, attrValues, affinityPlacementContext);
         if (affinityNode != null) {
           affinityNodeMap.put(node, affinityNode);
         }
@@ -1299,7 +1306,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       return affinityNodeMap;
     }
 
-    AffinityNode newNodeFromMetrics(Node node, AttributeValues attrValues, AtomicBoolean doSpreadAcrossDomains) throws PlacementException {
+    AffinityNode newNodeFromMetrics(Node node, AttributeValues attrValues, AffinityPlacementContext affinityPlacementContext) throws PlacementException {
       Set<Replica.ReplicaType> supportedReplicaTypes =
           attrValues
               .getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP)
@@ -1321,12 +1328,26 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // replica type
         supportedReplicaTypes = Set.of(Replica.ReplicaType.values());
       }
+
+      Set<String> nodeType;
+      Optional<String> nodePropOpt =
+          attrValues.getSystemProperty(
+              node, AffinityPlacementConfig.NODE_TYPE_SYSPROP);
+      if (nodePropOpt.isEmpty()) {
+        nodeType = Collections.emptySet();
+      } else {
+        nodeType = new HashSet<>(StrUtils.splitSmart(nodePropOpt.get(), ','));
+      }
+
       Optional<Double> nodeFreeDiskGB =
           attrValues.getNodeMetric(node, BuiltInMetrics.NODE_FREE_DISK_GB);
       Optional<Integer> nodeNumCores =
           attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES);
+      String az = attrValues.getSystemProperty(node, AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP)
+          .orElse(AffinityPlacementConfig.UNDEFINED_AVAILABILITY_ZONE);
+      affinityPlacementContext.allAvailabilityZones.add(az);
       String spreadDomain;
-      if (doSpreadAcrossDomains.get()) {
+      if (affinityPlacementContext.doSpreadAcrossDomains) {
         spreadDomain = attrValues.getSystemProperty(node, AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP).orElse(null);
         if (spreadDomain == null) {
           if (log.isWarnEnabled()) {
@@ -1335,7 +1356,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                 node.getName(),
                 AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
           }
-          doSpreadAcrossDomains.set(false);
+          affinityPlacementContext.doSpreadAcrossDomains = false;
+          affinityPlacementContext.allSpreadDomains.clear();
+        } else {
+          affinityPlacementContext.allSpreadDomains.add(spreadDomain);
         }
       } else {
         spreadDomain = null;
@@ -1355,7 +1379,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
         return null;
       } else {
-        return new AffinityNode(node, attrValues, supportedReplicaTypes, nodeNumCores.get(), nodeFreeDiskGB.get(), doSpreadAcrossDomains::get, spreadDomain);
+        return new AffinityNode(node, attrValues, affinityPlacementContext, supportedReplicaTypes, nodeType, nodeNumCores.get(), nodeFreeDiskGB.get(), az, spreadDomain);
       }
     }
 
@@ -1363,39 +1387,52 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       private final AttributeValues attrValues;
 
+      private final AffinityPlacementContext affinityPlacementContext;
+
       private final Set<Replica.ReplicaType> supportedReplicaTypes;
+      private final Set<String> nodeType;
 
       private int coresOnNode;
       private double nodeFreeDiskGB;
 
-      private final BooleanSupplier doSpreadAcrossDomains;
+      private final String availabilityZone;
       private final String spreadDomain;
 
-      AffinityNode(Node node, AttributeValues attrValues,
-                   Set<Replica.ReplicaType> supportedReplicaTypes,
+      AffinityNode(Node node, AttributeValues attrValues, AffinityPlacementContext affinityPlacementContext,
+                   Set<Replica.ReplicaType> supportedReplicaTypes, Set<String> nodeType,
                    int coresOnNode, double nodeFreeDiskGB,
-                   BooleanSupplier doSpreadAcrossDomains, String spreadDomain) {
+                   String az, String spreadDomain) {
         super(node);
         this.attrValues = attrValues;
+        this.affinityPlacementContext = affinityPlacementContext;
         this.supportedReplicaTypes = supportedReplicaTypes;
+        this.nodeType = nodeType;
         this.coresOnNode = coresOnNode;
         this.nodeFreeDiskGB = nodeFreeDiskGB;
-        this.doSpreadAcrossDomains = doSpreadAcrossDomains;
+        this.availabilityZone = az;
         this.spreadDomain = spreadDomain;
       }
 
       @Override
       public int getWeight() {
-        return calculateWeight(coresOnNode, nodeFreeDiskGB, 0);
+        return
+            coresOnNode +
+                100 * (prioritizedFreeDiskGB > 0 && nodeFreeDiskGB < prioritizedFreeDiskGB ? 1 : 0) +
+                10000 * getSpreadDomainWeight() +
+                1000000 * getAZWeight();
       }
 
       @Override
       public boolean canAddReplica(Replica replica) {
+        String collection = replica.getShard().getCollection().getName();
         return
             // By default, do not allow two replicas of the same shard on a node
             super.canAddReplica(replica) &&
                 supportedReplicaTypes.contains(replica.getType()) &&
-                Optional.ofNullable(withCollections.get(replica.getShard().getCollection().getName()))
+                Optional.ofNullable(nodeTypes.get(collection))
+                    .map(s -> s.stream().anyMatch(nodeType::contains))
+                    .orElse(true) &&
+                Optional.ofNullable(withCollections.get(collection))
                     .map(withColl -> this.getCollections().contains(withColl))
                     .orElse(true) &&
                 (minimalFreeDiskGB <= 0 || nodeFreeDiskGB - getProjectedSizeOfReplica(replica)  > minimalFreeDiskGB);
@@ -1403,45 +1440,56 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       @Override
       public int getWeightWithReplica(Replica replica) {
-        return calculateWeight(
-            coresOnNode + 1,
-            nodeFreeDiskGB - getProjectedSizeOfReplica(replica),
-            1
-        );
+        return getWeight() + calculateWeightDiffWithReplica(replica);
       }
 
       @Override
       protected void addProjectedReplicaWeights(Replica replica) {
         nodeFreeDiskGB -= getProjectedSizeOfReplica(replica);
         coresOnNode += 1;
-        if (doSpreadAcrossDomains.getAsBoolean()) {
-          spreadDomainUsage.merge(spreadDomain, 1, Integer::sum);
-        }
+        addReplicaToAzAndSpread(replica);
       }
 
       @Override
-      public int getWeightWithoutReplica(Replica replica) {
-        return calculateWeight(
-            coresOnNode - 1,
-            nodeFreeDiskGB + getProjectedSizeOfReplica(replica),
-            -1
-        );
+      protected void initReplicaWeights(Replica replica) {
+        addReplicaToAzAndSpread(replica);
+      }
+
+      private void addReplicaToAzAndSpread(Replica replica) {
+        affinityPlacementContext.availabilityZoneUsage
+            .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
+            .computeIfAbsent(replica.getShard().getShardName(), k -> new HashMap<>())
+            .computeIfAbsent(replica.getType(), k -> new ReplicaSpread(affinityPlacementContext.allAvailabilityZones))
+            .addReplica(availabilityZone);
+        if (affinityPlacementContext.doSpreadAcrossDomains) {
+          affinityPlacementContext.spreadDomainUsage
+              .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
+              .computeIfAbsent(replica.getShard().getShardName(), k -> new ReplicaSpread(affinityPlacementContext.allSpreadDomains))
+              .addReplica(spreadDomain);
+        }
       }
 
       @Override
       protected void removeProjectedReplicaWeights(Replica replica) {
         nodeFreeDiskGB += getProjectedSizeOfReplica(replica);
         coresOnNode -= 1;
-        if (doSpreadAcrossDomains.getAsBoolean()) {
-          spreadDomainUsage.computeIfPresent(spreadDomain, (k,v) -> v - 1);
+        Optional.ofNullable(affinityPlacementContext.availabilityZoneUsage.get(replica.getShard().getCollection().getName()))
+            .map(m -> m.get(replica.getShard().getShardName()))
+            .map(m -> m.get(replica.getType()))
+            .ifPresent(m -> m.removeReplica(availabilityZone));
+        if (affinityPlacementContext.doSpreadAcrossDomains) {
+          Optional.ofNullable(affinityPlacementContext.spreadDomainUsage.get(replica.getShard().getCollection().getName()))
+              .map(m -> m.get(replica.getShard().getShardName()))
+              .ifPresent(m -> m.removeReplica(spreadDomain));
         }
       }
 
-      private int calculateWeight(int cores, double freeDiskGB, int deltaReplicas) {
+      private int calculateWeightDiffWithReplica(Replica replica) {
         return
-            cores +
-                100 * (prioritizedFreeDiskGB > 0 && freeDiskGB < prioritizedFreeDiskGB ? 1 : 0) +
-                10000 * (doSpreadAcrossDomains.getAsBoolean() ? (getSpreadDomainReplicas() + deltaReplicas) : 0);
+            1 +
+            100 * (nodeFreeDiskGB >= prioritizedFreeDiskGB && nodeFreeDiskGB - getProjectedSizeOfReplica(replica) < prioritizedFreeDiskGB ? 1 : 0) +
+            10000 * projectReplicaSpreadWeightDiff(replica) +
+            1000000 * projectAZWeightDiff(replica);
       }
 
       private double getProjectedSizeOfReplica(Replica replica) {
@@ -1453,10 +1501,108 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
             .orElse(0D);
       }
 
-      private int getSpreadDomainReplicas() {
-        return Optional.ofNullable(spreadDomain)
-            .map(spreadDomainUsage::get)
-            .orElse(0);
+      private int getSpreadDomainWeight() {
+        if (affinityPlacementContext.doSpreadAcrossDomains) {
+          return affinityPlacementContext.spreadDomainUsage.values()
+              .stream()
+              .flatMap(m -> m.values().stream())
+              .mapToInt(rs -> rs.overMinimum(spreadDomain))
+              .map(i -> i * i)
+              .sum();
+        } else {
+          return 0;
+        }
+      }
+
+      private int projectReplicaSpreadWeightDiff(Replica replica) {
+        if (replica != null && affinityPlacementContext.doSpreadAcrossDomains) {
+          return
+              Optional.ofNullable(affinityPlacementContext.spreadDomainUsage.get(replica.getShard().getCollection().getName()))
+                  .map(m -> m.get(replica.getShard().getShardName()))
+                  .map(rs -> getDiffProjectedReplicaSpreadWeight(rs, spreadDomain, 1))
+                  .orElse(0);
+        } else {
+          return 0;
+        }
+      }
+
+      private int getAZWeight() {
+        if (affinityPlacementContext.allAvailabilityZones.size() < 2) {
+          return 0;
+        } else {
+          return affinityPlacementContext.availabilityZoneUsage.values()
+              .stream()
+              .flatMap(m -> m.values().stream())
+              .flatMap(m -> m.values().stream())
+              .mapToInt(rs -> rs.overMinimum(availabilityZone))
+              .map(i -> i * i)
+              .sum();
+        }
+      }
+
+      private int projectAZWeightDiff(Replica replica) {
+        if (affinityPlacementContext.allAvailabilityZones.size() < 2) {
+          return 0;
+        } else {
+          return
+              Optional.ofNullable(affinityPlacementContext.availabilityZoneUsage.get(replica.getShard().getCollection().getName()))
+                  .map(m -> m.get(replica.getShard().getShardName()))
+                  .map(m -> m.get(replica.getType()))
+                  .map(rs -> getDiffProjectedReplicaSpreadWeight(rs, availabilityZone, 1))
+                  .orElse(0);
+        }
+      }
+
+      private int getDiffProjectedReplicaSpreadWeight(ReplicaSpread replicaSpread, String key, int replicaDelta) {
+        int original = replicaSpread.overMinimum(key);
+        int projected = replicaSpread.projectOverMinimum(key, replicaDelta);
+        return projected * projected - original * original;
+      }
+    }
+
+    private static class ReplicaSpread {
+      private final Set<String> allKeys;
+      private final Map<String, Integer> spread;
+      private int minReplicasLocated;
+
+      private ReplicaSpread(Set<String> allKeys) {
+        this.allKeys = allKeys;
+        this.spread = new HashMap<>();
+        this.minReplicasLocated = 0;
+      }
+
+      int overMinimum(String key) {
+        return spread.getOrDefault(key, 0) - minReplicasLocated;
+      }
+
+      int projectOverMinimum(String key, int replicaDelta) {
+        int overMinimum = overMinimum(key);
+        if (overMinimum == 0 && replicaDelta > 0) {
+          addReplica(key);
+          int projected = overMinimum(key);
+          removeReplica(key);
+          return projected;
+        } else {
+          return Integer.max(0, overMinimum + replicaDelta);
+        }
+      }
+
+      void addReplica(String key) {
+        int previous = spread.getOrDefault(key, 0);
+        spread.put(key, previous + 1);
+        if (allKeys.size() > 0 && spread.size() == allKeys.size() && previous == minReplicasLocated) {
+          minReplicasLocated = spread.values().stream().mapToInt(Integer::intValue).min().orElse(0);
+        }
+      }
+
+      void removeReplica(String key) {
+        Integer replicasLocated = spread.computeIfPresent(key, (k,v) -> v - 1 == 0 ? null : v - 1);
+        if (replicasLocated == null) {
+          replicasLocated = 0;
+        }
+        if (replicasLocated < minReplicasLocated) {
+          minReplicasLocated = replicasLocated;
+        }
       }
     }
   }
