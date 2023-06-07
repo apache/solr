@@ -128,11 +128,18 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
             }
             log.info("Node: {}", node.getNode());
 
-            node.addReplica(pr);
+            boolean needsToResort = node.addReplica(
+                PlacementPlugin.createProjectedReplica(solrCollection, shardName, replicaType, node.getNode())
+            );
             nodesChosen += 1;
             replicaPlacements.add(
                 placementContext.getPlacementPlanFactory().createReplicaPlacement(
                     solrCollection, shardName, node.getNode(), replicaType));
+            if (needsToResort) {
+              List<WeightedNode> nodeList = new ArrayList<>(nodesForReplicaType);
+              nodesForReplicaType.clear();
+              nodesForReplicaType.addAll(nodeList);
+            }
           }
         }
       }
@@ -354,13 +361,21 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       // Defaults to a NO-OP
     }
 
-    final public void addReplica(Replica replica) {
+    final public boolean addReplica(Replica replica) {
       if (addReplicaToInternalState(replica)) {
-        addProjectedReplicaWeights(replica);
+        return addProjectedReplicaWeights(replica);
+      } else {
+        return false;
       }
     }
 
-    protected abstract void addProjectedReplicaWeights(Replica replica);
+    /**
+     * Add the weights for the given replica to this node
+     *
+     * @param replica the replica to add weights for
+     * @return a whether the ordered list of nodes needs a resort afterwords.
+     */
+    protected abstract boolean addProjectedReplicaWeights(Replica replica);
 
     public boolean canRemoveReplica(Replica replica) {
       return getReplicasForShard(replica.getShard()).contains(replica);

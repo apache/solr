@@ -1444,10 +1444,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       @Override
-      protected void addProjectedReplicaWeights(Replica replica) {
+      protected boolean addProjectedReplicaWeights(Replica replica) {
         nodeFreeDiskGB -= getProjectedSizeOfReplica(replica);
         coresOnNode += 1;
-        addReplicaToAzAndSpread(replica);
+        return addReplicaToAzAndSpread(replica);
       }
 
       @Override
@@ -1455,18 +1455,20 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         addReplicaToAzAndSpread(replica);
       }
 
-      private void addReplicaToAzAndSpread(Replica replica) {
-        affinityPlacementContext.availabilityZoneUsage
+      private boolean addReplicaToAzAndSpread(Replica replica) {
+        boolean needsResort = false;
+        needsResort |= affinityPlacementContext.availabilityZoneUsage
             .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
             .computeIfAbsent(replica.getShard().getShardName(), k -> new HashMap<>())
             .computeIfAbsent(replica.getType(), k -> new ReplicaSpread(affinityPlacementContext.allAvailabilityZones))
             .addReplica(availabilityZone);
         if (affinityPlacementContext.doSpreadAcrossDomains) {
-          affinityPlacementContext.spreadDomainUsage
+          needsResort |= affinityPlacementContext.spreadDomainUsage
               .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
               .computeIfAbsent(replica.getShard().getShardName(), k -> new ReplicaSpread(affinityPlacementContext.allSpreadDomains))
               .addReplica(spreadDomain);
         }
+        return needsResort;
       }
 
       @Override
@@ -1587,12 +1589,20 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
       }
 
-      void addReplica(String key) {
+      /**
+       * Add a replica for the given spread key, returning whether a full resorting is needed for AffinityNodes.
+       * Resorting is only needed if other nodes could possibly have a lower weight than before.
+       * @param key
+       * @return
+       */
+      boolean addReplica(String key) {
         int previous = spread.getOrDefault(key, 0);
         spread.put(key, previous + 1);
         if (allKeys.size() > 0 && spread.size() == allKeys.size() && previous == minReplicasLocated) {
           minReplicasLocated = spread.values().stream().mapToInt(Integer::intValue).min().orElse(0);
+          return true;
         }
+        return false;
       }
 
       void removeReplica(String key) {

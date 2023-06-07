@@ -91,8 +91,9 @@ public class RandomPlacementFactory
       }
 
       @Override
-      public void addProjectedReplicaWeights(Replica replica) {
+      public boolean addProjectedReplicaWeights(Replica replica) {
         randomTiebreaker = replicaPlacementRandom.nextInt();
+        return false;
       }
 
       @Override

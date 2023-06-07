@@ -441,15 +441,15 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             Set.of("1 NRT 0"),
             Set.of("1 NRT 0", "1 NRT 3"),
             Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6"),
-            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7"),
-            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2"),
-            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2", "1 NRT 4"),
-            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2", "1 NRT 4", "1 NRT 1"),
+            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1"),
+            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4"),
+            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7"),
+            Set.of("1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7", "1 NRT 2"),
             Set.of(
-                "1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2", "1 NRT 4", "1 NRT 1",
+                "1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7", "1 NRT 2",
                 "1 NRT 5"),
             Set.of(
-                "1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 7", "1 NRT 2", "1 NRT 4", "1 NRT 1",
+                "1 NRT 0", "1 NRT 3", "1 NRT 6", "1 NRT 1", "1 NRT 4", "1 NRT 7", "1 NRT 2",
                 "1 NRT 5", "1 NRT 8"));
 
     for (int countNrtToPlace = 1; countNrtToPlace <= 9; countNrtToPlace++) {

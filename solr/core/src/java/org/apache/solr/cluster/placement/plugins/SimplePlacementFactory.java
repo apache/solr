@@ -78,9 +78,10 @@ public class SimplePlacementFactory
     }
 
     @Override
-    protected void addProjectedReplicaWeights(Replica replica) {
+    protected boolean addProjectedReplicaWeights(Replica replica) {
       int replicaCount = collectionReplicas.merge(replica.getShard().getCollection().getName(), 1, Integer::sum);
       totalWeight += replicaCount > 1 ? SAME_COL_MULT : 1;
+      return false;
     }
 
     @Override
@@ -90,8 +91,8 @@ public class SimplePlacementFactory
 
     @Override
     protected void removeProjectedReplicaWeights(Replica replica) {
-      int replicaCount = collectionReplicas.computeIfPresent(replica.getShard().getCollection().getName(), (k, v) -> v - 1);
-      totalWeight -= replicaCount > 0 ? SAME_COL_MULT : 1;
+      Integer replicaCount = collectionReplicas.computeIfPresent(replica.getShard().getCollection().getName(), (k, v) -> v - 1);
+      totalWeight -= replicaCount != null && replicaCount > 0 ? SAME_COL_MULT : 1;
     }
   }
 }

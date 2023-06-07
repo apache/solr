@@ -17,16 +17,9 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
@@ -34,14 +27,9 @@ import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
-import org.apache.solr.cluster.placement.PlacementPlan;
-import org.apache.solr.cluster.placement.PlacementPlanFactory;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.PlacementRequest;
-import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
-import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * Factory for creating {@link MinimizeCoresPlacementPlugin}, a Placement plugin implementing
@@ -103,8 +91,9 @@ public class MinimizeCoresPlacementFactory
     }
 
     @Override
-    public void addProjectedReplicaWeights(Replica replica) {
+    public boolean addProjectedReplicaWeights(Replica replica) {
       coreCount += 1;
+      return false;
     }
 
     @Override
