@@ -131,6 +131,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
+      ScoreDoc[] mainScoreDocsClone = (mainScale != null || reRankScale != null) ? deepClone(mainScoreDocs) : null;
       ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
@@ -164,7 +165,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
           ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
-                  mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
         }
         return rescoredDocs; // Just return the rescoredDocs
       } else if (howMany > rescoredDocs.scoreDocs.length) {
@@ -183,7 +184,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
           ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
-                  mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
         }
         return rescoredDocs;
       } else {
@@ -195,13 +196,24 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
           ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
-                  mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
         }
         return rescoredDocs;
       }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
+  }
+
+  private ScoreDoc[] deepClone(ScoreDoc[] scoreDocs) {
+    ScoreDoc[] scoreDocs1 = new ScoreDoc[scoreDocs.length];
+    for(int i=0; i<scoreDocs.length; i++) {
+      ScoreDoc scoreDoc = scoreDocs[i];
+      if(scoreDoc != null) {
+        scoreDocs1[i] = new ScoreDoc(scoreDoc.doc, scoreDoc.score);
+      }
+    }
+    return scoreDocs1;
   }
 
   public static class BoostedComp implements Comparator<ScoreDoc> {

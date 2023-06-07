@@ -90,29 +90,26 @@ public class ReRankScaler {
       originalScoreMap.put(scoreDoc.doc, scoreDoc.score);
     }
 
-    for (ScoreDoc scoreDoc : rescoredDocs) {
-      rescoredMap.put(scoreDoc.doc, scoreDoc.score);
-    }
-
     if (scaleMainScores()) {
       scaledOriginalScoreMap = minMaxScaleScores(originalScoreMap, mainQueryMin, mainQueryMax);
     } else {
       scaledOriginalScoreMap = originalScoreMap;
     }
 
-    Map<Integer, Float> rescoreMap = new HashMap<>();
+    //System.out.println("HOW MANY:"+howMany);
     for (int i = 0; i < howMany; i++) {
       ScoreDoc rescoredDoc = rescoredDocs[i];
       int doc = rescoredDoc.doc;
       float score = rescoredDoc.score;
       float rescore = getReRankScore(originalScoreMap.get(doc), score, reRankOperator);
+      //System.out.println("RESCORE:"+rescore);
       if (rescore > 0) {
         rescoredMap.put(doc, rescore);
       }
     }
 
     if (scaleReRankScores()) {
-      scaledRescoredMap = minMaxScaleScores(rescoreMap, reRankQueryMin, reRankQueryMax);
+      scaledRescoredMap = minMaxScaleScores(rescoredMap, reRankQueryMin, reRankQueryMax);
     } else {
       scaledRescoredMap = rescoredMap;
     }
@@ -165,6 +162,7 @@ public class ReRankScaler {
 
   public static float getReRankScore(
       float originalScore, float combinedScore, ReRankOperator reRankOperator) {
+    //System.out.println("Orignal and Combined:"+originalScore+" : "+combinedScore+" : "+reRankOperator.toString());
     if (originalScore == combinedScore) {
       return 0;
     }
@@ -182,15 +180,19 @@ public class ReRankScaler {
 
   public static Map<Integer, Float> minMaxScaleScores(
       Map<Integer, Float> docScoreMap, float min, float max) {
+    //System.out.println("SCALING:"+docScoreMap);
+    //System.out.println("BETWEEN:"+min+" : "+ max);
     Map<Integer, Float> scaledScores = new HashMap<>();
     float localMin = Float.MAX_VALUE;
     float localMax = Float.MIN_VALUE;
 
     for (float score : docScoreMap.values()) {
+      //System.out.println("SCORE/MIN/MAX: "+score+"/"+localMin+"/"+localMax);
       localMin = Math.min(localMin, score);
       localMax = Math.max(localMax, score);
     }
 
+    //System.out.println("LOCAL MIN/MAX"+localMin+":"+localMax);
     for (Map.Entry<Integer, Float> entry : docScoreMap.entrySet()) {
       int doc = entry.getKey();
       float score = entry.getValue();
@@ -207,6 +209,8 @@ public class ReRankScaler {
         entry.setValue((scale * score) + min);
       }
     }
+
+    //System.out.println("SCALED:"+scaledScores);
 
     return scaledScores;
   }
