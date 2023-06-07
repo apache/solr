@@ -67,12 +67,12 @@ public class SimplePlacementFactory
     }
 
     @Override
-    public int getWeight() {
+    public int calcWeight() {
       return totalWeight;
     }
 
     @Override
-    public int getWeightWithReplica(Replica replica) {
+    public int calcWeightWithReplica(Replica replica) {
       int replicaCount = collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0);
       return totalWeight + (replicaCount > 0 ? SAME_COL_MULT : 1);
     }

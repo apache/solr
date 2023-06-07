@@ -37,9 +37,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
@@ -1414,7 +1412,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       @Override
-      public int getWeight() {
+      public int calcWeight() {
         return
             coresOnNode +
                 100 * (prioritizedFreeDiskGB > 0 && nodeFreeDiskGB < prioritizedFreeDiskGB ? 1 : 0) +
@@ -1439,8 +1437,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       @Override
-      public int getWeightWithReplica(Replica replica) {
-        return getWeight() + calculateWeightDiffWithReplica(replica);
+      public int calcWeightWithReplica(Replica replica) {
+        return calcWeight() + calculateWeightDiffWithReplica(replica);
       }
 
       @Override

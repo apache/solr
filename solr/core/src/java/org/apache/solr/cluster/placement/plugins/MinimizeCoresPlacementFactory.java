@@ -81,12 +81,12 @@ public class MinimizeCoresPlacementFactory
     }
 
     @Override
-    public int getWeight() {
+    public int calcWeight() {
       return coreCount;
     }
 
     @Override
-    public int getWeightWithReplica(Replica replica) {
+    public int calcWeightWithReplica(Replica replica) {
       return coreCount + 1;
     }
 

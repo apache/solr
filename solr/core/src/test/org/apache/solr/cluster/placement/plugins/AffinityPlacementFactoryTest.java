@@ -363,6 +363,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             List.of("NRT " + AZ1_NRT_HIGHCORES, "TLOG " + AZ3_TLOGPULL), // shard 1
             List.of("TLOG " + AZ2_TLOGPULL)); // shard 2
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();

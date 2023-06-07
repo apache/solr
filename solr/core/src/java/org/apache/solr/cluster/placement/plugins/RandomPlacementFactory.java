@@ -75,7 +75,7 @@ public class RandomPlacementFactory
       }
 
       @Override
-      public int getWeight() {
+      public int calcWeight() {
         return 0;
       }
 
@@ -86,8 +86,8 @@ public class RandomPlacementFactory
       }
 
       @Override
-      public int getWeightWithReplica(Replica replica) {
-        return getWeight();
+      public int calcWeightWithReplica(Replica replica) {
+        return calcWeight();
       }
 
       @Override
