@@ -113,9 +113,7 @@ public class BalanceReplicasAPI extends AdminAPIBase {
       this.async = async;
     }
 
-    @Schema(
-        description =
-            "The set of nodes across which replicas will be balanced.")
+    @Schema(description = "The set of nodes across which replicas will be balanced.")
     @JsonProperty(value = "nodes")
     public Set<String> nodes;
 

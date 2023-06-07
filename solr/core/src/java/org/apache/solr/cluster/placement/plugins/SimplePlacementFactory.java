@@ -45,7 +45,10 @@ public class SimplePlacementFactory
   public static class SimplePlacementPlugin extends OrderedNodePlacementPlugin {
 
     @Override
-    protected Map<Node, WeightedNode> getBaseWeightedNodes(PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) {
+    protected Map<Node, WeightedNode> getBaseWeightedNodes(
+        PlacementContext placementContext,
+        Set<Node> nodes,
+        Iterable<SolrCollection> relevantCollections) {
       HashMap<Node, WeightedNode> nodeVsShardCount = new HashMap<>();
 
       for (Node n : nodes) {
@@ -73,14 +76,19 @@ public class SimplePlacementFactory
 
     @Override
     public int calcRelevantWeightWithReplica(Replica replica) {
-      int colReplicaCount = collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0) + 1;
+      int colReplicaCount =
+          collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0) + 1;
       return getAllReplicasOnNode().size() + colReplicaCount * SAME_COL_MULT;
     }
 
     @Override
     protected boolean addProjectedReplicaWeights(Replica replica) {
-      int colReplicaCount = collectionReplicas.merge(replica.getShard().getCollection().getName(), 1, Integer::sum);
-      totalWeight += 1 + Math.pow(SAME_COL_MULT, colReplicaCount) - Math.pow(SAME_COL_MULT, colReplicaCount - 1);
+      int colReplicaCount =
+          collectionReplicas.merge(replica.getShard().getCollection().getName(), 1, Integer::sum);
+      totalWeight +=
+          1
+              + Math.pow(SAME_COL_MULT, colReplicaCount)
+              - Math.pow(SAME_COL_MULT, colReplicaCount - 1);
       return false;
     }
 
@@ -91,9 +99,14 @@ public class SimplePlacementFactory
 
     @Override
     protected void removeProjectedReplicaWeights(Replica replica) {
-      Integer colReplicaCount = collectionReplicas.computeIfPresent(replica.getShard().getCollection().getName(), (k, v) -> v - 1);
+      Integer colReplicaCount =
+          collectionReplicas.computeIfPresent(
+              replica.getShard().getCollection().getName(), (k, v) -> v - 1);
       if (colReplicaCount != null) {
-        totalWeight -= 1 + Math.pow(SAME_COL_MULT, colReplicaCount + 1) - Math.pow(SAME_COL_MULT, colReplicaCount);
+        totalWeight -=
+            1
+                + Math.pow(SAME_COL_MULT, colReplicaCount + 1)
+                - Math.pow(SAME_COL_MULT, colReplicaCount);
       }
     }
   }

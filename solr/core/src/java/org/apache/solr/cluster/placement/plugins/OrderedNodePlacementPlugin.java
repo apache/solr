@@ -67,16 +67,18 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       allNodes.addAll(request.getTargetNodes());
       allCollections.add(request.getCollection());
     }
-    Collection<WeightedNode> weightedNodes = getWeightedNodes(placementContext, allNodes, allCollections).values();
+    Collection<WeightedNode> weightedNodes =
+        getWeightedNodes(placementContext, allNodes, allCollections).values();
     for (PlacementRequest request : requests) {
       int totalReplicasPerShard = 0;
       for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
         totalReplicasPerShard += request.getCountReplicasToCreate(rt);
       }
 
-      List<WeightedNode> nodesForRequest = weightedNodes.stream()
-          .filter(wn -> request.getTargetNodes().contains(wn.getNode()))
-          .collect(Collectors.toList());
+      List<WeightedNode> nodesForRequest =
+          weightedNodes.stream()
+              .filter(wn -> request.getTargetNodes().contains(wn.getNode()))
+              .collect(Collectors.toList());
 
       Set<ReplicaPlacement> replicaPlacements =
           CollectionUtil.newHashSet(totalReplicasPerShard * request.getShardNames().size());
@@ -92,14 +94,16 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           if (replicaCount == 0) {
             continue;
           }
-          Replica pr = PlacementPlugin.createProjectedReplica(solrCollection, shardName, replicaType, null);
+          Replica pr =
+              PlacementPlugin.createProjectedReplica(solrCollection, shardName, replicaType, null);
           PriorityQueue<WeightedNode> nodesForReplicaType = new PriorityQueue<>();
           nodesForRequest.stream()
               .filter(n -> n.canAddReplica(pr))
-              .forEach(n -> {
-                n.sortByRelevantWeightWithReplica(pr);
-                n.addToSortedCollection(nodesForReplicaType);
-              });
+              .forEach(
+                  n -> {
+                    n.sortByRelevantWeightWithReplica(pr);
+                    n.addToSortedCollection(nodesForReplicaType);
+                  });
 
           if (nodesForReplicaType.size() < replicaCount) {
             throw new PlacementException(
@@ -116,7 +120,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           int nodesChosen = 0;
           while (nodesChosen < replicaCount) {
             if (nodesForReplicaType.isEmpty()) {
-              throw new PlacementException("There are not enough nodes to handle request to place replica");
+              throw new PlacementException(
+                  "There are not enough nodes to handle request to place replica");
             }
             WeightedNode node = nodesForReplicaType.poll();
             while (node.hasWeightChangedSinceSort()) {
@@ -126,13 +131,16 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
             }
             log.info("Node: {}", node.getNode());
 
-            boolean needsToResort = node.addReplica(
-                PlacementPlugin.createProjectedReplica(solrCollection, shardName, replicaType, node.getNode())
-            );
+            boolean needsToResort =
+                node.addReplica(
+                    PlacementPlugin.createProjectedReplica(
+                        solrCollection, shardName, replicaType, node.getNode()));
             nodesChosen += 1;
             replicaPlacements.add(
-                placementContext.getPlacementPlanFactory().createReplicaPlacement(
-                    solrCollection, shardName, node.getNode(), replicaType));
+                placementContext
+                    .getPlacementPlanFactory()
+                    .createReplicaPlacement(
+                        solrCollection, shardName, node.getNode(), replicaType));
             if (needsToResort) {
               List<WeightedNode> nodeList = new ArrayList<>(nodesForReplicaType);
               nodesForReplicaType.clear();
@@ -151,10 +159,16 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   }
 
   @Override
-  public BalancePlan computeBalancing(BalanceRequest balanceRequest, PlacementContext placementContext) throws PlacementException {
+  public BalancePlan computeBalancing(
+      BalanceRequest balanceRequest, PlacementContext placementContext) throws PlacementException {
     Map<Replica, Node> replicaMovements = new HashMap<>();
     TreeSet<WeightedNode> orderedNodes = new TreeSet<>();
-    Collection<WeightedNode> weightedNodes = getWeightedNodes(placementContext, balanceRequest.getNodes(), placementContext.getCluster().collections()).values();
+    Collection<WeightedNode> weightedNodes =
+        getWeightedNodes(
+                placementContext,
+                balanceRequest.getNodes(),
+                placementContext.getCluster().collections())
+            .values();
     // This is critical to store the last sort weight for this node
     weightedNodes.forEach(node -> node.addToSortedCollection(orderedNodes));
 
@@ -162,7 +176,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     // most cores, loop
     Map<Replica, Node> newReplicaMovements = new HashMap<>();
     ArrayList<WeightedNode> traversedHighNodes = new ArrayList<>(orderedNodes.size() - 1);
-    while (orderedNodes.size() > 1 && orderedNodes.first().calcWeight() < orderedNodes.last().calcWeight()) {
+    while (orderedNodes.size() > 1
+        && orderedNodes.first().calcWeight() < orderedNodes.last().calcWeight()) {
       WeightedNode lowestWeight = orderedNodes.pollFirst();
       if (lowestWeight == null) {
         break;
@@ -172,11 +187,17 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         lowestWeight.addToSortedCollection(orderedNodes);
         continue;
       }
-      log.debug("Lowest node: {}, weight: {}", lowestWeight.getNode().getName(), lowestWeight.calcWeight());
+      log.debug(
+          "Lowest node: {}, weight: {}",
+          lowestWeight.getNode().getName(),
+          lowestWeight.calcWeight());
 
       newReplicaMovements.clear();
-      // If a compatible node was found to move replicas, break and find the lowest weighted node again
-      while (newReplicaMovements.isEmpty() && !orderedNodes.isEmpty() && orderedNodes.last().calcWeight() > lowestWeight.calcWeight() + 1) {
+      // If a compatible node was found to move replicas, break and find the lowest weighted node
+      // again
+      while (newReplicaMovements.isEmpty()
+          && !orderedNodes.isEmpty()
+          && orderedNodes.last().calcWeight() > lowestWeight.calcWeight() + 1) {
         WeightedNode highestWeight = orderedNodes.pollLast();
         if (highestWeight == null) {
           break;
@@ -186,7 +207,10 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           highestWeight.addToSortedCollection(orderedNodes);
           continue;
         }
-        log.debug("Highest node: {}, weight: {}", highestWeight.getNode().getName(), highestWeight.calcWeight());
+        log.debug(
+            "Highest node: {}, weight: {}",
+            highestWeight.getNode().getName(),
+            highestWeight.calcWeight());
 
         traversedHighNodes.add(highestWeight);
         // select a replica from the node with the most cores to move to the node with the least
@@ -195,19 +219,27 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         int combinedNodeWeights = highestWeight.calcWeight() + lowestWeight.calcWeight();
         for (Replica r : availableReplicasToMove) {
           // Only continue if the replica can be removed from the old node and moved to the new node
-          if (highestWeight.canRemoveReplicas(Set.of(r)).isEmpty() || !lowestWeight.canAddReplica(r)) {
+          if (highestWeight.canRemoveReplicas(Set.of(r)).isEmpty()
+              || !lowestWeight.canAddReplica(r)) {
             continue;
           }
           lowestWeight.addReplica(r);
           highestWeight.removeReplica(r);
           int lowestWeightWithReplica = lowestWeight.calcWeight();
           int highestWeightWithoutReplica = highestWeight.calcWeight();
-          log.debug("Replica: {}, lowestWith: {} ({}), highestWithout: {} ({})", r.getReplicaName(), lowestWeightWithReplica, lowestWeight.canAddReplica(r), highestWeightWithoutReplica, highestWeight.canRemoveReplicas(Set.of(r)));
+          log.debug(
+              "Replica: {}, lowestWith: {} ({}), highestWithout: {} ({})",
+              r.getReplicaName(),
+              lowestWeightWithReplica,
+              lowestWeight.canAddReplica(r),
+              highestWeightWithoutReplica,
+              highestWeight.canRemoveReplicas(Set.of(r)));
 
           // If the combined weight of both nodes is lower after the move, make the move.
           // Otherwise, make the move if it doesn't cause the weight of the higher node to
           // go below the weight of the lower node, because that is over-correction.
-          if (highestWeightWithoutReplica + lowestWeightWithReplica >= combinedNodeWeights && highestWeightWithoutReplica < lowestWeightWithReplica) {
+          if (highestWeightWithoutReplica + lowestWeightWithReplica >= combinedNodeWeights
+              && highestWeightWithoutReplica < lowestWeightWithReplica) {
             // Undo the move
             lowestWeight.removeReplica(r);
             highestWeight.addReplica(r);
@@ -217,7 +249,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           newReplicaMovements.put(r, lowestWeight.getNode());
 
           // Do not go beyond here, do another loop and see if other nodes can move replicas.
-          // It might end up being the same nodes in the next loop that end up moving another replica, but that's ok.
+          // It might end up being the same nodes in the next loop that end up moving another
+          // replica, but that's ok.
           break;
         }
       }
@@ -230,11 +263,18 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       }
     }
 
-    return placementContext.getBalancePlanFactory().createBalancePlan(balanceRequest, replicaMovements);
+    return placementContext
+        .getBalancePlanFactory()
+        .createBalancePlan(balanceRequest, replicaMovements);
   }
 
-  protected Map<Node, WeightedNode> getWeightedNodes(PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) throws PlacementException {
-    Map<Node, WeightedNode> weightedNodes =  getBaseWeightedNodes(placementContext, nodes, relevantCollections);
+  protected Map<Node, WeightedNode> getWeightedNodes(
+      PlacementContext placementContext,
+      Set<Node> nodes,
+      Iterable<SolrCollection> relevantCollections)
+      throws PlacementException {
+    Map<Node, WeightedNode> weightedNodes =
+        getBaseWeightedNodes(placementContext, nodes, relevantCollections);
 
     for (SolrCollection collection : placementContext.getCluster().collections()) {
       for (Shard shard : collection.shards()) {
@@ -250,7 +290,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     return weightedNodes;
   }
 
-  protected abstract Map<Node, WeightedNode> getBaseWeightedNodes(PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) throws PlacementException;
+  protected abstract Map<Node, WeightedNode> getBaseWeightedNodes(
+      PlacementContext placementContext,
+      Set<Node> nodes,
+      Iterable<SolrCollection> relevantCollections)
+      throws PlacementException;
 
   @Override
   public void verifyAllowedModification(
@@ -277,36 +321,40 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       DeleteReplicasRequest deleteReplicasRequest, PlacementContext placementContext)
       throws PlacementException {
     Map<Node, List<Replica>> nodesRepresented =
-        deleteReplicasRequest.getReplicas()
-            .stream()
+        deleteReplicasRequest.getReplicas().stream()
             .collect(Collectors.groupingBy(Replica::getNode));
 
     Map<Node, WeightedNode> weightedNodes =
-        getWeightedNodes(placementContext, nodesRepresented.keySet(), placementContext.getCluster().collections());
+        getWeightedNodes(
+            placementContext,
+            nodesRepresented.keySet(),
+            placementContext.getCluster().collections());
 
-    PlacementModificationException placementModificationException = new PlacementModificationException("delete replica(s) rejected");
+    PlacementModificationException placementModificationException =
+        new PlacementModificationException("delete replica(s) rejected");
     for (Map.Entry<Node, List<Replica>> entry : nodesRepresented.entrySet()) {
       WeightedNode node = weightedNodes.get(entry.getKey());
       if (node == null) {
-        entry.getValue().forEach(replica ->
-            placementModificationException.addRejectedModification(
-                replica.toString(),
-                "could not load information for node: " + entry.getKey().getName())
-        );
+        entry
+            .getValue()
+            .forEach(
+                replica ->
+                    placementModificationException.addRejectedModification(
+                        replica.toString(),
+                        "could not load information for node: " + entry.getKey().getName()));
       }
       node.canRemoveReplicas(entry.getValue())
-          .forEach((replica, reason) ->
-              placementModificationException.addRejectedModification(
-                  replica.toString(),
-                  reason)
-          );
+          .forEach(
+              (replica, reason) ->
+                  placementModificationException.addRejectedModification(
+                      replica.toString(), reason));
     }
     if (!placementModificationException.getRejectedModifications().isEmpty()) {
       throw placementModificationException;
     }
   }
 
-  public static abstract class WeightedNode implements Comparable<WeightedNode> {
+  public abstract static class WeightedNode implements Comparable<WeightedNode> {
     private final Node node;
     private final Map<String, Map<String, Set<Replica>>> replicas;
     private IntSupplier sortWeightCalculator;
@@ -332,12 +380,10 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     public Set<Replica> getAllReplicasOnNode() {
-      return
-          replicas.values()
-              .stream()
-              .flatMap(shard -> shard.values().stream())
-              .flatMap(Collection::stream)
-              .collect(Collectors.toSet());
+      return replicas.values().stream()
+          .flatMap(shard -> shard.values().stream())
+          .flatMap(Collection::stream)
+          .collect(Collectors.toSet());
     }
 
     public Set<String> getCollectionsOnNode() {
@@ -353,17 +399,15 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     public boolean hasShardOnNode(Shard shard) {
-      return
-          replicas
-              .getOrDefault(shard.getCollection().getName(), Collections.emptyMap())
-              .containsKey(shard.getShardName());
+      return replicas
+          .getOrDefault(shard.getCollection().getName(), Collections.emptyMap())
+          .containsKey(shard.getShardName());
     }
 
     public Set<Replica> getReplicasForShardOnNode(Shard shard) {
-      return
-          Optional.ofNullable(replicas.get(shard.getCollection().getName()))
-              .map(m -> m.get(shard.getShardName()))
-              .orElseGet(Collections::emptySet);
+      return Optional.ofNullable(replicas.get(shard.getCollection().getName()))
+          .map(m -> m.get(shard.getShardName()))
+          .orElseGet(Collections::emptySet);
     }
 
     public void addToSortedCollection(Collection<WeightedNode> collection) {
@@ -387,7 +431,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           .add(replica);
     }
 
-    final public void initReplica(Replica replica) {
+    public final void initReplica(Replica replica) {
       if (addReplicaToInternalState(replica)) {
         initReplicaWeights(replica);
       }
@@ -397,7 +441,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       // Defaults to a NO-OP
     }
 
-    final public boolean addReplica(Replica replica) {
+    public final boolean addReplica(Replica replica) {
       if (addReplicaToInternalState(replica)) {
         return addProjectedReplicaWeights(replica);
       } else {
@@ -417,7 +461,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      * Determine if the given replicas can be removed from the node.
      *
      * @param replicas the replicas to remove
-     * @return a mapping from replicas that cannot be removed to the reason why they can't be removed.
+     * @return a mapping from replicas that cannot be removed to the reason why they can't be
+     *     removed.
      */
     public Map<Replica, String> canRemoveReplicas(Collection<Replica> replicas) {
       Map<Replica, String> replicaRemovalExceptions = new HashMap<>();
@@ -429,7 +474,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       return replicaRemovalExceptions;
     }
 
-    final public void removeReplica(Replica replica) {
+    public final void removeReplica(Replica replica) {
       // Only remove the projected replicaWeight if the node has this replica
       AtomicBoolean hasReplica = new AtomicBoolean(false);
       replicas.computeIfPresent(
@@ -442,11 +487,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                     hasReplica.set(true);
                   }
                   return reps.isEmpty() ? null : reps;
-                }
-            );
+                });
             return shardReps.isEmpty() ? null : shardReps;
-          }
-      );
+          });
       if (hasReplica.get()) {
         removeProjectedReplicaWeights(replica);
       }

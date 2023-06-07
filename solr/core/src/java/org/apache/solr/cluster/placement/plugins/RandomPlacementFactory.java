@@ -56,7 +56,10 @@ public class RandomPlacementFactory
     }
 
     @Override
-    protected Map<Node, WeightedNode> getBaseWeightedNodes(PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) {
+    protected Map<Node, WeightedNode> getBaseWeightedNodes(
+        PlacementContext placementContext,
+        Set<Node> nodes,
+        Iterable<SolrCollection> relevantCollections) {
       HashMap<Node, WeightedNode> nodeMap = new HashMap<>();
 
       for (Node node : nodes) {

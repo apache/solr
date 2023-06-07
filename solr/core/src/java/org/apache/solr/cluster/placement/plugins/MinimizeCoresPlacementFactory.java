@@ -51,7 +51,10 @@ public class MinimizeCoresPlacementFactory
 
     @Override
     protected Map<Node, WeightedNode> getBaseWeightedNodes(
-        PlacementContext placementContext, Set<Node> nodes, Iterable<SolrCollection> relevantCollections) throws PlacementException {
+        PlacementContext placementContext,
+        Set<Node> nodes,
+        Iterable<SolrCollection> relevantCollections)
+        throws PlacementException {
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
       AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
       attributeFetcher.requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES);

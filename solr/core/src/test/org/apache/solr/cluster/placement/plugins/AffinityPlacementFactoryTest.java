@@ -1269,7 +1269,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     int perNode = TOTAL_REPLICAS > numNodes ? TOTAL_REPLICAS / numNodes : 1;
     replicasPerNode.forEach(
         (node, count) -> {
-          assertEquals("Wrong number of replicas for node: " + node.getName(), perNode, count.get());
+          assertEquals(
+              "Wrong number of replicas for node: " + node.getName(), perNode, count.get());
         });
     shardsPerNode.forEach(
         (node, names) -> {

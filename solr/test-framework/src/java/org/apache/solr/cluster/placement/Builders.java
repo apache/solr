@@ -109,8 +109,7 @@ public class Builders {
     private static final PlacementPlanFactory PLACEMENT_PLAN_FACTORY =
         new PlacementPlanFactoryImpl();
 
-    private static final BalancePlanFactory BALANCE_PLAN_FACTORY =
-        new BalancePlanFactoryImpl();
+    private static final BalancePlanFactory BALANCE_PLAN_FACTORY = new BalancePlanFactoryImpl();
 
     public PlacementContext buildPlacementContext() {
       Cluster cluster = build();
