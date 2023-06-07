@@ -202,7 +202,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     // primary to secondary (1:1)
     private final Map<String, String> withCollections;
     // secondary to primary (1:N)
-    private final Map<String, Set<String>> colocatedWith;
+    private final Map<String, Set<String>> collocatedWith;
 
     private final Map<String, Set<String>> nodeTypes;
 
@@ -228,12 +228,12 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       this.spreadAcrossDomains = spreadAcrossDomains;
       this.withCollections = withCollections;
       if (withCollections.isEmpty()) {
-        colocatedWith = Map.of();
+        collocatedWith = Map.of();
       } else {
-        colocatedWith = new HashMap<>();
+        collocatedWith = new HashMap<>();
         withCollections.forEach(
             (primary, secondary) ->
-                colocatedWith.computeIfAbsent(secondary, s -> new HashSet<>()).add(primary));
+                collocatedWith.computeIfAbsent(secondary, s -> new HashSet<>()).add(primary));
       }
 
       if (collectionNodeTypes.isEmpty()) {
@@ -432,7 +432,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         throws PlacementModificationException {
       Cluster cluster = placementContext.getCluster();
       Set<String> colocatedCollections =
-          colocatedWith.getOrDefault(deleteCollectionRequest.getCollection().getName(), Set.of());
+          collocatedWith.getOrDefault(deleteCollectionRequest.getCollection().getName(), Set.of());
       for (String primaryName : colocatedCollections) {
         try {
           if (cluster.getCollection(primaryName) != null) {
@@ -456,7 +456,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         throws PlacementModificationException {
       Cluster cluster = placementContext.getCluster();
       SolrCollection secondaryCollection = deleteReplicasRequest.getCollection();
-      Set<String> colocatedCollections = colocatedWith.get(secondaryCollection.getName());
+      Set<String> colocatedCollections = collocatedWith.get(secondaryCollection.getName());
       if (colocatedCollections == null) {
         return;
       }
@@ -1440,9 +1440,43 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                     .map(s -> s.stream().anyMatch(nodeType::contains))
                     .orElse(true) &&
                 Optional.ofNullable(withCollections.get(collection))
-                    .map(withColl -> this.getCollections().contains(withColl))
+                    .map(this::hasCollectionOnNode)
                     .orElse(true) &&
                 (minimalFreeDiskGB <= 0 || nodeFreeDiskGB - getProjectedSizeOfReplica(replica)  > minimalFreeDiskGB);
+      }
+
+      @Override
+      public Map<Replica, String> canRemoveReplicas(Collection<Replica> replicas) {
+        Map<Replica, String> replicaRemovalExceptions = new HashMap<>();
+        Map<String, Map<String, Set<Replica>>> removals = new HashMap<>();
+        for (Replica replica : replicas) {
+          Set<Replica> replicasForShardOnNode = getReplicasForShardOnNode(replica.getShard());
+
+          if (!replicasForShardOnNode.contains(replica)) {
+            replicaRemovalExceptions.put(replica, "The replica does not exist on the node");
+            continue;
+          }
+
+          SolrCollection collection = replica.getShard().getCollection();
+          Set<String> collocatedCollections = new HashSet<>();
+          Optional.ofNullable(collocatedWith.get(collection.getName()))
+                  .ifPresent(collocatedCollections::addAll);
+          collocatedCollections.retainAll(getCollectionsOnNode());
+          if (collocatedCollections.isEmpty()) {
+            continue;
+          }
+
+          // There are collocatedCollections for this shard, so make sure there is a replica of this shard left on the node after it is removed
+          Set<Replica> replicasRemovedForShard = removals
+              .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
+              .computeIfAbsent(replica.getShard().getShardName(), k -> new HashSet<>());
+          replicasRemovedForShard.add(replica);
+
+          if (replicasRemovedForShard.size() >= replicasForShardOnNode.size()) {
+            replicaRemovalExceptions.put(replica, "co-located with replicas of " + collocatedCollections);
+          }
+        }
+        return replicaRemovalExceptions;
       }
 
       @Override

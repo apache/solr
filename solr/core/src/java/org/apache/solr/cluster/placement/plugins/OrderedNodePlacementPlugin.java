@@ -191,18 +191,18 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         traversedHighNodes.add(highestWeight);
         // select a replica from the node with the most cores to move to the node with the least
         // cores
-        Set<Replica> availableReplicasToMove = highestWeight.getAllReplicas();
+        Set<Replica> availableReplicasToMove = highestWeight.getAllReplicasOnNode();
         int combinedNodeWeights = highestWeight.calcWeight() + lowestWeight.calcWeight();
         for (Replica r : availableReplicasToMove) {
           // Only continue if the replica can be removed from the old node and moved to the new node
-          if (!highestWeight.canRemoveReplica(r) || !lowestWeight.canAddReplica(r)) {
+          if (highestWeight.canRemoveReplicas(Set.of(r)).isEmpty() || !lowestWeight.canAddReplica(r)) {
             continue;
           }
           lowestWeight.addReplica(r);
           highestWeight.removeReplica(r);
           int lowestWeightWithReplica = lowestWeight.calcWeight();
           int highestWeightWithoutReplica = highestWeight.calcWeight();
-          log.debug("Replica: {}, lowestWith: {} ({}), highestWithout: {} ({})", r.getReplicaName(), lowestWeightWithReplica, lowestWeight.canAddReplica(r), highestWeightWithoutReplica, highestWeight.canRemoveReplica(r));
+          log.debug("Replica: {}, lowestWith: {} ({}), highestWithout: {} ({})", r.getReplicaName(), lowestWeightWithReplica, lowestWeight.canAddReplica(r), highestWeightWithoutReplica, highestWeight.canRemoveReplicas(Set.of(r)));
 
           // If the combined weight of both nodes is lower after the move, make the move.
           // Otherwise, make the move if it doesn't cause the weight of the higher node to
@@ -276,16 +276,33 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   protected void verifyDeleteReplicas(
       DeleteReplicasRequest deleteReplicasRequest, PlacementContext placementContext)
       throws PlacementException {
-    Set<Node> relevantNodes = deleteReplicasRequest.getReplicas().stream().map(Replica::getNode).collect(Collectors.toSet());
-    Map<Node, WeightedNode> weightedNodes = getWeightedNodes(placementContext, relevantNodes, placementContext.getCluster().collections());
-    for (Replica replica : deleteReplicasRequest.getReplicas()) {
-      WeightedNode node = weightedNodes.get(replica.getNode());
+    Map<Node, List<Replica>> nodesRepresented =
+        deleteReplicasRequest.getReplicas()
+            .stream()
+            .collect(Collectors.groupingBy(Replica::getNode));
+
+    Map<Node, WeightedNode> weightedNodes =
+        getWeightedNodes(placementContext, nodesRepresented.keySet(), placementContext.getCluster().collections());
+
+    PlacementModificationException placementModificationException = new PlacementModificationException("delete replica(s) rejected");
+    for (Map.Entry<Node, List<Replica>> entry : nodesRepresented.entrySet()) {
+      WeightedNode node = weightedNodes.get(entry.getKey());
       if (node == null) {
-        throw new PlacementModificationException("Could not get information for node: " + replica.getNode());
+        entry.getValue().forEach(replica ->
+            placementModificationException.addRejectedModification(
+                replica.toString(),
+                "could not load information for node: " + entry.getKey().getName())
+        );
       }
-      if (!node.canRemoveReplica(replica)) {
-        throw new PlacementModificationException("Can not remove replica: " + replica);
-      }
+      node.canRemoveReplicas(entry.getValue())
+          .forEach((replica, reason) ->
+              placementModificationException.addRejectedModification(
+                  replica.toString(),
+                  reason)
+          );
+    }
+    if (!placementModificationException.getRejectedModifications().isEmpty()) {
+      throw placementModificationException;
     }
   }
 
@@ -314,7 +331,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       return node;
     }
 
-    public Set<Replica> getAllReplicas() {
+    public Set<Replica> getAllReplicasOnNode() {
       return
           replicas.values()
               .stream()
@@ -323,15 +340,26 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
               .collect(Collectors.toSet());
     }
 
-    public Set<String> getCollections() {
+    public Set<String> getCollectionsOnNode() {
       return replicas.keySet();
     }
 
-    public Set<String> getShards(String collection) {
+    public boolean hasCollectionOnNode(String collection) {
+      return replicas.containsKey(collection);
+    }
+
+    public Set<String> getShardsOnNode(String collection) {
       return replicas.getOrDefault(collection, Collections.emptyMap()).keySet();
     }
 
-    public Set<Replica> getReplicasForShard(Shard shard) {
+    public boolean hasShardOnNode(Shard shard) {
+      return
+          replicas
+              .getOrDefault(shard.getCollection().getName(), Collections.emptyMap())
+              .containsKey(shard.getShardName());
+    }
+
+    public Set<Replica> getReplicasForShardOnNode(Shard shard) {
       return
           Optional.ofNullable(replicas.get(shard.getCollection().getName()))
               .map(m -> m.get(shard.getShardName()))
@@ -349,7 +377,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
     public boolean canAddReplica(Replica replica) {
       // By default, do not allow two replicas of the same shard on a node
-      return getReplicasForShard(replica.getShard()).isEmpty();
+      return getReplicasForShardOnNode(replica.getShard()).isEmpty();
     }
 
     private boolean addReplicaToInternalState(Replica replica) {
@@ -385,8 +413,20 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      */
     protected abstract boolean addProjectedReplicaWeights(Replica replica);
 
-    public boolean canRemoveReplica(Replica replica) {
-      return getReplicasForShard(replica.getShard()).contains(replica);
+    /**
+     * Determine if the given replicas can be removed from the node.
+     *
+     * @param replicas the replicas to remove
+     * @return a mapping from replicas that cannot be removed to the reason why they can't be removed.
+     */
+    public Map<Replica, String> canRemoveReplicas(Collection<Replica> replicas) {
+      Map<Replica, String> replicaRemovalExceptions = new HashMap<>();
+      for (Replica replica : replicas) {
+        if (!getReplicasForShardOnNode(replica.getShard()).contains(replica)) {
+          replicaRemovalExceptions.put(replica, "The replica does not exist on the node");
+        }
+      }
+      return replicaRemovalExceptions;
     }
 
     final public void removeReplica(Replica replica) {

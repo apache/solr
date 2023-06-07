@@ -74,7 +74,7 @@ public class SimplePlacementFactory
     @Override
     public int calcRelevantWeightWithReplica(Replica replica) {
       int colReplicaCount = collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0) + 1;
-      return getAllReplicas().size() + colReplicaCount * SAME_COL_MULT;
+      return getAllReplicasOnNode().size() + colReplicaCount * SAME_COL_MULT;
     }
 
     @Override
