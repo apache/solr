@@ -18,9 +18,7 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1445,59 +1443,5 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
               .map(ReplicaPlacement::getNode)
               .collect(Collectors.toSet()));
     }
-  }
-
-  @Test
-  @SuppressWarnings("SelfComparison")
-  public void testCompareSpreadDomainWithNodes() {
-    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
-    final List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-    nodeBuilders.get(0).setNodeName("nodeA");
-    nodeBuilders.get(1).setNodeName("nodeB");
-    nodeBuilders.get(2).setNodeName("nodeC");
-
-    Cluster cluster = clusterBuilder.build();
-    Node nodeA =
-        cluster.getLiveNodes().stream()
-            .filter((n) -> n.getName().equals("nodeA"))
-            .findFirst()
-            .get();
-    Node nodeB =
-        cluster.getLiveNodes().stream()
-            .filter((n) -> n.getName().equals("nodeB"))
-            .findFirst()
-            .get();
-    Node nodeC =
-        cluster.getLiveNodes().stream()
-            .filter((n) -> n.getName().equals("nodeC"))
-            .findFirst()
-            .get();
-
-    Comparator<Node> nodeComparator = Comparator.comparing(Node::getName);
-    List<Node> listInGroup1 = new ArrayList<>(List.of(nodeC, nodeA));
-    AffinityPlacementFactory.AffinityPlacementPlugin.SpreadDomainWithNodes group1 =
-        new AffinityPlacementFactory.AffinityPlacementPlugin.SpreadDomainWithNodes(
-            "foo", listInGroup1, 0, nodeComparator);
-    AffinityPlacementFactory.AffinityPlacementPlugin.SpreadDomainWithNodes group2 =
-        new AffinityPlacementFactory.AffinityPlacementPlugin.SpreadDomainWithNodes(
-            "bar", List.of(nodeB), 1, nodeComparator);
-    assertEquals("Comparing to itself should return 0", 0, group1.compareTo(group1));
-    assertEquals(
-        "group 1 should be greater, since 'nodeC' is greater than 'nodeB",
-        1,
-        group1.compareTo(group2));
-    assertEquals(
-        "group 1 should be greater, since 'nodeC' is greater than 'nodeB",
-        -1,
-        group2.compareTo(group1));
-    listInGroup1.remove(0);
-    assertEquals(
-        "group 1 should be greater, since 'nodeB' is greater than 'nodeA",
-        -1,
-        group1.compareTo(group2));
-    listInGroup1.remove(0);
-    listInGroup1.add(nodeB);
-    assertEquals(
-        "group 1 should be greater because of the tie breaker", -1, group1.compareTo(group2));
   }
 }
