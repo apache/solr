@@ -74,10 +74,6 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         totalReplicasPerShard += request.getCountReplicasToCreate(rt);
       }
 
-//      if (request.getTargetNodes().size() < totalReplicasPerShard) {
-//        throw new PlacementException("Cluster size too small for number of replicas per shard");
-//      }
-
       List<WeightedNode> nodesForRequest = weightedNodes.stream()
           .filter(wn -> request.getTargetNodes().contains(wn.getNode()))
           .collect(Collectors.toList());
@@ -101,7 +97,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           nodesForRequest.stream()
               .filter(n -> n.canAddReplica(pr))
               .forEach(n -> {
-                n.sortWithReplicaAdded(pr);
+                n.sortByRelevantWeightWithReplica(pr);
                 n.addToSortedCollection(nodesForReplicaType);
               });
 
@@ -306,8 +302,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       this.sortWeightCalculator = this::calcWeight;
     }
 
-    public void sortWithReplicaAdded(Replica replica) {
-      sortWeightCalculator = () -> calcWeightWithReplica(replica);
+    public void sortByRelevantWeightWithReplica(Replica replica) {
+      sortWeightCalculator = () -> calcRelevantWeightWithReplica(replica);
     }
 
     public void sortWithoutChanges() {
@@ -349,7 +345,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
     public abstract int calcWeight();
 
-    public abstract int calcWeightWithReplica(Replica replica);
+    public abstract int calcRelevantWeightWithReplica(Replica replica);
 
     public boolean canAddReplica(Replica replica) {
       // By default, do not allow two replicas of the same shard on a node

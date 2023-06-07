@@ -86,7 +86,7 @@ public class MinimizeCoresPlacementFactory
     }
 
     @Override
-    public int calcWeightWithReplica(Replica replica) {
+    public int calcRelevantWeightWithReplica(Replica replica) {
       return coreCount + 1;
     }
 

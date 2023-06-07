@@ -72,15 +72,15 @@ public class SimplePlacementFactory
     }
 
     @Override
-    public int calcWeightWithReplica(Replica replica) {
-      int replicaCount = collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0);
-      return totalWeight + (replicaCount > 0 ? SAME_COL_MULT : 1);
+    public int calcRelevantWeightWithReplica(Replica replica) {
+      int colReplicaCount = collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0) + 1;
+      return getAllReplicas().size() + colReplicaCount * SAME_COL_MULT;
     }
 
     @Override
     protected boolean addProjectedReplicaWeights(Replica replica) {
-      int replicaCount = collectionReplicas.merge(replica.getShard().getCollection().getName(), 1, Integer::sum);
-      totalWeight += replicaCount > 1 ? SAME_COL_MULT : 1;
+      int colReplicaCount = collectionReplicas.merge(replica.getShard().getCollection().getName(), 1, Integer::sum);
+      totalWeight += 1 + Math.pow(SAME_COL_MULT, colReplicaCount) - Math.pow(SAME_COL_MULT, colReplicaCount - 1);
       return false;
     }
 
@@ -91,8 +91,10 @@ public class SimplePlacementFactory
 
     @Override
     protected void removeProjectedReplicaWeights(Replica replica) {
-      Integer replicaCount = collectionReplicas.computeIfPresent(replica.getShard().getCollection().getName(), (k, v) -> v - 1);
-      totalWeight -= replicaCount != null && replicaCount > 0 ? SAME_COL_MULT : 1;
+      Integer colReplicaCount = collectionReplicas.computeIfPresent(replica.getShard().getCollection().getName(), (k, v) -> v - 1);
+      if (colReplicaCount != null) {
+        totalWeight -= 1 + Math.pow(SAME_COL_MULT, colReplicaCount + 1) - Math.pow(SAME_COL_MULT, colReplicaCount);
+      }
     }
   }
 }

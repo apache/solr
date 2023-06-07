@@ -1421,6 +1421,15 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       @Override
+      public int calcRelevantWeightWithReplica(Replica replica) {
+        return
+            coresOnNode +
+                100 * (prioritizedFreeDiskGB > 0 && nodeFreeDiskGB - getProjectedSizeOfReplica(replica) < prioritizedFreeDiskGB ? 1 : 0) +
+                10000 * projectReplicaSpreadWeight(replica) +
+                1000000 * projectAZWeight(replica);
+      }
+
+      @Override
       public boolean canAddReplica(Replica replica) {
         String collection = replica.getShard().getCollection().getName();
         return
@@ -1434,11 +1443,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                     .map(withColl -> this.getCollections().contains(withColl))
                     .orElse(true) &&
                 (minimalFreeDiskGB <= 0 || nodeFreeDiskGB - getProjectedSizeOfReplica(replica)  > minimalFreeDiskGB);
-      }
-
-      @Override
-      public int calcWeightWithReplica(Replica replica) {
-        return calcWeight() + calculateWeightDiffWithReplica(replica);
       }
 
       @Override
@@ -1484,14 +1488,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
       }
 
-      private int calculateWeightDiffWithReplica(Replica replica) {
-        return
-            1 +
-            100 * (nodeFreeDiskGB >= prioritizedFreeDiskGB && nodeFreeDiskGB - getProjectedSizeOfReplica(replica) < prioritizedFreeDiskGB ? 1 : 0) +
-            10000 * projectReplicaSpreadWeightDiff(replica) +
-            1000000 * projectAZWeightDiff(replica);
-      }
-
       private double getProjectedSizeOfReplica(Replica replica) {
         return attrValues
             .getCollectionMetrics(replica.getShard().getCollection().getName())
@@ -1514,12 +1510,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
       }
 
-      private int projectReplicaSpreadWeightDiff(Replica replica) {
+      private int projectReplicaSpreadWeight(Replica replica) {
         if (replica != null && affinityPlacementContext.doSpreadAcrossDomains) {
           return
               Optional.ofNullable(affinityPlacementContext.spreadDomainUsage.get(replica.getShard().getCollection().getName()))
                   .map(m -> m.get(replica.getShard().getShardName()))
-                  .map(rs -> getDiffProjectedReplicaSpreadWeight(rs, spreadDomain, 1))
+                  .map(rs -> rs.projectOverMinimum(spreadDomain, 1))
+                  .map(i -> i * i)
                   .orElse(0);
         } else {
           return 0;
@@ -1540,7 +1537,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
       }
 
-      private int projectAZWeightDiff(Replica replica) {
+      private int projectAZWeight(Replica replica) {
         if (affinityPlacementContext.allAvailabilityZones.size() < 2) {
           return 0;
         } else {
@@ -1548,15 +1545,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               Optional.ofNullable(affinityPlacementContext.availabilityZoneUsage.get(replica.getShard().getCollection().getName()))
                   .map(m -> m.get(replica.getShard().getShardName()))
                   .map(m -> m.get(replica.getType()))
-                  .map(rs -> getDiffProjectedReplicaSpreadWeight(rs, availabilityZone, 1))
+                  .map(rs -> rs.projectOverMinimum(availabilityZone, 1))
+                  .map(i -> i * i)
                   .orElse(0);
         }
-      }
-
-      private int getDiffProjectedReplicaSpreadWeight(ReplicaSpread replicaSpread, String key, int replicaDelta) {
-        int original = replicaSpread.overMinimum(key);
-        int projected = replicaSpread.projectOverMinimum(key, replicaDelta);
-        return projected * projected - original * original;
       }
     }
 

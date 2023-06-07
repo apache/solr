@@ -86,7 +86,7 @@ public class RandomPlacementFactory
       }
 
       @Override
-      public int calcWeightWithReplica(Replica replica) {
+      public int calcRelevantWeightWithReplica(Replica replica) {
         return calcWeight();
       }
 
