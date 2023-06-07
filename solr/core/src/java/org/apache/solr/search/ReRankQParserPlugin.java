@@ -131,7 +131,6 @@ public class ReRankQParserPlugin extends QParserPlugin {
   private static final class ReRankQuery extends AbstractReRankQuery {
     private final Query reRankQuery;
     private final double reRankWeight;
-    private final ReRankOperator reRankOperator;
 
     @Override
     public int hashCode() {
@@ -172,7 +171,6 @@ public class ReRankQParserPlugin extends QParserPlugin {
           reRankOperator);
       this.reRankQuery = reRankQuery;
       this.reRankWeight = reRankWeight;
-      this.reRankOperator = reRankOperator;
     }
 
     @Override
