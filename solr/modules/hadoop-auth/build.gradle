@@ -96,7 +96,7 @@ dependencies {
     exclude group:'org.apache.kerby', module:'kerby-xdr'
     exclude group:'org.apache.kerby', module:'token-provider'
     exclude group:'org.slf4j', module:'slf4j-reload4j'
-    exclude group:'org.apache.kerby', module:'kerb-admin'
+    exclude group:'org.apache.kerby', module:'kerb-admin' // For future use with v2.x
   })
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
