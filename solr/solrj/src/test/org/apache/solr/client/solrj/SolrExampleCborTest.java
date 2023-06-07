@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
+import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -256,8 +257,9 @@ public class SolrExampleCborTest extends SolrExampleTests {
                 mapDocs.add(doc.toMap(new LinkedHashMap<>()));
               }
 
-              CBORFactory jf = new CBORFactory();
-              ObjectMapper cborMapper = new ObjectMapper(jf);
+              ObjectMapper cborMapper =
+                  new ObjectMapper(
+                      CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build());
               cborMapper.writeValue(os, mapDocs);
             }
 
