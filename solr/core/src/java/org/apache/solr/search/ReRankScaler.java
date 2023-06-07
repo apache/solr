@@ -192,6 +192,16 @@ public class ReRankScaler {
       localMax = Math.max(localMax, score);
     }
 
+    if(localMin == localMax) {
+      // All the scores are the same set the halfway between min and max
+      float halfway = (min + max) / 2;
+      for (Map.Entry<Integer, Float> entry : docScoreMap.entrySet()) {
+        int doc = entry.getKey();
+        scaledScores.put(doc, halfway);
+      }
+      return scaledScores;
+    }
+
     //System.out.println("LOCAL MIN/MAX"+localMin+":"+localMax);
     for (Map.Entry<Integer, Float> entry : docScoreMap.entrySet()) {
       int doc = entry.getKey();
