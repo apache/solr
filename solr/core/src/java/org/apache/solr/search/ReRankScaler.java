@@ -96,13 +96,13 @@ public class ReRankScaler {
       scaledOriginalScoreMap = originalScoreMap;
     }
 
-    //System.out.println("HOW MANY:"+howMany);
+    // System.out.println("HOW MANY:"+howMany);
     for (int i = 0; i < howMany; i++) {
       ScoreDoc rescoredDoc = rescoredDocs[i];
       int doc = rescoredDoc.doc;
       float score = rescoredDoc.score;
       float rescore = getReRankScore(originalScoreMap.get(doc), score, reRankOperator);
-      //System.out.println("RESCORE:"+rescore);
+      // System.out.println("RESCORE:"+rescore);
       if (rescore > 0) {
         rescoredMap.put(doc, rescore);
       }
@@ -162,7 +162,8 @@ public class ReRankScaler {
 
   public static float getReRankScore(
       float originalScore, float combinedScore, ReRankOperator reRankOperator) {
-    //System.out.println("Orignal and Combined:"+originalScore+" : "+combinedScore+" : "+reRankOperator.toString());
+    // System.out.println("Orignal and Combined:"+originalScore+" : "+combinedScore+" :
+    // "+reRankOperator.toString());
     if (originalScore == combinedScore) {
       return 0;
     }
@@ -180,19 +181,19 @@ public class ReRankScaler {
 
   public static Map<Integer, Float> minMaxScaleScores(
       Map<Integer, Float> docScoreMap, float min, float max) {
-    //System.out.println("SCALING:"+docScoreMap);
-    //System.out.println("BETWEEN:"+min+" : "+ max);
+    // System.out.println("SCALING:"+docScoreMap);
+    // System.out.println("BETWEEN:"+min+" : "+ max);
     Map<Integer, Float> scaledScores = new HashMap<>();
     float localMin = Float.MAX_VALUE;
     float localMax = Float.MIN_VALUE;
 
     for (float score : docScoreMap.values()) {
-      //System.out.println("SCORE/MIN/MAX: "+score+"/"+localMin+"/"+localMax);
+      // System.out.println("SCORE/MIN/MAX: "+score+"/"+localMin+"/"+localMax);
       localMin = Math.min(localMin, score);
       localMax = Math.max(localMax, score);
     }
 
-    if(localMin == localMax) {
+    if (localMin == localMax) {
       // All the scores are the same set the halfway between min and max
       float halfway = (min + max) / 2;
       for (Map.Entry<Integer, Float> entry : docScoreMap.entrySet()) {
@@ -202,7 +203,7 @@ public class ReRankScaler {
       return scaledScores;
     }
 
-    //System.out.println("LOCAL MIN/MAX"+localMin+":"+localMax);
+    // System.out.println("LOCAL MIN/MAX"+localMin+":"+localMax);
     for (Map.Entry<Integer, Float> entry : docScoreMap.entrySet()) {
       int doc = entry.getKey();
       float score = entry.getValue();
@@ -220,7 +221,7 @@ public class ReRankScaler {
       }
     }
 
-    //System.out.println("SCALED:"+scaledScores);
+    // System.out.println("SCALED:"+scaledScores);
 
     return scaledScores;
   }

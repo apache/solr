@@ -131,7 +131,8 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
-      ScoreDoc[] mainScoreDocsClone = (mainScale != null || reRankScale != null) ? deepClone(mainScoreDocs) : null;
+      ScoreDoc[] mainScoreDocsClone =
+          (mainScale != null || reRankScale != null) ? deepClone(mainScoreDocs) : null;
       ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
@@ -207,9 +208,9 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
   private ScoreDoc[] deepClone(ScoreDoc[] scoreDocs) {
     ScoreDoc[] scoreDocs1 = new ScoreDoc[scoreDocs.length];
-    for(int i=0; i<scoreDocs.length; i++) {
+    for (int i = 0; i < scoreDocs.length; i++) {
       ScoreDoc scoreDoc = scoreDocs[i];
-      if(scoreDoc != null) {
+      if (scoreDoc != null) {
         scoreDocs1[i] = new ScoreDoc(scoreDoc.doc, scoreDoc.score);
       }
     }
