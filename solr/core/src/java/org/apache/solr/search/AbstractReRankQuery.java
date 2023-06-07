@@ -42,7 +42,13 @@ public abstract class AbstractReRankQuery extends RankQuery {
   protected String reRankScale;
   protected ReRankOperator reRankOperator;
 
-  public AbstractReRankQuery(Query mainQuery, int reRankDocs, Rescorer reRankQueryRescorer, String mainScale, String reRankScale, ReRankOperator reRankOperator) {
+  public AbstractReRankQuery(
+      Query mainQuery,
+      int reRankDocs,
+      Rescorer reRankQueryRescorer,
+      String mainScale,
+      String reRankScale,
+      ReRankOperator reRankOperator) {
     this.mainQuery = mainQuery;
     this.reRankDocs = reRankDocs;
     this.reRankQueryRescorer = reRankQueryRescorer;
@@ -83,7 +89,15 @@ public abstract class AbstractReRankQuery extends RankQuery {
     }
 
     return new ReRankCollector(
-        reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority, mainScale, reRankScale, reRankOperator);
+        reRankDocs,
+        len,
+        reRankQueryRescorer,
+        cmd,
+        searcher,
+        boostedPriority,
+        mainScale,
+        reRankScale,
+        reRankOperator);
   }
 
   @Override

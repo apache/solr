@@ -160,9 +160,11 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       if (howMany == rescoredDocs.scoreDocs.length) {
-        if(mainScale != null || reRankScale != null) {
+        if (mainScale != null || reRankScale != null) {
           ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
-          rescoredDocs.scoreDocs = reRankScaler.scaleScores(mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+          rescoredDocs.scoreDocs =
+              reRankScaler.scaleScores(
+                  mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
         }
         return rescoredDocs; // Just return the rescoredDocs
       } else if (howMany > rescoredDocs.scoreDocs.length) {
@@ -177,9 +179,11 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
             0,
             rescoredDocs.scoreDocs.length); // overlay the re-ranked docs.
         rescoredDocs.scoreDocs = scoreDocs;
-        if(mainScale != null || reRankScale != null) {
+        if (mainScale != null || reRankScale != null) {
           ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
-          rescoredDocs.scoreDocs = reRankScaler.scaleScores(mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+          rescoredDocs.scoreDocs =
+              reRankScaler.scaleScores(
+                  mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
         }
         return rescoredDocs;
       } else {
@@ -187,9 +191,11 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
         ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
         System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
         rescoredDocs.scoreDocs = scoreDocs;
-        if(mainScale != null || reRankScale != null) {
+        if (mainScale != null || reRankScale != null) {
           ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
-          rescoredDocs.scoreDocs = reRankScaler.scaleScores(mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+          rescoredDocs.scoreDocs =
+              reRankScaler.scaleScores(
+                  mainScoreDocs, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
         }
         return rescoredDocs;
       }
@@ -197,7 +203,6 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
-
 
   public static class BoostedComp implements Comparator<ScoreDoc> {
     IntFloatHashMap boostedMap;

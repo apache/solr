@@ -84,7 +84,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
       String mainScale = localParams.get(RERANK_MAIN_SCALE);
       String reRankScale = localParams.get(RERANK_SCALE);
 
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator, mainScale, reRankQueryString);
+      return new ReRankQuery(
+          reRankQuery, reRankDocs, reRankWeight, reRankOperator, mainScale, reRankQueryString);
     }
   }
 
@@ -132,7 +133,6 @@ public class ReRankQParserPlugin extends QParserPlugin {
     private final double reRankWeight;
     private final ReRankOperator reRankOperator;
 
-
     @Override
     public int hashCode() {
       return 31 * classHash()
@@ -157,11 +157,19 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
 
     public ReRankQuery(
-        Query reRankQuery, int reRankDocs, double reRankWeight, ReRankOperator reRankOperator, String mainScale, String reRankScale) {
+        Query reRankQuery,
+        int reRankDocs,
+        double reRankWeight,
+        ReRankOperator reRankOperator,
+        String mainScale,
+        String reRankScale) {
       super(
           defaultQuery,
           reRankDocs,
-          new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator), mainScale, reRankScale, reRankOperator);
+          new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator),
+          mainScale,
+          reRankScale,
+          reRankOperator);
       this.reRankQuery = reRankQuery;
       this.reRankWeight = reRankWeight;
       this.reRankOperator = reRankOperator;
@@ -182,7 +190,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator, mainScale, reRankScale)
+      return new ReRankQuery(
+              reRankQuery, reRankDocs, reRankWeight, reRankOperator, mainScale, reRankScale)
           .wrap(rewrittenMainQuery);
     }
   }
