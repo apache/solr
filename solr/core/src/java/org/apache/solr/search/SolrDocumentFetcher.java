@@ -544,16 +544,11 @@ public class SolrDocumentFetcher {
 
     @Override
     public StoredValue storedValue() {
-      if (fieldType().stored() == false) {
-        return null;
-      } else {
-        return new StoredValue(stringValue());
-      }
+      return new StoredValue(stringValue());
     }
 
     @Override
     public InvertableType invertableType() {
-      // TODO SOLR-16799 when to use InvertableType.TOKEN_STREAM and when to use null?
       return null;
     }
   }
