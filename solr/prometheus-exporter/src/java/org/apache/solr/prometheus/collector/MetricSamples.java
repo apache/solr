@@ -58,10 +58,9 @@ public class MetricSamples {
       return;
     }
 
-    if(seenSamples.add(sample)) {
-        sampleFamily.samples.add(sample);
+    if (seenSamples.add(sample)) {
+      sampleFamily.samples.add(sample);
     }
-
   }
 
   public void addAll(MetricSamples other) {
@@ -88,5 +87,4 @@ public class MetricSamples {
   private void addUnseenSamples(Collector.MetricFamilySamples metricFamilySamples) {
     seenSamples.addAll(metricFamilySamples.samples);
   }
-
 }
