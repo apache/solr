@@ -21,7 +21,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -197,7 +196,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
 
     byte[] b = Files.readAllBytes(filmsJson);
     byte[] bytes = serializeToCbor(b);
-    assertEquals(210439, bytes.length);
+    assertEquals(290672, bytes.length);
     LongAdder docsSz = new LongAdder();
     new CborLoader(null, (document) -> docsSz.increment()).stream(new ByteArrayInputStream(bytes));
     assertEquals(films.size(), docsSz.intValue());
@@ -210,10 +209,9 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     // Read JSON file as a JsonNode
     JsonNode jsonNode = jsonMapper.readTree(is);
     // Create a CBOR ObjectMapper
+    CBORFactory jf = new CBORFactory();
+    ObjectMapper cborMapper = new ObjectMapper(jf);
     baos = new ByteArrayOutputStream();
-
-    ObjectMapper cborMapper =
-        new ObjectMapper(CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build());
     JsonGenerator jsonGenerator = cborMapper.createGenerator(baos);
 
     jsonGenerator.writeTree(jsonNode);

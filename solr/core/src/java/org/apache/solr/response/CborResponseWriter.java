@@ -34,8 +34,7 @@ public class CborResponseWriter extends BinaryResponseWriter {
   final CBORFactory cborFactory;
 
   public CborResponseWriter() {
-    cborFactory = CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build();
-    ;
+    cborFactory = new CBORFactory();
   }
 
   @Override

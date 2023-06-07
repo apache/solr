@@ -19,7 +19,6 @@ package org.apache.solr.handler.loader;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,10 +43,7 @@ public class CborLoader {
   private final Consumer<SolrInputDocument> sink;
 
   public CborLoader(CBORFactory cborFactory, Consumer<SolrInputDocument> sink) {
-    this.cborFactory =
-        cborFactory == null
-            ? CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build()
-            : cborFactory;
+    this.cborFactory = cborFactory == null ? new CBORFactory() : cborFactory;
     this.sink = sink;
   }
 

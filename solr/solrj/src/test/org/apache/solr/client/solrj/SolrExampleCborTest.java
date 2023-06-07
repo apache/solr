@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -257,9 +256,8 @@ public class SolrExampleCborTest extends SolrExampleTests {
                 mapDocs.add(doc.toMap(new LinkedHashMap<>()));
               }
 
-              ObjectMapper cborMapper =
-                  new ObjectMapper(
-                      CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build());
+              CBORFactory jf = new CBORFactory();
+              ObjectMapper cborMapper = new ObjectMapper(jf);
               cborMapper.writeValue(os, mapDocs);
             }
 
@@ -303,8 +301,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
       @Override
       @SuppressWarnings({"rawtypes", "unchecked"})
       public NamedList<Object> processResponse(InputStream b, String encoding) {
-        ObjectMapper objectMapper =
-            new ObjectMapper(CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build());
+        ObjectMapper objectMapper = new ObjectMapper(new CBORFactory());
         try {
           Map m = (Map) objectMapper.readValue(b, Object.class);
           NamedList nl = new NamedList();
