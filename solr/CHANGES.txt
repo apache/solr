@@ -138,6 +138,10 @@ Improvements
   "SYNCSHARD" is now available at `POST /api/collections/cName/shards/sName/sync-shard`, and "RENAME" is now available at
   `POST /api/collections/cName/rename`. (Jason Gerlowski)
 
+* SOLR-16398: The v2 "balance-shard-unique" API has been tweaked to be more intuitive, by removing the top-level command
+  specifier from the request body, and changing the path. The v2 functionality can now be accessed at:
+  `POST /api/collections/cName/balance-shard-unique {...}` (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
