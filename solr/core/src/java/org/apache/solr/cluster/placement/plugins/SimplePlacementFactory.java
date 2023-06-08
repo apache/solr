@@ -73,11 +73,18 @@ public class SimplePlacementFactory
 
     /**
      * The weight of the SameCollWeightedNode is the sum of:
-     * <li/> The number of replicas on the node
-     * <li/> 5 * for each collection, the sum of:
-     *   <ul><li/>(the number of replicas for that collection - 1)^2</ul>
-     * <li/> 1000 * for each shard, the sum of:
-     *   <ul><li/>(the number of replicas for that shard - 1)^2</ul>
+     * <li/>The number of replicas on the node
+     * <li/>5 * for each collection, the sum of:
+     *
+     *     <ul>
+     *       <li/>(the number of replicas for that collection - 1)^2
+     *     </ul>
+     *
+     * <li/>1000 * for each shard, the sum of:
+     *
+     *     <ul>
+     *       <li/>(the number of replicas for that shard - 1)^2
+     *     </ul>
      *
      * @return the weight
      */

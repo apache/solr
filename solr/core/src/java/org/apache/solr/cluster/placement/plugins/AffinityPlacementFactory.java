@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,13 +31,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
+import org.apache.solr.cluster.placement.PlacementModificationException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.ReplicaMetric;
@@ -226,6 +230,31 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       // We make things reproducible in tests by using test seed if any
       String seed = System.getProperty("tests.seed");
+    }
+
+    @Override
+    protected void verifyDeleteCollection(
+        DeleteCollectionRequest deleteCollectionRequest, PlacementContext placementContext)
+        throws PlacementModificationException {
+      Cluster cluster = placementContext.getCluster();
+      Set<String> collocatedCollections =
+          collocatedWith.getOrDefault(deleteCollectionRequest.getCollection().getName(), Set.of());
+      for (String primaryName : collocatedCollections) {
+        try {
+          if (cluster.getCollection(primaryName) != null) {
+            // still exists
+            throw new PlacementModificationException(
+                "collocated collection "
+                    + primaryName
+                    + " of "
+                    + deleteCollectionRequest.getCollection().getName()
+                    + " still present");
+          }
+        } catch (IOException e) {
+          throw new PlacementModificationException(
+              "failed to retrieve collocated collection information", e);
+        }
+      }
     }
 
     private static final class AffinityPlacementContext {

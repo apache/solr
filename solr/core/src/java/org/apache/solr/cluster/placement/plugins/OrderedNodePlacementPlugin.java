@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.PriorityQueue;
@@ -147,6 +148,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           if (replicasPlaced < replicaCount) {
             throw new PlacementException(
                 String.format(
+                    Locale.ROOT,
                     "Not enough eligible nodes to place %d replica(s) of type %s for shard %s of collection %s. Only able to place %d replicas.",
                     replicaCount,
                     replicaType,

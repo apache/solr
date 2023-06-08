@@ -335,7 +335,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient());
       fail("should have failed: " + rsp);
     } catch (Exception e) {
-      assertTrue(e.toString(), e.toString().contains("colocated collection"));
+      assertTrue(e.toString(), e.toString().contains("collocated collection"));
     }
   }
 
@@ -383,8 +383,8 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       fail("should have failed due to no nodes with the types: " + rsp);
     } catch (Exception e) {
       assertTrue(
-          "should contain 'no nodes with types':" + e,
-          e.toString().contains("no nodes with types"));
+          "should contain 'Not enough eligible nodes to place':" + e,
+          e.toString().contains("Not enough eligible nodes to place"));
     }
     System.setProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_0");
     CollectionAdminResponse rsp =
