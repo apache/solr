@@ -115,19 +115,11 @@ public class SimplePlacementFactory
 
     @Override
     protected boolean addProjectedReplicaWeights(Replica replica) {
-      int colReplicaCount =
+      int colReplicaCountWith =
           collectionReplicas.merge(replica.getShard().getCollection().getName(), 1, Integer::sum);
-      totalWeight += 1;
-      if (colReplicaCount > 1) {
-        totalWeight +=
-            SAME_COL_MULT * (Math.pow(colReplicaCount - 1, 2) - Math.pow(colReplicaCount - 2, 2));
-      }
-      int shardReplicaCount = getReplicasForShardOnNode(replica.getShard()).size();
-      if (shardReplicaCount > 1) {
-        totalWeight +=
-            SAME_SHARD_MULT
-                * (Math.pow(shardReplicaCount - 1, 2) - Math.pow(shardReplicaCount - 2, 2));
-      }
+      int shardReplicaCountWith = getReplicasForShardOnNode(replica.getShard()).size();
+      totalWeight +=
+          addedWeightOfAdditionalReplica(colReplicaCountWith - 1, shardReplicaCountWith - 1);
       return false;
     }
 
@@ -138,16 +130,26 @@ public class SimplePlacementFactory
 
     @Override
     protected void removeProjectedReplicaWeights(Replica replica) {
-      Integer colReplicaCount =
+      Integer colReplicaCountWithout =
           collectionReplicas.computeIfPresent(
               replica.getShard().getCollection().getName(), (k, v) -> v - 1);
-      if (colReplicaCount != null) {
-        totalWeight -= 1;
-        if (colReplicaCount >= 1) {
-          totalWeight -=
-              SAME_COL_MULT * (Math.pow(colReplicaCount, 2) - Math.pow(colReplicaCount - 1, 2));
-        }
+      int shardReplicaCountWithout = getReplicasForShardOnNode(replica.getShard()).size();
+      totalWeight -=
+          addedWeightOfAdditionalReplica(colReplicaCountWithout, shardReplicaCountWithout);
+    }
+
+    private int addedWeightOfAdditionalReplica(
+        int colReplicaCountWithout, int shardReplicaCountWithout) {
+      int additionalWeight = 1;
+      if (colReplicaCountWithout > 0) {
+        // x * 2 - 1 === x^2 - (x - 1)^2
+        additionalWeight += SAME_COL_MULT * (colReplicaCountWithout * 2 - 1);
       }
+      if (shardReplicaCountWithout > 0) {
+        // x * 2 - 1 === x^2 - (x - 1)^2
+        additionalWeight += SAME_SHARD_MULT * (colReplicaCountWithout * 2 - 1);
+      }
+      return additionalWeight;
     }
   }
 }
