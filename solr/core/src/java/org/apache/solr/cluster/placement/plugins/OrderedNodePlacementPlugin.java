@@ -265,12 +265,12 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           break;
         }
       }
-      orderedNodes.addAll(traversedHighNodes);
+      traversedHighNodes.forEach(n -> n.addToSortedCollection(orderedNodes));
       traversedHighNodes.clear();
       if (newReplicaMovements.size() > 0) {
         replicaMovements.putAll(newReplicaMovements);
         // There are no replicas to move to the lowestWeight, remove it from our loop
-        orderedNodes.add(lowestWeight);
+        lowestWeight.addToSortedCollection(orderedNodes);
       }
     }
 
@@ -369,6 +369,14 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
   }
 
+  /**
+   * A class that determines the weight of a given node and the replicas that reside on it.
+   * <p>
+   * The OrderedNodePlacementPlugin uses the weights determined here to place and balance replicas across
+   * the cluster.
+   *
+   * @lucene.experimental
+   */
   public abstract static class WeightedNode implements Comparable<WeightedNode> {
     private final Node node;
     private final Map<String, Map<String, Set<Replica>>> replicas;
