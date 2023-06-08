@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,6 +34,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 
 public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
@@ -76,7 +76,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
               + " are live, therefore replicas cannot be moved");
     }
     List<Replica> sourceReplicas = getReplicasOfNode(source, clusterState);
-    Map<Replica, String> replicaMovements = new HashMap<>(sourceReplicas.size());
+    Map<Replica, String> replicaMovements = CollectionUtil.newHashMap(sourceReplicas.size());
 
     if (target == null || target.isEmpty()) {
       List<Assign.AssignRequest> assignRequests = new ArrayList<>(sourceReplicas.size());

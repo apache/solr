@@ -46,6 +46,7 @@ import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.ReplicaMetric;
 import org.apache.solr.cluster.placement.ShardMetrics;
 import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -296,7 +297,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       AffinityPlacementContext affinityPlacementContext = new AffinityPlacementContext();
       affinityPlacementContext.doSpreadAcrossDomains = spreadAcrossDomains;
 
-      Map<Node, WeightedNode> affinityNodeMap = new HashMap<>(nodes.size());
+      Map<Node, WeightedNode> affinityNodeMap = CollectionUtil.newHashMap(nodes.size());
       for (Node node : nodes) {
         AffinityNode affinityNode =
             newNodeFromMetrics(node, attrValues, affinityPlacementContext, skipNodesWithErrors);

@@ -87,10 +87,14 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       SolrCollection solrCollection = request.getCollection();
       // Now place randomly all replicas of all shards on available nodes
       for (String shardName : request.getShardNames()) {
-        log.info("Collection: {}, shard: {}", solrCollection.getName(), shardName);
-
         for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-          log.info("ReplicaType: {}", replicaType);
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Placing replicas for Collection: {}, Shard: {}, ReplicaType: {}",
+                solrCollection.getName(),
+                shardName,
+                replicaType);
+          }
           int replicaCount = request.getCountReplicasToCreate(replicaType);
           if (replicaCount == 0) {
             continue;
@@ -110,16 +114,27 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           while (!nodesForReplicaType.isEmpty() && replicasPlaced < replicaCount) {
             WeightedNode node = nodesForReplicaType.poll();
             if (!node.canAddReplica(pr)) {
+              if (log.isDebugEnabled()) {
+                log.debug(
+                    "Node can no longer accept replica, removing from selection list: {}",
+                    node.getNode());
+              }
               continue;
             }
             if (node.hasWeightChangedSinceSort()) {
-              log.info("Out of date Node: {}", node.getNode());
+              if (log.isDebugEnabled()) {
+                log.debug(
+                    "Node's sort is out-of-date, adding back to selection list: {}",
+                    node.getNode());
+              }
               node.addToSortedCollection(nodesForReplicaType);
               // The node will be re-sorted,
               // so go back to the top of the loop to get the new lowest-sorted node
               continue;
             }
-            log.info("Node: {}", node.getNode());
+            if (log.isDebugEnabled()) {
+              log.debug("Node chosen to host replica: {}", node.getNode());
+            }
 
             boolean needsToResortAll =
                 node.addReplica(
@@ -132,6 +147,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                     .createReplicaPlacement(
                         solrCollection, shardName, node.getNode(), replicaType));
             if (needsToResortAll) {
+              if (log.isDebugEnabled()) {
+                log.debug("Replica addition requires re-sorting of entire selection list");
+              }
               List<WeightedNode> nodeList = new ArrayList<>(nodesForReplicaType);
               nodesForReplicaType.clear();
               nodeList.forEach(n -> n.addToSortedCollection(nodesForReplicaType));
@@ -197,14 +215,21 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         break;
       }
       if (lowestWeight.hasWeightChangedSinceSort()) {
-        // Re-sort this node and go back to find the lowest
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "Re-sorting lowest weighted node: {}, sorting weight is out-of-date.",
+              lowestWeight.getNode().getName());
+        }
+        // Re-sort this node and go back to find the lowest weight
         lowestWeight.addToSortedCollection(orderedNodes);
         continue;
       }
-      log.info(
-          "Lowest node: {}, weight: {}",
-          lowestWeight.getNode().getName(),
-          lowestWeight.calcWeight());
+      if (log.isDebugEnabled()) {
+        log.debug(
+            "Lowest weighted node: {}, weight: {}",
+            lowestWeight.getNode().getName(),
+            lowestWeight.calcWeight());
+      }
 
       newReplicaMovements.clear();
       // If a compatible node was found to move replicas, break and find the lowest weighted node
@@ -217,14 +242,21 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           break;
         }
         if (highestWeight.hasWeightChangedSinceSort()) {
-          // Re-sort this node and go back to find the lowest
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Re-sorting highest weighted node: {}, sorting weight is out-of-date.",
+                highestWeight.getNode().getName());
+          }
+          // Re-sort this node and go back to find the highest weight
           highestWeight.addToSortedCollection(orderedNodes);
           continue;
         }
-        log.debug(
-            "Highest node: {}, weight: {}",
-            highestWeight.getNode().getName(),
-            highestWeight.calcWeight());
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "Highest weighted node: {}, weight: {}",
+              highestWeight.getNode().getName(),
+              highestWeight.calcWeight());
+        }
 
         traversedHighNodes.add(highestWeight);
         // select a replica from the node with the most cores to move to the node with the least
@@ -241,13 +273,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           highestWeight.removeReplica(r);
           int lowestWeightWithReplica = lowestWeight.calcWeight();
           int highestWeightWithoutReplica = highestWeight.calcWeight();
-          log.info(
-              "Replica: {}, lowestWith: {} ({}), highestWithout: {} ({})",
-              r.getReplicaName(),
-              lowestWeightWithReplica,
-              lowestWeight.canAddReplica(r),
-              highestWeightWithoutReplica,
-              highestWeight.canRemoveReplicas(Set.of(r)));
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Replica: {}, toNode weight with replica: {}, fromNode weight without replica: {}",
+                r.getReplicaName(),
+                lowestWeightWithReplica,
+                highestWeightWithoutReplica);
+          }
 
           // If the combined weight of both nodes is lower after the move, make the move.
           // Otherwise, make the move if it doesn't cause the weight of the higher node to
@@ -259,7 +291,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
             highestWeight.addReplica(r);
             continue;
           }
-          log.info("Replica Movement Chosen!");
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Replica Movement chosen. From: {}, To: {}, Replica: {}",
+                highestWeight.getNode().getName(),
+                lowestWeight.getNode().getName(),
+                r);
+          }
           newReplicaMovements.put(r, lowestWeight.getNode());
 
           // Do not go beyond here, do another loop and see if other nodes can move replicas.
@@ -453,7 +491,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     private boolean addReplicaToInternalState(Replica replica) {
       return replicas
           .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
-          .computeIfAbsent(replica.getShard().getShardName(), k -> new HashSet<>(1))
+          .computeIfAbsent(replica.getShard().getShardName(), k -> CollectionUtil.newHashSet(1))
           .add(replica);
     }
 

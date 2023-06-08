@@ -20,7 +20,6 @@ package org.apache.solr.cluster.placement.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +39,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +108,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
     try {
       Map<org.apache.solr.cluster.Replica, Node> rawReplicaMovements =
           plugin.computeBalancing(balanceRequest, placementContext).getReplicaMovements();
-      Map<Replica, String> replicaMovements = new HashMap<>(rawReplicaMovements.size());
+      Map<Replica, String> replicaMovements = CollectionUtil.newHashMap(rawReplicaMovements.size());
       for (Map.Entry<org.apache.solr.cluster.Replica, Node> movement :
           rawReplicaMovements.entrySet()) {
         Replica converted = findReplica(solrCloudManager, movement.getKey());
