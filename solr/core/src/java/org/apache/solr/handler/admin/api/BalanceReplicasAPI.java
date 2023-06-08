@@ -46,7 +46,7 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/** V2 API for balacing the replicas that already exist across a set of nodes. */
+/** V2 API for balancing the replicas that already exist across a set of nodes. */
 @Path("cluster/balanceReplicas")
 public class BalanceReplicasAPI extends AdminAPIBase {
 
@@ -63,7 +63,7 @@ public class BalanceReplicasAPI extends AdminAPIBase {
   @PermissionName(COLL_EDIT_PERM)
   @Operation(summary = "Balance Replicas across the given set of Nodes.")
   public SolrJerseyResponse balanceReplicas(
-      @RequestBody(description = "Contains user provided parameters", required = true)
+      @RequestBody(description = "Contains user provided parameters")
           BalanceReplicasRequestBody requestBody)
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);

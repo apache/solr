@@ -48,7 +48,8 @@ public class SimplePlacementFactory
     protected Map<Node, WeightedNode> getBaseWeightedNodes(
         PlacementContext placementContext,
         Set<Node> nodes,
-        Iterable<SolrCollection> relevantCollections) {
+        Iterable<SolrCollection> relevantCollections,
+        boolean skipNodesWithErrors) {
       HashMap<Node, WeightedNode> nodeVsShardCount = new HashMap<>();
 
       for (Node n : nodes) {
@@ -79,6 +80,11 @@ public class SimplePlacementFactory
       int colReplicaCount =
           collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0) + 1;
       return getAllReplicasOnNode().size() + colReplicaCount * SAME_COL_MULT;
+    }
+
+    @Override
+    public boolean canAddReplica(Replica replica) {
+      return true;
     }
 
     @Override

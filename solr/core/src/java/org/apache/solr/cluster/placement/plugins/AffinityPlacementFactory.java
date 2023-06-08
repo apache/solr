@@ -241,7 +241,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     protected Map<Node, WeightedNode> getBaseWeightedNodes(
         PlacementContext placementContext,
         Set<Node> nodes,
-        Iterable<SolrCollection> relevantCollections)
+        Iterable<SolrCollection> relevantCollections,
+        boolean skipNodesWithErrors)
         throws PlacementException {
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
       AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
@@ -268,7 +269,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       Map<Node, WeightedNode> affinityNodeMap = new HashMap<>(nodes.size());
       for (Node node : nodes) {
-        AffinityNode affinityNode = newNodeFromMetrics(node, attrValues, affinityPlacementContext);
+        AffinityNode affinityNode = newNodeFromMetrics(node, attrValues, affinityPlacementContext, skipNodesWithErrors);
         if (affinityNode != null) {
           affinityNodeMap.put(node, affinityNode);
         }
@@ -278,7 +279,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     }
 
     AffinityNode newNodeFromMetrics(
-        Node node, AttributeValues attrValues, AffinityPlacementContext affinityPlacementContext)
+        Node node, AttributeValues attrValues, AffinityPlacementContext affinityPlacementContext, boolean skipNodesWithErrors)
         throws PlacementException {
       Set<Replica.ReplicaType> supportedReplicaTypes =
           attrValues.getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP).stream()
@@ -344,14 +345,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       } else {
         spreadDomain = null;
       }
-      if (nodeFreeDiskGB.isEmpty()) {
+      if (nodeFreeDiskGB.isEmpty() && skipNodesWithErrors) {
         if (log.isWarnEnabled()) {
           log.warn(
               "Unknown free disk on node {}, excluding it from placement decisions.",
               node.getName());
         }
         return null;
-      } else if (nodeNumCores.isEmpty()) {
+      } else if (nodeNumCores.isEmpty() && skipNodesWithErrors) {
         if (log.isWarnEnabled()) {
           log.warn(
               "Unknown number of cores on node {}, excluding it from placement decisions.",
@@ -365,8 +366,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
             affinityPlacementContext,
             supportedReplicaTypes,
             nodeType,
-            nodeNumCores.get(),
-            nodeFreeDiskGB.get(),
+            nodeNumCores.orElse(0),
+            nodeFreeDiskGB.orElse(0D),
             az,
             spreadDomain);
       }
@@ -452,11 +453,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Map<String, Map<String, Set<Replica>>> removals = new HashMap<>();
         for (Replica replica : replicas) {
           Set<Replica> replicasForShardOnNode = getReplicasForShardOnNode(replica.getShard());
-
-          if (!replicasForShardOnNode.contains(replica)) {
-            replicaRemovalExceptions.put(replica, "The replica does not exist on the node");
-            continue;
-          }
 
           SolrCollection collection = replica.getShard().getCollection();
           Set<String> collocatedCollections = new HashSet<>();

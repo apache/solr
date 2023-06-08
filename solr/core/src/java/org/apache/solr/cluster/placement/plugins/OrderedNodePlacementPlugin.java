@@ -68,7 +68,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       allCollections.add(request.getCollection());
     }
     Collection<WeightedNode> weightedNodes =
-        getWeightedNodes(placementContext, allNodes, allCollections).values();
+        getWeightedNodes(placementContext, allNodes, allCollections, true).values();
     for (PlacementRequest request : requests) {
       int totalReplicasPerShard = 0;
       for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
@@ -167,10 +167,14 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         getWeightedNodes(
                 placementContext,
                 balanceRequest.getNodes(),
-                placementContext.getCluster().collections())
+                placementContext.getCluster().collections(),
+                true)
             .values();
     // This is critical to store the last sort weight for this node
-    weightedNodes.forEach(node -> node.addToSortedCollection(orderedNodes));
+    weightedNodes.forEach(node -> {
+      node.sortWithoutChanges();
+      node.addToSortedCollection(orderedNodes);
+    });
 
     // While the node with the least cores still has room to take a replica from the node with the
     // most cores, loop
@@ -187,7 +191,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         lowestWeight.addToSortedCollection(orderedNodes);
         continue;
       }
-      log.debug(
+      log.info(
           "Lowest node: {}, weight: {}",
           lowestWeight.getNode().getName(),
           lowestWeight.calcWeight());
@@ -227,7 +231,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           highestWeight.removeReplica(r);
           int lowestWeightWithReplica = lowestWeight.calcWeight();
           int highestWeightWithoutReplica = highestWeight.calcWeight();
-          log.debug(
+          log.info(
               "Replica: {}, lowestWith: {} ({}), highestWithout: {} ({})",
               r.getReplicaName(),
               lowestWeightWithReplica,
@@ -245,7 +249,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
             highestWeight.addReplica(r);
             continue;
           }
-          log.debug("Replica Movement Chosen!");
+          log.info("Replica Movement Chosen!");
           newReplicaMovements.put(r, lowestWeight.getNode());
 
           // Do not go beyond here, do another loop and see if other nodes can move replicas.
@@ -271,10 +275,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   protected Map<Node, WeightedNode> getWeightedNodes(
       PlacementContext placementContext,
       Set<Node> nodes,
-      Iterable<SolrCollection> relevantCollections)
+      Iterable<SolrCollection> relevantCollections,
+      boolean skipNodesWithErrors)
       throws PlacementException {
     Map<Node, WeightedNode> weightedNodes =
-        getBaseWeightedNodes(placementContext, nodes, relevantCollections);
+        getBaseWeightedNodes(placementContext, nodes, relevantCollections, skipNodesWithErrors);
 
     for (SolrCollection collection : placementContext.getCluster().collections()) {
       for (Shard shard : collection.shards()) {
@@ -293,7 +298,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   protected abstract Map<Node, WeightedNode> getBaseWeightedNodes(
       PlacementContext placementContext,
       Set<Node> nodes,
-      Iterable<SolrCollection> relevantCollections)
+      Iterable<SolrCollection> relevantCollections,
+      boolean skipNodesWithErrors)
       throws PlacementException;
 
   @Override
@@ -328,7 +334,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         getWeightedNodes(
             placementContext,
             nodesRepresented.keySet(),
-            placementContext.getCluster().collections());
+            placementContext.getCluster().collections(),
+            false);
 
     PlacementModificationException placementModificationException =
         new PlacementModificationException("delete replica(s) rejected");
@@ -465,13 +472,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      *     removed.
      */
     public Map<Replica, String> canRemoveReplicas(Collection<Replica> replicas) {
-      Map<Replica, String> replicaRemovalExceptions = new HashMap<>();
-      for (Replica replica : replicas) {
-        if (!getReplicasForShardOnNode(replica.getShard()).contains(replica)) {
-          replicaRemovalExceptions.put(replica, "The replica does not exist on the node");
-        }
-      }
-      return replicaRemovalExceptions;
+      return Collections.emptyMap();
     }
 
     public final void removeReplica(Replica replica) {

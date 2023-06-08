@@ -53,7 +53,8 @@ public class MinimizeCoresPlacementFactory
     protected Map<Node, WeightedNode> getBaseWeightedNodes(
         PlacementContext placementContext,
         Set<Node> nodes,
-        Iterable<SolrCollection> relevantCollections)
+        Iterable<SolrCollection> relevantCollections,
+        boolean skipNodesWithErrors)
         throws PlacementException {
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
       AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
@@ -62,13 +63,13 @@ public class MinimizeCoresPlacementFactory
       AttributeValues attrValues = attributeFetcher.fetchAttributes();
       HashMap<Node, WeightedNode> nodeMap = new HashMap<>();
       for (Node node : nodes) {
-        if (attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).isEmpty()) {
+        if (skipNodesWithErrors && attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).isEmpty()) {
           throw new PlacementException("Can't get number of cores in " + node);
         }
         nodeMap.put(
             node,
             new NodeWithCoreCount(
-                node, attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).get()));
+                node, attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).orElse(0)));
       }
 
       return nodeMap;
