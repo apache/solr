@@ -20,7 +20,6 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 

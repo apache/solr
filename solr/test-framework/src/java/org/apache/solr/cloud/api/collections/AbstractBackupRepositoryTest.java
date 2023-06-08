@@ -31,10 +31,6 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.Test;
 
 public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
-
-  private static final boolean IGNORE_NONEXISTENT = true;
-  private static final boolean REPORT_NONEXISTENT = false;
-
   protected abstract BackupRepository getRepository();
 
   protected abstract URI getBaseUri() throws URISyntaxException;
@@ -187,19 +183,14 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       addFile(repo, file2Uri);
       addFile(repo, file3Uri);
 
-      // Ensure nonexistent files are handled differently based on boolean flag param
+      // Ensure nonexistent files can be deleted
       final URI nonexistentFileUri = repo.resolve(getBaseUri(), "file4.txt");
       assertFalse(repo.exists(nonexistentFileUri));
-      repo.delete(getBaseUri(), List.of("file4.txt"), IGNORE_NONEXISTENT);
-      expectThrows(
-          IOException.class,
-          () -> {
-            repo.delete(getBaseUri(), List.of("file4.txt"), REPORT_NONEXISTENT);
-          });
+      repo.delete(getBaseUri(), List.of("file4.txt"));
 
       // Delete existing files individually and in 'bulk'
-      repo.delete(getBaseUri(), List.of("file1.txt"), REPORT_NONEXISTENT);
-      repo.delete(getBaseUri(), List.of("file2.txt", "file3.txt"), REPORT_NONEXISTENT);
+      repo.delete(getBaseUri(), List.of("file1.txt"));
+      repo.delete(getBaseUri(), List.of("file2.txt", "file3.txt"));
       assertFalse(repo.exists(file1Uri));
       assertFalse(repo.exists(file2Uri));
       assertFalse(repo.exists(file3Uri));

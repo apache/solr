@@ -111,7 +111,7 @@ public class ShardBackupMetadata {
     final String filename = shardBackupId.getBackupMetadataFilename();
     URI fileURI = repository.resolve(folderURI, filename);
     if (repository.exists(fileURI)) {
-      repository.delete(folderURI, Collections.singleton(filename), true);
+      repository.delete(folderURI, Collections.singleton(filename));
     }
 
     try (OutputStream os = repository.createOutput(repository.resolve(folderURI, filename))) {
