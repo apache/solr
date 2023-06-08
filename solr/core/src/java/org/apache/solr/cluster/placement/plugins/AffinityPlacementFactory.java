@@ -269,7 +269,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       Map<Node, WeightedNode> affinityNodeMap = new HashMap<>(nodes.size());
       for (Node node : nodes) {
-        AffinityNode affinityNode = newNodeFromMetrics(node, attrValues, affinityPlacementContext, skipNodesWithErrors);
+        AffinityNode affinityNode =
+            newNodeFromMetrics(node, attrValues, affinityPlacementContext, skipNodesWithErrors);
         if (affinityNode != null) {
           affinityNodeMap.put(node, affinityNode);
         }
@@ -279,7 +280,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     }
 
     AffinityNode newNodeFromMetrics(
-        Node node, AttributeValues attrValues, AffinityPlacementContext affinityPlacementContext, boolean skipNodesWithErrors)
+        Node node,
+        AttributeValues attrValues,
+        AffinityPlacementContext affinityPlacementContext,
+        boolean skipNodesWithErrors)
         throws PlacementException {
       Set<Replica.ReplicaType> supportedReplicaTypes =
           attrValues.getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP).stream()

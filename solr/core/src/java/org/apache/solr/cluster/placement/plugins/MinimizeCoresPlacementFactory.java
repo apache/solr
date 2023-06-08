@@ -63,7 +63,8 @@ public class MinimizeCoresPlacementFactory
       AttributeValues attrValues = attributeFetcher.fetchAttributes();
       HashMap<Node, WeightedNode> nodeMap = new HashMap<>();
       for (Node node : nodes) {
-        if (skipNodesWithErrors && attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).isEmpty()) {
+        if (skipNodesWithErrors
+            && attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).isEmpty()) {
           throw new PlacementException("Can't get number of cores in " + node);
         }
         nodeMap.put(

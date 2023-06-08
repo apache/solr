@@ -135,7 +135,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
               nodesForReplicaType.clear();
               nodeList.forEach(n -> n.addToSortedCollection(nodesForReplicaType));
             }
-            // Add the chosen node back to the list if it can accept another replica of the shard/replicaType.
+            // Add the chosen node back to the list if it can accept another replica of the
+            // shard/replicaType.
             // The default implementation of "canAddReplica()" returns false for replicas
             // of shards that the node already contains, so this will usually be false.
             if (node.canAddReplica(pr)) {
@@ -151,8 +152,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                     replicaType,
                     shardName,
                     solrCollection.getName(),
-                    replicasPlaced
-                ));
+                    replicasPlaced));
           }
         }
       }
@@ -178,10 +178,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                 true)
             .values();
     // This is critical to store the last sort weight for this node
-    weightedNodes.forEach(node -> {
-      node.sortWithoutChanges();
-      node.addToSortedCollection(orderedNodes);
-    });
+    weightedNodes.forEach(
+        node -> {
+          node.sortWithoutChanges();
+          node.addToSortedCollection(orderedNodes);
+        });
 
     // While the node with the least cores still has room to take a replica from the node with the
     // most cores, loop
@@ -371,9 +372,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
   /**
    * A class that determines the weight of a given node and the replicas that reside on it.
-   * <p>
-   * The OrderedNodePlacementPlugin uses the weights determined here to place and balance replicas across
-   * the cluster.
+   *
+   * <p>The OrderedNodePlacementPlugin uses the weights determined here to place and balance
+   * replicas across the cluster.
    *
    * @lucene.experimental
    */
