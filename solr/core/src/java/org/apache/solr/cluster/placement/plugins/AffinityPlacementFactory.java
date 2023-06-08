@@ -947,13 +947,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               azToNumReplicas.put(az, azToNumReplicas.get(az) + 1);
             }
             if (doSpreadAcrossDomains) {
-              spreadDomainsInUse.merge(
-                  attrValues
-                      .getSystemProperty(
-                          replica.getNode(), AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
-                      .get(),
-                  1,
-                  Integer::sum);
+              attrValues
+                  .getSystemProperty(
+                      replica.getNode(), AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP)
+                  .ifPresent(nodeDomain -> spreadDomainsInUse.merge(nodeDomain, 1, Integer::sum));
             }
           }
         }
