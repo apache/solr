@@ -1444,4 +1444,45 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
               .collect(Collectors.toSet()));
     }
   }
+
+  @Test
+  public void testSpreadDomainsWithDownNode() throws Exception {
+    defaultConfig.spreadAcrossDomains = true;
+    defaultConfig.maxReplicasPerShardInDomain = -1;
+    configurePlugin(defaultConfig);
+    String collectionName = "basicCollection";
+
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    nodeBuilders.get(0).setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
+    nodeBuilders.get(1).setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "B");
+    nodeBuilders.get(2).setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
+
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    collectionBuilder.initializeShardsReplicas(1, 2, 0, 0, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+    clusterBuilder.getLiveNodeBuilders().remove(0);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    SolrCollection solrCollection = collectionBuilder.build();
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    {
+      // Place a new replica for the (only) existing shard of the collection
+      PlacementRequestImpl placementRequest =
+          new PlacementRequestImpl(
+              solrCollection,
+              Set.of(solrCollection.shards().iterator().next().getShardName()),
+              new HashSet<>(liveNodes),
+              1,
+              0,
+              0);
+
+      PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
+
+      assertEquals(1, pp.getReplicaPlacements().size());
+      ReplicaPlacement rp = pp.getReplicaPlacements().iterator().next();
+      assertEquals(liveNodes.get(1), rp.getNode());
+    }
+  }
 }
