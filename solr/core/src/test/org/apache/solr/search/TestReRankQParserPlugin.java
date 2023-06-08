@@ -16,11 +16,13 @@
  */
 package org.apache.solr.search;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -1078,7 +1080,66 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReRankScaleQueries() {
+  public void testReRankScaler() throws Exception {
+
+    ReRankScaler reRankScaler = new ReRankScaler("0-1", "5-100", ReRankOperator.ADD);
+    assertTrue(reRankScaler.scaleReRankScores());
+    assertTrue(reRankScaler.scaleMainScores());
+    assertEquals(reRankScaler.getMainQueryMin(), 0);
+    assertEquals(reRankScaler.getMainQueryMax(), 1);
+    assertEquals(reRankScaler.getReRankQueryMin(), 5);
+    assertEquals(reRankScaler.getReRankQueryMax(), 100);
+
+
+    Map<Integer, Float> scores = new HashMap<>();
+    scores.put(1, 180.25f);
+    scores.put(2, 90.125f);
+    scores.put(3, (180.25f+90.125f)/2); // halfway
+    Map<Integer, Float> scaled = ReRankScaler.minMaxScaleScores(scores, 0, 1);
+    assertEquals(scaled.size(), 3);
+    assertTrue(scaled.containsKey(1));
+    assertTrue(scaled.containsKey(2));
+    assertTrue(scaled.containsKey(3));
+    float scaled1 = scaled.get(1);
+    float scaled2 = scaled.get(2);
+    float scaled3 = scaled.get(3);
+    assertEquals(scaled1, 1.0f, 0);
+    assertEquals(scaled2, 0.0f, 0);
+    //scaled3 should be halfway between scaled1 and scaled2
+    assertEquals((scaled1+scaled2)/2, scaled3, 0);
+
+    scaled = ReRankScaler.minMaxScaleScores(scores, 50, 100);
+    scaled1 = scaled.get(1);
+    scaled2 = scaled.get(2);
+    scaled3 = scaled.get(3);
+    assertEquals(scaled1, 100.0f, 0);
+    assertEquals(scaled2, 50.0f, 0);
+    //scaled3 should be halfway between scaled1 and scaled2
+    assertEquals((scaled1+scaled2)/2, scaled3, 0);
+
+    scores.put(1, 10f);
+    scores.put(2, 10f);
+    scores.put(3, 10f); // halfway
+    scaled = ReRankScaler.minMaxScaleScores(scores, 0, 1);
+    scaled1 = scaled.get(1);
+    scaled2 = scaled.get(2);
+    scaled3 = scaled.get(3);
+    assertEquals(scaled1, .5f, 0);
+    assertEquals(scaled2, .5f, 0);
+    assertEquals(scaled3, .5f, 0);
+
+    float rescore = ReRankScaler.getReRankScore(100.2777f, 200.2333f, ReRankOperator.ADD);
+    assertEquals(rescore, 200.2333f - 100.2777f, 0);
+
+    rescore = ReRankScaler.getReRankScore(100.2777f, 200.2333f, ReRankOperator.MULTIPLY);
+    assertEquals(rescore, 200.2333f / 100.2777f, 0);
+
+    rescore = ReRankScaler.getReRankScore(100.2777f, 200.2333f, ReRankOperator.REPLACE);
+    assertEquals(rescore, 200.2333f, 0);
+  }
+
+  @Test
+  public void testReRankScaleQueries() throws Exception {
 
     assertU(delQ("*:*"));
     assertU(commit());

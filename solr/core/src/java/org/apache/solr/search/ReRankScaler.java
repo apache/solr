@@ -54,6 +54,22 @@ public class ReRankScaler {
     }
   }
 
+  public int getMainQueryMin() {
+    return mainQueryMin;
+  }
+
+  public int getMainQueryMax() {
+    return mainQueryMax;
+  }
+
+  public int getReRankQueryMin() {
+    return reRankQueryMin;
+  }
+
+  public int getReRankQueryMax() {
+    return reRankQueryMax;
+  }
+
   public boolean scaleScores() {
     if (scaleMainScores() || scaleReRankScores()) {
       return true;
