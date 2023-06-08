@@ -62,6 +62,7 @@ public class SimplePlacementFactory
 
   private static class SameCollWeightedNode extends OrderedNodePlacementPlugin.WeightedNode {
     private static final int SAME_COL_MULT = 5;
+    private static final int SAME_SHARD_MULT = 1000;
     public Map<String, Integer> collectionReplicas;
     public int totalWeight = 0;
 
@@ -70,6 +71,16 @@ public class SimplePlacementFactory
       this.collectionReplicas = new HashMap<>();
     }
 
+    /**
+     * The weight of the SameCollWeightedNode is the sum of:
+     * - The number of replicas on the node
+     * - 5 * for each collection, the sum of:
+     *   - (the number of replicas for that collection - 1)^2
+     * - 1000 * for each shard, the sum of:
+     *   - (the number of replicas for that shard - 1)^2
+     *
+     * @return the weight
+     */
     @Override
     public int calcWeight() {
       return totalWeight;
@@ -77,9 +88,15 @@ public class SimplePlacementFactory
 
     @Override
     public int calcRelevantWeightWithReplica(Replica replica) {
+      // Don't add 1 to the individual replica Counts, because 1 is subtracted from each when calculating weights.
+      // So since 1 would be added to each for the new replica, we can just use the original number to calculate the weights.
       int colReplicaCount =
-          collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0) + 1;
-      return getAllReplicasOnNode().size() + colReplicaCount * SAME_COL_MULT;
+          collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0);
+      int shardReplicaCount = getReplicasForShardOnNode(replica.getShard()).size();
+      return
+          getAllReplicasOnNode().size() + 1
+          + colReplicaCount * SAME_COL_MULT
+          + shardReplicaCount * SAME_SHARD_MULT;
     }
 
     @Override
@@ -91,10 +108,14 @@ public class SimplePlacementFactory
     protected boolean addProjectedReplicaWeights(Replica replica) {
       int colReplicaCount =
           collectionReplicas.merge(replica.getShard().getCollection().getName(), 1, Integer::sum);
-      totalWeight +=
-          1
-              + Math.pow(SAME_COL_MULT, colReplicaCount)
-              - Math.pow(SAME_COL_MULT, colReplicaCount - 1);
+      totalWeight += 1;
+      if (colReplicaCount > 1) {
+        totalWeight += SAME_COL_MULT * (Math.pow(colReplicaCount - 1, 2) - Math.pow(colReplicaCount - 2, 2));
+      }
+      int shardReplicaCount = getReplicasForShardOnNode(replica.getShard()).size();
+      if (shardReplicaCount > 1) {
+        totalWeight += SAME_SHARD_MULT * (Math.pow(shardReplicaCount - 1, 2) - Math.pow(shardReplicaCount - 2, 2));
+      }
       return false;
     }
 
@@ -109,10 +130,10 @@ public class SimplePlacementFactory
           collectionReplicas.computeIfPresent(
               replica.getShard().getCollection().getName(), (k, v) -> v - 1);
       if (colReplicaCount != null) {
-        totalWeight -=
-            1
-                + Math.pow(SAME_COL_MULT, colReplicaCount + 1)
-                - Math.pow(SAME_COL_MULT, colReplicaCount);
+        totalWeight -= 1;
+        if (colReplicaCount >= 1) {
+          totalWeight -= SAME_COL_MULT * (Math.pow(colReplicaCount, 2) - Math.pow(colReplicaCount - 1, 2));
+        }
       }
     }
   }

@@ -105,47 +105,54 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                     n.addToSortedCollection(nodesForReplicaType);
                   });
 
-          if (nodesForReplicaType.size() < replicaCount) {
-            throw new PlacementException(
-                "Not enough eligible nodes to place "
-                    + replicaCount
-                    + " replica(s) of type "
-                    + replicaType
-                    + " for shard "
-                    + shardName
-                    + " of collection "
-                    + solrCollection.getName());
-          }
-
-          int nodesChosen = 0;
-          while (nodesChosen < replicaCount) {
-            if (nodesForReplicaType.isEmpty()) {
-              throw new PlacementException(
-                  "There are not enough nodes to handle request to place replica");
-            }
+          int replicasPlaced = 0;
+          while (!nodesForReplicaType.isEmpty() && replicasPlaced < replicaCount) {
             WeightedNode node = nodesForReplicaType.poll();
-            while (node.hasWeightChangedSinceSort()) {
+            if (!node.canAddReplica(pr)) {
+              continue;
+            }
+            if (node.hasWeightChangedSinceSort()) {
               log.info("Out of date Node: {}", node.getNode());
               node.addToSortedCollection(nodesForReplicaType);
-              node = nodesForReplicaType.poll();
+              // The node will be re-sorted,
+              // so go back to the top of the loop to get the new lowest-sorted node
+              continue;
             }
             log.info("Node: {}", node.getNode());
 
-            boolean needsToResort =
+            boolean needsToResortAll =
                 node.addReplica(
                     PlacementPlugin.createProjectedReplica(
                         solrCollection, shardName, replicaType, node.getNode()));
-            nodesChosen += 1;
+            replicasPlaced += 1;
             replicaPlacements.add(
                 placementContext
                     .getPlacementPlanFactory()
                     .createReplicaPlacement(
                         solrCollection, shardName, node.getNode(), replicaType));
-            if (needsToResort) {
+            if (needsToResortAll) {
               List<WeightedNode> nodeList = new ArrayList<>(nodesForReplicaType);
               nodesForReplicaType.clear();
               nodeList.forEach(n -> n.addToSortedCollection(nodesForReplicaType));
             }
+            // Add the chosen node back to the list if it can accept another replica of the shard/replicaType.
+            // The default implementation of "canAddReplica()" returns false for replicas
+            // of shards that the node already contains, so this will usually be false.
+            if (node.canAddReplica(pr)) {
+              nodesForReplicaType.add(node);
+            }
+          }
+
+          if (replicasPlaced < replicaCount) {
+            throw new PlacementException(
+                String.format(
+                    "Not enough eligible nodes to place %d replica(s) of type %s for shard %s of collection %s. Only able to place %d replicas.",
+                    replicaCount,
+                    replicaType,
+                    shardName,
+                    solrCollection.getName(),
+                    replicasPlaced
+                ));
           }
         }
       }
@@ -349,12 +356,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                     placementModificationException.addRejectedModification(
                         replica.toString(),
                         "could not load information for node: " + entry.getKey().getName()));
+      } else {
+        node.canRemoveReplicas(entry.getValue())
+            .forEach(
+                (replica, reason) ->
+                    placementModificationException.addRejectedModification(
+                        replica.toString(), reason));
       }
-      node.canRemoveReplicas(entry.getValue())
-          .forEach(
-              (replica, reason) ->
-                  placementModificationException.addRejectedModification(
-                      replica.toString(), reason));
     }
     if (!placementModificationException.getRejectedModifications().isEmpty()) {
       throw placementModificationException;
