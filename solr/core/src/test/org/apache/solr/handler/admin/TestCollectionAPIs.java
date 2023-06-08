@@ -152,13 +152,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         apiBag,
         "/collections/coll1",
         POST,
-        "{balance-shard-unique : {property: preferredLeader} }",
-        "{operation : balanceshardunique ,collection : coll1, property : preferredLeader}");
-
-    compareOutput(
-        apiBag,
-        "/collections/coll1",
-        POST,
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }",
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}");
   }
