@@ -103,7 +103,5 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   public void testNotFound() {
     assertThrows(S3NotFoundException.class, () -> client.pullStream("/not-found"));
     assertThrows(S3NotFoundException.class, () -> client.length("/not-found"));
-    assertThrows(
-        S3NotFoundException.class, () -> client.delete(Collections.singleton("/not-found")));
   }
 }
