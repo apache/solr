@@ -233,7 +233,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
   @Deprecated
   default void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
       throws IOException {
-    delete(path, files);
+    throw new UnsupportedOperationException();
   }
 
   /**
@@ -242,7 +242,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * @since 9.3.0
    */
   default void delete(URI path, Collection<String> files) throws IOException {
-    throw new UnsupportedOperationException();
+    delete(path, files, true);
   }
 
   /**
