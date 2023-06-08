@@ -486,8 +486,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Map<Replica, String> replicaRemovalExceptions = new HashMap<>();
         Map<String, Map<String, Set<Replica>>> removals = new HashMap<>();
         for (Replica replica : replicas) {
-          Set<Replica> replicasForShardOnNode = getReplicasForShardOnNode(replica.getShard());
-
           SolrCollection collection = replica.getShard().getCollection();
           Set<String> collocatedCollections = new HashSet<>();
           Optional.ofNullable(collocatedWith.get(collection.getName()))
@@ -506,7 +504,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                   .computeIfAbsent(replica.getShard().getShardName(), k -> new HashSet<>());
           replicasRemovedForShard.add(replica);
 
-          if (replicasRemovedForShard.size() >= replicasForShardOnNode.size()) {
+          if (replicasRemovedForShard.size()
+              >= getReplicasForShardOnNode(replica.getShard()).size()) {
             replicaRemovalExceptions.put(
                 replica, "co-located with replicas of " + collocatedCollections);
           }

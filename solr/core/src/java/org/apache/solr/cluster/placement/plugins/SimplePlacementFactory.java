@@ -19,6 +19,7 @@ package org.apache.solr.cluster.placement.plugins;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
@@ -131,8 +132,10 @@ public class SimplePlacementFactory
     @Override
     protected void removeProjectedReplicaWeights(Replica replica) {
       Integer colReplicaCountWithout =
-          collectionReplicas.computeIfPresent(
-              replica.getShard().getCollection().getName(), (k, v) -> v - 1);
+          Optional.ofNullable(
+                  collectionReplicas.computeIfPresent(
+                      replica.getShard().getCollection().getName(), (k, v) -> v - 1))
+              .orElse(0);
       int shardReplicaCountWithout = getReplicasForShardOnNode(replica.getShard()).size();
       totalWeight -=
           addedWeightOfAdditionalReplica(colReplicaCountWithout, shardReplicaCountWithout);

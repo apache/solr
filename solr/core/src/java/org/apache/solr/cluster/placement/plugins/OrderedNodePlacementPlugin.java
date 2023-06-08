@@ -265,7 +265,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         int combinedNodeWeights = highestWeight.calcWeight() + lowestWeight.calcWeight();
         for (Replica r : availableReplicasToMove) {
           // Only continue if the replica can be removed from the old node and moved to the new node
-          if (highestWeight.canRemoveReplicas(Set.of(r)).isEmpty()
+          if (!highestWeight.canRemoveReplicas(Set.of(r)).isEmpty()
               || !lowestWeight.canAddReplica(r)) {
             continue;
           }
