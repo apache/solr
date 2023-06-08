@@ -53,7 +53,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   protected static final String INDEX_W_TIMESTAMP_REGEX =
       "index\\.[0-9]{17}"; // see SnapShooter.DATE_FMT
 
-  // May be set by sub classes as data root, in which case getDataHome will use it as base.
+  // May be set by subclasses as data root, in which case getDataHome will use it as base.
   // Absolute.
   protected Path dataHomePath;
 
@@ -86,7 +86,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   public abstract void addCloseListener(Directory dir, CloseListener closeListener);
 
   /**
-   * Close the this and all of the Directories it contains.
+   * Close this factory and all of the Directories it contains.
    *
    * @throws IOException If there is a low-level I/O error.
    */
@@ -196,7 +196,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
     fromDir.deleteFile(fileName);
   }
 
-  // sub classes perform an atomic rename if possible, otherwise fall back to delete + rename
+  // subclasses perform an atomic rename if possible, otherwise fall back to delete + rename
   // this is important to support for index roll over durability after crashes
   public void renameWithOverwrite(Directory dir, String fileName, String toName)
       throws IOException {
@@ -321,7 +321,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
    * Get the data home folder. If solr.data.home is set, that is used, else base on instanceDir
    *
    * @param cd core descriptor instance
-   * @return a String with absolute path to data direcotry
+   * @return a String with absolute path to data directory
    */
   public String getDataHome(CoreDescriptor cd) throws IOException {
     Path dataDir;
@@ -391,7 +391,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
     }
   }
 
-  // Extension point to allow sub-classes to infuse additional code when deleting old index
+  // Extension point to allow subclasses to infuse additional code when deleting old index
   // directories
   protected boolean deleteOldIndexDirectory(String oldDirPath) throws IOException {
     Path dirToRm = Path.of(oldDirPath);

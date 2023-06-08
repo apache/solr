@@ -176,15 +176,14 @@ public class CollectionReloadTest extends SolrCloudTestCase {
       case 2:
         log.info("Creating collection with V2 API");
         // Sometimes use V2 API
-        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
+        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
         String requestBody =
             String.format(
                 Locale.ROOT,
-                "{create:{name:%s, config:%s, numShards:%s, maxShardsPerNode:%s, nrtReplicas:%s, tlogReplicas:%s, pullReplicas:%s}}",
+                "{\"name\":\"%s\", \"config\":\"%s\", \"numShards\":%s, \"nrtReplicas\":%s, \"tlogReplicas\":%s, \"pullReplicas\":%s}",
                 collectionName,
                 "conf",
                 numShards, // numShards
-                100, // maxShardsPerNode
                 nrtReplicas,
                 tlogReplicas,
                 pullReplicas);

@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
@@ -90,23 +89,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     }
 
     compareOutput(
-        apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards/shard1",
-        DELETE,
-        null,
-        "{collection:collName, shard: shard1 , operation :deleteshard }");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards/shard1/replica1?deleteDataDir=true&onlyIfDown=true",
-        DELETE,
-        null,
-        "{collection:collName, shard: shard1, replica :replica1 , deleteDataDir:'true', onlyIfDown: 'true', operation :deletereplica }");
-
-    compareOutput(
         apiBag,
         "/collections/collName/shards",
         POST,
@@ -117,37 +99,8 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         apiBag,
         "/collections/collName/shards",
         POST,
-        "{add-replica:{shard: shard1, node: 'localhost_8978' , coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
-        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, property.prop1:prop1Val, property.prop2: prop2Val}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards",
-        POST,
         "{split:{ splitKey:id12345, coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
         "{collection: collName , split.key : id12345 , operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards",
-        POST,
-        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'TLOG' }}",
-        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: TLOG}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards",
-        POST,
-        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'PULL' }}",
-        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: PULL}");
-
-    // TODO annotation-based v2 APIs still miss enum support to validate the 'type' parameter as
-    // this test requires.
-    // Uncomment this test after fixing SOLR-15796
-    //    assertErrorContains(apiBag, "/collections/collName/shards", POST,
-    //        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'foo' }}", null,
-    //        "Value of enum must be one of"
-    //    );
 
     compareOutput(
         apiBag,
