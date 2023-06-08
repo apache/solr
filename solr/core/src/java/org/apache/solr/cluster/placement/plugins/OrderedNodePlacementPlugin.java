@@ -88,16 +88,16 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       // Now place randomly all replicas of all shards on available nodes
       for (String shardName : request.getShardNames()) {
         for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
+          int replicaCount = request.getCountReplicasToCreate(replicaType);
+          if (replicaCount == 0) {
+            continue;
+          }
           if (log.isDebugEnabled()) {
             log.debug(
                 "Placing replicas for Collection: {}, Shard: {}, ReplicaType: {}",
                 solrCollection.getName(),
                 shardName,
                 replicaType);
-          }
-          int replicaCount = request.getCountReplicasToCreate(replicaType);
-          if (replicaCount == 0) {
-            continue;
           }
           Replica pr =
               PlacementPlugin.createProjectedReplica(solrCollection, shardName, replicaType, null);
@@ -146,20 +146,23 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                     .getPlacementPlanFactory()
                     .createReplicaPlacement(
                         solrCollection, shardName, node.getNode(), replicaType));
-            if (needsToResortAll) {
-              if (log.isDebugEnabled()) {
-                log.debug("Replica addition requires re-sorting of entire selection list");
+            // Only update the priorityQueue if there are still replicas to be placed
+            if (replicasPlaced < replicaCount) {
+              if (needsToResortAll) {
+                if (log.isDebugEnabled()) {
+                  log.debug("Replica addition requires re-sorting of entire selection list");
+                }
+                List<WeightedNode> nodeList = new ArrayList<>(nodesForReplicaType);
+                nodesForReplicaType.clear();
+                nodeList.forEach(n -> n.addToSortedCollection(nodesForReplicaType));
               }
-              List<WeightedNode> nodeList = new ArrayList<>(nodesForReplicaType);
-              nodesForReplicaType.clear();
-              nodeList.forEach(n -> n.addToSortedCollection(nodesForReplicaType));
-            }
-            // Add the chosen node back to the list if it can accept another replica of the
-            // shard/replicaType.
-            // The default implementation of "canAddReplica()" returns false for replicas
-            // of shards that the node already contains, so this will usually be false.
-            if (node.canAddReplica(pr)) {
-              nodesForReplicaType.add(node);
+              // Add the chosen node back to the list if it can accept another replica of the
+              // shard/replicaType.
+              // The default implementation of "canAddReplica()" returns false for replicas
+              // of shards that the node already contains, so this will usually be false.
+              if (node.canAddReplica(pr)) {
+                nodesForReplicaType.add(node);
+              }
             }
           }
 
