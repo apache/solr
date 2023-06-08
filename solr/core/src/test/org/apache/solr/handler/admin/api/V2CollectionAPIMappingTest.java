@@ -52,7 +52,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
   @Override
   public void populateApiBag() {
     final CollectionsHandler collectionsHandler = getRequestHandler();
-    apiBag.registerObject(new BalanceShardUniqueAPI(collectionsHandler));
     apiBag.registerObject(new MigrateDocsAPI(collectionsHandler));
     apiBag.registerObject(new ModifyCollectionAPI(collectionsHandler));
     apiBag.registerObject(new MoveReplicaAPI(collectionsHandler));
@@ -159,26 +158,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
     assertEquals(123, v1Params.getPrimitiveInt("forward.timeout"));
     assertTrue(v1Params.getPrimitiveBool("followAliases"));
     assertEquals("requestTrackingId", v1Params.get(ASYNC));
-  }
-
-  @Test
-  public void testBalanceShardUniqueAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName",
-            "POST",
-            "{ 'balance-shard-unique': {"
-                + "'property': 'somePropertyToBalance', "
-                + "'onlyactivenodes': false, "
-                + "'shardUnique': true"
-                + "}}");
-
-    assertEquals(
-        CollectionParams.CollectionAction.BALANCESHARDUNIQUE.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals("somePropertyToBalance", v1Params.get("property"));
-    assertFalse(v1Params.getPrimitiveBool("onlyactivenodes"));
-    assertTrue(v1Params.getPrimitiveBool("shardUnique"));
   }
 
   @Test
