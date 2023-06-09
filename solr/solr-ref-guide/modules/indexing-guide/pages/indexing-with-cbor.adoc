@@ -1,0 +1,79 @@
+= Indexing with Update CBOR data format
+
+Solr supports http://cbor.io/[CBOR] format for indexing as well as querying. It supports most popular languages and platforms. It's much faster and efficient compared to JSON.
+
+== Python example
+
+Save the following as `cbor_post.py`
+[,python]
+----
+import json
+import requests
+import cbor2
+
+# JSON data to send (list of dictionaries)
+json_data = [
+    {
+        "id" : "1",
+        "name_s": "John Doe",
+        "age_i": 30,
+        "city_s": "New York"
+    },
+    {
+        "id": "2",
+        "name_s": "Jane Smith",
+        "age_i": 25,
+        "city_s": "London"
+    }
+]
+# If there is only a single doc you can use the following
+# json_data =    {
+#         "id" : "6",
+#         "name_s": "John Doe",
+#         "age_i": 30,
+#         "city_s": "New York"
+#     }
+
+
+# Convert JSON data to CBOR
+cbor_data = cbor2.dumps(json_data)
+
+# Set the endpoint URL
+# ensure that the collection 'coll1' is already created
+url = "http://localhost:8983/solr/coll1/update/cbor?commit=true"
+
+# Send a POST request with CBOR data
+response = requests.post(url, data=cbor_data, headers={"Content-Type": "application/cbor"})
+
+# Check the response status
+if response.status_code == 200:
+    print("POST request sent successfully!")
+    print("Response Body:", response.text)
+else:
+    print("Unexpected response status:", response.status_code)
+----
+
+=== Running the program
+
+To run the Python program mentioned above, you can follow these steps:
+
+1. Set up Python: Make sure you have Python installed on your system.
+2. Ensure that the dependencies are installed
+
+   pip install requests cbor2
+
+3. Run the program
+
+   python3 cbor_post.py
+
+4. Check the output
+
+   POST request sent successfully!
+   Response Body: {
+   "responseHeader":{
+   "rf":1,
+   "status":0,
+   "QTime":70
+   }
+   }
+
