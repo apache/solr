@@ -113,7 +113,7 @@ public class SolrCLI implements CLIO {
               .argName("COLLECTION")
               .hasArg()
               .required(false)
-              .desc("Name of collection; no default.")
+              .desc("Name of collection")
               .longOpt("collection")
               .build(),
           OPTION_VERBOSE);
