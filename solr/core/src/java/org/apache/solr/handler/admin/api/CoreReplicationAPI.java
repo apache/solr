@@ -105,5 +105,9 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
     public void add(String name, Object val) {
       files.add(name, val);
     }
+
+    public NamedList<Object> getfiles() {
+      return files;
+    }
   }
 }

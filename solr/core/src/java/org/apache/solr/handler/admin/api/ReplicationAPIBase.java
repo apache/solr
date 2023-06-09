@@ -67,20 +67,19 @@ public abstract class ReplicationAPIBase extends JerseyResource {
   }
 
   protected CoreReplicationAPI.IndexVersionResponse doFetchIndexVersion() throws IOException {
-
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
-
     return replicationHandler.getIndexVersionResponse();
   }
 
-  protected CoreReplicationAPI.FilesResponse doFetchFiles(long gen) throws IOException {
-    return getFileList(gen, solrQueryResponse);
-  }
-
-  private CoreReplicationAPI.FilesResponse getFileList(long generation, SolrQueryResponse rsp) {
+  protected CoreReplicationAPI.FilesResponse doFetchFiles(long generation) {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
+    return getFileList(generation, replicationHandler);
+  }
+
+  private CoreReplicationAPI.FilesResponse getFileList(
+      long generation, ReplicationHandler replicationHandler) {
     final IndexDeletionPolicyWrapper delPol = solrCore.getDeletionPolicy();
     final CoreReplicationAPI.FilesResponse filesResponse = new CoreReplicationAPI.FilesResponse();
 
