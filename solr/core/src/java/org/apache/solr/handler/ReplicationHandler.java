@@ -93,6 +93,8 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.handler.admin.api.CoreReplicationAPI;
+import org.apache.solr.handler.admin.api.DeleteShardAPI;
+import org.apache.solr.handler.admin.api.GetSchemaAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.metrics.MetricsMap;
@@ -272,7 +274,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_GET_FILE)) {
       getFileStream(solrParams, rsp);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
-      getFileList(solrParams, rsp);
+      final CoreReplicationAPI coreReplicationAPI =
+              new CoreReplicationAPI(core, req, rsp);
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, coreReplicationAPI.fetchFiles(Long.parseLong(solrParams.required().get(GENERATION))));
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
       doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
     } else if (command.equalsIgnoreCase(CMD_RESTORE)) {
@@ -345,6 +349,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     response.add(MESSAGE, message);
     if (e != null) {
       response.add(EXCEPTION, e);
+    }
+  }
+
+  private void reportErrorOnResponse(CoreReplicationAPI.FilesResponse filesResponse, String message, Exception e) {
+    filesResponse.add(STATUS, ERR_STATUS);
+    filesResponse.add(MESSAGE, message);
+    if (e != null) {
+      filesResponse.add(EXCEPTION, e);
     }
   }
 
@@ -670,112 +682,114 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(STATUS, OK_STATUS);
   }
 
-  private void getFileList(SolrParams solrParams, SolrQueryResponse rsp) {
-    final IndexDeletionPolicyWrapper delPol = core.getDeletionPolicy();
-    final long gen = Long.parseLong(solrParams.required().get(GENERATION));
-
-    IndexCommit commit = null;
-    try {
-      if (gen == -1) {
-        commit = delPol.getAndSaveLatestCommit();
-        if (null == commit) {
-          rsp.add(CMD_GET_FILE_LIST, Collections.emptyList());
-          return;
-        }
-      } else {
-        try {
-          commit = delPol.getAndSaveCommitPoint(gen);
-        } catch (IllegalStateException ignored) {
-          /* handle this below the same way we handle a return value of null... */
-        }
-        if (null == commit) {
-          // The gen they asked for either doesn't exist or has already been deleted
-          reportErrorOnResponse(rsp, "invalid index generation", null);
-          return;
-        }
-      }
-      assert null != commit;
-
-      List<Map<String, Object>> result = new ArrayList<>();
-      Directory dir = null;
-      try {
-        dir =
-            core.getDirectoryFactory()
-                .get(
-                    core.getNewIndexDir(),
-                    DirContext.DEFAULT,
-                    core.getSolrConfig().indexConfig.lockType);
-        SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
-        for (SegmentCommitInfo commitInfo : infos) {
-          for (String file : commitInfo.files()) {
-            Map<String, Object> fileMeta = new HashMap<>();
-            fileMeta.put(NAME, file);
-            fileMeta.put(SIZE, dir.fileLength(file));
-
-            try (final IndexInput in = dir.openInput(file, IOContext.READONCE)) {
-              try {
-                long checksum = CodecUtil.retrieveChecksum(in);
-                fileMeta.put(CHECKSUM, checksum);
-              } catch (Exception e) {
-                // TODO Should this trigger a larger error?
-                log.warn("Could not read checksum from index file: {}", file, e);
-              }
-            }
-
-            result.add(fileMeta);
-          }
-        }
-
-        // add the segments_N file
-
-        Map<String, Object> fileMeta = new HashMap<>();
-        fileMeta.put(NAME, infos.getSegmentsFileName());
-        fileMeta.put(SIZE, dir.fileLength(infos.getSegmentsFileName()));
-        if (infos.getId() != null) {
-          try (final IndexInput in =
-              dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
-            try {
-              fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
-            } catch (Exception e) {
-              // TODO Should this trigger a larger error?
-              log.warn(
-                  "Could not read checksum from index file: {}", infos.getSegmentsFileName(), e);
-            }
-          }
-        }
-        result.add(fileMeta);
-      } catch (IOException e) {
-        log.error(
-            "Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
-        reportErrorOnResponse(rsp, "unable to get file names for given index generation", e);
-        return;
-      } finally {
-        if (dir != null) {
-          try {
-            core.getDirectoryFactory().release(dir);
-          } catch (IOException e) {
-            log.error("Could not release directory after fetching file list", e);
-          }
-        }
-      }
-      rsp.add(CMD_GET_FILE_LIST, result);
-
-      if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware()) return;
-      log.debug("Adding config files to list: {}", includeConfFiles);
-      // if configuration files need to be included get their details
-      rsp.add(CONF_FILES, getConfFileInfoFromCache(confFileNameAlias, confFileInfoCache));
-      rsp.add(STATUS, OK_STATUS);
-
-    } finally {
-      if (null != commit) {
-        // before releasing the save on our commit point, set a short reserve duration since
-        // the main reason remote nodes will ask for the file list is because they are preparing to
-        // replicate from us...
-        delPol.setReserveDuration(commit.getGeneration(), reserveCommitDuration);
-        delPol.releaseCommitPoint(commit);
-      }
-    }
-  }
+//  public CoreReplicationAPI.FilesResponse getFileList(long generation, SolrQueryResponse rsp) {
+//    final IndexDeletionPolicyWrapper delPol = core.getDeletionPolicy();
+//    final CoreReplicationAPI.FilesResponse filesResponse = new CoreReplicationAPI.FilesResponse();
+//
+//    IndexCommit commit = null;
+//    try {
+//      if (generation == -1) {
+//        commit = delPol.getAndSaveLatestCommit();
+//        if (null == commit) {
+//          filesResponse.add(CMD_GET_FILE_LIST, Collections.emptyList());
+//          return filesResponse;
+//        }
+//      } else {
+//        try {
+//          commit = delPol.getAndSaveCommitPoint(generation);
+//        } catch (IllegalStateException ignored) {
+//          /* handle this below the same way we handle a return value of null... */
+//        }
+//        if (null == commit) {
+//          // The gen they asked for either doesn't exist or has already been deleted
+//          reportErrorOnResponse(filesResponse, "invalid index generation", null);
+//          return filesResponse;
+//        }
+//      }
+//      assert null != commit;
+//
+//      List<Map<String, Object>> result = new ArrayList<>();
+//      Directory dir = null;
+//      try {
+//        dir =
+//            core.getDirectoryFactory()
+//                .get(
+//                    core.getNewIndexDir(),
+//                    DirContext.DEFAULT,
+//                    core.getSolrConfig().indexConfig.lockType);
+//        SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
+//        for (SegmentCommitInfo commitInfo : infos) {
+//          for (String file : commitInfo.files()) {
+//            Map<String, Object> fileMeta = new HashMap<>();
+//            fileMeta.put(NAME, file);
+//            fileMeta.put(SIZE, dir.fileLength(file));
+//
+//            try (final IndexInput in = dir.openInput(file, IOContext.READONCE)) {
+//              try {
+//                long checksum = CodecUtil.retrieveChecksum(in);
+//                fileMeta.put(CHECKSUM, checksum);
+//              } catch (Exception e) {
+//                // TODO Should this trigger a larger error?
+//                log.warn("Could not read checksum from index file: {}", file, e);
+//              }
+//            }
+//
+//            result.add(fileMeta);
+//          }
+//        }
+//
+//        // add the segments_N file
+//
+//        Map<String, Object> fileMeta = new HashMap<>();
+//        fileMeta.put(NAME, infos.getSegmentsFileName());
+//        fileMeta.put(SIZE, dir.fileLength(infos.getSegmentsFileName()));
+//        if (infos.getId() != null) {
+//          try (final IndexInput in =
+//              dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
+//            try {
+//              fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
+//            } catch (Exception e) {
+//              // TODO Should this trigger a larger error?
+//              log.warn(
+//                  "Could not read checksum from index file: {}", infos.getSegmentsFileName(), e);
+//            }
+//          }
+//        }
+//        result.add(fileMeta);
+//      } catch (IOException e) {
+//        log.error(
+//            "Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
+//        reportErrorOnResponse(filesResponse, "unable to get file names for given index generation", e);
+//        return filesResponse;
+//      } finally {
+//        if (dir != null) {
+//          try {
+//            core.getDirectoryFactory().release(dir);
+//          } catch (IOException e) {
+//            log.error("Could not release directory after fetching file list", e);
+//          }
+//        }
+//      }
+//
+//      filesResponse.add(CMD_GET_FILE_LIST, result);
+//
+//      if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware()) return filesResponse;
+//      log.debug("Adding config files to list: {}", includeConfFiles);
+//      // if configuration files need to be included get their details
+//      filesResponse.add(CONF_FILES, getConfFileInfoFromCache(confFileNameAlias, confFileInfoCache));
+//      filesResponse.add(STATUS, OK_STATUS);
+//
+//    } finally {
+//      if (null != commit) {
+//        // before releasing the save on our commit point, set a short reserve duration since
+//        // the main reason remote nodes will ask for the file list is because they are preparing to
+//        // replicate from us...
+//        delPol.setReserveDuration(commit.getGeneration(), reserveCommitDuration);
+//        delPol.releaseCommitPoint(commit);
+//      }
+//    }
+//    return filesResponse;
+//  }
 
   public CoreReplicationAPI.IndexVersionResponse getIndexVersionResponse() throws IOException {
 
@@ -828,7 +842,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    * <p>The local conf files information is cached so that everytime it does not have to compute the
    * checksum. The cache is refreshed only if the lastModified of the file changes
    */
-  List<Map<String, Object>> getConfFileInfoFromCache(
+  public List<Map<String, Object>> getConfFileInfoFromCache(
       NamedList<String> nameAndAlias, final Map<String, FileInfo> confFileInfoCache) {
     List<Map<String, Object>> confFiles = new ArrayList<>();
     synchronized (confFileInfoCache) {
@@ -937,6 +951,22 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public String getDescription() {
     return "ReplicationHandler provides replication of index and configuration files from Leader to Followers";
+  }
+
+  public NamedList<String> getConfFileNameAlias() {
+    return confFileNameAlias;
+  }
+
+  public Map<String, FileInfo> getConfFileInfoCache() {
+    return confFileInfoCache;
+  }
+
+  public String getIncludeConfFiles() {
+    return includeConfFiles;
+  }
+
+  public Long getReserveCommitDuration() {
+    return reserveCommitDuration;
   }
 
   /** returns the CommitVersionInfo for the current searcher, or null on error. */
@@ -1876,7 +1906,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private static final String FAILED = "failed";
 
-  private static final String EXCEPTION = "exception";
+  public static final String EXCEPTION = "exception";
 
   public static final String LEADER_URL = "leaderUrl";
 

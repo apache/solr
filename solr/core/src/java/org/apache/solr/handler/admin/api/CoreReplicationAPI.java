@@ -24,8 +24,15 @@ import java.io.IOException;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import io.swagger.v3.oas.annotations.Parameter;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
@@ -46,10 +53,24 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
 
   @GET
   @Path("/indexversion")
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
   public IndexVersionResponse fetchIndexVersion() throws IOException {
     return doFetchIndexVersion();
+  }
+
+  @GET
+  @Path("/files/generation/{gen}")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(CORE_READ_PERM)
+  public FilesResponse fetchFiles(
+          @Parameter(
+          description = "The generation number of the index",
+          required = true)
+          @PathParam("gen")
+          long gen)
+  throws IOException {
+    return doFetchFiles(gen);
   }
 
   /** Response for {@link CoreReplicationAPI#fetchIndexVersion()}. */
@@ -72,4 +93,20 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
       this.status = status;
     }
   }
+
+  /** Response for {@link CoreReplicationAPI#fetchFiles(long)}. */
+  public static class FilesResponse extends SolrJerseyResponse {
+
+    @JsonProperty("filelist")
+    public NamedList<Object> files = new SimpleOrderedMap<>();
+
+    public FilesResponse() {}
+    public FilesResponse(NamedList<Object> files) {
+      this.files = files;
+    }
+
+    public void add(String name, Object val) { files.add(name, val); }
+
+  }
+
 }
