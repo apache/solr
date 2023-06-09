@@ -346,6 +346,9 @@ public class S3StorageClient {
    */
   long length(String path) throws S3Exception {
     String s3Path = sanitizedFilePath(path);
+    if (isDirectory(s3Path)) {
+      throw new S3Exception("Path is Directory");
+    }
     try {
       HeadObjectResponse objectMetadata =
           s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
