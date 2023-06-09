@@ -35,7 +35,7 @@ public class MetricSamples {
     samplesByMetricName = input;
     seenSamples = new HashSet<>();
     for (Collector.MetricFamilySamples metricFamilySamples : input.values()) {
-      addUnseenSamples(metricFamilySamples);
+      seenSamples.addAll(metricFamilySamples.samples);
     }
   }
 
@@ -46,7 +46,7 @@ public class MetricSamples {
   public void addSamplesIfNotPresent(
       String metricName, Collector.MetricFamilySamples metricFamilySamples) {
     if (samplesByMetricName.putIfAbsent(metricName, metricFamilySamples) == null) {
-      addUnseenSamples(metricFamilySamples);
+      seenSamples.addAll(metricFamilySamples.samples);
     }
   }
 
@@ -73,7 +73,7 @@ public class MetricSamples {
         }
       } else {
         this.samplesByMetricName.put(key, entry.getValue());
-        addUnseenSamples(entry.getValue());
+        seenSamples.addAll(entry.getValue().samples);
       }
     }
   }
@@ -84,7 +84,4 @@ public class MetricSamples {
         .collect(Collectors.toList());
   }
 
-  private void addUnseenSamples(Collector.MetricFamilySamples metricFamilySamples) {
-    seenSamples.addAll(metricFamilySamples.samples);
-  }
 }
