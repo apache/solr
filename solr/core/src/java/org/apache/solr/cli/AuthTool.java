@@ -223,12 +223,9 @@ public class AuthTool extends ToolBase {
               zkClient.setData(
                   "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
             } catch (Exception ex) {
-              if (!zkInaccessible) {
-                CLIO.out(
-                    "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
-                        + securityJson);
-                zkInaccessible = true;
-              }
+              CLIO.out(
+                  "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
+                      + securityJson);
             }
           }
         }
