@@ -72,7 +72,7 @@ else:
 
 === Running the program
 
-1. Set up Python: Make sure you have Python installed on your system.
+1. Install Python
 2. Ensure that the dependencies are installed
 
    pip install requests cbor2
@@ -146,7 +146,7 @@ main();
 
 === Running the program
 
-1. Set up Node.js
+1. Install Node.js
 2. Ensure that the dependencies are installed
 
  npm install cbor axios
