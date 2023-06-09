@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
@@ -24,6 +41,19 @@ import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
 
+/**
+ * <code>GetSchemaFieldAPI</code> contains the V2 APIs for all field related endpoint which are
+ *
+ * <ul>
+ *   <li>/fields
+ *   <li>/fields/{fieldName}
+ *   <li>/copyfields
+ *   <li>/dynamicfields
+ *   <li>/dynamicfields/{fieldName}
+ *   <li>/fieldtypes
+ *   <li>/fieldtypes/{fieldTypeName}
+ * </ul>
+ */
 public class GetSchemaFieldAPI extends GetSchemaAPI {
 
   private final SolrParams params;
@@ -49,7 +79,7 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
 
   public static class SchemaListFieldsResponse extends SolrJerseyResponse {
     @JsonProperty("fields")
-    public Object fields;
+    public List<Object> fields;
   }
 
   @GET
@@ -57,6 +87,9 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_ATOM_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaGetFieldInfoResponse getFieldInfo(@PathParam("fieldName") String fieldName) {
+    if (fieldName == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name must not be null");
+    }
     SchemaGetFieldInfoResponse response =
         instantiateJerseyResponse(SchemaGetFieldInfoResponse.class);
     final String realName = "fields";
@@ -66,8 +99,7 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
       response.fieldInfo = fieldInfo;
       return response;
     }
-    throw new SolrException(
-        SolrException.ErrorCode.NOT_FOUND, "No such path /" + realName + "/" + fieldName);
+    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such field [" + fieldName + "]");
   }
 
   public static class SchemaGetFieldInfoResponse extends SolrJerseyResponse {
@@ -91,7 +123,7 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
 
   public static class SchemaListCopyFieldsResponse extends SolrJerseyResponse {
     @JsonProperty("copyFields")
-    public Object copyFields;
+    public List<Object> copyFields;
   }
 
   @GET
@@ -110,7 +142,7 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
 
   public static class SchemaListDynamicFieldsResponse extends SolrJerseyResponse {
     @JsonProperty("dynamicFields")
-    public Object dynamicFields;
+    public List<Object> dynamicFields;
   }
 
   @GET
@@ -119,6 +151,10 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaGetDynamicFieldInfoResponse getDynamicFieldInfo(
       @PathParam("fieldName") String fieldName) {
+    if (fieldName == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Dynamic field name must not be null");
+    }
     SchemaGetDynamicFieldInfoResponse response =
         instantiateJerseyResponse(SchemaGetDynamicFieldInfoResponse.class);
     final String realName = "dynamicfields";
@@ -130,7 +166,7 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
       return response;
     }
     throw new SolrException(
-        SolrException.ErrorCode.NOT_FOUND, "No such path /" + realName + "/" + fieldName);
+        SolrException.ErrorCode.NOT_FOUND, "No such dynamic field [" + fieldName + "]");
   }
 
   public static class SchemaGetDynamicFieldInfoResponse extends SolrJerseyResponse {
@@ -154,7 +190,7 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
 
   public static class SchemaListFieldTypesResponse extends SolrJerseyResponse {
     @JsonProperty("fieldTypes")
-    public Object fieldTypes;
+    public List<Object> fieldTypes;
   }
 
   @GET
@@ -163,6 +199,10 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaGetFieldTypeInfoResponse getFieldTypeInfo(
       @PathParam("fieldTypeName") String fieldTypeName) {
+    if (fieldTypeName == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Field type name must not be null");
+    }
     SchemaGetFieldTypeInfoResponse response =
         instantiateJerseyResponse(SchemaGetFieldTypeInfoResponse.class);
 
@@ -175,7 +215,7 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
       return response;
     }
     throw new SolrException(
-        SolrException.ErrorCode.NOT_FOUND, "No such path /" + realName + "/" + fieldTypeName);
+        SolrException.ErrorCode.NOT_FOUND, "No such field type [" + fieldTypeName + "]");
   }
 
   public static class SchemaGetFieldTypeInfoResponse extends SolrJerseyResponse {
@@ -183,14 +223,15 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
     public SimpleOrderedMap<?> fieldTypeInfo;
   }
 
-  private Object listAllFieldsOfType(String realName, SolrParams params) {
+  private List<Object> listAllFieldsOfType(String realName, SolrParams params) {
     String camelCaseRealName = IndexSchema.nameMapping.get(realName);
     Map<String, Object> propertyValues = indexSchema.getNamedPropertyValues(realName, params);
-    Object o = propertyValues.get(camelCaseRealName);
+    @SuppressWarnings("unchecked")
+    List<Object> list = (List<Object>) propertyValues.get(camelCaseRealName);
     if (params.getBool("meta", false)) {
-      insertPackageInfo(o);
+      insertPackageInfo(list);
     }
-    return o;
+    return list;
   }
 
   @SuppressWarnings("unchecked")
