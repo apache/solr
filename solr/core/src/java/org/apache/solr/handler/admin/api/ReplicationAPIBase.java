@@ -45,9 +45,9 @@ import static org.apache.solr.handler.ReplicationHandler.*;
 public abstract class ReplicationAPIBase extends JerseyResource {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  protected final SolrCore solrCore;
   protected final SolrQueryRequest solrQueryRequest;
   protected final SolrQueryResponse solrQueryResponse;
-  protected final SolrCore solrCore;
 
   public ReplicationAPIBase(
       SolrCore solrCore, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
