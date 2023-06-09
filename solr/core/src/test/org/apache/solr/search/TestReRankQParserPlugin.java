@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -1093,7 +1092,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     Map<Integer, Float> scores = new HashMap<>();
     scores.put(1, 180.25f);
     scores.put(2, 90.125f);
-    scores.put(3, (180.25f+90.125f)/2); // halfway
+    scores.put(3, (180.25f + 90.125f) / 2); // halfway
     ReRankScaler.MinMaxExplain minMaxExplain = ReRankScaler.getMinMaxExplain(0, 1, scores);
     Map<Integer, Float> scaled = ReRankScaler.minMaxScaleScores(scores, minMaxExplain);
     assertEquals(scaled.size(), 3);
@@ -1105,8 +1104,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     float scaled3 = scaled.get(3);
     assertEquals(scaled1, 1.0f, 0);
     assertEquals(scaled2, 0.0f, 0);
-    //scaled3 should be halfway between scaled1 and scaled2
-    assertEquals((scaled1+scaled2)/2, scaled3, 0);
+    // scaled3 should be halfway between scaled1 and scaled2
+    assertEquals((scaled1 + scaled2) / 2, scaled3, 0);
     minMaxExplain = ReRankScaler.getMinMaxExplain(50, 100, scores);
     scaled = ReRankScaler.minMaxScaleScores(scores, minMaxExplain);
     scaled1 = scaled.get(1);
@@ -1114,8 +1113,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     scaled3 = scaled.get(3);
     assertEquals(scaled1, 100.0f, 0);
     assertEquals(scaled2, 50.0f, 0);
-    //scaled3 should be halfway between scaled1 and scaled2
-    assertEquals((scaled1+scaled2)/2, scaled3, 0);
+    // scaled3 should be halfway between scaled1 and scaled2
+    assertEquals((scaled1 + scaled2) / 2, scaled3, 0);
 
     scores.put(1, 10f);
     scores.put(2, 10f);
@@ -1256,7 +1255,5 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[5]/float[@name='score'][.='25.665672']",
         "//result/doc[6]/str[@name='id'][.='1']",
         "//result/doc[6]/float[@name='score'][.='20.002003']");
-
   }
-
 }

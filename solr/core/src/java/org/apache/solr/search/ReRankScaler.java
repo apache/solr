@@ -116,7 +116,6 @@ public class ReRankScaler {
       originalScoreMap.put(scoreDoc.doc, scoreDoc.score);
     }
 
-
     if (scaleMainScores()) {
       this.mainExplain = getMinMaxExplain(mainQueryMin, mainQueryMax, originalScoreMap);
       scaledOriginalScoreMap = minMaxScaleScores(originalScoreMap, this.mainExplain);
@@ -206,7 +205,8 @@ public class ReRankScaler {
     }
   }
 
-  public static float combineScores(float orginalScore, float reRankScore, ReRankOperator reRankOperator) {
+  public static float combineScores(
+      float orginalScore, float reRankScore, ReRankOperator reRankOperator) {
     switch (reRankOperator) {
       case ADD:
         return orginalScore + reRankScore;
@@ -235,8 +235,8 @@ public class ReRankScaler {
     }
 
     public float scale(float score) {
-      if(localMin == localMax) {
-        return  (scaleMin + scaleMax) / 2;
+      if (localMin == localMax) {
+        return (scaleMin + scaleMax) / 2;
       } else {
         float scaledScore = (score - localMin) / (localMax - localMin);
         if (scaleMin != 0 || scaleMax != 1) {
@@ -248,7 +248,8 @@ public class ReRankScaler {
     }
   }
 
-  public static MinMaxExplain getMinMaxExplain(float scaleMin, float scaleMax, Map<Integer, Float> docScoreMap) {
+  public static MinMaxExplain getMinMaxExplain(
+      float scaleMin, float scaleMax, Map<Integer, Float> docScoreMap) {
     float localMin = Float.MAX_VALUE;
     float localMax = Float.MIN_VALUE;
 
@@ -259,7 +260,8 @@ public class ReRankScaler {
     return new MinMaxExplain(scaleMin, scaleMax, localMin, localMax);
   }
 
-  public static Map<Integer, Float> minMaxScaleScores(Map<Integer, Float> docScoreMap, MinMaxExplain explain) {
+  public static Map<Integer, Float> minMaxScaleScores(
+      Map<Integer, Float> docScoreMap, MinMaxExplain explain) {
 
     Map<Integer, Float> scaledScores = new HashMap<>();
     for (Map.Entry<Integer, Float> entry : docScoreMap.entrySet()) {

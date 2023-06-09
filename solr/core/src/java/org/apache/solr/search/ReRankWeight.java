@@ -33,7 +33,11 @@ public class ReRankWeight extends FilterWeight {
   private final ReRankScaler reRankScaler;
 
   public ReRankWeight(
-      Query mainQuery, Rescorer reRankQueryRescorer, IndexSearcher searcher, Weight mainWeight, ReRankScaler reRankScaler)
+      Query mainQuery,
+      Rescorer reRankQueryRescorer,
+      IndexSearcher searcher,
+      Weight mainWeight,
+      ReRankScaler reRankScaler)
       throws IOException {
     super(mainQuery, mainWeight);
     this.searcher = searcher;
@@ -44,16 +48,24 @@ public class ReRankWeight extends FilterWeight {
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     final Explanation mainExplain = in.explain(context, doc);
-    final Explanation reRankExplain = reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
-    if(reRankScaler != null && reRankScaler.scaleScores()) {
+    final Explanation reRankExplain =
+        reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
+    if (reRankScaler != null && reRankScaler.scaleScores()) {
       float reRankScore = reRankExplain.getValue().floatValue();
       float mainScore = mainExplain.getValue().floatValue();
-      if(reRankScore > 0.0f) {
+      if (reRankScore > 0.0f) {
         float scaledMainScore = reRankScaler.mainExplain.scale(mainScore);
         float scaledReRankScore = reRankScaler.reRankExplain.scale(reRankScore);
         ReRankOperator reRankOperator = reRankScaler.reRankOperator;
-        float scaledCombined = ReRankScaler.combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
-        Explanation scaleExplain = Explanation.match(scaledCombined, String.format("Main query score rescaled to %f reRank score rescaled to $f", scaledMainScore, scaledReRankScore), reRankExplain);
+        float scaledCombined =
+            ReRankScaler.combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
+        Explanation scaleExplain =
+            Explanation.match(
+                scaledCombined,
+                String.format(
+                    "Main query score rescaled to %1$f reRank score rescaled to %2$f",
+                    scaledMainScore, scaledReRankScore),
+                reRankExplain);
         return scaleExplain;
       }
     }
