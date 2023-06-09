@@ -51,8 +51,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
   private final Rescorer reRankQueryRescorer;
   private final Sort sort;
   private final Query query;
-  private String mainScale;
-  private String reRankScale;
+  private ReRankScaler.ReRankScalerExplain reRankScalerExplain;
   private ReRankOperator reRankOperator;
 
   public ReRankCollector(
@@ -62,13 +61,11 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       QueryCommand cmd,
       IndexSearcher searcher,
       Set<BytesRef> boostedPriority,
-      String mainScale,
-      String reRankScale,
+      ReRankScaler.ReRankScalerExplain reRankScalerExplain,
       ReRankOperator reRankOperator)
       throws IOException {
     this(reRankDocs, length, reRankQueryRescorer, cmd, searcher, boostedPriority);
-    this.mainScale = mainScale;
-    this.reRankScale = reRankScale;
+    this.reRankScalerExplain = reRankScalerExplain;
     this.reRankOperator = reRankOperator;
   }
 
@@ -132,7 +129,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
       ScoreDoc[] mainScoreDocsClone =
-          (mainScale != null || reRankScale != null) ? deepClone(mainScoreDocs) : null;
+          (reRankScalerExplain.reRankScale()) ? deepClone(mainScoreDocs) : null;
       ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
@@ -162,8 +159,8 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       if (howMany == rescoredDocs.scoreDocs.length) {
-        if (mainScale != null || reRankScale != null) {
-          ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
+        if (reRankScalerExplain.reRankScale()) {
+          ReRankScaler reRankScaler = new ReRankScaler(reRankScalerExplain, reRankOperator);
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
                   mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
@@ -181,8 +178,8 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
             0,
             rescoredDocs.scoreDocs.length); // overlay the re-ranked docs.
         rescoredDocs.scoreDocs = scoreDocs;
-        if (mainScale != null || reRankScale != null) {
-          ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
+        if (reRankScalerExplain.reRankScale()) {
+          ReRankScaler reRankScaler = new ReRankScaler(reRankScalerExplain, reRankOperator);
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
                   mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
@@ -193,8 +190,8 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
         ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
         System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
         rescoredDocs.scoreDocs = scoreDocs;
-        if (mainScale != null || reRankScale != null) {
-          ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
+        if (reRankScalerExplain.reRankScale()) {
+          ReRankScaler reRankScaler = new ReRankScaler(reRankScalerExplain, reRankOperator);
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
                   mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);

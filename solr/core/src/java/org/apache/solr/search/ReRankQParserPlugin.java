@@ -84,8 +84,10 @@ public class ReRankQParserPlugin extends QParserPlugin {
       String mainScale = localParams.get(RERANK_MAIN_SCALE);
       String reRankScale = localParams.get(RERANK_SCALE);
 
+      ReRankScaler.ReRankScalerExplain reRankScalerExplain = new ReRankScaler.ReRankScalerExplain(mainScale, reRankScale);
+
       return new ReRankQuery(
-          reRankQuery, reRankDocs, reRankWeight, reRankOperator, mainScale, reRankScale);
+          reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScalerExplain);
     }
   }
 
@@ -140,8 +142,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
           + (int) reRankWeight
           + reRankDocs
           + reRankOperator.hashCode()
-          + String.valueOf(reRankScale).hashCode()
-          + String.valueOf(mainScale).hashCode();
+          + String.valueOf(reRankScalerExplain.reRankScale()).hashCode()
+          + String.valueOf(reRankScalerExplain.getMainScale()).hashCode();
     }
 
     @Override
@@ -155,8 +157,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
           && reRankWeight == rrq.reRankWeight
           && reRankDocs == rrq.reRankDocs
           && reRankOperator.equals(rrq.reRankOperator)
-          && String.valueOf(reRankScale).equals(String.valueOf(rrq.reRankScale))
-          && String.valueOf(mainScale).equals(String.valueOf(rrq.mainScale));
+          && String.valueOf(reRankScalerExplain.getReRankScale()).equals(String.valueOf(rrq.reRankScalerExplain.getReRankScale()))
+          && String.valueOf(reRankScalerExplain.getMainScale()).equals(String.valueOf(rrq.reRankScalerExplain.getMainScale()));
     }
 
     public ReRankQuery(
@@ -164,14 +166,12 @@ public class ReRankQParserPlugin extends QParserPlugin {
         int reRankDocs,
         double reRankWeight,
         ReRankOperator reRankOperator,
-        String mainScale,
-        String reRankScale) {
+        ReRankScaler.ReRankScalerExplain reRankScalerExplain) {
       super(
           defaultQuery,
           reRankDocs,
           new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator),
-          mainScale,
-          reRankScale,
+          reRankScalerExplain,
           reRankOperator);
       this.reRankQuery = reRankQuery;
       this.reRankWeight = reRankWeight;
@@ -186,11 +186,11 @@ public class ReRankQParserPlugin extends QParserPlugin {
       sb.append(RERANK_QUERY).append("='").append(reRankQuery.toString()).append("' ");
       sb.append(RERANK_DOCS).append('=').append(reRankDocs).append(' ');
       sb.append(RERANK_WEIGHT).append('=').append(reRankWeight).append(' ');
-      if (reRankScale != null) {
-        sb.append(RERANK_SCALE).append('=').append(reRankScale).append(' ');
+      if (reRankScalerExplain.getReRankScale() != null) {
+        sb.append(RERANK_SCALE).append('=').append(reRankScalerExplain.getReRankScale()).append(' ');
       }
-      if (mainScale != null) {
-        sb.append(RERANK_MAIN_SCALE).append('=').append(mainScale).append(' ');
+      if (reRankScalerExplain.getMainScale() != null) {
+        sb.append(RERANK_MAIN_SCALE).append('=').append(reRankScalerExplain.getMainScale()).append(' ');
       }
       sb.append(RERANK_OPERATOR).append('=').append(reRankOperator.toLower()).append('}');
       return sb.toString();
@@ -199,7 +199,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
       return new ReRankQuery(
-              reRankQuery, reRankDocs, reRankWeight, reRankOperator, mainScale, reRankScale)
+              reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScalerExplain)
           .wrap(rewrittenMainQuery);
     }
   }

@@ -28,13 +28,13 @@ public class ReRankScaler {
   protected int mainQueryMax = -1;
   protected int reRankQueryMin = -1;
   protected int reRankQueryMax = -1;
-  protected MinMaxExplain mainExplain;
-  protected MinMaxExplain reRankExplain;
   protected ReRankOperator reRankOperator;
+  protected  ReRankScalerExplain reRankScalerExplain;
 
-  public ReRankScaler(String mainRange, String reRankRange, ReRankOperator reRankOperator)
+  public ReRankScaler(ReRankScalerExplain reRankScalerExplain, ReRankOperator reRankOperator)
       throws SyntaxError {
 
+    this.reRankScalerExplain = reRankScalerExplain;
     if (reRankOperator != ReRankOperator.ADD
         && reRankOperator != ReRankOperator.MULTIPLY
         && reRankOperator != ReRankOperator.REPLACE) {
@@ -43,14 +43,14 @@ public class ReRankScaler {
       this.reRankOperator = reRankOperator;
     }
 
-    if (mainRange != null) {
-      String[] mainMinMax = mainRange.split("-");
+    if (reRankScalerExplain.getMainScale() != null) {
+      String[] mainMinMax = reRankScalerExplain.getMainScale().split("-");
       this.mainQueryMin = Integer.parseInt(mainMinMax[0]);
       this.mainQueryMax = Integer.parseInt(mainMinMax[1]);
     }
 
-    if (reRankRange != null) {
-      String[] reRankMinMax = reRankRange.split("-");
+    if (reRankScalerExplain.getReRankScale() != null) {
+      String[] reRankMinMax = reRankScalerExplain.getReRankScale().split("-");
       this.reRankQueryMin = Integer.parseInt(reRankMinMax[0]);
       this.reRankQueryMax = Integer.parseInt(reRankMinMax[1]);
     }
@@ -70,14 +70,6 @@ public class ReRankScaler {
 
   public int getReRankQueryMax() {
     return reRankQueryMax;
-  }
-
-  public MinMaxExplain getMainExplain() {
-    return mainExplain;
-  }
-
-  public MinMaxExplain getReRankExplain() {
-    return reRankExplain;
   }
 
   public boolean scaleScores() {
@@ -117,8 +109,9 @@ public class ReRankScaler {
     }
 
     if (scaleMainScores()) {
-      this.mainExplain = getMinMaxExplain(mainQueryMin, mainQueryMax, originalScoreMap);
-      scaledOriginalScoreMap = minMaxScaleScores(originalScoreMap, this.mainExplain);
+      MinMaxExplain mainExplain = getMinMaxExplain(mainQueryMin, mainQueryMax, originalScoreMap);
+      scaledOriginalScoreMap = minMaxScaleScores(originalScoreMap, mainExplain);
+      reRankScalerExplain.setMainScaleExplain(mainExplain);
     } else {
       scaledOriginalScoreMap = originalScoreMap;
     }
@@ -134,8 +127,9 @@ public class ReRankScaler {
     }
 
     if (scaleReRankScores()) {
-      this.reRankExplain = getMinMaxExplain(reRankQueryMin, reRankQueryMax, rescoredMap);
+      MinMaxExplain reRankExplain = getMinMaxExplain(reRankQueryMin, reRankQueryMax, rescoredMap);
       scaledRescoredMap = minMaxScaleScores(rescoredMap, reRankExplain);
+      reRankScalerExplain.setReRankScaleExplain(reRankExplain);
     } else {
       scaledRescoredMap = rescoredMap;
     }
@@ -216,6 +210,46 @@ public class ReRankScaler {
         return orginalScore * reRankScore;
       default:
         return -1;
+    }
+  }
+
+  public static final class ReRankScalerExplain {
+    private MinMaxExplain mainScaleExplain;
+    private MinMaxExplain reRankScaleExplain;
+    private String mainScale;
+    private String reRankScale;
+
+    public ReRankScalerExplain(String mainScale, String reRankScale) {
+      this.mainScale = mainScale;
+      this.reRankScale = reRankScale;
+    }
+
+    public MinMaxExplain getMainScaleExplain() {
+      return mainScaleExplain;
+    }
+
+    public MinMaxExplain getReRankScaleExplain() {
+      return reRankScaleExplain;
+    }
+
+    public void setMainScaleExplain(MinMaxExplain mainScaleExplain) {
+      this.mainScaleExplain = mainScaleExplain;
+    }
+
+    public void setReRankScaleExplain(MinMaxExplain reRankScaleExplain) {
+      this.reRankScaleExplain = reRankScaleExplain;
+    }
+
+    public boolean reRankScale() {
+      return (getMainScale() != null || getReRankScale() != null);
+    }
+
+    public String getMainScale() {
+      return this.mainScale;
+    }
+
+    public String getReRankScale() {
+      return this.reRankScale;
     }
   }
 

@@ -38,23 +38,19 @@ public abstract class AbstractReRankQuery extends RankQuery {
   protected final int reRankDocs;
   protected final Rescorer reRankQueryRescorer;
   protected Set<BytesRef> boostedPriority;
-  protected String mainScale;
-  protected String reRankScale;
   protected ReRankOperator reRankOperator;
-  protected ReRankScaler reRankScaler;
+  protected ReRankScaler.ReRankScalerExplain reRankScalerExplain;
 
   public AbstractReRankQuery(
       Query mainQuery,
       int reRankDocs,
       Rescorer reRankQueryRescorer,
-      String mainScale,
-      String reRankScale,
+      ReRankScaler.ReRankScalerExplain reRankScalerExplain,
       ReRankOperator reRankOperator) {
     this.mainQuery = mainQuery;
     this.reRankDocs = reRankDocs;
     this.reRankQueryRescorer = reRankQueryRescorer;
-    this.mainScale = mainScale;
-    this.reRankScale = reRankScale;
+    this.reRankScalerExplain = reRankScalerExplain;
     this.reRankOperator = reRankOperator;
   }
 
@@ -96,8 +92,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
         cmd,
         searcher,
         boostedPriority,
-        mainScale,
-        reRankScale,
+        reRankScalerExplain,
         reRankOperator);
   }
 
@@ -116,7 +111,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
     final Weight mainWeight = mainQuery.createWeight(searcher, scoreMode, boost);
-    return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight, reRankScaler);
+    return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight, reRankScalerExplain, reRankOperator);
   }
 
   @Override

@@ -31,19 +31,22 @@ public class ReRankWeight extends FilterWeight {
 
   private final IndexSearcher searcher;
   private final Rescorer reRankQueryRescorer;
-  private final ReRankScaler reRankScaler;
+  private final ReRankScaler.ReRankScalerExplain reRankScalerExplain;
+  private final ReRankOperator reRankOperator;
 
   public ReRankWeight(
       Query mainQuery,
       Rescorer reRankQueryRescorer,
       IndexSearcher searcher,
       Weight mainWeight,
-      ReRankScaler reRankScaler)
+      ReRankScaler.ReRankScalerExplain reRankScalerExplain,
+      ReRankOperator reRankOperator)
       throws IOException {
     super(mainQuery, mainWeight);
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
-    this.reRankScaler = reRankScaler;
+    this.reRankScalerExplain = reRankScalerExplain;
+    this.reRankOperator = reRankOperator;
   }
 
   @Override
@@ -51,13 +54,12 @@ public class ReRankWeight extends FilterWeight {
     final Explanation mainExplain = in.explain(context, doc);
     final Explanation reRankExplain =
         reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
-    if (reRankScaler != null && reRankScaler.scaleScores()) {
+    if (reRankScalerExplain.reRankScale()) {
       float reRankScore = reRankExplain.getValue().floatValue();
       float mainScore = mainExplain.getValue().floatValue();
       if (reRankScore > 0.0f) {
-        float scaledMainScore = reRankScaler.mainExplain.scale(mainScore);
-        float scaledReRankScore = reRankScaler.reRankExplain.scale(reRankScore);
-        ReRankOperator reRankOperator = reRankScaler.reRankOperator;
+        float scaledMainScore = reRankScalerExplain.getMainScaleExplain().scale(mainScore);
+        float scaledReRankScore = reRankScalerExplain.getReRankScaleExplain().scale(reRankScore);
         float scaledCombined =
             ReRankScaler.combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
         Explanation scaleExplain =
