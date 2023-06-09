@@ -228,9 +228,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               }
             });
       }
-
-      // We make things reproducible in tests by using test seed if any
-      String seed = System.getProperty("tests.seed");
     }
 
     @Override
@@ -304,6 +301,11 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         if (affinityNode != null) {
           affinityNodeMap.put(node, affinityNode);
         }
+      }
+
+      // If there are not multiple spreadDomains, then there is nothing to spread across
+      if (affinityPlacementContext.allSpreadDomains.size() < 2) {
+        affinityPlacementContext.doSpreadAcrossDomains = false;
       }
 
       return affinityNodeMap;
@@ -527,15 +529,18 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       private boolean addReplicaToAzAndSpread(Replica replica) {
         boolean needsResort = false;
-        needsResort |=
-            affinityPlacementContext
-                .availabilityZoneUsage
-                .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
-                .computeIfAbsent(replica.getShard().getShardName(), k -> new HashMap<>())
-                .computeIfAbsent(
-                    replica.getType(),
-                    k -> new ReplicaSpread(affinityPlacementContext.allAvailabilityZones))
-                .addReplica(availabilityZone);
+        if (affinityPlacementContext.allAvailabilityZones.size() > 1) {
+          needsResort |=
+              affinityPlacementContext
+                  .availabilityZoneUsage
+                  .computeIfAbsent(
+                      replica.getShard().getCollection().getName(), k -> new HashMap<>())
+                  .computeIfAbsent(replica.getShard().getShardName(), k -> new HashMap<>())
+                  .computeIfAbsent(
+                      replica.getType(),
+                      k -> new ReplicaSpread(affinityPlacementContext.allAvailabilityZones))
+                  .addReplica(availabilityZone);
+        }
         if (affinityPlacementContext.doSpreadAcrossDomains) {
           needsResort |=
               affinityPlacementContext
@@ -618,7 +623,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
 
       private int projectAZWeight(Replica replica) {
-        if (affinityPlacementContext.allAvailabilityZones.size() < 2) {
+        if (replica == null || affinityPlacementContext.allAvailabilityZones.size() < 2) {
           return 0;
         } else {
           return Optional.ofNullable(

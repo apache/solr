@@ -40,7 +40,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
       throws Exception {
     CollectionHandlingUtils.checkRequired(message, "node");
     String node = message.getStr("node");
-    List<Replica> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
+    List<Replica> sourceReplicas = ReplicaMigrationUtils.getReplicasOfNode(node, state);
     List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, state);
     if (!singleReplicas.isEmpty()) {
       results.add(

@@ -26,10 +26,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
@@ -75,7 +73,7 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
               + source
               + " are live, therefore replicas cannot be moved");
     }
-    List<Replica> sourceReplicas = getReplicasOfNode(source, clusterState);
+    List<Replica> sourceReplicas = ReplicaMigrationUtils.getReplicasOfNode(source, clusterState);
     Map<Replica, String> replicaMovements = CollectionUtil.newHashMap(sourceReplicas.size());
 
     if (target == null || target.isEmpty()) {
@@ -120,19 +118,5 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
           "success",
           "REPLACENODE action completed successfully from  : " + source + " to : " + target);
     }
-  }
-
-  static List<Replica> getReplicasOfNode(String source, ClusterState state) {
-    List<Replica> sourceReplicas = new ArrayList<>();
-    for (Map.Entry<String, DocCollection> e : state.getCollectionsMap().entrySet()) {
-      for (Slice slice : e.getValue().getSlices()) {
-        for (Replica replica : slice.getReplicas()) {
-          if (source.equals(replica.getNodeName())) {
-            sourceReplicas.add(replica);
-          }
-        }
-      }
-    }
-    return sourceReplicas;
   }
 }

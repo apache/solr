@@ -35,7 +35,9 @@ import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -126,7 +128,7 @@ public class ReplicaMigrationUtils {
                       String errorString =
                           String.format(
                               Locale.ROOT,
-                              "Failed to create replica for collection=%s shard=%s" + " on node=%s",
+                              "Failed to create replica for collection=%s shard=%s on node=%s",
                               sourceCollection,
                               sourceReplica.getShard(),
                               targetNode);
@@ -206,7 +208,7 @@ public class ReplicaMigrationUtils {
       ccc.getZkStateReader().removeCollectionStateWatcher(e.getKey(), e.getValue());
     }
     if (anyOneFailed.get()) {
-      log.info("Failed to create some replicas. Cleaning up all replicas on target node");
+      log.info("Failed to create some replicas. Cleaning up all newly created replicas.");
       SolrCloseableLatch cleanupLatch =
           new SolrCloseableLatch(createdReplicas.size(), ccc.getCloseableToLatchOn());
       for (ZkNodeProps createdReplica : createdReplicas) {
@@ -282,7 +284,7 @@ public class ReplicaMigrationUtils {
                           "failure",
                           String.format(
                               Locale.ROOT,
-                              "Failed to delete replica for collection=%s shard=%s" + " on node=%s",
+                              "Failed to delete replica for collection=%s shard=%s on node=%s",
                               coll,
                               shard,
                               node));
@@ -300,5 +302,19 @@ public class ReplicaMigrationUtils {
     }
     log.debug("Waiting for delete node action to complete");
     return cleanupLatch.await(5, TimeUnit.MINUTES);
+  }
+
+  static List<Replica> getReplicasOfNode(String nodeName, ClusterState state) {
+    List<Replica> sourceReplicas = new ArrayList<>();
+    for (Map.Entry<String, DocCollection> e : state.getCollectionsMap().entrySet()) {
+      for (Slice slice : e.getValue().getSlices()) {
+        for (Replica replica : slice.getReplicas()) {
+          if (nodeName.equals(replica.getNodeName())) {
+            sourceReplicas.add(replica);
+          }
+        }
+      }
+    }
+    return sourceReplicas;
   }
 }
