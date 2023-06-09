@@ -175,7 +175,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
       if (replicationHandler.getConfFileNameAlias().size() < 1
           || solrCore.getCoreContainer().isZooKeeperAware()) return filesResponse;
-      log.debug("Adding config files to list: {}", replicationHandler.getIncludeConfFiles());
+      String includeConfFiles = replicationHandler.getIncludeConfFiles();
+      log.debug("Adding config files to list: {}", includeConfFiles);
       // if configuration files need to be included get their details
       filesResponse.add(
           CONF_FILES,
