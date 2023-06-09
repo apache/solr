@@ -28,6 +28,8 @@ public class ReRankScaler {
   protected int mainQueryMax = -1;
   protected int reRankQueryMin = -1;
   protected int reRankQueryMax = -1;
+  protected MinMaxExplain mainExplain;
+  protected MinMaxExplain reRankExplain;
   protected ReRankOperator reRankOperator;
 
   public ReRankScaler(String mainRange, String reRankRange, ReRankOperator reRankOperator)
@@ -70,6 +72,14 @@ public class ReRankScaler {
     return reRankQueryMax;
   }
 
+  public MinMaxExplain getMainExplain() {
+    return mainExplain;
+  }
+
+  public MinMaxExplain getReRankExplain() {
+    return reRankExplain;
+  }
+
   public boolean scaleScores() {
     if (scaleMainScores() || scaleReRankScores()) {
       return true;
@@ -106,26 +116,27 @@ public class ReRankScaler {
       originalScoreMap.put(scoreDoc.doc, scoreDoc.score);
     }
 
+
     if (scaleMainScores()) {
-      scaledOriginalScoreMap = minMaxScaleScores(originalScoreMap, mainQueryMin, mainQueryMax);
+      this.mainExplain = getMinMaxExplain(mainQueryMin, mainQueryMax, originalScoreMap);
+      scaledOriginalScoreMap = minMaxScaleScores(originalScoreMap, this.mainExplain);
     } else {
       scaledOriginalScoreMap = originalScoreMap;
     }
 
-    // System.out.println("HOW MANY:"+howMany);
     for (int i = 0; i < howMany; i++) {
       ScoreDoc rescoredDoc = rescoredDocs[i];
       int doc = rescoredDoc.doc;
       float score = rescoredDoc.score;
       float rescore = getReRankScore(originalScoreMap.get(doc), score, reRankOperator);
-      // System.out.println("RESCORE:"+rescore);
       if (rescore > 0) {
         rescoredMap.put(doc, rescore);
       }
     }
 
     if (scaleReRankScores()) {
-      scaledRescoredMap = minMaxScaleScores(rescoredMap, reRankQueryMin, reRankQueryMax);
+      this.reRankExplain = getMinMaxExplain(reRankQueryMin, reRankQueryMax, rescoredMap);
+      scaledRescoredMap = minMaxScaleScores(rescoredMap, reRankExplain);
     } else {
       scaledRescoredMap = rescoredMap;
     }
@@ -195,49 +206,67 @@ public class ReRankScaler {
     }
   }
 
-  public static Map<Integer, Float> minMaxScaleScores(
-      Map<Integer, Float> docScoreMap, float min, float max) {
-    // System.out.println("SCALING:"+docScoreMap);
-    // System.out.println("BETWEEN:"+min+" : "+ max);
-    Map<Integer, Float> scaledScores = new HashMap<>();
+  public static float combineScores(float orginalScore, float reRankScore, ReRankOperator reRankOperator) {
+    switch (reRankOperator) {
+      case ADD:
+        return orginalScore + reRankScore;
+      case REPLACE:
+        return reRankScore;
+      case MULTIPLY:
+        return orginalScore * reRankScore;
+      default:
+        return -1;
+    }
+  }
+
+  public static final class MinMaxExplain {
+    public final float scaleMin;
+    public final float scaleMax;
+    public final float localMin;
+    public final float localMax;
+    private float diff;
+
+    public MinMaxExplain(float scaleMin, float scaleMax, float localMin, float localMax) {
+      this.scaleMin = scaleMin;
+      this.scaleMax = scaleMax;
+      this.localMin = localMin;
+      this.localMax = localMax;
+      this.diff = scaleMax - scaleMin;
+    }
+
+    public float scale(float score) {
+      if(localMin == localMax) {
+        return  (scaleMin + scaleMax) / 2;
+      } else {
+        float scaledScore = (score - localMin) / (localMax - localMin);
+        if (scaleMin != 0 || scaleMax != 1) {
+          return (diff * scaledScore) + scaleMin;
+        } else {
+          return scaledScore;
+        }
+      }
+    }
+  }
+
+  public static MinMaxExplain getMinMaxExplain(float scaleMin, float scaleMax, Map<Integer, Float> docScoreMap) {
     float localMin = Float.MAX_VALUE;
     float localMax = Float.MIN_VALUE;
 
     for (float score : docScoreMap.values()) {
-      // System.out.println("SCORE/MIN/MAX: "+score+"/"+localMin+"/"+localMax);
       localMin = Math.min(localMin, score);
       localMax = Math.max(localMax, score);
     }
+    return new MinMaxExplain(scaleMin, scaleMax, localMin, localMax);
+  }
 
-    if (localMin == localMax) {
-      // All the scores are the same set the halfway between min and max
-      float halfway = (min + max) / 2;
-      for (Map.Entry<Integer, Float> entry : docScoreMap.entrySet()) {
-        int doc = entry.getKey();
-        scaledScores.put(doc, halfway);
-      }
-      return scaledScores;
-    }
+  public static Map<Integer, Float> minMaxScaleScores(Map<Integer, Float> docScoreMap, MinMaxExplain explain) {
 
-    // System.out.println("LOCAL MIN/MAX"+localMin+":"+localMax);
+    Map<Integer, Float> scaledScores = new HashMap<>();
     for (Map.Entry<Integer, Float> entry : docScoreMap.entrySet()) {
       int doc = entry.getKey();
       float score = entry.getValue();
-      float scaled = (score - localMin) / (localMax - localMin);
-      scaledScores.put(doc, scaled);
+      scaledScores.put(doc, explain.scale(score));
     }
-
-    if (min != 0 || max != 1) {
-      // Next scale between specific min/max
-      float scale = max - min;
-
-      for (Map.Entry<Integer, Float> entry : scaledScores.entrySet()) {
-        float score = entry.getValue();
-        entry.setValue((scale * score) + min);
-      }
-    }
-
-    // System.out.println("SCALED:"+scaledScores);
 
     return scaledScores;
   }

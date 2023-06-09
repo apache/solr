@@ -41,6 +41,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
   protected String mainScale;
   protected String reRankScale;
   protected ReRankOperator reRankOperator;
+  protected ReRankScaler reRankScaler;
 
   public AbstractReRankQuery(
       Query mainQuery,
@@ -115,7 +116,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
     final Weight mainWeight = mainQuery.createWeight(searcher, scoreMode, boost);
-    return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight);
+    return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight, reRankScaler);
   }
 
   @Override

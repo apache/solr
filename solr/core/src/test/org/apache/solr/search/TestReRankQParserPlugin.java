@@ -1090,12 +1090,12 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertEquals(reRankScaler.getReRankQueryMin(), 5);
     assertEquals(reRankScaler.getReRankQueryMax(), 100);
 
-
     Map<Integer, Float> scores = new HashMap<>();
     scores.put(1, 180.25f);
     scores.put(2, 90.125f);
     scores.put(3, (180.25f+90.125f)/2); // halfway
-    Map<Integer, Float> scaled = ReRankScaler.minMaxScaleScores(scores, 0, 1);
+    ReRankScaler.MinMaxExplain minMaxExplain = ReRankScaler.getMinMaxExplain(0, 1, scores);
+    Map<Integer, Float> scaled = ReRankScaler.minMaxScaleScores(scores, minMaxExplain);
     assertEquals(scaled.size(), 3);
     assertTrue(scaled.containsKey(1));
     assertTrue(scaled.containsKey(2));
@@ -1107,8 +1107,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertEquals(scaled2, 0.0f, 0);
     //scaled3 should be halfway between scaled1 and scaled2
     assertEquals((scaled1+scaled2)/2, scaled3, 0);
-
-    scaled = ReRankScaler.minMaxScaleScores(scores, 50, 100);
+    minMaxExplain = ReRankScaler.getMinMaxExplain(50, 100, scores);
+    scaled = ReRankScaler.minMaxScaleScores(scores, minMaxExplain);
     scaled1 = scaled.get(1);
     scaled2 = scaled.get(2);
     scaled3 = scaled.get(3);
@@ -1119,8 +1119,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     scores.put(1, 10f);
     scores.put(2, 10f);
-    scores.put(3, 10f); // halfway
-    scaled = ReRankScaler.minMaxScaleScores(scores, 0, 1);
+    scores.put(3, 10f);
+    minMaxExplain = ReRankScaler.getMinMaxExplain(0, 1, scores);
+
+    scaled = ReRankScaler.minMaxScaleScores(scores, minMaxExplain);
     scaled1 = scaled.get(1);
     scaled2 = scaled.get(2);
     scaled3 = scaled.get(3);
@@ -1243,10 +1245,18 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         req(params),
         "*[count(//doc)=6]",
         "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[1]/float[@name='score'][.='37.70526']",
         "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[2]/float[@name='score'][.='30.012009']",
         "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[3]/float[@name='score'][.='29.82389']",
         "//result/doc[4]/str[@name='id'][.='5']",
+        "//result/doc[4]/float[@name='score'][.='29.527113']",
         "//result/doc[5]/str[@name='id'][.='2']",
-        "//result/doc[6]/str[@name='id'][.='1']");
+        "//result/doc[5]/float[@name='score'][.='25.665672']",
+        "//result/doc[6]/str[@name='id'][.='1']",
+        "//result/doc[6]/float[@name='score'][.='20.002003']");
+
   }
+
 }
