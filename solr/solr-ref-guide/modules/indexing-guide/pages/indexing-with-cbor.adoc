@@ -72,8 +72,6 @@ else:
 
 === Running the program
 
-To run the Python program mentioned above, you can follow these steps:
-
 1. Set up Python: Make sure you have Python installed on your system.
 2. Ensure that the dependencies are installed
 
@@ -94,3 +92,70 @@ To run the Python program mentioned above, you can follow these steps:
    }
    }
 
+== Node.js example
+
+Save the following program into a a file called `script.js`
+
+[,javascript]
+----
+const cbor = require('cbor');
+const axios = require('axios');
+
+async function main() {
+// JSON data to send (list of JSON objects)
+const jsonData = [
+{
+"id" : "1",
+"name_s": "John Doe",
+"age_i": 30,
+"city_s": "New York"
+},
+{
+"id": "2",
+"name_s": "Jane Smith",
+"age_i": 25,
+"city_s": "London"
+},
+];
+
+  // Convert JSON data to CBOR
+  const cborData = cbor.encode(jsonData);
+
+  // Set the endpoint URL
+  const url = "http://localhost:8983/solr/coll1/update/cbor?commit=true"
+
+  try {
+    // Send a POST request with CBOR data
+    const response = await axios.post(url, cborData, {
+      headers: {
+        'Content-Type': 'application/cbor',
+      },
+    });
+
+    // Process the response
+    console.log('POST request sent successfully!');
+    console.log('Response:', response.data);
+  } catch (error) {
+    console.error('Error sending POST request:', error.message);
+  }
+}
+
+main();
+----
+[]
+
+=== Running the program
+
+1. Set up Node.js
+2. Ensure that the dependencies are installed
+
+ npm install cbor axios
+
+3. Execute the script
+
+ node script.js
+
+4. Check the output
+
+ POST request sent successfully!
+ Response: { responseHeader: { rf: 1, status: 0, QTime: 187 } }
