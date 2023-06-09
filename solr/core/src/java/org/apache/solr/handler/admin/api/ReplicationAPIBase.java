@@ -16,14 +16,24 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.handler.ReplicationHandler.CHECKSUM;
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
+import static org.apache.solr.handler.ReplicationHandler.CONF_FILES;
+import static org.apache.solr.handler.ReplicationHandler.ERR_STATUS;
+import static org.apache.solr.handler.ReplicationHandler.EXCEPTION;
+import static org.apache.solr.handler.ReplicationHandler.MESSAGE;
+import static org.apache.solr.handler.ReplicationHandler.OK_STATUS;
+import static org.apache.solr.handler.ReplicationHandler.SIZE;
+import static org.apache.solr.handler.ReplicationHandler.STATUS;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.HashMap;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.SegmentCommitInfo;
@@ -40,9 +50,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.ReplicationHandler.*;
 
 /** A common parent for "replication" (i.e. replication-level) APIs. */
 public abstract class ReplicationAPIBase extends JerseyResource {
@@ -73,7 +80,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
   private CoreReplicationAPI.FilesResponse getFileList(long generation, SolrQueryResponse rsp) {
     ReplicationHandler replicationHandler =
-            (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
+        (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     final IndexDeletionPolicyWrapper delPol = solrCore.getDeletionPolicy();
     final CoreReplicationAPI.FilesResponse filesResponse = new CoreReplicationAPI.FilesResponse();
 
@@ -103,11 +110,12 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       Directory dir = null;
       try {
         dir =
-                solrCore.getDirectoryFactory()
-                        .get(
-                                solrCore.getNewIndexDir(),
-                                DirectoryFactory.DirContext.DEFAULT,
-                                solrCore.getSolrConfig().indexConfig.lockType);
+            solrCore
+                .getDirectoryFactory()
+                .get(
+                    solrCore.getNewIndexDir(),
+                    DirectoryFactory.DirContext.DEFAULT,
+                    solrCore.getSolrConfig().indexConfig.lockType);
         SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
@@ -136,21 +144,22 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         fileMeta.put(SIZE, dir.fileLength(infos.getSegmentsFileName()));
         if (infos.getId() != null) {
           try (final IndexInput in =
-                       dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
+              dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
             try {
               fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
             } catch (Exception e) {
               // TODO Should this trigger a larger error?
               log.warn(
-                      "Could not read checksum from index file: {}", infos.getSegmentsFileName(), e);
+                  "Could not read checksum from index file: {}", infos.getSegmentsFileName(), e);
             }
           }
         }
         result.add(fileMeta);
       } catch (IOException e) {
         log.error(
-                "Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
-        reportErrorOnResponse(filesResponse, "unable to get file names for given index generation", e);
+            "Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
+        reportErrorOnResponse(
+            filesResponse, "unable to get file names for given index generation", e);
         return filesResponse;
       } finally {
         if (dir != null) {
@@ -164,10 +173,15 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
       filesResponse.add(CMD_GET_FILE_LIST, result);
 
-      if (replicationHandler.getConfFileNameAlias().size() < 1 || solrCore.getCoreContainer().isZooKeeperAware()) return filesResponse;
+      if (replicationHandler.getConfFileNameAlias().size() < 1
+          || solrCore.getCoreContainer().isZooKeeperAware()) return filesResponse;
       log.debug("Adding config files to list: {}", replicationHandler.getIncludeConfFiles());
       // if configuration files need to be included get their details
-      filesResponse.add(CONF_FILES, replicationHandler.getConfFileInfoFromCache(replicationHandler.getConfFileNameAlias(), replicationHandler.getConfFileInfoCache()));
+      filesResponse.add(
+          CONF_FILES,
+          replicationHandler.getConfFileInfoFromCache(
+              replicationHandler.getConfFileNameAlias(),
+              replicationHandler.getConfFileInfoCache()));
       filesResponse.add(STATUS, OK_STATUS);
 
     } finally {
@@ -175,19 +189,20 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         // before releasing the save on our commit point, set a short reserve duration since
         // the main reason remote nodes will ask for the file list is because they are preparing to
         // replicate from us...
-        delPol.setReserveDuration(commit.getGeneration(), replicationHandler.getReserveCommitDuration());
+        delPol.setReserveDuration(
+            commit.getGeneration(), replicationHandler.getReserveCommitDuration());
         delPol.releaseCommitPoint(commit);
       }
     }
     return filesResponse;
   }
 
-  private void reportErrorOnResponse(CoreReplicationAPI.FilesResponse filesResponse, String message, Exception e) {
+  private void reportErrorOnResponse(
+      CoreReplicationAPI.FilesResponse filesResponse, String message, Exception e) {
     filesResponse.add(STATUS, ERR_STATUS);
     filesResponse.add(MESSAGE, message);
     if (e != null) {
       filesResponse.add(EXCEPTION, e);
     }
   }
-
 }

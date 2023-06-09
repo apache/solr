@@ -269,9 +269,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_GET_FILE)) {
       getFileStream(solrParams, rsp);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
-      final CoreReplicationAPI coreReplicationAPI =
-              new CoreReplicationAPI(core, req, rsp);
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, coreReplicationAPI.fetchFiles(Long.parseLong(solrParams.required().get(GENERATION))));
+      final CoreReplicationAPI coreReplicationAPI = new CoreReplicationAPI(core, req, rsp);
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+          rsp,
+          coreReplicationAPI.fetchFiles(Long.parseLong(solrParams.required().get(GENERATION))));
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
       doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
     } else if (command.equalsIgnoreCase(CMD_RESTORE)) {
@@ -347,7 +348,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private void reportErrorOnResponse(CoreReplicationAPI.FilesResponse filesResponse, String message, Exception e) {
+  private void reportErrorOnResponse(
+      CoreReplicationAPI.FilesResponse filesResponse, String message, Exception e) {
     filesResponse.add(STATUS, ERR_STATUS);
     filesResponse.add(MESSAGE, message);
     if (e != null) {
