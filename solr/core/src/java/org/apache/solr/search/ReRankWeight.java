@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.Locale;
+
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterWeight;
@@ -62,7 +64,7 @@ public class ReRankWeight extends FilterWeight {
         Explanation scaleExplain =
             Explanation.match(
                 scaledCombined,
-                String.format(
+                String.format(Locale.getDefault(),
                     "Main query score rescaled to %1$f reRank score rescaled to %2$f",
                     scaledMainScore, scaledReRankScore),
                 reRankExplain);
