@@ -96,7 +96,6 @@ dependencies {
   implementation "org.apache.lucene:lucene-join"
   implementation "org.apache.lucene:lucene-misc"
   implementation "org.apache.lucene:lucene-queryparser"
-  implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
 
