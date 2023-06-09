@@ -45,7 +45,7 @@ public class ReRankWeight extends FilterWeight {
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     final Explanation mainExplain = in.explain(context, doc);
     final Explanation reRankExplain = reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
-    if(reRankScaler.scaleScores()) {
+    if(reRankScaler != null && reRankScaler.scaleScores()) {
       float reRankScore = reRankExplain.getValue().floatValue();
       float mainScore = mainExplain.getValue().floatValue();
       if(reRankScore > 0.0f) {
