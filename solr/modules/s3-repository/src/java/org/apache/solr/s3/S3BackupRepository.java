@@ -162,8 +162,7 @@ public class S3BackupRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) throws IOException {
     Objects.requireNonNull(path, "cannot delete files without a valid URI path");
     Objects.requireNonNull(files, "collection of files to delete cannot be null");
 
@@ -177,13 +176,7 @@ public class S3BackupRepository implements BackupRepository {
             .map(S3BackupRepository::getS3Path)
             .collect(Collectors.toSet());
 
-    try {
-      client.delete(filesToDelete);
-    } catch (S3NotFoundException e) {
-      if (!ignoreNoSuchFileException) {
-        throw e;
-      }
-    }
+    client.delete(filesToDelete);
   }
 
   @Override
