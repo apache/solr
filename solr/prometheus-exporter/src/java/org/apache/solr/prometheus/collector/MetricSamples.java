@@ -83,5 +83,4 @@ public class MetricSamples {
         .filter(value -> !value.samples.isEmpty())
         .collect(Collectors.toList());
   }
-
 }
