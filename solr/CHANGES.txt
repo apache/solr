@@ -170,6 +170,8 @@ Optimizations
   request. SolrJ will now form the URL directly to the intended replica of the collection (and not the collection itself).
   (Pierre Salagnac, Ivan Djurasevic, Jason Baik)
 
+* SOLR-16273: Improve the performance of the Prometheus Metric Exporter scraping metrics (Matthew Biscocho via David Smiley & Christine Poerschke
+
 Bug Fixes
 ---------------------
 
