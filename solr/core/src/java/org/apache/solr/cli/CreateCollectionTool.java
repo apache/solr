@@ -250,7 +250,7 @@ public class CreateCollectionTool extends ToolBase {
 
     if (confDirectoryName.equals("_default")
         && (confName.equals("") || confName.equals("_default"))) {
-      final String collectionName = cli.getOptionValue("collection");
+      final String collectionName = cli.getOptionValue("name");
       final String solrUrl = cli.getOptionValue("solrUrl");
       final String curlCommand =
           String.format(
