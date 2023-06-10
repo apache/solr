@@ -606,20 +606,6 @@ This defaults to the same name as the core or collection.
 +
 *Example*: `bin/solr create -n basic`
 
-`-p <port>` or `-port <port>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: _see description_
-|===
-+
-The port of a local Solr instance to send the create command to.
-By default the script tries to detect the port by looking for running Solr instances.
-+
-This option is useful if you are running multiple Solr instances on the same host, thus requiring you to be specific about which instance to create the core in.
-+
-*Example*: `bin/solr create -p 8983`
-
 `-s <shards>` or `-shards <shards>`::
 +
 [%autowidth,frame=none]
@@ -694,7 +680,7 @@ Consequently, we recommend that you do not share data-driven configurations betw
 You can turn off schemaless functionality for a collection with the following command, assuming the collection name is `mycollection`.
 
 [source,bash]
-$ bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false
+$ bin/solr config -c mycollection -action set-user-property -property update.autoCreateFields -value false
 
 See also the section <<Set or Unset Configuration Properties>>.
 
@@ -746,20 +732,6 @@ If the configuration directory is being used by another collection, then it will
 |===
 +
 Skip safety checks when deleting the configuration directory used by a collection.
-
-`-p <port>` or `-port <port>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: _see description_
-|===
-+
-The port of a local Solr instance to send the delete command to.
-By default the script tries to detect the port by looking for running Solr instances.
-+
-This option is useful if you are running multiple Solr instances on the same host, thus requiring you to be specific about which instance to delete the core from.
-+
-*Example*: `bin/solr delete -p 8983`
 
 == Authentication
 
@@ -921,25 +893,25 @@ The `bin/solr` script enables a subset of the Config API: xref:configuration-gui
 
 To set the common property `updateHandler.autoCommit.maxDocs` to `100` on collection `mycollection`:
 
-`bin/solr config -c mycollection -p 8983 -action set-property -property updateHandler.autoCommit.maxDocs -value 100`
+`bin/solr config -c mycollection -action set-property -property updateHandler.autoCommit.maxDocs -value 100`
 
 The default `-action` is `set-property`, so the above can be shortened by not mentioning it:
 
-`bin/solr config -c mycollection -p 8983 -property updateHandler.autoCommit.maxDocs -value 100`
+`bin/solr config -c mycollection -property updateHandler.autoCommit.maxDocs -value 100`
 
 To unset a previously set common property, specify `-action unset-property` with no `-value`:
 
-`bin/solr config -c mycollection -p 8983 -action unset-property -property updateHandler.autoCommit.maxDocs`
+`bin/solr config -c mycollection -action unset-property -property updateHandler.autoCommit.maxDocs`
 
 === Set or Unset User-Defined Properties
 
 To set the user-defined property `update.autoCreateFields` to `false` (to disable xref:indexing-guide:schemaless-mode.adoc[]):
 
-`bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false`
+`bin/solr config -c mycollection -action set-user-property -property update.autoCreateFields -value false`
 
 To unset a previously set user-defined property, specify `-action unset-user-property` with no `-value`:
 
-`bin/solr config -c mycollection -p 8983 -action unset-user-property -property update.autoCreateFields`
+`bin/solr config -c mycollection -action unset-user-property -property update.autoCreateFields`
 
 === Config Parameters
 
@@ -988,15 +960,6 @@ Set the property to this value.
 +
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
-
-`-p <port>` or `-port <port>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-`localhost` port of the Solr node to use when applying the configuration change.
 
 `-solrUrl <url>`::
 +
