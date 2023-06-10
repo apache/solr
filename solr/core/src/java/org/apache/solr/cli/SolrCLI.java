@@ -502,13 +502,16 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
     String zkHost = cli.getOptionValue("zkHost");
-    if (zkHost != null) return zkHost;
+    if (zkHost != null) {
+      return zkHost;
+    }
 
     // find it using the localPort
     String solrUrl = cli.getOptionValue("solrUrl");
-    if (solrUrl == null)
+    if (solrUrl == null) {
       throw new IllegalStateException(
-          "Must provide either the -zkHost or -solrUrl parameters to use the create_collection command!");
+              "Must provide either the -zkHost or -solrUrl parameters to run this command!");
+    }
 
     if (!solrUrl.endsWith("/")) {
       solrUrl += "/";
