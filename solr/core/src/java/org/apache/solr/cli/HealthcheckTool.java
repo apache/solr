@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -67,6 +68,21 @@ public class HealthcheckTool extends SolrCloudTool {
   }
 
   @Override
+  public List<Option> getOptions() {
+    return List.of(
+            SolrCLI.OPTION_SOLRURL,
+            Option.builder("c")
+                    .longOpt("name")
+                    .argName("NAME")
+                    .hasArg()
+                    .required(true)
+                    .desc("Name of the collection to check.")
+                    .build(),
+            SolrCLI.OPTION_ZKHOST,
+            SolrCLI.OPTION_VERBOSE);
+  }
+
+  @Override
   public String getName() {
     return "healthcheck";
   }
@@ -74,7 +90,7 @@ public class HealthcheckTool extends SolrCloudTool {
   @Override
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String collection = cli.getOptionValue("collection");
+    String collection = cli.getOptionValue("name");
     if (collection == null) {
       throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
     }
