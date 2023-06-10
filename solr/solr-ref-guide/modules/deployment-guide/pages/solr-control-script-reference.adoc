@@ -738,6 +738,15 @@ If the configuration directory is being used by another collection, then it will
 +
 *Example*: `bin/solr delete -deleteConfig false`
 
+`-forceDeleteConfig`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Skip safety checks when deleting the configuration directory used by a collection.
+
 `-p <port>` or `-port <port>`::
 +
 [%autowidth,frame=none]
