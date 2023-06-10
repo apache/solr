@@ -47,7 +47,7 @@ public class CreateCollectionTool extends ToolBase {
           SolrCLI.OPTION_ZKHOST,
           SolrCLI.OPTION_SOLRURL,
           Option.builder("c")
-              .longOpt("collection")
+              .longOpt("name")
               .argName("NAME")
               .hasArg()
               .required(true)
@@ -131,7 +131,7 @@ public class CreateCollectionTool extends ToolBase {
 
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
 
-    String collectionName = cli.getOptionValue("collection");
+    String collectionName = cli.getOptionValue("name");
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName = cli.getOptionValue("confdir", "_default"); // CREATE_CONFDIR
     String confname = cli.getOptionValue("confname");
@@ -259,7 +259,11 @@ public class CreateCollectionTool extends ToolBase {
                   + "'{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'",
               solrUrl,
               collectionName);
-      final String configCommand = String.format(Locale.ROOT,"To turn off: bin/solr config -c %s -p 8983 -action set-user-property -property update.autoCreateFields -value false",collectionName);
+      final String configCommand =
+          String.format(
+              Locale.ROOT,
+              "bin/solr config -c %s -p 8983 -action set-user-property -property update.autoCreateFields -value false",
+              collectionName);
       echo(
           "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is");
       echo("         NOT RECOMMENDED for production use.");

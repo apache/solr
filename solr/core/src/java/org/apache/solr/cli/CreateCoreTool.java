@@ -16,10 +16,7 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
@@ -54,14 +51,16 @@ public class CreateCoreTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         SolrCLI.OPTION_SOLRURL,
-        Option.builder(NAME)
+        Option.builder("c")
+            .longOpt("name")
             .argName("NAME")
             .hasArg()
             .required(true)
             .desc("Name of the core to create.")
             .build(),
-        Option.builder("confdir")
-            .argName("CONFIG")
+        Option.builder("d")
+            .longOpt("confdir")
+            .argName("NAME")
             .hasArg()
             .required(false)
             .desc(
@@ -69,41 +68,33 @@ public class CreateCoreTool extends ToolBase {
                     + SolrCLI.DEFAULT_CONFIG_SET
                     + '.')
             .build(),
-        Option.builder("configsetsDir")
-            .argName("DIR")
-            .hasArg()
-            .required(true)
-            .desc("Path to configsets directory on the local system.")
-            .build(),
+        // Option.builder("configsetsDir")
+        //    .argName("DIR")
+        //     .hasArg()
+        //    .required(true)
+        //    .desc("Path to configsets directory on the local system.")
+        //    .build(),
         SolrCLI.OPTION_VERBOSE);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    String coreName = cli.getOptionValue("name");
     String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
-
-    File configsetsDir = new File(cli.getOptionValue("configsetsDir"));
-    if (!configsetsDir.isDirectory())
-      throw new FileNotFoundException(configsetsDir.getAbsolutePath() + " not found!");
-
-    String configSet = cli.getOptionValue("confdir", SolrCLI.DEFAULT_CONFIG_SET);
-    File configSetDir = new File(configsetsDir, configSet);
-    if (!configSetDir.isDirectory()) {
-      // we allow them to pass a directory instead of a configset name
-      File possibleConfigDir = new File(configSet);
-      if (possibleConfigDir.isDirectory()) {
-        configSetDir = possibleConfigDir;
-      } else {
-        throw new FileNotFoundException(
-            "Specified config directory "
-                + configSet
-                + " not found in "
-                + configsetsDir.getAbsolutePath());
-      }
+    if (!solrUrl.endsWith("/")) {
+      solrUrl += "/";
     }
 
-    String coreName = cli.getOptionValue(NAME);
+    final String solrInstallDir = System.getProperty("solr.install.dir");
+    final String confDirName =
+        cli.getOptionValue("confdir", SolrCLI.DEFAULT_CONFIG_SET); // CREATE_CONFDIR
+
+    // we allow them to pass a directory instead of a configset name
+    File configsetDir = new File(confDirName);
+    if (!configsetDir.isDirectory()) {
+      ensureConfDirExists(confDirName, solrInstallDir);
+    }
+    printDefaultConfigsetWarningIfNecessary(cli);
 
     String coreRootDirectory; // usually same as solr home, but not always
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
@@ -121,12 +112,6 @@ public class CreateCoreTool extends ToolBase {
 
       // convert raw JSON into user-friendly output
       coreRootDirectory = (String) systemInfo.get("core_root");
-
-      // Fall back to solr_home, in case we are running against older server that does not return
-      // the property
-      if (coreRootDirectory == null) coreRootDirectory = (String) systemInfo.get("solr_home");
-      if (coreRootDirectory == null)
-        coreRootDirectory = configsetsDir.getParentFile().getAbsolutePath();
     }
 
     if (SolrCLI.safeCheckCoreExists(solrUrl, coreName)) {
@@ -135,29 +120,20 @@ public class CreateCoreTool extends ToolBase {
               + coreName
               + "' already exists!\nChecked core existence using Core API command");
     }
-
+    System.out.println("HERE IT OCMES");
+    System.out.println(coreRootDirectory);
+    System.out.println(coreName);
     File coreInstanceDir = new File(coreRootDirectory, coreName);
-    File confDir = new File(configSetDir, "conf");
+    File confDir = new File(getFullConfDir(confDirName, solrInstallDir), "conf");
     if (!coreInstanceDir.isDirectory()) {
       coreInstanceDir.mkdirs();
-      if (!coreInstanceDir.isDirectory())
+      if (!coreInstanceDir.isDirectory()) {
         throw new IOException(
             "Failed to create new core instance directory: " + coreInstanceDir.getAbsolutePath());
-
-      if (confDir.isDirectory()) {
-        FileUtils.copyDirectoryToDirectory(confDir, coreInstanceDir);
-      } else {
-        // hmmm ... the configset we're cloning doesn't have a conf sub-directory,
-        // we'll just assume it is OK if it has solrconfig.xml
-        if ((new File(configSetDir, "solrconfig.xml")).isFile()) {
-          FileUtils.copyDirectory(configSetDir, new File(coreInstanceDir, "conf"));
-        } else {
-          throw new IllegalArgumentException(
-              "\n"
-                  + configSetDir.getAbsolutePath()
-                  + " doesn't contain a conf subdirectory or solrconfig.xml\n");
-        }
       }
+
+      FileUtils.copyDirectoryToDirectory(confDir, coreInstanceDir);
+
       echoIfVerbose(
           "\nCopying configuration to new core instance directory:\n"
               + coreInstanceDir.getAbsolutePath(),
@@ -180,4 +156,49 @@ public class CreateCoreTool extends ToolBase {
       throw e;
     }
   }
-} // end CreateCoreTool class
+
+  private String getFullConfDir(String confDirName, String solrInstallDir) {
+    return solrInstallDir + "/server/solr/configsets/" + confDirName;
+  }
+
+  private String ensureConfDirExists(String confDirName, String solrInstallDir) {
+    String fullConfDir = getFullConfDir(confDirName, solrInstallDir);
+    if (!new File(fullConfDir).isDirectory()) {
+      echo("Specified configuration directory " + confDirName + " not found!");
+      System.exit(1);
+    }
+
+    return fullConfDir;
+  }
+
+  private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) {
+    final String confDirectoryName = cli.getOptionValue("confdir", "_default"); // CREATE_CONFDIR
+    final String confName = cli.getOptionValue("confname", "");
+
+    if (confDirectoryName.equals("_default")
+        && (confName.equals("") || confName.equals("_default"))) {
+      final String collectionName = cli.getOptionValue("collection");
+      final String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
+      final String curlCommand =
+          String.format(
+              Locale.ROOT,
+              "curl %s/%s/config -d "
+                  + "'{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'",
+              solrUrl,
+              collectionName);
+      final String configCommand =
+          String.format(
+              Locale.ROOT,
+              "bin/solr config -c %s -p 8983 -action set-user-property -property update.autoCreateFields -value false",
+              collectionName);
+      echo(
+          "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is");
+      echo("         NOT RECOMMENDED for production use.");
+      echo("");
+      echo("         To turn it off:");
+      echo("            " + curlCommand);
+      echo("         Or:");
+      echo("            " + configCommand);
+    }
+  }
+}
