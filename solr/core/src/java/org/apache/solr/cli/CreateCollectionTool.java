@@ -261,12 +261,15 @@ public class CreateCollectionTool extends ToolBase {
                   + "'{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'",
               solrUrl,
               collectionName);
+      final String configCommand = String.format(Locale.ROOT,"To turn off: bin/solr config -c %s -p 8983 -action set-user-property -property update.autoCreateFields -value false",collectionName);
       echo(
           "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is");
       echo("         NOT RECOMMENDED for production use.");
       echo("");
       echo("         To turn it off:");
       echo("            " + curlCommand);
+      echo("         Or:");
+      echo("            " + configCommand);
     }
   }
 }
