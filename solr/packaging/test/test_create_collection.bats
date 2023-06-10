@@ -38,9 +38,16 @@ teardown() {
   delete_all_collections
 }
 
+@test "create collection" {
+  run solr create_collection -c COLL_NAME
+  assert_output --partial "Created collection 'COLL_NAME'"
+  assert_output --partial "assuming solrUrl is http://localhost:8983/solr"
+}
+
 @test "create collection using solrUrl" {
   run solr create_collection -c COLL_NAME -solrUrl http://localhost:8983/solr
-  assert_output --partial "Created collection 'COLL_NAME'"
+  assert_output --partial "Created collection 'COLL_NAME'"  
+  refute_output --partial "assuming solrUrl is http://localhost:8983/solr"
 }
 
 @test "create collection using Zookeeper" {

@@ -509,12 +509,14 @@ public class SolrCLI implements CLIO {
     // find it using the localPort
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
-      throw new IllegalStateException(
-          "Must provide either the -zkHost or -solrUrl parameters to run this command!");
-    }
-
-    if (!solrUrl.endsWith("/")) {
-      solrUrl += "/";
+      solrUrl = DEFAULT_SOLR_URL;
+      CLIO.getOutStream()
+          .println(
+              "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                  + DEFAULT_SOLR_URL
+                  + ".");
+      // throw new IllegalStateException(
+      //    "Must provide either the -zkHost or -solrUrl parameters to run this command!");
     }
 
     try (var solrClient = getSolrClient(solrUrl)) {
