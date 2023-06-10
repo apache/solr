@@ -116,9 +116,7 @@ public class CreateCollectionTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
     if (zkHost == null) {
       throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("solrUrl")
-              + " is running in standalone server mode, please use the create_core command instead;\n"
+          "Solr at is running in standalone server mode, please use the create_core command instead;\n"
               + "create_collection can only be used when running in SolrCloud mode.\n");
     }
 
