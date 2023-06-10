@@ -60,7 +60,8 @@ public class CreateCollectionTool extends ToolBase {
               .required(false)
               .desc("Number of shards; default is 1.")
               .build(),
-          Option.builder("replicationFactor")
+          Option.builder("rf")
+              .longOpt("replicationFactor")
               .argName("#")
               .hasArg()
               .required(false)
@@ -84,12 +85,6 @@ public class CreateCollectionTool extends ToolBase {
               .required(false)
               .desc("Configuration name; default is the collection name.")
               .build(),
-          // Option.builder("configsetsDir")
-          //    .argName("DIR")
-          //    .hasArg()
-          //   .required(true)
-          //   .desc("Path to configsets directory on the local system.")
-          //     .build(),
           SolrCLI.OPTION_VERBOSE);
 
   public CreateCollectionTool() {
@@ -133,11 +128,9 @@ public class CreateCollectionTool extends ToolBase {
 
     String collectionName = cli.getOptionValue("name");
     final String solrInstallDir = System.getProperty("solr.install.dir");
-    final String confDirName = cli.getOptionValue("confdir", "_default"); // CREATE_CONFDIR
-    String confname = cli.getOptionValue("confname");
-    String confdir = cli.getOptionValue("confdir");
-    // final String confName = cli.getOptionValue("confname", collectionName);
-    ensureConfDirExists(confDirName, solrInstallDir);
+    String confName = cli.getOptionValue("confname");
+    String confDir = cli.getOptionValue("confdir", "_default");
+    ensureConfDirExists(confDir, solrInstallDir);
     printDefaultConfigsetWarningIfNecessary(cli);
 
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -160,34 +153,34 @@ public class CreateCollectionTool extends ToolBase {
     final String configsetsDir = solrInstallDir + "/server/solr/configsets";
 
     boolean configExistsInZk =
-        confname != null
-            && !confname.trim().isEmpty()
+        confName != null
+            && !confName.trim().isEmpty()
             && ZkStateReader.from(cloudSolrClient)
                 .getZkClient()
-                .exists("/configs/" + confname, true);
+                .exists("/configs/" + confName, true);
 
     if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
       // do nothing
     } else if (configExistsInZk) {
-      echo("Re-using existing configuration directory " + confname);
-    } else if (confdir != null && !confdir.trim().isEmpty()) {
-      if (confname == null || confname.trim().isEmpty()) {
-        confname = collectionName;
+      echo("Re-using existing configuration directory " + confName);
+    } else { // if (confdir != null && !confdir.trim().isEmpty()) {
+      if (confName == null || confName.trim().isEmpty()) {
+        confName = collectionName;
       }
-      Path confPath = ConfigSetService.getConfigsetPath(confdir, configsetsDir);
+      Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDir);
 
       echoIfVerbose(
           "Uploading "
               + confPath.toAbsolutePath()
               + " for config "
-              + confname
+              + confName
               + " to ZooKeeper at "
               + cloudSolrClient.getClusterStateProvider().getQuorumHosts(),
           cli);
       ZkMaintenanceUtils.uploadToZK(
           ZkStateReader.from(cloudSolrClient).getZkClient(),
           confPath,
-          ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
+          ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
           ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
     }
 
@@ -208,7 +201,7 @@ public class CreateCollectionTool extends ToolBase {
       response =
           cloudSolrClient.request(
               CollectionAdminRequest.createCollection(
-                  collectionName, confname, numShards, replicationFactor));
+                  collectionName, confName, numShards, replicationFactor));
     } catch (SolrServerException sse) {
       throw new Exception(
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
@@ -226,22 +219,26 @@ public class CreateCollectionTool extends ToolBase {
               collectionName,
               numShards,
               replicationFactor);
-      if (confname != null && !confname.trim().isEmpty()) {
-        endMessage += String.format(Locale.ROOT, " with config-set '%s'", confname);
+      if (confName != null && !confName.trim().isEmpty()) {
+        endMessage += String.format(Locale.ROOT, " with config-set '%s'", confName);
       }
 
       echo(endMessage);
     }
   }
 
-  private String ensureConfDirExists(String confDirName, String solrInstallDir) {
-    final String fullConfDir = solrInstallDir + "/server/solr/configsets/" + confDirName;
-    if (!new File(fullConfDir).isDirectory()) {
-      echo("Specified configuration directory " + confDirName + " not found!");
-      System.exit(1);
+  /**
+   * Ensure the confDirName is a path to a directory by itself or when it is combined with the
+   * solrInstallDir.
+   */
+  private void ensureConfDirExists(String confDirName, String solrInstallDir) {
+    if (!new File(confDirName).isDirectory()) {
+      final String fullConfDir = solrInstallDir + "/server/solr/configsets/" + confDirName;
+      if (!new File(fullConfDir).isDirectory()) {
+        echo("Specified configuration directory " + confDirName + " not found!");
+        System.exit(1);
+      }
     }
-
-    return fullConfDir;
   }
 
   private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) {
