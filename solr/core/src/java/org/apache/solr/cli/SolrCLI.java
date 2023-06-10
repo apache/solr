@@ -510,7 +510,7 @@ public class SolrCLI implements CLIO {
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       throw new IllegalStateException(
-              "Must provide either the -zkHost or -solrUrl parameters to run this command!");
+          "Must provide either the -zkHost or -solrUrl parameters to run this command!");
     }
 
     if (!solrUrl.endsWith("/")) {
