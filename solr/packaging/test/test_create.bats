@@ -36,6 +36,6 @@ teardown() {
 
 @test "create for cloud mode" {
   run solr start -c
-  run solr create -c COLL_NAME
+  run solr create -c COLL_NAME -solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME'"
 }
