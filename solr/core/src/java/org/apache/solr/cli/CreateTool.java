@@ -50,9 +50,6 @@ public class CreateTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
-    if (!solrUrl.endsWith("/")) {
-      solrUrl += "/";
-    }
 
     ToolBase tool;
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
