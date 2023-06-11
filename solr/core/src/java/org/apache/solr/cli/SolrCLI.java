@@ -39,12 +39,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -246,33 +244,6 @@ public class SolrCLI implements CLIO {
     throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
-  private static void displayToolOptions() throws Exception {
-    HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp("healthcheck", getToolOptions(new HealthcheckTool()));
-    formatter.printHelp("status", getToolOptions(new StatusTool()));
-    formatter.printHelp("api", getToolOptions(new ApiTool()));
-    formatter.printHelp("create_collection", getToolOptions(new CreateCollectionTool()));
-    formatter.printHelp("create_core", getToolOptions(new CreateCoreTool()));
-    formatter.printHelp("create", getToolOptions(new CreateTool()));
-    formatter.printHelp("delete", getToolOptions(new DeleteTool()));
-    formatter.printHelp("config", getToolOptions(new ConfigTool()));
-    formatter.printHelp("run_example", getToolOptions(new RunExampleTool()));
-    formatter.printHelp("upconfig", getToolOptions(new ConfigSetUploadTool()));
-    formatter.printHelp("downconfig", getToolOptions(new ConfigSetDownloadTool()));
-    formatter.printHelp("rm", getToolOptions(new ZkRmTool()));
-    formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
-    formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
-    formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
-    formatter.printHelp("export", getToolOptions(new ExportTool()));
-    formatter.printHelp("package", getToolOptions(new PackageTool()));
-
-    List<Class<? extends Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
-    for (Class<? extends Tool> next : toolClasses) {
-      Tool tool = next.getConstructor().newInstance();
-      formatter.printHelp(tool.getName(), getToolOptions(tool));
-    }
-  }
-
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
     options.addOption("help", false, "Print this message");
@@ -282,18 +253,6 @@ public class SolrCLI implements CLIO {
       options.addOption(toolOpt);
     }
     return options;
-  }
-
-  public static List<Option> joinOptions(List<Option> lhs, List<Option> rhs) {
-    if (lhs == null) {
-      return rhs == null ? List.of() : rhs;
-    }
-
-    if (rhs == null) {
-      return lhs;
-    }
-
-    return Stream.concat(lhs.stream(), rhs.stream()).collect(Collectors.toUnmodifiableList());
   }
 
   /** Parses the command-line arguments passed by the user. */
@@ -312,7 +271,7 @@ public class SolrCLI implements CLIO {
 
     CommandLine cli = null;
     try {
-      cli = (new GnuParser()).parse(options, args);
+      cli = (new DefaultParser()).parse(options, args);
     } catch (ParseException exp) {
       boolean hasHelpArg = false;
       if (args != null) {
@@ -477,7 +436,8 @@ public class SolrCLI implements CLIO {
     print("Pass -help or -h after any COMMAND to see command-specific usage information,");
     print("  such as:    ./solr start -help or ./solr stop -h");
     print("");
-    print("Learn more by visiting the Solr Reference Guide at https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html.");
+    print(
+        "Learn more by visiting the Solr Reference Guide at https://solr.apache.org/guide/solr/latest/deployment-guide/solr-control-script-reference.html.");
   }
   /**
    * Get the base URL of a live Solr instance from either the solrUrl command-line option from
