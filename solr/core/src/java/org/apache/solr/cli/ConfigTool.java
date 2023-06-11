@@ -48,13 +48,13 @@ public class ConfigTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("c")
-            .longOpt("name")
-            .argName("NAME")
-            .hasArg()
-            .required(true)
-            .desc("Name of the collection.")
-            .build(),
+            Option.builder("c")
+                    .longOpt("name")
+                    .argName("NAME")
+                    .hasArg()
+                    .required(true)
+                    .desc("Name of the collection.")
+                    .build(),
         Option.builder("action")
             .argName("ACTION")
             .hasArg()
@@ -84,7 +84,6 @@ public class ConfigTool extends ToolBase {
     String solrUrl = SolrCLI.resolveSolrUrl(cli);
     String action = cli.getOptionValue("action", "set-property");
     String collection = cli.getOptionValue("name");
-
     String property = cli.getOptionValue("property");
     String value = cli.getOptionValue("value");
 
