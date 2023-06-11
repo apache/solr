@@ -85,7 +85,6 @@ public class StatusTool extends ToolBase {
     }
 
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
-    System.out.println("Waiting " + maxWaitSecs);
     String solrUrl = cli.getOptionValue("solr", SolrCLI.DEFAULT_SOLR_URL);
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();
