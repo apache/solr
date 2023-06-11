@@ -70,16 +70,16 @@ public class HealthcheckTool extends SolrCloudTool {
   @Override
   public List<Option> getOptions() {
     return List.of(
-            SolrCLI.OPTION_SOLRURL,
-            Option.builder("c")
-                    .longOpt("name")
-                    .argName("NAME")
-                    .hasArg()
-                    .required(true)
-                    .desc("Name of the collection to check.")
-                    .build(),
-            SolrCLI.OPTION_ZKHOST,
-            SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_SOLRURL,
+        Option.builder("c")
+            .longOpt("name")
+            .argName("NAME")
+            .hasArg()
+            .required(true)
+            .desc("Name of the collection to check.")
+            .build(),
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_VERBOSE);
   }
 
   @Override
