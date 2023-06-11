@@ -121,14 +121,8 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-    System.out.println("args == null: " + (args == null));
-    System.out.println("args.length == 0: " + (args.length == 0));
-    System.out.println("args[0] == null: " + (args[0] == null));
-    System.out.println("args[0].trim().length() == 0: " + (args[0].trim().length() == 0));
     if (args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0) {
       printHelp();
-
-      //displayToolOptions();
       exit(1);
     }
 
