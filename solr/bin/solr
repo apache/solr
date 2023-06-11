@@ -784,7 +784,7 @@ function get_status() {
         port=$(jetty_port "$ID")
         if [ "$port" != "" ]; then
           echo -e "\nSolr process $ID running on port $port"
-          run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
+          run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
           echo ""
         else
           echo -e "\nSolr process $ID from $PIDF not found."
@@ -802,12 +802,13 @@ function get_status() {
           if [ "$port" != "" ]; then
             echo ""
             echo "Solr process $ID running on port $port"
-            run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
+            run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
             echo ""
           fi
       done
     else
       echo -e "\nNo Solr nodes are running.\n"
+      run_tool status "$@"
     fi
   fi
 
@@ -957,31 +958,10 @@ else
   exit
 fi
 
+# status tool
 if [ "$SCRIPT_CMD" == "status" ]; then
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "$1" in
-          -help|-h)
-              print_usage "$SCRIPT_CMD"
-              exit 0
-          ;;
-          --)
-              shift
-              break
-          ;;
-          *)
-              if [ "$1" != "" ]; then
-                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
-                exit 1
-              else
-                break # out-of-args, stop looping
-              fi
-          ;;
-      esac
-    done
-  fi
   get_status
-  exit
+  exit $?
 fi
 
 # assert tool

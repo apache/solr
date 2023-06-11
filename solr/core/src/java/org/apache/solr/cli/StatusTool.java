@@ -26,7 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -75,7 +77,15 @@ public class StatusTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    // Override the default help behaviour to put out a customized message that omits the internally
+    // focused Options.
+    if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
+      new HelpFormatter().printHelp("status", new Options());
+      return;
+    }
+
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
+    System.out.println("Waiting " + maxWaitSecs);
     String solrUrl = cli.getOptionValue("solr", SolrCLI.DEFAULT_SOLR_URL);
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();
