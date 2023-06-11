@@ -938,8 +938,8 @@ function stop_solr() {
 
 if [ $# -eq 1 ]; then
   case $1 in
-    -help|-h)
-        print_usage ""
+    -help|-h)    
+        run_tool ""    
         exit
     ;;
     -version|-v|version)
@@ -954,7 +954,7 @@ if [ $# -gt 0 ]; then
   shift
 else
   # no args - just show usage and exit
-  print_usage ""
+  run_tool "$@"
   exit
 fi
 

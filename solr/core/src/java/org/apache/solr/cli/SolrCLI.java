@@ -19,6 +19,8 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.packagemanager.PackageUtils.print;
+import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
@@ -107,7 +109,7 @@ public class SolrCLI implements CLIO {
           .desc("Recurse (true|false), default is false.")
           // .type(Boolean.class)
           .build();
-  
+
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);
@@ -119,11 +121,14 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
+    System.out.println("args == null: " + (args == null));
+    System.out.println("args.length == 0: " + (args.length == 0));
+    System.out.println("args[0] == null: " + (args[0] == null));
+    System.out.println("args[0].trim().length() == 0: " + (args[0].trim().length() == 0));
     if (args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0) {
-      CLIO.err(
-          "Invalid command-line args! Must pass the name of a tool to run.\n"
-              + "Supported tools:\n");
-      displayToolOptions();
+      printHelp();
+
+      //displayToolOptions();
       exit(1);
     }
 
@@ -456,6 +461,28 @@ public class SolrCLI implements CLIO {
         numSeconds);
   }
 
+  private static void printHelp() {
+
+    print("Usage: solr COMMAND OPTIONS");
+    print(
+        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package");
+    print("");
+    print("  Standalone server example (start Solr running in the background on port 8984):");
+    print("");
+    printGreen("    ./solr start -p 8984");
+    print("");
+    print(
+        "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):");
+    print("");
+    printGreen(
+        "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
+    print("");
+    print(
+        "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
+    print("");
+    print("Pass -help or -h after any COMMAND to see command-specific usage information,");
+    print("such as:    ./solr start -help or ./solr stop -h");
+  }
   /**
    * Get the base URL of a live Solr instance from either the solrUrl command-line option from
    * ZooKeeper.
