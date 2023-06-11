@@ -21,6 +21,17 @@ setup() {
   common_clean_setup
 }
 
+@test "solr help flag prints help" {
+  run -1 solr -help
+  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  refute_output --partial 'ERROR'
+}
+@test "solr with no flags prints help" {
+  run -1 solr
+  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  refute_output --partial 'ERROR'
+}
+
 @test "start help flag prints help" {
   run solr start -help
   assert_output --partial 'Usage: solr start'
