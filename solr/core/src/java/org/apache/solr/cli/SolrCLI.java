@@ -79,6 +79,7 @@ public class SolrCLI implements CLIO {
 
   public static final Option OPTION_ZKHOST =
       Option.builder("z")
+          .longOpt("zkHost")
           .argName("HOST")
           .hasArg()
           .required(false)
@@ -99,13 +100,14 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_VERBOSE =
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
 
+  // should this be boolean or just a otption?
   public static final Option OPTION_RECURSE =
-      Option.builder("recurse")
+      Option.builder("r")
+          .longOpt("recurse")
           .argName("recurse")
           .hasArg()
           .required(false)
           .desc("Recurse (true|false), default is false.")
-          // .type(Boolean.class)
           .build();
 
   public static void exit(int exitStatus) {
@@ -479,7 +481,7 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
     String zkHost = cli.getOptionValue("zkHost");
-    if (zkHost != null) {
+    if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
 
