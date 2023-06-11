@@ -84,6 +84,7 @@ public class ConfigTool extends ToolBase {
     String solrUrl = SolrCLI.resolveSolrUrl(cli);
     String action = cli.getOptionValue("action", "set-property");
     String collection = cli.getOptionValue("name");
+
     String property = cli.getOptionValue("property");
     String value = cli.getOptionValue("value");
 

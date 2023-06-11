@@ -1007,6 +1007,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
       case "${1:-}" in
         -upconfig|upconfig|-downconfig|downconfig|cp|rm|mv|ls|mkroot)
             if [ "${1:0:1}" == "-" ]; then
+              echo "The use of $1 is deprecated.   Please use ${1:1} instead."
               ZK_OP=${1:1}
             else
               ZK_OP=$1

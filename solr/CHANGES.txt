@@ -144,6 +144,25 @@ Improvements
 * SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
   only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
 
+* SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster
+  information after the previous selections are implemented. (Houston Putman)
+
+* SOLR-16392: The v2 "create shard" API has been tweaked to be more intuitive, by removing the top-level "create"
+  command specifier.  The rest of the API remains unchanged. (Jason Gerlowski)
+
+* SOLR-16392: The v2 "add-replica" API has been tweaked to be more intuitive, by removing the top-level command specifier and
+  changing the path.  The v2 functionality can now be accessed at: `POST /api/collections/cName/shards/sName/replicas {...}`
+  (Jason Gerlowski)
+
+* SOLR-16398: Several v2 "command" APIs have been tweaked to be more intuitive. "FORCELEADER" is now available at
+  `POST /api/collections/cName/shards/sName/force-leader`, "RELOAD" is now available at `POST /api/collections/cName/reload`,
+  "SYNCSHARD" is now available at `POST /api/collections/cName/shards/sName/sync-shard`, and "RENAME" is now available at
+  `POST /api/collections/cName/rename`. (Jason Gerlowski)
+
+* SOLR-16398: The v2 "balance-shard-unique" API has been tweaked to be more intuitive, by removing the top-level command
+  specifier from the request body, and changing the path. The v2 functionality can now be accessed at:
+  `POST /api/collections/cName/balance-shard-unique {...}` (Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -158,6 +177,11 @@ Optimizations
 
 * SOLR-16764: Clarify that ExportTool exports documents in JSON with Lines format, not standard JSON.  Add explicit -compress option for gzipping output.
   Add ability to specific a directory for output along with a specific file when using -out. (Eric Pugh)
+
+* SOLR-14630: When querying with the `_route_` or `shards.preference` parameter and if there are multiple replicas for a
+  collection on the receiving node, there was sometimes an extra HTTP hop or the non-intended replica may receive the
+  request. SolrJ will now form the URL directly to the intended replica of the collection (and not the collection itself).
+  (Pierre Salagnac, Ivan Djurasevic, Jason Baik)
 
 Bug Fixes
 ---------------------
@@ -196,11 +220,15 @@ Bug Fixes
 
 * SOLR-16811: /update/json/docs?echo and mapUniqueKeyOnly params doesn't work (Mikhail Khludnev)
 
+* SOLR-16807: DenseVectorField breaks catch-all copyFields (Joel Bernstein)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
 
 * SOLR-16642: Upgrade to Lucene 9.5.0 (Vinayak Hegde, David Smiley)
+
+* SOLR-16799: upgrade Solr to use Lucene 9.6.0 (Alex Deparvu, Tomás Fernández Löbbe)
 
 Other Changes
 ---------------------

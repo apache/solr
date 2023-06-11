@@ -96,7 +96,6 @@ dependencies {
   implementation "org.apache.lucene:lucene-join"
   implementation "org.apache.lucene:lucene-misc"
   implementation "org.apache.lucene:lucene-queryparser"
-  implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
 
@@ -120,6 +119,7 @@ dependencies {
   implementation 'com.fasterxml.jackson.core:jackson-core'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
+  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
 
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'

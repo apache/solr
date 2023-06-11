@@ -110,8 +110,8 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         fail("All spans must belong to single span, but:" + finishedSpans);
       }
     }
-    assertEquals("get:/{collection}/select", finishedSpans.get(0).operationName());
-    assertDbInstanceColl(finishedSpans.get(0));
+    assertEquals("get:/{core}/select", finishedSpans.get(0).operationName());
+    assertDbInstanceCore(finishedSpans.get(0));
   }
 
   @Test
@@ -134,13 +134,13 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     List<MockSpan> finishedSpans;
 
-    new V2Request.Builder("/c/" + COLLECTION)
+    new V2Request.Builder("/collections/" + COLLECTION + "/reload")
         .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{\n" + " \"reload\" : {}\n" + "}")
+        .withPayload("{}")
         .build()
         .process(cloudClient);
     finishedSpans = getAndClearSpans();
-    assertEquals("reload:/c/{collection}", finishedSpans.get(0).operationName());
+    assertEquals("post:/collections/{collection}/reload", finishedSpans.get(0).operationName());
     assertDbInstanceColl(finishedSpans.get(0));
 
     new V2Request.Builder("/c/" + COLLECTION + "/update/json")

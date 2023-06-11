@@ -111,9 +111,8 @@ public class TrackingBackupRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
-    delegate.delete(path, files, ignoreNoSuchFileException);
+  public void delete(URI path, Collection<String> files) throws IOException {
+    delegate.delete(path, files);
   }
 
   @Override

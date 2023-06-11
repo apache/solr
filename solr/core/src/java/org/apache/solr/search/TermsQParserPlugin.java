@@ -21,12 +21,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -35,6 +35,7 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
@@ -120,7 +121,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     docValuesTermsFilterPerSegment {
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
-        return disableCacheByDefault(new DocValuesTermsQuery(fname, byteRefs));
+        return disableCacheByDefault(SortedSetDocValuesField.newSlowSetQuery(fname, byteRefs));
       }
     };
 
@@ -189,14 +190,14 @@ public class TermsQParserPlugin extends QParserPlugin {
     };
   }
 
-  private static class TopLevelDocValuesTermsQuery extends DocValuesTermsQuery {
+  private static class TopLevelDocValuesTermsQuery extends TermInSetQuery {
     private final String fieldName;
     private SortedSetDocValues topLevelDocValues;
     private LongBitSet topLevelTermOrdinals;
     private boolean matchesAtLeastOneTerm = false;
 
     public TopLevelDocValuesTermsQuery(String field, BytesRef... terms) {
-      super(field, terms);
+      super(MultiTermQuery.DOC_VALUES_REWRITE, field, terms);
       this.fieldName = field;
     }
 
@@ -213,7 +214,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       topLevelDocValues =
           DocValues.getSortedSet(((SolrIndexSearcher) searcher).getSlowAtomicReader(), fieldName);
       topLevelTermOrdinals = new LongBitSet(topLevelDocValues.getValueCount());
-      PrefixCodedTerms.TermIterator iterator = getTerms().iterator();
+      PrefixCodedTerms.TermIterator iterator = getTermData().iterator();
 
       long lastTermOrdFound = 0;
       for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {

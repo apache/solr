@@ -107,7 +107,7 @@ public class SolrCLI implements CLIO {
           .desc("Recurse (true|false), default is false.")
           // .type(Boolean.class)
           .build();
-
+  
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);
