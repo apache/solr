@@ -120,9 +120,7 @@ public class CreateCoreTool extends ToolBase {
               + coreName
               + "' already exists!\nChecked core existence using Core API command");
     }
-    System.out.println("HERE IT OCMES");
-    System.out.println(coreRootDirectory);
-    System.out.println(coreName);
+
     File coreInstanceDir = new File(coreRootDirectory, coreName);
     File confDir = new File(getFullConfDir(confDirName, solrInstallDir), "conf");
     if (!coreInstanceDir.isDirectory()) {
