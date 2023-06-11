@@ -915,7 +915,7 @@ To unset a previously set user-defined property, specify `-action unset-user-pro
 
 === Config Parameters
 
-`-c <name>` or `-collection <name>`::
+`-c <name>` or `-name <name>`::
 +
 [%autowidth,frame=none]
 |===

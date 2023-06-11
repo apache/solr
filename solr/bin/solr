@@ -996,46 +996,9 @@ if [ "$SCRIPT_CMD" == "healthcheck" ]; then
   exit $?
 fi
 
-if [[ "$SCRIPT_CMD" == "config" ]]; then
-  CONFIG_PARAMS=()
-
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "$1" in
-          -z|-zkhost|-zkHost)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
-                exit 1
-              fi
-              ZK_HOST="$2"
-              shift 2
-          ;;
-          -s|-scheme)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "URL scheme is required when using the $1 option!"
-                exit 1
-              fi
-              SOLR_URL_SCHEME="$2"
-              shift 2
-          ;;
-          *)  # Pass through all other params
-              if [ "$1" != "" ]; then
-                CONFIG_PARAMS+=($1)
-                shift
-              else
-                break
-              fi
-          ;;
-      esac
-    done
-  fi
-  if [[ -n "$ZK_HOST" ]]; then
-    CONFIG_PARAMS+=("-z" "$ZK_HOST")
-  fi
-  if [[ -n "$SOLR_URL_SCHEME" ]]; then
-    CONFIG_PARAMS+=("-scheme" "$SOLR_URL_SCHEME")
-  fi
-  run_tool config "${CONFIG_PARAMS[@]}"
+# config tool
+if [ "$SCRIPT_CMD" == "config" ]; then
+  run_tool config "$@"
   exit $?
 fi
 

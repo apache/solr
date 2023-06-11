@@ -108,18 +108,6 @@ public class SolrCLI implements CLIO {
           // .type(Boolean.class)
           .build();
 
-  public static final List<Option> cloudOptions =
-      List.of(
-          OPTION_ZKHOST,
-          Option.builder("c")
-              .argName("COLLECTION")
-              .hasArg()
-              .required(false)
-              .desc("Name of collection")
-              .longOpt("collection")
-              .build(),
-          OPTION_VERBOSE);
-
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);
@@ -476,21 +464,29 @@ public class SolrCLI implements CLIO {
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
-      if (zkHost == null)
-        throw new IllegalStateException(
-            "Must provide either the '-solrUrl' or '-zkHost' parameters!");
+      if (zkHost == null) {
+        solrUrl = DEFAULT_SOLR_URL;
+        CLIO.getOutStream()
+                .println(
+                        "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                                + DEFAULT_SOLR_URL
+                                + ".");
+      }
+      else {
 
-      try (CloudSolrClient cloudSolrClient =
-          new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-              .build()) {
-        cloudSolrClient.connect();
-        Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-        if (liveNodes.isEmpty())
-          throw new IllegalStateException(
-              "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
 
-        String firstLiveNode = liveNodes.iterator().next();
-        solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+        try (CloudSolrClient cloudSolrClient =
+                     new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+                             .build()) {
+          cloudSolrClient.connect();
+          Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+          if (liveNodes.isEmpty())
+            throw new IllegalStateException(
+                    "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
+
+          String firstLiveNode = liveNodes.iterator().next();
+          solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+        }
       }
     }
     return solrUrl;
@@ -515,8 +511,6 @@ public class SolrCLI implements CLIO {
               "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
                   + DEFAULT_SOLR_URL
                   + ".");
-      // throw new IllegalStateException(
-      //    "Must provide either the -zkHost or -solrUrl parameters to run this command!");
     }
 
     try (var solrClient = getSolrClient(solrUrl)) {

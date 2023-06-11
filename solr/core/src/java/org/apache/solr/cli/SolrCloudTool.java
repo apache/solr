@@ -41,9 +41,7 @@ public abstract class SolrCloudTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return SolrCLI.cloudOptions;
-  }
+  public abstract List<Option> getOptions();
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
