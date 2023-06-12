@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -94,13 +95,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           }
           if (log.isDebugEnabled()) {
             log.debug(
-                "Placing replicas for Collection: {}, Shard: {}, ReplicaType: {}",
+                "Placing {} replicas for Collection: {}, Shard: {}, ReplicaType: {}",
+                replicaCount,
                 solrCollection.getName(),
                 shardName,
                 replicaType);
           }
-          Replica pr =
-              PlacementPlugin.createProjectedReplica(solrCollection, shardName, replicaType, null);
+          Replica pr = createProjectedReplica(solrCollection, shardName, replicaType, null);
           PriorityQueue<WeightedNode> nodesForReplicaType = new PriorityQueue<>();
           nodesForRequest.stream()
               .filter(n -> n.canAddReplica(pr))
@@ -138,8 +139,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
             boolean needsToResortAll =
                 node.addReplica(
-                    PlacementPlugin.createProjectedReplica(
-                        solrCollection, shardName, replicaType, node.getNode()));
+                    createProjectedReplica(solrCollection, shardName, replicaType, node.getNode()));
             replicasPlaced += 1;
             replicaPlacements.add(
                 placementContext
@@ -207,8 +207,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           node.addToSortedCollection(orderedNodes);
         });
 
-    // While the node with the least cores still has room to take a replica from the node with the
-    // most cores, loop
+    // While the node with the lowest weight still has room to take a replica from the node with the
+    // highest weight, loop
     Map<Replica, Node> newReplicaMovements = new HashMap<>();
     ArrayList<WeightedNode> traversedHighNodes = new ArrayList<>(orderedNodes.size() - 1);
     while (orderedNodes.size() > 1
@@ -416,8 +416,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   /**
    * A class that determines the weight of a given node and the replicas that reside on it.
    *
-   * <p>The OrderedNodePlacementPlugin uses the weights determined here to place and balance
-   * replicas across the cluster.
+   * <p>The {@link OrderedNodePlacementPlugin} uses the weights determined here to place and balance
+   * replicas across the cluster. Replicas will be placed onto WeightedNodes with lower weights, and
+   * be taken off of WeightedNodes with higher weights.
    *
    * @lucene.experimental
    */
@@ -600,5 +601,90 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         }
       }
     }
+  }
+
+  /**
+   * Create a fake replica to be used when computing placements for new Replicas. The new replicas
+   * need to be added to the projected state, even though they don't exist.
+   *
+   * @param collection the existing collection that the replica will be created for
+   * @param shardName the name of the new replica's shard
+   * @param type the ReplicaType for the new replica
+   * @param node the Solr node on which the replica will be placed
+   * @return a fake replica to use until the new replica is created
+   */
+  static Replica createProjectedReplica(
+      final SolrCollection collection,
+      final String shardName,
+      final Replica.ReplicaType type,
+      final Node node) {
+    final Shard shard =
+        new Shard() {
+          @Override
+          public String getShardName() {
+            return shardName;
+          }
+
+          @Override
+          public SolrCollection getCollection() {
+            return collection;
+          }
+
+          @Override
+          public Replica getReplica(String name) {
+            return null;
+          }
+
+          @Override
+          public Iterator<Replica> iterator() {
+            return null;
+          }
+
+          @Override
+          public Iterable<Replica> replicas() {
+            return null;
+          }
+
+          @Override
+          public Replica getLeader() {
+            return null;
+          }
+
+          @Override
+          public ShardState getState() {
+            return null;
+          }
+        };
+    return new Replica() {
+      @Override
+      public Shard getShard() {
+        return shard;
+      }
+
+      @Override
+      public ReplicaType getType() {
+        return type;
+      }
+
+      @Override
+      public ReplicaState getState() {
+        return ReplicaState.DOWN;
+      }
+
+      @Override
+      public String getReplicaName() {
+        return "";
+      }
+
+      @Override
+      public String getCoreName() {
+        return "";
+      }
+
+      @Override
+      public Node getNode() {
+        return node;
+      }
+    };
   }
 }

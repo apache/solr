@@ -19,12 +19,7 @@ package org.apache.solr.cluster.placement;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import org.apache.solr.cluster.Node;
-import org.apache.solr.cluster.Replica;
-import org.apache.solr.cluster.Shard;
-import org.apache.solr.cluster.SolrCollection;
 
 /**
  * Implemented by external plugins to control replica placement and movement on the search cluster
@@ -105,79 +100,4 @@ public interface PlacementPlugin {
   default void verifyAllowedModification(
       ModificationRequest modificationRequest, PlacementContext placementContext)
       throws PlacementException, InterruptedException {}
-
-  static Replica createProjectedReplica(
-      final SolrCollection collection,
-      final String shardName,
-      final Replica.ReplicaType type,
-      final Node node) {
-    final Shard shard =
-        new Shard() {
-          @Override
-          public String getShardName() {
-            return shardName;
-          }
-
-          @Override
-          public SolrCollection getCollection() {
-            return collection;
-          }
-
-          @Override
-          public Replica getReplica(String name) {
-            return null;
-          }
-
-          @Override
-          public Iterator<Replica> iterator() {
-            return null;
-          }
-
-          @Override
-          public Iterable<Replica> replicas() {
-            return null;
-          }
-
-          @Override
-          public Replica getLeader() {
-            return null;
-          }
-
-          @Override
-          public ShardState getState() {
-            return null;
-          }
-        };
-    return new Replica() {
-      @Override
-      public Shard getShard() {
-        return shard;
-      }
-
-      @Override
-      public ReplicaType getType() {
-        return type;
-      }
-
-      @Override
-      public ReplicaState getState() {
-        return ReplicaState.DOWN;
-      }
-
-      @Override
-      public String getReplicaName() {
-        return "";
-      }
-
-      @Override
-      public String getCoreName() {
-        return "";
-      }
-
-      @Override
-      public Node getNode() {
-        return node;
-      }
-    };
-  }
 }

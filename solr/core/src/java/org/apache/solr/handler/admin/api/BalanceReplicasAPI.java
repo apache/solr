@@ -88,19 +88,13 @@ public class BalanceReplicasAPI extends AdminAPIBase {
   public ZkNodeProps createRemoteMessage(BalanceReplicasRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     if (requestBody != null) {
-      insertIfValueNotNull(remoteMessage, NODES, requestBody.nodes);
-      insertIfValueNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
-      insertIfValueNotNull(remoteMessage, ASYNC, requestBody.async);
+      insertIfNotNull(remoteMessage, NODES, requestBody.nodes);
+      insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
+      insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
     }
     remoteMessage.put(QUEUE_OPERATION, CollectionAction.BALANCE_REPLICAS.toLower());
 
     return new ZkNodeProps(remoteMessage);
-  }
-
-  private void insertIfValueNotNull(Map<String, Object> dest, String key, Object value) {
-    if (value != null) {
-      dest.put(key, value);
-    }
   }
 
   public static class BalanceReplicasRequestBody implements JacksonReflectMapWriter {

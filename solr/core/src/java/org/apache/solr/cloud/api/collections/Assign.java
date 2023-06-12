@@ -460,7 +460,7 @@ public class Assign {
      * @return Map from Replica to the Node where that Replica should be moved.
      * @throws AssignmentException when balance request cannot produce any valid assignments.
      */
-    default Map<Replica, String> balanceReplicas(
+    default Map<Replica, String> computeReplicaBalancing(
         SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
         throws AssignmentException, IOException, InterruptedException {
       return Collections.emptyMap();

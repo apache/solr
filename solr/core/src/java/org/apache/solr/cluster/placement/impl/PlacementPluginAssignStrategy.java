@@ -98,7 +98,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
   }
 
   @Override
-  public Map<Replica, String> balanceReplicas(
+  public Map<Replica, String> computeReplicaBalancing(
       SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
       throws Assign.AssignmentException, IOException, InterruptedException {
     PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);

@@ -22,8 +22,8 @@ import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 
 /**
- * A cluster related placement request that Solr asks a {@link PlacementPlugin} plugin to resolve
- * and compute replica balancing plan for replicas that already exist across a set of Nodes.
+ * A cluster related placement request that Solr asks a {@link PlacementPlugin} to resolve and
+ * compute replica balancing plan for replicas that already exist across a set of Nodes.
  *
  * <p>The set of {@link Node}s on which the replicas should be balanced across is specified
  * (defaults to being equal to the set returned by {@link Cluster#getLiveDataNodes()}).

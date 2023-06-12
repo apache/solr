@@ -72,7 +72,7 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
 
     Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
     Map<Replica, String> replicaMovements =
-        assignStrategy.balanceReplicas(
+        assignStrategy.computeReplicaBalancing(
             ccc.getSolrCloudManager(),
             nodes,
             message.getInt(CollectionParams.MAX_BALANCE_SKEW, -1));
