@@ -1081,7 +1081,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testReRankScaler() throws Exception {
 
-    ReRankScaler reRankScaler = new ReRankScaler(new ReRankScaler.ReRankScalerExplain("0-1", "5-100"), ReRankOperator.ADD);
+    ReRankScaler reRankScaler = new ReRankScaler("0-1", "5-100", ReRankOperator.ADD);
     assertTrue(reRankScaler.scaleReRankScores());
     assertTrue(reRankScaler.scaleMainScores());
     assertEquals(reRankScaler.getMainQueryMin(), 0);

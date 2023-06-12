@@ -84,10 +84,9 @@ public class ReRankQParserPlugin extends QParserPlugin {
       String mainScale = localParams.get(RERANK_MAIN_SCALE);
       String reRankScale = localParams.get(RERANK_SCALE);
 
-      ReRankScaler.ReRankScalerExplain reRankScalerExplain = new ReRankScaler.ReRankScalerExplain(mainScale, reRankScale);
+      ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
 
-      return new ReRankQuery(
-          reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScalerExplain);
+      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler);
     }
   }
 
@@ -142,8 +141,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
           + (int) reRankWeight
           + reRankDocs
           + reRankOperator.hashCode()
-          + String.valueOf(reRankScalerExplain.reRankScale()).hashCode()
-          + String.valueOf(reRankScalerExplain.getMainScale()).hashCode();
+          + String.valueOf(reRankScaler.getReRankScalerExplain().reRankScale()).hashCode()
+          + String.valueOf(reRankScaler.getReRankScalerExplain().getMainScale()).hashCode();
     }
 
     @Override
@@ -157,8 +156,10 @@ public class ReRankQParserPlugin extends QParserPlugin {
           && reRankWeight == rrq.reRankWeight
           && reRankDocs == rrq.reRankDocs
           && reRankOperator.equals(rrq.reRankOperator)
-          && String.valueOf(reRankScalerExplain.getReRankScale()).equals(String.valueOf(rrq.reRankScalerExplain.getReRankScale()))
-          && String.valueOf(reRankScalerExplain.getMainScale()).equals(String.valueOf(rrq.reRankScalerExplain.getMainScale()));
+          && String.valueOf(reRankScaler.getReRankScalerExplain().getReRankScale())
+              .equals(String.valueOf(rrq.reRankScaler.getReRankScalerExplain().getReRankScale()))
+          && String.valueOf(reRankScaler.getReRankScalerExplain().getMainScale())
+              .equals(String.valueOf(rrq.reRankScaler.getReRankScalerExplain().getMainScale()));
     }
 
     public ReRankQuery(
@@ -166,12 +167,12 @@ public class ReRankQParserPlugin extends QParserPlugin {
         int reRankDocs,
         double reRankWeight,
         ReRankOperator reRankOperator,
-        ReRankScaler.ReRankScalerExplain reRankScalerExplain) {
+        ReRankScaler reRankScaler) {
       super(
           defaultQuery,
           reRankDocs,
           new ReRankQueryRescorer(reRankQuery, reRankWeight, reRankOperator),
-          reRankScalerExplain,
+          reRankScaler,
           reRankOperator);
       this.reRankQuery = reRankQuery;
       this.reRankWeight = reRankWeight;
@@ -186,11 +187,17 @@ public class ReRankQParserPlugin extends QParserPlugin {
       sb.append(RERANK_QUERY).append("='").append(reRankQuery.toString()).append("' ");
       sb.append(RERANK_DOCS).append('=').append(reRankDocs).append(' ');
       sb.append(RERANK_WEIGHT).append('=').append(reRankWeight).append(' ');
-      if (reRankScalerExplain.getReRankScale() != null) {
-        sb.append(RERANK_SCALE).append('=').append(reRankScalerExplain.getReRankScale()).append(' ');
+      if (reRankScaler.getReRankScalerExplain().getReRankScale() != null) {
+        sb.append(RERANK_SCALE)
+            .append('=')
+            .append(reRankScaler.getReRankScalerExplain().getReRankScale())
+            .append(' ');
       }
-      if (reRankScalerExplain.getMainScale() != null) {
-        sb.append(RERANK_MAIN_SCALE).append('=').append(reRankScalerExplain.getMainScale()).append(' ');
+      if (reRankScaler.getReRankScalerExplain().getMainScale() != null) {
+        sb.append(RERANK_MAIN_SCALE)
+            .append('=')
+            .append(reRankScaler.getReRankScalerExplain().getMainScale())
+            .append(' ');
       }
       sb.append(RERANK_OPERATOR).append('=').append(reRankOperator.toLower()).append('}');
       return sb.toString();
@@ -198,8 +205,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new ReRankQuery(
-              reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScalerExplain)
+      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler)
           .wrap(rewrittenMainQuery);
     }
   }

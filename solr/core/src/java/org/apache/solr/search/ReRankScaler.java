@@ -29,12 +29,12 @@ public class ReRankScaler {
   protected int reRankQueryMin = -1;
   protected int reRankQueryMax = -1;
   protected ReRankOperator reRankOperator;
-  protected  ReRankScalerExplain reRankScalerExplain;
+  protected ReRankScalerExplain reRankScalerExplain;
 
-  public ReRankScaler(ReRankScalerExplain reRankScalerExplain, ReRankOperator reRankOperator)
+  public ReRankScaler(String mainScale, String reRankScale, ReRankOperator reRankOperator)
       throws SyntaxError {
 
-    this.reRankScalerExplain = reRankScalerExplain;
+    this.reRankScalerExplain = new ReRankScalerExplain(mainScale, reRankScale);
     if (reRankOperator != ReRankOperator.ADD
         && reRankOperator != ReRankOperator.MULTIPLY
         && reRankOperator != ReRankOperator.REPLACE) {
@@ -70,6 +70,10 @@ public class ReRankScaler {
 
   public int getReRankQueryMax() {
     return reRankQueryMax;
+  }
+
+  public ReRankScalerExplain getReRankScalerExplain() {
+    return this.reRankScalerExplain;
   }
 
   public boolean scaleScores() {
