@@ -61,7 +61,7 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
   @Path("/files/generation/{gen}")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
-  public FilesResponse fetchFiles(
+  public NamedList<Object> fetchFiles(
       @Parameter(description = "The generation number of the index", required = true)
           @PathParam("gen")
           long gen)
@@ -87,23 +87,6 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
       this.indexVersion = indexVersion;
       this.generation = generation;
       this.status = status;
-    }
-  }
-
-  /** Response for {@link CoreReplicationAPI#fetchFiles(long)}. */
-  public static class FilesResponse extends SolrJerseyResponse {
-
-    @JsonProperty("filelist")
-    public NamedList<Object> files = new SimpleOrderedMap<>();
-
-    public FilesResponse() {}
-
-    public FilesResponse(NamedList<Object> files) {
-      this.files = files;
-    }
-
-    public void add(String name, Object val) {
-      files.add(name, val);
     }
   }
 }

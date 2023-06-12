@@ -42,6 +42,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -72,16 +73,16 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return replicationHandler.getIndexVersionResponse();
   }
 
-  protected CoreReplicationAPI.FilesResponse doFetchFiles(long generation) {
+  protected NamedList<Object> doFetchFiles(long generation) {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return getFileList(generation, replicationHandler);
   }
 
-  private CoreReplicationAPI.FilesResponse getFileList(
+  protected NamedList<Object> getFileList(
       long generation, ReplicationHandler replicationHandler) {
     final IndexDeletionPolicyWrapper delPol = solrCore.getDeletionPolicy();
-    final CoreReplicationAPI.FilesResponse filesResponse = new CoreReplicationAPI.FilesResponse();
+    final NamedList<Object> filesResponse = new NamedList<>();
 
     IndexCommit commit = null;
     try {
@@ -198,7 +199,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
   }
 
   private void reportErrorOnResponse(
-      CoreReplicationAPI.FilesResponse filesResponse, String message, Exception e) {
+          NamedList<Object> filesResponse, String message, Exception e) {
     filesResponse.add(STATUS, ERR_STATUS);
     filesResponse.add(MESSAGE, message);
     if (e != null) {
