@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.solr.request.SolrRequestInfo;
 
 public class ReRankScaler {
 
@@ -115,6 +116,8 @@ public class ReRankScaler {
     if (scaleMainScores()) {
       MinMaxExplain mainExplain = getMinMaxExplain(mainQueryMin, mainQueryMax, originalScoreMap);
       scaledOriginalScoreMap = minMaxScaleScores(originalScoreMap, mainExplain);
+      System.out.println("Scaled Main Scores:" + scaledOriginalScoreMap);
+      SolrRequestInfo.getRequestInfo().getResponseBuilder().mainScaleExplain = mainExplain;
       reRankScalerExplain.setMainScaleExplain(mainExplain);
     } else {
       scaledOriginalScoreMap = originalScoreMap;
@@ -133,6 +136,8 @@ public class ReRankScaler {
     if (scaleReRankScores()) {
       MinMaxExplain reRankExplain = getMinMaxExplain(reRankQueryMin, reRankQueryMax, rescoredMap);
       scaledRescoredMap = minMaxScaleScores(rescoredMap, reRankExplain);
+      System.out.println("Scaled reRank Scores:" + scaledRescoredMap);
+      SolrRequestInfo.getRequestInfo().getResponseBuilder().reRankScaleExplain = reRankExplain;
       reRankScalerExplain.setReRankScaleExplain(reRankExplain);
     } else {
       scaledRescoredMap = rescoredMap;
@@ -278,7 +283,8 @@ public class ReRankScaler {
       } else {
         float scaledScore = (score - localMin) / (localMax - localMin);
         if (scaleMin != 0 || scaleMax != 1) {
-          return (diff * scaledScore) + scaleMin;
+          scaledScore = (diff * scaledScore) + scaleMin;
+          return scaledScore;
         } else {
           return scaledScore;
         }

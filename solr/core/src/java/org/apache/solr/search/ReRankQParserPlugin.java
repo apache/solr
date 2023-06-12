@@ -21,6 +21,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -86,7 +87,14 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
       ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
 
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler);
+      if (reRankScaler.scaleScores()) {
+        reRankWeight = 1;
+      }
+
+      boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
+
+      return new ReRankQuery(
+          reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, debugQuery);
     }
   }
 
@@ -132,6 +140,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
   private static final class ReRankQuery extends AbstractReRankQuery {
     private final Query reRankQuery;
     private final double reRankWeight;
+    private final boolean debugQuery;
 
     @Override
     public int hashCode() {
@@ -167,7 +176,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
         int reRankDocs,
         double reRankWeight,
         ReRankOperator reRankOperator,
-        ReRankScaler reRankScaler) {
+        ReRankScaler reRankScaler,
+        boolean debugQuery) {
       super(
           defaultQuery,
           reRankDocs,
@@ -176,6 +186,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
           reRankOperator);
       this.reRankQuery = reRankQuery;
       this.reRankWeight = reRankWeight;
+      this.debugQuery = debugQuery;
     }
 
     @Override
@@ -205,8 +216,17 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     @Override
     protected Query rewrite(Query rewrittenMainQuery) throws IOException {
-      return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler)
+      return new ReRankQuery(
+              reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, debugQuery)
           .wrap(rewrittenMainQuery);
+    }
+
+    public boolean getCache() {
+      if (debugQuery) {
+        return false;
+      } else {
+        return super.getCache();
+      }
     }
   }
 }

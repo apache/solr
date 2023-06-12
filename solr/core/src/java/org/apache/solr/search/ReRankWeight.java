@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.Locale;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterWeight;
@@ -25,6 +24,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.Weight;
+import org.apache.solr.request.SolrRequestInfo;
 
 /** A {@code Weight} used by reranking queries. */
 public class ReRankWeight extends FilterWeight {
@@ -59,19 +59,26 @@ public class ReRankWeight extends FilterWeight {
       float mainScore = mainExplain.getValue().floatValue();
       if (reRankScore > 0.0f) {
         float scaledMainScore =
-            reRankScaler.getReRankScalerExplain().getMainScaleExplain().scale(mainScore);
+            SolrRequestInfo.getRequestInfo().getResponseBuilder().mainScaleExplain.scale(mainScore);
         float scaledReRankScore =
-            reRankScaler.getReRankScalerExplain().getReRankScaleExplain().scale(reRankScore);
+            SolrRequestInfo.getRequestInfo()
+                .getResponseBuilder()
+                .reRankScaleExplain
+                .scale(reRankScore);
         float scaledCombined =
             ReRankScaler.combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
+        System.out.println(
+            "Scaled scores 1:"
+                + Float.valueOf(scaledMainScore).toString()
+                + " : "
+                + Float.valueOf(scaledReRankScore).toString());
         Explanation scaleExplain =
             Explanation.match(
                 scaledCombined,
-                String.format(
-                    Locale.getDefault(),
-                    "Main query score rescaled to %1$f reRank score rescaled to %2$f",
-                    scaledMainScore,
-                    scaledReRankScore),
+                "Main query score rescaled to "
+                    + scaledMainScore
+                    + " reRank score rescaled to "
+                    + scaledReRankScore,
                 reRankExplain);
         return scaleExplain;
       }

@@ -1130,10 +1130,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertEquals(scaled3, .5f, 0);
 
     float rescore = ReRankScaler.getReRankScore(100.2777f, 200.2333f, ReRankOperator.ADD);
-    assertEquals(rescore, 200.2333f - 100.2777f, 0);
+    assertEquals(rescore, 99.9556f, .00001f);
 
-    rescore = ReRankScaler.getReRankScore(100.2777f, 200.2333f, ReRankOperator.MULTIPLY);
-    assertEquals(rescore, 200.2333f / 100.2777f, 0);
+    rescore = ReRankScaler.getReRankScore(100.88845f, 200.77777f, ReRankOperator.MULTIPLY);
+    assertEquals(rescore, 1.99009f, .00001f);
 
     rescore = ReRankScaler.getReRankScore(100.2777f, 200.2333f, ReRankOperator.REPLACE);
     assertEquals(rescore, 200.2333f, 0);
@@ -1362,5 +1362,45 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[1]/float[@name='score'][.='30.0']",
         "//result/doc[2]/str[@name='id'][.='5']",
         "//result/doc[2]/float[@name='score'][.='30.0']");
+
+    // Test reRank more than found
+    params = new ModifiableSolrParams();
+    params.add(
+        "rq",
+        "{!"
+            + ReRankQParserPlugin.NAME
+            + " "
+            + ReRankQParserPlugin.RERANK_MAIN_SCALE
+            + "=10-20 "
+            + ReRankQParserPlugin.RERANK_SCALE
+            + "=10-20 "
+            + ReRankQParserPlugin.RERANK_QUERY
+            + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS
+            + "=4}");
+    params.add("q", "term_t:YYYY");
+    params.add("fq", "id:(4 OR 5)");
+    params.add("fl", "id,score");
+    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("bff", "field(test_ti)");
+    params.add("start", "0");
+    params.add("rows", "6");
+    params.add("df", "text");
+    params.add("debugQuery", "true");
+    assertQ(
+        req(params),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='4']",
+        "//result/doc[1]/float[@name='score'][.='30.0']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "//result/doc[2]/float[@name='score'][.='30.0']");
+
+    String explainResponse = JQ(req(params));
+    assertTrue(
+        explainResponse.contains(
+            "30.001122 = Main query score rescaled to 10.0 reRank score rescaled to 20.001122"));
+    assertTrue(
+        explainResponse.contains(
+            "30.001133 = Main query score rescaled to 20.0 reRank score rescaled to 10.001134"));
   }
 }
