@@ -21,7 +21,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentracing.noop.NoopSpan;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -36,7 +40,6 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   private CoreReplicationAPI coreReplicationAPI;
   private SolrCore mockCore;
   private ReplicationHandler mockReplicationHandler;
-  private static final String coreName = "test";
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
 
@@ -53,7 +56,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     mockQueryRequest = mock(SolrQueryRequest.class);
     when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
     queryResponse = new SolrQueryResponse();
-    coreReplicationAPI = new CoreReplicationAPI(mockCore, mockQueryRequest, queryResponse);
+    coreReplicationAPI = new CoreReplicationAPIMock(mockCore, mockQueryRequest, queryResponse);
   }
 
   @Test
@@ -68,9 +71,38 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     assertEquals(expected.status, response.status);
   }
 
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testFetchFiles() throws Exception {
+    CoreReplicationAPI.FilesResponse actualResponse = coreReplicationAPI.fetchFiles(-1);
+    assertEquals("filelist", actualResponse.files.getName(0));
+    List<Map<String, Object>> actual =
+        (List<Map<String, Object>>) actualResponse.files.get("filelist");
+    System.out.println(actualResponse.files);
+    assertEquals(true, false);
+    assertEquals(123, actual.get(0).get("size"));
+    assertEquals("test", actual.get(0).get("name"));
+    assertEquals(123456789, actual.get(0).get("checksum"));
+  }
+
   private void setUpMocks() {
     mockCore = mock(SolrCore.class);
     mockReplicationHandler = mock(ReplicationHandler.class);
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
+  }
+
+  class CoreReplicationAPIMock extends CoreReplicationAPI {
+    public CoreReplicationAPIMock(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
+      super(solrCore, req, rsp);
+    }
+
+    @Override
+    protected FilesResponse doFetchFiles(long generation) {
+      return new CoreReplicationAPI.FilesResponse(
+          new NamedList<>(
+              Map.of(
+                  "filelist",
+                  Arrays.asList(Map.of("size", 123, "name", "test", "checksum", 123456789)))));
+    }
   }
 }
