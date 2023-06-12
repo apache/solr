@@ -62,9 +62,9 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
   public ReplicationAPIBase(
       SolrCore solrCore, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
+    this.solrCore = solrCore;
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
-    this.solrCore = solrCore;
   }
 
   protected CoreReplicationAPI.IndexVersionResponse doFetchIndexVersion() throws IOException {
