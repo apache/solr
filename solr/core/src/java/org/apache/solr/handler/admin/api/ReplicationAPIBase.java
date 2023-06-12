@@ -79,8 +79,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return getFileList(generation, replicationHandler);
   }
 
-  protected NamedList<Object> getFileList(
-      long generation, ReplicationHandler replicationHandler) {
+  protected NamedList<Object> getFileList(long generation, ReplicationHandler replicationHandler) {
     final IndexDeletionPolicyWrapper delPol = solrCore.getDeletionPolicy();
     final NamedList<Object> filesResponse = new NamedList<>();
 
@@ -198,8 +197,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return filesResponse;
   }
 
-  private void reportErrorOnResponse(
-          NamedList<Object> filesResponse, String message, Exception e) {
+  private void reportErrorOnResponse(NamedList<Object> filesResponse, String message, Exception e) {
     filesResponse.add(STATUS, ERR_STATUS);
     filesResponse.add(MESSAGE, message);
     if (e != null) {

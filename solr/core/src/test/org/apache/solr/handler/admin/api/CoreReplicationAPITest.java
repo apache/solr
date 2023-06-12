@@ -17,12 +17,11 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentracing.noop.NoopSpan;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
@@ -65,22 +64,21 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
         new CoreReplicationAPI.IndexVersionResponse(123L, 123L, "testGeneration");
     when(mockReplicationHandler.getIndexVersionResponse()).thenReturn(expected);
 
-    CoreReplicationAPI.IndexVersionResponse response = coreReplicationAPI.doFetchIndexVersion();
-    assertEquals(expected.indexVersion, response.indexVersion);
-    assertEquals(expected.generation, response.generation);
-    assertEquals(expected.status, response.status);
+    CoreReplicationAPI.IndexVersionResponse actual = coreReplicationAPI.doFetchIndexVersion();
+    assertEquals(expected.indexVersion, actual.indexVersion);
+    assertEquals(expected.generation, actual.generation);
+    assertEquals(expected.status, actual.status);
   }
 
   @Test
   @SuppressWarnings("unchecked")
   public void testFetchFiles() throws Exception {
-    CoreReplicationAPI.FilesResponse actualResponse = coreReplicationAPI.fetchFiles(-1);
-    assertEquals("filelist", actualResponse.files.getName(0));
-    List<Map<String, Object>> actual =
-        (List<Map<String, Object>>) actualResponse.files.get("filelist");
-    assertEquals(123, actual.get(0).get("size"));
-    assertEquals("test", actual.get(0).get("name"));
-    assertEquals(123456789, actual.get(0).get("checksum"));
+    NamedList<Object> actualResponse = coreReplicationAPI.fetchFiles(-1);
+    assertEquals("filelist", actualResponse.getName(0));
+    Map<String, Object> actual = (Map<String, Object>) actualResponse.get("filelist");
+    assertEquals(123, actual.get("size"));
+    assertEquals("test", actual.get("name"));
+    assertEquals(123456789, actual.get("checksum"));
   }
 
   private void setUpMocks() {
@@ -95,12 +93,12 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected FilesResponse doFetchFiles(long generation) {
-      return new CoreReplicationAPI.FilesResponse(
-          new NamedList<>(
-              Map.of(
-                  "filelist",
-                  Arrays.asList(Map.of("size", 123, "name", "test", "checksum", 123456789)))));
+    protected NamedList<Object> getFileList(
+        long generation, ReplicationHandler replicationHandler) {
+      final NamedList<Object> filesResponse = new NamedList<>();
+      filesResponse.add(
+          CMD_GET_FILE_LIST, Map.of("size", 123, "name", "test", "checksum", 123456789));
+      return filesResponse;
     }
   }
 }
