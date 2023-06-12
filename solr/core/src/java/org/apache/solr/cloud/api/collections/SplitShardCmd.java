@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider.Variable.CORE_IDX;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.RANDOM;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
@@ -46,11 +45,13 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.client.solrj.impl.NodeValueFetcher;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -65,7 +66,6 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
@@ -878,10 +878,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
     Map<String, Object> nodeValues =
         nodeStateProvider.getNodeValues(
-            parentShardLeader.getNodeName(), Collections.singletonList(ImplicitSnitch.DISK));
+            parentShardLeader.getNodeName(),
+            Collections.singletonList(NodeValueFetcher.Tags.FREEDISK.tagName));
     Map<String, Map<String, List<Replica>>> infos =
         nodeStateProvider.getReplicaInfo(
-            parentShardLeader.getNodeName(), Collections.singletonList(CORE_IDX.metricsAttribute));
+            parentShardLeader.getNodeName(),
+            Collections.singletonList(ReplicaMetricImpl.INDEX_SIZE_GB.getInternalName()));
     if (infos.get(collection) == null || infos.get(collection).get(shard) == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
@@ -891,12 +893,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     Double indexSize = null;
     for (Replica info : lst) {
       if (info.getCoreName().equals(parentShardLeader.getCoreName())) {
-        Number size = (Number) info.get(CORE_IDX.metricsAttribute);
+        Number size = (Number) info.get(ReplicaMetricImpl.INDEX_SIZE_GB.getInternalName());
         if (size == null) {
           log.warn("cannot verify information for parent shard leader");
           return;
         }
-        indexSize = (Double) CORE_IDX.convertVal(size);
+        indexSize = ReplicaMetricImpl.INDEX_SIZE_GB.convert(size);
         break;
       }
     }
@@ -904,7 +906,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       log.warn("missing replica information for parent shard leader");
       return;
     }
-    Number freeSize = (Number) nodeValues.get(ImplicitSnitch.DISK);
+    Number freeSize = (Number) nodeValues.get(NodeValueFetcher.Tags.FREEDISK.tagName);
     if (freeSize == null) {
       log.warn("missing node disk space information for parent shard leader");
       return;
