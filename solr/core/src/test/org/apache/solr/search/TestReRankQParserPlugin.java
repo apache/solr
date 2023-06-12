@@ -1331,5 +1331,36 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[5]/float[@name='score'][.='15.5736']",
         "//result/doc[6]/str[@name='id'][.='1']",
         "//result/doc[6]/float[@name='score'][.='10.0']");
+
+    // Test reRank more than found
+    params = new ModifiableSolrParams();
+    params.add(
+        "rq",
+        "{!"
+            + ReRankQParserPlugin.NAME
+            + " "
+            + ReRankQParserPlugin.RERANK_MAIN_SCALE
+            + "=10-20 "
+            + ReRankQParserPlugin.RERANK_SCALE
+            + "=10-20 "
+            + ReRankQParserPlugin.RERANK_QUERY
+            + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS
+            + "=4}");
+    params.add("q", "term_t:YYYY");
+    params.add("fq", "id:(4 OR 5)");
+    params.add("fl", "id,score");
+    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("bff", "field(test_ti)");
+    params.add("start", "0");
+    params.add("rows", "6");
+    params.add("df", "text");
+    assertQ(
+        req(params),
+        "*[count(//doc)=2]",
+        "//result/doc[1]/str[@name='id'][.='4']",
+        "//result/doc[1]/float[@name='score'][.='30.0']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "//result/doc[2]/float[@name='score'][.='30.0']");
   }
 }
