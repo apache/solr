@@ -78,8 +78,6 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     assertEquals("filelist", actualResponse.files.getName(0));
     List<Map<String, Object>> actual =
         (List<Map<String, Object>>) actualResponse.files.get("filelist");
-    System.out.println(actualResponse.files);
-    assertEquals(true, false);
     assertEquals(123, actual.get(0).get("size"));
     assertEquals("test", actual.get(0).get("name"));
     assertEquals(123456789, actual.get(0).get("checksum"));
