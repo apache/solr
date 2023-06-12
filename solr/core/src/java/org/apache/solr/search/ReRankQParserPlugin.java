@@ -221,6 +221,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
           .wrap(rewrittenMainQuery);
     }
 
+    @Override
     public boolean getCache() {
       if (debugQuery) {
         return false;
