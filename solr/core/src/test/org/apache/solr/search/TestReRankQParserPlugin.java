@@ -1398,9 +1398,45 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     String explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
-            "30.0 = Main query score rescaled to 10.0 reRank score rescaled to 20.0"));
+            "30.0 = first pass score scaled to 10.0 second pass score scaled to 20.0"));
     assertTrue(
         explainResponse.contains(
-            "30.0 = Main query score rescaled to 20.0 reRank score rescaled to 10.0"));
+            "30.0 = first pass score scaled to 20.0 second pass score scaled to 10.0"));
+
+    params = new ModifiableSolrParams();
+    params.add(
+        "rq",
+        "{!"
+            + ReRankQParserPlugin.NAME
+            + " "
+            + ReRankQParserPlugin.RERANK_MAIN_SCALE
+            + "=10-20 "
+            + ReRankQParserPlugin.RERANK_QUERY
+            + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS
+            + "=4}");
+    params.add("q", "term_t:YYYY");
+    params.add("fl", "id,score");
+    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("bff", "field(test_ti)");
+    params.add("start", "0");
+    params.add("rows", "6");
+    params.add("df", "text");
+    params.add("debugQuery", "true");
+    assertQ(
+        req(params),
+        "*[count(//doc)=6]",
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[1]/float[@name='score'][.='5018.705']",
+        "//result/doc[2]/str[@name='id'][.='4']",
+        "//result/doc[2]/float[@name='score'][.='519.8311']");
+
+    explainResponse = JQ(req(params));
+    assertTrue(
+        explainResponse.contains(
+            "5018.705 = first pass score scaled to 17.705261 unscaled second pass score 5001.0"));
+    assertTrue(
+        explainResponse.contains(
+            "519.8311 = first pass score scaled to 18.831097 unscaled second pass score 501.0"));
   }
 }
