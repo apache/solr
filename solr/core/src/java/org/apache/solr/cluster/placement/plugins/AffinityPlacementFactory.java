@@ -37,6 +37,7 @@ import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
@@ -95,42 +96,10 @@ import org.slf4j.LoggerFactory;
  * prop), and avoid having more than one replica per shard on the same node.<br>
  * Only after these constraints are satisfied do minimize cores per node or disk usage.</i>
  *
- * <p>Overall strategy of this plugin:
- *
- * <ul>
- *   <li>The set of nodes in the cluster is obtained and transformed into 3 independent sets (that
- *       can overlap) of nodes accepting each of the three replica types.
- *   <li>For each shard on which placing replicas is required and then for each replica type to
- *       place (starting with NRT, then TLOG then PULL):
- *       <ul>
- *         <li>The set of candidates nodes corresponding to the replica type is used and from that
- *             set are removed nodes that already have a replica (of any type) for that shard
- *         <li>If there are not enough nodes, an error is thrown (this is checked further down
- *             during processing).
- *         <li>The number of (already existing) replicas of the current type on each Availability
- *             Zone is collected.
- *         <li>Separate the set of available nodes to as many subsets (possibly some are empty) as
- *             there are Availability Zones defined for the candidate nodes
- *         <li>In each AZ nodes subset, sort the nodes by increasing total number of cores count,
- *             with possibly a condition that pushes nodes with low disk space to the end of the
- *             list? Or a weighted combination of the relative importance of these two factors? Some
- *             randomization? Marking as non available nodes with not enough disk space? These and
- *             other are likely aspects to be played with once the plugin is tested or observed to
- *             be running in prod, don't expect the initial code drop(s) to do all of that.
- *         <li>Iterate over the number of replicas to place (for the current replica type for the
- *             current shard):
- *             <ul>
- *               <li>Based on the number of replicas per AZ collected previously, pick the non empty
- *                   set of nodes having the lowest number of replicas. Then pick the first node in
- *                   that set. That's the node the replica is placed one. Remove the node from the
- *                   set of available nodes for the given AZ and increase the number of replicas
- *                   placed on that AZ.
- *             </ul>
- *         <li>During this process, the number of cores on the nodes in general is tracked to take
- *             into account placement decisions so that not all shards decide to put their replicas
- *             on the same nodes (they might though if these are the less loaded nodes).
- *       </ul>
- * </ul>
+ * <p>This plugin achieves this by creating a {@link AffinityPlacementPlugin.AffinityNode} that
+ * weights nodes very high if they are unbalanced with respect to AvailabilityZone and SpreadDomain.
+ * See {@link AffinityPlacementPlugin.AffinityNode} for more information on how this weighting helps
+ * the plugin correctly place and balance replicas.
  *
  * <p>This code is a realistic placement computation, based on a few assumptions. The code is
  * written in such a way to make it relatively easy to adapt it to (somewhat) different assumptions.
@@ -255,6 +224,16 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
+    /**
+     * AffinityPlacementContext is used to share information across {@link AffinityNode} instances.
+     *
+     * <p>For instance, with SpreadDomains and AvailabilityZones, the weighting of a Node requires
+     * information on the contents of other Nodes. This class is how that information is shared.
+     *
+     * <p>One AffinityPlacementContext is used for each call to {@link
+     * #computePlacements(Collection, PlacementContext)} or {@link #computeBalancing(BalanceRequest,
+     * PlacementContext)}. The state of the context will be altered throughout the computation.
+     */
     private static final class AffinityPlacementContext {
       private final Set<String> allSpreadDomains = new HashSet<>();
       private final Map<String, Map<String, ReplicaSpread>> spreadDomainUsage = new HashMap<>();
@@ -373,6 +352,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                 node.getName(),
                 AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
           }
+          // In the context stop using spreadDomains, because we have a node without a spread
+          // domain.
           affinityPlacementContext.doSpreadAcrossDomains = false;
           affinityPlacementContext.allSpreadDomains.clear();
         } else {
@@ -409,6 +390,62 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
+    /**
+     * This implementation weights nodes in order to achieve balancing across AvailabilityZones and
+     * SpreadDomains, while trying to minimize the amount of replicas on a node and ensure a given
+     * disk space per node. This implementation also supports limiting the placement of certain
+     * replica types per node and co-locating collections.
+     *
+     * <p>The total weight of the AffinityNode is the sum of:
+     *
+     * <ul>
+     *   <li>The number of replicas on the node
+     *   <li>100 if the free disk space on the node < prioritizedFreeDiskGB, otherwise 0
+     *   <li>If SpreadDomains are used:<br>
+     *       10,000 * the sum over each collection/shard:
+     *       <ul>
+     *         <li>(# of replicas in this node's spread domain - the minimum spreadDomain's
+     *             replicaCount)^2 <br>
+     *             <i>These are individually squared to penalize higher values when summing up all
+     *             values</i>
+     *       </ul>
+     *   <li>If AvailabilityZones are used:<br>
+     *       1,000,000 * the sum over each collection/shard/replicaType:
+     *       <ul>
+     *         <li>(# of replicas in this node's AZ - the minimum AZ's replicaCount)^2 <br>
+     *             <i>These are individually squared to penalize higher values when summing up all
+     *             values</i>
+     *       </ul>
+     * </ul>
+     *
+     * The weighting here ensures that the order of importance for nodes is:
+     *
+     * <ol>
+     *   <li>Spread replicas of the same shard/replicaType across availabilityZones
+     *   <li>Spread replicas of the same shard across spreadDomains
+     *   <li>Make sure that replicas are not placed on nodes that have < prioritizedFreeDiskGB disk
+     *       space available
+     *   <li>Minimize the amount of replicas on the node
+     * </ol>
+     *
+     * <p>The "relevant" weight with a replica is the sum of:
+     *
+     * <ul>
+     *   <li>The number of replicas on the node
+     *   <li>100 if the projected free disk space on the node < prioritizedFreeDiskGB, otherwise 0
+     *   <li>If SpreadDomains are used:<br>
+     *       10,000 * ( # of replicas for the replica's shard in this node's spread domain - the
+     *       minimum spreadDomain's replicaCount )
+     *   <li>If AvailabilityZones are used:<br>
+     *       1,000,000 * ( # of replicas for the replica's shard & replicaType in this node's AZ -
+     *       the minimum AZ's replicaCount )
+     * </ul>
+     *
+     * <p>Multiple replicas of the same shard are not permitted to live on the same Node.
+     *
+     * <p>Users can specify withCollection, to ensure that co-placement of replicas is ensured when
+     * computing new replica placements or replica balancing.
+     */
     private class AffinityNode extends WeightedNode {
 
       private final AttributeValues attrValues;
@@ -448,6 +485,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       @Override
       public int calcWeight() {
         return coresOnNode
+            // Only add 100 if prioritizedFreeDiskGB was provided and the node's freeDisk is lower
+            // than it
             + 100 * (prioritizedFreeDiskGB > 0 && nodeFreeDiskGB < prioritizedFreeDiskGB ? 1 : 0)
             + 10000 * getSpreadDomainWeight()
             + 1000000 * getAZWeight();
@@ -456,6 +495,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       @Override
       public int calcRelevantWeightWithReplica(Replica replica) {
         return coresOnNode
+            // Only add 100 if prioritizedFreeDiskGB was provided and the node's projected freeDisk
+            // is lower than it
             + 100
                 * (prioritizedFreeDiskGB > 0
                         && nodeFreeDiskGB - getProjectedSizeOfReplica(replica)
@@ -469,20 +510,30 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       @Override
       public boolean canAddReplica(Replica replica) {
         String collection = replica.getShard().getCollection().getName();
-        return
         // By default, do not allow two replicas of the same shard on a node
-        super.canAddReplica(replica)
+        return super.canAddReplica(replica)
+            // Filter out unsupported replica types
             && supportedReplicaTypes.contains(replica.getType())
+            // Filter out unsupported node types
             && Optional.ofNullable(nodeTypes.get(collection))
                 .map(s -> s.stream().anyMatch(nodeType::contains))
                 .orElse(true)
+            // Ensure any co-located collections already exist on the Node
             && Optional.ofNullable(withCollections.get(collection))
                 .map(this::hasCollectionOnNode)
                 .orElse(true)
+            // Ensure the disk space will not go below the minimum if the replica is added
             && (minimalFreeDiskGB <= 0
                 || nodeFreeDiskGB - getProjectedSizeOfReplica(replica) > minimalFreeDiskGB);
       }
 
+      /**
+       * Return any replicas that cannot be removed because there are collocated collections that
+       * require the replica to exist.
+       *
+       * @param replicas the replicas to remove
+       * @return any errors for replicas that cannot be removed
+       */
       @Override
       public Map<Replica, String> canRemoveReplicas(Collection<Replica> replicas) {
         Map<Replica, String> replicaRemovalExceptions = new HashMap<>();
@@ -529,6 +580,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       private boolean addReplicaToAzAndSpread(Replica replica) {
         boolean needsResort = false;
+        // Only use AvailabilityZones if there are more than 1
         if (affinityPlacementContext.allAvailabilityZones.size() > 1) {
           needsResort |=
               affinityPlacementContext
@@ -541,6 +593,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                       k -> new ReplicaSpread(affinityPlacementContext.allAvailabilityZones))
                   .addReplica(availabilityZone);
         }
+        // Only use SpreadDomains if they have been provided to all nodes and there are more than 1
         if (affinityPlacementContext.doSpreadAcrossDomains) {
           needsResort |=
               affinityPlacementContext
@@ -559,12 +612,16 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       protected void removeProjectedReplicaWeights(Replica replica) {
         nodeFreeDiskGB += getProjectedSizeOfReplica(replica);
         coresOnNode -= 1;
-        Optional.ofNullable(
-                affinityPlacementContext.availabilityZoneUsage.get(
-                    replica.getShard().getCollection().getName()))
-            .map(m -> m.get(replica.getShard().getShardName()))
-            .map(m -> m.get(replica.getType()))
-            .ifPresent(m -> m.removeReplica(availabilityZone));
+        // Only use AvailabilityZones if there are more than 1
+        if (affinityPlacementContext.allAvailabilityZones.size() > 1) {
+          Optional.ofNullable(
+                  affinityPlacementContext.availabilityZoneUsage.get(
+                      replica.getShard().getCollection().getName()))
+              .map(m -> m.get(replica.getShard().getShardName()))
+              .map(m -> m.get(replica.getType()))
+              .ifPresent(m -> m.removeReplica(availabilityZone));
+        }
+        // Only use SpreadDomains if they have been provided to all nodes and there are more than 1
         if (affinityPlacementContext.doSpreadAcrossDomains) {
           Optional.ofNullable(
                   affinityPlacementContext.spreadDomainUsage.get(
@@ -583,6 +640,16 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
             .orElse(0D);
       }
 
+      /**
+       * If there are more than one spreadDomains given in the cluster, then return a weight for
+       * this node, given the number of replicas in its spreadDomain.
+       *
+       * <p>For each Collection & Shard, sum up the number of replicas this node's SpreadDomain has
+       * over the minimum SpreadDomain. Square each value before summing, to ensure that smaller
+       * number of higher values are penalized more than a larger number of smaller values.
+       *
+       * @return the weight
+       */
       private int getSpreadDomainWeight() {
         if (affinityPlacementContext.doSpreadAcrossDomains) {
           return affinityPlacementContext.spreadDomainUsage.values().stream()
@@ -595,6 +662,15 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
       }
 
+      /**
+       * If there are more than one SpreadDomains given in the cluster, then return a projected
+       * SpreadDomain weight for this node and this replica.
+       *
+       * <p>For the new replica's Collection & Shard, project the number of replicas this node's
+       * SpreadDomain has over the minimum SpreadDomain.
+       *
+       * @return the weight
+       */
       private int projectReplicaSpreadWeight(Replica replica) {
         if (replica != null && affinityPlacementContext.doSpreadAcrossDomains) {
           return Optional.ofNullable(
@@ -602,13 +678,23 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                       replica.getShard().getCollection().getName()))
               .map(m -> m.get(replica.getShard().getShardName()))
               .map(rs -> rs.projectOverMinimum(spreadDomain, 1))
-              .map(i -> i * i)
               .orElse(0);
         } else {
           return 0;
         }
       }
 
+      /**
+       * If there are more than one AvailabilityZones given in the cluster, then return a weight for
+       * this node, given the number of replicas in its availabilityZone.
+       *
+       * <p>For each Collection, Shard & ReplicaType, sum up the number of replicas this node's
+       * AvailabilityZone has over the minimum AvailabilityZone. Square each value before summing,
+       * to ensure that smaller number of higher values are penalized more than a larger number of
+       * smaller values.
+       *
+       * @return the weight
+       */
       private int getAZWeight() {
         if (affinityPlacementContext.allAvailabilityZones.size() < 2) {
           return 0;
@@ -622,6 +708,15 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
       }
 
+      /**
+       * If there are more than one AvailabilityZones given in the cluster, then return a projected
+       * AvailabilityZone weight for this node and this replica.
+       *
+       * <p>For the new replica's Collection, Shard & ReplicaType, project the number of replicas
+       * this node's AvailabilityZone has over the minimum AvailabilityZone.
+       *
+       * @return the weight
+       */
       private int projectAZWeight(Replica replica) {
         if (replica == null || affinityPlacementContext.allAvailabilityZones.size() < 2) {
           return 0;
@@ -632,7 +727,6 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
               .map(m -> m.get(replica.getShard().getShardName()))
               .map(m -> m.get(replica.getType()))
               .map(rs -> rs.projectOverMinimum(availabilityZone, 1))
-              .map(i -> i * i)
               .orElse(0);
         }
       }
@@ -653,6 +747,11 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         return spread.getOrDefault(key, 0) - minReplicasLocated;
       }
 
+      /**
+       * Trying adding a replica for the given spread key, and return the {@link
+       * #overMinimum(String)} with it added. Remove the replica, so that the state is unchanged
+       * from when the method was called.
+       */
       int projectOverMinimum(String key, int replicaDelta) {
         int overMinimum = overMinimum(key);
         if (overMinimum == 0 && replicaDelta > 0) {
