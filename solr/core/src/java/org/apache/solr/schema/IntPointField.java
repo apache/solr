@@ -19,11 +19,13 @@ package org.apache.solr.schema;
 
 import java.util.Collection;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -119,7 +121,16 @@ public class IntPointField extends PointField implements IntValueFieldType {
       values[i] = parseIntFromUser(field.getName(), val);
       i++;
     }
-    return IntPoint.newSetQuery(field.getName(), values);
+    Query pointsQuery = IntPoint.newSetQuery(field.getName(), values);
+    if (field.hasDocValues()) {
+      long[] longValues = new long[values.length];
+      for (int j = 0; j < longValues.length; j++) {
+        longValues[j] = values[j];
+      }
+      return new IndexOrDocValuesQuery(
+          pointsQuery, SortedNumericDocValuesField.newSlowSetQuery(field.getName(), longValues));
+    }
+    return pointsQuery;
   }
 
   @Override
