@@ -58,14 +58,14 @@ public class StatusTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("solr")
+        // Unlike most of the other tools, this is an internal, not end user
+        // focused setting.  Therefore, no default value is provided.
+        Option.builder("solrUrl")
             .argName("URL")
             .hasArg()
             .required(false)
             .desc(
-                "Address of the Solr Web application, defaults to: "
-                    + SolrCLI.DEFAULT_SOLR_URL
-                    + '.')
+                "Property set by calling scripts, not meant for user configuration.")
             .build(),
         Option.builder("maxWaitSecs")
             .argName("SECS")
@@ -79,13 +79,13 @@ public class StatusTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     // Override the default help behaviour to put out a customized message that omits the internally
     // focused Options.
-    if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
+    if (cli.getOptions().length == 0 || cli.getArgs().length == 0 || cli.hasOption("h")) {
       new HelpFormatter().printHelp("status", new Options());
       return;
     }
 
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
-    String solrUrl = cli.getOptionValue("solr", SolrCLI.DEFAULT_SOLR_URL);
+    String solrUrl = cli.getOptionValue("solrUrl");
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);

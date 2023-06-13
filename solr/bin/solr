@@ -784,7 +784,7 @@ function get_status() {
         port=$(jetty_port "$ID")
         if [ "$port" != "" ]; then
           echo -e "\nSolr process $ID running on port $port"
-          run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
+          run_tool status -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
           echo ""
         else
           echo -e "\nSolr process $ID from $PIDF not found."
@@ -802,7 +802,7 @@ function get_status() {
           if [ "$port" != "" ]; then
             echo ""
             echo "Solr process $ID running on port $port"
-            run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
+            run_tool status -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
             echo ""
           fi
       done
