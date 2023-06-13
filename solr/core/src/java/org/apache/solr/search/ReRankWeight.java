@@ -55,7 +55,7 @@ public class ReRankWeight extends FilterWeight {
     final Explanation reRankExplain =
         reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
     if (reRankScaler.getReRankScalerExplain().reRankScale()) {
-      float reRankScore = reRankExplain.getValue().floatValue();
+      float reRankScore = reRankExplain.getDetails()[1].getValue().floatValue();
       float mainScore = mainExplain.getValue().floatValue();
       if (reRankScore > 0.0f) {
         float scaledMainScore =
@@ -67,11 +67,6 @@ public class ReRankWeight extends FilterWeight {
                 .scale(reRankScore);
         float scaledCombined =
             ReRankScaler.combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
-        System.out.println(
-            "Scaled scores 1:"
-                + Float.valueOf(scaledMainScore).toString()
-                + " : "
-                + Float.valueOf(scaledReRankScore).toString());
         Explanation scaleExplain =
             Explanation.match(
                 scaledCombined,

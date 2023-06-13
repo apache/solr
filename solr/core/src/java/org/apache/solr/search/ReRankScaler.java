@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.lucene.search.QueryRescorer;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.solr.request.SolrRequestInfo;
 
@@ -31,11 +32,17 @@ public class ReRankScaler {
   protected int reRankQueryMax = -1;
   protected ReRankOperator reRankOperator;
   protected ReRankScalerExplain reRankScalerExplain;
+  private QueryRescorer replaceRescorer;
 
-  public ReRankScaler(String mainScale, String reRankScale, ReRankOperator reRankOperator)
+  public ReRankScaler(
+      String mainScale,
+      String reRankScale,
+      ReRankOperator reRankOperator,
+      QueryRescorer replaceRescorer)
       throws SyntaxError {
 
     this.reRankScalerExplain = new ReRankScalerExplain(mainScale, reRankScale);
+    this.replaceRescorer = replaceRescorer;
     if (reRankOperator != ReRankOperator.ADD
         && reRankOperator != ReRankOperator.MULTIPLY
         && reRankOperator != ReRankOperator.REPLACE) {
@@ -55,6 +62,10 @@ public class ReRankScaler {
       this.reRankQueryMin = Integer.parseInt(reRankMinMax[0]);
       this.reRankQueryMax = Integer.parseInt(reRankMinMax[1]);
     }
+  }
+
+  public QueryRescorer getReplaceRescorer() {
+    return replaceRescorer;
   }
 
   public int getMainQueryMin() {
@@ -116,7 +127,6 @@ public class ReRankScaler {
     if (scaleMainScores()) {
       MinMaxExplain mainExplain = getMinMaxExplain(mainQueryMin, mainQueryMax, originalScoreMap);
       scaledOriginalScoreMap = minMaxScaleScores(originalScoreMap, mainExplain);
-      System.out.println("Scaled Main Scores:" + scaledOriginalScoreMap);
       SolrRequestInfo.getRequestInfo().getResponseBuilder().mainScaleExplain = mainExplain;
       reRankScalerExplain.setMainScaleExplain(mainExplain);
     } else {
@@ -127,16 +137,14 @@ public class ReRankScaler {
       ScoreDoc rescoredDoc = rescoredDocs[i];
       int doc = rescoredDoc.doc;
       float score = rescoredDoc.score;
-      float rescore = getReRankScore(originalScoreMap.get(doc), score, reRankOperator);
-      if (rescore > 0) {
-        rescoredMap.put(doc, rescore);
+      if (score > 0) {
+        rescoredMap.put(doc, score);
       }
     }
 
     if (scaleReRankScores()) {
       MinMaxExplain reRankExplain = getMinMaxExplain(reRankQueryMin, reRankQueryMax, rescoredMap);
       scaledRescoredMap = minMaxScaleScores(rescoredMap, reRankExplain);
-      System.out.println("Scaled reRank Scores:" + scaledRescoredMap);
       SolrRequestInfo.getRequestInfo().getResponseBuilder().reRankScaleExplain = reRankExplain;
       reRankScalerExplain.setReRankScaleExplain(reRankExplain);
     } else {
@@ -191,8 +199,7 @@ public class ReRankScaler {
 
   public static float getReRankScore(
       float originalScore, float combinedScore, ReRankOperator reRankOperator) {
-    // System.out.println("Orignal and Combined:"+originalScore+" : "+combinedScore+" :
-    // "+reRankOperator.toString());
+
     if (originalScore == combinedScore) {
       return 0;
     }

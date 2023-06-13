@@ -1081,7 +1081,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testReRankScaler() throws Exception {
 
-    ReRankScaler reRankScaler = new ReRankScaler("0-1", "5-100", ReRankOperator.ADD);
+    ReRankScaler reRankScaler = new ReRankScaler("0-1", "5-100", ReRankOperator.ADD, null);
     assertTrue(reRankScaler.scaleReRankScores());
     assertTrue(reRankScaler.scaleMainScores());
     assertEquals(reRankScaler.getMainQueryMin(), 0);
@@ -1398,9 +1398,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     String explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
-            "30.001122 = Main query score rescaled to 10.0 reRank score rescaled to 20.001122"));
+            "30.0 = Main query score rescaled to 10.0 reRank score rescaled to 20.0"));
     assertTrue(
         explainResponse.contains(
-            "30.001133 = Main query score rescaled to 20.0 reRank score rescaled to 10.001134"));
+            "30.0 = Main query score rescaled to 20.0 reRank score rescaled to 10.0"));
   }
 }

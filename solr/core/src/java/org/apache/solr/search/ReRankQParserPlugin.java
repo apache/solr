@@ -85,7 +85,12 @@ public class ReRankQParserPlugin extends QParserPlugin {
       String mainScale = localParams.get(RERANK_MAIN_SCALE);
       String reRankScale = localParams.get(RERANK_SCALE);
 
-      ReRankScaler reRankScaler = new ReRankScaler(mainScale, reRankScale, reRankOperator);
+      ReRankScaler reRankScaler =
+          new ReRankScaler(
+              mainScale,
+              reRankScale,
+              reRankOperator,
+              new ReRankQueryRescorer(reRankQuery, 1, ReRankOperator.REPLACE));
 
       if (reRankScaler.scaleScores()) {
         reRankWeight = 1;
@@ -223,7 +228,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean getCache() {
-      if (debugQuery) {
+      if (reRankScaler.scaleScores() && debugQuery) {
+        // Caching breaks explain when reRankScaling is used.
         return false;
       } else {
         return super.getCache();
