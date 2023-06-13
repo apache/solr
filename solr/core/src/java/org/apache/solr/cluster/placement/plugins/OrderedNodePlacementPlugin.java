@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -264,7 +265,10 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         traversedHighNodes.add(highestWeight);
         // select a replica from the node with the most cores to move to the node with the least
         // cores
-        Set<Replica> availableReplicasToMove = highestWeight.getAllReplicasOnNode();
+        List<Replica> availableReplicasToMove = highestWeight.getAllReplicasOnNode()
+                .stream()
+                .sorted(Comparator.comparing(Replica::getReplicaName))
+                .collect(Collectors.toList());
         int combinedNodeWeights = highestWeight.calcWeight() + lowestWeight.calcWeight();
         for (Replica r : availableReplicasToMove) {
           // Only continue if the replica can be removed from the old node and moved to the new node

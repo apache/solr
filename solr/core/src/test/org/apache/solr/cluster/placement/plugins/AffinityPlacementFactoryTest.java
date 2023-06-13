@@ -56,7 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Unit test for {@link AffinityPlacementFactory} */
-public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
+public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PlacementPlugin plugin;
@@ -493,6 +493,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             List.of("NRT 10", "TLOG 11"), // shard 1
             List.of()); // shard 2
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
@@ -525,95 +526,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     expectedPlacements = Set.of("2 PULL 0");
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
-  }
-
-  /**
-   * Verifies that a computed set of placements does match the expected placement on nodes.
-   *
-   * @param expectedPlacements a set of strings of the form {@code "1 NRT 3"} where 1 would be the
-   *     shard index, NRT the replica type and 3 the node on which the replica is placed. Shards are
-   *     1-based. Nodes 0-based.
-   *     <p>Read carefully: <b>shard index</b> and not shard name. Index in the <b>order</b> of
-   *     shards as defined for the collection in the call to {@link
-   *     org.apache.solr.cluster.placement.Builders.CollectionBuilder#customCollectionSetup(List,
-   *     List)}
-   * @param shardBuilders the shard builders are passed here to get the shard names by index
-   *     (1-based) rather than by parsing the shard names (which would break if we change the shard
-   *     naming scheme).
-   */
-  private static void verifyPlacements(
-      Set<String> expectedPlacements,
-      PlacementPlan placementPlan,
-      List<Builders.ShardBuilder> shardBuilders,
-      List<Node> liveNodes) {
-    Set<ReplicaPlacement> computedPlacements = placementPlan.getReplicaPlacements();
-
-    // Prepare structures for looking up shard name index and node index
-    Map<String, Integer> shardNumbering = new HashMap<>();
-    int index = 1; // first shard is 1 not 0
-    for (Builders.ShardBuilder sb : shardBuilders) {
-      shardNumbering.put(sb.getShardName(), index++);
-    }
-    Map<Node, Integer> nodeNumbering = new HashMap<>();
-    index = 0;
-    for (Node n : liveNodes) {
-      nodeNumbering.put(n, index++);
-    }
-
-    if (expectedPlacements.size() != computedPlacements.size()) {
-      fail(
-          "Wrong number of placements, expected "
-              + expectedPlacements.size()
-              + " computed "
-              + computedPlacements.size()
-              + ". "
-              + getExpectedVsComputedPlacement(
-                  expectedPlacements, computedPlacements, shardNumbering, nodeNumbering));
-    }
-
-    Set<String> expected = new HashSet<>(expectedPlacements);
-    for (ReplicaPlacement p : computedPlacements) {
-      String lookUpPlacementResult =
-          shardNumbering.get(p.getShardName())
-              + " "
-              + p.getReplicaType().name()
-              + " "
-              + nodeNumbering.get(p.getNode());
-      if (!expected.remove(lookUpPlacementResult)) {
-        fail(
-            "Computed placement ["
-                + lookUpPlacementResult
-                + "] not expected. "
-                + getExpectedVsComputedPlacement(
-                    expectedPlacements, computedPlacements, shardNumbering, nodeNumbering));
-      }
-    }
-  }
-
-  private static String getExpectedVsComputedPlacement(
-      Set<String> expectedPlacements,
-      Set<ReplicaPlacement> computedPlacements,
-      Map<String, Integer> shardNumbering,
-      Map<Node, Integer> nodeNumbering) {
-
-    StringBuilder sb = new StringBuilder("Expected placement: ");
-    for (String placement : expectedPlacements) {
-      sb.append("[").append(placement).append("] ");
-    }
-
-    sb.append("Computed placement: ");
-    for (ReplicaPlacement placement : computedPlacements) {
-      String lookUpPlacementResult =
-          shardNumbering.get(placement.getShardName())
-              + " "
-              + placement.getReplicaType().name()
-              + " "
-              + nodeNumbering.get(placement.getNode());
-
-      sb.append("[").append(lookUpPlacementResult).append("] ");
-    }
-
-    return sb.toString();
   }
 
   @Test
