@@ -81,9 +81,6 @@ public class CreateCoreTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     String coreName = cli.getOptionValue("name");
     String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
-    if (!solrUrl.endsWith("/")) {
-      solrUrl += "/";
-    }
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName =

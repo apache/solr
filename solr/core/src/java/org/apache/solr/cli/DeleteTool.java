@@ -92,7 +92,6 @@ public class DeleteTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
       Map<String, Object> systemInfo =

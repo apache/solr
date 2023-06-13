@@ -218,7 +218,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
    * collection.
    */
   protected void doTestConfigUpdate(String testCollectionName, String solrUrl) throws Exception {
-    //if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
       NamedList<Object> configJson =

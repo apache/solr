@@ -146,8 +146,6 @@ public class StatusTool extends ToolBase {
   public Map<String, Object> getStatus(String solrUrl) throws Exception {
     Map<String, Object> status;
 
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
-
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
       NamedList<Object> systemInfo =
           solrClient.request(
