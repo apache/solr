@@ -129,7 +129,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
       ScoreDoc[] mainScoreDocsClone =
-          (reRankScaler.scaleScores()) ? deepCloneAndZeroOut(mainScoreDocs) : null;
+          (reRankScaler != null && reRankScaler.scaleScores()) ? deepCloneAndZeroOut(mainScoreDocs) : null;
       ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
@@ -137,7 +137,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
       // If we're scaling scores use the replace rescorer because we just want the re-rank score.
       TopDocs rescoredDocs =
-          reRankScaler.scaleScores()
+          reRankScaler != null && reRankScaler.scaleScores()
               ? reRankScaler
                   .getReplaceRescorer()
                   .rescore(searcher, mainDocs, mainDocs.scoreDocs.length)
@@ -164,7 +164,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       if (howMany == rescoredDocs.scoreDocs.length) {
-        if (reRankScaler.scaleScores()) {
+        if (reRankScaler != null && reRankScaler.scaleScores()) {
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
                   mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
@@ -182,7 +182,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
             0,
             rescoredDocs.scoreDocs.length); // overlay the re-ranked docs.
         rescoredDocs.scoreDocs = scoreDocs;
-        if (reRankScaler.scaleScores()) {
+        if (reRankScaler != null && reRankScaler.scaleScores()) {
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
                   mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
@@ -193,7 +193,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
         ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
         System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
         rescoredDocs.scoreDocs = scoreDocs;
-        if (reRankScaler.scaleScores()) {
+        if (reRankScaler != null && reRankScaler.scaleScores()) {
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
                   mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
