@@ -40,7 +40,7 @@ public abstract class AbstractPlacementFactoryTest extends SolrTestCaseJ4 {
    *     shard index, NRT the replica type and 3 the node on which the replica is placed. Shards are
    *     1-based. Nodes 0-based.
    *     <p>Read carefully: <b>shard index</b> and not shard name. Index in the <b>order</b> of
-   *     shards as defined for the collection in the call to {@link
+   *     shards as defined for the collection in the call to {@code
    *     Builders.CollectionBuilder#customCollectionSetup(List, List)}
    * @param shardBuilders the shard builders are passed here to get the shard names by index
    *     (1-based) rather than by parsing the shard names (which would break if we change the shard
@@ -124,12 +124,12 @@ public abstract class AbstractPlacementFactoryTest extends SolrTestCaseJ4 {
   /**
    * Verifies that a computed set of placements does match the expected placement on nodes.
    *
-   * @param expectedMovements a set of strings of the form {@code " COL 1 NRT 3 -> 4"} where COL is
-   *     the name of the collection, 1 would be the shard index, NRT the replica type and 3 -> 4
-   *     represents the replica moving from the 3rd node to the 4th node. Shards are 1-based. Nodes
-   *     0-based.
+   * @param expectedMovements a set of strings of the form {@code "COL 1 NRT 3 -> 4"} where COL is
+   *     the name of the collection, 1 would be the shard index, NRT the replica type and {@code 3
+   *     -> 4} represents the replica moving from the 3rd node to the 4th node. Shards are 1-based.
+   *     Nodes 0-based.
    *     <p>Read carefully: <b>shard index</b> and not shard name. Index in the <b>order</b> of
-   *     shards as defined for the collection in the call to {@link
+   *     shards as defined for the collection in the call to {@code
    *     Builders.CollectionBuilder#customCollectionSetup(List, List)}
    * @param shardBuilders the shard builders are passed here to get the shard names by index
    *     (1-based) rather than by parsing the shard names (which would break if we change the shard
