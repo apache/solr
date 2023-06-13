@@ -193,7 +193,6 @@ public class ResponseBuilder {
   // Used for timeAllowed parameter. First phase elapsed time is subtracted from the time allowed
   // for the second phase.
   public int firstPhaseElapsedTime;
-  
   /**
    * Utility function to add debugging info. This will make sure a valid debugInfo exists before
    * adding to it.
