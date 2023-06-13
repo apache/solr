@@ -64,8 +64,7 @@ public class StatusTool extends ToolBase {
             .argName("URL")
             .hasArg()
             .required(false)
-            .desc(
-                "Property set by calling scripts, not meant for user configuration.")
+            .desc("Property set by calling scripts, not meant for user configuration.")
             .build(),
         Option.builder("maxWaitSecs")
             .argName("SECS")
