@@ -37,6 +37,8 @@ import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
  * the same shard on the same node. This code is meant as an educational example of a placement
  * plugin.
  *
+ * <p>See {@link NodeWithCoreCount} for information on how this PlacementFactory weights nodes.
+ *
  * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.
  */
 public class MinimizeCoresPlacementFactory
@@ -77,6 +79,12 @@ public class MinimizeCoresPlacementFactory
     }
   }
 
+  /**
+   * This implementation weights nodes according to how many cores they contain. The weight of a
+   * node is just the count of cores on that node.
+   *
+   * <p>Multiple replicas of the same shard are not permitted to live on the same Node.
+   */
   private static class NodeWithCoreCount extends OrderedNodePlacementPlugin.WeightedNode {
     private int coreCount;
 

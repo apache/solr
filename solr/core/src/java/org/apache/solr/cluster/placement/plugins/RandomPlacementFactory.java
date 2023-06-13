@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -32,6 +33,8 @@ import org.apache.solr.cluster.placement.PlacementPluginFactory;
  * Factory for creating {@link RandomPlacementPlugin}, a placement plugin implementing random
  * placement for new collection creation while preventing two replicas of same shard from being
  * placed on same node..
+ *
+ * <p>See {@link RandomNode} for information on how this PlacementFactory weights nodes.
  *
  * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.
  */
@@ -64,46 +67,61 @@ public class RandomPlacementFactory
       HashMap<Node, WeightedNode> nodeMap = new HashMap<>();
 
       for (Node node : nodes) {
-        nodeMap.put(node, new RandomNode(node));
+        nodeMap.put(node, new RandomNode(node, replicaPlacementRandom));
       }
 
       return nodeMap;
     }
+  }
 
-    private class RandomNode extends WeightedNode {
-      private int randomTiebreaker;
+  /**
+   * This implementation weights nodes equally. When trying to determine which nodes should be
+   * chosen to host replicas, a random sorting is used.
+   *
+   * <p>Multiple replicas of the same shard are not permitted to live on the same Node.
+   */
+  private static class RandomNode extends OrderedNodePlacementPlugin.WeightedNode {
+    private final Random random;
+    private int randomTiebreaker;
 
-      public RandomNode(Node node) {
-        super(node);
-        this.randomTiebreaker = replicaPlacementRandom.nextInt();
-      }
+    public RandomNode(Node node, Random random) {
+      super(node);
+      this.random = random;
+      this.randomTiebreaker = random.nextInt();
+    }
 
-      @Override
-      public int calcWeight() {
-        return 0;
-      }
+    @Override
+    public int calcWeight() {
+      return 0;
+    }
 
-      @Override
-      @SuppressWarnings({"rawtypes"})
-      public Comparable getTiebreaker() {
-        return randomTiebreaker;
-      }
+    @Override
+    @SuppressWarnings({"rawtypes"})
+    public Comparable getTiebreaker() {
+      return randomTiebreaker;
+    }
 
-      @Override
-      public int calcRelevantWeightWithReplica(Replica replica) {
-        return calcWeight();
-      }
+    @Override
+    public int calcRelevantWeightWithReplica(Replica replica) {
+      return calcWeight();
+    }
 
-      @Override
-      public boolean addProjectedReplicaWeights(Replica replica) {
-        randomTiebreaker = replicaPlacementRandom.nextInt();
-        return false;
-      }
+    @Override
+    protected boolean addProjectedReplicaWeights(Replica replica) {
+      // NO-OP
+      return false;
+    }
 
-      @Override
-      public void removeProjectedReplicaWeights(Replica replica) {
-        randomTiebreaker = replicaPlacementRandom.nextInt();
-      }
+    @Override
+    protected void removeProjectedReplicaWeights(Replica replica) {
+      // NO-OP
+    }
+
+    @Override
+    public void addToSortedCollection(
+        Collection<OrderedNodePlacementPlugin.WeightedNode> collection) {
+      randomTiebreaker = random.nextInt();
+      super.addToSortedCollection(collection);
     }
   }
 }

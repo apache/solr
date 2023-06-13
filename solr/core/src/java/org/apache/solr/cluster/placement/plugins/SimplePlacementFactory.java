@@ -33,6 +33,8 @@ import org.apache.solr.cluster.placement.PlacementPluginFactory;
  * from the old <code>LegacyAssignStrategy</code>. This chooses nodes with the fewest cores
  * (especially cores of the same collection).
  *
+ * <p>See {@link SameCollWeightedNode} for information on how this PlacementFactory weights nodes.
+ *
  * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.
  */
 public class SimplePlacementFactory
@@ -61,6 +63,47 @@ public class SimplePlacementFactory
     }
   }
 
+  /**
+   * This implementation weights nodes according to how many replicas of the same collection and
+   * shard reside on the node. The implementation tries to spread replicas of the same
+   * collection/shard across different nodes, so nodes that contain more of the same
+   * collection/shard will be weighted higher than nodes that only contain replicas for unique
+   * collections/shards.
+   *
+   * <p>The total weight of the SameCollWeightedNode is the sum of:
+   *
+   * <ul>
+   *   <li>The number of replicas on the node
+   *   <li>5 * for each collection, the sum of:
+   *       <ul>
+   *         <li>(the number of replicas for that collection - 1)^2
+   *       </ul>
+   *   <li>1000 * for each shard, the sum of:
+   *       <ul>
+   *         <li>(the number of replicas for that shard - 1)^2
+   *       </ul>
+   * </ul>
+   *
+   * The count of overlapping replicas for collections/shards must be squared, since we want higher
+   * values to be penalized more than lower values. If a node has 2 collections with 3 replicas
+   * each, it should be weighted less than a node with 1 collection that has 5 replicas placed
+   * there. Without squaring, the weight for the first node would be 26, and the weight of the
+   * second node would be 25. So node #2 would be weighted lower even though it is considered to be
+   * violating the constraints more. When we square the overlapping replica counts, the weight of
+   * the first node would be 46 and the weight of the second node would be 85. This is the preferred
+   * order.
+   *
+   * <p>The "relevant" weight with a replica is the sum of:
+   *
+   * <ul>
+   *   <li>The number of replicas on the node
+   *   <li>5 * (the number of replicas on the node for that replica's collection - 1)
+   *   <li>1000 * (the number of replicas on the node for that replica's shard - 1)
+   * </ul>
+   *
+   * <p>Multiple replicas of the same shard are permitted to live on the same Node, but as shown
+   * above, the weight penalty for such is very high.
+   */
   private static class SameCollWeightedNode extends OrderedNodePlacementPlugin.WeightedNode {
     private static final int SAME_COL_MULT = 5;
     private static final int SAME_SHARD_MULT = 1000;
@@ -72,23 +115,6 @@ public class SimplePlacementFactory
       this.collectionReplicas = new HashMap<>();
     }
 
-    /**
-     * The weight of the SameCollWeightedNode is the sum of:
-     * <li/>The number of replicas on the node
-     * <li/>5 * for each collection, the sum of:
-     *
-     *     <ul>
-     *       <li/>(the number of replicas for that collection - 1)^2
-     *     </ul>
-     *
-     * <li/>1000 * for each shard, the sum of:
-     *
-     *     <ul>
-     *       <li/>(the number of replicas for that shard - 1)^2
-     *     </ul>
-     *
-     * @return the weight
-     */
     @Override
     public int calcWeight() {
       return totalWeight;
