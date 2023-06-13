@@ -54,7 +54,7 @@ public class ReRankWeight extends FilterWeight {
     final Explanation mainExplain = in.explain(context, doc);
     final Explanation reRankExplain =
         reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
-    if (reRankScaler.getReRankScalerExplain().reRankScale()) {
+    if (reRankScaler != null && reRankScaler.getReRankScalerExplain().reRankScale()) {
       float reRankScore = reRankExplain.getDetails()[1].getValue().floatValue();
       float mainScore = mainExplain.getValue().floatValue();
       if (reRankScore > 0.0f) {
