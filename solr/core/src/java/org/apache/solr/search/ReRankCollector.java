@@ -129,7 +129,9 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
       ScoreDoc[] mainScoreDocsClone =
-          (reRankScaler != null && reRankScaler.scaleScores()) ? deepCloneAndZeroOut(mainScoreDocs) : null;
+          (reRankScaler != null && reRankScaler.scaleScores())
+              ? deepCloneAndZeroOut(mainScoreDocs)
+              : null;
       ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
