@@ -22,7 +22,6 @@ import static org.apache.solr.bench.generators.SourceDSL.integers;
 import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 import java.io.IOException;
-
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
@@ -59,28 +58,36 @@ public class QueryResponseWriters {
   @State(Scope.Benchmark)
   public static class BenchState {
 
-    /**
-     * See {@link SolrCore#DEFAULT_RESPONSE_WRITERS}
-     */
-    @Param({CommonParams.JAVABIN, CommonParams.JSON, "cbor", "smile", "xml", "python", "phps", "ruby", "raw"})
+    /** See {@link SolrCore#DEFAULT_RESPONSE_WRITERS} */
+    @Param({
+      CommonParams.JAVABIN,
+      CommonParams.JSON,
+      "cbor",
+      "smile",
+      "xml",
+      "python",
+      "phps",
+      "ruby",
+      "raw"
+    })
     String wt;
 
     private int docs = 100;
     private QueryRequest q;
 
     @Setup(Level.Trial)
-    public void setup(MiniClusterBenchState miniClusterState)
-        throws Exception {
+    public void setup(MiniClusterBenchState miniClusterState) throws Exception {
 
       miniClusterState.startMiniCluster(1);
       miniClusterState.createCollection(collection, 1, 1);
 
       // only stored fields are needed to cover the response writers perf
-      Docs docGen = docs()
-          .field("id", integers().incrementing())
-          .field("text2_ts", strings().basicLatinAlphabet().multi(25).ofLengthBetween(30, 64))
-          .field("bools_b", booleans().all())
-          .field("int1_is", integers().all());
+      Docs docGen =
+          docs()
+              .field("id", integers().incrementing())
+              .field("text2_ts", strings().basicLatinAlphabet().multi(25).ofLengthBetween(30, 64))
+              .field("bools_b", booleans().all())
+              .field("int1_is", integers().all());
       miniClusterState.index(collection, docGen, docs);
       miniClusterState.forceMerge(collection, 5);
 
@@ -96,8 +103,7 @@ public class QueryResponseWriters {
   }
 
   @Benchmark
-  public void query(
-      BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
+  public void query(BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
       throws SolrServerException, IOException {
     miniClusterState.client.request(benchState.q, collection);
   }
