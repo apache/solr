@@ -265,8 +265,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         traversedHighNodes.add(highestWeight);
         // select a replica from the node with the most cores to move to the node with the least
         // cores
-        List<Replica> availableReplicasToMove = highestWeight.getAllReplicasOnNode()
-                .stream()
+        List<Replica> availableReplicasToMove =
+            highestWeight.getAllReplicasOnNode().stream()
                 .sorted(Comparator.comparing(Replica::getReplicaName))
                 .collect(Collectors.toList());
         int combinedNodeWeights = highestWeight.calcWeight() + lowestWeight.calcWeight();

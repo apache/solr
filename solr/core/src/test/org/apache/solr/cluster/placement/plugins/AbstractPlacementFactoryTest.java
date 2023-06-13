@@ -17,32 +17,18 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cluster.Node;
-import org.apache.solr.cluster.Replica;
-import org.apache.solr.cluster.Shard;
-import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.BalancePlan;
-import org.apache.solr.cluster.placement.Builders;
-import org.apache.solr.cluster.placement.PlacementContext;
-import org.apache.solr.cluster.placement.PlacementException;
-import org.apache.solr.cluster.placement.PlacementPlan;
-import org.apache.solr.cluster.placement.PlacementPlugin;
-import org.apache.solr.cluster.placement.ReplicaPlacement;
-import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
-import org.apache.solr.common.util.Pair;
-import org.junit.Before;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.Replica;
+import org.apache.solr.cluster.placement.BalancePlan;
+import org.apache.solr.cluster.placement.Builders;
+import org.apache.solr.cluster.placement.PlacementPlan;
+import org.apache.solr.cluster.placement.ReplicaPlacement;
 
 /** Unit test for {@link AffinityPlacementFactory} */
 public abstract class AbstractPlacementFactoryTest extends SolrTestCaseJ4 {
@@ -55,8 +41,7 @@ public abstract class AbstractPlacementFactoryTest extends SolrTestCaseJ4 {
    *     1-based. Nodes 0-based.
    *     <p>Read carefully: <b>shard index</b> and not shard name. Index in the <b>order</b> of
    *     shards as defined for the collection in the call to {@link
-   *     Builders.CollectionBuilder#customCollectionSetup(List,
-   *     List)}
+   *     Builders.CollectionBuilder#customCollectionSetup(List, List)}
    * @param shardBuilders the shard builders are passed here to get the shard names by index
    *     (1-based) rather than by parsing the shard names (which would break if we change the shard
    *     naming scheme).
@@ -139,26 +124,26 @@ public abstract class AbstractPlacementFactoryTest extends SolrTestCaseJ4 {
   /**
    * Verifies that a computed set of placements does match the expected placement on nodes.
    *
-   * @param expectedMovements a set of strings of the form {@code " COL 1 NRT 3 -> 4"} where
-   *     COL is the name of the collection, 1 would be the shard index, NRT the replica type and
-   *     3 -> 4 represents the replica moving from the 3rd node to the 4th node. Shards are
-   *     1-based. Nodes 0-based.
+   * @param expectedMovements a set of strings of the form {@code " COL 1 NRT 3 -> 4"} where COL is
+   *     the name of the collection, 1 would be the shard index, NRT the replica type and 3 -> 4
+   *     represents the replica moving from the 3rd node to the 4th node. Shards are 1-based. Nodes
+   *     0-based.
    *     <p>Read carefully: <b>shard index</b> and not shard name. Index in the <b>order</b> of
    *     shards as defined for the collection in the call to {@link
-   *     Builders.CollectionBuilder#customCollectionSetup(List,
-   *     List)}
+   *     Builders.CollectionBuilder#customCollectionSetup(List, List)}
    * @param shardBuilders the shard builders are passed here to get the shard names by index
    *     (1-based) rather than by parsing the shard names (which would break if we change the shard
    *     naming scheme).
    */
   public static void verifyBalancing(
-          Set<String> expectedMovements,
-          BalancePlan balancePlan,
-          List<Builders.ShardBuilder> shardBuilders,
-          List<Node> liveNodes) {
+      Set<String> expectedMovements,
+      BalancePlan balancePlan,
+      List<Builders.ShardBuilder> shardBuilders,
+      List<Node> liveNodes) {
     Map<Replica, Node> computedMovements = balancePlan.getReplicaMovements();
 
-    assertNotNull("Replica movements returned from balancePlan should not be null", computedMovements);
+    assertNotNull(
+        "Replica movements returned from balancePlan should not be null", computedMovements);
 
     // Prepare structures for looking up shard name index and node index
     Map<String, Integer> shardNumbering = new HashMap<>();
@@ -174,44 +159,44 @@ public abstract class AbstractPlacementFactoryTest extends SolrTestCaseJ4 {
 
     if (expectedMovements.size() != computedMovements.size()) {
       fail(
-              "Wrong number of replica movements, expected "
-                      + expectedMovements.size()
-                      + " computed "
-                      + computedMovements.size()
-                      + ". "
-                      + getExpectedVsComputedMovement(
-                      expectedMovements, computedMovements, shardNumbering, nodeNumbering));
+          "Wrong number of replica movements, expected "
+              + expectedMovements.size()
+              + " computed "
+              + computedMovements.size()
+              + ". "
+              + getExpectedVsComputedMovement(
+                  expectedMovements, computedMovements, shardNumbering, nodeNumbering));
     }
 
     Set<String> expected = new HashSet<>(expectedMovements);
     for (Map.Entry<Replica, Node> movement : computedMovements.entrySet()) {
       Replica replica = movement.getKey();
       String lookUpMovementResult =
-              replica.getShard().getCollection().getName()
-                      + " "
-                      + shardNumbering.get(replica.getShard().getShardName())
-                      + " "
-                      + replica.getType().name()
-                      + " "
-                      + nodeNumbering.get(replica.getNode())
-                      + " -> "
-                      + nodeNumbering.get(movement.getValue());
+          replica.getShard().getCollection().getName()
+              + " "
+              + shardNumbering.get(replica.getShard().getShardName())
+              + " "
+              + replica.getType().name()
+              + " "
+              + nodeNumbering.get(replica.getNode())
+              + " -> "
+              + nodeNumbering.get(movement.getValue());
       if (!expected.remove(lookUpMovementResult)) {
         fail(
-                "Computed placement ["
-                        + lookUpMovementResult
-                        + "] not expected. "
-                        + getExpectedVsComputedMovement(
-                        expectedMovements, computedMovements, shardNumbering, nodeNumbering));
+            "Computed placement ["
+                + lookUpMovementResult
+                + "] not expected. "
+                + getExpectedVsComputedMovement(
+                    expectedMovements, computedMovements, shardNumbering, nodeNumbering));
       }
     }
   }
 
   private static String getExpectedVsComputedMovement(
-          Set<String> expectedMovements,
-          Map<Replica, Node> computedMovements,
-          Map<String, Integer> shardNumbering,
-          Map<Node, Integer> nodeNumbering) {
+      Set<String> expectedMovements,
+      Map<Replica, Node> computedMovements,
+      Map<String, Integer> shardNumbering,
+      Map<Node, Integer> nodeNumbering) {
 
     StringBuilder sb = new StringBuilder("Expected movement: ");
     for (String movement : expectedMovements) {
@@ -222,15 +207,15 @@ public abstract class AbstractPlacementFactoryTest extends SolrTestCaseJ4 {
     for (Map.Entry<Replica, Node> movement : computedMovements.entrySet()) {
       Replica replica = movement.getKey();
       String lookUpMovementResult =
-              replica.getShard().getCollection().getName()
-                      + " "
-                      + shardNumbering.get(replica.getShard().getShardName())
-                      + " "
-                      + replica.getType().name()
-                      + " "
-                      + nodeNumbering.get(replica.getNode())
-                      + " -> "
-                      + nodeNumbering.get(movement.getValue());
+          replica.getShard().getCollection().getName()
+              + " "
+              + shardNumbering.get(replica.getShard().getShardName())
+              + " "
+              + replica.getType().name()
+              + " "
+              + nodeNumbering.get(replica.getNode())
+              + " -> "
+              + nodeNumbering.get(movement.getValue());
 
       sb.append("[").append(lookUpMovementResult).append("] ");
     }
