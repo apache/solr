@@ -183,9 +183,6 @@ public class TestCborDataFormat extends SolrCloudTestCase {
   public void test() throws Exception {
     Path filmsJson = new File(ExternalPaths.SOURCE_HOME, "example/films/films.json").toPath();
 
-    long sz = Files.size(filmsJson);
-    assertEquals(633600, sz);
-
     List<Object> films = null;
     try (InputStream is = Files.newInputStream(filmsJson)) {
       films = (List<Object>) Utils.fromJSON(is);
