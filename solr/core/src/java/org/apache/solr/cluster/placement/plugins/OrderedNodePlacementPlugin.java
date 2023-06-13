@@ -313,6 +313,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           break;
         }
       }
+      traversedHighNodes.addAll(orderedNodes);
+      orderedNodes.clear();
       traversedHighNodes.forEach(n -> n.addToSortedCollection(orderedNodes));
       traversedHighNodes.clear();
       if (newReplicaMovements.size() > 0) {

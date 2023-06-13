@@ -37,6 +37,7 @@ import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.BalancePlan;
 import org.apache.solr.cluster.placement.Builders;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
 import org.apache.solr.cluster.placement.PlacementContext;
@@ -45,6 +46,7 @@ import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
+import org.apache.solr.cluster.placement.impl.BalanceRequestImpl;
 import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
@@ -1396,5 +1398,273 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
       ReplicaPlacement rp = pp.getReplicaPlacements().iterator().next();
       assertEquals(liveNodes.get(1), rp.getNode());
     }
+  }
+
+  /**
+   * Tests replica balancing across all nodes in a cluster
+   */
+  @Test
+  public void testBalancingBareMetrics() throws Exception {
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas =
+            List.of(
+                    List.of("NRT 0", "TLOG 0", "NRT 2"), // shard 1
+                    List.of("NRT 1", "NRT 4", "TLOG 3")); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    // Add another collection
+    collectionBuilder = Builders.newCollectionBuilder("b");
+    shardsReplicas =
+            List.of(
+                    List.of("NRT 1", "TLOG 0", "NRT 3"), // shard 1
+                    List.of("NRT 1", "NRT 3", "TLOG 0")); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    BalanceRequestImpl balanceRequest =
+            new BalanceRequestImpl(new HashSet<>(clusterBuilder.buildLiveNodes()));
+    BalancePlan balancePlan =
+            plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+
+
+    // Each expected placement is represented as a string "col shard replica-type fromNode -> toNode"
+    Set<String> expectedPlacements = Set.of("b 1 TLOG 0 -> 2", "b 1 NRT 3 -> 4");
+    verifyBalancing(expectedPlacements, balancePlan, collectionBuilder.getShardBuilders(), clusterBuilder.buildLiveNodes());
+  }
+
+  /**
+   * Tests replica balancing across all nodes in a cluster
+   */
+  @Test
+  public void testBalancingExistingMetrics() throws Exception {
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    int coresOnNode = 10;
+    for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
+      nodeBuilder.setCoreCount(coresOnNode);
+      coresOnNode += 10;
+    }
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas =
+            List.of(
+                    List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
+                    List.of("NRT 1", "NRT 3", "TLOG 2")); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    BalanceRequestImpl balanceRequest =
+            new BalanceRequestImpl(new HashSet<>(clusterBuilder.buildLiveNodes()));
+    BalancePlan balancePlan =
+            plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+
+
+    // Each expected placement is represented as a string "col shard replica-type fromNode -> toNode"
+    Set<String> expectedPlacements = Set.of("a 1 NRT 3 -> 1", "a 2 NRT 3 -> 0");
+    verifyBalancing(expectedPlacements, balancePlan, collectionBuilder.getShardBuilders(), clusterBuilder.buildLiveNodes());
+  }
+
+  /**
+   * Tests that balancing works across a subset of nodes
+   */
+  @Test
+  public void testBalancingWithNodeSubset() throws Exception {
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    int coresOnNode = 10;
+    for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
+      nodeBuilder.setCoreCount(coresOnNode);
+      coresOnNode += 10;
+    }
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas =
+            List.of(
+                    List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
+                    List.of("NRT 1", "NRT 3", "TLOG 2")); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    // Only balance over node 1 and 2
+    List<Node> overNodes = clusterBuilder.buildLiveNodes();
+    overNodes.remove(0);
+
+    BalanceRequestImpl balanceRequest =
+            new BalanceRequestImpl(new HashSet<>(overNodes));
+    BalancePlan balancePlan =
+            plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+
+
+    // Each expected placement is represented as a string "col shard replica-type fromNode -> toNode"
+    Set<String> expectedPlacements = Set.of("a 1 NRT 3 -> 1");
+    verifyBalancing(expectedPlacements, balancePlan, collectionBuilder.getShardBuilders(), clusterBuilder.buildLiveNodes());
+  }
+
+  /**
+   * Tests balancing with multiple criteria: Replica type restricted nodes, Availability zones +
+   * existing collection
+   */
+  @Test
+  public void testBalancingMultiCriteria() throws Exception {
+    String collectionName = "a";
+
+    // Note node numbering is in purpose not following AZ structure
+    final int AZ1_NRT_LOWCORES = 0;
+    final int AZ1_NRT_HIGHCORES = 3;
+    final int AZ1_TLOGPULL_LOWFREEDISK = 5;
+
+    final int AZ2_NRT_MEDCORES = 2;
+    final int AZ2_NRT_HIGHCORES = 1;
+    final int AZ2_TLOGPULL = 7;
+
+    final int AZ3_NRT_LOWCORES = 4;
+    final int AZ3_NRT_HIGHCORES = 6;
+    final int AZ3_TLOGPULL = 8;
+
+    final String AZ1 = "AZ1";
+    final String AZ2 = "AZ2";
+    final String AZ3 = "AZ3";
+
+    final int LOW_CORES = 10;
+    final int MED_CORES = 50;
+    final int HIGH_CORES = 100;
+
+    final String TLOG_PULL_REPLICA_TYPE = "TLOG, PULL";
+    final String NRT_REPLICA_TYPE = "Nrt";
+
+    // Cluster nodes and their attributes.
+    // 3 AZ's with three nodes each, 2 of which can only take NRT, one that can take TLOG or PULL
+    // One of the NRT has fewer cores than the other
+    // The TLOG/PULL replica on AZ1 doesn't have much free disk space
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    for (int i = 0; i < 9; i++) {
+      final String az;
+      final int numcores;
+      final double freedisk;
+      final String acceptedReplicaType;
+
+      if (i == AZ1_NRT_LOWCORES || i == AZ1_NRT_HIGHCORES || i == AZ1_TLOGPULL_LOWFREEDISK) {
+        az = AZ1;
+      } else if (i == AZ2_NRT_HIGHCORES || i == AZ2_NRT_MEDCORES || i == AZ2_TLOGPULL) {
+        az = AZ2;
+      } else {
+        az = AZ3;
+      }
+
+      if (i == AZ1_NRT_LOWCORES || i == AZ3_NRT_LOWCORES) {
+        numcores = LOW_CORES;
+      } else if (i == AZ2_NRT_MEDCORES) {
+        numcores = MED_CORES;
+      } else {
+        numcores = HIGH_CORES;
+      }
+
+      if (i == AZ1_TLOGPULL_LOWFREEDISK) {
+        freedisk = PRIORITIZED_FREE_DISK_GB - 10;
+      } else {
+        freedisk = PRIORITIZED_FREE_DISK_GB + 10;
+      }
+
+      if (i == AZ1_TLOGPULL_LOWFREEDISK || i == AZ2_TLOGPULL || i == AZ3_TLOGPULL) {
+        acceptedReplicaType = TLOG_PULL_REPLICA_TYPE;
+      } else {
+        acceptedReplicaType = NRT_REPLICA_TYPE;
+      }
+
+      nodeBuilders
+              .get(i)
+              .setSysprop(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP, az)
+              .setSysprop(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP, acceptedReplicaType)
+              .setCoreCount(numcores)
+              .setFreeDiskGB(freedisk);
+    }
+
+    // The collection already exists with shards and replicas.
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    List<List<String>> shardsReplicas =
+            List.of(
+                    List.of("NRT " + AZ1_NRT_HIGHCORES,
+                            "TLOG " + AZ3_TLOGPULL,
+                            "NRT " + AZ3_NRT_HIGHCORES,
+                            "NRT " + AZ3_NRT_LOWCORES,
+                            "TLOG " + AZ2_TLOGPULL), // shard 1
+                    List.of("TLOG " + AZ2_TLOGPULL,
+                            "NRT " + AZ2_NRT_HIGHCORES,
+                            "NRT " + AZ3_NRT_LOWCORES,
+                            "TLOG " + AZ3_TLOGPULL)); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    BalanceRequestImpl balanceRequest =
+            new BalanceRequestImpl(new HashSet<>(liveNodes));
+    BalancePlan bp =
+            plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+    Set<String> expectedMovements =
+            Set.of(
+                    "a 2 NRT " + AZ2_NRT_HIGHCORES + " -> " + AZ1_NRT_LOWCORES,
+                    "a 1 NRT " + AZ3_NRT_HIGHCORES + " -> " + AZ1_NRT_LOWCORES,
+                    "a 1 NRT " + AZ1_NRT_HIGHCORES + " -> " + AZ2_NRT_MEDCORES);
+    verifyBalancing(expectedMovements, bp, collectionBuilder.getShardBuilders(), liveNodes);
+  }
+
+  @Test
+  public void testWithCollectionBalancing() throws Exception {
+    AffinityPlacementConfig config =
+            new AffinityPlacementConfig(
+                    MINIMAL_FREE_DISK_GB,
+                    PRIORITIZED_FREE_DISK_GB,
+                    Map.of(primaryCollectionName, secondaryCollectionName),
+                    Map.of());
+    configurePlugin(config);
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(6);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas =
+            List.of(List.of("NRT 0", "NRT 1", "NRT 3")); // shard 1
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    // Add another collection
+    collectionBuilder = Builders.newCollectionBuilder(secondaryCollectionName);
+    shardsReplicas =
+            List.of(List.of("NRT 0", "NRT 2", "NRT 4")); // shard 1
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
+
+    BalanceRequestImpl balanceRequest = new BalanceRequestImpl(cluster.getLiveNodes());
+
+    BalancePlan bp = plugin.computeBalancing(balanceRequest, placementContext);
+    assertEquals("No movements expected, single movable replica requires co-placement", 0, bp.getReplicaMovements().size());
   }
 }
