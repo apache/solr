@@ -196,9 +196,6 @@ public class ResponseBuilder {
   // for the second phase.
   public int firstPhaseElapsedTime;
 
-  public ReRankScaler.MinMaxExplain mainScaleExplain;
-  public ReRankScaler.MinMaxExplain reRankScaleExplain;
-
   /**
    * Utility function to add debugging info. This will make sure a valid debugInfo exists before
    * adding to it.

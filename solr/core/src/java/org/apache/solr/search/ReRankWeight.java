@@ -24,7 +24,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Rescorer;
 import org.apache.lucene.search.Weight;
-import org.apache.solr.request.SolrRequestInfo;
 
 /** A {@code Weight} used by reranking queries. */
 public class ReRankWeight extends FilterWeight {
@@ -54,28 +53,13 @@ public class ReRankWeight extends FilterWeight {
     final Explanation mainExplain = in.explain(context, doc);
     final Explanation reRankExplain =
         reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
-    if (reRankScaler != null && reRankScaler.getReRankScalerExplain().reRankScale()) {
-      float reRankScore = reRankExplain.getDetails()[1].getValue().floatValue();
-      float mainScore = mainExplain.getValue().floatValue();
-      if (reRankScore > 0.0f) {
-        float scaledMainScore =
-            SolrRequestInfo.getRequestInfo().getResponseBuilder().mainScaleExplain.scale(mainScore);
-        float scaledReRankScore =
-            SolrRequestInfo.getRequestInfo()
-                .getResponseBuilder()
-                .reRankScaleExplain
-                .scale(reRankScore);
-        float scaledCombined =
-            ReRankScaler.combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
-        Explanation scaleExplain =
-            Explanation.match(
-                scaledCombined,
-                "Main query score rescaled to "
-                    + scaledMainScore
-                    + " reRank score rescaled to "
-                    + scaledReRankScore,
-                reRankExplain);
-        return scaleExplain;
+    if (reRankScaler != null && reRankScaler.scaleScores()) {
+      Explanation reScaleExplain = reRankScaler.explain(mainExplain, reRankExplain);
+      if (reScaleExplain != null) {
+        // Can be null if only reRankScore is scaled and is not a reRank match
+        return reScaleExplain;
+      } else {
+        return reRankExplain;
       }
     }
     return reRankExplain;

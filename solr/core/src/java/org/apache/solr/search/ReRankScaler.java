@@ -20,9 +20,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.QueryRescorer;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.solr.request.SolrRequestInfo;
 
 public class ReRankScaler {
 
@@ -127,7 +127,6 @@ public class ReRankScaler {
     if (scaleMainScores()) {
       MinMaxExplain mainExplain = getMinMaxExplain(mainQueryMin, mainQueryMax, originalScoreMap);
       scaledOriginalScoreMap = minMaxScaleScores(originalScoreMap, mainExplain);
-      SolrRequestInfo.getRequestInfo().getResponseBuilder().mainScaleExplain = mainExplain;
       reRankScalerExplain.setMainScaleExplain(mainExplain);
     } else {
       scaledOriginalScoreMap = originalScoreMap;
@@ -145,7 +144,6 @@ public class ReRankScaler {
     if (scaleReRankScores()) {
       MinMaxExplain reRankExplain = getMinMaxExplain(reRankQueryMin, reRankQueryMax, rescoredMap);
       scaledRescoredMap = minMaxScaleScores(rescoredMap, reRankExplain);
-      SolrRequestInfo.getRequestInfo().getResponseBuilder().reRankScaleExplain = reRankExplain;
       reRankScalerExplain.setReRankScaleExplain(reRankExplain);
     } else {
       scaledRescoredMap = rescoredMap;
@@ -295,6 +293,62 @@ public class ReRankScaler {
         } else {
           return scaledScore;
         }
+      }
+    }
+  }
+
+  public Explanation explain(Explanation mainQueryExplain, Explanation reRankQueryExplain) {
+    float reRankScore = reRankQueryExplain.getDetails()[1].getValue().floatValue();
+    float mainScore = mainQueryExplain.getValue().floatValue();
+    if (reRankScore > 0f) {
+      if (scaleMainScores() && scaleReRankScores()) {
+        MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
+        MinMaxExplain reRankScaleExplain = reRankScalerExplain.getReRankScaleExplain();
+        float scaledMainScore = mainScaleExplain.scale(mainScore);
+        float scaledReRankScore = reRankScaleExplain.scale(reRankScore);
+        float combinedScaleScore =
+            combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
+        return Explanation.match(
+            combinedScaleScore,
+            "Main query score rescaled to "
+                + scaledMainScore
+                + " reRank score rescaled to "
+                + scaledReRankScore,
+            reRankQueryExplain);
+      } else if (scaleMainScores() && !scaleReRankScores()) {
+        MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
+        float scaledMainScore = mainScaleExplain.scale(mainScore);
+        float combinedScaleScore = combineScores(scaledMainScore, reRankScore, reRankOperator);
+        return Explanation.match(
+            combinedScaleScore,
+            "Main query score rescaled to "
+                + scaledMainScore
+                + " unscaled reRank score "
+                + reRankScore,
+            reRankQueryExplain);
+
+      } else if (!scaleMainScores() && scaleReRankScores()) {
+        MinMaxExplain reRankScaleExplain = reRankScalerExplain.getReRankScaleExplain();
+        float scaledReRankScore = reRankScaleExplain.scale(reRankScore);
+        float combinedScaleScore = combineScores(mainScore, scaledReRankScore, reRankOperator);
+        return Explanation.match(
+            combinedScaleScore,
+            "Main query unscaled score "
+                + mainScore
+                + " reRank score rescaled to "
+                + scaledReRankScore,
+            reRankQueryExplain);
+      } else {
+        // If we get here nothing has been scaled so return null
+        return null;
+      }
+    } else {
+      if (scaleMainScores()) {
+        MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
+        float scaledMainScore = mainScaleExplain.scale(mainScore);
+        return Explanation.match(scaledMainScore, "Rescaled main scaled score", reRankQueryExplain);
+      } else {
+        return null;
       }
     }
   }
