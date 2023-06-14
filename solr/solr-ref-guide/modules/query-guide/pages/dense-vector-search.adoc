@@ -75,7 +75,7 @@ s|Required |Default: none
 The dimension of the dense vector to pass in.
 +
 Accepted values:
-Any integer < = `1024`.
+Any integer.
 
 `similarityFunction`::
 +
