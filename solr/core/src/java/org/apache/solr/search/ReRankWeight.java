@@ -54,7 +54,8 @@ public class ReRankWeight extends FilterWeight {
     final Explanation reRankExplain =
         reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
     if (reRankScaler != null && reRankScaler.scaleScores()) {
-      Explanation reScaleExplain = reRankScaler.explain(mainExplain, reRankExplain);
+      Explanation reScaleExplain =
+          reRankScaler.explain(context.docBase + doc, mainExplain, reRankExplain);
       if (reScaleExplain != null) {
         // Can be null if only reRankScore is scaled and is not a reRank match
         return reScaleExplain;

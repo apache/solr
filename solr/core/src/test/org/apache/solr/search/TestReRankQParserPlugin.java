@@ -1429,7 +1429,15 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[1]/float[@name='score'][.='5018.705']",
         "//result/doc[2]/str[@name='id'][.='4']",
-        "//result/doc[2]/float[@name='score'][.='519.8311']");
+        "//result/doc[2]/float[@name='score'][.='519.8311']",
+        "//result/doc[3]/str[@name='id'][.='6']",
+        "//result/doc[3]/float[@name='score'][.='31.0']",
+        "//result/doc[4]/str[@name='id'][.='5']",
+        "//result/doc[4]/float[@name='score'][.='24.527113']",
+        "//result/doc[5]/str[@name='id'][.='2']",
+        "//result/doc[5]/float[@name='score'][.='15.5736']",
+        "//result/doc[6]/str[@name='id'][.='1']",
+        "//result/doc[6]/float[@name='score'][.='10.0']");
 
     explainResponse = JQ(req(params));
     assertTrue(
@@ -1438,5 +1446,15 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertTrue(
         explainResponse.contains(
             "519.8311 = first pass score scaled to 18.831097 unscaled second pass score 501.0"));
+    assertTrue(
+        explainResponse.contains(
+            "31.0 = first pass score scaled to 20.0 unscaled second pass score 11.0"));
+    assertTrue(
+        explainResponse.contains(
+            "24.527113 = first pass score scaled to 19.527113 unscaled second pass score 5.0"));
+
+    assertTrue(explainResponse.contains("15.5736 = scaled main query score"));
+
+    assertTrue(explainResponse.contains("10.0 = scaled main query score"));
   }
 }

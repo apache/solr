@@ -33,6 +33,7 @@ public class ReRankScaler {
   protected ReRankOperator reRankOperator;
   protected ReRankScalerExplain reRankScalerExplain;
   private QueryRescorer replaceRescorer;
+  private Map<Integer, Float> rescoredMap = new HashMap<>();
 
   public ReRankScaler(
       String mainScale,
@@ -115,8 +116,6 @@ public class ReRankScaler {
   public ScoreDoc[] scaleScores(ScoreDoc[] originalDocs, ScoreDoc[] rescoredDocs, int howMany) {
 
     Map<Integer, Float> originalScoreMap = new HashMap<>();
-    Map<Integer, Float> rescoredMap = new HashMap<>();
-
     Map<Integer, Float> scaledOriginalScoreMap = null;
     Map<Integer, Float> scaledRescoredMap = null;
 
@@ -137,13 +136,14 @@ public class ReRankScaler {
       int doc = rescoredDoc.doc;
       float score = rescoredDoc.score;
       if (score > 0) {
-        rescoredMap.put(doc, score);
+        this.rescoredMap.put(doc, score);
       }
     }
 
     if (scaleReRankScores()) {
-      MinMaxExplain reRankExplain = getMinMaxExplain(reRankQueryMin, reRankQueryMax, rescoredMap);
-      scaledRescoredMap = minMaxScaleScores(rescoredMap, reRankExplain);
+      MinMaxExplain reRankExplain =
+          getMinMaxExplain(reRankQueryMin, reRankQueryMax, this.rescoredMap);
+      scaledRescoredMap = minMaxScaleScores(this.rescoredMap, reRankExplain);
       reRankScalerExplain.setReRankScaleExplain(reRankExplain);
     } else {
       scaledRescoredMap = rescoredMap;
@@ -297,10 +297,11 @@ public class ReRankScaler {
     }
   }
 
-  public Explanation explain(Explanation mainQueryExplain, Explanation reRankQueryExplain) {
+  public Explanation explain(
+      int doc, Explanation mainQueryExplain, Explanation reRankQueryExplain) {
     float reRankScore = reRankQueryExplain.getDetails()[1].getValue().floatValue();
     float mainScore = mainQueryExplain.getValue().floatValue();
-    if (reRankScore > 0f) {
+    if (reRankScore > 0f && rescoredMap.containsKey(doc)) {
       if (scaleMainScores() && scaleReRankScores()) {
         MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
         MinMaxExplain reRankScaleExplain = reRankScalerExplain.getReRankScaleExplain();
@@ -346,7 +347,7 @@ public class ReRankScaler {
       if (scaleMainScores()) {
         MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
         float scaledMainScore = mainScaleExplain.scale(mainScore);
-        return Explanation.match(scaledMainScore, "scaled main query score", reRankQueryExplain);
+        return Explanation.match(scaledMainScore, "scaled main query score", mainQueryExplain);
       } else {
         return null;
       }
