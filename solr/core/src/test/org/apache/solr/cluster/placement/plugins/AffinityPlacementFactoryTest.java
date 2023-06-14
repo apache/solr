@@ -19,7 +19,6 @@ package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,13 +44,11 @@ import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.cluster.placement.PlacementPlugin;
-import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -815,72 +812,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFreeDiskConstraintsWithNewReplicas() throws Exception {
-    String collectionName = "freeDiskWithReplicasCollection";
-    int NUM_NODES = 3;
-    Builders.ClusterBuilder clusterBuilder =
-        Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
-    Node smallNode = null;
-    for (int i = 0; i < NUM_NODES; i++) {
-      Builders.NodeBuilder nodeBuilder = clusterBuilder.getLiveNodeBuilders().get(i);
-      // Act as if the two replicas were placed on nodes 1 and 2
-      nodeBuilder.setCoreCount(0);
-      nodeBuilder.setFreeDiskGB(100.0);
-    }
-
-    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
-    collectionBuilder.initializeShardsReplicas(
-        3,
-        1,
-        0,
-        0,
-        clusterBuilder.getLiveNodeBuilders(), // .subList(1, 3),
-        List.of(33, 33, 60));
-    clusterBuilder.addCollection(collectionBuilder);
-
-    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
-    Cluster cluster = placementContext.getCluster();
-
-    SolrCollection solrCollection = cluster.getCollection(collectionName);
-
-    // Test when an additional replicaType makes the projected indexSize go over the limit
-    // Add two replicas (different types) to the first shard, the second replica should fail
-    PlacementRequestImpl badReplicaPlacementRequest =
-        new PlacementRequestImpl(
-            solrCollection,
-            StreamSupport.stream(solrCollection.shards().spliterator(), false)
-                .map(Shard::getShardName)
-                .findFirst()
-                .map(Set::of)
-                .orElseGet(Collections::emptySet),
-            cluster.getLiveNodes(),
-            0,
-            1,
-            1);
-
-    Assert.assertThrows(
-        PlacementException.class,
-        () -> plugin.computePlacement(badReplicaPlacementRequest, placementContext));
-
-    // Test when an additional shard makes the projected indexSize go over the limit
-    // Add one replica to each shard, the third shard should fail
-    PlacementRequest badShardPlacementRequest =
-        new PlacementRequestImpl(
-            solrCollection,
-            StreamSupport.stream(solrCollection.shards().spliterator(), false)
-                .map(Shard::getShardName)
-                .collect(Collectors.toSet()),
-            cluster.getLiveNodes(),
-            0,
-            1,
-            1);
-
-    Assert.assertThrows(
-        PlacementException.class,
-        () -> plugin.computePlacement(badShardPlacementRequest, placementContext));
-  }
-
-  @Test
   public void testWithCollectionPlacement() throws Exception {
     AffinityPlacementConfig config =
         new AffinityPlacementConfig(
@@ -1363,12 +1294,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
     List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-    // The first node needs to have 2 fewer cores than the second node, because unfortunately the
-    // metrics will be altered when computing the first placementRequest. If the metrics were copied
-    // when fetched, then this wouldn't be necessary. However, for now this is acceptable, because
-    // it's only a testing issue. The real AttributeFetcher does not share maps across the
-    // AttributeValues that it creates. So a placementPlugin gets a clean set of metrics for each
-    // placementRequest, that the placementPlugin can edit however it wants to.
     nodeBuilders
         .get(0)
         .setCoreCount(1)
@@ -1376,12 +1301,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
     nodeBuilders
         .get(1)
-        .setCoreCount(3)
+        .setCoreCount(2)
         .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
         .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
     nodeBuilders
         .get(2)
-        .setCoreCount(4)
+        .setCoreCount(3)
         .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
         .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "B");
 
@@ -1389,12 +1314,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     if (hasExistingCollection) {
       // Existing collection has replicas for its shards and is visible in the cluster state
-      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, nodeBuilders, List.of(0));
+      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, nodeBuilders);
       clusterBuilder.addCollection(collectionBuilder);
     } else {
       // New collection to create has the shards defined but no replicas and is not present in
       // cluster state
-      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of(), List.of(0));
+      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
     }
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
