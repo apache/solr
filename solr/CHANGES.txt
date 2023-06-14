@@ -65,6 +65,9 @@ New Features
 
 * SOLR-16836: Introduced support for high dimensional vectors (Alessandro Benedetti).
 
+* SOLR-16806: Solr now provides a BalanceReplicas API to spread replicas across a given set of nodes.
+  (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
+
 Improvements
 ---------------------
 
@@ -164,6 +167,12 @@ Improvements
 * SOLR-16398: The v2 "balance-shard-unique" API has been tweaked to be more intuitive, by removing the top-level command
   specifier from the request body, and changing the path. The v2 functionality can now be accessed at:
   `POST /api/collections/cName/balance-shard-unique {...}` (Jason Gerlowski)
+
+* SOLR-16806: The included PlacementPlugins (Random, Simple, MinimizeCores and Affinity) now all implement the
+  OrderedNodePlacementPlugin, which provides the implementation for computePlacements() and computeBalancing().
+  Each implementing PlacementPlugin provides a way of weighting Solr Nodes, and the OrderedNodePlacement plugin
+  then uses the weights to decide the optimal strategy for placing new replicas or balancing existing replicas.
+  (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
 Optimizations
 ---------------------
