@@ -182,7 +182,7 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
         response = EntityUtils.toString(entity, UTF_8);
         m = (Map<?, ?>) Utils.fromJSONString(response);
       } catch (JSONParser.ParseException e) {
-        log.error("err response: " + response, e);
+        log.error("err response: {}", response);
         throw new AssertionError(e);
       }
     } finally {
