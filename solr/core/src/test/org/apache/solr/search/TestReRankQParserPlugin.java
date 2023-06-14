@@ -1081,7 +1081,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testReRankScaler() throws Exception {
 
-    ReRankScaler reRankScaler = new ReRankScaler("0-1", "5-100", ReRankOperator.ADD, null);
+    ReRankScaler reRankScaler = new ReRankScaler("0-1", "5-100", ReRankOperator.ADD, null, true);
     assertTrue(reRankScaler.scaleReRankScores());
     assertTrue(reRankScaler.scaleMainScores());
     assertEquals(reRankScaler.getMainQueryMin(), 0);
@@ -1278,6 +1278,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "6");
     params.add("df", "text");
+    params.add("debugQuery", "true");
+
     assertQ(
         req(params),
         "*[count(//doc)=6]",
@@ -1452,6 +1454,60 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertTrue(
         explainResponse.contains(
             "24.527113 = first pass score scaled to 19.527113 unscaled second pass score 5.0"));
+
+    assertTrue(explainResponse.contains("15.5736 = scaled main query score"));
+
+    assertTrue(explainResponse.contains("10.0 = scaled main query score"));
+
+    params = new ModifiableSolrParams();
+    params.add(
+        "rq",
+        "{!"
+            + ReRankQParserPlugin.NAME
+            + " "
+            + ReRankQParserPlugin.RERANK_MAIN_SCALE
+            + "=10-20 "
+            + ReRankQParserPlugin.RERANK_QUERY
+            + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS
+            + "=4}");
+    params.add("q", "term_t:YYYY");
+    params.add("fl", "id,score");
+    params.add("rqq", "{!edismax bf=$bff}id:(3 OR 4 OR 6 OR 5)");
+    params.add("bff", "field(test_ti)");
+    params.add("start", "0");
+    params.add("rows", "6");
+    params.add("df", "text");
+    params.add("debugQuery", "true");
+    assertQ(
+        req(params),
+        "*[count(//doc)=6]",
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[1]/float[@name='score'][.='5018.4053']",
+        "//result/doc[2]/str[@name='id'][.='4']",
+        "//result/doc[2]/float[@name='score'][.='519.5313']",
+        "//result/doc[3]/str[@name='id'][.='6']",
+        "//result/doc[3]/float[@name='score'][.='30.700203']",
+        "//result/doc[4]/str[@name='id'][.='5']",
+        "//result/doc[4]/float[@name='score'][.='24.227316']",
+        "//result/doc[5]/str[@name='id'][.='2']",
+        "//result/doc[5]/float[@name='score'][.='15.5736']",
+        "//result/doc[6]/str[@name='id'][.='1']",
+        "//result/doc[6]/float[@name='score'][.='10.0']");
+
+    explainResponse = JQ(req(params));
+    assertTrue(
+        explainResponse.contains(
+            "5018.4053 = first pass score scaled to 17.705261 unscaled second pass score 5000.7"));
+    assertTrue(
+        explainResponse.contains(
+            "519.5313 = first pass score scaled to 18.831097 unscaled second pass score 500.7002"));
+    assertTrue(
+        explainResponse.contains(
+            "30.700203 = first pass score scaled to 20.0 unscaled second pass score 10.700202"));
+    assertTrue(
+        explainResponse.contains(
+            "24.227316 = first pass score scaled to 19.527113 unscaled second pass score 4.7002025"));
 
     assertTrue(explainResponse.contains("15.5736 = scaled main query score"));
 

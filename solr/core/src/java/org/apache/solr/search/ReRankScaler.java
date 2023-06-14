@@ -19,7 +19,9 @@ package org.apache.solr.search;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.QueryRescorer;
 import org.apache.lucene.search.ScoreDoc;
@@ -30,18 +32,21 @@ public class ReRankScaler {
   protected int mainQueryMax = -1;
   protected int reRankQueryMin = -1;
   protected int reRankQueryMax = -1;
+  protected boolean debugQuery;
   protected ReRankOperator reRankOperator;
   protected ReRankScalerExplain reRankScalerExplain;
   private QueryRescorer replaceRescorer;
-  private Map<Integer, Float> rescoredMap = new HashMap<>();
+  private Set<Integer> reRankSet;
 
   public ReRankScaler(
       String mainScale,
       String reRankScale,
       ReRankOperator reRankOperator,
-      QueryRescorer replaceRescorer)
+      QueryRescorer replaceRescorer,
+      boolean debugQuery)
       throws SyntaxError {
 
+    this.debugQuery = debugQuery;
     this.reRankScalerExplain = new ReRankScalerExplain(mainScale, reRankScale);
     this.replaceRescorer = replaceRescorer;
     if (reRankOperator != ReRankOperator.ADD
@@ -118,6 +123,7 @@ public class ReRankScaler {
     Map<Integer, Float> originalScoreMap = new HashMap<>();
     Map<Integer, Float> scaledOriginalScoreMap = null;
     Map<Integer, Float> scaledRescoredMap = null;
+    Map<Integer, Float> rescoredMap = new HashMap<>();
 
     for (ScoreDoc scoreDoc : originalDocs) {
       originalScoreMap.put(scoreDoc.doc, scoreDoc.score);
@@ -131,19 +137,23 @@ public class ReRankScaler {
       scaledOriginalScoreMap = originalScoreMap;
     }
 
+    this.reRankSet = debugQuery ? new HashSet<>() : null;
+
     for (int i = 0; i < howMany; i++) {
       ScoreDoc rescoredDoc = rescoredDocs[i];
       int doc = rescoredDoc.doc;
+      if (debugQuery) {
+        reRankSet.add(doc);
+      }
       float score = rescoredDoc.score;
       if (score > 0) {
-        this.rescoredMap.put(doc, score);
+        rescoredMap.put(doc, score);
       }
     }
 
     if (scaleReRankScores()) {
-      MinMaxExplain reRankExplain =
-          getMinMaxExplain(reRankQueryMin, reRankQueryMax, this.rescoredMap);
-      scaledRescoredMap = minMaxScaleScores(this.rescoredMap, reRankExplain);
+      MinMaxExplain reRankExplain = getMinMaxExplain(reRankQueryMin, reRankQueryMax, rescoredMap);
+      scaledRescoredMap = minMaxScaleScores(rescoredMap, reRankExplain);
       reRankScalerExplain.setReRankScaleExplain(reRankExplain);
     } else {
       scaledRescoredMap = rescoredMap;
@@ -301,21 +311,27 @@ public class ReRankScaler {
       int doc, Explanation mainQueryExplain, Explanation reRankQueryExplain) {
     float reRankScore = reRankQueryExplain.getDetails()[1].getValue().floatValue();
     float mainScore = mainQueryExplain.getValue().floatValue();
-    if (reRankScore > 0f && rescoredMap.containsKey(doc)) {
+    if (reRankSet.contains(doc)) {
       if (scaleMainScores() && scaleReRankScores()) {
-        MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
-        MinMaxExplain reRankScaleExplain = reRankScalerExplain.getReRankScaleExplain();
-        float scaledMainScore = mainScaleExplain.scale(mainScore);
-        float scaledReRankScore = reRankScaleExplain.scale(reRankScore);
-        float combinedScaleScore =
-            combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
-        return Explanation.match(
-            combinedScaleScore,
-            "first pass score scaled to "
-                + scaledMainScore
-                + " second pass score scaled to "
-                + scaledReRankScore,
-            reRankQueryExplain);
+        if (reRankScore > 0) {
+          MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
+          MinMaxExplain reRankScaleExplain = reRankScalerExplain.getReRankScaleExplain();
+          float scaledMainScore = mainScaleExplain.scale(mainScore);
+          float scaledReRankScore = reRankScaleExplain.scale(reRankScore);
+          float combinedScaleScore =
+              combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
+          return Explanation.match(
+              combinedScaleScore,
+              "first pass score scaled to "
+                  + scaledMainScore
+                  + " second pass score scaled to "
+                  + scaledReRankScore,
+              reRankQueryExplain);
+        } else {
+          MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
+          float scaledMainScore = mainScaleExplain.scale(mainScore);
+          return Explanation.match(scaledMainScore, "scaled first pass score", reRankQueryExplain);
+        }
       } else if (scaleMainScores() && !scaleReRankScores()) {
         MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
         float scaledMainScore = mainScaleExplain.scale(mainScore);
@@ -329,16 +345,20 @@ public class ReRankScaler {
             reRankQueryExplain);
 
       } else if (!scaleMainScores() && scaleReRankScores()) {
-        MinMaxExplain reRankScaleExplain = reRankScalerExplain.getReRankScaleExplain();
-        float scaledReRankScore = reRankScaleExplain.scale(reRankScore);
-        float combinedScaleScore = combineScores(mainScore, scaledReRankScore, reRankOperator);
-        return Explanation.match(
-            combinedScaleScore,
-            "first pass unscaled score "
-                + mainScore
-                + " second pass score scaled to "
-                + scaledReRankScore,
-            reRankQueryExplain);
+        if (reRankScore > 0) {
+          MinMaxExplain reRankScaleExplain = reRankScalerExplain.getReRankScaleExplain();
+          float scaledReRankScore = reRankScaleExplain.scale(reRankScore);
+          float combinedScaleScore = combineScores(mainScore, scaledReRankScore, reRankOperator);
+          return Explanation.match(
+              combinedScaleScore,
+              "first pass unscaled score "
+                  + mainScore
+                  + " second pass score scaled to "
+                  + scaledReRankScore,
+              reRankQueryExplain);
+        } else {
+          return null;
+        }
       } else {
         // If we get here nothing has been scaled so return null
         return null;

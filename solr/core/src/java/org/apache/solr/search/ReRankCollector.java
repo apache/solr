@@ -169,7 +169,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
         if (reRankScaler != null && reRankScaler.scaleScores()) {
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
-                  mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, reRankScoreDocs.length);
         }
         return rescoredDocs; // Just return the rescoredDocs
       } else if (howMany > rescoredDocs.scoreDocs.length) {
@@ -187,7 +187,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
         if (reRankScaler != null && reRankScaler.scaleScores()) {
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
-                  mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, reRankScoreDocs.length);
         }
         return rescoredDocs;
       } else {
@@ -198,7 +198,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
         if (reRankScaler != null && reRankScaler.scaleScores()) {
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
-                  mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, reRankScoreDocs.length);
         }
         return rescoredDocs;
       }

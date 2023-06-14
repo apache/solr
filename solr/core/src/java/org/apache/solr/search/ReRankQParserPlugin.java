@@ -84,19 +84,19 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
       String mainScale = localParams.get(RERANK_MAIN_SCALE);
       String reRankScale = localParams.get(RERANK_SCALE);
+      boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
 
       ReRankScaler reRankScaler =
           new ReRankScaler(
               mainScale,
               reRankScale,
               reRankOperator,
-              new ReRankQueryRescorer(reRankQuery, 1, ReRankOperator.REPLACE));
+              new ReRankQueryRescorer(reRankQuery, 1, ReRankOperator.REPLACE),
+              debugQuery);
 
       if (reRankScaler.scaleScores()) {
         reRankWeight = 1;
       }
-
-      boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
 
       return new ReRankQuery(
           reRankQuery, reRankDocs, reRankWeight, reRankOperator, reRankScaler, debugQuery);
