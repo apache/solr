@@ -20,6 +20,8 @@ New Features
 * SOLR-16719: AffinityPlacementFactory now supports spreading replicas across domains within the availablity zone and
   optionally fail the request if more than a configurable number of replicas need to be placed in a single domain. (Houston Putman, Tomás Fernández Löbbe)
 
+* SOLR-16836: Introduced support for high dimensional vectors (Alessandro Benedetti).
+
 Improvements
 ---------------------
 
