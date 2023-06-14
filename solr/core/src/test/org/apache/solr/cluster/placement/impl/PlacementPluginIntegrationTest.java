@@ -404,52 +404,48 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(cloudManager);
     SolrCollection collection = cluster.getCollection(COLLECTION);
     AttributeFetcher attributeFetcher = new AttributeFetcherImpl(cloudManager);
-    NodeMetric<String> someMetricKey =
-        new NodeMetricImpl.StaticNodeMetricImpl<>("solr.jvm:system.properties:user.name");
+    NodeMetric<String> someMetricKey = new NodeMetricImpl<>("solr.jvm:system.properties:user.name");
     String sysprop = "user.name";
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
-        .requestNodeMetric(BuiltInMetrics.NODE_HEAP_USAGE)
-        .requestNodeMetric(BuiltInMetrics.NODE_SYSLOAD_AVG)
-        .requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES)
-        .requestNodeMetric(BuiltInMetrics.NODE_FREE_DISK_GB)
-        .requestNodeMetric(BuiltInMetrics.NODE_TOTAL_DISK_GB)
-        .requestNodeMetric(BuiltInMetrics.NODE_AVAILABLE_PROCESSORS)
+        .requestNodeMetric(NodeMetricImpl.HEAP_USAGE)
+        .requestNodeMetric(NodeMetricImpl.SYSLOAD_AVG)
+        .requestNodeMetric(NodeMetricImpl.NUM_CORES)
+        .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB)
+        .requestNodeMetric(NodeMetricImpl.TOTAL_DISK_GB)
+        .requestNodeMetric(NodeMetricImpl.AVAILABLE_PROCESSORS)
         .requestNodeMetric(someMetricKey)
         .requestNodeSystemProperty(sysprop)
         .requestCollectionMetrics(
             collection,
             Set.of(
-                BuiltInMetrics.REPLICA_INDEX_SIZE_GB,
-                BuiltInMetrics.REPLICA_QUERY_RATE_1MIN,
-                BuiltInMetrics.REPLICA_UPDATE_RATE_1MIN));
+                ReplicaMetricImpl.INDEX_SIZE_GB,
+                ReplicaMetricImpl.QUERY_RATE_1MIN,
+                ReplicaMetricImpl.UPDATE_RATE_1MIN));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     String userName = System.getProperty("user.name");
     // node metrics
     for (Node node : cluster.getLiveNodes()) {
-      Optional<Double> doubleOpt =
-          attributeValues.getNodeMetric(node, BuiltInMetrics.NODE_HEAP_USAGE);
+      Optional<Double> doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.HEAP_USAGE);
       assertTrue("heap usage", doubleOpt.isPresent());
       assertTrue(
           "heap usage should be 0 < heapUsage < 100 but was " + doubleOpt,
           doubleOpt.get() > 0 && doubleOpt.get() < 100);
-      doubleOpt = attributeValues.getNodeMetric(node, BuiltInMetrics.NODE_TOTAL_DISK_GB);
+      doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
       assertTrue("total disk", doubleOpt.isPresent());
       assertTrue("total disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
-      doubleOpt = attributeValues.getNodeMetric(node, BuiltInMetrics.NODE_FREE_DISK_GB);
+      doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB);
       assertTrue("free disk", doubleOpt.isPresent());
       assertTrue("free disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
-      Optional<Integer> intOpt = attributeValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES);
+      Optional<Integer> intOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES);
       assertTrue("cores", intOpt.isPresent());
       assertTrue("cores should be > 0", intOpt.get() > 0);
       assertTrue(
           "systemLoadAverage 2",
-          attributeValues.getNodeMetric(node, BuiltInMetrics.NODE_SYSLOAD_AVG).isPresent());
+          attributeValues.getNodeMetric(node, NodeMetricImpl.SYSLOAD_AVG).isPresent());
       assertTrue(
           "availableProcessors",
-          attributeValues
-              .getNodeMetric(node, BuiltInMetrics.NODE_AVAILABLE_PROCESSORS)
-              .isPresent());
+          attributeValues.getNodeMetric(node, NodeMetricImpl.AVAILABLE_PROCESSORS).isPresent());
       Optional<String> userNameOpt = attributeValues.getNodeMetric(node, someMetricKey);
       assertTrue("user.name", userNameOpt.isPresent());
       assertEquals("userName", userName, userNameOpt.get());
@@ -475,7 +471,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
                         assertTrue("replica metrics", replicaMetricsOpt.isPresent());
                         ReplicaMetrics replicaMetrics = replicaMetricsOpt.get();
                         Optional<Double> indexSizeOpt =
-                            replicaMetrics.getReplicaMetric(BuiltInMetrics.REPLICA_INDEX_SIZE_GB);
+                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
                         assertTrue("indexSize", indexSizeOpt.isPresent());
                         indexSizeOpt.get();
                         assertTrue(
@@ -487,12 +483,10 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
                         assertNotNull(
                             "queryRate",
-                            replicaMetrics.getReplicaMetric(
-                                BuiltInMetrics.REPLICA_QUERY_RATE_1MIN));
+                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.QUERY_RATE_1MIN));
                         assertNotNull(
                             "updateRate",
-                            replicaMetrics.getReplicaMetric(
-                                BuiltInMetrics.REPLICA_UPDATE_RATE_1MIN));
+                            replicaMetrics.getReplicaMetric(ReplicaMetricImpl.UPDATE_RATE_1MIN));
                       });
             });
   }

@@ -29,7 +29,7 @@ import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
+import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 
 /**
  * Factory for creating {@link MinimizeCoresPlacementPlugin}, a Placement plugin implementing
@@ -60,19 +60,19 @@ public class MinimizeCoresPlacementFactory
         throws PlacementException {
       // Fetch attributes for a superset of all nodes requested amongst the placementRequests
       AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
-      attributeFetcher.requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES);
+      attributeFetcher.requestNodeMetric(NodeMetricImpl.NUM_CORES);
       attributeFetcher.fetchFrom(nodes);
       AttributeValues attrValues = attributeFetcher.fetchAttributes();
       HashMap<Node, WeightedNode> nodeMap = new HashMap<>();
       for (Node node : nodes) {
         if (skipNodesWithErrors
-            && attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).isEmpty()) {
+            && attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).isEmpty()) {
           throw new PlacementException("Can't get number of cores in " + node);
         }
         nodeMap.put(
             node,
             new NodeWithCoreCount(
-                node, attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES).orElse(0)));
+                node, attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).orElse(0)));
       }
 
       return nodeMap;

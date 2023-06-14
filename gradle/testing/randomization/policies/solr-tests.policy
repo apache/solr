@@ -144,6 +144,9 @@ grant {
 
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 
+  // needed by s3mock
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
+
   // SSL related properties for Solr tests
   permission javax.net.ssl.SSLPermission "setDefaultSSLContext";
 

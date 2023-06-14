@@ -46,7 +46,8 @@ import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.ReplicaMetric;
 import org.apache.solr.cluster.placement.ShardMetrics;
-import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
+import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
+import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
@@ -258,9 +259,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP)
           .requestNodeSystemProperty(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP);
       attributeFetcher
-          .requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES)
-          .requestNodeMetric(BuiltInMetrics.NODE_FREE_DISK_GB);
-      Set<ReplicaMetric<?>> replicaMetrics = Set.of(BuiltInMetrics.REPLICA_INDEX_SIZE_GB);
+          .requestNodeMetric(NodeMetricImpl.NUM_CORES)
+          .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB);
+      Set<ReplicaMetric<?>> replicaMetrics = Set.of(ReplicaMetricImpl.INDEX_SIZE_GB);
       Set<String> requestedCollections = new HashSet<>();
       for (SolrCollection collection : relevantCollections) {
         if (requestedCollections.add(collection.getName())) {
@@ -330,10 +331,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         nodeType = new HashSet<>(StrUtils.splitSmart(nodePropOpt.get(), ','));
       }
 
-      Optional<Double> nodeFreeDiskGB =
-          attrValues.getNodeMetric(node, BuiltInMetrics.NODE_FREE_DISK_GB);
-      Optional<Integer> nodeNumCores =
-          attrValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES);
+      Optional<Double> nodeFreeDiskGB = attrValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB);
+      Optional<Integer> nodeNumCores = attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES);
       String az =
           attrValues
               .getSystemProperty(node, AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP)
@@ -636,7 +635,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
             .getCollectionMetrics(replica.getShard().getCollection().getName())
             .flatMap(colMetrics -> colMetrics.getShardMetrics(replica.getShard().getShardName()))
             .flatMap(ShardMetrics::getLeaderMetrics)
-            .flatMap(lrm -> lrm.getReplicaMetric(BuiltInMetrics.REPLICA_INDEX_SIZE_GB))
+            .flatMap(lrm -> lrm.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB))
             .orElse(0D);
       }
 

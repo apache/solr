@@ -50,7 +50,6 @@ import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -772,7 +771,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             1,
             1);
 
-    Assert.assertThrows(
+    assertThrows(
         PlacementException.class,
         () -> plugin.computePlacement(badReplicaPlacementRequest, placementContext));
 
@@ -789,7 +788,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             1,
             1);
 
-    Assert.assertThrows(
+    assertThrows(
         PlacementException.class,
         () -> plugin.computePlacement(badShardPlacementRequest, placementContext));
   }
@@ -1278,12 +1277,6 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
     List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-    // The first node needs to have 2 fewer cores than the second node, because unfortunately the
-    // metrics will be altered when computing the first placementRequest. If the metrics were copied
-    // when fetched, then this wouldn't be necessary. However, for now this is acceptable, because
-    // it's only a testing issue. The real AttributeFetcher does not share maps across the
-    // AttributeValues that it creates. So a placementPlugin gets a clean set of metrics for each
-    // placementRequest, that the placementPlugin can edit however it wants to.
     nodeBuilders
         .get(0)
         .setCoreCount(1)
@@ -1291,12 +1284,12 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
     nodeBuilders
         .get(1)
-        .setCoreCount(3)
+        .setCoreCount(2)
         .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
         .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
     nodeBuilders
         .get(2)
-        .setCoreCount(4)
+        .setCoreCount(3)
         .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
         .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "B");
 
@@ -1304,12 +1297,12 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     if (hasExistingCollection) {
       // Existing collection has replicas for its shards and is visible in the cluster state
-      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, nodeBuilders, List.of(0));
+      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, nodeBuilders);
       clusterBuilder.addCollection(collectionBuilder);
     } else {
       // New collection to create has the shards defined but no replicas and is not present in
       // cluster state
-      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of(), List.of(0));
+      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
     }
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
