@@ -37,15 +37,18 @@ public class ReRankScaler {
   protected ReRankScalerExplain reRankScalerExplain;
   private QueryRescorer replaceRescorer;
   private Set<Integer> reRankSet;
+  private double reRankScaleWeight;
 
   public ReRankScaler(
       String mainScale,
       String reRankScale,
+      double reRankScaleWeight,
       ReRankOperator reRankOperator,
       QueryRescorer replaceRescorer,
       boolean debugQuery)
       throws SyntaxError {
 
+    this.reRankScaleWeight = reRankScaleWeight;
     this.debugQuery = debugQuery;
     this.reRankScalerExplain = new ReRankScalerExplain(mainScale, reRankScale);
     this.replaceRescorer = replaceRescorer;
@@ -168,13 +171,17 @@ public class ReRankScaler {
       if (scaledRescoredMap.containsKey(doc)) {
         switch (reRankOperator) {
           case ADD:
-            scoreDoc = new ScoreDoc(doc, scaledScore + scaledRescoredMap.get(doc));
+            scoreDoc =
+                new ScoreDoc(
+                    doc, scaledScore + (float) (reRankScaleWeight * scaledRescoredMap.get(doc)));
             break;
           case MULTIPLY:
-            scoreDoc = new ScoreDoc(doc, scaledScore * scaledRescoredMap.get(doc));
+            scoreDoc =
+                new ScoreDoc(
+                    doc, (float) (scaledScore * reRankScaleWeight * scaledRescoredMap.get(doc)));
             break;
           case REPLACE:
-            scoreDoc = new ScoreDoc(doc, scaledRescoredMap.get(doc));
+            scoreDoc = new ScoreDoc(doc, (float) (reRankScaleWeight * scaledRescoredMap.get(doc)));
             break;
         }
       } else {
@@ -224,14 +231,17 @@ public class ReRankScaler {
   }
 
   public static float combineScores(
-      float orginalScore, float reRankScore, ReRankOperator reRankOperator) {
+      float orginalScore,
+      float reRankScore,
+      double reRankScaleWeight,
+      ReRankOperator reRankOperator) {
     switch (reRankOperator) {
       case ADD:
-        return orginalScore + reRankScore;
+        return (float) (orginalScore + reRankScaleWeight * reRankScore);
       case REPLACE:
-        return reRankScore;
+        return (float) (reRankScaleWeight * reRankScore);
       case MULTIPLY:
-        return orginalScore * reRankScore;
+        return (float) (orginalScore * reRankScaleWeight * reRankScore);
       default:
         return -1;
     }
@@ -319,13 +329,16 @@ public class ReRankScaler {
           float scaledMainScore = mainScaleExplain.scale(mainScore);
           float scaledReRankScore = reRankScaleExplain.scale(reRankScore);
           float combinedScaleScore =
-              combineScores(scaledMainScore, scaledReRankScore, reRankOperator);
+              combineScores(scaledMainScore, scaledReRankScore, reRankScaleWeight, reRankOperator);
           return Explanation.match(
               combinedScaleScore,
               "first pass score scaled to "
                   + scaledMainScore
                   + " second pass score scaled to "
-                  + scaledReRankScore,
+                  + scaledReRankScore
+                  + " * weight("
+                  + reRankScaleWeight
+                  + ")",
               reRankQueryExplain);
         } else {
           MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
@@ -335,26 +348,34 @@ public class ReRankScaler {
       } else if (scaleMainScores() && !scaleReRankScores()) {
         MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();
         float scaledMainScore = mainScaleExplain.scale(mainScore);
-        float combinedScaleScore = combineScores(scaledMainScore, reRankScore, reRankOperator);
+        float combinedScaleScore =
+            combineScores(scaledMainScore, reRankScore, reRankScaleWeight, reRankOperator);
         return Explanation.match(
             combinedScaleScore,
             "first pass score scaled to "
                 + scaledMainScore
                 + " unscaled second pass score "
-                + reRankScore,
+                + reRankScore
+                + " * weight("
+                + reRankScaleWeight
+                + ")",
             reRankQueryExplain);
 
       } else if (!scaleMainScores() && scaleReRankScores()) {
         if (reRankScore > 0) {
           MinMaxExplain reRankScaleExplain = reRankScalerExplain.getReRankScaleExplain();
           float scaledReRankScore = reRankScaleExplain.scale(reRankScore);
-          float combinedScaleScore = combineScores(mainScore, scaledReRankScore, reRankOperator);
+          float combinedScaleScore =
+              combineScores(mainScore, scaledReRankScore, reRankScaleWeight, reRankOperator);
           return Explanation.match(
               combinedScaleScore,
               "first pass unscaled score "
                   + mainScore
                   + " second pass score scaled to "
-                  + scaledReRankScore,
+                  + scaledReRankScore
+                  + " * weight("
+                  + reRankScaleWeight
+                  + ")",
               reRankQueryExplain);
         } else {
           return null;

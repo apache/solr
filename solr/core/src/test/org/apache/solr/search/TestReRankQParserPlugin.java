@@ -1081,7 +1081,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   @Test
   public void testReRankScaler() throws Exception {
 
-    ReRankScaler reRankScaler = new ReRankScaler("0-1", "5-100", ReRankOperator.ADD, null, true);
+    ReRankScaler reRankScaler = new ReRankScaler("0-1", "5-100", 1, ReRankOperator.ADD, null, true);
     assertTrue(reRankScaler.scaleReRankScores());
     assertTrue(reRankScaler.scaleMainScores());
     assertEquals(reRankScaler.getMainQueryMin(), 0);
@@ -1229,6 +1229,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=10-20 "
             + ReRankQParserPlugin.RERANK_SCALE
             + "=10-20 "
+            + ReRankQParserPlugin.RERANK_WEIGHT
+            + "=1 "
             + ReRankQParserPlugin.RERANK_QUERY
             + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS
@@ -1240,6 +1242,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "6");
     params.add("df", "text");
+    params.add("debugQuery", "true");
     assertQ(
         req(params),
         "*[count(//doc)=6]",
@@ -1267,6 +1270,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=10-20 "
             + ReRankQParserPlugin.RERANK_SCALE
             + "=10-20 "
+            + ReRankQParserPlugin.RERANK_WEIGHT
+            + "=1 "
             + ReRankQParserPlugin.RERANK_QUERY
             + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS
@@ -1307,6 +1312,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=10-20 "
             + ReRankQParserPlugin.RERANK_SCALE
             + "=10-20 "
+            + ReRankQParserPlugin.RERANK_WEIGHT
+            + "=1 "
             + ReRankQParserPlugin.RERANK_QUERY
             + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS
@@ -1345,6 +1352,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=10-20 "
             + ReRankQParserPlugin.RERANK_SCALE
             + "=10-20 "
+            + ReRankQParserPlugin.RERANK_WEIGHT
+            + "=1 "
             + ReRankQParserPlugin.RERANK_QUERY
             + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS
@@ -1376,6 +1385,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + "=10-20 "
             + ReRankQParserPlugin.RERANK_SCALE
             + "=10-20 "
+            + ReRankQParserPlugin.RERANK_WEIGHT
+            + "=1 "
             + ReRankQParserPlugin.RERANK_QUERY
             + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS
@@ -1400,10 +1411,10 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     String explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
-            "30.0 = first pass score scaled to 10.0 second pass score scaled to 20.0"));
+            "30.0 = first pass score scaled to 10.0 second pass score scaled to 20.0 * weight(1.0)"));
     assertTrue(
         explainResponse.contains(
-            "30.0 = first pass score scaled to 20.0 second pass score scaled to 10.0"));
+            "30.0 = first pass score scaled to 20.0 second pass score scaled to 10.0 * weight(1.0)"));
 
     params = new ModifiableSolrParams();
     params.add(
@@ -1413,6 +1424,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + " "
             + ReRankQParserPlugin.RERANK_MAIN_SCALE
             + "=10-20 "
+            + ReRankQParserPlugin.RERANK_WEIGHT
+            + "=1 "
             + ReRankQParserPlugin.RERANK_QUERY
             + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS
@@ -1444,16 +1457,16 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
-            "5018.705 = first pass score scaled to 17.705261 unscaled second pass score 5001.0"));
+            "5018.705 = first pass score scaled to 17.705261 unscaled second pass score 5001.0 * weight(1.0)"));
     assertTrue(
         explainResponse.contains(
-            "519.8311 = first pass score scaled to 18.831097 unscaled second pass score 501.0"));
+            "519.8311 = first pass score scaled to 18.831097 unscaled second pass score 501.0 * weight(1.0)"));
     assertTrue(
         explainResponse.contains(
-            "31.0 = first pass score scaled to 20.0 unscaled second pass score 11.0"));
+            "31.0 = first pass score scaled to 20.0 unscaled second pass score 11.0 * weight(1.0)"));
     assertTrue(
         explainResponse.contains(
-            "24.527113 = first pass score scaled to 19.527113 unscaled second pass score 5.0"));
+            "24.527113 = first pass score scaled to 19.527113 unscaled second pass score 5.0 * weight(1.0)"));
 
     assertTrue(explainResponse.contains("15.5736 = scaled main query score"));
 
@@ -1467,6 +1480,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
             + " "
             + ReRankQParserPlugin.RERANK_MAIN_SCALE
             + "=10-20 "
+            + ReRankQParserPlugin.RERANK_WEIGHT
+            + "=1 "
             + ReRankQParserPlugin.RERANK_QUERY
             + "=$rqq "
             + ReRankQParserPlugin.RERANK_DOCS
@@ -1498,16 +1513,16 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
-            "5018.4053 = first pass score scaled to 17.705261 unscaled second pass score 5000.7"));
+            "5018.4053 = first pass score scaled to 17.705261 unscaled second pass score 5000.7 * weight(1.0)"));
     assertTrue(
         explainResponse.contains(
-            "519.5313 = first pass score scaled to 18.831097 unscaled second pass score 500.7002"));
+            "519.5313 = first pass score scaled to 18.831097 unscaled second pass score 500.7002 * weight(1.0)"));
     assertTrue(
         explainResponse.contains(
-            "30.700203 = first pass score scaled to 20.0 unscaled second pass score 10.700202"));
+            "30.700203 = first pass score scaled to 20.0 unscaled second pass score 10.700202 * weight(1.0)"));
     assertTrue(
         explainResponse.contains(
-            "24.227316 = first pass score scaled to 19.527113 unscaled second pass score 4.7002025"));
+            "24.227316 = first pass score scaled to 19.527113 unscaled second pass score 4.7002025 * weight(1.0)"));
 
     assertTrue(explainResponse.contains("15.5736 = scaled main query score"));
 
