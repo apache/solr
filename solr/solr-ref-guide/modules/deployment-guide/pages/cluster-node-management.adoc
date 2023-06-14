@@ -371,7 +371,7 @@ Shuffle the replicas across the given set of Solr nodes until an equilibrium is 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cluster/balanceReplicas -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/cluster/replicas/balance -H 'Content-Type: application/json' -d '
   {
     "nodes": ["localhost:8983_solr", "localhost:8984_solr"],
     "async": "balance-replicas-1"

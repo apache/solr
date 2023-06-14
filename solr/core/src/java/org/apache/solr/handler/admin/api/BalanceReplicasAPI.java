@@ -47,7 +47,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /** V2 API for balancing the replicas that already exist across a set of nodes. */
-@Path("cluster/balanceReplicas")
+@Path("cluster/replicas/balance")
 public class BalanceReplicasAPI extends AdminAPIBase {
 
   @Inject
@@ -107,7 +107,9 @@ public class BalanceReplicasAPI extends AdminAPIBase {
       this.async = async;
     }
 
-    @Schema(description = "The set of nodes across which replicas will be balanced.")
+    @Schema(
+        description =
+            "The set of nodes across which replicas will be balanced. Defaults to all live data nodes.")
     @JsonProperty(value = "nodes")
     public Set<String> nodes;
 
