@@ -1128,15 +1128,6 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     assertEquals(scaled1, .5f, 0);
     assertEquals(scaled2, .5f, 0);
     assertEquals(scaled3, .5f, 0);
-
-    float rescore = ReRankScaler.getReRankScore(100.2777f, 200.2333f, ReRankOperator.ADD);
-    assertEquals(rescore, 99.9556f, .00001f);
-
-    rescore = ReRankScaler.getReRankScore(100.88845f, 200.77777f, ReRankOperator.MULTIPLY);
-    assertEquals(rescore, 1.99009f, .00001f);
-
-    rescore = ReRankScaler.getReRankScore(100.2777f, 200.2333f, ReRankOperator.REPLACE);
-    assertEquals(rescore, 200.2333f, 0);
   }
 
   @Test

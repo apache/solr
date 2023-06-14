@@ -212,24 +212,6 @@ public class ReRankScaler {
     return scaledScoreDocs;
   }
 
-  public static float getReRankScore(
-      float originalScore, float combinedScore, ReRankOperator reRankOperator) {
-
-    if (originalScore == combinedScore) {
-      return 0;
-    }
-    switch (reRankOperator) {
-      case ADD:
-        return combinedScore - originalScore;
-      case REPLACE:
-        return combinedScore;
-      case MULTIPLY:
-        return combinedScore / originalScore;
-      default:
-        return -1;
-    }
-  }
-
   public static float combineScores(
       float orginalScore,
       float reRankScore,
