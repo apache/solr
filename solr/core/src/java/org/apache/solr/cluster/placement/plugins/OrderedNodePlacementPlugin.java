@@ -313,8 +313,14 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           break;
         }
       }
+      // For now we do not have any way to see if there are out-of-date notes in the middle of the
+      // TreeSet. Therefore, we need to re-sort this list after every selection. In the future, we
+      // should find a way to re-sort the out-of-date nodes without having to sort all nodes.
       traversedHighNodes.addAll(orderedNodes);
       orderedNodes.clear();
+
+      // Add back in the traversed highNodes that we did not select replicas from,
+      // they might have replicas to move to the next lowestWeighted node
       traversedHighNodes.forEach(n -> n.addToSortedCollection(orderedNodes));
       traversedHighNodes.clear();
       if (newReplicaMovements.size() > 0) {

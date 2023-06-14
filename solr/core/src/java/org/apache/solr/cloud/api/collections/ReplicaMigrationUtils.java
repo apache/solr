@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
@@ -255,7 +254,8 @@ public class ReplicaMigrationUtils {
       CollectionCommandContext ccc,
       String async)
       throws IOException, InterruptedException {
-    CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
+    SolrCloseableLatch cleanupLatch =
+        new SolrCloseableLatch(sourceReplicas.size(), ccc.getCloseableToLatchOn());
     for (Replica sourceReplica : sourceReplicas) {
       String coll = sourceReplica.getCollection();
       String shard = sourceReplica.getShard();
