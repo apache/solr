@@ -30,18 +30,6 @@ public interface AttributeValues {
   /** For the given node: metric identified by an instance of {@link NodeMetric} */
   <T> Optional<T> getNodeMetric(Node node, NodeMetric<T> metric);
 
-  /**
-   * For the given node: increase the metric identified by an instance of {@link NodeMetric} by the
-   * given amount
-   */
-  <T> boolean increaseNodeMetric(Node node, NodeMetric<T> metric, T byValue);
-
-  /**
-   * For the given node: decrease the metric identified by an instance of {@link NodeMetric} by the
-   * given amount
-   */
-  <T> boolean decreaseNodeMetric(Node node, NodeMetric<T> metric, T byValue);
-
   /** Get collection metrics. */
   Optional<CollectionMetrics> getCollectionMetrics(String collectionName);
 }

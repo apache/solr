@@ -63,6 +63,8 @@ New Features
 * SOLR-16719: AffinityPlacementFactory now supports spreading replicas across domains within the availablity zone and
   optionally fail the request if more than a configurable number of replicas need to be placed in a single domain. (Houston Putman, Tomás Fernández Löbbe)
 
+* SOLR-16836: Introduced support for high dimensional vectors (Alessandro Benedetti).
+
 Improvements
 ---------------------
 
@@ -143,9 +145,6 @@ Improvements
 
 * SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
   only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
-
-* SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster
-  information after the previous selections are implemented. (Houston Putman)
 
 * SOLR-16392: The v2 "create shard" API has been tweaked to be more intuitive, by removing the top-level "create"
   command specifier.  The rest of the API remains unchanged. (Jason Gerlowski)
