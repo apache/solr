@@ -60,10 +60,13 @@ New Features
 
 * SOLR-16674: Introduced support for byte vector encoding in DenseVectorField and KnnQParser (Elia Porciani via Alessandro Benedetti).
 
-* SOLR-16719: AffinityPlacementFactory now supports spreading replicas across domains within the availablity zone and
+* SOLR-16719: AffinityPlacementFactory now supports spreading replicas across domains within the availability zone and
   optionally fail the request if more than a configurable number of replicas need to be placed in a single domain. (Houston Putman, Tomás Fernández Löbbe)
 
 * SOLR-16836: Introduced support for high dimensional vectors (Alessandro Benedetti).
+
+* SOLR-16806: Solr now provides a BalanceReplicas API at `POST /api/cluster/replicas/balance` (v2), to spread replicas
+  across a given set of nodes. No v1 API is available. (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
 Improvements
 ---------------------
@@ -146,6 +149,9 @@ Improvements
 * SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
   only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
 
+* SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster
+  information after the previous selections are implemented. (Houston Putman)
+
 * SOLR-16392: The v2 "create shard" API has been tweaked to be more intuitive, by removing the top-level "create"
   command specifier.  The rest of the API remains unchanged. (Jason Gerlowski)
 
@@ -161,6 +167,12 @@ Improvements
 * SOLR-16398: The v2 "balance-shard-unique" API has been tweaked to be more intuitive, by removing the top-level command
   specifier from the request body, and changing the path. The v2 functionality can now be accessed at:
   `POST /api/collections/cName/balance-shard-unique {...}` (Jason Gerlowski)
+
+* SOLR-16806: The included PlacementPlugins (Random, Simple, MinimizeCores and Affinity) now all implement the
+  OrderedNodePlacementPlugin, which provides the implementation for computePlacements() and computeBalancing().
+  Each implementing PlacementPlugin provides a way of weighting Solr Nodes, and the OrderedNodePlacement plugin
+  then uses the weights to decide the optimal strategy for placing new replicas or balancing existing replicas.
+  (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
 Optimizations
 ---------------------
