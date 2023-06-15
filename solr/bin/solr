@@ -569,9 +569,9 @@ function print_usage() {
     echo ""
     echo "             -V/-verbose        Enable more verbose output for this script."
     echo ""
-    echo "         upconfig uploads a configset from the local machine to Zookeeper. (Backcompat: -upconfig)"
+    echo "         upconfig uploads a configset from the local machine to Zookeeper."
     echo ""
-    echo "         downconfig downloads a configset from Zookeeper to the local machine. (Backcompat: -downconfig)"
+    echo "         downconfig downloads a configset from Zookeeper to the local machine."
     echo ""
     echo "             -n <configName>    Name of the configset in Zookeeper that will be the destination of"
     echo "                                  'upconfig' and the source for 'downconfig'."
@@ -1005,15 +1005,10 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   if [ $# -gt 0 ]; then
     while true; do
       case "${1:-}" in
-        -upconfig|upconfig|-downconfig|downconfig|cp|rm|mv|ls|mkroot)
-            if [ "${1:0:1}" == "-" ]; then
-              echo "The use of $1 is deprecated.   Please use ${1:1} instead."
-              ZK_OP=${1:1}
-            else
-              ZK_OP=$1
-            fi
+        upconfig|downconfig|cp|rm|mv|ls|mkroot)
+            ZK_OP=$1
             shift 1
-        ;;
+        ;;      
         -z|-zkhost|-zkHost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"

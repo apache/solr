@@ -63,28 +63,6 @@ public class AttributeValuesImpl implements AttributeValues {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public <T> boolean increaseNodeMetric(Node node, NodeMetric<T> metric, T byValue) {
-    Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(metric);
-    if (nodeToValue == null) {
-      return false;
-    }
-    nodeToValue.merge(node, byValue, (orig, add) -> metric.increase((T) orig, (T) add));
-    return true;
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public <T> boolean decreaseNodeMetric(Node node, NodeMetric<T> metric, T byValue) {
-    Map<Node, Object> nodeToValue = metricSnitchToNodeToValue.get(metric);
-    if (nodeToValue == null) {
-      return false;
-    }
-    nodeToValue.merge(node, byValue, (orig, add) -> metric.decrease((T) orig, (T) add));
-    return true;
-  }
-
-  @Override
   public Optional<CollectionMetrics> getCollectionMetrics(String collectionName) {
     return Optional.ofNullable(collectionMetrics.get(collectionName));
   }
