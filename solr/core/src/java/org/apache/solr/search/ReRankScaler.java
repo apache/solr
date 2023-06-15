@@ -170,7 +170,10 @@ public class ReRankScaler {
       ScoreDoc scoreDoc = null;
       if (scaledRescoredMap.containsKey(doc)) {
         scoreDoc =
-            new ScoreDoc(doc, combineScores(scaledScore , scaledRescoredMap.get(doc), reRankScaleWeight, reRankOperator));
+            new ScoreDoc(
+                doc,
+                combineScores(
+                    scaledScore, scaledRescoredMap.get(doc), reRankScaleWeight, reRankOperator));
       } else {
         scoreDoc = new ScoreDoc(doc, scaledScore);
       }
