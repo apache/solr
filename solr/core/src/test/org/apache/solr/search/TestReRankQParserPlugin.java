@@ -1250,6 +1250,43 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[6]/str[@name='id'][.='1']",
         "//result/doc[6]/float[@name='score'][.='20.002003']");
 
+    // Test with fewer rows then matching docs.
+    params = new ModifiableSolrParams();
+    params.add(
+        "rq",
+        "{!"
+            + ReRankQParserPlugin.NAME
+            + " "
+            + ReRankQParserPlugin.RERANK_MAIN_SCALE
+            + "=10-20 "
+            + ReRankQParserPlugin.RERANK_SCALE
+            + "=10-20 "
+            + ReRankQParserPlugin.RERANK_WEIGHT
+            + "=1 "
+            + ReRankQParserPlugin.RERANK_QUERY
+            + "=$rqq "
+            + ReRankQParserPlugin.RERANK_DOCS
+            + "=200}");
+    params.add("q", "term_t:YYYY");
+    params.add("fl", "id,score");
+    params.add("rqq", "{!edismax bf=$bff}*:*");
+    params.add("bff", "field(test_ti)");
+    params.add("start", "0");
+    params.add("rows", "4");
+    params.add("df", "text");
+    params.add("debugQuery", "true");
+    assertQ(
+        req(params),
+        "*[count(//doc)=4]",
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[1]/float[@name='score'][.='37.70526']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[2]/float[@name='score'][.='30.012009']",
+        "//result/doc[3]/str[@name='id'][.='4']",
+        "//result/doc[3]/float[@name='score'][.='29.82389']",
+        "//result/doc[4]/str[@name='id'][.='5']",
+        "//result/doc[4]/float[@name='score'][.='29.527113']");
+
     // Test no-rerank hits.
     params = new ModifiableSolrParams();
     params.add(

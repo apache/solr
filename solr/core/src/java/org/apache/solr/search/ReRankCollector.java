@@ -192,14 +192,15 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
         return rescoredDocs;
       } else {
         // We've rescored more then we need to return.
-        ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
-        System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
-        rescoredDocs.scoreDocs = scoreDocs;
+
         if (reRankScaler != null && reRankScaler.scaleScores()) {
           rescoredDocs.scoreDocs =
               reRankScaler.scaleScores(
-                  mainScoreDocsClone, rescoredDocs.scoreDocs, reRankScoreDocs.length);
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
         }
+        ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
+        System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
+        rescoredDocs.scoreDocs = scoreDocs;
         return rescoredDocs;
       }
     } catch (Exception e) {
