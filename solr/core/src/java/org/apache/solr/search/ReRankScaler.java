@@ -169,21 +169,8 @@ public class ReRankScaler {
       float scaledScore = entry.getValue();
       ScoreDoc scoreDoc = null;
       if (scaledRescoredMap.containsKey(doc)) {
-        switch (reRankOperator) {
-          case ADD:
-            scoreDoc =
-                new ScoreDoc(
-                    doc, scaledScore + (float) (reRankScaleWeight * scaledRescoredMap.get(doc)));
-            break;
-          case MULTIPLY:
-            scoreDoc =
-                new ScoreDoc(
-                    doc, (float) (scaledScore * reRankScaleWeight * scaledRescoredMap.get(doc)));
-            break;
-          case REPLACE:
-            scoreDoc = new ScoreDoc(doc, (float) (reRankScaleWeight * scaledRescoredMap.get(doc)));
-            break;
-        }
+        scoreDoc =
+            new ScoreDoc(doc, combineScores(scaledScore , scaledRescoredMap.get(doc), reRankScaleWeight, reRankOperator));
       } else {
         scoreDoc = new ScoreDoc(doc, scaledScore);
       }
