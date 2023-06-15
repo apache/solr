@@ -80,6 +80,9 @@ dependencies {
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
   testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl", {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
