@@ -488,6 +488,15 @@ s|Required |Default: none
 +
 *Example*: `bin/solr healthcheck -c gettingstarted`
 
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
 `-z <zkhost>` or `-zkHost <zkhost>`::
 +
 [%autowidth,frame=none]
