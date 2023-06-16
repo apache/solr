@@ -23,13 +23,10 @@ import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 import java.nio.file.Path;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,7 +48,6 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
   @Test
   public void testHealthcheckWithZkHostParameter() throws Exception {
 
-
     String[] args =
         new String[] {
           "healthcheck", "-collection", "bob", "-zkHost", cluster.getZkClient().getZkServerAddress()
@@ -65,14 +61,9 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
     Set<String> liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
     String firstLiveNode = liveNodes.iterator().next();
     String solrUrl =
-            ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(firstLiveNode);
+        ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(firstLiveNode);
 
-    String[] args =
-            new String[] {
-                    "healthcheck", "-collection", "bob",
-                     "-solrUrl",
-                     solrUrl
-            };
+    String[] args = new String[] {"healthcheck", "-collection", "bob", "-solrUrl", solrUrl};
     assertEquals(0, runTool(args));
   }
 

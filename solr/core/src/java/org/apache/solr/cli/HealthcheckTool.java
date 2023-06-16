@@ -57,15 +57,15 @@ public class HealthcheckTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-            SolrCLI.OPTION_SOLRURL,
-            SolrCLI.OPTION_ZKHOST,
-            Option.builder("c")
-                    .argName("COLLECTION")
-                    .hasArg()
-                    .required(false)
-                    .desc("Name of collection; no default.")
-                    .longOpt("collection")
-                    .build());
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_ZKHOST,
+        Option.builder("c")
+            .argName("COLLECTION")
+            .hasArg()
+            .required(false)
+            .desc("Name of collection; no default.")
+            .longOpt("collection")
+            .build());
   }
 
   enum ShardState {
@@ -89,13 +89,12 @@ public class HealthcheckTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudHttp2SolrClient cloudSolrClient =
-                 new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-                         .build()) {
+        new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+            .build()) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
       cloudSolrClient.connect();
       runCloudTool(cloudSolrClient, cli);
     }
-
   }
 
   @Override
