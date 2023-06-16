@@ -229,7 +229,6 @@ IF "%1"=="-h" goto usage
 IF "%1"=="--help" goto usage
 IF "%1"=="/?" goto usage
 IF "%1"=="status" goto get_status
-IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
 IF "%1"=="-version" goto get_version
 IF "%1"=="assert" goto run_solrcli
@@ -312,7 +311,7 @@ goto done
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package
+@echo        where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, zk, auth, assert, config, export, api, package
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
@@ -1578,7 +1577,7 @@ goto done
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI version
+  org.apache.solr.cli.SolrCLI -version
 goto done
 
 :parse_create_args

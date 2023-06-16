@@ -137,12 +137,9 @@ public class SolrCLI implements CLIO {
       exit(1);
     }
 
-    if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
-      // Simple version tool, no need for its own class
-      if (args.length != 1) {
-        CLIO.err("Version tool does not accept any parameters!");
-      }
-      CLIO.out("Solr version is: " + SolrVersion.LATEST.toString());
+    if (Arrays.asList("-v", "-version").contains(args[0])) {
+      // Output the version of Solr
+      CLIO.out("Solr version is: " + SolrVersion.LATEST);
       exit(0);
     }
 
