@@ -58,6 +58,8 @@ public class GetSchemaFieldAPI extends GetSchemaAPI {
 
   private final SolrParams params;
 
+  // TODO Stop using SolrParams here and instead give API methods parameters representing only those
+  // query-params that they support
   @Inject
   public GetSchemaFieldAPI(IndexSchema indexSchema, SolrParams params) {
     super(indexSchema);
