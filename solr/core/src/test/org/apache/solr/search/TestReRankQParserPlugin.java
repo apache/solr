@@ -1437,12 +1437,14 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[2]/float[@name='score'][.='30.0']");
 
     String explainResponse = JQ(req(params));
-    assertTrue(
-        explainResponse.contains(
-            "30.0 = first pass score scaled to 10.0 second pass score scaled to 20.0 * weight(1.0)"));
-    assertTrue(
-        explainResponse.contains(
-            "30.0 = first pass score scaled to 20.0 second pass score scaled to 10.0 * weight(1.0)"));
+    assertTrue(explainResponse.contains("30.0 = combined scaled first and second pass score"));
+
+    assertTrue(explainResponse.contains("10.0 = first pass score scaled between: 10-20"));
+    assertTrue(explainResponse.contains("20.0 = second pass score scaled between: 10-20"));
+
+    assertTrue(explainResponse.contains("20.0 = first pass score scaled between: 10-20"));
+
+    assertTrue(explainResponse.contains("10.0 = second pass score scaled between: 10-20"));
 
     params = new ModifiableSolrParams();
     params.add(
@@ -1485,20 +1487,19 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
-            "5018.705 = first pass score scaled to 17.705261 unscaled second pass score 5001.0 * weight(1.0)"));
+            "5018.705 = combined scaled first and unscaled second pass score"));
     assertTrue(
         explainResponse.contains(
-            "519.8311 = first pass score scaled to 18.831097 unscaled second pass score 501.0 * weight(1.0)"));
+            "519.8311 = combined scaled first and unscaled second pass score"));
+    assertTrue(
+        explainResponse.contains("31.0 = combined scaled first and unscaled second pass score "));
     assertTrue(
         explainResponse.contains(
-            "31.0 = first pass score scaled to 20.0 unscaled second pass score 11.0 * weight(1.0)"));
-    assertTrue(
-        explainResponse.contains(
-            "24.527113 = first pass score scaled to 19.527113 unscaled second pass score 5.0 * weight(1.0)"));
+            "24.527113 = combined scaled first and unscaled second pass score"));
 
-    assertTrue(explainResponse.contains("15.5736 = scaled main query score"));
+    assertTrue(explainResponse.contains("15.5736 = scaled main query score between: 10-20"));
 
-    assertTrue(explainResponse.contains("10.0 = scaled main query score"));
+    assertTrue(explainResponse.contains("10.0 = scaled main query score between: 10-20"));
 
     params = new ModifiableSolrParams();
     params.add(
@@ -1538,23 +1539,21 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[6]/str[@name='id'][.='1']",
         "//result/doc[6]/float[@name='score'][.='10.0']");
 
-    explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
-            "5018.4053 = first pass score scaled to 17.705261 unscaled second pass score 5000.7 * weight(1.0)"));
+            "5018.705 = combined scaled first and unscaled second pass score"));
     assertTrue(
         explainResponse.contains(
-            "519.5313 = first pass score scaled to 18.831097 unscaled second pass score 500.7002 * weight(1.0)"));
+            "519.8311 = combined scaled first and unscaled second pass score"));
+    assertTrue(
+        explainResponse.contains("31.0 = combined scaled first and unscaled second pass score "));
     assertTrue(
         explainResponse.contains(
-            "30.700203 = first pass score scaled to 20.0 unscaled second pass score 10.700202 * weight(1.0)"));
-    assertTrue(
-        explainResponse.contains(
-            "24.227316 = first pass score scaled to 19.527113 unscaled second pass score 4.7002025 * weight(1.0)"));
+            "24.527113 = combined scaled first and unscaled second pass score"));
 
-    assertTrue(explainResponse.contains("15.5736 = scaled main query score"));
+    assertTrue(explainResponse.contains("15.5736 = scaled main query score between: 10-20"));
 
-    assertTrue(explainResponse.contains("10.0 = scaled main query score"));
+    assertTrue(explainResponse.contains("10.0 = scaled main query score between: 10-20"));
 
     // Use default reRankWeight of 2
     params = new ModifiableSolrParams();
@@ -1596,19 +1595,19 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     explainResponse = JQ(req(params));
     assertTrue(
         explainResponse.contains(
-            "10019.105 = first pass score scaled to 17.705261 unscaled second pass score 5000.7 * weight(2.0)"));
+            "10019.105 = combined scaled first and unscaled second pass score"));
     assertTrue(
         explainResponse.contains(
-            "1020.2315 = first pass score scaled to 18.831097 unscaled second pass score 500.7002 * weight(2.0)"));
+            "1020.2315 = combined scaled first and unscaled second pass score"));
     assertTrue(
         explainResponse.contains(
-            "41.400406 = first pass score scaled to 20.0 unscaled second pass score 10.700202 * weight(2.0)"));
+            "41.400406 = combined scaled first and unscaled second pass score"));
     assertTrue(
         explainResponse.contains(
-            "28.927517 = first pass score scaled to 19.527113 unscaled second pass score 4.7002025 * weight(2.0)"));
+            "28.927517 = combined scaled first and unscaled second pass score"));
 
-    assertTrue(explainResponse.contains("15.5736 = scaled main query score"));
+    assertTrue(explainResponse.contains("15.5736 = scaled main query score between: 10-20"));
 
-    assertTrue(explainResponse.contains("10.0 = scaled main query score"));
+    assertTrue(explainResponse.contains("10.0 = scaled main query score between: 10-20"));
   }
 }
