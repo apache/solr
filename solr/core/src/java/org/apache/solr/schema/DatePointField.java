@@ -22,8 +22,8 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -33,7 +33,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
-import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -176,12 +175,11 @@ public class DatePointField extends PointField implements DateValueFieldType {
       values[i] = DateMathParser.parseMath(null, val).getTime();
       i++;
     }
-    Query pointsQuery = LongPoint.newSetQuery(field.getName(), values);
     if (field.hasDocValues()) {
-      return new IndexOrDocValuesQuery(
-          pointsQuery, SortedNumericDocValuesField.newSlowSetQuery(field.getName(), values));
+      return LongField.newSetQuery(field.getName(), values);
+    } else {
+      return LongPoint.newSetQuery(field.getName(), values);
     }
-    return pointsQuery;
   }
 
   @Override

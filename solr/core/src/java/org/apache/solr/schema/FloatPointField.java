@@ -18,15 +18,14 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
+import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.FloatPoint;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
-import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -127,16 +126,11 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
       values[i] = parseFloatFromUser(field.getName(), val);
       i++;
     }
-    Query pointsQuery = FloatPoint.newSetQuery(field.getName(), values);
     if (field.hasDocValues()) {
-      long[] floatValues = new long[values.length];
-      for (int j = 0; j < values.length; j++) {
-        floatValues[j] = NumericUtils.floatToSortableInt(values[j]);
-      }
-      return new IndexOrDocValuesQuery(
-          pointsQuery, SortedNumericDocValuesField.newSlowSetQuery(field.getName(), floatValues));
+      return FloatField.newSetQuery(field.getName(), values);
+    } else {
+      return FloatPoint.newSetQuery(field.getName(), values);
     }
-    return pointsQuery;
   }
 
   @Override

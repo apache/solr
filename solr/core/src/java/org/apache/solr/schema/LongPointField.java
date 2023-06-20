@@ -18,14 +18,13 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
-import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
@@ -121,12 +120,11 @@ public class LongPointField extends PointField implements LongValueFieldType {
       values[i] = parseLongFromUser(field.getName(), val);
       i++;
     }
-    Query pointsQuery = LongPoint.newSetQuery(field.getName(), values);
     if (field.hasDocValues()) {
-      return new IndexOrDocValuesQuery(
-          pointsQuery, SortedNumericDocValuesField.newSlowSetQuery(field.getName(), values));
+      return LongField.newSetQuery(field.getName(), values);
+    } else {
+      return LongPoint.newSetQuery(field.getName(), values);
     }
-    return pointsQuery;
   }
 
   @Override

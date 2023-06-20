@@ -18,15 +18,14 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
-import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -127,16 +126,11 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
       values[i] = parseDoubleFromUser(field.getName(), val);
       i++;
     }
-    Query pointQuery = DoublePoint.newSetQuery(field.getName(), values);
     if (field.hasDocValues()) {
-      long[] longValues = new long[values.length];
-      for (int j = 0; j < values.length; j++) {
-        longValues[j] = NumericUtils.doubleToSortableLong(values[j]);
-      }
-      return new IndexOrDocValuesQuery(
-          pointQuery, SortedNumericDocValuesField.newSlowSetQuery(field.getName(), longValues));
+      return DoubleField.newSetQuery(field.getName(), values);
+    } else {
+      return DoublePoint.newSetQuery(field.getName(), values);
     }
-    return pointQuery;
   }
 
   @Override
