@@ -105,7 +105,7 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
     try (SelectStream stream =
         new SelectStream(
             StreamExpressionParser.parse(
-                "select(\"a_s as fieldA\", search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"))"),
+                "select(\"a_s as fieldA\", a_*, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"))"),
             factory)) {
       expressionString = stream.toExpression(factory).toString();
       assertTrue(expressionString.contains("select(search(collection1,"));
@@ -113,6 +113,7 @@ public class StreamExpressionToExpessionTest extends SolrTestCase {
       assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
       assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
       assertTrue(expressionString.contains("a_s as fieldA"));
+      assertTrue(expressionString.contains("a_*"));
     }
   }
 

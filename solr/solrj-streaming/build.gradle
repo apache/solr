@@ -27,6 +27,7 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
   implementation 'org.apache.commons:commons-math3'
+  implementation 'commons-io:commons-io'
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
