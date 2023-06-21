@@ -375,13 +375,24 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setParams(params);
       q = qParser.getQuery();
       if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-        assertTrue(req.getCore().getLatestSchema().getField("foo_ti").hasDocValues());
-        assertEquals(IndexOrDocValuesQuery.class, q.getClass());
-        assertEquals(
-            20,
-            ((PointInSetQuery) ((IndexOrDocValuesQuery) q).getIndexQuery())
-                .getPackedPoints()
-                .size());
+        if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
+          assertTrue(req.getCore().getLatestSchema().getField("foo_ti").hasDocValues());
+          assertEquals(
+              "Expecting IndexOrDocValuesQuery when type is IntPointField AND docValues are enabled",
+              IndexOrDocValuesQuery.class,
+              q.getClass());
+          assertEquals(
+              20,
+              ((PointInSetQuery) ((IndexOrDocValuesQuery) q).getIndexQuery())
+                  .getPackedPoints()
+                  .size());
+        } else {
+          assertFalse(req.getCore().getLatestSchema().getField("foo_ti").hasDocValues());
+          assertEquals(
+              "Expecting PointInSetQuery when type is IntPointField AND docValues are disabled",
+              20,
+              ((PointInSetQuery) q).getPackedPoints().size());
+        }
       } else {
         assertEquals(20, ((TermInSetQuery) q).getTermData().size());
       }
@@ -392,11 +403,25 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);
       q = qParser.getQuery();
-      assertTrue(req.getCore().getLatestSchema().getField("foo_ti").hasDocValues());
-      assertEquals(IndexOrDocValuesQuery.class, q.getClass());
-      assertEquals(
-          20,
-          ((PointInSetQuery) ((IndexOrDocValuesQuery) q).getIndexQuery()).getPackedPoints().size());
+
+      if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
+        assertTrue(req.getCore().getLatestSchema().getField("foo_pi").hasDocValues());
+        assertEquals(
+            "Expecting IndexOrDocValuesQuery when type is IntPointField AND docValues are enabled",
+            IndexOrDocValuesQuery.class,
+            q.getClass());
+        assertEquals(
+            20,
+            ((PointInSetQuery) ((IndexOrDocValuesQuery) q).getIndexQuery())
+                .getPackedPoints()
+                .size());
+      } else {
+        assertFalse(req.getCore().getLatestSchema().getField("foo_pi").hasDocValues());
+        assertEquals(
+            "Expecting PointInSetQuery when type is IntPointField AND docValues are disabled",
+            20,
+            ((PointInSetQuery) q).getPackedPoints().size());
+      }
 
       // a filter() clause inside a relevancy query should be able to use a TermsQuery
       qParser =
