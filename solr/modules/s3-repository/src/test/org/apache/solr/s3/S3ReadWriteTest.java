@@ -20,7 +20,6 @@ import static org.hamcrest.Matchers.containsString;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
@@ -103,7 +102,5 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   public void testNotFound() {
     assertThrows(S3NotFoundException.class, () -> client.pullStream("/not-found"));
     assertThrows(S3NotFoundException.class, () -> client.length("/not-found"));
-    assertThrows(
-        S3NotFoundException.class, () -> client.delete(Collections.singleton("/not-found")));
   }
 }

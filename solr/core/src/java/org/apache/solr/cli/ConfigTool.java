@@ -54,7 +54,7 @@ public class ConfigTool extends ToolBase {
                 .hasArg()
                 .required(false)
                 .desc(
-                    "Config API action, one of: set-property, unset-property; default is 'set-property'.")
+                    "Config API action, one of: set-property, unset-property; set-user-property, unset-user-property; default is 'set-property'.")
                 .build(),
             Option.builder("property")
                 .argName("PROP")
@@ -105,7 +105,7 @@ public class ConfigTool extends ToolBase {
     }
 
     String action = cli.getOptionValue("action", "set-property");
-    String collection = cli.getOptionValue("collection", "gettingstarted");
+    String collection = cli.getOptionValue("collection");
     String property = cli.getOptionValue("property");
     String value = cli.getOptionValue("value");
 
