@@ -87,6 +87,9 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       runQuery(testCollection, client, "json");
       runQuery(testCollection, client, "json");
       b = runQuery(testCollection, client, "cbor");
+      int compactSz = b.length;
+      b = runQuery(testCollection, client, "cbor-noncompact");
+      assertTrue(compactSz < b.length);
       b = runQuery(testCollection, client, "cbor");
       ObjectMapper objectMapper = new ObjectMapper(new CBORFactory());
       Object o = objectMapper.readValue(b, Object.class);
@@ -116,11 +119,18 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     NamedList<Object> result;
     QueryRequest request;
     RTimer timer = new RTimer();
-    request = new QueryRequest(new SolrQuery("*:*").setRows(1111));
-    request.setResponseParser(new InputStreamResponseParser(wt));
+    SolrQuery q = new SolrQuery("*:*").setRows(1111);
+    request = new QueryRequest(q);
+    if (wt.equals("cbor-noncompact")) {
+      q.set("string_ref", false);
+      request.setResponseParser(new InputStreamResponseParser("cbor"));
+    } else {
+      request.setResponseParser(new InputStreamResponseParser(wt));
+    }
     result = client.request(request, testCollection);
     byte[] b = copyStream((InputStream) result.get("stream"));
     System.out.println(wt + "_time : " + timer.getTime());
+    System.out.println(wt + "_size : " + b.length);
     return b;
   }
 
