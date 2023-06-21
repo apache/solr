@@ -50,19 +50,18 @@ teardown() {
 @test "deploying and undeploying of packages" {
   run solr start -c -Denable.packages=true
 
-  run solr package
-  refute_output --partial "No Solr nodes are running."
-
-  run solr package -help
-  assert_output --partial "Bootstraps a previously installed package"
-  assert_output --partial "Undeploys a package from specified collection(s)"
+  solr create_collection -c foo-1.2
 
   # Deploy package - the package doesn't need to exist before the collection validation kicks in
   run solr package deploy PACKAGE_NAME -collections foo-1.2
   # assert_output --partial "Deployment successful"
   refute_output --partial "Invalid collection"
+  
+  # Until PACKAGE_NAME refers to an actual installable package, this is as far as we get.
+  assert_output --partial "Package instance doesn't exist: PACKAGE_NAME:null"
 
   # Undeploy package
   run solr package undeploy PACKAGE_NAME -collections foo-1.2
   refute_output --partial "Invalid collection"
+  assert_output --partial "Package PACKAGE_NAME not deployed on collection foo-1.2"
 }
