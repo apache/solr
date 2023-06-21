@@ -127,7 +127,7 @@ public class CborLoader {
   }
 
   public static ContentStreamLoader createLoader(SolrParams p) {
-    CBORFactory factory = new CBORFactory();
+    CBORFactory factory = CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build();
     return new ContentStreamLoader() {
       @Override
       public void load(
