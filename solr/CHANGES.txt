@@ -147,7 +147,8 @@ Improvements
 * SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster
   information after the previous selections are implemented. (Houston Putman)
 
-* SOLR-16820: Align allowed collection names and the validation of them in the CreateCollectionAPI and the PackageTool. (Will White via Eric Pugh)
+* SOLR-16392: The v2 "create shard" API has been tweaked to be more intuitive, by removing the top-level "create"
+  command specifier.  The rest of the API remains unchanged. (Jason Gerlowski)
 
 Optimizations
 ---------------------
