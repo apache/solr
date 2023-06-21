@@ -346,7 +346,8 @@ public class MiniClusterState {
      * @throws Exception the exception
      */
     @SuppressForbidden(reason = "This module does not need to deal with logging context")
-    public void index(String collection, Docs docs, int docCount, boolean parallel) throws Exception {
+    public void index(String collection, Docs docs, int docCount, boolean parallel)
+        throws Exception {
       if (createCollectionAndIndex) {
         log("indexing data for benchmark...");
         if (parallel) {
@@ -379,7 +380,8 @@ public class MiniClusterState {
       dumpCoreInfo();
     }
 
-    private void indexParallel(String collection, Docs docs, int docCount) throws InterruptedException {
+    private void indexParallel(String collection, Docs docs, int docCount)
+        throws InterruptedException {
       Meter meter = new Meter();
       ExecutorService executorService =
           Executors.newFixedThreadPool(
@@ -434,7 +436,8 @@ public class MiniClusterState {
       scheduledExecutor.shutdown();
     }
 
-    private void indexBatch(String collection, Docs docs, int docCount, int batchSize) throws SolrServerException, IOException {
+    private void indexBatch(String collection, Docs docs, int docCount, int batchSize)
+        throws SolrServerException, IOException {
       Meter meter = new Meter();
       List<SolrInputDocument> batch = new ArrayList<>(batchSize);
       for (int i = 0; i < docCount; i++) {
@@ -458,7 +461,6 @@ public class MiniClusterState {
         batch = null;
       }
       log(meter.getCount() + " docs at " + meter.getMeanRate() + " doc/s");
-
     }
 
     /**
