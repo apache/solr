@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -94,7 +95,7 @@ public class NumericSearch {
               .field("term_high_s", highCardinalityTerms);
       // .field("numbers_dt", setValues);
 
-      miniClusterState.index(COLLECTION, docs, numDocs);
+      miniClusterState.index(COLLECTION, docs, numDocs, false);
       basePath = miniClusterState.nodes.get(0);
       SolrQuery q = new SolrQuery("*:*");
       q.setParam("facet", "true");
@@ -183,7 +184,10 @@ public class NumericSearch {
       private final AtomicInteger idx;
 
       CircularIterator(Collection<T> collection) {
-        this.collection = collection.toArray();
+        this.collection = Objects.requireNonNull(collection).toArray();
+        if (this.collection.length == 0) {
+          throw new IllegalArgumentException("This iterator doesn't support empty collections");
+        }
         this.idx = new AtomicInteger();
       }
 
