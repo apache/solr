@@ -128,17 +128,15 @@ public class ModifiableSolrParamsTest extends SolrTestCase {
   }
 
   public void testSetShardAttributesToParams() {
-    var dummyShardUrl = "Shard-Url";
     var dummyIndent = "Dummy-Indent";
 
     modifiable.set(ShardParams.SHARDS, "dummyValue");
     modifiable.set(CommonParams.HEADER_ECHO_PARAMS, "dummyValue");
     modifiable.set(CommonParams.INDENT, dummyIndent);
 
-    modifiable.setShardAttributesToParams(2, dummyShardUrl);
+    modifiable.setShardAttributesToParams(2);
 
     assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.DISTRIB));
-    assertEquals(dummyShardUrl, modifiable.get(ShardParams.SHARD_URL));
     assertEquals("2", modifiable.get(ShardParams.SHARDS_PURPOSE));
     assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.OMIT_HEADER));
     assertEquals(Boolean.TRUE.toString(), modifiable.get(ShardParams.IS_SHARD));

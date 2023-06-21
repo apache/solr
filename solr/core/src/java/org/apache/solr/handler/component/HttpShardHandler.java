@@ -367,17 +367,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   private static String createSliceShardsStr(final List<String> shardUrls) {
-    final StringBuilder sliceShardsStr = new StringBuilder();
-    boolean first = true;
-    for (String shardUrl : shardUrls) {
-      if (first) {
-        first = false;
-      } else {
-        sliceShardsStr.append('|');
-      }
-      sliceShardsStr.append(shardUrl);
-    }
-    return sliceShardsStr.toString();
+    return String.join("|", shardUrls);
   }
 
   private boolean canShortCircuit(
