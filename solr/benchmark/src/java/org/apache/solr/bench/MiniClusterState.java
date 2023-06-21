@@ -345,7 +345,6 @@ public class MiniClusterState {
      * @param docCount the doc count
      * @throws Exception the exception
      */
-    @SuppressForbidden(reason = "This module does not need to deal with logging context")
     public void index(String collection, Docs docs, int docCount, boolean parallel)
         throws Exception {
       if (createCollectionAndIndex) {
@@ -380,6 +379,7 @@ public class MiniClusterState {
       dumpCoreInfo();
     }
 
+    @SuppressForbidden(reason = "This module does not need to deal with logging context")
     private void indexParallel(String collection, Docs docs, int docCount)
         throws InterruptedException {
       Meter meter = new Meter();
