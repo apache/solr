@@ -139,6 +139,8 @@ Improvements
 * SOLR-16470: `/coreName/replication?commit=indexversion` now has a v2 equivalent, available at
   `GET /api/cores/coreName/replication/indexversion` (Matthew Biscocho via Jason Gerlowski)
 
+* SOLR-16687: Add support of SolrClassLoader to SolrZkClient (Lamine Idjeraoui via Jason Gerlowski & Houston Putman)
+
 * SOLR-16820: Align allowed collection names and the validation of them in the CreateCollectionAPI and the PackageTool. (Will White via Eric Pugh)
 
 Optimizations
