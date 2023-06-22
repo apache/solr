@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
-import java.nio.file.Path;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -31,7 +30,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class HealthcheckToolTest extends SolrCloudTestCase {
-  private Path dir;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
