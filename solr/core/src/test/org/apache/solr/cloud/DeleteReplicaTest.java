@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderAccessor;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.ZkContainer;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -346,6 +347,16 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
             log.info("Running delete core {}", cd);
 
             try {
+              // Ensure that the Jetty container has fully initialized
+              RetryUtil.retryUntil(
+                  "Jetty runner did not start promptly",
+                  10,
+                  100,
+                  TimeUnit.MILLISECONDS,
+                  () -> {
+                    return replica1Jetty.isRunning();
+                  });
+
               ZkController replica1ZkController =
                   replica1Jetty.getCoreContainer().getZkController();
               ZkNodeProps m =
