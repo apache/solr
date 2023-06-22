@@ -176,6 +176,8 @@ Improvements
   then uses the weights to decide the optimal strategy for placing new replicas or balancing existing replicas.
   (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
+* SOLR-16820: Align allowed collection names and the validation of them in the CreateCollectionAPI and the PackageTool. (Will White via Eric Pugh)
+
 Optimizations
 ---------------------
 
