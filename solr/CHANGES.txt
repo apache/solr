@@ -237,7 +237,7 @@ Bug Fixes
 
 * SOLR-16807: DenseVectorField breaks catch-all copyFields (Joel Bernstein)
 
-* SOLR-16831: Fixed bin/solr healthcheck command returning cluster status details. (Eric Pugh)
+* SOLR-16831: Fixed bin/solr healthcheck command returning cluster status details. Removed SolrCloudTool class that is no longer used. (Eric Pugh)
 
 Dependency Upgrades
 ---------------------
