@@ -237,6 +237,8 @@ Bug Fixes
 
 * SOLR-16807: DenseVectorField breaks catch-all copyFields (Joel Bernstein)
 
+* SOLR-16831: Fixed bin/solr healthcheck command returning cluster status details. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
