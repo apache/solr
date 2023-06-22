@@ -29,7 +29,8 @@ import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.impl.BuiltInMetrics;
+import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
+import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.junit.Test;
 
 /** */
@@ -84,19 +85,17 @@ public class BuildersTest extends SolrTestCaseJ4 {
     AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
-        .requestNodeMetric(BuiltInMetrics.NODE_NUM_CORES)
-        .requestNodeMetric(BuiltInMetrics.NODE_FREE_DISK_GB)
-        .requestNodeMetric(BuiltInMetrics.NODE_TOTAL_DISK_GB)
-        .requestCollectionMetrics(collection, Set.of(BuiltInMetrics.REPLICA_INDEX_SIZE_GB));
+        .requestNodeMetric(NodeMetricImpl.NUM_CORES)
+        .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB)
+        .requestNodeMetric(NodeMetricImpl.TOTAL_DISK_GB)
+        .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     for (Node node : cluster.getLiveNodes()) {
-      Optional<Integer> coreCount =
-          attributeValues.getNodeMetric(node, BuiltInMetrics.NODE_NUM_CORES);
+      Optional<Integer> coreCount = attributeValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES);
       assertTrue("coreCount present", coreCount.isPresent());
-      Optional<Double> diskOpt =
-          attributeValues.getNodeMetric(node, BuiltInMetrics.NODE_FREE_DISK_GB);
+      Optional<Double> diskOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB);
       assertTrue("freeDisk", diskOpt.isPresent());
-      diskOpt = attributeValues.getNodeMetric(node, BuiltInMetrics.NODE_TOTAL_DISK_GB);
+      diskOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
       assertTrue("totalDisk", diskOpt.isPresent());
     }
     Optional<CollectionMetrics> collectionMetricsOpt =
@@ -110,8 +109,7 @@ public class BuildersTest extends SolrTestCaseJ4 {
       Optional<ReplicaMetrics> replicaMetricsOpt = shardMetrics.getLeaderMetrics();
       assertTrue("leader metrics", replicaMetricsOpt.isPresent());
       ReplicaMetrics leaderMetrics = replicaMetricsOpt.get();
-      Optional<Double> sizeOpt =
-          leaderMetrics.getReplicaMetric(BuiltInMetrics.REPLICA_INDEX_SIZE_GB);
+      Optional<Double> sizeOpt = leaderMetrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
       assertTrue("missing size", sizeOpt.isPresent());
       if (shardName.endsWith("1")) {
         assertEquals("size", 10, ((Number) sizeOpt.get()).intValue());
@@ -128,7 +126,7 @@ public class BuildersTest extends SolrTestCaseJ4 {
                 assertTrue("replica metrics", metricsOpt.isPresent());
                 ReplicaMetrics metrics = metricsOpt.get();
                 Optional<Double> replicaSizeOpt =
-                    metrics.getReplicaMetric(BuiltInMetrics.REPLICA_INDEX_SIZE_GB);
+                    metrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
                 assertTrue("missing size", replicaSizeOpt.isPresent());
                 if (shardName.endsWith("1")) {
                   assertEquals("size", 10, ((Number) replicaSizeOpt.get()).intValue());
