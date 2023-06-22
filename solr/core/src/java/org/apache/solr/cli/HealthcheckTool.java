@@ -60,11 +60,11 @@ public class HealthcheckTool extends ToolBase {
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_ZKHOST,
         Option.builder("c")
-            .argName("COLLECTION")
+            .longOpt("name")
+            .argName("NAME")
             .hasArg()
             .required(false)
-            .desc("Name of collection; no default.")
-            .longOpt("collection")
+            .desc("Name of the collection to check.")
             .build());
   }
 
