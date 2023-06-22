@@ -142,6 +142,14 @@ Improvements
   specifier from the request body, and changing the path. The v2 functionality can now be accessed at:
   `POST /api/collections/cName/balance-shard-unique {...}` (Jason Gerlowski)
 
+* SOLR-16806: The included PlacementPlugins (Random, Simple, MinimizeCores and Affinity) now all implement the
+  OrderedNodePlacementPlugin, which provides the implementation for computePlacements() and computeBalancing().
+  Each implementing PlacementPlugin provides a way of weighting Solr Nodes, and the OrderedNodePlacement plugin
+  then uses the weights to decide the optimal strategy for placing new replicas or balancing existing replicas.
+  (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
+
+* SOLR-16820: Align allowed collection names and the validation of them in the CreateCollectionAPI and the PackageTool. (Will White via Eric Pugh)
+
 Optimizations
 ---------------------
 
