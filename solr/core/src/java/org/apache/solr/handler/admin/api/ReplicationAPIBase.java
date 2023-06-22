@@ -73,7 +73,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return replicationHandler.getIndexVersionResponse();
   }
 
-  protected NamedList<Object> doFetchFiles(long generation) {
+  protected NamedList<Object> doFetchFileList(long generation) {
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return getFileList(generation, replicationHandler);

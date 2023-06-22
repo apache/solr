@@ -60,12 +60,11 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
   @Path("/files/generation/{gen}")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
-  public NamedList<Object> fetchFiles(
+  public NamedList<Object> fetchFileList(
       @Parameter(description = "The generation number of the index", required = true)
           @PathParam("gen")
-          long gen)
-      throws IOException {
-    return doFetchFiles(gen);
+          long gen) {
+    return doFetchFileList(gen);
   }
 
   /** Response for {@link CoreReplicationAPI#fetchIndexVersion()}. */
