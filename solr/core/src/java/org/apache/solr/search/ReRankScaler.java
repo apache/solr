@@ -124,6 +124,10 @@ public class ReRankScaler {
     return this.reRankScalerExplain;
   }
 
+  public double getReRankScaleWeight() {
+    return this.reRankScaleWeight;
+  }
+
   public boolean scaleScores() {
     if (scaleMainScores() || scaleReRankScores()) {
       return true;
@@ -396,7 +400,8 @@ public class ReRankScaler {
                 reRankQueryExplain.getDetails()[0],
                 Explanation.match(mainScaleExplain.localMin, "min first pass score"),
                 Explanation.match(mainScaleExplain.localMax, "max first pass score")),
-            reRankQueryExplain.getDetails()[1]);
+            reRankQueryExplain.getDetails()[1],
+            Explanation.match(reRankScaleWeight, "rerank weight"));
 
       } else if (!scaleMainScores() && scaleReRankScores()) {
         if (reRankScore > 0) {

@@ -201,7 +201,15 @@ public class ReRankQParserPlugin extends QParserPlugin {
       sb.append(" mainQuery='").append(mainQuery.toString()).append("' ");
       sb.append(RERANK_QUERY).append("='").append(reRankQuery.toString()).append("' ");
       sb.append(RERANK_DOCS).append('=').append(reRankDocs).append(' ');
-      sb.append(RERANK_WEIGHT).append('=').append(reRankWeight).append(' ');
+      if (reRankScaler.scaleScores()) {
+        // The reRankScaler applies the weight
+        sb.append(RERANK_WEIGHT)
+            .append('=')
+            .append(reRankScaler.getReRankScaleWeight())
+            .append(' ');
+      } else {
+        sb.append(RERANK_WEIGHT).append('=').append(reRankWeight).append(' ');
+      }
       if (reRankScaler.getReRankScalerExplain().getReRankScale() != null) {
         sb.append(RERANK_SCALE)
             .append('=')
