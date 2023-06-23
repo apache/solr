@@ -1,6 +1,6 @@
 # The lines in this file needs to be lexicographically sorted.
 # Please only add direct dependencies. Overrides of transitive versions should be called out in a comment.
-biz.aQute.bnd:biz.aQute.bnd.annotation=6.4.0
+biz.aQute.bnd:biz.aQute.bnd.annotation=6.4.1
 com.adobe.testing:s3mock-junit4=2.13.0
 com.carrotsearch.randomizedtesting:*=2.8.1
 com.carrotsearch:hppc=0.9.1
@@ -21,12 +21,12 @@ commons-codec:commons-codec=1.15
 commons-collections:commons-collections=3.2.2
 commons-io:commons-io=2.11.0
 io.dropwizard.metrics:*=4.2.19
-io.grpc:grpc-*=1.55.1
+io.grpc:grpc-*=1.56.0
 io.netty:*=4.1.93.Final
 io.opentelemetry:opentelemetry-bom-alpha=1.21.0-alpha
 io.opentracing:*=0.33.0
 io.prometheus:*=0.16.0
-io.swagger.core.v3:*=2.2.11
+io.swagger.core.v3:*=2.2.12
 jakarta.ws.rs:jakarta.ws.rs-api=2.1.6
 junit:junit=4.13.2
 net.sourceforge.argparse4j:argparse4j=0.9.0
@@ -69,5 +69,5 @@ org.osgi:osgi.annotation=8.1.0
 org.quicktheories:quicktheories=0.26
 org.semver4j:semver4j=4.3.0
 org.slf4j:*=2.0.7
-org.xerial.snappy:snappy-java=1.1.9.1
+org.xerial.snappy:snappy-java=1.1.10.1
 software.amazon.awssdk:*=2.20.86
