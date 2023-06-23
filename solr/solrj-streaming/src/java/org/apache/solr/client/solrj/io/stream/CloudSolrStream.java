@@ -184,11 +184,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
     for (Entry<String, String[]> param : params.getMap().entrySet()) {
       for (String val : param.getValue()) {
-        // SOLR-8409: Escaping the " is a special case.
-        // Do note that in any other BASE streams with parameters where a " might come into play
-        // that this same replacement needs to take place.
-        expression.addParameter(
-            new StreamExpressionNamedParameter(param.getKey(), val.replace("\"", "\\\"")));
+        expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), val));
       }
     }
 

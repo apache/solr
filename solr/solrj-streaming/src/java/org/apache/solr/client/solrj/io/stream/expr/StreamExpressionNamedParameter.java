@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.io.stream.expr;
 
 import java.util.Objects;
+import java.util.regex.MatchResult;
+import java.util.regex.Pattern;
 
 /** Provides a named parameter */
 public class StreamExpressionNamedParameter implements StreamExpressionParameter {
@@ -85,13 +87,35 @@ public class StreamExpressionNamedParameter implements StreamExpressionParameter
 
     if (requiresQuote) {
       sb.append("\"");
-    }
-    sb.append(parameter.toString());
-    if (requiresQuote) {
+      sb.append(
+          ESCAPE_QUOTES
+              .matcher(parameter.toString())
+              .replaceAll(StreamExpressionNamedParameter::escapeQuoteMatch));
       sb.append("\"");
+    } else {
+      sb.append(parameter.toString());
     }
 
     return sb.toString();
+  }
+
+  /**
+   * single literal doublequote, possibly already escaped by a preceding single literal backslash
+   */
+  private static final Pattern ESCAPE_QUOTES = Pattern.compile("(\\\\)?\"");
+
+  private static String escapeQuoteMatch(MatchResult m) {
+    if (m.start(1) == -1) {
+      // the quote was _not_ already escaped, so replace it with a simple escaped quote
+      // (single literal doublequote preceded by a single literal backslash), for a
+      // final result: `\"`.
+      return "\\\\\"";
+    } else {
+      // the quote was already escaped, so escape it at the _Solr syntax_ level by
+      // preceding the existing `\"` with an extra literal backslash `\\`, for final
+      // result: `\\\"`.
+      return "\\\\\\\\\\\\\"";
+    }
   }
 
   @Override
