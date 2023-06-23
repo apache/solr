@@ -176,7 +176,6 @@ public class HealthcheckTool extends ToolBase {
                   solrClient.request(
                       new GenericSolrRequest(
                           SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-              System.out.println("did this work?");
               uptime = SolrCLI.uptime((Long) systemInfo.findRecursive("jvm", "jmx", "upTimeMS"));
               String usedMemory = (String) systemInfo.findRecursive("jvm", "memory", "used");
               String totalMemory = (String) systemInfo.findRecursive("jvm", "memory", "total");
