@@ -73,6 +73,7 @@ public class ReRankScaler {
     }
   }
 
+  @Override
   public int hashCode() {
     return Integer.hashCode(mainQueryMax)
         + Integer.hashCode(mainQueryMin)
@@ -81,6 +82,7 @@ public class ReRankScaler {
         + reRankOperator.toString().hashCode();
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o instanceof ReRankScaler) {
       ReRankScaler _reRankScaler = (ReRankScaler) o;
