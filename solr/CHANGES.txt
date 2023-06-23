@@ -200,6 +200,9 @@ Optimizations
 
 * SOLR-16273: Improve the performance of the Prometheus Metric Exporter scraping metrics (Matthew Biscocho via David Smiley & Christine Poerschke
 
+* SOLR-16846: Use IndexOrDocValuesQuery for PointFields on Set queries. This improves the performance in some scenarios when
+  the set query is combined with other selective queries. (Tomás Fernández Löbbe, Alex Deparvu)
+
 Bug Fixes
 ---------------------
 
