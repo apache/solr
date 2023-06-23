@@ -404,24 +404,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setParams(params);
       q = qParser.getQuery();
 
-      if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
-        assertTrue(req.getCore().getLatestSchema().getField("foo_pi").hasDocValues());
-        assertEquals(
-            "Expecting IndexOrDocValuesQuery when type is IntPointField AND docValues are enabled",
-            IndexOrDocValuesQuery.class,
-            q.getClass());
-        assertEquals(
-            20,
-            ((PointInSetQuery) ((IndexOrDocValuesQuery) q).getIndexQuery())
-                .getPackedPoints()
-                .size());
-      } else {
-        assertFalse(req.getCore().getLatestSchema().getField("foo_pi").hasDocValues());
-        assertEquals(
-            "Expecting PointInSetQuery when type is IntPointField AND docValues are disabled",
-            20,
-            ((PointInSetQuery) q).getPackedPoints().size());
-      }
+      assertTrue(req.getCore().getLatestSchema().getField("foo_pi").hasDocValues());
+      assertEquals(
+          "Expecting IndexOrDocValuesQuery when type is IntPointField AND docValues are enabled",
+          IndexOrDocValuesQuery.class,
+          q.getClass());
+      assertEquals(
+          20,
+          ((PointInSetQuery) ((IndexOrDocValuesQuery) q).getIndexQuery()).getPackedPoints().size());
 
       // a filter() clause inside a relevancy query should be able to use a TermsQuery
       qParser =
