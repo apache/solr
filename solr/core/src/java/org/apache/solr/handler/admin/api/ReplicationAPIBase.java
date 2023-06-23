@@ -22,6 +22,7 @@ import static org.apache.solr.handler.ReplicationHandler.OK_STATUS;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
@@ -71,13 +72,14 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       long generation, ReplicationHandler replicationHandler) {
     final IndexDeletionPolicyWrapper delPol = solrCore.getDeletionPolicy();
     final CoreReplicationAPI.FileListResponse filesResponse =
-        new CoreReplicationAPI.FileListResponse(new CoreReplicationAPI.FileList());
+        new CoreReplicationAPI.FileListResponse();
 
     IndexCommit commit = null;
     try {
       if (generation == -1) {
         commit = delPol.getAndSaveLatestCommit();
         if (null == commit) {
+          filesResponse.setFileList(Collections.emptyList());
           return filesResponse;
         }
       } else {
@@ -88,7 +90,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         }
         if (null == commit) {
           // The gen they asked for either doesn't exist or has already been deleted
-          filesResponse.setResponse(reportErrorOnResponse("invalid index generation", null));
+          reportErrorOnResponse(filesResponse, "invalid index generation", null);
           return filesResponse;
         }
       }
@@ -144,8 +146,8 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       } catch (IOException e) {
         log.error(
             "Unable to get file names for indexCommit generation: {}", commit.getGeneration(), e);
-        filesResponse.setResponse(
-            reportErrorOnResponse("unable to get file names for given index generation", e));
+        reportErrorOnResponse(
+            filesResponse, "unable to get file names for given index generation", e);
         return filesResponse;
       } finally {
         if (dir != null) {
@@ -156,20 +158,18 @@ public abstract class ReplicationAPIBase extends JerseyResource {
           }
         }
       }
-      CoreReplicationAPI.FileList fileList =
-          (CoreReplicationAPI.FileList) filesResponse.getResponse();
-      fileList.addToFileList(result);
+      filesResponse.addToFileList(result);
 
       if (replicationHandler.getConfFileNameAlias().size() < 1
           || solrCore.getCoreContainer().isZooKeeperAware()) return filesResponse;
       String includeConfFiles = replicationHandler.getIncludeConfFiles();
       log.debug("Adding config files to list: {}", includeConfFiles);
       // if configuration files need to be included get their details
-      fileList.addToConfFiles(
+      filesResponse.addToConfFiles(
           replicationHandler.getConfFileInfoFromCache(
               replicationHandler.getConfFileNameAlias(),
               replicationHandler.getConfFileInfoCache()));
-      fileList.setStatus(OK_STATUS);
+      filesResponse.setStatus(OK_STATUS);
 
     } finally {
       if (null != commit) {
@@ -184,13 +184,12 @@ public abstract class ReplicationAPIBase extends JerseyResource {
     return filesResponse;
   }
 
-  private CoreReplicationAPI.Status reportErrorOnResponse(String message, Exception e) {
-    CoreReplicationAPI.Status statusResponse = new CoreReplicationAPI.Status();
-    statusResponse.setStatus(ERR_STATUS);
-    statusResponse.setMessage(message);
+  private void reportErrorOnResponse(
+      CoreReplicationAPI.FileListResponse fileListResponse, String message, Exception e) {
+    fileListResponse.setStatus(ERR_STATUS);
+    fileListResponse.setMessage(message);
     if (e != null) {
-      statusResponse.setException(e);
+      fileListResponse.setException(e);
     }
-    return statusResponse;
   }
 }

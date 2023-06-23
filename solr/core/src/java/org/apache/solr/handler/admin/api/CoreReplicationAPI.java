@@ -20,7 +20,6 @@ import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONT
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -92,41 +91,24 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
     }
   }
 
-  /** Base Response for {@link CoreReplicationAPI#fetchFileList(long)}. */
-  public interface FileListResponseBase {}
-
   /** Response for {@link CoreReplicationAPI#fetchFileList(long)}. */
   public static class FileListResponse extends SolrJerseyResponse {
-
-    @JsonValue
-    @JsonProperty("response")
-    public FileListResponseBase response;
-
-    public FileListResponse(FileListResponseBase repsonse) {
-      this.response = repsonse;
-    }
-
-    public void setResponse(FileListResponseBase response) {
-      this.response = response;
-    }
-
-    public FileListResponseBase getResponse() {
-      return this.response;
-    }
-  }
-
-  public static class FileList implements JacksonReflectMapWriter, FileListResponseBase {
     @JsonProperty("filelist")
     public List<FileMetaData> fileList;
 
     @JsonProperty("confFiles")
     public List<FileMetaData> confFiles;
 
+    @JsonProperty("status")
     public String status;
 
-    public FileList() {
-      this.fileList = new ArrayList<>();
-    }
+    @JsonProperty("message")
+    public String message;
+
+    @JsonProperty("exception")
+    public Exception exception;
+
+    public FileListResponse() {}
 
     public void addToFileList(List<FileMetaData> fileMetaData) {
       if (fileList == null) {
@@ -142,23 +124,13 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
       confFiles.addAll(confFilesMetaData);
     }
 
-    public void setStatus(String status) {
-      this.status = status;
+    public void setFileList(List<FileMetaData> fileList) {
+      this.fileList = fileList;
     }
-  }
 
-  public static class Status implements JacksonReflectMapWriter, FileListResponseBase {
-
-    @JsonProperty("status")
-    public String status;
-
-    @JsonProperty("message")
-    public String message;
-
-    @JsonProperty("exception")
-    public Exception exception;
-
-    public Status() {}
+    public void setConfFiles(List<FileMetaData> confFiles) {
+      this.confFiles = confFiles;
+    }
 
     public void setStatus(String status) {
       this.status = status;
