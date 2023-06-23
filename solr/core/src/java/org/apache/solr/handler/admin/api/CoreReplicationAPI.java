@@ -143,6 +143,26 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
     public void setException(Exception exception) {
       this.exception = exception;
     }
+
+    public List<FileMetaData> getFileList() {
+      return fileList;
+    }
+
+    public List<FileMetaData> getConfFiles() {
+      return confFiles;
+    }
+
+    public String getStatus() {
+      return status;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+
+    public Exception getException() {
+      return exception;
+    }
   }
 
   /**

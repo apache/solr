@@ -17,14 +17,13 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.handler.ReplicationHandler.CMD_GET_FILE_LIST;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentracing.noop.NoopSpan;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -73,12 +72,10 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings("unchecked")
   public void testFetchFiles() throws Exception {
-    NamedList<Object> actualResponse = coreReplicationAPI.fetchFiles(-1);
-    assertEquals("filelist", actualResponse.getName(0));
-    Map<String, Object> actual = (Map<String, Object>) actualResponse.get("filelist");
-    assertEquals(123, actual.get("size"));
-    assertEquals("test", actual.get("name"));
-    assertEquals(123456789, actual.get("checksum"));
+    CoreReplicationAPI.FileListResponse actualResponse = coreReplicationAPI.fetchFileList(-1);
+    assertEquals(123, actualResponse.getFileList().get(0).getSize());
+    assertEquals("test", actualResponse.getFileList().get(0).getName());
+    assertEquals(123456789, actualResponse.getFileList().get(0).getChecksum());
   }
 
   private void setUpMocks() {
@@ -93,11 +90,10 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     }
 
     @Override
-    protected NamedList<Object> getFileList(
-        long generation, ReplicationHandler replicationHandler) {
-      final NamedList<Object> filesResponse = new NamedList<>();
-      filesResponse.add(
-          CMD_GET_FILE_LIST, Map.of("size", 123, "name", "test", "checksum", 123456789));
+    protected FileListResponse getFileList(long generation, ReplicationHandler replicationHandler) {
+      final FileListResponse filesResponse = new FileListResponse();
+      List<FileMetaData> fileMetaData = Arrays.asList(new FileMetaData(123, "test", 123456789));
+      filesResponse.addToFileList(fileMetaData);
       return filesResponse;
     }
   }
