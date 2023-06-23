@@ -103,8 +103,8 @@ public class QueryResponseWriters {
   }
 
   @Benchmark
-  public void query(BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
+  public Object query(BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
       throws SolrServerException, IOException {
-    miniClusterState.client.request(benchState.q, collection);
+    return miniClusterState.client.request(benchState.q, collection);
   }
 }
