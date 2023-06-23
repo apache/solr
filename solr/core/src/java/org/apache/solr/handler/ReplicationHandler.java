@@ -270,7 +270,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       getFileStream(solrParams, rsp);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
       final CoreReplicationAPI coreReplicationAPI = new CoreReplicationAPI(core, req, rsp);
-      rsp.setAllValues(
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+          rsp,
           coreReplicationAPI.fetchFileList(Long.parseLong(solrParams.required().get(GENERATION))));
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
       doSnapShoot(new ModifiableSolrParams(solrParams), rsp, req);
@@ -720,9 +721,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    * <p>The local conf files information is cached so that everytime it does not have to compute the
    * checksum. The cache is refreshed only if the lastModified of the file changes
    */
-  public List<Map<String, Object>> getConfFileInfoFromCache(
+  public List<CoreReplicationAPI.FileMetaData> getConfFileInfoFromCache(
       NamedList<String> nameAndAlias, final Map<String, FileInfo> confFileInfoCache) {
-    List<Map<String, Object>> confFiles = new ArrayList<>();
+    List<CoreReplicationAPI.FileMetaData> confFiles = new ArrayList<>();
     synchronized (confFileInfoCache) {
       Checksum checksum = null;
       for (int i = 0; i < nameAndAlias.size(); i++) {
@@ -743,8 +744,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           info = new FileInfo(lastModified, cf, size, getCheckSum(checksum, f));
           confFileInfoCache.put(cf, info);
         }
-        Map<String, Object> m = info.getAsMap();
-        if (nameAndAlias.getVal(i) != null) m.put(ALIAS, nameAndAlias.getVal(i));
+        CoreReplicationAPI.FileMetaData m = info.getAsMap();
+        if (nameAndAlias.getVal(i) != null) m.setAlias(nameAndAlias.getVal(i));
         confFiles.add(m);
       }
     }
@@ -764,12 +765,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       this.checksum = checksum;
     }
 
-    Map<String, Object> getAsMap() {
-      Map<String, Object> map = new HashMap<>();
-      map.put(NAME, name);
-      map.put(SIZE, size);
-      map.put(CHECKSUM, checksum);
-      return map;
+    CoreReplicationAPI.FileMetaData getAsMap() {
+      return new CoreReplicationAPI.FileMetaData(size, name, checksum);
     }
   }
 
