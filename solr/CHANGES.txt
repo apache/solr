@@ -170,6 +170,9 @@ Optimizations
   request. SolrJ will now form the URL directly to the intended replica of the collection (and not the collection itself).
   (Pierre Salagnac, Ivan Djurasevic, Jason Baik)
 
+* SOLR-16846: Use IndexOrDocValuesQuery for PointFields on Set queries. This improves the performance in some scenarios when
+  the set query is combined with other selective queries. (Tomás Fernández Löbbe, Alex Deparvu)
+
 Bug Fixes
 ---------------------
 
