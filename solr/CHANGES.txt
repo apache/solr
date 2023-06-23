@@ -245,6 +245,8 @@ Other Changes
 
 * PR#1566: Removed deprecated members from Tuple class (janhoy)
 
+* SOLR-16841: Added QueryResponseWriter benchmarks (Alex Deparvu via Tomás Fernández Löbbe)
+
 ==================  9.2.1 ==================
 
 Bug Fixes

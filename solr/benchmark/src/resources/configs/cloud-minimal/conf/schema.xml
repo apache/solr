@@ -44,8 +44,10 @@
     <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
     <dynamicField name="*_s" type="string" indexed="true" stored="false"/>
     <dynamicField name="*_t" type="text" indexed="true" stored="false"/>
+    <dynamicField name="*_ts" type="text" indexed="true" stored="true"/>
     <dynamicField name="*_i" type="int" indexed="true" stored="false"/>
     <dynamicField name="*_i_dv" type="int" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_is" type="int" indexed="false" stored="true"/>
     <dynamicField name="*_l" type="long" indexed="true" stored="false"/>
     <dynamicField name="*_l_dv" type="long" indexed="true" docValues="true" stored="false"/>
     <dynamicField name="*_f" type="float" indexed="true" stored="false"/>
