@@ -158,8 +158,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
           + (int) reRankWeight
           + reRankDocs
           + reRankOperator.hashCode()
-          + String.valueOf(reRankScaler.getReRankScalerExplain().reRankScale()).hashCode()
-          + String.valueOf(reRankScaler.getReRankScalerExplain().getMainScale()).hashCode();
+          + reRankScaler.hashCode();
     }
 
     @Override
@@ -173,10 +172,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
           && reRankWeight == rrq.reRankWeight
           && reRankDocs == rrq.reRankDocs
           && reRankOperator.equals(rrq.reRankOperator)
-          && String.valueOf(reRankScaler.getReRankScalerExplain().getReRankScale())
-              .equals(String.valueOf(rrq.reRankScaler.getReRankScalerExplain().getReRankScale()))
-          && String.valueOf(reRankScaler.getReRankScalerExplain().getMainScale())
-              .equals(String.valueOf(rrq.reRankScaler.getReRankScalerExplain().getMainScale()));
+          && reRankScaler.equals(rrq.reRankScaler);
     }
 
     public ReRankQuery(

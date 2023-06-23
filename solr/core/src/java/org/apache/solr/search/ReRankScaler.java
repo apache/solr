@@ -73,6 +73,31 @@ public class ReRankScaler {
     }
   }
 
+  public int hashCode() {
+    return Integer.hashCode(mainQueryMax) +
+        Integer.hashCode(mainQueryMin) +
+        Integer.hashCode(reRankQueryMin) +
+        Integer.hashCode(reRankQueryMax) +
+        reRankOperator.toString().hashCode();
+  }
+
+  public boolean equals(Object o) {
+    if(o instanceof ReRankScaler) {
+      ReRankScaler _reRankScaler = (ReRankScaler) o;
+      if(mainQueryMin == _reRankScaler.mainQueryMin &&
+          mainQueryMax == _reRankScaler.mainQueryMax &&
+          reRankQueryMin == _reRankScaler.reRankQueryMin &&
+          reRankQueryMax == _reRankScaler.reRankQueryMax &&
+      reRankOperator.equals(_reRankScaler.reRankOperator)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
   public QueryRescorer getReplaceRescorer() {
     return replaceRescorer;
   }
