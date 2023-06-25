@@ -182,14 +182,16 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
       Objects.requireNonNull(withCollections, "withCollections must not be null");
       Objects.requireNonNull(collectionNodeTypes, "collectionNodeTypes must not be null");
+      Objects.requireNonNull(withCollectionShards, "withCollectionShards must not be null");
       this.spreadAcrossDomains = spreadAcrossDomains;
       this.withCollections = withCollections;
       this.withCollectionShards = withCollectionShards;
       Map<String, Set<String>> collocated = new HashMap<>();
+      // reverse both relations: shard-agnostic and shard-wise
       List.of(this.withCollections, this.withCollectionShards)
           .forEach(
-              collns ->
-                  collns.forEach(
+              direct ->
+                  direct.forEach(
                       (primary, secondary) ->
                           collocated
                               .computeIfAbsent(secondary, s -> new HashSet<>())
@@ -580,12 +582,16 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                   .computeIfAbsent(replica.getShard().getShardName(), k -> new HashSet<>());
           replicasRemovedForShard.add(replica);
           // either if all shards are mandatory, or the current one is mandatory
+          boolean shardWise = false;
           if (mandatoryShardsOrAll.isEmpty()
-              || mandatoryShardsOrAll.contains(replica.getShard().getShardName())) {
+              || (shardWise = mandatoryShardsOrAll.contains(replica.getShard().getShardName()))) {
             if (replicasRemovedForShard.size()
                 >= getReplicasForShardOnNode(replica.getShard()).size()) {
               replicaRemovalExceptions.put(
-                  replica, "co-located with replicas of " + collocatedCollections);
+                  replica,
+                  "co-located with replicas of "
+                      + (shardWise ? replica.getShard().getShardName() + " of " : "")
+                      + collocatedCollections);
             }
           }
         }

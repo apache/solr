@@ -181,11 +181,11 @@ See the section <<withCollection constraint>> below.
 |Optional |Default: none
 |===
 +
-Defines an additional constraint that shards of the primary collections (keys) must be located on the same nodes as the shards of the secondary collections (values).
-The plugin will assume that the secondary collection replicas are already in place and ignore candidate nodes where they are not already present. Keys should be disjoint with `withCollection`.
+Same as `withCollection` but enforces a shard level constraint.
+eg. shardN of the primary collection (occurs in a key) is placed only on nodes where shardN of secondary collection (occurs as a value) resides.
+The same constraint is enforced on deleting when a replica of a secondary collection shardN is deleted. It prevents deletion if primary collection's shardN is collocated on certain node.
+Keys should be disjoint with `withCollection`.
 +
-See the section <<withCollectionShards constraint>> below.
-
 `collectionNodeType`::
 +
 [%autowidth,frame=none]
@@ -212,8 +212,6 @@ The plugin preserves this co-location by rejecting delete operation of secondary
 In order to delete a secondary collection (or its replicas) from these nodes first the replicas of the primary collection must be removed from the co-located nodes, or the configuration must be changed to remove the
 co-location mapping for the primary collection.
 
-==== withCollectionShards constraint
-Almost same as above, but collocates shards of the paired collections.
 
 == Example Configurations
 This is a simple configuration that uses default values:
