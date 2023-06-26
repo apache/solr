@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
+import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -86,6 +87,9 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       runQuery(testCollection, client, "json");
       runQuery(testCollection, client, "json");
       b = runQuery(testCollection, client, "cbor");
+      int compactSz = b.length;
+      b = runQuery(testCollection, client, "cbor-noncompact");
+      assertTrue(compactSz < b.length);
       b = runQuery(testCollection, client, "cbor");
       ObjectMapper objectMapper = new ObjectMapper(new CBORFactory());
       Object o = objectMapper.readValue(b, Object.class);
@@ -115,11 +119,18 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     NamedList<Object> result;
     QueryRequest request;
     RTimer timer = new RTimer();
-    request = new QueryRequest(new SolrQuery("*:*").setRows(1111));
-    request.setResponseParser(new InputStreamResponseParser(wt));
+    SolrQuery q = new SolrQuery("*:*").setRows(1111);
+    request = new QueryRequest(q);
+    if (wt.equals("cbor-noncompact")) {
+      q.set("string_ref", false);
+      request.setResponseParser(new InputStreamResponseParser("cbor"));
+    } else {
+      request.setResponseParser(new InputStreamResponseParser(wt));
+    }
     result = client.request(request, testCollection);
     byte[] b = copyStream((InputStream) result.get("stream"));
     System.out.println(wt + "_time : " + timer.getTime());
+    System.out.println(wt + "_size : " + b.length);
     return b;
   }
 
@@ -182,9 +193,6 @@ public class TestCborDataFormat extends SolrCloudTestCase {
   public void test() throws Exception {
     Path filmsJson = new File(ExternalPaths.SOURCE_HOME, "example/films/films.json").toPath();
 
-    long sz = Files.size(filmsJson);
-    assertEquals(633600, sz);
-
     List<Object> films = null;
     try (InputStream is = Files.newInputStream(filmsJson)) {
       films = (List<Object>) Utils.fromJSON(is);
@@ -196,7 +204,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
 
     byte[] b = Files.readAllBytes(filmsJson);
     byte[] bytes = serializeToCbor(b);
-    assertEquals(290672, bytes.length);
+    assertEquals(210439, bytes.length);
     LongAdder docsSz = new LongAdder();
     new CborLoader(null, (document) -> docsSz.increment()).stream(new ByteArrayInputStream(bytes));
     assertEquals(films.size(), docsSz.intValue());
@@ -209,9 +217,10 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     // Read JSON file as a JsonNode
     JsonNode jsonNode = jsonMapper.readTree(is);
     // Create a CBOR ObjectMapper
-    CBORFactory jf = new CBORFactory();
-    ObjectMapper cborMapper = new ObjectMapper(jf);
     baos = new ByteArrayOutputStream();
+
+    ObjectMapper cborMapper =
+        new ObjectMapper(CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build());
     JsonGenerator jsonGenerator = cborMapper.createGenerator(baos);
 
     jsonGenerator.writeTree(jsonNode);
