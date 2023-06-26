@@ -179,7 +179,7 @@ Improvements
 * SOLR-16820: Align allowed collection names and the validation of them in the CreateCollectionAPI and the PackageTool. (Will White via Eric Pugh)
 
 * SOLR-13396: Add property to control the deletion of unknown cores.  Solr can be started with the system property
-  `solr.deleteUnknownCores` set to `false` to disable automatic deletion of cores without corresponding ZooKeeper entries. (Colvin Cowie)
+  `solr.deleteUnknownCores` set to `false` to disable automatic deletion of cores without corresponding ZooKeeper entries. (Colvin Cowie, janhoy)
 
 Optimizations
 ---------------------
