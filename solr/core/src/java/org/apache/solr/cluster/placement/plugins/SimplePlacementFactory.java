@@ -102,9 +102,7 @@ public class SimplePlacementFactory
 
               ReplicaCount replicaCount =
                   nodeVsShardCount.computeIfAbsent(assignedNode, ReplicaCount::new);
-              replicaCount.totalReplicas++;
-              replicaCount.collectionReplicas.merge(
-                  request.getCollection().getName(), 1, Integer::sum);
+              replicaCount.addReplica(request.getCollection().getName());
             }
           }
         }
@@ -131,7 +129,7 @@ public class SimplePlacementFactory
           for (Replica replica : shard.replicas()) {
             ReplicaCount count = nodeVsShardCount.get(replica.getNode());
             if (count != null) {
-              count.addReplica(collection.getName(), shard.getShardName());
+              count.addReplica(collection.getName());
             }
           }
         }
@@ -154,9 +152,10 @@ public class SimplePlacementFactory
       return (collectionReplicas.getOrDefault(collection, 0) * 5) + totalReplicas;
     }
 
-    public void addReplica(String collection, String shard) {
+    public void addReplica(String collection) {
       // Used to "weigh" whether this node should be used later.
       collectionReplicas.merge(collection, 1, Integer::sum);
+      totalReplicas++;
     }
 
     public Node node() {
