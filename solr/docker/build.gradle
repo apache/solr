@@ -453,6 +453,7 @@ if (''.equals(releaseGpgFingerprint)) {
         exec {
           commandLine 'docker', 'run',
               '--cidfile', mockServerIdFile,
+              '--rm',
               '-d',
               '-v', "${mockHttpdHome.absoluteFile}:/data/${-> project.version}",
               '-w', '/data',
