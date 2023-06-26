@@ -956,5 +956,40 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     }
   }
 
+  @Test
+  public void testBuilder() {
+    try (Http2SolrClient seed =
+        new Http2SolrClient.Builder("baseSolrUrl")
+            .withBasicAuthCredentials("testu", "testp")
+            .build()) {
+
+      Http2SolrClient clone1 =
+          new Http2SolrClient.Builder("baseSolrUrl").withHttpClient(seed).build();
+      String expected1 =
+          Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu", "testp");
+      assertEquals(expected1, clone1.basicAuthAuthorizationStr);
+
+      // test overwrite seed value
+      Http2SolrClient clone2 =
+          new Http2SolrClient.Builder("baseSolrUrl")
+              .withHttpClient(seed)
+              .withBasicAuthCredentials("testu2", "testp2")
+              .build();
+      String expected2 =
+          Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu2", "testp2");
+      assertEquals(expected2, clone2.basicAuthAuthorizationStr);
+
+      // test overwrite seed value, order of builder method calls reversed
+      Http2SolrClient clone3 =
+          new Http2SolrClient.Builder("baseSolrUrl")
+              .withBasicAuthCredentials("testu3", "testp3")
+              .withHttpClient(seed)
+              .build();
+      String expected3 =
+          Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu3", "testp3");
+      assertEquals(expected3, clone3.basicAuthAuthorizationStr);
+    }
+  }
+
   /** Missed tests : - set cookies via interceptor - invariant params - compression */
 }

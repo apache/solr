@@ -38,6 +38,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.util.EntityUtils;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -178,11 +179,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
         break;
       case 2:
         // Sometimes use V2 API
-        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
+        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
         String requestBody =
             String.format(
                 Locale.ROOT,
-                "{create:{name:%s, config:%s, numShards:%s, tlogReplicas:%s}}",
+                "{\"name\": \"%s\", \"config\": \"%s\", \"numShards\": %s, \"tlogReplicas\": %s}",
                 collectionName,
                 "conf",
                 2, // numShards
@@ -359,15 +360,19 @@ public class TestTlogReplica extends SolrCloudTestCase {
         url =
             String.format(
                 Locale.ROOT,
-                "%s/____v2/c/%s/shards",
+                "%s/____v2/collections/%s/shards/%s/replicas",
                 cluster.getRandomJetty(random()).getBaseUrl(),
-                collectionName);
-        String requestBody =
-            String.format(Locale.ROOT, "{add-replica:{shard:%s, type:%s}}", shardName, type);
+                collectionName,
+                shardName);
+        String requestBody = String.format(Locale.ROOT, "{\"type\": \"%s\"}", type);
         HttpPost addReplicaPost = new HttpPost(url);
         addReplicaPost.setHeader("Content-type", "application/json");
         addReplicaPost.setEntity(new StringEntity(requestBody));
         httpResponse = getHttpClient().execute(addReplicaPost);
+        if (httpResponse.getStatusLine().getStatusCode() == 400) {
+          final String entity = EntityUtils.toString(httpResponse.getEntity());
+          System.out.println(entity);
+        }
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
     }

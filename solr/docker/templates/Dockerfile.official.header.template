@@ -34,7 +34,7 @@ ARG SOLR_DOWNLOAD_SERVER="https://www.apache.org/dyn/closer.lua?action=download&
 
 RUN set -ex; \
   apt-get update; \
-  apt-get -y install wget gpg dirmngr; \
+  apt-get -y --no-install-recommends install wget gpg gnupg dirmngr; \
   rm -rf /var/lib/apt/lists/*; \
   export SOLR_BINARY="solr-$SOLR_VERSION$SOLR_DIST.tgz"; \
   MAX_REDIRECTS=3; \

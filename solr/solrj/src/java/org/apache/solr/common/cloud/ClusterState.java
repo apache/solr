@@ -285,8 +285,8 @@ public class ClusterState implements JSONWriter.Writable {
       props = Collections.emptyMap();
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
-      props = new HashMap<>(objs);
       objs.remove(CollectionStateProps.SHARDS);
+      props = new HashMap<>(objs);
     }
 
     Object routerObj = props.get(CollectionStateProps.DOC_ROUTER);
@@ -302,7 +302,7 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version, prsSupplier);
+    return DocCollection.create(name, slices, props, router, version, prsSupplier);
   }
 
   @Override

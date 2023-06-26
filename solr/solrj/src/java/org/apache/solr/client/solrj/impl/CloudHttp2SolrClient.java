@@ -253,7 +253,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
      * Tells {@link CloudHttp2SolrClient.Builder} that created clients can send updates to any shard
      * replica (shard leaders and non-leaders).
      *
-     * <p>Shard leaders are still preferred, but the created clients will fallback to using other
+     * <p>Shard leaders are still preferred, but the created clients will fall back to using other
      * replicas if a leader cannot be found.
      *
      * @see #sendDirectUpdatesToShardLeadersOnly

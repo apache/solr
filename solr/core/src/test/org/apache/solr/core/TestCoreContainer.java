@@ -490,7 +490,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     final CoreContainer cores = init(CONFIGSETS_SOLR_XML);
     try {
-      Path solrInstallDir = cores.getConfig().getSolrInstallDir();
+      Path solrInstallDir = NodeConfig.getSolrInstallDir();
       assertTrue(
           "solrInstallDir was " + solrInstallDir,
           solrInstallDir != null && installDirPath.toString().equals(solrInstallDir.toString()));

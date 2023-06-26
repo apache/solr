@@ -1969,7 +1969,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   static class VersionProvider {
-    private static long version = 0;
+    private static long version = 1;
 
     static String getNextVersion() {
       return Long.toString(version++);

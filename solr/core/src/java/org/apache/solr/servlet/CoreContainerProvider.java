@@ -468,18 +468,6 @@ public class CoreContainerProvider implements ServletContextListener {
           ResolutionStrategy.IGNORE,
           "properties",
           "system");
-      MetricsMap sysenv =
-          new MetricsMap(
-              map ->
-                  System.getenv()
-                      .forEach(
-                          (k, v) -> {
-                            if (!hiddenSysProps.contains(k)) {
-                              map.putNoEx(String.valueOf(k), v);
-                            }
-                          }));
-      metricManager.registerGauge(
-          null, registryName, sysenv, metricTag, ResolutionStrategy.IGNORE, "env", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }

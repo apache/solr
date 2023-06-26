@@ -18,12 +18,15 @@
 package org.apache.solr.jersey;
 
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_CORE;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_PARAMS;
 
 import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.glassfish.hk2.api.Factory;
 
 public class InjectionFactories {
@@ -83,6 +86,42 @@ public class InjectionFactories {
 
     @Override
     public void dispose(SolrCore instance) {}
+  }
+
+  public static class ReuseFromContextIndexSchemaFactory implements Factory<IndexSchema> {
+
+    private final SolrCore solrCore;
+
+    @Inject
+    public ReuseFromContextIndexSchemaFactory(SolrCore solrCore) {
+      this.solrCore = solrCore;
+    }
+
+    @Override
+    public IndexSchema provide() {
+      return solrCore.getLatestSchema();
+    }
+
+    @Override
+    public void dispose(IndexSchema instance) {}
+  }
+
+  public static class ReuseFromContextSolrParamsFactory implements Factory<SolrParams> {
+
+    private final ContainerRequestContext containerRequestContext;
+
+    @Inject
+    public ReuseFromContextSolrParamsFactory(ContainerRequestContext containerRequestContext) {
+      this.containerRequestContext = containerRequestContext;
+    }
+
+    @Override
+    public SolrParams provide() {
+      return (SolrParams) containerRequestContext.getProperty(SOLR_PARAMS);
+    }
+
+    @Override
+    public void dispose(SolrParams instance) {}
   }
 
   public static class SingletonFactory<T> implements Factory<T> {

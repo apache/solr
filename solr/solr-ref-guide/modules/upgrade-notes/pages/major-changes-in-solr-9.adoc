@@ -71,7 +71,16 @@ The xref:deployment-guide:installing-solr.adoc#available-solr-packages[Installin
 Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site for information on how to download these offerings.
 
 === Shard Management
-* Solr now provides an xref:deployment-guide:shard-management.adoc#installshard[INSTALLSHARD] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
+* Solr now provides an xref:deployment-guide:shard-management.adoc#installsharddata["Install Shard"] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
+
+== Solr 9.3
+=== Solr CLI
+* the bin/solr -i and bin/solr -info removed in favour of bin/solr status command.
+
+=== Security
+* Use of `stream.file`, `stream.url` and `stream.body` params are no longer enabled via configuration in solrconfig.xml, nor dynamic equivalents with the config API.
+Older configuration now does nothing.
+Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
 
 == Solr 9.2
 === Upgrade to Jetty 10.x
@@ -91,7 +100,9 @@ This is what has been documented in xref:deployment-guide:enabling-ssl.adoc#star
 * A new `opentelemetry` module is added, with support for OTEL tracing in `OTLP` format using gRPC.
 
 === Docker
-* The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal).
+* The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal). Solr's Docker image now requires Docker engine version 20.10.10 or newer.
+
+TIP: Users who cannot upgrade their Docker engine will need to specify the docker commandline option `--security-opt seccomp=unconfined` when starting the container.
 
 === Streaming Expressions
 * Streaming Expressions have been moved out of Solrj core into its own module called `solrj-streaming`.
@@ -102,9 +113,9 @@ the `solrj-streaming` artifacts under the `org.apache.solr` groupId.
 
 === Deprecations
 * Loading solr.xml from Zookeeper is deprecated. See xref:configuration-guide:configuring-solr-xml.adoc[Configuring solr.xml].
-* The xref:query-guide:analytics.adoc[Analytics Component] has been deprecated. Consider using xref:query-guide:json-facet-api.adoc[JSON Facet API] as a substitute. Please notify the project if there's functionality you need that isn't currently covered by JSON facets.
+* The Analytics Component has been deprecated. Consider using xref:query-guide:json-facet-api.adoc[JSON Facet API] as a substitute. Please notify the project if there's functionality you need that isn't currently covered by JSON facets.
 * The `jaegertracer-configurator` module is deprecated for removal in Solr 10. Users should start migrating to the new `opentelemetry` module.
-  
+
 == Solr 9.1.1
 * Solr no longer accepts all file types for configSets. Please see xref:configuration-guide:config-sets.adoc#forbidden-file-types[ConfigSet Forbidden File Types] for more information.
 
@@ -164,7 +175,7 @@ Administrators that need Solr exposed more broadly can change the `SOLR_JETTY_HO
 If you rely upon the previous behavior, then you can change the `clientPortAddress` in `solr/server/solr/zoo.cfg`
 * Jetty low level request-logging in NCSA format is now enabled by default, with a retention of 3 days worth of logs.
 This may require some more disk space for logs than was the case in version 8.x. See xref:deployment-guide:configuring-logging.adoc[Configuring Logging] for how to change this.
-* Hadoop authentication support has been moved to the new `hadoop-auth` module. Existing Solr configurations do not need any Hadoop authentication related changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
+* Hadoop authentication support has been moved to the new `hadoop-auth` module. Users need to add the module `hadoop-auth` to classpath. The plugins has also changed package name to `org.apache.solr.security.hadoop`, but can still be loaded as shortform `class="solr.HadoopAuthPlugin"`, `class="solr.ConfigurableInternodeAuthHadoopPlugin"` or `class="solr.KerberosPlugin"`  - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 * xref:deployment-guide:jwt-authentication-plugin.adoc[JWTAuthPlugin] has been moved to a module. Users need to add the module `jwt-auth` to classpath. The plugin has also
 changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
 * Dependency updates - A lot of dependency updates removes several security issues from dependencies, and thus make Solr more secure.

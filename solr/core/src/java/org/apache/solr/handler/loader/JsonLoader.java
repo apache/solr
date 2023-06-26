@@ -295,10 +295,9 @@ public class JsonLoader extends ContentStreamLoader {
 
     private Map<String, Object> getDocMap(
         Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
-      Map<String, Object> result = record;
+      Map<String, Object> result = mapUniqueKeyOnly ? record : new LinkedHashMap<>(record);
       if (srcField != null && parser instanceof RecordingJSONParser) {
         // if srcFIeld specified extract it out first
-        result = new LinkedHashMap<>(record);
         RecordingJSONParser rjp = (RecordingJSONParser) parser;
         result.put(srcField, rjp.getBuf());
         rjp.resetBuf();
@@ -320,7 +319,9 @@ public class JsonLoader extends ContentStreamLoader {
         if (srcField != null && result.containsKey(srcField)) {
           copy.put(srcField, result.remove(srcField));
         }
-        copy.put(df, result.values());
+        final List<Object> deepValues = new ArrayList<>();
+        deepValues.addAll(result.values());
+        copy.put(df, deepValues);
         result = copy;
       }
 

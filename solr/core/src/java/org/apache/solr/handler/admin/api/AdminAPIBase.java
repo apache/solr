@@ -17,10 +17,18 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+
+import java.util.Map;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -82,6 +90,26 @@ public abstract class AdminAPIBase extends JerseyResource {
     }
   }
 
+  protected String resolveCollectionName(String collName, boolean followAliases) {
+    final String collectionName =
+        followAliases
+            ? coreContainer
+                .getZkController()
+                .getZkStateReader()
+                .getAliases()
+                .resolveSimpleAlias(collName)
+            : collName;
+
+    final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+    if (!clusterState.hasCollection(collectionName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Collection '" + collectionName + "' does not exist, no action taken.");
+    }
+
+    return collectionName;
+  }
+
   /**
    * TODO Taken from CollectionsHandler.handleRequestBody, but its unclear where (if ever) this gets
    * cleared.
@@ -94,5 +122,39 @@ public abstract class AdminAPIBase extends JerseyResource {
 
   public void disableResponseCaching() {
     solrQueryResponse.setHttpCaching(false);
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleResponse(
+      SubResponseAccumulatingJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage,
+      String asyncId)
+      throws Exception {
+    final SolrResponse remoteResponse =
+        CollectionsHandler.submitCollectionApiCommand(
+            coreContainer,
+            coreContainer.getDistributedCollectionCommandRunner(),
+            remoteMessage,
+            action,
+            DEFAULT_COLLECTION_OP_TIMEOUT);
+    if (remoteResponse.getException() != null) {
+      throw remoteResponse.getException();
+    }
+
+    if (asyncId != null) {
+      response.requestId = asyncId;
+    }
+
+    // Values fetched from remoteResponse may be null
+    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
+    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+
+    return remoteResponse;
+  }
+
+  protected static void insertIfNotNull(Map<String, Object> destination, String key, Object value) {
+    if (value != null) {
+      destination.put(key, value);
+    }
   }
 }
