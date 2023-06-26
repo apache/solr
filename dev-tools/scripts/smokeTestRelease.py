@@ -744,7 +744,7 @@ def testSolrExample(binaryDistPath, javaPath):
   print('      Running techproducts example on port 8983 from %s' % binaryDistPath)
   try:
     if not cygwin:
-      runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
+      runExampleStatus = subprocess.call(['bin/solr','start','-e','techproducts'])
     else:
       runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
 
@@ -756,7 +756,7 @@ def testSolrExample(binaryDistPath, javaPath):
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      run query...')
     s = load('http://localhost:8983/solr/techproducts/select/?q=video')
-    if s.find('"numFound":3,"start":0') == -1:
+    if s.find('"numFound":3') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
     s = load('http://localhost:8983/api/cores')
