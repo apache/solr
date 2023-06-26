@@ -32,15 +32,19 @@ import org.apache.solr.request.SolrQueryRequest;
  */
 public class CborResponseWriter extends BinaryResponseWriter {
   final CBORFactory cborFactory;
+  final CBORFactory cborFactoryCompact;
 
   public CborResponseWriter() {
-    cborFactory = CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build();
+    cborFactoryCompact = CBORFactory.builder().enable(CBORGenerator.Feature.STRINGREF).build();
+    cborFactory = CBORFactory.builder().build();
   }
 
   @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response)
       throws IOException {
-    WriterImpl writer = new WriterImpl(cborFactory, out, req, response);
+    boolean useStringRef = req.getParams().getBool("string_ref", true);
+    WriterImpl writer =
+        new WriterImpl(useStringRef ? cborFactoryCompact : cborFactory, out, req, response);
     writer.writeResponse();
     writer.gen.flush();
   }
