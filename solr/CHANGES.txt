@@ -269,6 +269,8 @@ Bug Fixes
 
 * SOLR-16619: Fix solr scripts running on IBM i (Jesse Gorzinski via Eric Pugh)
 
+* SOLR-16809: The configuration for hiding sensitive sysProp information has been joined under `-Dsolr.hiddenSysProps` and `SOLR_HIDDEN_SYS_PROPS`. (Houston Putman, David Smiley)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
