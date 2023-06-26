@@ -81,6 +81,17 @@ Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site 
 Older configuration now does nothing.
 Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
 
+* The method for specifying sysProps that contain sensitive information has been streamlined.
+Now the sysProp `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` are available to provide a comma-separated
+list of patterns to match sysProps that should be hidden or redacted.
+Please see the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[hiddenSysProps section] for more information.
++
+The sysProp `-Dsolr.redaction.system.pattern` has been deprecated, use the above options instead.
++
+The `<hiddenSysProps>` solr.xml element under `<metrics>` has been deprecated.
+Instead, use the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[<hiddenSysProps>] tag under `<solr>`, which accepts a comma-separated string.
+
+
 === Official Docker Image
 * The customization of the Official Solr Dockerfile has been changed.
 The customization options `SOLR_DOWNLOAD_URL`, `SOLR_CLOSER_URL`, `SOLR_DIST_URL` and `SOLR_ARCHIVE_URL`, have been removed.
