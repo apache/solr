@@ -87,7 +87,8 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
         new BackupCoreAPI.BackupCoreRequestBody();
     backupCoreRequestBody.location = locationPath.toString();
     backupCoreRequestBody.shardBackupId = shardBackupId.getIdAsString();
-    backupCoreAPI.createIncrementBackup(DEFAULT_TEST_COLLECTION_NAME, null, backupCoreRequestBody);
+    backupCoreRequestBody.incremental = true;
+    backupCoreAPI.createBackup(DEFAULT_TEST_COLLECTION_NAME, null, backupCoreRequestBody);
     assertNull("Backup should have succeeded", resp.getException());
     simpleBackupCheck(locationUri, shardBackupId);
   }
@@ -112,12 +113,12 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
         new BackupCoreAPI.BackupCoreRequestBody();
     backupCoreRequestBody.location = locationPath.toString();
     backupCoreRequestBody.shardBackupId = null;
-
+    backupCoreRequestBody.incremental = true;
     Exception ex =
         expectThrows(
             Exception.class,
             () ->
-                backupCoreAPI.createIncrementBackup(
+                backupCoreAPI.createBackup(
                     DEFAULT_TEST_COLLECTION_NAME, null, backupCoreRequestBody));
     assertTrue(ex.getClass() == SolrException.class);
     assertTrue(((SolrException) ex).code() == 400);

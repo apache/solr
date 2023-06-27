@@ -20,10 +20,14 @@ package org.apache.solr.handler.admin;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.handler.admin.api.BackupCoreAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.SolrJerseyResponse;
+
+import java.util.HashMap;
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
@@ -45,14 +49,17 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
       backupCoreRequestBody.shardBackupId = params.required().get(CoreAdminParams.SHARD_BACKUP_ID);
       backupCoreRequestBody.prevShardBackupId =
           params.get(CoreAdminParams.PREV_SHARD_BACKUP_ID, null);
+      backupCoreRequestBody.incremental = true;
     }
-    BackupCoreAPI backupCoreAPI = new BackupCoreAPI(it.handler.coreContainer, it.req, it.rsp);
+    BackupCoreAPI backupCoreAPI = new BackupCoreAPI(it.handler.coreContainer, it.req, it.rsp, it.handler.coreAdminAsyncTracker);
     try {
-      SolrJerseyResponse response;
-      if (incremental) {
-        response = backupCoreAPI.createIncrementBackup(cname, name, backupCoreRequestBody);
-      } else response = backupCoreAPI.createBackup(cname, name, backupCoreRequestBody);
-      V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
+      //SolrJerseyResponse response  = backupCoreAPI.createBackup(cname, name, backupCoreRequestBody);
+      SolrJerseyResponse response  = backupCoreAPI.createBackup(cname, name, backupCoreRequestBody,null);
+      NamedList<Object> namedList = new NamedList<>();
+      V2ApiUtils.squashIntoNamedList(namedList, response);
+      it.rsp.addResponse(namedList);
+
+      //it.rsp.addResponse(response.toMap(new HashMap<>()));
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

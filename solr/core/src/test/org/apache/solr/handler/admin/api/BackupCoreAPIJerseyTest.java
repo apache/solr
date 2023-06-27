@@ -43,6 +43,7 @@ import org.glassfish.jersey.process.internal.RequestScoped;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class BackupCoreAPIJerseyTest extends JerseyTest {
 
@@ -121,7 +122,7 @@ public class BackupCoreAPIJerseyTest extends JerseyTest {
     System.out.println(jsonBody);
   }
 
-  // @Test
+   @Test
   public void testMissingRequiredParameterResultIn400ForIncrementalBackup() {
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody =
         new BackupCoreAPI.BackupCoreRequestBody();
