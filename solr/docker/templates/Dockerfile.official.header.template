@@ -27,7 +27,7 @@ ARG SOLR_DIST="_REPLACE_SOLR_DIST_"
 ARG SOLR_SHA512="_REPLACE_SOLR_TGZ_SHA_"
 ARG SOLR_KEYS="_REPLACE_RELEASE_MANAGER_GPG_FINGERPRINT_"
 
-# Override the default solr download location with a prefered mirror, e.g.:
+# Override the default solr download location with a preferred mirror, e.g.:
 #   docker build -t mine --build-arg SOLR_DOWNLOAD_SERVER=https://downloads.apache.org/solr/solr .
 # This server must support downloading at: ${SOLR_DOWNLOAD_SERVER}/${SOLR_VERSION}/solr-${SOLR_VERSION}(-slim).tgz(.asc)
 ARG SOLR_DOWNLOAD_SERVER="https://www.apache.org/dyn/closer.lua?action=download&filename=/solr/solr"

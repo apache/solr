@@ -88,7 +88,7 @@ The only way to specify a custom location for the Solr binaries is through `SOLR
 If the server URL contains `apache.org`, then the Dockerfile will check gpg signature files.
 If the server URL does not contain `apache.org`, then the gpg signature checking will be skipped.
 +
-It is still strongly recommended to use the Dockerfile included Solr binary TGZs if you want to build Solr images with custom versions of Solr.
+It is still strongly recommended to use the Dockerfile included in the Solr binary TGZs if you want to build Solr images with custom versions of Solr.
 The custom version of Solr will include this Dockerfile when it is built.
 
 == Solr 9.2
