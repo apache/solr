@@ -70,6 +70,8 @@ New Features
 * SOLR-16806: Solr now provides a BalanceReplicas API at `POST /api/cluster/replicas/balance` (v2), to spread replicas
   across a given set of nodes. No v1 API is available. (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
+* SOLR-16827: Add min/max scaling to the reranker (Joel Bernstein)
+
 Improvements
 ---------------------
 
