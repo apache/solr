@@ -21,6 +21,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentracing.noop.NoopSpan;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
@@ -73,9 +75,9 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   public void testFetchFiles() throws Exception {
     CoreReplicationAPI.FileListResponse actualResponse = coreReplicationAPI.fetchFileList(-1);
-    assertEquals(123, actualResponse.getFileList().get(0).getSize());
-    assertEquals("test", actualResponse.getFileList().get(0).getName());
-    assertEquals(123456789, actualResponse.getFileList().get(0).getChecksum());
+    assertEquals(123, actualResponse.fileList.get(0).size);
+    assertEquals("test", actualResponse.fileList.get(0).size);
+    assertEquals(123456789, actualResponse.fileList.get(0).size);
   }
 
   private void setUpMocks() {
@@ -93,7 +95,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     protected FileListResponse getFileList(long generation, ReplicationHandler replicationHandler) {
       final FileListResponse filesResponse = new FileListResponse();
       List<FileMetaData> fileMetaData = Arrays.asList(new FileMetaData(123, "test", 123456789));
-      filesResponse.addToFileList(fileMetaData);
+      filesResponse.fileList = new ArrayList<>(fileMetaData);
       return filesResponse;
     }
   }
