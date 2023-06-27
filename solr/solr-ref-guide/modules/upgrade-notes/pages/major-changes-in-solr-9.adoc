@@ -83,7 +83,7 @@ Older configuration now does nothing.
 Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
 
 === Deletion of unknown cores is now disabled by default
-When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper. Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files. As of Solr 9.3 that behaviour is no longer enabled by default. To re-enable that behaviour edit your `include file to set `SOLR_DELETE_UNKNOWN_CORES` to `true`.
+When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper. Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files. As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[]
 
 [source,bash]
 ----
