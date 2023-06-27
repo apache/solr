@@ -739,12 +739,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         } catch (IOException e) {
           // proceed with zeroes for now, will probably error on checksum anyway
         }
-        if (info == null || info.lastmodified != lastModified || info.size != size) {
+        if (info == null || info.lastmodified != lastModified || info.fileMetaData.getSize() != size) {
           if (checksum == null) checksum = new Adler32();
           info = new FileInfo(lastModified, cf, size, getCheckSum(checksum, f));
           confFileInfoCache.put(cf, info);
         }
-        CoreReplicationAPI.FileMetaData m = info.getAsMap();
+        CoreReplicationAPI.FileMetaData m = info.fileMetaData;
         if (nameAndAlias.getVal(i) != null) m.setAlias(nameAndAlias.getVal(i));
         confFiles.add(m);
       }
@@ -754,20 +754,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   static class FileInfo {
     long lastmodified;
-    String name;
-    long size;
-    long checksum;
+    CoreReplicationAPI.FileMetaData fileMetaData;
 
     public FileInfo(long lasmodified, String name, long size, long checksum) {
       this.lastmodified = lasmodified;
-      this.name = name;
-      this.size = size;
-      this.checksum = checksum;
+      this.fileMetaData = new CoreReplicationAPI.FileMetaData(size, name, checksum);
     }
 
-    CoreReplicationAPI.FileMetaData getAsMap() {
-      return new CoreReplicationAPI.FileMetaData(size, name, checksum);
-    }
   }
 
   private void disablePoll(SolrQueryResponse rsp) {
