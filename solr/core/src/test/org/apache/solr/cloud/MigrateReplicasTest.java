@@ -17,7 +17,19 @@
 
 package org.apache.solr.cloud;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.codahale.metrics.Metric;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpPost;
@@ -30,20 +42,14 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.handler.admin.api.BalanceReplicasAPI;
 import org.apache.solr.handler.admin.api.MigrateReplicasAPI;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.Before;
@@ -52,21 +58,6 @@ import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
-import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 
 public class MigrateReplicasTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -131,16 +122,15 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     DocCollection collection = cloudClient.getClusterState().getCollection(coll);
     log.debug("### Before decommission: {}", collection);
     log.info("excluded_node : {}  ", emptyNode);
-    Map<?,?> response = callMigrateReplicas(
+    Map<?, ?> response =
+        callMigrateReplicas(
             cloudClient,
             new MigrateReplicasAPI.MigrateReplicasRequestBody(
-                    Set.of(nodeToBeDecommissioned),
-                    Set.of(emptyNode),
-                    true,
-                    null
-            )
-    );
-    assertEquals("MigrateReplicas request was unsuccessful", 0L, ((Map<?,?>)response.get("responseHeader")).get("status"));
+                Set.of(nodeToBeDecommissioned), Set.of(emptyNode), true, null));
+    assertEquals(
+        "MigrateReplicas request was unsuccessful",
+        0L,
+        ((Map<?, ?>) response.get("responseHeader")).get("status"));
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
     try (SolrClient coreClient =
         getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))) {
@@ -159,16 +149,15 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     log.debug("### Existing replicas on decommissioned node: {}", replicas);
 
     // let's do it back - this time wait for recoveries
-    response = callMigrateReplicas(
+    response =
+        callMigrateReplicas(
             cloudClient,
             new MigrateReplicasAPI.MigrateReplicasRequestBody(
-                    Set.of(emptyNode),
-                    Set.of(nodeToBeDecommissioned),
-                    true,
-                    null
-            )
-    );
-    assertEquals("MigrateReplicas request was unsuccessful", 0L, ((Map<?,?>)response.get("responseHeader")).get("status"));
+                Set.of(emptyNode), Set.of(nodeToBeDecommissioned), true, null));
+    assertEquals(
+        "MigrateReplicas request was unsuccessful",
+        0L,
+        ((Map<?, ?>) response.get("responseHeader")).get("status"));
 
     try (SolrClient coreClient =
         getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(emptyNode))) {
@@ -274,7 +263,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(
         coll,
         create.getNumShards(),
-            create.getNumShards()
+        create.getNumShards()
             * (create.getNumNrtReplicas()
                 + create.getNumPullReplicas()
                 + create.getNumTlogReplicas()));
@@ -285,15 +274,15 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         l.stream()
             .map(node -> initialCollection.getReplicas(node).size())
             .collect(Collectors.toList());
-    Map<?, ?> response = callMigrateReplicas(
+    Map<?, ?> response =
+        callMigrateReplicas(
             cloudClient,
             new MigrateReplicasAPI.MigrateReplicasRequestBody(
-                    new HashSet<>(nodesToBeDecommissioned),
-                    Collections.emptySet(),
-                    true,
-                    null)
-    );
-    assertEquals("MigrateReplicas request was unsuccessful", 0L, ((Map<?,?>)response.get("responseHeader")).get("status"));
+                new HashSet<>(nodesToBeDecommissioned), Collections.emptySet(), true, null));
+    assertEquals(
+        "MigrateReplicas request was unsuccessful",
+        0L,
+        ((Map<?, ?>) response.get("responseHeader")).get("status"));
 
     DocCollection collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     assertNotNull("Collection cannot be null: " + coll, collection);
@@ -305,14 +294,16 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         replicas = Collections.emptyList();
       }
       assertEquals(
-              "There should be no more replicas on the sourceNode after a migrateReplicas request.",
-              Collections.emptyList(),
-              replicas);
+          "There should be no more replicas on the sourceNode after a migrateReplicas request.",
+          Collections.emptyList(),
+          replicas);
     }
 
     for (String node : eventualTargetNodes) {
       assertEquals(
-              "The non-source node '" + node + "' has the wrong number of replicas after the migration", 2, collection.getReplicas(node).size());
+          "The non-source node '" + node + "' has the wrong number of replicas after the migration",
+          2,
+          collection.getReplicas(node).size());
     }
   }
 
@@ -333,33 +324,37 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(coll, 5, 5);
 
     String liveNode = cloudClient.getClusterState().getLiveNodes().iterator().next();
-    Map<?, ?> response = callMigrateReplicas(
-                cloudClient,
-                new MigrateReplicasAPI.MigrateReplicasRequestBody(
-                        Set.of(liveNode),
-                        Collections.emptySet(),
-                        true,
-                        null)
-        );
-    assertNotNull("No error in response, when the request should have failed", response.get("error"));
-    assertEquals("Wrong error message", "No nodes other than the source nodes are live, therefore replicas cannot be migrated", ((Map<?,?>)response.get("error")).get("msg"));
+    Map<?, ?> response =
+        callMigrateReplicas(
+            cloudClient,
+            new MigrateReplicasAPI.MigrateReplicasRequestBody(
+                Set.of(liveNode), Collections.emptySet(), true, null));
+    assertNotNull(
+        "No error in response, when the request should have failed", response.get("error"));
+    assertEquals(
+        "Wrong error message",
+        "No nodes other than the source nodes are live, therefore replicas cannot be migrated",
+        ((Map<?, ?>) response.get("error")).get("msg"));
   }
 
-  public Map<?, ?> callMigrateReplicas(CloudSolrClient cloudClient, MigrateReplicasAPI.MigrateReplicasRequestBody body)
-          throws IOException {
+  public Map<?, ?> callMigrateReplicas(
+      CloudSolrClient cloudClient, MigrateReplicasAPI.MigrateReplicasRequestBody body)
+      throws IOException {
     HttpEntityEnclosingRequestBase httpRequest = null;
     HttpEntity entity;
     String response = null;
     Map<?, ?> r = null;
 
-    String uri = cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "") + "/api/cluster/replicas/migrate";
+    String uri =
+        cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "")
+            + "/api/cluster/replicas/migrate";
     try {
       httpRequest = new HttpPost(uri);
 
       httpRequest.setEntity(new ByteArrayEntity(Utils.toJSON(body), ContentType.APPLICATION_JSON));
       httpRequest.setHeader("Accept", "application/json");
       entity =
-              ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();
+          ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();
       try {
         response = EntityUtils.toString(entity, UTF_8);
         r = (Map<?, ?>) Utils.fromJSONString(response);
