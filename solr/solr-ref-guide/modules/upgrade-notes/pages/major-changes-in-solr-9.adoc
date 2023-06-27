@@ -94,7 +94,7 @@ The custom version of Solr will include this Dockerfile when it is built.
 === Deletion of unknown cores is now disabled by default
 When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper.
 Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files.
-As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[unknown core deletion].
+As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[Unknown core deletion].
 
 [source,bash]
 ----
