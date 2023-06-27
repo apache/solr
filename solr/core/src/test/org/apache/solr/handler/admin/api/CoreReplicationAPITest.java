@@ -75,8 +75,8 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   public void testFetchFiles() throws Exception {
     CoreReplicationAPI.FileListResponse actualResponse = coreReplicationAPI.fetchFileList(-1);
     assertEquals(123, actualResponse.fileList.get(0).size);
-    assertEquals("test", actualResponse.fileList.get(0).size);
-    assertEquals(123456789, actualResponse.fileList.get(0).size);
+    assertEquals("test", actualResponse.fileList.get(0).name);
+    assertEquals(123456789, actualResponse.fileList.get(0).checksum);
   }
 
   private void setUpMocks() {
