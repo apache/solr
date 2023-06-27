@@ -135,6 +135,7 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   protected Set<String> getNodesFromParam(ZkNodeProps message, String paramName) {
     Object rawParam = message.get(paramName);
     if (rawParam == null) {

@@ -64,7 +64,7 @@ public class MigrateReplicasAPI extends AdminAPIBase {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
   @Operation(summary = "Migrate Replicas from a given set of nodes.")
-  public SolrJerseyResponse balanceReplicas(
+  public SolrJerseyResponse migrateReplicas(
       @RequestBody(description = "Contains user provided parameters", required = true)
           MigrateReplicasRequestBody requestBody)
       throws Exception {
