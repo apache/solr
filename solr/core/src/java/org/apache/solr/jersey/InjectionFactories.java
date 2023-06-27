@@ -20,7 +20,6 @@ package org.apache.solr.jersey;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_CORE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_PARAMS;
 
-import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import org.apache.solr.common.params.SolrParams;
@@ -33,38 +32,26 @@ import org.glassfish.hk2.api.ServiceLocator;
 
 public class InjectionFactories {
 
-  public static class SolrQueryRequestFactory implements Factory<SolrQueryRequest> {
-
-    private final ContainerRequestContext containerRequestContext;
-
-    @Inject
-    public SolrQueryRequestFactory(ContainerRequestContext containerRequestContext) {
-      this.containerRequestContext = containerRequestContext;
-    }
+  public static class SolrQueryRequestFactory extends RequestContextBasedFactory
+      implements Factory<SolrQueryRequest> {
 
     @Override
     public SolrQueryRequest provide() {
       return (SolrQueryRequest)
-          containerRequestContext.getProperty(RequestContextKeys.SOLR_QUERY_REQUEST);
+          getRequestContext().getProperty(RequestContextKeys.SOLR_QUERY_REQUEST);
     }
 
     @Override
     public void dispose(SolrQueryRequest instance) {}
   }
 
-  public static class SolrQueryResponseFactory implements Factory<SolrQueryResponse> {
-
-    private final ContainerRequestContext containerRequestContext;
-
-    @Inject
-    public SolrQueryResponseFactory(ContainerRequestContext containerRequestContext) {
-      this.containerRequestContext = containerRequestContext;
-    }
+  public static class SolrQueryResponseFactory extends RequestContextBasedFactory
+      implements Factory<SolrQueryResponse> {
 
     @Override
     public SolrQueryResponse provide() {
       return (SolrQueryResponse)
-          containerRequestContext.getProperty(RequestContextKeys.SOLR_QUERY_RESPONSE);
+          getRequestContext().getProperty(RequestContextKeys.SOLR_QUERY_RESPONSE);
     }
 
     @Override
@@ -72,17 +59,12 @@ public class InjectionFactories {
   }
 
   /** Fetch the (existing) SolrCore from the request context */
-  public static class ReuseFromContextSolrCoreFactory implements Factory<SolrCore> {
-
-    @Context ServiceLocator serviceLocator;
+  public static class ReuseFromContextSolrCoreFactory extends RequestContextBasedFactory
+      implements Factory<SolrCore> {
 
     @Override
     public SolrCore provide() {
-      return doProvide(serviceLocator.getService(ContainerRequestContext.class));
-    }
-
-    private SolrCore doProvide(ContainerRequestContext containerRequestContext) {
-      return (SolrCore) containerRequestContext.getProperty(SOLR_CORE);
+      return (SolrCore) getRequestContext().getProperty(SOLR_CORE);
     }
 
     @Override
@@ -90,7 +72,6 @@ public class InjectionFactories {
   }
 
   public static class ReuseFromContextIndexSchemaFactory implements Factory<IndexSchema> {
-
     @Context ServiceLocator serviceLocator;
 
     @Override
@@ -106,21 +87,24 @@ public class InjectionFactories {
     public void dispose(IndexSchema instance) {}
   }
 
-  public static class ReuseFromContextSolrParamsFactory implements Factory<SolrParams> {
-
-    @Context ServiceLocator serviceLocator;
+  public static class ReuseFromContextSolrParamsFactory extends RequestContextBasedFactory
+      implements Factory<SolrParams> {
 
     @Override
     public SolrParams provide() {
-      return doProvide(serviceLocator.getService(ContainerRequestContext.class));
-    }
-
-    private SolrParams doProvide(ContainerRequestContext containerRequestContext) {
-      return (SolrParams) containerRequestContext.getProperty(SOLR_PARAMS);
+      return (SolrParams) getRequestContext().getProperty(SOLR_PARAMS);
     }
 
     @Override
     public void dispose(SolrParams instance) {}
+  }
+
+  public static class RequestContextBasedFactory {
+    @Context ServiceLocator serviceLocator;
+
+    public ContainerRequestContext getRequestContext() {
+      return serviceLocator.getService(ContainerRequestContext.class);
+    }
   }
 
   public static class SingletonFactory<T> implements Factory<T> {
