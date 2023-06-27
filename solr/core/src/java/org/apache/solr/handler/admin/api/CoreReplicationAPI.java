@@ -22,12 +22,10 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PER
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.apache.solr.core.SolrCore;
@@ -59,14 +57,13 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
   }
 
   @GET
-  @Path("/files/generation/{gen}")
+  @Path("/files")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
   public FileListResponse fetchFileList(
       @Parameter(description = "The generation number of the index", required = true)
-          @PathParam("gen")
+          @QueryParam("generation")
           long gen) {
-    FileListResponse response = doFetchFileList(gen);
     return doFetchFileList(gen);
   }
 
@@ -109,7 +106,6 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
     public Exception exception;
 
     public FileListResponse() {}
-
   }
 
   /**

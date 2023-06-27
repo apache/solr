@@ -760,7 +760,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       this.lastmodified = lasmodified;
       this.fileMetaData = new CoreReplicationAPI.FileMetaData(size, name, checksum);
     }
-
   }
 
   private void disablePoll(SolrQueryResponse rsp) {

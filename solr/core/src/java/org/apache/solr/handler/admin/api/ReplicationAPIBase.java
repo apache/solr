@@ -165,9 +165,11 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       String includeConfFiles = replicationHandler.getIncludeConfFiles();
       log.debug("Adding config files to list: {}", includeConfFiles);
       // if configuration files need to be included get their details
-      filesResponse.confFiles = new ArrayList<>(replicationHandler.getConfFileInfoFromCache(
-              replicationHandler.getConfFileNameAlias(),
-              replicationHandler.getConfFileInfoCache()));
+      filesResponse.confFiles =
+          new ArrayList<>(
+              replicationHandler.getConfFileInfoFromCache(
+                  replicationHandler.getConfFileNameAlias(),
+                  replicationHandler.getConfFileInfoCache()));
       filesResponse.status = OK_STATUS;
 
     } finally {

@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.opentracing.noop.NoopSpan;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
