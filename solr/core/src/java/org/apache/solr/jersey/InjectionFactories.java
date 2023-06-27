@@ -22,12 +22,14 @@ import static org.apache.solr.jersey.RequestContextKeys.SOLR_PARAMS;
 
 import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.ServiceLocator;
 
 public class InjectionFactories {
 
@@ -72,15 +74,14 @@ public class InjectionFactories {
   /** Fetch the (existing) SolrCore from the request context */
   public static class ReuseFromContextSolrCoreFactory implements Factory<SolrCore> {
 
-    private final ContainerRequestContext containerRequestContext;
-
-    @Inject
-    public ReuseFromContextSolrCoreFactory(ContainerRequestContext containerRequestContext) {
-      this.containerRequestContext = containerRequestContext;
-    }
+    @Context ServiceLocator serviceLocator;
 
     @Override
     public SolrCore provide() {
+      return doProvide(serviceLocator.getService(ContainerRequestContext.class));
+    }
+
+    private SolrCore doProvide(ContainerRequestContext containerRequestContext) {
       return (SolrCore) containerRequestContext.getProperty(SOLR_CORE);
     }
 
@@ -90,15 +91,14 @@ public class InjectionFactories {
 
   public static class ReuseFromContextIndexSchemaFactory implements Factory<IndexSchema> {
 
-    private final SolrCore solrCore;
-
-    @Inject
-    public ReuseFromContextIndexSchemaFactory(SolrCore solrCore) {
-      this.solrCore = solrCore;
-    }
+    @Context ServiceLocator serviceLocator;
 
     @Override
     public IndexSchema provide() {
+      return doProvide(serviceLocator.getService(SolrCore.class));
+    }
+
+    private IndexSchema doProvide(SolrCore solrCore) {
       return solrCore.getLatestSchema();
     }
 
@@ -108,15 +108,14 @@ public class InjectionFactories {
 
   public static class ReuseFromContextSolrParamsFactory implements Factory<SolrParams> {
 
-    private final ContainerRequestContext containerRequestContext;
-
-    @Inject
-    public ReuseFromContextSolrParamsFactory(ContainerRequestContext containerRequestContext) {
-      this.containerRequestContext = containerRequestContext;
-    }
+    @Context ServiceLocator serviceLocator;
 
     @Override
     public SolrParams provide() {
+      return doProvide(serviceLocator.getService(ContainerRequestContext.class));
+    }
+
+    private SolrParams doProvide(ContainerRequestContext containerRequestContext) {
       return (SolrParams) containerRequestContext.getProperty(SOLR_PARAMS);
     }
 
