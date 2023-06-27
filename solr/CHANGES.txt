@@ -77,6 +77,8 @@ New Features
 * SOLR-16806: Solr now provides a BalanceReplicas API at `POST /api/cluster/replicas/balance` (v2), to spread replicas
   across a given set of nodes. No v1 API is available. (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
+* SOLR-16827: Add min/max scaling to the reranker (Joel Bernstein)
+
 Improvements
 ---------------------
 
@@ -184,6 +186,10 @@ Improvements
   (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
 * SOLR-16820: Align allowed collection names and the validation of them in the CreateCollectionAPI and the PackageTool. (Will White via Eric Pugh)
+
+* SOLR-16748: The Official Solr Dockerfile has been cleaned up. The SOLR_DOWNLOAD_SERVER arg is now the only way to
+  specify where to download Solr from. If the url includes "apache.org", then GPG checks will be computed, otherwise
+  the GPG checks will be skipped. (Houston Putman)
 
 Optimizations
 ---------------------
