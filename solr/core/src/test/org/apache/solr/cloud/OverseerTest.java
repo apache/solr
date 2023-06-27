@@ -1947,8 +1947,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .build();
     solrClients.add(client);
-    SolrClientCloudManager sccm =
-        new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), client);
+    SolrClientCloudManager sccm = new SolrClientCloudManager(client);
     sccm.getClusterStateProvider().connect();
     return sccm;
   }
