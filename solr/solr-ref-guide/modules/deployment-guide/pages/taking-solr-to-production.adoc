@@ -292,15 +292,16 @@ See xref:zookeeper-utilities.adoc[] for more info.
 
 ==== Unknown core deletion
 
-When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper. If no corresponding entry exists the core will be deleted automatically to remove the orphaned files.
+When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper. If no corresponding entry exists the core will be skipped and a warning will be logged.
+This protects against misconfiguration (e.g. connecting to the wrong ZooKeeper instance or chroot) where the index would still be valid once the configuration is corrected. However you may
+need to manually delete unwanted cores that have not been removed successfully as part of intentional deletion of a collection.
 
-To disable this behavior and delete the files manually, edit your `include file to set `SOLR_DELETE_UNKNOWN_CORES` to `false`.
+If you would prefer to automatically remove the orphaned files you can edit your include file to set `SOLR_DELETE_UNKNOWN_CORES` to `true`.
 
 [source,bash]
 ----
-SOLR_DELETE_UNKNOWN_CORES=false
+SOLR_DELETE_UNKNOWN_CORES=true
 ----
-Doing so may protect against misconfiguration (e.g. connecting to the wrong ZooKeeper instance or chroot) where the index would still be valid once the configuration is corrected.
 
 === Solr Hostname
 

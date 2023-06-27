@@ -1684,7 +1684,7 @@ public class CoreContainer {
         // this mostly happens when the core is deleted when this node is down
         // but it can also happen if connecting to the wrong zookeeper
         final boolean deleteUnknownCores =
-            Boolean.parseBoolean(System.getProperty("solr.deleteUnknownCores", "true"));
+            Boolean.parseBoolean(System.getProperty("solr.deleteUnknownCores", "false"));
         log.error(
             "SolrCore {} in {} is not in cluster state.{}",
             dcore.getName(),

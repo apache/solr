@@ -83,11 +83,11 @@
 # By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 #SOLR_WAIT_FOR_ZK="30"
 
-# By default Solr will delete cores that are not registered in Zookeeper at startup;
-# set to "false" to disable that behavior and preserve unknown cores so that you can
-# delete them manually. This may protect against misconfiguration (e.g. connecting
-# to the wrong Zookeeper instance or chroot).
-#SOLR_DELETE_UNKNOWN_CORES=true
+# By default Solr will log a warning for cores that are not registered in Zookeeper at startup
+# but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
+# wrong Zookeeper instance or chroot), however you need to manually delete the cores if
+# they are no longer required. Set to "true" to have Solr automatically delete unknown cores.
+#SOLR_DELETE_UNKNOWN_CORES=false
 
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"

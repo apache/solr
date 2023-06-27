@@ -78,11 +78,11 @@ REM set SOLR_HOST=192.168.1.1
 REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 REM set SOLR_WAIT_FOR_ZK=30
 
-REM By default Solr will delete cores that are not registered in Zookeeper at startup;
-REM set to "false" to disable that behavior and preserve unknown cores so that you can
-REM delete them manually. This may protect against misconfiguration (e.g. connecting
-REM to the wrong Zookeeper instance or chroot).
-REM set SOLR_DELETE_UNKNOWN_CORES=true
+REM By default Solr will log a warning for cores that are not registered in Zookeeper at startup
+REM but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
+REM wrong Zookeeper instance or chroot), however you need to manually delete the cores if
+REM they are no longer required. Set to "true" to have Solr automatically delete unknown cores.
+REM set SOLR_DELETE_UNKNOWN_CORES=false
 
 REM By default the start script uses UTC; override the timezone if needed
 REM set SOLR_TIMEZONE=UTC
