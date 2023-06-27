@@ -151,7 +151,8 @@ public class IncrementalShardBackup {
                 solrCore.getIndexDir(),
                 DirectoryFactory.DirContext.DEFAULT,
                 solrCore.getSolrConfig().indexConfig.lockType);
-    try {
+    try (var permit = backupRepo.permit("backup")) {
+      assert permit != null; // javac warning
       BackupStats stats = incrementalCopy(files, dir);
       details.add("indexFileCount", stats.fileCount);
       details.add("uploadedIndexFileCount", stats.uploadedFileCount);

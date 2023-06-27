@@ -48,6 +48,17 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
   }
 
   /**
+   * Acquires a permit, used with try-finally. Should be used to wrap an aggregate heavy operation
+   * (backup or restore an index; many files).
+   *
+   * @param operation for logging; possibly for decision-making too
+   * @throws InterruptedException if it takes a long time
+   */
+  default AutoCloseable permit(String operation) throws InterruptedException {
+    return new RepoPermit(operation);
+  }
+
+  /**
    * This method returns the location where the backup should be stored (or restored from).
    *
    * @param override The location parameter supplied by the user.

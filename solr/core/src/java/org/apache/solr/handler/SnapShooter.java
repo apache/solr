@@ -286,7 +286,8 @@ public class SnapShooter {
           baseSnapDirPath);
     }
     boolean success = false;
-    try {
+    try (var permit = backupRepo.permit("backup")) {
+      assert permit != null; // javac warning
       NamedList<Object> details = new SimpleOrderedMap<>();
       details.add("startTime", Instant.now().toString());
 

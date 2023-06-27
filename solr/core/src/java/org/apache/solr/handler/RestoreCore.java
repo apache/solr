@@ -90,8 +90,8 @@ public class RestoreCore implements Callable<Boolean> {
     String indexDirPath = core.getIndexDir();
     Directory restoreIndexDir = null;
     Directory indexDir = null;
-    try {
-
+    try (var permit = repository.permit()) {
+      assert permit != null; // javac warning
       restoreIndexDir =
           core.getDirectoryFactory()
               .get(
@@ -215,6 +215,8 @@ public class RestoreCore implements Callable<Boolean> {
     void localCopy(Directory src, String filename, Directory dest) throws IOException;
 
     Checksum checksum(String filename) throws IOException;
+
+    AutoCloseable permit() throws InterruptedException;
   }
 
   /** A basic {@link RestoreRepository} simply delegates all calls to {@link BackupRepository} */
@@ -259,6 +261,11 @@ public class RestoreCore implements Callable<Boolean> {
         }
       }
       return null;
+    }
+
+    @Override
+    public AutoCloseable permit() throws InterruptedException {
+      return repository.permit("restore");
     }
   }
 
@@ -307,6 +314,11 @@ public class RestoreCore implements Callable<Boolean> {
     public Checksum checksum(String filename) {
       Optional<ShardBackupMetadata.BackedFile> backedFile = shardBackupMetadata.getFile(filename);
       return backedFile.map(bf -> bf.fileChecksum).orElse(null);
+    }
+
+    @Override
+    public AutoCloseable permit() throws InterruptedException {
+      return repository.permit("restore");
     }
 
     private String getStoredFilename(String filename) {
