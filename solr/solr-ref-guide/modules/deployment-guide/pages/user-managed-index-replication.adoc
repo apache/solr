@@ -450,7 +450,7 @@ http://_host:port_/solr/_core_name_/replication?command=filelist&generation=<_ge
 
 [source,bash]
 ----
-http://_host:port_/api/cores/_core_name_/replication/files/generation/<_generation-number_>
+http://_host:port_/api/cores/_core_name_/replication/files?generation=<_generation-number_>
 
 ----
 ====
