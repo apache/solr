@@ -1611,10 +1611,10 @@ public class IndexFetcher {
         replicationHandler.getConfFileInfoFromCache(names, confFileInfoCache);
     // compare their size/checksum to see if
     for (CoreReplicationAPI.FileMetaData fileInfo : localFilesInfo) {
-      String name = fileInfo.getName();
+      String name = fileInfo.name;
       Map<String, Object> m = nameVsFile.get(name);
       if (m == null) continue; // the file is not even present locally (so must be downloaded)
-      if (m.get(CHECKSUM).equals(fileInfo.getChecksum())) {
+      if (m.get(CHECKSUM).equals(fileInfo.checksum)) {
         nameVsFile.remove(name); // checksums are same so the file need not be downloaded
       }
     }

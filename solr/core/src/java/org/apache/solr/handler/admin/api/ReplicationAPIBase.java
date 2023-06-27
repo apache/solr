@@ -79,7 +79,7 @@ public abstract class ReplicationAPIBase extends JerseyResource {
       if (generation == -1) {
         commit = delPol.getAndSaveLatestCommit();
         if (null == commit) {
-          filesResponse.setFileList(Collections.emptyList());
+          filesResponse.fileList = Collections.emptyList();
           return filesResponse;
         }
       } else {
@@ -110,13 +110,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
             CoreReplicationAPI.FileMetaData metaData = new CoreReplicationAPI.FileMetaData();
-            metaData.setName(file);
-            metaData.setSize(dir.fileLength(file));
+            metaData.name = file;
+            metaData.size = dir.fileLength(file);
 
             try (final IndexInput in = dir.openInput(file, IOContext.READONCE)) {
               try {
                 long checksum = CodecUtil.retrieveChecksum(in);
-                metaData.setChecksum(checksum);
+                metaData.checksum = checksum;
               } catch (Exception e) {
                 // TODO Should this trigger a larger error?
                 log.warn("Could not read checksum from index file: {}", file, e);
@@ -128,13 +128,13 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
         // add the segments_N file
         CoreReplicationAPI.FileMetaData fileMetaData = new CoreReplicationAPI.FileMetaData();
-        fileMetaData.setName(infos.getSegmentsFileName());
-        fileMetaData.setSize(dir.fileLength(infos.getSegmentsFileName()));
+        fileMetaData.name = infos.getSegmentsFileName();
+        fileMetaData.size = dir.fileLength(infos.getSegmentsFileName());
         if (infos.getId() != null) {
           try (final IndexInput in =
               dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
             try {
-              fileMetaData.setChecksum(CodecUtil.retrieveChecksum(in));
+              fileMetaData.checksum = CodecUtil.retrieveChecksum(in);
             } catch (Exception e) {
               // TODO Should this trigger a larger error?
               log.warn(
@@ -158,18 +158,17 @@ public abstract class ReplicationAPIBase extends JerseyResource {
           }
         }
       }
-      filesResponse.addToFileList(result);
+      filesResponse.fileList = new ArrayList<>(result);
 
       if (replicationHandler.getConfFileNameAlias().size() < 1
           || solrCore.getCoreContainer().isZooKeeperAware()) return filesResponse;
       String includeConfFiles = replicationHandler.getIncludeConfFiles();
       log.debug("Adding config files to list: {}", includeConfFiles);
       // if configuration files need to be included get their details
-      filesResponse.addToConfFiles(
-          replicationHandler.getConfFileInfoFromCache(
+      filesResponse.confFiles = new ArrayList<>(replicationHandler.getConfFileInfoFromCache(
               replicationHandler.getConfFileNameAlias(),
               replicationHandler.getConfFileInfoCache()));
-      filesResponse.setStatus(OK_STATUS);
+      filesResponse.status = OK_STATUS;
 
     } finally {
       if (null != commit) {
@@ -186,10 +185,10 @@ public abstract class ReplicationAPIBase extends JerseyResource {
 
   private void reportErrorOnResponse(
       CoreReplicationAPI.FileListResponse fileListResponse, String message, Exception e) {
-    fileListResponse.setStatus(ERR_STATUS);
-    fileListResponse.setMessage(message);
+    fileListResponse.status = ERR_STATUS;
+    fileListResponse.message = message;
     if (e != null) {
-      fileListResponse.setException(e);
+      fileListResponse.exception = e;
     }
   }
 }

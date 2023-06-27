@@ -110,59 +110,6 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
 
     public FileListResponse() {}
 
-    public void addToFileList(List<FileMetaData> fileMetaData) {
-      if (fileList == null) {
-        fileList = new ArrayList<>();
-      }
-      fileList.addAll(fileMetaData);
-    }
-
-    public void addToConfFiles(List<FileMetaData> confFilesMetaData) {
-      if (confFiles == null) {
-        confFiles = new ArrayList<>();
-      }
-      confFiles.addAll(confFilesMetaData);
-    }
-
-    public void setFileList(List<FileMetaData> fileList) {
-      this.fileList = fileList;
-    }
-
-    public void setConfFiles(List<FileMetaData> confFiles) {
-      this.confFiles = confFiles;
-    }
-
-    public void setStatus(String status) {
-      this.status = status;
-    }
-
-    public void setMessage(String message) {
-      this.message = message;
-    }
-
-    public void setException(Exception exception) {
-      this.exception = exception;
-    }
-
-    public List<FileMetaData> getFileList() {
-      return fileList;
-    }
-
-    public List<FileMetaData> getConfFiles() {
-      return confFiles;
-    }
-
-    public String getStatus() {
-      return status;
-    }
-
-    public String getMessage() {
-      return message;
-    }
-
-    public Exception getException() {
-      return exception;
-    }
   }
 
   /**
@@ -189,38 +136,6 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
       this.size = size;
       this.name = name;
       this.checksum = checksum;
-    }
-
-    public void setSize(long size) {
-      this.size = size;
-    }
-
-    public void setName(String name) {
-      this.name = name;
-    }
-
-    public void setChecksum(long checksum) {
-      this.checksum = checksum;
-    }
-
-    public void setAlias(String alias) {
-      this.alias = alias;
-    }
-
-    public long getSize() {
-      return size;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public long getChecksum() {
-      return checksum;
-    }
-
-    public String getAlias() {
-      return alias;
     }
   }
 }

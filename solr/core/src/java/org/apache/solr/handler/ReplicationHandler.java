@@ -739,13 +739,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         } catch (IOException e) {
           // proceed with zeroes for now, will probably error on checksum anyway
         }
-        if (info == null || info.lastmodified != lastModified || info.fileMetaData.getSize() != size) {
+        if (info == null || info.lastmodified != lastModified || info.fileMetaData.size != size) {
           if (checksum == null) checksum = new Adler32();
           info = new FileInfo(lastModified, cf, size, getCheckSum(checksum, f));
           confFileInfoCache.put(cf, info);
         }
         CoreReplicationAPI.FileMetaData m = info.fileMetaData;
-        if (nameAndAlias.getVal(i) != null) m.setAlias(nameAndAlias.getVal(i));
+        if (nameAndAlias.getVal(i) != null) m.alias = nameAndAlias.getVal(i);
         confFiles.add(m);
       }
     }
