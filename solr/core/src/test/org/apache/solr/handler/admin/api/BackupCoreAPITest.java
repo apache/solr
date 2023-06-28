@@ -29,10 +29,7 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 public class BackupCoreAPITest extends SolrTestCaseJ4 {
 
@@ -143,8 +140,8 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     assertEquals(backupCoreRequestBody.shardBackupId, response.shardBackupId);
   }
 
-  @After // unique core per test
-  public void coreDestroy() {
+  @AfterClass // unique core per test
+  public static void coreDestroy() {
     deleteCore();
   }
 
