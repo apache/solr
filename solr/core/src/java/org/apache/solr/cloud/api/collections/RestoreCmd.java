@@ -321,12 +321,14 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         ConfigSetService configSetService)
         throws IOException {
       if (configSetService.checkConfigExists(restoreConfigName)) {
-        log.warn(
+        log.info(
             "Config with name {} already exists. Skipping upload to Zookeeper and using existing config.",
             restoreConfigName);
         // TODO add overwrite option?
       } else {
-        log.info("Uploading config {}", restoreConfigName);
+        log.info(
+            "Config with name {} does not already exist in ZooKeeper. Will restore from Backup.",
+            restoreConfigName);
 
         backupMgr.uploadConfigDir(configName, restoreConfigName, configSetService);
       }
