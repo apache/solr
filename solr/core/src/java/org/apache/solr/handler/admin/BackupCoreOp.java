@@ -25,7 +25,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.handler.admin.api.BackupCoreAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.SolrJerseyResponse;
 
 import java.util.HashMap;

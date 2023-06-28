@@ -27,8 +27,6 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.ws.rs.*;
-
-import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -41,7 +39,6 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.IncrementalShardBackup;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;

@@ -39,8 +39,6 @@ import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.handler.admin.api.BackupCoreAPI;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,7 +140,7 @@ public class IncrementalShardBackup {
     log.info(
         "Creating backup snapshot at {} shardBackupMetadataFile:{}", backupLocation, shardBackupId);
     NamedList<Object> details = new SimpleOrderedMap<>();
-
+    ;
     details.add("startTime", Instant.now().toString());
 
     Collection<String> files = indexCommit.getFileNames();
@@ -169,7 +167,6 @@ public class IncrementalShardBackup {
     }
 
     details.add("endTime", Instant.now().toString());
-    //Instant endTime = Instant
     details.add("shardBackupId", shardBackupId.getIdAsString());
     log.info(
         "Done creating backup snapshot at {} shardBackupMetadataFile:{}",
@@ -218,9 +215,7 @@ public class IncrementalShardBackup {
     return backupStats;
   }
 
-  private static class BackupStats implements JacksonReflectMapWriter {
-    private Instant startTime;
-    private Instant endTIme;
+  private static class BackupStats {
     private int fileCount;
     private int uploadedFileCount;
     private long indexSize;
@@ -246,5 +241,4 @@ public class IncrementalShardBackup {
       return Precision.round(totalUploadedBytes / (1024.0 * 1024), 3);
     }
   }
-
 }
