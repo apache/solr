@@ -27,6 +27,8 @@ New Features
 
 * SOLR-16827: Add min/max scaling to the reranker (Joel Bernstein)
 
+* SOLR-16844: Added new parameter `backupConfigset` to collection Backup to optionally skip backing up configsets. (Tomás Fernández Löbbe)
+
 Improvements
 ---------------------
 
