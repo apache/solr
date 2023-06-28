@@ -122,7 +122,7 @@ public class BackupCoreAPIJerseyTest extends JerseyTest {
     System.out.println(jsonBody);
   }
 
-   @Test
+  @Test
   public void testMissingRequiredParameterResultIn400ForIncrementalBackup() {
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody =
         new BackupCoreAPI.BackupCoreRequestBody();

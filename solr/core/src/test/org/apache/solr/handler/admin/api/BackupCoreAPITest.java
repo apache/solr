@@ -47,93 +47,102 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
 
   @Before
   @Override
-  public void setUp() throws Exception{
+  public void setUp() throws Exception {
     super.setUp();
     SolrQueryRequest solrQueryRequest = req();
     SolrQueryResponse solrQueryResponse = new SolrQueryResponse();
     CoreContainer coreContainer = h.getCoreContainer();
 
     CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
-            new CoreAdminHandler.CoreAdminAsyncTracker();
-    backupCoreAPI = new BackupCoreAPI(coreContainer, solrQueryRequest, solrQueryResponse, coreAdminAsyncTracker);
+        new CoreAdminHandler.CoreAdminAsyncTracker();
+    backupCoreAPI =
+        new BackupCoreAPI(
+            coreContainer, solrQueryRequest, solrQueryResponse, coreAdminAsyncTracker);
   }
 
   @Test
-  public void testCreateBackupReturnsValidResponse() throws Exception{
+  public void testCreateBackupReturnsValidResponse() throws Exception {
     final String backupName = "my-new-backup";
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.incremental = false;
-    BackupCoreAPI.SnapShooterBackupCoreResponse response = (BackupCoreAPI.SnapShooterBackupCoreResponse)backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody, null);
+    BackupCoreAPI.SnapShooterBackupCoreResponse response =
+        (BackupCoreAPI.SnapShooterBackupCoreResponse)
+            backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody, null);
 
     assertEquals(backupName, response.snapshotName);
-    assertEquals("snapshot."+backupName, response.directoryName);
-    assertEquals(1,response.fileCount);
-    assertEquals(1,response.indexFileCount);
+    assertEquals("snapshot." + backupName, response.directoryName);
+    assertEquals(1, response.fileCount);
+    assertEquals(1, response.indexFileCount);
   }
 
   @Test
-  public void testMissingLocationParameter() throws Exception{
+  public void testMissingLocationParameter() throws Exception {
     final String backupName = "my-new-backup";
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.location = null;
     backupCoreRequestBody.incremental = false;
     final SolrException solrException =
-            expectThrows(
-                    SolrException.class,
-                    () -> {
-                      backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody, null);
-                    });
+        expectThrows(
+            SolrException.class,
+            () -> {
+              backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody, null);
+            });
     assertEquals(500, solrException.code());
     assertTrue(
-            "Exception message differed from expected: " + solrException.getMessage(),
-            solrException.getMessage().contains("'location' is not specified as a query"));
+        "Exception message differed from expected: " + solrException.getMessage(),
+        solrException.getMessage().contains("'location' is not specified as a query"));
   }
 
   @Test
-  public void testMissingCoreNameParameter() throws Exception{
+  public void testMissingCoreNameParameter() throws Exception {
     final String backupName = "my-new-backup";
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.location = null;
     backupCoreRequestBody.incremental = false;
 
     final SolrException solrException =
-            expectThrows(
-                    SolrException.class,
-                    () -> {
-                      backupCoreAPI.createBackup(null, backupName, backupCoreRequestBody, null);
-                    });
+        expectThrows(
+            SolrException.class,
+            () -> {
+              backupCoreAPI.createBackup(null, backupName, backupCoreRequestBody, null);
+            });
     assertEquals(400, solrException.code());
     assertTrue(
-            "Exception message differed from expected: " + solrException.getMessage(),
-            solrException.getMessage().contains("Missing required parameter:"));
+        "Exception message differed from expected: " + solrException.getMessage(),
+        solrException.getMessage().contains("Missing required parameter:"));
   }
+
   @Test
-  public void testBackupForNonExistentCore() throws Exception{
+  public void testBackupForNonExistentCore() throws Exception {
     final String backupName = "my-new-backup";
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.location = null;
     backupCoreRequestBody.incremental = false;
     final SolrException solrException =
-            expectThrows(
-                    SolrException.class,
-                    () -> {
-                      backupCoreAPI.createBackup("non-existent-core", backupName, backupCoreRequestBody, null);
-                    });
+        expectThrows(
+            SolrException.class,
+            () -> {
+              backupCoreAPI.createBackup(
+                  "non-existent-core", backupName, backupCoreRequestBody, null);
+            });
     assertEquals(500, solrException.code());
   }
 
   @Test
-  public void testCreateIncrementalBackupReturnsValidResponse() throws Exception{
+  public void testCreateIncrementalBackupReturnsValidResponse() throws Exception {
     final String backupName = "my-new-backup";
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.incremental = true;
     backupCoreRequestBody.shardBackupId = "md_shard1_0";
-    BackupCoreAPI.IncrementalBackupCoreResponse response = (BackupCoreAPI.IncrementalBackupCoreResponse)backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody, null);
+    BackupCoreAPI.IncrementalBackupCoreResponse response =
+        (BackupCoreAPI.IncrementalBackupCoreResponse)
+            backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody, null);
 
     assertEquals(1, response.indexFileCount);
     assertEquals(1, response.uploadedIndexFileCount);
     assertEquals(backupCoreRequestBody.shardBackupId, response.shardBackupId);
   }
+
   @After // unique core per test
   public void coreDestroy() {
     deleteCore();
@@ -142,6 +151,7 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
   private Path createBackupLocation() {
     return createTempDir().toAbsolutePath();
   }
+
   private URI bootstrapBackupLocation(Path locationPath) throws IOException {
     final String locationPathStr = locationPath.toString();
     h.getCoreContainer().getAllowPaths().add(locationPath);
@@ -152,12 +162,14 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
       return locationUri;
     }
   }
-  private BackupCoreAPI.BackupCoreRequestBody createBackupCoreRequestBody() throws Exception{
+
+  private BackupCoreAPI.BackupCoreRequestBody createBackupCoreRequestBody() throws Exception {
     final Path locationPath = createBackupLocation();
     final URI locationUri = bootstrapBackupLocation(locationPath);
     final CoreContainer cores = h.getCoreContainer();
     cores.getAllowPaths().add(Paths.get(locationUri));
-    final BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = new BackupCoreAPI.BackupCoreRequestBody();
+    final BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody =
+        new BackupCoreAPI.BackupCoreRequestBody();
     backupCoreRequestBody.location = locationPath.toString();
     return backupCoreRequestBody;
   }
