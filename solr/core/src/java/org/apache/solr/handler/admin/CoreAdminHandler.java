@@ -382,11 +382,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-<<<<<<< HEAD
-    return List.of(CoreSnapshotAPI.class, BackupCoreAPI.class);
-=======
-    return List.of(CoreSnapshotAPI.class, InstallCoreDataAPI.class);
->>>>>>> 00a5cb546b6b0cab8e21c2cdc69fe53809f58a95
+    return List.of(CoreSnapshotAPI.class, InstallCoreDataAPI.class, BackupCoreAPI.class);
   }
 
   static {
