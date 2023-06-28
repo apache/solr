@@ -252,6 +252,8 @@ Bug Fixes
 
 * SOLR-16848: Flaky DeleteReplicaTest.raceConditionOnDeleteAndRegisterReplica (Alex Deparvu, Paul McArthur)
 
+* SOLR-16619: Fix solr scripts running on IBM i (Jesse Gorzinski via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
