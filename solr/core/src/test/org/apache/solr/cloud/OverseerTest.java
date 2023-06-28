@@ -1936,11 +1936,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt())).thenCallRealMethod();
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt(), anyBoolean()))
         .thenCallRealMethod();
-    doReturn(getCloudDataProvider(zkAddress, zkClient)).when(zkController).getSolrCloudManager();
+    doReturn(getCloudDataProvider(zkAddress)).when(zkController).getSolrCloudManager();
     return zkController;
   }
 
-  private SolrCloudManager getCloudDataProvider(String zkAddress, SolrZkClient zkClient) {
+  private SolrCloudManager getCloudDataProvider(String zkAddress) {
     var client =
         new CloudLegacySolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
             .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
