@@ -184,6 +184,9 @@ Improvements
   specify where to download Solr from. If the url includes "apache.org", then GPG checks will be computed, otherwise
   the GPG checks will be skipped. (Houston Putman)
 
+* SOLR-16490:  A v2 equivalent for /admin/cores "BACKUPCORE" is now available at `POST /api/cores/{coreName}/backup/{name}
+  (Sanjay Dutt via Jason Gerlowski)`
+
 Optimizations
 ---------------------
 
