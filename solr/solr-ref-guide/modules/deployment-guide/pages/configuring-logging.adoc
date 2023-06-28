@@ -188,22 +188,6 @@ For example:
 </Logger>
 ----
 
-== Selective logging on SolrCore
-
-It can sometimes be a bit noisy when SolrCore#execute prints info on each response. Selective logging can be configured on SolrCore with `MarkerFilter` in `log4j2.xml`.
-
-For example:
-
-[source,xml]
-----
-<Logger name="org.apache.solr.core.SolrCore.Request" level="info">
-  <Filters>
-    <MarkerFilter marker="/get" onMatch="DENY" onMismatch="NEUTRAL"/>
-    <MarkerFilter marker="/replication" onMatch="DENY" onMismatch="NEUTRAL"/>
-  </Filters>
-</Logger>
-----
-
 == Request Logging
 
 Every incoming HTTP(s) request is by default logged in the standard https://en.wikipedia.org/wiki/Common_Log_Format[`NCSA format`]
