@@ -220,6 +220,8 @@ Bug Fixes
 
 * SOLR-16831: Fixed bin/solr healthcheck command returning cluster status details. Removed SolrCloudTool class that is no longer used. (Eric Pugh)
 
+* SOLR-16848: Flaky DeleteReplicaTest.raceConditionOnDeleteAndRegisterReplica (Alex Deparvu, Paul McArthur)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
