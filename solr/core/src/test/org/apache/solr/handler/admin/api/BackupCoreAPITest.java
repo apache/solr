@@ -29,7 +29,10 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
 
 public class BackupCoreAPITest extends SolrTestCaseJ4 {
 
