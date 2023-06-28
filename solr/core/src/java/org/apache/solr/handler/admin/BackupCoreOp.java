@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.handler.admin.api.BackupCoreAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -53,13 +54,12 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
     }
     BackupCoreAPI backupCoreAPI = new BackupCoreAPI(it.handler.coreContainer, it.req, it.rsp, it.handler.coreAdminAsyncTracker);
     try {
-      //SolrJerseyResponse response  = backupCoreAPI.createBackup(cname, name, backupCoreRequestBody);
       SolrJerseyResponse response  = backupCoreAPI.createBackup(cname, name, backupCoreRequestBody,null);
-      NamedList<Object> namedList = new NamedList<>();
+      NamedList<Object> namedList = new SimpleOrderedMap<>();
       V2ApiUtils.squashIntoNamedList(namedList, response);
+      namedList.remove("responseHeader");
       it.rsp.addResponse(namedList);
 
-      //it.rsp.addResponse(response.toMap(new HashMap<>()));
     } catch (Exception e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

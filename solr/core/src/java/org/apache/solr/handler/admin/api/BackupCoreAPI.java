@@ -31,6 +31,7 @@ import javax.ws.rs.*;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -61,7 +62,7 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse createBackup(
-          @Schema(description = "The name of the core.") @PathParam("coreName") String coreName,
+          @Schema(description = "The name of the core.") @PathParam("core")  String coreName,
           @Schema(description = "The backup will be created in a directory called snapshot.<name>")
           @PathParam("name")
           String name,
@@ -70,9 +71,11 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
           @Parameter(description = "The id to associate with the async task.") @QueryParam("async")
           String taskId)
           throws Exception {
-    BackupCoreResponse backupCoreResponse = instantiateJerseyResponse(BackupCoreResponse.class);
+    if(coreName == null)
+      throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: " + CoreAdminParams.CORE);
     return handlePotentiallyAsynchronousTask
-            (backupCoreResponse
+            (null
                     ,coreName
                     ,taskId
                     ,"backup"
@@ -113,8 +116,7 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
                         shardBackupId,
                         Optional.ofNullable(backupCoreRequestBody.commitName));
         NamedList<Object> rsp = incSnapShooter.backup();
-        backupCoreResponse.response = IncrementalBackupCoreResponse.getObjectFromNamedList(rsp);
-        return backupCoreResponse;
+        return IncrementalBackupCoreResponse.getObjectFromNamedList(rsp);
 
       }else {
         SnapShooterBackupCoreResponse snapShooterBackupCoreResponse = new SnapShooterBackupCoreResponse();
@@ -135,8 +137,7 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
         }
         snapShooter.validateCreateSnapshot();
         NamedList<Object> rsp = snapShooter.createSnapshot();
-        backupCoreResponse.response = SnapShooterBackupCoreResponse.getObjectFromNamedList(rsp);
-        return backupCoreResponse;
+        return SnapShooterBackupCoreResponse.getObjectFromNamedList(rsp);
       }
     }catch(Exception exp){
       throw new SolrException(
@@ -145,7 +146,7 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
               exp);
     }});
   }
-  public static class BackupCoreRequestBody implements JacksonReflectMapWriter {
+  public static class BackupCoreRequestBody extends SolrJerseyResponse {
 
     @Schema(description = "The name of the repository to be used for backup.")
     @JsonProperty("repository")
@@ -173,11 +174,7 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
     @JsonProperty("incremental")
     public boolean incremental;
   }
-  public static class BackupCoreResponse extends SolrJerseyResponse{
-    @JsonProperty("response")
-    public Object response;
-  }
-  public static class IncrementalBackupCoreResponse implements JacksonReflectMapWriter {
+  public static class IncrementalBackupCoreResponse extends SolrJerseyResponse {
     //public NamedList<Object> response;
     @Schema(description = "The time at which backup snapshot started at.")
     @JsonProperty("startTime")
@@ -227,7 +224,15 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
     }
   }
 
-  public static class SnapShooterBackupCoreResponse implements JacksonReflectMapWriter {
+  public static class SnapShooterBackupCoreResponse extends SolrJerseyResponse {
+
+    @Schema(description = "The time at which snapshot started at.")
+    @JsonProperty("startTime")
+    public String startTime;
+    @Schema(description = "The number of files in the snapshot.")
+    @JsonProperty("fileCount")
+    public int fileCount;
+
     @Schema(description = "The number of index files in the snapshot.")
     @JsonProperty("indexFileCount")
     public int indexFileCount;
@@ -237,12 +242,12 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
     public String status;
 
     @Schema(description = "The time at which snapshot completed at.")
+    @JsonProperty("snapshotCompletedAt")
+    public String snapshotCompletedAt;
+
+    @Schema(description = "The time at which snapshot completed at.")
     @JsonProperty("endTime")
     public String endTime;
-
-    @Schema(description = "The time at which snapshot started at.")
-    @JsonProperty("startTime")
-    public String startTime;
 
     @Schema(description = "The name of the snapshot")
     @JsonProperty("snapshotName")
@@ -260,6 +265,8 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
       snapShooterBackupCoreResponse.snapshotName = nl.get("snapshotName").toString();
       snapShooterBackupCoreResponse.status = nl.get("status").toString();
       snapShooterBackupCoreResponse.startTime = nl.get("startTime").toString();
+      snapShooterBackupCoreResponse.fileCount = Integer.parseInt(nl.get("fileCount").toString());
+      snapShooterBackupCoreResponse.snapshotCompletedAt = nl.get("snapshotCompletedAt").toString();
       return snapShooterBackupCoreResponse;
     }
   }
