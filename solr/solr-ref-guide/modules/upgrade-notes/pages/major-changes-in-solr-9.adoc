@@ -73,14 +73,23 @@ Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site 
 === Shard Management
 * Solr now provides an xref:deployment-guide:shard-management.adoc#installsharddata["Install Shard"] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
 
-== Solr 9.3
 === Solr CLI
-* the bin/solr -i and bin/solr -info removed in favour of bin/solr status command.
+* The `bin/solr -i` and `bin/solr -info` options were removed in favour of the `bin/solr status` command.
 
 === Security
 * Use of `stream.file`, `stream.url` and `stream.body` params are no longer enabled via configuration in solrconfig.xml, nor dynamic equivalents with the config API.
 Older configuration now does nothing.
 Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
+
+=== Official Docker Image
+* The customization of the Official Solr Dockerfile has been changed.
+The customization options `SOLR_DOWNLOAD_URL`, `SOLR_CLOSER_URL`, `SOLR_DIST_URL` and `SOLR_ARCHIVE_URL`, have been removed.
+The only way to specify a custom location for the Solr binaries is through `SOLR_DOWNLOAD_SERVER`.
+If the server URL contains `apache.org`, then the Dockerfile will check gpg signature files.
+If the server URL does not contain `apache.org`, then the gpg signature checking will be skipped.
++
+It is still strongly recommended to use the Dockerfile included in the Solr binary TGZs if you want to build Solr images with custom versions of Solr.
+The custom version of Solr will include this Dockerfile when it is built.
 
 == Solr 9.2
 === Upgrade to Jetty 10.x
@@ -175,7 +184,7 @@ Administrators that need Solr exposed more broadly can change the `SOLR_JETTY_HO
 If you rely upon the previous behavior, then you can change the `clientPortAddress` in `solr/server/solr/zoo.cfg`
 * Jetty low level request-logging in NCSA format is now enabled by default, with a retention of 3 days worth of logs.
 This may require some more disk space for logs than was the case in version 8.x. See xref:deployment-guide:configuring-logging.adoc[Configuring Logging] for how to change this.
-* Hadoop authentication support has been moved to the new `hadoop-auth` module. Existing Solr configurations do not need any Hadoop authentication related changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
+* Hadoop authentication support has been moved to the new `hadoop-auth` module. Users need to add the module `hadoop-auth` to classpath. The plugins has also changed package name to `org.apache.solr.security.hadoop`, but can still be loaded as shortform `class="solr.HadoopAuthPlugin"`, `class="solr.ConfigurableInternodeAuthHadoopPlugin"` or `class="solr.KerberosPlugin"`  - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 * xref:deployment-guide:jwt-authentication-plugin.adoc[JWTAuthPlugin] has been moved to a module. Users need to add the module `jwt-auth` to classpath. The plugin has also
 changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
 * Dependency updates - A lot of dependency updates removes several security issues from dependencies, and thus make Solr more secure.
