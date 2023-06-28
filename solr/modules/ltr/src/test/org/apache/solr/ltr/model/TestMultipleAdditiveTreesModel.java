@@ -98,7 +98,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.setParam("debugQuery", "on");
 
     String qryResult = JQ("/query" + query.toQueryString());
-    qryResult = qryResult.replaceAll("\n", " ");
+    qryResult = qryResult.replace("\n", " ");
 
     MatcherAssert.assertThat(qryResult, containsString("\"debug\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("debug"));
@@ -169,7 +169,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   }
 
   @Test
-  public void multipleAdditiveTreesTestTreesParamDoesNotContatinTree() throws Exception {
+  public void multipleAdditiveTreesTestTreesParamDoesNotContainTree() throws Exception {
     final ModelException expectedException =
         new ModelException("MultipleAdditiveTreesModel tree doesn't contain a tree");
     Exception ex =
@@ -295,5 +295,66 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
                   "multipleadditivetreesmodel_features.json");
             });
     assertEquals(expectedException.toString(), ex.toString());
+  }
+
+  @Test
+  public void testMultipleAdditiveTreesWithNulls() throws Exception {
+    loadFeatures("multipleadditivetreesmodel_features_with_missing_branch.json");
+    loadModels("multipleadditivetreesmodel_with_missing_branch.json");
+
+    doTestMultipleAdditiveTreesWithNulls();
+    doTestMultipleAdditiveTreesExplainWithNulls();
+  }
+
+  private void doTestMultipleAdditiveTreesWithNulls() throws Exception {
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("rows", "3");
+    query.add("fl", "*,score");
+
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA efi.user_query=w3}");
+
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==30.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==-120.0");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==-120.0");
+  }
+
+  private void doTestMultipleAdditiveTreesExplainWithNulls() throws Exception {
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("*:*");
+    query.add("fl", "*,score,[fv]");
+    query.add("rows", "3");
+
+    query.add("rq", "{!ltr reRankDocs=3 model=modelA efi.user_query=w3}");
+
+    // test out the explain feature, make sure it returns something
+    query.setParam("debugQuery", "on");
+
+    String qryResult = JQ("/query" + query.toQueryString());
+    qryResult = qryResult.replace("\n", " ");
+
+    MatcherAssert.assertThat(qryResult, containsString("\"debug\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("debug"));
+
+    MatcherAssert.assertThat(qryResult, containsString("\"explain\":{"));
+    qryResult = qryResult.substring(qryResult.indexOf("explain"));
+
+    MatcherAssert.assertThat(qryResult, containsString("modelA"));
+    MatcherAssert.assertThat(
+        qryResult, containsString(MultipleAdditiveTreesModel.class.getSimpleName()));
+
+    MatcherAssert.assertThat(qryResult, containsString("50.0 = tree 0"));
+    MatcherAssert.assertThat(qryResult, containsString("-20.0 = tree 1"));
+    MatcherAssert.assertThat(qryResult, containsString("'matchedTitle':1.0 > 0.5"));
+    MatcherAssert.assertThat(
+        qryResult,
+        containsString("'constantScoreToForceMultipleAdditiveTreesScoreAllDocs':1.0 <= 10.0"));
+    MatcherAssert.assertThat(qryResult, containsString("'userDevice': NaN"));
+
+    MatcherAssert.assertThat(qryResult, containsString(" Go Right "));
+    MatcherAssert.assertThat(qryResult, containsString(" Go Left "));
   }
 }

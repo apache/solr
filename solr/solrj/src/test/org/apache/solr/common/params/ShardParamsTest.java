@@ -45,10 +45,6 @@ public class ShardParamsTest extends SolrTestCase {
     assertEquals(ShardParams.IS_SHARD, "isShard");
   }
 
-  public void testShardUrl() {
-    assertEquals(ShardParams.SHARD_URL, "shard.url");
-  }
-
   public void testShardsQt() {
     assertEquals(ShardParams.SHARDS_QT, "shards.qt");
   }

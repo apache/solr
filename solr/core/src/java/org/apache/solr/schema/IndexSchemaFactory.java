@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.xml.parsers.ParserConfigurationException;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
@@ -48,6 +49,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /** Base class for factories for IndexSchema implementations */
+@NotThreadSafe
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -134,8 +136,8 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
 
   private static VersionedConfig loadConfig(
       InputStream schemaInputStream, SolrResourceLoader loader, String name) {
-    try {
-      InputStream is = (schemaInputStream == null ? loader.openResource(name) : schemaInputStream);
+    try (InputStream is =
+        (schemaInputStream == null ? loader.openResource(name) : schemaInputStream)) {
       ConfigNode node = getParsedSchema(is, loader, name);
       int version =
           is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream

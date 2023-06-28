@@ -387,7 +387,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       liveNodes.add(address);
 
       when(zkStateReaderMock.getBaseUrlForNodeName(address))
-          .thenAnswer(invocation -> address.replaceAll("_", "/"));
+          .thenAnswer(invocation -> address.replace("_", "/"));
     }
 
     when(solrZkClientMock.getZkClientTimeout()).thenReturn(30000);
@@ -670,6 +670,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     handleCreateCollMessageProps(ZkNodeProps.load(bytes));
   }
 
+  @SuppressWarnings("DirectInvocationOnMock")
   private void handleCreateCollMessageProps(ZkNodeProps props) {
     log.info("track created replicas / collections");
     try {
@@ -684,8 +685,13 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           collectionsSet.put(
               collName,
               new ClusterState.CollectionRef(
-                  new DocCollection(
-                      collName, new HashMap<>(), props.getProperties(), DocRouter.DEFAULT)));
+                  DocCollection.create(
+                      collName,
+                      new HashMap<>(),
+                      props.getProperties(),
+                      DocRouter.DEFAULT,
+                      0,
+                      distribStateManagerMock.getPrsSupplier(collName))));
       }
       if (CollectionParams.CollectionAction.ADDREPLICA.isEqual(props.getStr("operation"))) {
         replicas.add(props);
@@ -758,7 +764,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<>();
     List<String> nodeUrlWithoutProtocolPartForLiveNodes = new ArrayList<>(createNodes.size());
     for (String nodeName : createNodes) {
-      String nodeUrlWithoutProtocolPart = nodeName.replaceAll("_", "/");
+      String nodeUrlWithoutProtocolPart = nodeName.replace("_", "/");
       if (nodeUrlWithoutProtocolPart.startsWith("http://"))
         nodeUrlWithoutProtocolPart = nodeUrlWithoutProtocolPart.substring(7);
       nodeUrlWithoutProtocolPartForLiveNodes.add(nodeUrlWithoutProtocolPart);

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -27,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -197,14 +195,7 @@ public class TestHarness extends BaseTestHarness {
                 .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
                 .setZkHost(System.getProperty("zkHost"))
                 .build();
-    UpdateShardHandlerConfig updateShardHandlerConfig =
-        new UpdateShardHandlerConfig(
-            HttpClientUtil.DEFAULT_MAXCONNECTIONS,
-            HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
-            30000,
-            30000,
-            UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY,
-            UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS);
+
     // universal default metric reporter
     Map<String, Object> attributes = new HashMap<>();
     attributes.put("name", "default");
@@ -218,7 +209,7 @@ public class TestHarness extends BaseTestHarness {
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
-        .setUpdateShardHandlerConfig(updateShardHandlerConfig)
+        .setUpdateShardHandlerConfig(UpdateShardHandlerConfig.TEST_DEFAULT)
         .setMetricsConfig(metricsConfig)
         .build();
   }
@@ -239,7 +230,7 @@ public class TestHarness extends BaseTestHarness {
 
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
-      return ImmutableList.of(
+      return List.of(
           new CoreDescriptor(
               coreName,
               cc.getCoreRootDirectory().resolve(coreName),

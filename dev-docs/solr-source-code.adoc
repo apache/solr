@@ -1,0 +1,82 @@
+# Working With Solr Source Code
+
+## Building Solr from Source
+
+Download the Java 11 JDK (Java Development Kit) or later.
+We recommend the OpenJDK distribution Eclipse Temurin available from https://adoptium.net/.
+You will need the JDK installed, and the $JAVA_HOME/bin (Windows: %JAVA_HOME%\bin) folder included on your command path.
+To test this, issue a "java -version" command from your shell (command prompt) and verify that the Java version is 11 or later.
+See the xref:jvms.adoc[JVM developer doc] for more information on Gradle and JVMs.
+
+Clone the latest Apache Solr source code directly from the Git repository: <https://solr.apache.org/community.html#version-control>.
+Alternatively, you can download the Apache Solr distribution, from https://solr.apache.org/downloads.html and unzip the distribution to a folder of your choice, e.g. C:\solr or ~/solr.
+
+Solr uses https://gradle.org/[Gradle] as the build system.
+Navigate to the root of your source tree folder and issue the `./gradlew tasks` command to see the available options for building, testing, and packaging Solr.
+
+`./gradlew dev` will create a Solr executable suitable for development.
+Change directories via `cd ./solr/packaging/build/dev` and run the `bin/solr` script to start Solr.
+It will also create a "slim" Solr executable based on the "slim" Solr distribution.
+You can find this environment at `./solr/packaging/build/dev-slim`.
+Use either `./gradlew devSlim` or `./gradlew devFull` to create just one type of distribution.
+
+NOTE: `gradlew` is the "Gradle Wrapper" and will automatically download and start using the correct version of Gradle for Solr.
+
+NOTE: `./gradlew help` will print a list of high-level tasks. There are also a number of plain-text files in <source folder root>/help that you can browse.
+
+The first time you run Gradle, it will create a file "gradle.properties" that contains machine-specific settings.
+Normally you can use this file as-is, but it can be modified if necessary.
+
+Note as well that the gradle build does not create or copy binaries throughout the source repository so you need to switch to the packaging output folder `./solr/packaging/build`; the rest of the instructions below remain identical.
+The packaging directory is rewritten on each build.
+
+To build the documentation, type `./gradlew -p solr documentation`.
+
+`./gradlew check` will assemble Solr and run all validation tasks unit tests.
+
+NOTE: the `check` command requires `perl` and `python3` to be present on your `PATH` to validate documentation.
+
+To build the final Solr artifacts run `./gradlew assemble`.
+
+Lastly, there is developer oriented documentation in `./dev-docs/README.adoc` that you may find useful in working with Solr.
+
+## Unit Tests
+
+Please make sure that all unit tests succeed before constructing your patch.
+
+> gradlew clean test
+
+
+After a while, if you see a success or failure message.
+
+Solr testing makes extensive use of randomization.
+Each test starts with a "seed" for the random number generator, allowing repeatability.
+We had one test, for instance, that only failed when the locale was set to a particular locale.
+Re-using the seed reproduces these kinds of cases.
+
+You'll find a "reproduce with..." message either on the screen or in the output that gives the exact command necessary.
+
+Carefully read the errors messages and check your code.
+If the test fails you may want to repeatedly rerun a single test as you debug and sort out any problems.
+In which case you could run the "reproduce with" command in the output.
+
+### Frequently failing Tests
+
+There are some tests that fail sometimes on some systems, but run on Jenkins fine.
+It's always a good idea to be sure you can run the full test suite successfully before you start making code changes.
+Or keep an un-changed version of the code around to see if your changes are really to blame.
+
+One of the great things about Open Source is so many people run the tests on so many different systems.
+Occasionally you'll be the lucky person who has the system that wins the prize by having the environment that exposes a new failure mode, see the discussion at https://issues.apache.org/jira/browse/SOLR-3846 for an example.
+
+If you do find one of these, here's what you should do:
+
+1. If tests continue to fail, ask on the dev list if anyone else has seen the issue. This is the case where having the un-changed code helps. If the tests fail on both the changed and un-changed versions, discuss on the dev list whether the test should be disabled.
+1. If tests fail with your changes but not on un-altered code, well, you need to understand why. By far the most frequent reason is a bug or unintended side-effect of your code, but occasionally it's a test that needs modification. Again, the dev list is a good place to discuss this.
+1. Be very cautious about adding anything like @Ignore to a test. This is generally the wrong thing to do unless you get some consensus, and it'll surely generate "spirited debate".
+1. Of course any effort you want to make towards tracking down the reason a test fails in your particular environment is greatly appreciated!
+
+## Additional Information
+
+You can review the https://github.com/apache/solr/blob/main/CONTRIBUTING.md[contribution guide] for information on how to contribute.
+There are also additional helpful docs https://github.com/apache/solr/blob/main/help[in the help directory].

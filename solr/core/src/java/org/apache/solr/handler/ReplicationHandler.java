@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,7 +55,6 @@ import java.util.regex.Pattern;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.DeflaterOutputStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.DirectoryReader;
@@ -70,6 +68,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RateLimiter;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -93,6 +92,9 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
+import org.apache.solr.handler.admin.api.CoreReplicationAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -265,33 +267,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // This command does not give the current index version of the leader
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
-      IndexCommit commitPoint = indexCommitPoint; // make a copy so it won't change
-
-      if (commitPoint == null) {
-        // if this handler is 'lazy', we may not have tracked the last commit
-        // because our commit listener is registered on inform
-        commitPoint = core.getDeletionPolicy().getLatestCommit();
-      }
-
-      if (commitPoint != null && replicationEnabled.get()) {
-        //
-        // There is a race condition here.  The commit point may be changed / deleted by the time
-        // we get around to reserving it.  This is a very small window though, and should not result
-        // in a catastrophic failure, but will result in the client getting an empty file list for
-        // the CMD_GET_FILE_LIST command.
-        //
-        core.getDeletionPolicy()
-            .setReserveDuration(commitPoint.getGeneration(), reserveCommitDuration);
-        rsp.add(CMD_INDEX_VERSION, IndexDeletionPolicyWrapper.getCommitTimestamp(commitPoint));
-        rsp.add(GENERATION, commitPoint.getGeneration());
-        rsp.add(STATUS, OK_STATUS);
-      } else {
-        // This happens when replication is not configured to happen after startup and no
-        // commit/optimize has happened yet.
-        rsp.add(CMD_INDEX_VERSION, 0L);
-        rsp.add(GENERATION, 0L);
-        rsp.add(STATUS, OK_STATUS);
-      }
+      final SolrJerseyResponse indexVersionResponse = getIndexVersionResponse();
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, indexVersionResponse);
     } else if (command.equals(CMD_GET_FILE)) {
       getFileStream(solrParams, rsp);
     } else if (command.equals(CMD_GET_FILE_LIST)) {
@@ -484,7 +461,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       return currentIndexFetcher.fetchLatestIndex(forceReplication);
     } catch (Exception e) {
-      SolrException.log(log, "Index fetch failed ", e);
+      log.error("Index fetch failed", e);
       if (currentIndexFetcher != pollingIndexFetcher) {
         currentIndexFetcher.destroy();
       }
@@ -777,7 +754,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           try {
             core.getDirectoryFactory().release(dir);
           } catch (IOException e) {
-            SolrException.log(log, "Could not release directory after fetching file list", e);
+            log.error("Could not release directory after fetching file list", e);
           }
         }
       }
@@ -798,6 +775,38 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         delPol.releaseCommitPoint(commit);
       }
     }
+  }
+
+  public CoreReplicationAPI.IndexVersionResponse getIndexVersionResponse() throws IOException {
+
+    IndexCommit commitPoint = indexCommitPoint; // make a copy so it won't change
+    CoreReplicationAPI.IndexVersionResponse rsp = new CoreReplicationAPI.IndexVersionResponse();
+    if (commitPoint == null) {
+      // if this handler is 'lazy', we may not have tracked the last commit
+      // because our commit listener is registered on inform
+      commitPoint = core.getDeletionPolicy().getLatestCommit();
+    }
+
+    if (commitPoint != null && replicationEnabled.get()) {
+      //
+      // There is a race condition here.  The commit point may be changed / deleted by the time
+      // we get around to reserving it.  This is a very small window though, and should not result
+      // in a catastrophic failure, but will result in the client getting an empty file list for
+      // the CMD_GET_FILE_LIST command.
+      //
+      core.getDeletionPolicy()
+          .setReserveDuration(commitPoint.getGeneration(), reserveCommitDuration);
+      rsp.indexVersion = IndexDeletionPolicyWrapper.getCommitTimestamp(commitPoint);
+      rsp.generation = commitPoint.getGeneration();
+    } else {
+      // This happens when replication is not configured to happen after startup and no
+      // commit/optimize has happened yet.
+      rsp.indexVersion = 0L;
+      rsp.generation = 0L;
+    }
+    rsp.status = OK_STATUS;
+
+    return rsp;
   }
 
   /**
@@ -1459,11 +1468,21 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     {
       final String reserve = (String) initArgs.get(RESERVE);
-      if (reserve != null && !reserve.trim().equals("")) {
+      if (reserve != null && !reserve.trim().isEmpty()) {
         reserveCommitDuration = readIntervalMs(reserve);
       }
     }
     log.info("Commits will be reserved for {} ms", reserveCommitDuration);
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(CoreReplicationAPI.class);
+  }
+
+  @Override
+  public Boolean registerV2() {
+    return Boolean.TRUE;
   }
 
   // check leader or follower is enabled
@@ -1761,7 +1780,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     @Override
     public void write(OutputStream out) throws IOException {
       createOutputStream(out);
-      FileInputStream inputStream = null;
       try {
         initWrite();
 
@@ -1797,7 +1815,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       } catch (IOException e) {
         log.warn("Exception while writing response for params: {}", params, e);
       } finally {
-        IOUtils.closeQuietly(inputStream);
         extendReserveAndReleaseCommitPoint();
       }
     }

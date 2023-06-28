@@ -32,13 +32,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.InvertableType;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
@@ -540,6 +541,16 @@ public class SolrDocumentFetcher {
     public Number numericValue() {
       return null;
     }
+
+    @Override
+    public StoredValue storedValue() {
+      return new StoredValue(stringValue());
+    }
+
+    @Override
+    public InvertableType invertableType() {
+      return null;
+    }
   }
 
   /**
@@ -762,7 +773,7 @@ public class SolrDocumentFetcher {
     }
 
     private boolean returnDVFields() {
-      return CollectionUtils.isNotEmpty(dvFields);
+      return !dvFields.isEmpty();
     }
 
     private Set<String> getStoredFields() {

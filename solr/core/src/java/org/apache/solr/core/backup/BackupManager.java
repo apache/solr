@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core.backup;
 
-import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -221,7 +220,7 @@ public class BackupManager {
         repository.openInput(zkStateDir, COLLECTION_PROPS_FILE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()]; // probably ok since the json file should be small.
       is.readBytes(arr, 0, (int) is.length());
-      ClusterState c_state = ClusterState.createFromJson(-1, arr, Collections.emptySet());
+      ClusterState c_state = ClusterState.createFromJson(-1, arr, Collections.emptySet(), null);
       return c_state.getCollection(collectionName);
     }
   }
@@ -254,7 +253,9 @@ public class BackupManager {
       String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
-    Preconditions.checkState(repository.exists(source), "Path %s does not exist", source);
+    if (!repository.exists(source)) {
+      throw new IllegalArgumentException("Path " + source + " does not exist");
+    }
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
 

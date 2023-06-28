@@ -24,6 +24,18 @@ Instructions below apply to `solr:8.0.0` and above.
 
 See the https://hub.docker.com/_/solr?tab=tags[Docker Hub page] for a full list of tags and architectures available.
 
+=== Available images
+
+Two docker images are provided for each release, full and slim.
+These correspond to the two binary distributions that are produced for each Solr release.
+The docker images for these distributions can be found at:
+
+[horizontal]
+Full distribution:: `solr:<version>`
+Slim distribution:: `solr:<version>-slim`
+
+Please refer to the xref:installing-solr.adoc#available-solr-packages[Available Solr Packages] section for more information on each distribution.
+
 === Running Solr with host-mounted directories
 
 Typically users first want to run a single standalone Solr server in a container, with a single core for data, while storing data in a local directory.
@@ -337,10 +349,8 @@ If you really do not want to run `tini`, and just run Solr as PID 1 instead, the
 
 == Out of Memory Handling
 
-You can use the `OOM` environment variable to control the behaviour of the Solr JVM when an out-of-memory error occurs.
-If you specify `OOM=exit`, Solr docker will add `-XX:+ExitOnOutOfMemoryError` to the JVM arguments, so that the JVM will exit.
-If you specify `OOM=crash`, Solr docker will add `-XX:+CrashOnOutOfMemoryError` to the JVM arguments, so the JVM will crash and produces text and binary crash files (if core files are enabled).
-If you specify `OOM=script`, Solr docker will add `-XX:OnOutOfMemoryError=/opt/docker-solr/scripts/oom_solr.sh`, so the JVM will run that script (and if you want to you can mount your own in its place).
+Please refer to the xref:taking-solr-to-production.adoc#out-of-memory-handling[Out of Memory Handling] Section for more information.
+The Docker image no-longer has custom logic for OOMs.
 
 == History
 

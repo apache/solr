@@ -78,7 +78,7 @@ public class ClosableTracerShim implements Tracer {
   @Override
   public void close() {
     shim.close();
-    log.info("Closing wrapped OTEL tracer instance.");
+    log.debug("Closing wrapped OTEL tracer instance.");
     sdkTracerProvider.forceFlush();
     sdkTracerProvider.close();
   }

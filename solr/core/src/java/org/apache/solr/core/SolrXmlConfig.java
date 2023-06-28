@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.google.common.base.Strings;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -38,13 +37,12 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
@@ -72,24 +70,24 @@ public class SolrXmlConfig {
   private static final Pattern COMMA_SEPARATED_PATTERN = Pattern.compile("\\s*,\\s*");
 
   /**
-   * Given some node Properties, checks if non-null and a 'zkHost' is alread included. If so, the
+   * Given some node Properties, checks if non-null and a 'zkHost' is already included. If so, the
    * Properties are returned as is. If not, then the returned value will be a new Properties,
    * wrapping the original Properties, with the 'zkHost' value set based on the value of the
-   * corispond System property (if set)
+   * corresponding System property (if set)
    *
    * <p>In theory we only need this logic once, ideally in SolrDispatchFilter, but we put it here to
-   * re-use redundently because of how much surface area our API has for various tests to poke at
+   * re-use redundantly because of how much surface area our API has for various tests to poke at
    * us.
    */
   public static Properties wrapAndSetZkHostFromSysPropIfNeeded(final Properties props) {
-    if (null != props && !StringUtils.isEmpty(props.getProperty(ZK_HOST))) {
+    if (null != props && StrUtils.isNotNullOrEmpty(props.getProperty(ZK_HOST))) {
       // nothing to do...
       return props;
     }
     // we always wrap if we might set a property -- never mutate the original props
     final Properties results = (null == props ? new Properties() : new Properties(props));
     final String sysprop = System.getProperty(ZK_HOST);
-    if (!StringUtils.isEmpty(sysprop)) {
+    if (StrUtils.isNotNullOrEmpty(sysprop)) {
       results.setProperty(ZK_HOST, sysprop);
     }
     return results;
@@ -133,9 +131,9 @@ public class SolrXmlConfig {
 
     NamedList<Object> entries = readNodeListAsNamedList(root, "<solr>");
     String nodeName = (String) entries.remove("nodeName");
-    if (Strings.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
+    if (StrUtils.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
 
-    // It should goes inside the fillSolrSection method but
+    // It should go inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
     Map<String, String> coreAdminHandlerActions =
         readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
@@ -168,8 +166,6 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
-    configBuilder.setSolrCoreCacheFactoryConfig(
-        getPluginInfo(root.get("transientCoreCacheFactory")));
     configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
     configBuilder.setSolrProperties(loadProperties(root, substituteProperties));
@@ -230,7 +226,7 @@ public class SolrXmlConfig {
       substituteProps = new Properties();
     }
     try {
-      byte[] buf = IOUtils.toByteArray(is);
+      byte[] buf = is.readAllBytes();
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
         XmlConfigFile config =
             new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
@@ -380,6 +376,7 @@ public class SolrXmlConfig {
                 builder.setReplayUpdatesThreads(it.intVal(-1));
                 break;
               case "transientCacheSize":
+                log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
                 builder.setTransientCacheSize(it.intVal(-1));
                 break;
               case "allowUrls":
@@ -401,14 +398,14 @@ public class SolrXmlConfig {
   }
 
   private static List<String> separateStrings(String commaSeparatedString) {
-    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptyList();
     }
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
   }
 
   private static Set<Path> separatePaths(String commaSeparatedString) {
-    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptySet();
     }
     // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
@@ -559,6 +556,12 @@ public class SolrXmlConfig {
         case "distributedCollectionConfigSetExecution":
           builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
           break;
+        case "minStateByteLenForCompression":
+          builder.setMinStateByteLenForCompression(parseInt(name, value));
+          break;
+        case "stateCompressor":
+          builder.setStateCompressorClass(value);
+          break;
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
@@ -658,6 +661,17 @@ public class SolrXmlConfig {
       builder.setNullObject(decodeNullValue(missingValues.get("nullObject")));
     }
 
+    ConfigNode caching = metrics.get("solr/metrics/caching");
+    if (caching != null) {
+      Object threadsCachingIntervalSeconds =
+          DOMUtil.childNodesToNamedList(caching).get("threadsIntervalSeconds", null);
+      builder.setCacheConfig(
+          new MetricsConfig.CacheConfig(
+              threadsCachingIntervalSeconds == null
+                  ? null
+                  : Integer.parseInt(threadsCachingIntervalSeconds.toString())));
+    }
+
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
     Set<String> hiddenSysProps = getHiddenSysProps(metrics);
     return builder
@@ -713,7 +727,7 @@ public class SolrXmlConfig {
     Set<String> props = new HashSet<>();
     p.forEachChild(
         it -> {
-          if (it.name().equals("str") && !StringUtils.isEmpty(it.txt())) props.add(it.txt());
+          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt())) props.add(it.txt());
           return Boolean.TRUE;
         });
     if (props.isEmpty()) {

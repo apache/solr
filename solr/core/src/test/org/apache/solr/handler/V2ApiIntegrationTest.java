@@ -28,11 +28,11 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
@@ -77,7 +77,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     BaseHttpSolrClient.RemoteSolrException ex =
         expectThrows(
             BaseHttpSolrClient.RemoteSolrException.class,
-            () -> v2Request.process(cluster.getSolrClient()));
+            () -> {
+              v2Request.process(cluster.getSolrClient());
+            });
     assertEquals(expectedCode, ex.code());
   }
 
@@ -86,16 +88,11 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     String notFoundPath = "/c/" + COLL_NAME + "/abccdef";
     String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
     testException(new XMLResponseParser(), 404, notFoundPath, incorrectPayload);
-    testException(
-        new DelegationTokenResponse.JsonMapResponseParser(), 404, notFoundPath, incorrectPayload);
+    testException(new JsonMapResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new BinaryResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new XMLResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
     testException(new BinaryResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
-    testException(
-        new DelegationTokenResponse.JsonMapResponseParser(),
-        400,
-        "/c/" + COLL_NAME,
-        incorrectPayload);
+    testException(new JsonMapResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
   }
 
   @Test
@@ -190,19 +187,15 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         "/collections/collection1/get",
         Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     String tempDir = createTempDir().toFile().getPath();
-    Map<String, Object> backupPayload = new HashMap<>();
     Map<String, Object> backupParams = new HashMap<>();
-    backupPayload.put("backup-collection", backupParams);
-    backupParams.put("name", "backup_test");
-    backupParams.put("collection", COLL_NAME);
     backupParams.put("location", tempDir);
     cluster
         .getJettySolrRunners()
         .forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get(tempDir)));
     client.request(
-        new V2Request.Builder("/c")
+        new V2Request.Builder("/collections/" + COLL_NAME + "/backups/backup_test/versions")
             .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Utils.toJSONString(backupPayload))
+            .withPayload(Utils.toJSONString(backupParams))
             .build());
   }
 

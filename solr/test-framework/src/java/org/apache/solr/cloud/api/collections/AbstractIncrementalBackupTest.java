@@ -57,7 +57,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.TrackingBackupRepository;
@@ -227,6 +226,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     assertEquals(firstBatchNumDocs, getNumDocsInCollection(backupCollectionName));
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   @Nightly
   public void testBackupIncremental() throws Exception {
@@ -318,7 +318,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
               .setRepositoryName(BACKUP_REPO_NAME)
               .setLocation(backupLocation)
               .process(cluster.getSolrClient());
-      assertEquals(2, ((NamedList) resp.getResponse().get("deleted")).get("numIndexFiles"));
+      assertEquals(
+          2, ((Map<String, Object>) resp.getResponse().get("deleted")).get("numIndexFiles"));
 
       new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), getCollectionName());
       indexDocs(getCollectionName(), false);
@@ -495,7 +496,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       this.maxNumberOfBackupToKeep = maxNumberOfBackupToKeep;
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void backupThenWait() throws SolrServerException, IOException {
       CollectionAdminRequest.Backup backup =
           CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
@@ -515,7 +516,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       } else {
         CollectionAdminResponse rsp = backup.process(cluster.getSolrClient());
         assertEquals(0, rsp.getStatus());
-        NamedList resp = (NamedList) rsp.getResponse().get("response");
+        Map<String, Object> resp = (Map<String, Object>) rsp.getResponse().get("response");
         numBackup++;
         assertEquals(numBackup, resp.get("backupId"));
         ;
@@ -577,7 +578,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
       URI backupPropertiesFile =
           repository.resolve(backupURI, "backup_" + numBackup + ".properties");
-      URI zkBackupFolder = repository.resolve(backupURI, "zk_backup_" + numBackup);
+      URI zkBackupFolder = repository.resolveDirectory(backupURI, "zk_backup_" + numBackup);
       assertTrue(repository.exists(backupPropertiesFile));
       assertTrue(repository.exists(zkBackupFolder));
       assertFolderAreSame(

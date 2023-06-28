@@ -75,8 +75,6 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
                 .process(cluster.getSolrClient()))
             .getStatus());
 
-    cluster.getSolrClient().setDefaultCollection(COLLECTION);
-
     // we're indexing each Currency value in 3 docs, each with a diff 'x_s' field value
     // use modulo to pick the values, so we don't add the docs in strict order of either VALUES of
     // STR_VALS (that way if we want ot filter by id later, it's an independent variable)
@@ -86,10 +84,10 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
       assertEquals(
           0,
           (new UpdateRequest().add(sdoc("id", "" + id, "x_s", x, FIELD, val)))
-              .process(cluster.getSolrClient())
+              .process(cluster.getSolrClient(COLLECTION))
               .getStatus());
     }
-    assertEquals(0, cluster.getSolrClient().commit().getStatus());
+    assertEquals(0, cluster.getSolrClient(COLLECTION).commit().getStatus());
   }
 
   public void testSimpleRangeFacetsOfSymmetricRates() throws Exception {
@@ -137,7 +135,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
                 args.get(2),
                 "f." + FIELD + ".facet.range.other",
                 "all");
-        QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+        QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
         try {
           assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
 
@@ -199,7 +197,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
                     + "', end:'"
                     + args.get(2)
                     + "', other:all}}");
-        rsp = cluster.getSolrClient().query(solrQuery);
+        rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
         try {
           assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
 
@@ -265,7 +263,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
               "22,EUR",
               "f." + FIELD + ".facet.range.other",
               "all");
-      final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+      final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
       try {
         assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
         @SuppressWarnings({"rawtypes"})
@@ -324,7 +322,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
                   + (use_mincount ? 3 : 0)
                   + ", "
                   + "        gap:'2,EUR', end:'22,EUR', other:all}}");
-      final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+      final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
       try {
         assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
 
@@ -387,7 +385,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         expectThrows(
             SolrException.class,
             () -> {
-              final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+              final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage(), ex.getMessage().contains(expected));
@@ -411,7 +409,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         expectThrows(
             SolrException.class,
             () -> {
-              final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+              final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage(), ex.getMessage().contains(expected));
@@ -455,7 +453,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
                   + "        facet: { foo:{ type:terms, field:x_s, "
                   + "                       refine:true, limit:2, overrequest:0"
                   + " } } } }");
-      final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+      final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
       try {
         // this top level result count sanity check that should vary based on how we are filtering
         // our facets...
@@ -566,7 +564,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
                   + FIELD
                   + ", other:all, "
                   + "                       start:'8,EUR', gap:'2,EUR', end:'22,EUR' }} } }");
-      final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+      final QueryResponse rsp = cluster.getSolrClient(COLLECTION).query(solrQuery);
       try {
         // this top level result count sanity check that should vary based on how we are filtering
         // our facets...

@@ -240,7 +240,7 @@ public abstract class PointField extends NumericFieldType {
 
   @Override
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
-    if ("".equals(termStr)) {
+    if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
     throw new SolrException(

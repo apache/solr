@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -32,10 +31,6 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.Test;
 
 public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
-
-  private static final boolean IGNORE_NONEXISTENT = true;
-  private static final boolean REPORT_NONEXISTENT = false;
-
   protected abstract BackupRepository getRepository();
 
   protected abstract URI getBaseUri() throws URISyntaxException;
@@ -79,8 +74,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
   public void testCanDetermineWhetherFilesAndDirectoriesExist() throws Exception {
     try (BackupRepository repo = getRepository()) {
       // Create 'emptyDir/', 'nonEmptyDir/', and 'nonEmptyDir/file.txt'
-      final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir");
-      final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir");
+      final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir/");
+      final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir/");
       final URI nestedFileUri = repo.resolve(nonEmptyDirUri, "file.txt");
       repo.createDirectory(emptyDirUri);
       repo.createDirectory(nonEmptyDirUri);
@@ -89,7 +84,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       assertTrue(repo.exists(emptyDirUri));
       assertTrue(repo.exists(nonEmptyDirUri));
       assertTrue(repo.exists(nestedFileUri));
-      final URI nonexistedDirUri = repo.resolve(getBaseUri(), "nonexistentDir");
+      final URI nonexistedDirUri = repo.resolve(getBaseUri(), "nonexistentDir/");
       assertFalse(repo.exists(nonexistedDirUri));
     }
   }
@@ -97,8 +92,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
   @Test
   public void testCanDistinguishBetweenFilesAndDirectories() throws Exception {
     try (BackupRepository repo = getRepository()) {
-      final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir");
-      final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir");
+      final URI emptyDirUri = repo.resolve(getBaseUri(), "emptyDir/");
+      final URI nonEmptyDirUri = repo.resolve(getBaseUri(), "nonEmptyDir/");
       final URI nestedFileUri = repo.resolve(nonEmptyDirUri, "file.txt");
       repo.createDirectory(emptyDirUri);
       repo.createDirectory(nonEmptyDirUri);
@@ -152,10 +147,10 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       assertFalse(repo.exists(fileUri));
 
       // Delete the middle directory in a deeply nested structure (/nest1/nest2/nest3/nest4)
-      final URI level1DeeplyNestedUri = repo.resolve(getBaseUri(), "nest1");
-      final URI level2DeeplyNestedUri = repo.resolve(level1DeeplyNestedUri, "nest2");
-      final URI level3DeeplyNestedUri = repo.resolve(level2DeeplyNestedUri, "nest3");
-      final URI level4DeeplyNestedUri = repo.resolve(level3DeeplyNestedUri, "nest4");
+      final URI level1DeeplyNestedUri = repo.resolve(getBaseUri(), "nest1/");
+      final URI level2DeeplyNestedUri = repo.resolve(level1DeeplyNestedUri, "nest2/");
+      final URI level3DeeplyNestedUri = repo.resolve(level2DeeplyNestedUri, "nest3/");
+      final URI level4DeeplyNestedUri = repo.resolve(level3DeeplyNestedUri, "nest4/");
       repo.createDirectory(level1DeeplyNestedUri);
       repo.createDirectory(level2DeeplyNestedUri);
       repo.createDirectory(level3DeeplyNestedUri);
@@ -188,19 +183,14 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       addFile(repo, file2Uri);
       addFile(repo, file3Uri);
 
-      // Ensure nonexistent files are handled differently based on boolean flag param
+      // Ensure nonexistent files can be deleted
       final URI nonexistentFileUri = repo.resolve(getBaseUri(), "file4.txt");
       assertFalse(repo.exists(nonexistentFileUri));
-      repo.delete(getBaseUri(), Lists.newArrayList("file4.txt"), IGNORE_NONEXISTENT);
-      expectThrows(
-          IOException.class,
-          () -> {
-            repo.delete(getBaseUri(), Lists.newArrayList("file4.txt"), REPORT_NONEXISTENT);
-          });
+      repo.delete(getBaseUri(), List.of("file4.txt"));
 
       // Delete existing files individually and in 'bulk'
-      repo.delete(getBaseUri(), Lists.newArrayList("file1.txt"), REPORT_NONEXISTENT);
-      repo.delete(getBaseUri(), Lists.newArrayList("file2.txt", "file3.txt"), REPORT_NONEXISTENT);
+      repo.delete(getBaseUri(), List.of("file1.txt"));
+      repo.delete(getBaseUri(), List.of("file2.txt", "file3.txt"));
       assertFalse(repo.exists(file1Uri));
       assertFalse(repo.exists(file2Uri));
       assertFalse(repo.exists(file3Uri));
@@ -223,7 +213,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       addFile(repo, file1Uri);
       addFile(repo, file2Uri);
 
-      final List<String> rootChildren = Lists.newArrayList(repo.listAll(rootUri));
+      final List<String> rootChildren = List.of(repo.listAll(rootUri));
       assertEquals(3, rootChildren.size());
       assertTrue(rootChildren.contains("otherDir1"));
       assertTrue(rootChildren.contains("otherDir2"));
@@ -232,7 +222,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       final String[] otherDir2Children = repo.listAll(otherDir2Uri);
       assertEquals(0, otherDir2Children.length);
 
-      final List<String> otherDir3Children = Lists.newArrayList(repo.listAll(otherDir3Uri));
+      final List<String> otherDir3Children = List.of(repo.listAll(otherDir3Uri));
       assertEquals(2, otherDir3Children.size());
       assertTrue(otherDir3Children.contains("file1.txt"));
       assertTrue(otherDir3Children.contains("file2.txt"));
