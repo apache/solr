@@ -174,7 +174,7 @@ See the section on xref:query-guide:common-query-parameters.adoc#logparamslist-p
 
 == Selective logging on SolrCore
 
-It can sometimes be a bit noisy when SolrCore#execute prints info on each response. Selective logging can be configured on SolrCore with `MarkerFilter` in `log4j2.xml`.
+It can sometimes be noisy when `SolrCore` logging prints info on every response. Selective logging can be configured on SolrCore with `MarkerFilter` in `log4j2.xml`.
 
 For example:
 
