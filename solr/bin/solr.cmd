@@ -316,9 +316,9 @@ goto done
 @echo   -h host       Specify the hostname for this Solr instance
 @echo.
 @echo   -p port       Specify the port to start the Solr HTTP listener on; default is 8983
-@echo "                  The specified port (SOLR_PORT) will also be used to determine the stop port"
-@echo "                  STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT+10000). "
-@echo "                  For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
+@echo                   The specified port (SOLR_PORT) will also be used to determine the stop port
+@echo                   STOP_PORT=(%%SOLR_PORT%%-1000) and JMX RMI listen port RMI_PORT=(%%SOLR_PORT%%+10000).
+@echo                   For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985
 @echo.
 @echo   -d dir        Specify the Solr server directory; defaults to server
 @echo.
