@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -119,7 +120,11 @@ public class IntPointField extends PointField implements IntValueFieldType {
       values[i] = parseIntFromUser(field.getName(), val);
       i++;
     }
-    return IntPoint.newSetQuery(field.getName(), values);
+    if (field.hasDocValues()) {
+      return IntField.newSetQuery(field.getName(), values);
+    } else {
+      return IntPoint.newSetQuery(field.getName(), values);
+    }
   }
 
   @Override

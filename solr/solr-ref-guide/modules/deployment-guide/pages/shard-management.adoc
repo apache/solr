@@ -324,9 +324,7 @@ http://localhost:8983/solr/admin/collections?action=CREATESHARD&shard=newShardNa
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
-    "create":{
-      "shard":"newShardName"
-    }
+    "shard":"newShardName"
   }
 '
 ----
@@ -358,6 +356,8 @@ s|Required |Default: none
 +
 
 The name of the collection that includes the shard to be split.
+Provided as a query parameter in v1 requests, and as a path parameter for v2 requests.
+
 
 `shard`::
 +
@@ -591,11 +591,7 @@ http://localhost:8983/solr/admin/collections?action=FORCELEADER&collection=techp
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1 -H 'Content-Type: application/json' -d '
-  {
-    "force-leader":{}
-  }
-'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/force-leader
 ----
 *Output*
 

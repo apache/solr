@@ -100,21 +100,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     parts = new HashMap<>();
     api =
         V2HttpCall.getApiInfo(containerHandlers, "/collections/hello/shards", "POST", null, parts);
-    assertConditions(
-        api.getSpec(),
-        Map.of(
-            "/methods[0]", "POST",
-            "/commands/split", NOT_NULL,
-            "/commands/add-replica", NOT_NULL));
-
-    parts = new HashMap<>();
-    api =
-        V2HttpCall.getApiInfo(
-            containerHandlers, "/collections/hello/shards/shard1", "POST", null, parts);
-    assertConditions(
-        api.getSpec(), Map.of("/methods[0]", "POST", "/commands/force-leader", NOT_NULL));
-    assertEquals("hello", parts.get("collection"));
-    assertEquals("shard1", parts.get("shard"));
+    assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/split", NOT_NULL));
 
     parts = new HashMap<>();
     api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST", null, parts);
@@ -138,7 +124,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     methodNames.add(rsp.getValues()._getStr("/spec[0]/methods[0]", null));
     methodNames.add(rsp.getValues()._getStr("/spec[1]/methods[0]", null));
     assertTrue(methodNames.contains("POST"));
-    assertTrue(methodNames.contains("GET"));
   }
 
   public void testPayload() {
