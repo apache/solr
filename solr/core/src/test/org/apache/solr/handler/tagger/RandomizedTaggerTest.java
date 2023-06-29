@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -70,7 +69,7 @@ public class RandomizedTaggerTest extends TaggerTestCase {
         } else { // existing word (possible multi-word from prev iteration)
           buf.append(RandomPicks.randomFrom(R, names));
         }
-        
+
         // This loop has an exponential effect, because we add existing an name to a new name. In case we generate
         // a too long name, the test will fail because of a too gib automaton.
         // Stop at 500 chars to prevent this.
