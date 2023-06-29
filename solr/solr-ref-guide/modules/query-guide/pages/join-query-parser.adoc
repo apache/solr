@@ -207,22 +207,22 @@ Just for simplification we use the example of joining `from` "many" `to` "one". 
 |===
 
 Notice how shardN corresponds to its' counterpart from other side collection.
-Use `AffinityPlacementPlugin.withCollectionShards` to align collection shards.
+Use xref:configuration-guide:replica-placement-plugins.adoc[AffinityPlacementPlugin.withCollectionShards] to align collection shards.
 
 Here are the supported options for collection routing:
 
 |===
 | `router.name`| field constraint
 
-|`implicit`|`from`, `to` matche `router.field`
-|`plain` or `compositeId`| `from`, `to` matche either `uniqueKey` or `router.field`
+|`implicit`|`from`, `to` match  `router.field`
+|`plain` or `compositeId`| `from`, `to` match either `uniqueKey` or `router.field`
 |`compositeId` (the default one)|constraint can be disabled by `checkRouterField=false`
 
 |===
 
 Note: the third case assumes indexer assigns `sku.id=<product.id>!<sku_id>` in this case `compositeId` logic put a product's sku into shard with the same name as their product. Also, you can turn `checkRouterField=false` and manually put every document via `\_route_` pseudo field.
 
-Eg. if for `skus` collection `router.field=product_id`. After all we can find products of red colored skus `q={!join to=id from=product_id fromIndex=skus}color:red`.
+For example, if  `skus` collection has `router.field=product_id`, we can find products of red colored skus via `q={!join to=id from=product_id fromIndex=skus}color:red`.
 
 == Cross Collection Join
 The Cross Collection Join Filter is a method for the join parser that will execute a query against a remote Solr collection to get back a set of join keys that will be used to as a filter query against the local Solr collection.
