@@ -78,7 +78,7 @@ public class StatusTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     // Override the default help behaviour to put out a customized message that omits the internally
     // focused Options.
-    if (cli.hasOption("h") || cli.hasOption("help")) {
+    if (cli.getOptions().length == 0 && cli.getArgs().length == 0 || cli.hasOption("h") || cli.hasOption("help")) {
       final Options options = new Options();
       getOptions().forEach(options::addOption);
       new HelpFormatter().printHelp("status", options);
