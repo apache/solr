@@ -68,6 +68,7 @@ public class JerseyApplications {
       register(RequestMetricHandling.PreRequestMetricsFilter.class);
       register(RequestMetricHandling.PostRequestMetricsFilter.class);
       register(PostRequestDecorationFilter.class);
+      register(PostRequestLoggingFilter.class);
       register(
           new AbstractBinder() {
             @Override
