@@ -28,6 +28,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
@@ -54,15 +55,17 @@ import org.apache.solr.security.PermissionNameProvider;
  *   <li>/fieldtypes/{fieldTypeName}
  * </ul>
  */
-public class GetSchemaFieldAPI extends GetSchemaAPI {
+@Path("/{a:cores|collections}/{collectionName}/schema")
+public class GetSchemaFieldAPI /*extends GetSchemaAPI*/ extends JerseyResource {
 
+  private final IndexSchema indexSchema;
   private final SolrParams params;
 
   // TODO Stop using SolrParams here and instead give API methods parameters representing only those
   // query-params that they support
   @Inject
   public GetSchemaFieldAPI(IndexSchema indexSchema, SolrParams params) {
-    super(indexSchema);
+    this.indexSchema = indexSchema;
     this.params = params;
   }
 
