@@ -174,7 +174,7 @@ See the section on xref:query-guide:common-query-parameters.adoc#logparamslist-p
 
 == Selective Logging on SolrCore
 
-It can sometimes be noisy when `SolrCore` logs info on every response. Selective logging can be configured on SolrCore by using the `MarkerFilter` on request paths in `log4j2.xml`.
+Solr logs all core requests at INFO level using the o.a.s.c.SolrCore.Request. This can be disabled entirely by changing the level of these loggers to WARN or ERROR, or more selectively by using the `MarkerFilter` on request paths in `log4j2.xml`.
 
 For example:
 
