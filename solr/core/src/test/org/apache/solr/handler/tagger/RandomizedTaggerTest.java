@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -72,6 +73,21 @@ public class RandomizedTaggerTest extends TaggerTestCase {
       }
       names.add(buf.toString());
     }
+
+    // truncate too long names (more than 1000 chars)
+    names =
+        names.stream()
+            .map(
+                name -> {
+                  if (name.length() > 1000) {
+                    // don't truncate in the middle of a word
+                    int index = name.substring(0, 1000).lastIndexOf(' ');
+                    return name.substring(0, index);
+                  } else {
+                    return name;
+                  }
+                })
+            .collect(Collectors.toSet());
 
     // BUILD NAMES
     buildNames(names.toArray(new String[names.size()]));
