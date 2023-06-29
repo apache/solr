@@ -91,6 +91,16 @@ If the server URL does not contain `apache.org`, then the gpg signature checking
 It is still strongly recommended to use the Dockerfile included in the Solr binary TGZs if you want to build Solr images with custom versions of Solr.
 The custom version of Solr will include this Dockerfile when it is built.
 
+=== Deletion of unknown cores is now disabled by default
+When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper.
+Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files.
+As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[Unknown core deletion].
+
+[source,bash]
+----
+SOLR_DELETE_UNKNOWN_CORES=true
+----
+
 == Solr 9.2
 === Upgrade to Jetty 10.x
 * Solr upgraded to Jetty 10.x from 9.x due to Jetty 9.x is now end of life. Jetty 10.x has a Java 11 minimum and matches Solr 9 minimum Java version. Jetty logging has been replaced with slf4j again matching Solr. See https://webtide.com/jetty-10-and-11-have-arrived/ for additional Jetty 10.x highlights.

@@ -52,6 +52,13 @@ Other Changes
 
 ==================  9.3.0 ==================
 
+Upgrade Notes
+---------------------
+
+* SOLR-13396: Add property to control the deletion of unknown cores.  The default setting is to not delete unknown cores.
+  This is a change to behaviour introduced in Solr 7.3.1 by SOLR-12066. To continue using the previous behaviour, Solr can be
+  started with the system property `solr.deleteUnknownCores` set to `true`. (Colvin Cowie, janhoy)
+
 New Features
 ---------------------
 * SOLR-16697: Solr now provides an "Install Shard"  API that allows users who have built (per-shard) indices offline to import
