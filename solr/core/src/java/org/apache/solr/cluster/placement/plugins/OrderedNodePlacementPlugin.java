@@ -613,6 +613,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         }
       }
     }
+
+    @Override
+    public String toString() {
+      return "WeightedNode{" + "node=" + node + ", lastSortedWeight=" + lastSortedWeight + '}';
+    }
   }
 
   /**
@@ -666,6 +671,15 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           public ShardState getState() {
             return null;
           }
+
+          @Override
+          public String toString() {
+            return Optional.ofNullable(collection)
+                    .map(SolrCollection::getName)
+                    .orElse("<no collection>")
+                + "/"
+                + shardName;
+          }
         };
     return new Replica() {
       @Override
@@ -696,6 +710,15 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       @Override
       public Node getNode() {
         return node;
+      }
+
+      @Override
+      public String toString() {
+        return Optional.ofNullable(shard).map(Shard::getShardName).orElse("<no shard>")
+            + "@"
+            + Optional.ofNullable(node).map(Node::getName).orElse("<no node>")
+            + " of "
+            + type;
       }
     };
   }

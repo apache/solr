@@ -36,6 +36,9 @@ New Features
 
 * SOLR-16844: Added new parameter `backupConfigset` to collection Backup to optionally skip backing up configsets. (Tomás Fernández Löbbe)
 
+* SOLR-16837: Introducing AffinityPlacementFactory.withCollectionShards to collocate corresponding shards of two collections.
+  eg primaryColl.shard1 will be placed to the node where secondaryColl.shard1 resides, etc. (Mikhail Khludnev)
+
 Improvements
 ---------------------
 
