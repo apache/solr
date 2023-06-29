@@ -135,18 +135,19 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     try (SolrClient coreClient =
         getHttpSolrClient(zkStateReader.getBaseUrlForNodeName(nodeToBeDecommissioned))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreClient);
-      assertEquals(0, status.getCoreStatus().size());
+      assertEquals(
+          "There should not be any cores left on decommissioned node",
+          0,
+          status.getCoreStatus().size());
     }
 
     Thread.sleep(5000);
-    collection = cloudClient.getClusterState().getCollection(coll);
+    collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
-    List<Replica> replicas = collection.getReplicas(nodeToBeDecommissioned);
-    if (replicas == null) {
-      replicas = Collections.emptyList();
-    }
-    log.debug("### Existing replicas on decommissioned node: {}", replicas);
+    assertNull(
+        "There should not be any replicas left on decommissioned node",
+        collection.getReplicas(nodeToBeDecommissioned));
 
     // let's do it back - this time wait for recoveries
     response =
@@ -183,13 +184,13 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     }
     // make sure all newly created replicas on node are active
     List<Replica> newReplicas = collection.getReplicas(nodeToBeDecommissioned);
-    replicas.forEach(r -> newReplicas.removeIf(nr -> nr.getName().equals(r.getName())));
-    assertFalse(newReplicas.isEmpty());
+    assertNotNull("There should be replicas on the migrated-to node", newReplicas);
+    assertFalse("There should be replicas on the migrated-to node", newReplicas.isEmpty());
     for (Replica r : newReplicas) {
       assertEquals(r.toString(), Replica.State.ACTIVE, r.getState());
     }
     // make sure all replicas on emptyNode are not active
-    replicas = collection.getReplicas(emptyNode);
+    List<Replica> replicas = collection.getReplicas(emptyNode);
     if (replicas != null) {
       for (Replica r : replicas) {
         assertNotEquals(r.toString(), Replica.State.ACTIVE, r.getState());
@@ -257,7 +258,6 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     // TestInjection#waitForInSyncWithLeader
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(coll, "conf1", 3, 2, 0, 0);
-    create.setCreateNodeSet(StrUtils.join(l, ','));
     cloudClient.request(create);
 
     cluster.waitForActiveCollection(
@@ -269,7 +269,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
                 + create.getNumTlogReplicas()));
 
     DocCollection initialCollection = cloudClient.getClusterState().getCollection(coll);
-    log.debug("### Before decommission: {}", initialCollection);
+    log.info("### Before decommission: {}", initialCollection);
     List<Integer> initialReplicaCounts =
         l.stream()
             .map(node -> initialCollection.getReplicas(node).size())
@@ -286,7 +286,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
 
     DocCollection collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     assertNotNull("Collection cannot be null: " + coll, collection);
-    log.debug("### After decommission: {}", collection);
+    log.info("### After decommission: {}", collection);
     // check what are replica states on the decommissioned nodes
     for (String nodeToBeDecommissioned : nodesToBeDecommissioned) {
       List<Replica> replicas = collection.getReplicas(nodeToBeDecommissioned);

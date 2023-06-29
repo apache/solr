@@ -18,10 +18,12 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -66,34 +68,32 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
     Set<Node> allNodes = new HashSet<>();
     Set<SolrCollection> allCollections = new HashSet<>();
+
+    Deque<PendingPlacementRequest> pendingRequests = new ArrayDeque<>(requests.size());
     for (PlacementRequest request : requests) {
+      PendingPlacementRequest pending = new PendingPlacementRequest(request);
+      pendingRequests.add(pending);
+      placementPlans.add(
+          placementContext
+              .getPlacementPlanFactory()
+              .createPlacementPlan(request, pending.getComputedPlacementSet()));
       allNodes.addAll(request.getTargetNodes());
       allCollections.add(request.getCollection());
     }
+
     Collection<WeightedNode> weightedNodes =
         getWeightedNodes(placementContext, allNodes, allCollections, true).values();
-    for (PlacementRequest request : requests) {
-      int totalReplicasPerShard = 0;
-      for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
-        totalReplicasPerShard += request.getCountReplicasToCreate(rt);
-      }
+    while (!pendingRequests.isEmpty()) {
+      PendingPlacementRequest request = pendingRequests.poll();
 
       List<WeightedNode> nodesForRequest =
-          weightedNodes.stream()
-              .filter(wn -> request.getTargetNodes().contains(wn.getNode()))
-              .collect(Collectors.toList());
-
-      Set<ReplicaPlacement> replicaPlacements =
-          CollectionUtil.newHashSet(totalReplicasPerShard * request.getShardNames().size());
+          weightedNodes.stream().filter(request::isTargetingNode).collect(Collectors.toList());
 
       SolrCollection solrCollection = request.getCollection();
       // Now place randomly all replicas of all shards on available nodes
-      for (String shardName : request.getShardNames()) {
-        for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-          int replicaCount = request.getCountReplicasToCreate(replicaType);
-          if (replicaCount == 0) {
-            continue;
-          }
+      for (String shardName : request.getPendingShards()) {
+        for (Replica.ReplicaType replicaType : request.getPendingReplicaTypes(shardName)) {
+          int replicaCount = request.getPendingReplicas(shardName, replicaType);
           if (log.isDebugEnabled()) {
             log.debug(
                 "Placing {} replicas for Collection: {}, Shard: {}, ReplicaType: {}",
@@ -113,36 +113,40 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                   });
 
           int replicasPlaced = 0;
+          boolean retryRequestLater = false;
           while (!nodesForReplicaType.isEmpty() && replicasPlaced < replicaCount) {
             WeightedNode node = nodesForReplicaType.poll();
-            if (!node.canAddReplica(pr)) {
-              if (log.isDebugEnabled()) {
-                log.debug(
-                    "Node can no longer accept replica, removing from selection list: {}",
-                    node.getNode());
-              }
-              continue;
-            }
+
             if (node.hasWeightChangedSinceSort()) {
-              if (log.isDebugEnabled()) {
-                log.debug(
-                    "Node's sort is out-of-date, adding back to selection list: {}",
-                    node.getNode());
-              }
+              log.debug("Node's sort is out-of-date, adding back to selection list: {}", node);
               node.addToSortedCollection(nodesForReplicaType);
               // The node will be re-sorted,
               // so go back to the top of the loop to get the new lowest-sorted node
               continue;
             }
-            if (log.isDebugEnabled()) {
-              log.debug("Node chosen to host replica: {}", node.getNode());
+            // If there is a tie, we want to come back later and try again, but only if the request
+            // can be requeued
+            // TODO: Make this logic better
+            if (!pendingRequests.isEmpty()
+                && request.canBeRequeued()
+                && !nodesForReplicaType.isEmpty()) {
+              while (nodesForReplicaType.peek().hasWeightChangedSinceSort()) {
+                nodesForReplicaType.poll().addToSortedCollection(nodesForReplicaType);
+              }
+              if (nodesForReplicaType.peek().lastSortedWeight == node.lastSortedWeight) {
+                log.debug(
+                    "There is a tie for best weight, try this placement request later: {}", node);
+                retryRequestLater = true;
+                break;
+              }
             }
+            log.debug("Node chosen to host replica: {}", node);
 
             boolean needsToResortAll =
                 node.addReplica(
                     createProjectedReplica(solrCollection, shardName, replicaType, node.getNode()));
             replicasPlaced += 1;
-            replicaPlacements.add(
+            request.addPlacement(
                 placementContext
                     .getPlacementPlanFactory()
                     .createReplicaPlacement(
@@ -150,9 +154,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
             // Only update the priorityQueue if there are still replicas to be placed
             if (replicasPlaced < replicaCount) {
               if (needsToResortAll) {
-                if (log.isDebugEnabled()) {
-                  log.debug("Replica addition requires re-sorting of entire selection list");
-                }
+                log.debug("Replica addition requires re-sorting of entire selection list");
                 List<WeightedNode> nodeList = new ArrayList<>(nodesForReplicaType);
                 nodesForReplicaType.clear();
                 nodeList.forEach(n -> n.addToSortedCollection(nodesForReplicaType));
@@ -167,7 +169,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
             }
           }
 
-          if (replicasPlaced < replicaCount) {
+          if (!retryRequestLater && replicasPlaced < replicaCount) {
             throw new PlacementException(
                 String.format(
                     Locale.ROOT,
@@ -180,11 +182,10 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           }
         }
       }
-
-      placementPlans.add(
-          placementContext
-              .getPlacementPlanFactory()
-              .createPlacementPlan(request, replicaPlacements));
+      if (request.isPending()) {
+        request.requeue();
+        pendingRequests.add(request);
+      }
     }
     return placementPlans;
   }
@@ -613,6 +614,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         }
       }
     }
+
+    @Override
+    public String toString() {
+      return node.getName();
+    }
   }
 
   /**
@@ -698,5 +704,95 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         return node;
       }
     };
+  }
+
+  /** Context for a placement request still has replicas that need to be placed. */
+  class PendingPlacementRequest {
+    boolean hasBeenRequeued;
+
+    final SolrCollection collection;
+
+    final Set<Node> targetNodes;
+
+    final Set<ReplicaPlacement> computedPlacements;
+
+    final Map<String, Map<Replica.ReplicaType, Integer>> replicasToPlaceForShards;
+
+    public PendingPlacementRequest(PlacementRequest request) {
+      hasBeenRequeued = false;
+      collection = request.getCollection();
+      targetNodes = request.getTargetNodes();
+      Set<String> shards = request.getShardNames();
+      replicasToPlaceForShards = CollectionUtil.newHashMap(shards.size());
+      shards.forEach(s -> replicasToPlaceForShards.put(s, new HashMap<>()));
+      int totalShardReplicas = 0;
+      for (Replica.ReplicaType type : Replica.ReplicaType.values()) {
+        int count = request.getCountReplicasToCreate(type);
+        if (count > 0) {
+          totalShardReplicas += count;
+          shards.forEach(s -> replicasToPlaceForShards.get(s).put(type, count));
+        }
+      }
+      computedPlacements = CollectionUtil.newHashSet(totalShardReplicas * shards.size());
+    }
+
+    public boolean isPending() {
+      return !replicasToPlaceForShards.isEmpty();
+    }
+
+    public SolrCollection getCollection() {
+      return collection;
+    }
+
+    public boolean isTargetingNode(WeightedNode node) {
+      return targetNodes.contains(node.getNode());
+    }
+
+    public Set<ReplicaPlacement> getComputedPlacementSet() {
+      return computedPlacements;
+    }
+
+    public Set<String> getPendingShards() {
+      return new HashSet<>(replicasToPlaceForShards.keySet());
+    }
+
+    public Set<Replica.ReplicaType> getPendingReplicaTypes(String shard) {
+      return new HashSet<>(
+          replicasToPlaceForShards.getOrDefault(shard, Collections.emptyMap()).keySet());
+    }
+
+    public int getPendingReplicas(String shard, Replica.ReplicaType type) {
+      return Optional.ofNullable(replicasToPlaceForShards.get(shard))
+          .map(m -> m.get(type))
+          .orElse(0);
+    }
+
+    /**
+     * Only allow one requeue
+     *
+     * @return true if the request has not been requeued already
+     */
+    public boolean canBeRequeued() {
+      return !hasBeenRequeued;
+    }
+
+    public void requeue() {
+      hasBeenRequeued = true;
+    }
+
+    public void addPlacement(ReplicaPlacement replica) {
+      computedPlacements.add(replica);
+      replicasToPlaceForShards.computeIfPresent(
+          replica.getShardName(),
+          (shard, replicaTypes) -> {
+            replicaTypes.computeIfPresent(
+                replica.getReplicaType(), (type, count) -> (count == 1) ? null : count - 1);
+            if (replicaTypes.size() > 0) {
+              return replicaTypes;
+            } else {
+              return null;
+            }
+          });
+    }
   }
 }
