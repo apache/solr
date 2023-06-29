@@ -172,7 +172,7 @@ The log file under which you can find all these queries is called `solr_slow_req
 In addition to the logging options described above, it's possible to log only a selected list of request parameters (such as those sent with queries) with an additional request parameter called `logParamsList`.
 See the section on xref:query-guide:common-query-parameters.adoc#logparamslist-parameter[logParamsList Parameter] for more information.
 
-== Selective logging on SolrCore
+== Selective Logging on SolrCore
 
 It can sometimes be noisy when `SolrCore` logs info on every response. Selective logging can be configured on SolrCore by using the `MarkerFilter` on request paths in `log4j2.xml`.
 
