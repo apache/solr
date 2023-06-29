@@ -34,7 +34,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.BackupFilePaths;
@@ -119,12 +118,8 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
                       prevShardBackupId,
                       shardBackupId,
                       Optional.ofNullable(backupCoreRequestBody.commitName));
-              NamedList<Object> rsp = incSnapShooter.backup();
-              return IncrementalBackupCoreResponse.getObjectFromNamedList(rsp);
-
+              return incSnapShooter.backup();
             } else {
-              SnapShooterBackupCoreResponse snapShooterBackupCoreResponse =
-                  new SnapShooterBackupCoreResponse();
               SnapShooter snapShooter =
                   new SnapShooter(
                       repository, core, locationUri, name, backupCoreRequestBody.commitName);
@@ -144,8 +139,7 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
                         + "requires a shared file system mounted at the same path on all nodes!");
               }
               snapShooter.validateCreateSnapshot();
-              NamedList<Object> rsp = snapShooter.createSnapshot();
-              return SnapShooterBackupCoreResponse.getObjectFromNamedList(rsp);
+              return snapShooter.createSnapshot();
             }
           } catch (Exception exp) {
             throw new SolrException(
@@ -181,108 +175,5 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
     @Schema(description = "To turn on incremental backup feature")
     @JsonProperty("incremental")
     public boolean incremental;
-  }
-
-  public static class IncrementalBackupCoreResponse extends SolrJerseyResponse {
-    // public NamedList<Object> response;
-    @Schema(description = "The time at which backup snapshot started at.")
-    @JsonProperty("startTime")
-    public String startTime;
-
-    @Schema(description = "The count of index files in the snapshot.")
-    @JsonProperty("indexFileCount")
-    public int indexFileCount;
-
-    @Schema(description = "The count of uploaded index files.")
-    @JsonProperty("uploadedIndexFileCount")
-    public int uploadedIndexFileCount;
-
-    @Schema(description = "The size of index in MB.")
-    @JsonProperty("indexSizeMB")
-    public double indexSizeMB;
-
-    @Schema(description = "The size of uploaded index in MB.")
-    @JsonProperty("uploadedIndexFileMB")
-    public double uploadedIndexFileMB;
-
-    @Schema(description = "Shard Id.")
-    @JsonProperty("shard")
-    public String shard;
-
-    @Schema(description = "The time at which backup snapshot completed at.")
-    @JsonProperty("endTime")
-    public String endTime;
-
-    @Schema(description = "ShardId of shard to which core belongs to.")
-    @JsonProperty("shardBackupId")
-    public String shardBackupId;
-
-    public static IncrementalBackupCoreResponse getObjectFromNamedList(NamedList<Object> nl) {
-      IncrementalBackupCoreResponse incrementalBackupCoreResponse =
-          new IncrementalBackupCoreResponse();
-      incrementalBackupCoreResponse.endTime = nl.get("endTime").toString();
-      incrementalBackupCoreResponse.indexSizeMB =
-          Double.parseDouble(nl.get("indexSizeMB").toString());
-      incrementalBackupCoreResponse.indexFileCount =
-          Integer.parseInt(nl.get("indexFileCount").toString());
-      incrementalBackupCoreResponse.startTime = nl.get("startTime").toString();
-      incrementalBackupCoreResponse.shardBackupId = nl.get("shardBackupId").toString();
-      incrementalBackupCoreResponse.uploadedIndexFileCount =
-          Integer.parseInt(nl.get("uploadedIndexFileCount").toString());
-      incrementalBackupCoreResponse.uploadedIndexFileMB =
-          Double.parseDouble(nl.get("uploadedIndexFileMB").toString());
-      if (nl.get("shard") != null) incrementalBackupCoreResponse.shard = nl.get("shard").toString();
-      return incrementalBackupCoreResponse;
-    }
-  }
-
-  public static class SnapShooterBackupCoreResponse extends SolrJerseyResponse {
-
-    @Schema(description = "The time at which snapshot started at.")
-    @JsonProperty("startTime")
-    public String startTime;
-
-    @Schema(description = "The number of files in the snapshot.")
-    @JsonProperty("fileCount")
-    public int fileCount;
-
-    @Schema(description = "The number of index files in the snapshot.")
-    @JsonProperty("indexFileCount")
-    public int indexFileCount;
-
-    @Schema(description = "The status of the snapshot")
-    @JsonProperty("status")
-    public String status;
-
-    @Schema(description = "The time at which snapshot completed at.")
-    @JsonProperty("snapshotCompletedAt")
-    public String snapshotCompletedAt;
-
-    @Schema(description = "The time at which snapshot completed at.")
-    @JsonProperty("endTime")
-    public String endTime;
-
-    @Schema(description = "The name of the snapshot")
-    @JsonProperty("snapshotName")
-    public String snapshotName;
-
-    @Schema(description = "The name of the directory where snapshot created.")
-    @JsonProperty("directoryName")
-    public String directoryName;
-
-    public static SnapShooterBackupCoreResponse getObjectFromNamedList(NamedList<Object> nl) {
-      SnapShooterBackupCoreResponse snapShooterBackupCoreResponse =
-          new SnapShooterBackupCoreResponse();
-      snapShooterBackupCoreResponse.directoryName = nl.get("directoryName").toString();
-      snapShooterBackupCoreResponse.endTime = nl.get("endTime").toString();
-      snapShooterBackupCoreResponse.indexFileCount =
-          Integer.parseInt(nl.get("indexFileCount").toString());
-      snapShooterBackupCoreResponse.snapshotName = nl.get("snapshotName").toString();
-      snapShooterBackupCoreResponse.status = nl.get("status").toString();
-      snapShooterBackupCoreResponse.startTime = nl.get("startTime").toString();
-      snapShooterBackupCoreResponse.fileCount = Integer.parseInt(nl.get("fileCount").toString());
-      snapShooterBackupCoreResponse.snapshotCompletedAt = nl.get("snapshotCompletedAt").toString();
-      return snapShooterBackupCoreResponse;
-    }
   }
 }

@@ -26,6 +26,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.handler.IncrementalShardBackup;
+import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -65,8 +67,8 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     final String backupName = "my-new-backup";
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.incremental = false;
-    BackupCoreAPI.SnapShooterBackupCoreResponse response =
-        (BackupCoreAPI.SnapShooterBackupCoreResponse)
+    SnapShooter.SnapShooterBackupCoreResponse response =
+        (SnapShooter.SnapShooterBackupCoreResponse)
             backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody, null);
 
     assertEquals(backupName, response.snapshotName);
@@ -134,8 +136,8 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.incremental = true;
     backupCoreRequestBody.shardBackupId = "md_shard1_0";
-    BackupCoreAPI.IncrementalBackupCoreResponse response =
-        (BackupCoreAPI.IncrementalBackupCoreResponse)
+    IncrementalShardBackup.IncrementalBackupCoreResponse response =
+        (IncrementalShardBackup.IncrementalBackupCoreResponse)
             backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody, null);
 
     assertEquals(1, response.indexFileCount);
