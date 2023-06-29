@@ -279,7 +279,7 @@ IF "%SCRIPT_CMD%"=="create_collection" goto run_solrcli
 IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
 IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
 IF "%SCRIPT_CMD%"=="auth" goto auth_usage
-IF "%SCRIPT_CMD%"=="status" goto status_usage
+IF "%SCRIPT_CMD%"=="status" goto run_solrcli
 goto done
 
 :script_usage
@@ -362,14 +362,6 @@ goto done
 @echo   -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
 @echo   -V/-verbose   Verbose messages from this script
-@echo.
-goto done
-
-:status_usage
-@echo.
-@echo Usage: solr status
-@echo.
-@echo   NOTE: This command will show the status of all running Solr servers
 @echo.
 goto done
 
@@ -1324,10 +1316,11 @@ for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port
           @echo.
           set has_info=1
           echo Found Solr process %%k running on port !SOME_SOLR_PORT!
+          REM Passing in %2 (-h or -help) directly is captured by a custom help path for usage output
           "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
             -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
             -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-            org.apache.solr.cli.SolrCLI status -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!SOME_SOLR_PORT!/solr
+            org.apache.solr.cli.SolrCLI status -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!SOME_SOLR_PORT!/solr %2
           @echo.
         )
       )
@@ -1666,7 +1659,7 @@ IF "%FIRST_ARG%"=="start" (
 ) ELSE IF "%FIRST_ARG%"=="auth" (
   goto auth_usage
 ) ELSE IF "%FIRST_ARG%"=="status" (
-  goto status_usage
+  goto run_solrcli
 ) ELSE (
   goto script_usage
 )
