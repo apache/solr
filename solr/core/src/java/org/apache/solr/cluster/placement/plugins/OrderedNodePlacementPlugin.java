@@ -725,7 +725,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   }
 
   /** Context for a placement request still has replicas that need to be placed. */
-  class PendingPlacementRequest {
+  static class PendingPlacementRequest {
     boolean hasBeenRequeued;
 
     final SolrCollection collection;
