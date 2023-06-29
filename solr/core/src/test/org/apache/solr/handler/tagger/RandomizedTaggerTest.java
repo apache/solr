@@ -70,24 +70,16 @@ public class RandomizedTaggerTest extends TaggerTestCase {
         } else { // existing word (possible multi-word from prev iteration)
           buf.append(RandomPicks.randomFrom(R, names));
         }
+        
+        // This loop has an exponential effect, because we add existing an name to a new name. In case we generate
+        // a too long name, the test will fail because of a too gib automaton.
+        // Stop at 500 chars to prevent this.
+        if (buf.length() > 500) {
+          break;
+        }
       }
       names.add(buf.toString());
     }
-
-    // truncate too long names (more than 1000 chars)
-    names =
-        names.stream()
-            .map(
-                name -> {
-                  if (name.length() > 1000) {
-                    // don't truncate in the middle of a word
-                    int index = name.substring(0, 1000).lastIndexOf(' ');
-                    return name.substring(0, index);
-                  } else {
-                    return name;
-                  }
-                })
-            .collect(Collectors.toSet());
 
     // BUILD NAMES
     buildNames(names.toArray(new String[names.size()]));
