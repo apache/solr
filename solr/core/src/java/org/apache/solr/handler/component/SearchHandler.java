@@ -335,16 +335,29 @@ public class SearchHandler extends RequestHandlerBase
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+    boolean isShard = req.getParams().getBool(ShardParams.IS_SHARD, false);
+    if (isShard) {
+      int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
+      SolrPluginUtils.forEachRequestPurpose(
+          purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
+    }
+
+    List<SearchComponent> components = getComponents();
+    ResponseBuilder rb = newResponseBuilder(req, rsp, components);
+    if (rb.requestInfo != null) {
+      rb.requestInfo.setResponseBuilder(rb);
+    }
+
+    rb.isDistrib = isDistrib(req);
+    tagRequestWithRequestId(rb);
+
+    if (isShard) {
       // log a simple message on start
       log.info("Start Forwarded Search Query");
       SolrParams filteredParams = removeVerboseParams(req.getParams());
       rsp.getToLog()
           .asShallowMap(false)
           .put("params", "{" + filteredParams + "}"); // replace "params" with the filtered version
-      int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
-      SolrPluginUtils.forEachRequestPurpose(
-          purpose, n -> shardPurposes.computeIfAbsent(n, name -> new Counter()).inc());
     } else {
       // Then it is the first time this req hitting Solr - not a req distributed by another higher
       // level req.
@@ -357,15 +370,6 @@ public class SearchHandler extends RequestHandlerBase
         log.info("Start External Search Query: {}", req.getParamString());
       }
     }
-
-    List<SearchComponent> components = getComponents();
-    ResponseBuilder rb = newResponseBuilder(req, rsp, components);
-    if (rb.requestInfo != null) {
-      rb.requestInfo.setResponseBuilder(rb);
-    }
-
-    rb.isDistrib = isDistrib(req);
-    tagRequestWithRequestId(rb);
 
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
     rb.setDebug(dbg);
