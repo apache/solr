@@ -460,7 +460,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   public void testBackupProperties() throws IOException {
-    // backupName, String collectionName, String extCollectionName, String configName
     BackupProperties p =
         BackupProperties.create(
             "backupName",
