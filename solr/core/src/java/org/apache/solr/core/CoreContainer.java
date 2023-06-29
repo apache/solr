@@ -1681,8 +1681,18 @@ public class CoreContainer {
     } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
-        // this mostly happen when the core is deleted when this node is down
-        unload(dcore.getName(), true, true, true);
+        // this mostly happens when the core is deleted when this node is down
+        // but it can also happen if connecting to the wrong zookeeper
+        final boolean deleteUnknownCores =
+            Boolean.parseBoolean(System.getProperty("solr.deleteUnknownCores", "false"));
+        log.error(
+            "SolrCore {} in {} is not in cluster state.{}",
+            dcore.getName(),
+            dcore.getInstanceDir(),
+            (deleteUnknownCores
+                ? " It will be deleted. See SOLR-13396 for more information."
+                : ""));
+        unload(dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
         throw e;
       }
       solrCores.removeCoreDescriptor(dcore);
