@@ -617,7 +617,12 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
     @Override
     public String toString() {
-      return "WeightedNode{" + "node=" + node.getName() + ", lastSortedWeight=" + lastSortedWeight + '}';
+      return "WeightedNode{"
+          + "node="
+          + node.getName()
+          + ", lastSortedWeight="
+          + lastSortedWeight
+          + '}';
     }
   }
 
