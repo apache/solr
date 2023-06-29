@@ -2258,6 +2258,10 @@ function start_solr() {
     SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
   fi
 
+  if [ -n "${SOLR_DELETE_UNKNOWN_CORES:-}" ]; then
+    SOLR_OPTS+=("-Dsolr.deleteUnknownCores=$SOLR_DELETE_UNKNOWN_CORES")
+  fi
+
   # If SSL-related system props are set, add them to SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
