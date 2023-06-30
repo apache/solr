@@ -196,6 +196,9 @@ Improvements
   specify where to download Solr from. If the url includes "apache.org", then GPG checks will be computed, otherwise
   the GPG checks will be skipped. (Houston Putman)
 
+* SOLR-16470: `/coreName/replication?command=filelist` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/replication/files?generation=123` (Matthew Biscocho via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
