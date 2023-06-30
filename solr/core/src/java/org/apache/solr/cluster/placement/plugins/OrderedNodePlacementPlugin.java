@@ -27,7 +27,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -659,9 +658,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   private static class NodeHeap {
     final Function<WeightedNode, Integer> weightFunc;
 
-    final TreeMap<Integer, List<WeightedNode>> nodesByWeight;
+    final TreeMap<Integer, Deque<WeightedNode>> nodesByWeight;
 
-    List<WeightedNode> currentLowestList;
+    Deque<WeightedNode> currentLowestList;
     int currentLowestWeight;
 
     int size = 0;
@@ -675,11 +674,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
     protected WeightedNode poll() {
       updateLowestWeightedList();
-      if (currentLowestList == null) {
+      if (currentLowestList == null || currentLowestList.isEmpty()) {
         return null;
       } else {
         size--;
-        return currentLowestList.remove(0);
+        return currentLowestList.pollFirst();
       }
     }
 
@@ -695,7 +694,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     private void updateLowestWeightedList() {
       recheckLowestWeights();
       while (currentLowestList == null || currentLowestList.isEmpty()) {
-        Map.Entry<Integer, List<WeightedNode>> lowestEntry = nodesByWeight.pollFirstEntry();
+        Map.Entry<Integer, Deque<WeightedNode>> lowestEntry = nodesByWeight.pollFirstEntry();
         if (lowestEntry == null) {
           currentLowestList = null;
           currentLowestWeight = -1;
@@ -728,7 +727,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       if (currentLowestWeight == nodeWeight) {
         currentLowestList.add(node);
       } else {
-        nodesByWeight.computeIfAbsent(nodeWeight, w -> new LinkedList<>()).add(node);
+        nodesByWeight.computeIfAbsent(nodeWeight, w -> new ArrayDeque<>()).addLast(node);
       }
     }
 
