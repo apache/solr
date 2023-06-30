@@ -550,9 +550,9 @@ echo                             overrides the 'ZK_HOST=...'' defined in solr.in
 echo.
 echo             -V              Enable more verbose output.
 echo.
-echo         upconfig uploads a configset from the local machine to Zookeeper. (Backcompat: -upconfig)
+echo         upconfig uploads a configset from the local machine to Zookeeper.
 echo.
-echo         downconfig downloads a configset from Zookeeper to the local machine. (Backcompat: -downconfig)
+echo         downconfig downloads a configset from Zookeeper to the local machine.
 echo.
 echo             -n configName   Name of the configset in Zookeeper that will be the destination of
 echo                             'upconfig' and the source for 'downconfig'.
@@ -1180,6 +1180,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DwaitForZk=%SOLR_WAIT_FOR_ZK%"
   )
 
+  IF NOT "%SOLR_DELETE_UNKNOWN_CORES%"=="" (
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dsolr.deleteUnknownCores=%SOLR_DELETE_UNKNOWN_CORES%"
+  )
+
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (
@@ -1769,13 +1773,9 @@ goto done
 
 REM Clumsy to do the state machine thing for -d and -n, but that's required for back-compat
 :parse_zk_args
-IF "%1"=="-upconfig" (
-  goto set_zk_op
-) ELSE IF "%1"=="-V" (
+IF "%1"=="-V" (
   goto set_zk_verbose
 ) ELSE IF "%1"=="upconfig" (
-  goto set_zk_op
-) ELSE IF "%1"=="-downconfig" (
   goto set_zk_op
 ) ELSE IF "%1"=="downconfig" (
   goto set_zk_op
@@ -1877,13 +1877,6 @@ IF "!ZK_OP!"=="" (
 IF "!ZK_HOST!"=="" (
   set "ERROR_MSG=Must specify -z zkHost"
   goto zk_short_usage
-)
-
-IF "!ZK_OP!"=="-upconfig" (
-  set ZK_OP="upconfig"
-)
-IF "!ZK_OP!"=="-downconfig" (
-  set ZK_OP="downconfig"
 )
 
 IF "!ZK_OP!"=="upconfig" (

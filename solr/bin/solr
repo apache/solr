@@ -569,9 +569,9 @@ function print_usage() {
     echo ""
     echo "             -V/-verbose        Enable more verbose output for this script."
     echo ""
-    echo "         upconfig uploads a configset from the local machine to Zookeeper. (Backcompat: -upconfig)"
+    echo "         upconfig uploads a configset from the local machine to Zookeeper."
     echo ""
-    echo "         downconfig downloads a configset from Zookeeper to the local machine. (Backcompat: -downconfig)"
+    echo "         downconfig downloads a configset from Zookeeper to the local machine."
     echo ""
     echo "             -n <configName>    Name of the configset in Zookeeper that will be the destination of"
     echo "                                  'upconfig' and the source for 'downconfig'."
@@ -746,7 +746,7 @@ function solr_pid_by_port() {
 # extract the value of the -Djetty.port parameter from a running Solr process
 function jetty_port() {
   SOLR_PID="$1"
-  SOLR_PROC=$(ps -o command='' -p "$SOLR_PID" | grep start\.jar | grep jetty\.port)
+  SOLR_PROC=$(ps -f -p "$SOLR_PID" | grep start\.jar | grep jetty\.port)
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
@@ -1337,15 +1337,10 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   if [ $# -gt 0 ]; then
     while true; do
       case "${1:-}" in
-        -upconfig|upconfig|-downconfig|downconfig|cp|rm|mv|ls|mkroot)
-            if [ "${1:0:1}" == "-" ]; then
-              echo "The use of $1 is deprecated.   Please use ${1:1} instead."
-              ZK_OP=${1:1}
-            else
-              ZK_OP=$1
-            fi
+        upconfig|downconfig|cp|rm|mv|ls|mkroot)
+            ZK_OP=$1
             shift 1
-        ;;
+        ;;      
         -z|-zkhost|-zkHost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
@@ -2261,6 +2256,10 @@ function start_solr() {
 
   if [ -n "${SOLR_DATA_HOME:-}" ]; then
     SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
+  fi
+
+  if [ -n "${SOLR_DELETE_UNKNOWN_CORES:-}" ]; then
+    SOLR_OPTS+=("-Dsolr.deleteUnknownCores=$SOLR_DELETE_UNKNOWN_CORES")
   fi
 
   # If SSL-related system props are set, add them to SOLR_OPTS

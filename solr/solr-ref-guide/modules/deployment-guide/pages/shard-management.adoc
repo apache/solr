@@ -591,11 +591,7 @@ http://localhost:8983/solr/admin/collections?action=FORCELEADER&collection=techp
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1 -H 'Content-Type: application/json' -d '
-  {
-    "force-leader":{}
-  }
-'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/force-leader
 ----
 *Output*
 

@@ -24,6 +24,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_CONFIGSET;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_INCREMENTAL;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
@@ -162,6 +163,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     requestBody.backupStrategy = params.get(INDEX_BACKUP_STRATEGY);
     requestBody.snapshotName = params.get(COMMIT_NAME);
     requestBody.incremental = params.getBool(BACKUP_INCREMENTAL);
+    requestBody.backupConfigset = params.getBool(BACKUP_CONFIGSET);
     requestBody.maxNumBackupPoints = params.getInt(MAX_NUM_BACKUP_POINTS);
     requestBody.async = params.get(ASYNC);
 
@@ -186,6 +188,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     @JsonProperty public String backupStrategy;
     @JsonProperty public String snapshotName;
     @JsonProperty public Boolean incremental;
+    @JsonProperty public Boolean backupConfigset;
     @JsonProperty public Integer maxNumBackupPoints;
     @JsonProperty public String async;
   }
