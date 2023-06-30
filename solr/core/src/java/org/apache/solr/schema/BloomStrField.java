@@ -32,6 +32,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * A specialized StrField variant that facilitates configuration of a ngram subfield (populated at
@@ -58,6 +59,26 @@ public final class BloomStrField extends StrField implements SchemaAware {
   public static final String BLOOM_FIELD_BASE_SUFFIX = "0NgramS"; // single-valued
 
   public static final String BLOOM_FIELD_BASE_SUFFIX_MULTI = "0NgramM"; // multiValued
+
+  private static final boolean DEFAULT_ENABLE_NGRAMS =
+      !"false".equals(System.getProperty("enableNgrams"));
+
+  private static final ThreadLocal<Boolean> ENABLE_NGRAMS =
+      new ThreadLocal<>() {
+        @Override
+        protected Boolean initialValue() {
+          return DEFAULT_ENABLE_NGRAMS;
+        }
+      };
+
+  public static void init(SolrQueryRequest req) {
+    boolean enableNgrams = req.getParams().getBool("enableNgrams", DEFAULT_ENABLE_NGRAMS);
+    ENABLE_NGRAMS.set(enableNgrams);
+  }
+
+  public static boolean enableNgrams() {
+    return ENABLE_NGRAMS.get();
+  }
 
   private IndexSchema schema;
   private FieldType bloomFieldType;

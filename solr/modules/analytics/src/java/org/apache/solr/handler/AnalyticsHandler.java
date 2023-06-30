@@ -36,6 +36,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.AnalyticsShardResponseWriter;
 import org.apache.solr.response.AnalyticsShardResponseWriter.AnalyticsResponse;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.BloomStrField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
@@ -76,6 +77,7 @@ public class AnalyticsHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
     SolrQueryTimeoutImpl.set(req);
+    BloomStrField.init(req);
     try {
       DocSet docs;
       try {
