@@ -125,12 +125,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
             // we have replicas to place, that's ok, because the replicas will be put on all the tie
             // options probably.
             // Only skip the request if it can be requeued.
+            int numWeightTies = nodesForReplicaType.peekTies();
             if (!pendingRequests.isEmpty()
                 && request.canBeRequeued()
-                && nodesForReplicaType.peekTies() > (replicaCount - replicasPlaced)) {
+                && numWeightTies > (replicaCount - replicasPlaced)) {
               log.debug(
                   "There is a tie for best weight. There are more options ({}) than replicas to place ({}), so try this placement request later: {}",
-                  nodesForReplicaType.peekTies(),
+                  numWeightTies,
                   replicaCount - replicasPlaced,
                   node);
               retryRequestLater = true;
