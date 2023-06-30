@@ -66,31 +66,34 @@ public class StubShardAffinityPlacementFactory extends AffinityPlacementFactory 
               .put(node, (double) 100);
         }
         final PlacementContext wrappingContext;
-        wrappingContext = new PlacementContext() {
+        wrappingContext =
+            new PlacementContext() {
 
-          private AttributeFetcherForTest fetcherForTest = new AttributeFetcherForTest(new AttributeValuesImpl(sysprops, metrics, collectionMetrics));
+              private AttributeFetcherForTest fetcherForTest =
+                  new AttributeFetcherForTest(
+                      new AttributeValuesImpl(sysprops, metrics, collectionMetrics));
 
-          @Override
-          public Cluster getCluster() {
-            return placementContext.getCluster();
-          }
+              @Override
+              public Cluster getCluster() {
+                return placementContext.getCluster();
+              }
 
-          @Override
-          public AttributeFetcher getAttributeFetcher() {
-            return fetcherForTest;
-          }
+              @Override
+              public AttributeFetcher getAttributeFetcher() {
+                return fetcherForTest;
+              }
 
-          @Override
-          public PlacementPlanFactory getPlacementPlanFactory() {
-            return placementContext.getPlacementPlanFactory();
-          }
+              @Override
+              public PlacementPlanFactory getPlacementPlanFactory() {
+                return placementContext.getPlacementPlanFactory();
+              }
 
-          @Override
-          public BalancePlanFactory getBalancePlanFactory() {
-            return placementContext.getBalancePlanFactory();
-          }
-        };
-        return super.computePlacements( requests, wrappingContext);
+              @Override
+              public BalancePlanFactory getBalancePlanFactory() {
+                return placementContext.getBalancePlanFactory();
+              }
+            };
+        return super.computePlacements(requests, wrappingContext);
       }
     };
   }
