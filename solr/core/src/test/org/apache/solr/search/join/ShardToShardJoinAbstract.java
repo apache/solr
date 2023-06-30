@@ -46,7 +46,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.cluster.placement.impl.StubShardAffinityPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.StubShardAffinityPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementConfig;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;

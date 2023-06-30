@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.placement.impl;
+package org.apache.solr.cluster.placement.plugins;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -25,7 +25,7 @@ import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeFetcherForTest;
-import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.BalancePlanFactory;
 import org.apache.solr.cluster.placement.CollectionMetrics;
 import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.PlacementContext;
@@ -34,7 +34,8 @@ import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.cluster.placement.PlacementPlanFactory;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementRequest;
-import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
+import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
+import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 
 public class StubShardAffinityPlacementFactory extends AffinityPlacementFactory {
 
@@ -56,35 +57,40 @@ public class StubShardAffinityPlacementFactory extends AffinityPlacementFactory 
         final Map<String, CollectionMetrics> collectionMetrics = new HashMap<>();
 
         for (Node node : placementContext.getCluster().getLiveNodes()) {
-          metrics.computeIfAbsent(BuiltInMetrics.NODE_NUM_CORES, n -> new HashMap<>()).put(node, 1);
+          metrics.computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>()).put(node, 1);
           metrics
-              .computeIfAbsent(BuiltInMetrics.NODE_FREE_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(NodeMetricImpl.FREE_DISK_GB, n -> new HashMap<>())
               .put(node, (double) 10);
           metrics
-              .computeIfAbsent(BuiltInMetrics.NODE_TOTAL_DISK_GB, n -> new HashMap<>())
+              .computeIfAbsent(NodeMetricImpl.TOTAL_DISK_GB, n -> new HashMap<>())
               .put(node, (double) 100);
         }
-        return super.computePlacements(
-            requests,
-            new PlacementContext() {
-              @Override
-              public Cluster getCluster() {
-                return placementContext.getCluster();
-              }
+        final PlacementContext wrappingContext;
+        wrappingContext = new PlacementContext() {
 
-              @Override
-              public AttributeFetcher getAttributeFetcher() {
-                // return placementContext.getAttributeFetcher();
-                AttributeValues attributeValues =
-                    new AttributeValuesImpl(sysprops, metrics, collectionMetrics);
-                return new AttributeFetcherForTest(attributeValues);
-              }
+          private AttributeFetcherForTest fetcherForTest = new AttributeFetcherForTest(new AttributeValuesImpl(sysprops, metrics, collectionMetrics));
 
-              @Override
-              public PlacementPlanFactory getPlacementPlanFactory() {
-                return placementContext.getPlacementPlanFactory();
-              }
-            });
+          @Override
+          public Cluster getCluster() {
+            return placementContext.getCluster();
+          }
+
+          @Override
+          public AttributeFetcher getAttributeFetcher() {
+            return fetcherForTest;
+          }
+
+          @Override
+          public PlacementPlanFactory getPlacementPlanFactory() {
+            return placementContext.getPlacementPlanFactory();
+          }
+
+          @Override
+          public BalancePlanFactory getBalancePlanFactory() {
+            return placementContext.getBalancePlanFactory();
+          }
+        };
+        return super.computePlacements( requests, wrappingContext);
       }
     };
   }
