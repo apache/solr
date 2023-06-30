@@ -99,6 +99,12 @@ public class InjectionFactories {
     public void dispose(SolrParams instance) {}
   }
 
+  /**
+   * Allows access to a {@link ContainerRequestContext} via a {@link ServiceLocator}
+   *
+   * <p>ServiceLocator must be used util https://github.com/eclipse-ee4j/jersey/issues/3503 is
+   * resolved.
+   */
   public static class RequestContextBasedFactory {
     @Context ServiceLocator serviceLocator;
 
