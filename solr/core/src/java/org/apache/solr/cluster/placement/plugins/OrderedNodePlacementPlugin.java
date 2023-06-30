@@ -693,6 +693,22 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     private void updateLowestWeightedList() {
+      recheckLowestWeights();
+      while (currentLowestList == null || currentLowestList.isEmpty()) {
+        Map.Entry<Integer, List<WeightedNode>> lowestEntry = nodesByWeight.pollFirstEntry();
+        if (lowestEntry == null) {
+          currentLowestList = null;
+          currentLowestWeight = -1;
+          break;
+        } else {
+          currentLowestList = lowestEntry.getValue();
+          currentLowestWeight = lowestEntry.getKey();
+          recheckLowestWeights();
+        }
+      }
+    }
+
+    private void recheckLowestWeights() {
       if (currentLowestList != null) {
         currentLowestList.removeIf(
             node -> {
@@ -703,25 +719,6 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
               }
               return false;
             });
-      }
-      while (currentLowestList == null || currentLowestList.isEmpty()) {
-        Map.Entry<Integer, List<WeightedNode>> lowestEntry = nodesByWeight.pollFirstEntry();
-        if (lowestEntry == null) {
-          currentLowestList = null;
-          currentLowestWeight = -1;
-        } else {
-          currentLowestList = lowestEntry.getValue();
-          currentLowestWeight = lowestEntry.getKey();
-          currentLowestList.removeIf(
-              node -> {
-                if (weightFunc.apply(node) != currentLowestWeight) {
-                  log.debug("Node's sort is out-of-date, re-sorting: {}", node);
-                  add(node);
-                  return true;
-                }
-                return false;
-              });
-        }
       }
     }
 
