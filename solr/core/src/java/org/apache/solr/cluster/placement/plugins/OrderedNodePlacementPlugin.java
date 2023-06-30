@@ -85,12 +85,15 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         getWeightedNodes(placementContext, allNodes, allCollections, true).values();
     while (!pendingRequests.isEmpty()) {
       PendingPlacementRequest request = pendingRequests.poll();
+      if (!request.isPending()) {
+        continue;
+      }
 
       List<WeightedNode> nodesForRequest =
           weightedNodes.stream().filter(request::isTargetingNode).collect(Collectors.toList());
 
       SolrCollection solrCollection = request.getCollection();
-      // Now place randomly all replicas of all shards on available nodes
+      // Now place all replicas of all shards on available nodes
       for (String shardName : request.getPendingShards()) {
         for (Replica.ReplicaType replicaType : request.getPendingReplicaTypes(shardName)) {
           int replicaCount = request.getPendingReplicas(shardName, replicaType);
@@ -770,13 +773,16 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       targetNodes = request.getTargetNodes();
       Set<String> shards = request.getShardNames();
       replicasToPlaceForShards = CollectionUtil.newHashMap(shards.size());
-      shards.forEach(s -> replicasToPlaceForShards.put(s, new HashMap<>()));
       int totalShardReplicas = 0;
       for (Replica.ReplicaType type : Replica.ReplicaType.values()) {
         int count = request.getCountReplicasToCreate(type);
         if (count > 0) {
           totalShardReplicas += count;
-          shards.forEach(s -> replicasToPlaceForShards.get(s).put(type, count));
+          shards.forEach(
+              s ->
+                  replicasToPlaceForShards
+                      .computeIfAbsent(s, sh -> CollectionUtil.newHashMap(3))
+                      .put(type, count));
         }
       }
       computedPlacements = CollectionUtil.newHashSet(totalShardReplicas * shards.size());
