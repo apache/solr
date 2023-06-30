@@ -73,14 +73,28 @@ Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site 
 === Shard Management
 * Solr now provides an xref:deployment-guide:shard-management.adoc#installsharddata["Install Shard"] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
 
-== Solr 9.3
 === Solr CLI
-* the bin/solr -i and bin/solr -info removed in favour of bin/solr status command.
+* The `bin/solr -i` and `bin/solr -info` options were removed in favour of the `bin/solr status` command.
 
 === Security
 * Use of `stream.file`, `stream.url` and `stream.body` params are no longer enabled via configuration in solrconfig.xml, nor dynamic equivalents with the config API.
 Older configuration now does nothing.
 Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
+
+=== Official Docker Image
+* The customization of the Official Solr Dockerfile has been changed.
+The customization options `SOLR_DOWNLOAD_URL`, `SOLR_CLOSER_URL`, `SOLR_DIST_URL` and `SOLR_ARCHIVE_URL`, have been removed.
+The only way to specify a custom location for the Solr binaries is through `SOLR_DOWNLOAD_SERVER`.
+If the server URL contains `apache.org`, then the Dockerfile will check gpg signature files.
+If the server URL does not contain `apache.org`, then the gpg signature checking will be skipped.
++
+It is still strongly recommended to use the Dockerfile included in the Solr binary TGZs if you want to build Solr images with custom versions of Solr.
+The custom version of Solr will include this Dockerfile when it is built.
+
+=== Deletion of unknown cores is now disabled by default
+ * When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper.
+Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files.
+As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[Unknown core deletion].
 
 == Solr 9.2
 === Upgrade to Jetty 10.x
