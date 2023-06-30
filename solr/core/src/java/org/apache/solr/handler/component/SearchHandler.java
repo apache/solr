@@ -62,6 +62,7 @@ import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.BloomStrField;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SortSpec;
@@ -441,6 +442,7 @@ public class SearchHandler extends RequestHandlerBase
       // a normal non-distributed request
 
       SolrQueryTimeoutImpl.set(req);
+      BloomStrField.init(req);
       try {
         // The semantics of debugging vs not debugging are different enough that
         // it makes sense to have two control loops
