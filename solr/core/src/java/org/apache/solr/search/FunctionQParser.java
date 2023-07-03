@@ -45,7 +45,7 @@ public class FunctionQParser extends QParser {
   // to a real ValueSource
   public static final int FLAG_USE_FIELDNAME_SOURCE = 0x04;
 
-  // When the flag is ture, vector parsing use byte encoding, otherwise float encoding is used
+  // When the flag is set, vector parsing use byte encoding, otherwise float encoding is used
   public static final int FLAG_PARSE_VECTOR_BYTE_ENCODING = 0x08;
   public static final int FLAG_DEFAULT = FLAG_CONSUME_DELIMITER;
 
@@ -253,26 +253,37 @@ public class FunctionQParser extends QParser {
 
   public List<Number> parseVector(VectorEncoding encoding) throws SyntaxError {
     ArrayList<Number> values = new ArrayList<>();
-
+    char initChar = sp.val.charAt(sp.pos);
+    if (initChar != '['){
+      throw new SyntaxError("Missing parenthesis at the beginning of vector ");
+    }
     sp.pos += 1;
+    boolean correctVectorToEnd = false;
     while (sp.pos < sp.end){
       char ch = sp.val.charAt(sp.pos);
       if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
-        if (encoding.equals(VectorEncoding.BYTE)){
-          values.add(sp.getByte());
-        } else if (encoding.equals(VectorEncoding.FLOAT32)){
-          values.add(sp.getFloat());
+        switch (encoding) {
+          case BYTE:
+            values.add(sp.getByte());
+            break;
+          case FLOAT32:
+            values.add(sp.getFloat());
+            break;
+          default:
+            throw new SyntaxError(String.format("Unexpected vector encoding", encoding));
         }
+        correctVectorToEnd = true;
       } else if (ch == ','){
         sp.pos++;
-      } else if (ch == ']') {
+        correctVectorToEnd = false;
+      } else if (ch == ']' && correctVectorToEnd) {
         break;
       } else {
         throw new SyntaxError(String.format("Unexpected {} at position {}", ch, sp.pos));
       }
     }
     if (sp.pos >= sp.end) {
-      throw new SyntaxError("Missing end paranthesis for vector");
+      throw new SyntaxError("Missing parenthesis at the end of vector");
     }
     sp.pos++;
     return values;

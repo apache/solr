@@ -140,11 +140,11 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     createIndex(null, 88); // id with no value
 
     // test identity (straight field value)
-//    singleTest(field, "\0", 10, 10);
-//
-//    // test constant score
-//    singleTest(field, "1.414213", 10, 1.414213f);
-//    singleTest(field, "-1.414213", 10, 0f);
+    singleTest(field, "\0", 10, 10);
+
+    // test constant score
+    singleTest(field, "1.414213", 10, 1.414213f);
+    singleTest(field, "-1.414213", 10, 0f);
 
     singleTest(field, "sum(\0,1)", 10, 11);
     singleTest(field, "sum(\0,\0)", 10, 20);
