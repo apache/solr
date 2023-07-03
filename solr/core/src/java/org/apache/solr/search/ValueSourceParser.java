@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.VectorEncoding;
@@ -346,28 +345,39 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         });
     alias("sum", "add");
     addParser(
-          "vectorSimilarity",
-          new ValueSourceParser() {
-              @Override
-              public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        "vectorSimilarity",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
 
-                  VectorEncoding vectorEncoding = VectorEncoding.valueOf(fp.parseArg());
-                  VectorSimilarityFunction functionName = VectorSimilarityFunction.valueOf(fp.parseArg());
+            VectorEncoding vectorEncoding = VectorEncoding.valueOf(fp.parseArg());
+            VectorSimilarityFunction functionName = VectorSimilarityFunction.valueOf(fp.parseArg());
 
-                  int vectorEncodingFlag = vectorEncoding.equals(VectorEncoding.BYTE)? FunctionQParser.FLAG_PARSE_VECTOR_BYTE_ENCODING : 0;
-                  ValueSource v1 = fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_CONSUME_DELIMITER | vectorEncodingFlag);
-                  ValueSource v2 = fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_CONSUME_DELIMITER | vectorEncodingFlag);
+            int vectorEncodingFlag =
+                vectorEncoding.equals(VectorEncoding.BYTE)
+                    ? FunctionQParser.FLAG_PARSE_VECTOR_BYTE_ENCODING
+                    : 0;
+            ValueSource v1 =
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT
+                        | FunctionQParser.FLAG_CONSUME_DELIMITER
+                        | vectorEncodingFlag);
+            ValueSource v2 =
+                fp.parseValueSource(
+                    FunctionQParser.FLAG_DEFAULT
+                        | FunctionQParser.FLAG_CONSUME_DELIMITER
+                        | vectorEncodingFlag);
 
-                  switch (vectorEncoding){
-                      case FLOAT32:
-                          return new FloatVectorSimilarityFunction(functionName, v1, v2);
-                      case BYTE:
-                          return new ByteVectorSimilarityFunction(functionName, v1, v2);
-                      default:
-                          throw new SyntaxError("Invalid vector encoding: " + vectorEncoding);
-                  }
-              }
-          });
+            switch (vectorEncoding) {
+              case FLOAT32:
+                return new FloatVectorSimilarityFunction(functionName, v1, v2);
+              case BYTE:
+                return new ByteVectorSimilarityFunction(functionName, v1, v2);
+              default:
+                throw new SyntaxError("Invalid vector encoding: " + vectorEncoding);
+            }
+          }
+        });
 
     addParser(
         "product",

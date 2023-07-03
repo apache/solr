@@ -346,7 +346,7 @@ public class DenseVectorField extends FloatPointField {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
 
-    switch (vectorEncoding){
+    switch (vectorEncoding) {
       case FLOAT32:
         return new FloatKnnVectorFieldSource(field.getName());
       case BYTE:
@@ -354,8 +354,7 @@ public class DenseVectorField extends FloatPointField {
     }
 
     throw new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST,
-        "Vector encoding not supported for function queries.");
+        SolrException.ErrorCode.BAD_REQUEST, "Vector encoding not supported for function queries.");
   }
 
   public Query getKnnVectorQuery(

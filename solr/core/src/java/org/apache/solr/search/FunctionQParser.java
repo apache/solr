@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -250,16 +249,15 @@ public class FunctionQParser extends QParser {
     return val;
   }
 
-
   public List<Number> parseVector(VectorEncoding encoding) throws SyntaxError {
     ArrayList<Number> values = new ArrayList<>();
     char initChar = sp.val.charAt(sp.pos);
-    if (initChar != '['){
+    if (initChar != '[') {
       throw new SyntaxError("Missing parenthesis at the beginning of vector ");
     }
     sp.pos += 1;
-    boolean correctVectorToEnd = false;
-    while (sp.pos < sp.end){
+    boolean valueExpected = true;
+    while (sp.pos < sp.end) {
       char ch = sp.val.charAt(sp.pos);
       if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
         switch (encoding) {
@@ -272,11 +270,14 @@ public class FunctionQParser extends QParser {
           default:
             throw new SyntaxError(String.format("Unexpected vector encoding", encoding));
         }
-        correctVectorToEnd = true;
-      } else if (ch == ','){
+        valueExpected = false;
+      } else if (ch == ',') {
+        if (valueExpected) {
+          throw new SyntaxError(String.format("Unexpected vector encoding", encoding));
+        }
         sp.pos++;
-        correctVectorToEnd = false;
-      } else if (ch == ']' && correctVectorToEnd) {
+        valueExpected = true;
+      } else if (ch == ']' && !valueExpected) {
         break;
       } else {
         throw new SyntaxError(String.format("Unexpected {} at position {}", ch, sp.pos));
@@ -409,7 +410,7 @@ public class FunctionQParser extends QParser {
       }
     } else if (ch == '"' || ch == '\'') {
       valueSource = new LiteralValueSource(sp.getQuotedString());
-    } else if (ch == '[' ) {
+    } else if (ch == '[') {
       valueSource = parseConstVector(flags);
     } else if (ch == '$') {
       sp.pos++;
@@ -507,7 +508,10 @@ public class FunctionQParser extends QParser {
 
   public ValueSource parseConstVector(int flags) throws SyntaxError {
 
-    VectorEncoding encoding = (flags & FLAG_PARSE_VECTOR_BYTE_ENCODING) != 0? VectorEncoding.BYTE : VectorEncoding.FLOAT32;
+    VectorEncoding encoding =
+        (flags & FLAG_PARSE_VECTOR_BYTE_ENCODING) != 0
+            ? VectorEncoding.BYTE
+            : VectorEncoding.FLOAT32;
     var vector = parseVector(encoding);
 
     switch (encoding) {
@@ -527,7 +531,6 @@ public class FunctionQParser extends QParser {
 
     throw new SyntaxError("wrong vector encoding:" + encoding);
   }
-
 
   /**
    * @lucene.experimental
