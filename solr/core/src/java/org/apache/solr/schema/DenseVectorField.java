@@ -35,6 +35,8 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
+import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
@@ -343,9 +345,17 @@ public class DenseVectorField extends FloatPointField {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
+
+    switch (vectorEncoding){
+      case FLOAT32:
+        return new FloatKnnVectorFieldSource(field.getName());
+      case BYTE:
+        return new ByteKnnVectorFieldSource(field.getName());
+    }
+
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
-        "Function queries are not supported for Dense Vector fields.");
+        "Vector encoding not supported for function queries.");
   }
 
   public Query getKnnVectorQuery(
