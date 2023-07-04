@@ -89,6 +89,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ScoreJoinQParserPlugin extends QParserPlugin {
 
+  public static final String USE_CROSSCOLLECTION =
+      "SolrCloud join: To join with a collection that might not be co-located, use method=crossCollection.";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String SCORE = "score";
@@ -311,8 +313,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
    * Returns a String with the name of a core.
    *
    * <p>This method searches the core with fromIndex name in the core's container. If fromIndex
-   * isn't name of collection or alias it returns fromIndex without changes. If fromIndex is name of
-   * alias but if the alias points to multiple collections it's throw
+   * isn't the name of a collection or alias it returns fromIndex without changes. If fromIndex is
+   * the name of an alias but the alias points to multiple collections it throws
    * SolrException.ErrorCode.BAD_REQUEST because multiple shards not yet supported.
    *
    * @param fromIndex name of the index
@@ -384,104 +386,133 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       SolrParams localParams) {
     final DocCollection fromCollection = zkController.getClusterState().getCollection(fromIndex);
     final String nodeName = zkController.getNodeName();
-    final String hitTheRoad =
-        "SolrCloud join: To join with a collection that might not be co-located, use method=crossCollection.";
     if (fromCollection.getSlices().size() == 1) {
-      String fromReplica = null;
-
-      for (Slice slice : fromCollection.getActiveSlicesArr()) {
-        if (fromReplica != null)
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, hitTheRoad);
-
-        for (Replica replica : slice.getReplicas()) {
-          if (replica.getNodeName().equals(nodeName)) {
-            fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-            // found local replica, but is it Active?
-            if (replica.getState() != Replica.State.ACTIVE)
-              throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "SolrCloud join: "
-                      + fromIndex
-                      + " has a local replica ("
-                      + fromReplica
-                      + ") on "
-                      + nodeName
-                      + ", but it is "
-                      + replica.getState());
-
-            break;
-          }
-        }
-      }
-
-      if (fromReplica == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, hitTheRoad);
-
-      return fromReplica;
+      return getLocalSingleShard(zkController, fromIndex);
     } else { // sharded from
       final CloudDescriptor toCoreDescriptor = toCore.getCoreDescriptor().getCloudDescriptor();
-      final String toShardId = toCoreDescriptor.getShardId();
       final DocCollection toCollection =
           zkController.getClusterState().getCollection(toCoreDescriptor.getCollectionName());
 
-      String routerName = checkRouters(toCollection, fromCollection, hitTheRoad);
-      boolean checkField = false;
-      switch (routerName) {
-        case PlainIdRouter.NAME: // mandatory field check
-          checkField = true;
-          checkRouterField(toCore, toCollection, toField, hitTheRoad);
-          break;
-        case CompositeIdRouter.NAME: // let you shoot your legs
-          if (localParams.getBool(CHECK_ROUTER_FIELD, true)) {
-            checkField = true;
-            checkRouterField(toCore, toCollection, toField, hitTheRoad);
-          }
-          break;
-        case ImplicitDocRouter.NAME: // don't check field, you know what you do
-        default:
-          break;
-      }
-      // if router field is not set, "to" may fallback to uniqueKey
-      if (localParams.getBool(CHECK_ROUTER_FIELD, true)) {
-        checkRouterField(toCore, toCollection, toField, hitTheRoad);
-      }
-      checkShardNumber(toCollection, fromCollection, hitTheRoad);
-      final Slice fromShardReplicas = fromCollection.getActiveSlicesMap().get(toShardId);
-      for (Replica collocatedFrom :
-          fromShardReplicas.getReplicas(r -> r.getNodeName().equals(nodeName))) {
-        if (log.isDebugEnabled()) {
-          log.debug("<-{} @ {}", collocatedFrom.getCoreName(), toCoreDescriptor.getCoreNodeName());
-        }
-        // which replica to pick if there are many one?
-        // if router field is not set, "from" may fallback to uniqueKey, but only we attempt to pick
-        // local shard.
-        if (checkField) {
-          try (final SolrCore fromCore =
-              toCore.getCoreContainer().getCore(collocatedFrom.getCoreName())) {
-            checkRouterField(fromCore, fromCollection, fromField, hitTheRoad);
-          }
-        }
-        return collocatedFrom.getCoreName();
-      }
-      final String shards =
-          fromShardReplicas.getReplicas().stream()
-              .map(r -> r.getShard() + ":" + r.getCoreName() + "@" + r.getNodeName())
-              .collect(Collectors.joining(","));
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Unable to find collocated \"from\" replica: "
-              + shards
-              + " at node: "
-              + nodeName
-              + " for "
-              + toShardId
-              + ". "
-              + hitTheRoad);
+      boolean isFromSiteCheckRequired =
+          checkToSideRouter(toCore, toField, localParams, fromCollection, toCollection);
+
+      checkShardCount(toCollection, fromCollection);
+      return findCollocatedFromCore(
+          toCore, fromField, fromCollection, nodeName, isFromSiteCheckRequired);
     }
   }
 
-  private static void checkShardNumber(
-      DocCollection toCollection, DocCollection fromCollection, String hitTheRoad) {
+  private static String findCollocatedFromCore(
+      SolrCore toCore,
+      String fromField,
+      DocCollection fromCollection,
+      String nodeName,
+      boolean isFromSiteCheckRequired) {
+    final CloudDescriptor toCoreDescriptor = toCore.getCoreDescriptor().getCloudDescriptor();
+    String toShardId = toCoreDescriptor.getShardId();
+    final Slice fromShardReplicas = fromCollection.getActiveSlicesMap().get(toShardId);
+    for (Replica collocatedFrom :
+        fromShardReplicas.getReplicas(r -> r.getNodeName().equals(nodeName))) {
+      if (log.isDebugEnabled()) {
+        log.debug("<-{} @ {}", collocatedFrom.getCoreName(), toCoreDescriptor.getCoreNodeName());
+      }
+      // which replica to pick if there are many one?
+      // if router field is not set, "from" may fallback to uniqueKey, but only we attempt to pick
+      // local shard.
+      if (isFromSiteCheckRequired) {
+        try (final SolrCore fromCore =
+            toCore.getCoreContainer().getCore(collocatedFrom.getCoreName())) {
+          checkRouterField(fromCore, fromCollection, fromField);
+        }
+      }
+      return collocatedFrom.getCoreName();
+    }
+    final String shards =
+        fromShardReplicas.getReplicas().stream()
+            .map(r -> r.getShard() + ":" + r.getCoreName() + "@" + r.getNodeName())
+            .collect(Collectors.joining(","));
+    throw new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST,
+        "Unable to find collocated \"from\" replica: "
+            + shards
+            + " at node: "
+            + nodeName
+            + " for "
+            + toShardId
+            + ". "
+            + USE_CROSSCOLLECTION);
+  }
+
+  private static boolean checkToSideRouter(
+      SolrCore toCore,
+      String toField,
+      SolrParams localParams,
+      DocCollection fromCollection,
+      DocCollection toCollection) {
+    String routerName = checkRouters(toCollection, fromCollection);
+    boolean checkFromRouterField = false;
+    switch (routerName) {
+      case PlainIdRouter.NAME: // mandatory field check
+        checkFromRouterField = true;
+        checkRouterField(toCore, toCollection, toField);
+        break;
+      case CompositeIdRouter.NAME: // let you shoot your legs
+        if (localParams.getBool(CHECK_ROUTER_FIELD, true)) {
+          checkFromRouterField = true;
+          checkRouterField(toCore, toCollection, toField);
+        }
+        break;
+      case ImplicitDocRouter.NAME: // don't check field, you know what you do
+      default:
+        // if router field is not set, "to" may fallback to uniqueKey
+        if (localParams.getBool(CHECK_ROUTER_FIELD, true)) {
+          checkRouterField(toCore, toCollection, toField);
+        }
+        break;
+    }
+    return checkFromRouterField;
+  }
+
+  /**
+   * Finds a core of collocated single shard collection.
+   *
+   * @return core name of the collocated single shard collection
+   */
+  private static String getLocalSingleShard(ZkController zkController, String fromIndex) {
+    final DocCollection fromCollection = zkController.getClusterState().getCollection(fromIndex);
+    final String nodeName = zkController.getNodeName();
+    String fromReplica = null;
+
+    for (Slice slice : fromCollection.getActiveSlicesArr()) {
+      assert fromReplica == null;
+      for (Replica replica : slice.getReplicas()) {
+        if (replica.getNodeName().equals(nodeName)) {
+          fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+          // found local replica, but is it Active?
+          if (replica.getState() != Replica.State.ACTIVE)
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "SolrCloud join: "
+                    + fromIndex
+                    + " has a local replica ("
+                    + fromReplica
+                    + ") on "
+                    + nodeName
+                    + ", but it is "
+                    + replica.getState());
+
+          break;
+        }
+      }
+    }
+
+    if (fromReplica == null)
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, USE_CROSSCOLLECTION);
+
+    return fromReplica;
+  }
+
+  private static void checkShardCount(DocCollection toCollection, DocCollection fromCollection) {
     final boolean shardsNumberCheck =
         toCollection.getSlices().size() == fromCollection.getSlices().size();
     if (!shardsNumberCheck) {
@@ -492,12 +523,12 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
               + "; "
               + fromCollection.getSlices().size()
               + ". "
-              + hitTheRoad);
+              + USE_CROSSCOLLECTION);
     }
   }
 
   private static void checkRouterField(
-      SolrCore toCore, DocCollection fromCollection, String fromField, String hitTheRoad) {
+      SolrCore toCore, DocCollection fromCollection, String fromField) {
     String routeField = fromCollection.getRouter().getRouteField(fromCollection);
     if (routeField == null) {
       routeField = toCore.getLatestSchema().getUniqueKeyField().getName();
@@ -511,12 +542,11 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
               + ", but one of field param is "
               + fromField
               + ". "
-              + hitTheRoad);
+              + USE_CROSSCOLLECTION);
     }
   }
 
-  private static String checkRouters(
-      DocCollection collection, DocCollection fromCollection, String hitTheRoad) {
+  private static String checkRouters(DocCollection collection, DocCollection fromCollection) {
 
     final String routerName = collection.getRouter().getName();
     if (!routerName.equals(fromCollection.getRouter().getName())) {
@@ -530,7 +560,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
               + ", "
               + fromCollection.getRouter()
               + ". "
-              + hitTheRoad);
+              + USE_CROSSCOLLECTION);
     }
     return routerName;
   }
