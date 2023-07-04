@@ -33,6 +33,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
@@ -393,12 +394,14 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       final DocCollection toCollection =
           zkController.getClusterState().getCollection(toCoreDescriptor.getCollectionName());
 
-      boolean isFromSiteCheckRequired =
+      final String shardId = toCoreDescriptor.getShardId();
+      final DocRouter.Range toRange = toCollection.getSlice(shardId).getRange();
+      boolean isFromSideCheckRequired =
           checkToSideRouter(toCore, toField, localParams, fromCollection, toCollection);
 
-      checkShardCount(toCollection, fromCollection);
+      checkSliceRanges(toCollection, fromCollection, shardId);
       return findCollocatedFromCore(
-          toCore, fromField, fromCollection, nodeName, isFromSiteCheckRequired);
+          toCore, fromField, fromCollection, nodeName, isFromSideCheckRequired);
     }
   }
 
@@ -407,7 +410,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       String fromField,
       DocCollection fromCollection,
       String nodeName,
-      boolean isFromSiteCheckRequired) {
+      boolean isFromSideCheckRequired) {
     final CloudDescriptor toCoreDescriptor = toCore.getCoreDescriptor().getCloudDescriptor();
     String toShardId = toCoreDescriptor.getShardId();
     final Slice fromShardReplicas = fromCollection.getActiveSlicesMap().get(toShardId);
@@ -417,9 +420,9 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         log.debug("<-{} @ {}", collocatedFrom.getCoreName(), toCoreDescriptor.getCoreNodeName());
       }
       // which replica to pick if there are many one?
-      // if router field is not set, "from" may fallback to uniqueKey, but only we attempt to pick
+      // if router field is not set, "from" may fall back to uniqueKey, but only we attempt to pick
       // local shard.
-      if (isFromSiteCheckRequired) {
+      if (isFromSideCheckRequired) {
         try (final SolrCore fromCore =
             toCore.getCoreContainer().getCore(collocatedFrom.getCoreName())) {
           checkRouterField(fromCore, fromCollection, fromField);
@@ -512,16 +515,43 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     return fromReplica;
   }
 
-  private static void checkShardCount(DocCollection toCollection, DocCollection fromCollection) {
-    final boolean shardsNumberCheck =
-        toCollection.getSlices().size() == fromCollection.getSlices().size();
-    if (!shardsNumberCheck) {
+  private static void checkSliceRanges(
+      DocCollection toCollection, DocCollection fromCollection, String shardId) {
+    final DocRouter.Range toRange = toCollection.getSlice(shardId).getRange();
+    final DocRouter.Range fromRange = fromCollection.getSlice(shardId).getRange();
+    if (toRange == null && fromRange == null) {
+      // perhaps these are implicit routers
+      return;
+    }
+    if ((toRange == null) != (fromRange == null)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Expecting same number of shards, got: "
-              + toCollection.getSlices().size()
-              + "; "
-              + fromCollection.getSlices().size()
+          "Expecting non null slice ranges for shard:"
+              + shardId
+              + " of "
+              + toCollection
+              + " "
+              + toRange
+              + " and "
+              + fromCollection
+              + " "
+              + fromRange
+              + ". "
+              + USE_CROSSCOLLECTION);
+    }
+    if (!toRange.isSubsetOf(fromRange)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Expecting "
+              + toCollection
+              + " "
+              + toRange
+              + " to be a subset "
+              + fromCollection
+              + " "
+              + fromRange
+              + " for shard:"
+              + shardId
               + ". "
               + USE_CROSSCOLLECTION);
     }
