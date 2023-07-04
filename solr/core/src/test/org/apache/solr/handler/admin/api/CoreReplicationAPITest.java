@@ -85,7 +85,7 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
   }
 
-  class CoreReplicationAPIMock extends CoreReplicationAPI {
+  private static class CoreReplicationAPIMock extends CoreReplicationAPI {
     public CoreReplicationAPIMock(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
       super(solrCore, req, rsp);
     }
