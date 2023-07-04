@@ -418,9 +418,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
   public void testWatch() throws Exception {
     final int DATA_NODE_COUNT = 2;
     MiniSolrCloudCluster cluster =
-            configureCluster(DATA_NODE_COUNT)
-                    .addConfig("conf1", configset("cloud-minimal"))
-                    .configure();
+        configureCluster(DATA_NODE_COUNT)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .configure();
     final String TEST_COLLECTION = "c1";
 
     try {
@@ -436,14 +436,14 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       }
 
       ZkStateReader zkStateReader =
-              coordinatorJetty.getCoreContainer().getZkController().getZkStateReader();
+          coordinatorJetty.getCoreContainer().getZkController().getZkStateReader();
       ZkStateReaderAccessor zkWatchAccessor = new ZkStateReaderAccessor(zkStateReader);
 
       // no watch at first
       assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
       new QueryRequest(new SolrQuery("*:*"))
-              .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
-              .process(client, TEST_COLLECTION);
+          .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+          .process(client, TEST_COLLECTION);
 
       // now it should be watching it after the query
       assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
