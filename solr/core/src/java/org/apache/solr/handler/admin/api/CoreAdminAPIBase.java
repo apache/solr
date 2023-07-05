@@ -80,7 +80,7 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
             SolrException.ErrorCode.BAD_REQUEST, "Core container instance missing");
       }
       final CoreAdminHandler.CoreAdminAsyncTracker.TaskObject taskObject =
-          new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(taskId);
+          new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(taskId, actionName);
 
       MDCLoggingContext.setCoreName(coreName);
       TraceUtils.setDbInstance(req, coreName);
@@ -89,7 +89,6 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
       } else {
         coreAdminAsyncTracker.submitAsyncTask(
             taskObject,
-            actionName,
             () -> {
               T response = supplier.get();
               V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
