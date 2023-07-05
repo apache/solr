@@ -38,7 +38,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.DelegatedSolrQueryRequest;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.request.DelegatingSolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -76,7 +77,9 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
       Factory factory, HttpSolrCall solrCall, String collectionName, boolean isPreferLeader) {
     String syntheticCoreName = factory.collectionVsCoreNameMapping.get(collectionName);
     if (syntheticCoreName != null) {
-      return solrCall.cores.getCore(syntheticCoreName);
+      SolrCore syntheticCore = solrCall.cores.getCore(syntheticCoreName);
+      setMDCLoggingContext(collectionName);
+      return syntheticCore;
     } else {
       ZkStateReader zkStateReader = solrCall.cores.getZkController().getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
@@ -123,10 +126,24 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
             log.debug("coordinator node, returns synthetic core: {}", core.getName());
           }
         }
+        setMDCLoggingContext(collectionName);
         return core;
       }
       return null;
     }
+  }
+
+  /**
+   * Overrides the MDC context as the core set was synthetic core, which does not reflect the
+   * collection being operated on
+   */
+  private static void setMDCLoggingContext(String collectionName) {
+    MDCLoggingContext.setCollection(collectionName);
+
+    // below is irrelevant for call to coordinator
+    MDCLoggingContext.setCoreName(null);
+    MDCLoggingContext.setShard(null);
+    MDCLoggingContext.setCoreName(null);
   }
 
   private static void addReplica(String syntheticCollectionName, CoreContainer cores) {
