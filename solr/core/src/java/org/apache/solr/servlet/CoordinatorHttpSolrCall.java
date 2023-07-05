@@ -125,7 +125,6 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
    * Overrides the MDC context as the core set was synthetic core, which does not reflect the
    * collection being operated on
    *
-   * @param collectionName
    */
   private static void setMDCLoggingContext(String collectionName) {
     MDCLoggingContext.setCollection(collectionName);
