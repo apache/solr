@@ -96,6 +96,13 @@ The custom version of Solr will include this Dockerfile when it is built.
 Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files.
 As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[Unknown core deletion].
 
+=== v2 API 
+* Solr's experimental "v2" API has seen a number of improvements in the 9.3 release.
++
+It is now approaching parity with the functionality offered by Solr's v1 API.  In particular 9.3 adds v2 "CRUD" endpoints for interacting with alias properties and collection snapshots.  Several lower-level "replication" APIs now also offer v2 equivalents.
++
+Additionally, the v2 API as a whole is being redesigned to be more REST-ful and intuitive.  To this end, 9.3 introduces backwards-incompatible changes to the v2 shard, replica, and backup creation and deletion APIs.  A number of lower-level "command" APIs have also been tweaked, including: collection reloading, collection renaming, "force leader", "balance shard unique", and all of Solr's "log level" and "log watcher" APIs.  Clients using Solr's v2 endpoints should check their usage against the full list of modified APIs in CHANGES.txt prior to upgrading.  Details on each are available in the 9.3 reference guide.
+
 == Solr 9.2
 === Upgrade to Jetty 10.x
 * Solr upgraded to Jetty 10.x from 9.x due to Jetty 9.x is now end of life. Jetty 10.x has a Java 11 minimum and matches Solr 9 minimum Java version. Jetty logging has been replaced with slf4j again matching Solr. See https://webtide.com/jetty-10-and-11-have-arrived/ for additional Jetty 10.x highlights.
