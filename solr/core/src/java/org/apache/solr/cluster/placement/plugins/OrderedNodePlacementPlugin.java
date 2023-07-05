@@ -106,6 +106,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                 replicaType);
           }
           Replica pr = createProjectedReplica(solrCollection, shardName, replicaType, null);
+
+          // Create a NodeHeap so that we have access to the number of ties for the lowestWeighted
+          // node.
+          // Sort this heap by the relevant weight of the node given that the replica has been
+          // added.
           NodeHeap nodesForReplicaType = new NodeHeap(n -> n.calcRelevantWeightWithReplica(pr));
           nodesForRequest.stream()
               .filter(n -> n.canAddReplica(pr))
@@ -123,10 +128,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
             // If there is a tie, and there are more node options than we have replicas to place,
             // then we want to come back later and try again. If there are ties, but less tie
-            // options than
-            // we have replicas to place, that's ok, because the replicas will be put on all the tie
-            // options probably.
-            // Only skip the request if it can be requeued.
+            // options than we have replicas to place, that's ok, because the replicas will likely
+            // be put on all the tie options.
+            //
+            // Only skip the request if it can be requeued, and there are other pending requests to
+            // compute.
             int numWeightTies = nodesForReplicaType.peekTies();
             if (!pendingRequests.isEmpty()
                 && request.canBeRequeued()
@@ -658,6 +664,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     };
   }
 
+  /**
+   * A heap that stores Nodes, sorting them by a given function.
+   *
+   * <p>A normal Java heap class cannot be used, because the {@link #peekTies()} method is required.
+   */
   private static class NodeHeap {
     final Function<WeightedNode, Integer> weightFunc;
 
@@ -675,6 +686,12 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       currentLowestWeight = -1;
     }
 
+    /**
+     * Remove and return the node with the lowest weight. There is no guarantee to the sorting of
+     * nodes that have equal weights.
+     *
+     * @return the node with the lowest weight
+     */
     protected WeightedNode poll() {
       updateLowestWeightedList();
       if (currentLowestList == null || currentLowestList.isEmpty()) {
@@ -686,14 +703,18 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     /**
-     * PeekTies should only be called after poll().
+     * Return the number of Nodes that are tied for the current lowest weight (using the given
+     * sorting function).
      *
-     * @return the number of nodes that have a weight tied with the WeightedNode returned in poll()
+     * <p>PeekTies should only be called after poll().
+     *
+     * @return the number of nodes that are tied for the lowest weight
      */
     protected int peekTies() {
       return currentLowestList == null ? 1 : currentLowestList.size() + 1;
     }
 
+    /** Make sure that the list that contains the nodes with the lowest weights is correct. */
     private void updateLowestWeightedList() {
       recheckLowestWeights();
       while (currentLowestList == null || currentLowestList.isEmpty()) {
@@ -710,6 +731,10 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       }
     }
 
+    /**
+     * Go through the list of Nodes with the lowest weight, and make sure that they are still the
+     * same weight. If their weight has increased, re-add the node to the heap.
+     */
     private void recheckLowestWeights() {
       if (currentLowestList != null) {
         currentLowestList.removeIf(
@@ -724,6 +749,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       }
     }
 
+    /**
+     * Add a node to the heap.
+     *
+     * @param node the node to add
+     */
     public void add(WeightedNode node) {
       size++;
       int nodeWeight = weightFunc.apply(node);
@@ -734,14 +764,29 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       }
     }
 
+    /**
+     * Get the number of nodes in the heap.
+     *
+     * @return number of nodes
+     */
     public int size() {
       return size;
     }
 
+    /**
+     * Check if the heap is empty.
+     *
+     * @return if the heap has no nodes
+     */
     public boolean isEmpty() {
       return size == 0;
     }
 
+    /**
+     * Re-sort all nodes in the heap, because their weights can no-longer be trusted. This is only
+     * necessary if nodes in the heap may have had their weights decrease. If the nodes just had
+     * their weights increase, then calling this is not required.
+     */
     public void resortAll() {
       ArrayList<WeightedNode> temp = new ArrayList<>(size);
       if (currentLowestList != null) {
@@ -763,8 +808,10 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
     final Set<Node> targetNodes;
 
+    // A running list of placements already computed
     final Set<ReplicaPlacement> computedPlacements;
 
+    // A live view on how many replicas still need to be placed for each shard & replica type
     final Map<String, Map<Replica.ReplicaType, Integer>> replicasToPlaceForShards;
 
     public PendingPlacementRequest(PlacementRequest request) {
@@ -788,6 +835,12 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       computedPlacements = CollectionUtil.newHashSet(totalShardReplicas * shards.size());
     }
 
+    /**
+     * Determine if this request is not yet complete, and there are requested replicas that have not
+     * had placements computed.
+     *
+     * @return if there are still replica placements that need to be computed
+     */
     public boolean isPending() {
       return !replicasToPlaceForShards.isEmpty();
     }
@@ -800,21 +853,52 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       return targetNodes.contains(node.getNode());
     }
 
+    /**
+     * The set of ReplicaPlacements computed for this request.
+     *
+     * <p>The list that is returned is the same list used internally, so it will be augmented until
+     * {@link #isPending()} returns false.
+     *
+     * @return The live set of replicaPlacements for this request.
+     */
     public Set<ReplicaPlacement> getComputedPlacementSet() {
       return computedPlacements;
     }
 
+    /**
+     * Fetch the list of shards that still have replicas that need placements computed. If all the
+     * requested replicas for a shard are represented in {@link #getComputedPlacementSet()}, then
+     * that shard will not be returned by this method.
+     *
+     * @return list of unfinished shards
+     */
     public Collection<String> getPendingShards() {
       return new ArrayList<>(replicasToPlaceForShards.keySet());
     }
 
+    /**
+     * For the given shard, return the replica types that still have placements that need to be
+     * computed.
+     *
+     * @param shard name of the shard to check for uncomputed placements
+     * @return the set of unfinished replica types
+     */
     public Collection<Replica.ReplicaType> getPendingReplicaTypes(String shard) {
       return Optional.ofNullable(replicasToPlaceForShards.get(shard))
           .map(Map::keySet)
+          // Use a sorted TreeSet to make sure that tests are repeatable
           .<Collection<Replica.ReplicaType>>map(TreeSet::new)
           .orElseGet(Collections::emptyList);
     }
 
+    /**
+     * Fetch the number of replicas that still need to be placed for the given shard and replica
+     * type.
+     *
+     * @param shard name of shard to be place
+     * @param type type of replica to be placed
+     * @return the number of replicas that have not yet had placements computed
+     */
     public int getPendingReplicas(String shard, Replica.ReplicaType type) {
       return Optional.ofNullable(replicasToPlaceForShards.get(shard))
           .map(m -> m.get(type))
@@ -822,7 +906,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     /**
-     * Only allow one requeue
+     * Currently, only of requeue is allowed per pending request.
      *
      * @return true if the request has not been requeued already
      */
@@ -830,10 +914,16 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       return !hasBeenRequeued;
     }
 
+    /** Let the pending request know that it has been requeued */
     public void requeue() {
       hasBeenRequeued = true;
     }
 
+    /**
+     * Track the given replica placement for this pending request.
+     *
+     * @param replica placement that has been made for the pending request
+     */
     public void addPlacement(ReplicaPlacement replica) {
       computedPlacements.add(replica);
       replicasToPlaceForShards.computeIfPresent(
