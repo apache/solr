@@ -17,14 +17,11 @@
 package org.apache.solr.core;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 /** */
 public class MetricsConfig {
 
   private final PluginInfo[] metricReporters;
-  private final Set<String> hiddenSysProps;
   private final PluginInfo counterSupplier;
   private final PluginInfo meterSupplier;
   private final PluginInfo timerSupplier;
@@ -39,7 +36,6 @@ public class MetricsConfig {
   private MetricsConfig(
       boolean enabled,
       PluginInfo[] metricReporters,
-      Set<String> hiddenSysProps,
       PluginInfo counterSupplier,
       PluginInfo meterSupplier,
       PluginInfo timerSupplier,
@@ -51,7 +47,6 @@ public class MetricsConfig {
       CacheConfig cacheConfig) {
     this.enabled = enabled;
     this.metricReporters = metricReporters;
-    this.hiddenSysProps = hiddenSysProps;
     this.counterSupplier = counterSupplier;
     this.meterSupplier = meterSupplier;
     this.timerSupplier = timerSupplier;
@@ -97,14 +92,6 @@ public class MetricsConfig {
     return nullObject;
   }
 
-  public Set<String> getHiddenSysProps() {
-    if (enabled) {
-      return hiddenSysProps;
-    } else {
-      return Collections.emptySet();
-    }
-  }
-
   /** Symbolic name to use as plugin class name for no-op implementations. */
   public static final String NOOP_IMPL_CLASS = "__noop__";
 
@@ -145,7 +132,6 @@ public class MetricsConfig {
 
   public static class MetricsConfigBuilder {
     private PluginInfo[] metricReporterPlugins = new PluginInfo[0];
-    private Set<String> hiddenSysProps = new HashSet<>();
     private PluginInfo counterSupplier;
     private PluginInfo meterSupplier;
     private PluginInfo timerSupplier;
@@ -167,14 +153,6 @@ public class MetricsConfig {
 
     public MetricsConfigBuilder setCacheConfig(CacheConfig cacheConfig) {
       this.cacheConfig = cacheConfig;
-      return this;
-    }
-
-    public MetricsConfigBuilder setHiddenSysProps(Set<String> hiddenSysProps) {
-      if (hiddenSysProps != null && !hiddenSysProps.isEmpty()) {
-        this.hiddenSysProps.clear();
-        this.hiddenSysProps.addAll(hiddenSysProps);
-      }
       return this;
     }
 
@@ -228,7 +206,6 @@ public class MetricsConfig {
       return new MetricsConfig(
           enabled,
           metricReporterPlugins,
-          hiddenSysProps,
           counterSupplier,
           meterSupplier,
           timerSupplier,

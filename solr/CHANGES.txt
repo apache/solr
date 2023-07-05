@@ -199,6 +199,9 @@ Improvements
   specify where to download Solr from. If the url includes "apache.org", then GPG checks will be computed, otherwise
   the GPG checks will be skipped. (Houston Putman)
 
+* SOLR-16470: `/coreName/replication?command=filelist` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/replication/files?generation=123` (Matthew Biscocho via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -268,6 +271,8 @@ Bug Fixes
 * SOLR-16848: Flaky DeleteReplicaTest.raceConditionOnDeleteAndRegisterReplica (Alex Deparvu, Paul McArthur)
 
 * SOLR-16619: Fix solr scripts running on IBM i (Jesse Gorzinski via Eric Pugh)
+
+* SOLR-16809: The configuration for hiding sensitive sysProp information has been joined under `-Dsolr.hiddenSysProps` and `SOLR_HIDDEN_SYS_PROPS`. (Houston Putman, David Smiley)
 
 Dependency Upgrades
 ---------------------
