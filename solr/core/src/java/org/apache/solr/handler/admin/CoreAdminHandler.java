@@ -97,6 +97,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   protected final CoreAdminAsyncTracker coreAdminAsyncTracker;
 
   public static String RESPONSE_STATUS = "STATUS";
+
   public static String RESPONSE_MESSAGE = "msg";
   public static String OPERATION_RESPONSE = "response";
 
@@ -196,8 +197,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
       // boolean doPersist = false;
       final String taskId = req.getParams().get(CommonAdminParams.ASYNC);
-      final CoreAdminAsyncTracker.TaskObject taskObject =
-          new CoreAdminAsyncTracker.TaskObject(taskId);
 
       // Pick the action
       final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
@@ -212,6 +211,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         return;
       }
 
+      final CoreAdminAsyncTracker.TaskObject taskObject =
+              new CoreAdminAsyncTracker.TaskObject(taskId, action);
+
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
       final String coreName =
           req.getParams().get(CoreAdminParams.CORE, req.getParams().get(CoreAdminParams.NAME));
@@ -222,7 +224,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       } else {
         coreAdminAsyncTracker.submitAsyncTask(
             taskObject,
-            action,
             () -> {
               callInfo.call();
               return callInfo.rsp;
@@ -432,14 +433,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
 
     public void submitAsyncTask(
-        TaskObject taskObject, String action, Callable<SolrQueryResponse> task)
+        TaskObject taskObject, Callable<SolrQueryResponse> task)
         throws SolrException {
       ensureTaskIdNotInUse(taskObject.taskId);
       addTask(RUNNING, taskObject);
 
       try {
         MDC.put("CoreAdminHandler.asyncId", taskObject.taskId);
-        MDC.put("CoreAdminHandler.action", action);
+        MDC.put("CoreAdminHandler.action", taskObject.action);
         parallelExecutor.execute(
             () -> {
               boolean exceptionCaught = false;
@@ -503,12 +504,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
      * response (if available).
      */
     public static class TaskObject {
-      public String taskId;
+      public final String taskId;
+      public final String action;
       public String rspInfo;
       public Object operationRspInfo;
 
-      public TaskObject(String taskId) {
+      public TaskObject(String taskId, String action) {
         this.taskId = taskId;
+        this.action = action;
       }
 
       public String getRspObject() {
