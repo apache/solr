@@ -17,7 +17,11 @@
 
 package org.apache.solr.search.join;
 
+import java.util.HashMap;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,17 +54,44 @@ public class ShardJoinImplicitTest extends ShardToShardJoinAbstract {
           childDoc.setField("_route_", shards[parent.hashCode() % shards.length]);
           return childDoc;
         });
+    final CollectionAdminRequest.Create wrongRouter =
+        CollectionAdminRequest.createCollection("wrongRouter", "_default", 3, 2)
+            .setProperties(new HashMap<>());
+    wrongRouter.setRouterName(CompositeIdRouter.NAME);
+    wrongRouter.process(cluster.getSolrClient());
   }
 
   @Test
   public void testScore() throws Exception {
-    // without score
     testJoins(toColl, fromColl, "checkRouterField=false", true);
+  }
+
+  @Test(expected = SolrException.class)
+  public void testScoreFailOnFieldCheck() throws Exception {
+    try {
+      testJoins(toColl, fromColl, random().nextBoolean() ? "checkRouterField=true" : "", true);
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains("id"));
+      assertTrue(e.getMessage().contains("field"));
+      assertTrue(e.getMessage().contains("parent_id_s"));
+      throw e;
+    }
   }
 
   @Test
   public void testNoScore() throws Exception {
-    // with score
     testJoins(toColl, fromColl, "checkRouterField=false", false);
+  }
+
+  @Test(expected = SolrException.class)
+  public void testNoScoreFailOnFieldCheck() throws Exception {
+    try {
+      testJoins(toColl, fromColl, random().nextBoolean() ? "checkRouterField=true" : "", false);
+    } catch (Exception e) {
+      assertTrue(e.getMessage().contains("id"));
+      assertTrue(e.getMessage().contains("field"));
+      assertTrue(e.getMessage().contains("parent_id_s"));
+      throw e;
+    }
   }
 }

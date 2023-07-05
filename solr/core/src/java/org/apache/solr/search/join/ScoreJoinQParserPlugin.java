@@ -553,16 +553,16 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     if (!toRange.isSubsetOf(fromRange)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Expecting "
-              + toCollection
+          "Expecting hash range of collection:"
+              + toCollection.getName()
+              + " of shard:"
+              + shardId
               + " "
               + toRange
-              + " to be a subset "
-              + fromCollection
-              + " "
+              + " to be a subset of the same shard of collection:"
+              + fromCollection.getName()
+              + ", which is "
               + fromRange
-              + " for shard:"
-              + shardId
               + ". "
               + USE_CROSSCOLLECTION);
     }
@@ -577,12 +577,13 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     if (!fromField.equals(routeField)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          fromCollection.getName()
-              + " can be joined by its router field "
+          "collection:"
+              + fromCollection.getName()
+              + " is sharded by: '"
               + routeField
-              + ", but one of field param is "
+              + "', but attempting to join via '"
               + fromField
-              + ". "
+              + "' field. "
               + USE_CROSSCOLLECTION);
     }
   }
@@ -594,11 +595,11 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
           SolrException.ErrorCode.BAD_REQUEST,
           collection.getName()
               + " and "
-              + fromCollection
-              + " should the same routers, but: "
-              + collection.getRouter()
-              + ", "
-              + fromCollection.getRouter()
+              + fromCollection.getName()
+              + " should have the same routers, but they are: "
+              + collection.getRouter().getName()
+              + " and "
+              + fromCollection.getRouter().getName()
               + ". "
               + USE_CROSSCOLLECTION);
     }

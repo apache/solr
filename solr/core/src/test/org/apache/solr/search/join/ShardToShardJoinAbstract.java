@@ -140,17 +140,13 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
     UpdateRequest upChild = new UpdateRequest();
     upChild.add(children);
     upChild.commit(cluster.getSolrClient(), fromColl);
-    // TODO assert response
-    // System.out.println(children);
 
     UpdateRequest upParent = new UpdateRequest();
     upParent.add(parents);
     upParent.commit(cluster.getSolrClient(), toColl);
-    // System.out.println(parents);
 
     final CollectionAdminResponse process =
         CollectionAdminRequest.getClusterStatus().process(cluster.getSolrClient());
-    // System.out.println(process.toString());
   }
 
   @AfterClass

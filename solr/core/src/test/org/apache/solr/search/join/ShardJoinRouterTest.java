@@ -39,13 +39,11 @@ public class ShardJoinRouterTest extends ShardToShardJoinAbstract {
 
   @Test
   public void testScore() throws Exception {
-    // without score
     testJoins(toColl, fromColl, "", true);
   }
 
   @Test
   public void testNoScore() throws Exception {
-    // with score
     testJoins(toColl, fromColl, "", false);
   }
 }
