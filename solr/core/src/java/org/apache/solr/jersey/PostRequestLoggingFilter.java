@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +37,6 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriInfo;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -93,7 +91,7 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
         "method={} path={} query-params={{}} status={} QTime={}",
         requestContext.getMethod(),
         templatedPath,
-        filterAndStringifyQueryParameters(requestContext.getUriInfo()),
+        filterAndStringifyQueryParameters(requestContext.getUriInfo().getQueryParameters()),
         response.responseHeader.status,
         response.responseHeader.qTime);
 
@@ -107,7 +105,7 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
           "method={} path={} query-params={{}} status={} QTime={}",
           requestContext.getMethod(),
           templatedPath,
-          filterAndStringifyQueryParameters(requestContext.getUriInfo()),
+          filterAndStringifyQueryParameters(requestContext.getUriInfo().getQueryParameters()),
           response.responseHeader.status,
           response.responseHeader.qTime);
     }
@@ -125,28 +123,29 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
         .replaceAll("//", "/");
   }
 
-  private String filterAndStringifyQueryParameters(UriInfo uriInfo) {
-    final var unfilteredParams = uriInfo.getQueryParameters();
+  public static String filterAndStringifyQueryParameters(
+      MultivaluedMap<String, String> unfilteredParams) {
     final var paramNamesToLog = getParamNamesToLog(unfilteredParams);
 
     final StringBuilder sb = new StringBuilder(128);
-    boolean first = true;
-    for (Map.Entry<String, List<String>> entry : unfilteredParams.entrySet()) {
-      final String name = entry.getKey();
-      if (!paramNamesToLog.contains(name)) continue;
+    unfilteredParams.entrySet().stream()
+        .sorted(Map.Entry.comparingByKey())
+        .forEachOrdered(
+            entry -> {
+              final String name = entry.getKey();
+              if (!paramNamesToLog.contains(name)) return;
 
-      for (String val : entry.getValue()) {
-        if (!first) sb.append('&');
-        first = false;
-        StrUtils.partialURLEncodeVal(sb, name);
-        sb.append('=');
-        StrUtils.partialURLEncodeVal(sb, val);
-      }
-    }
+              for (String val : entry.getValue()) {
+                if (sb.length() != 0) sb.append('&');
+                StrUtils.partialURLEncodeVal(sb, name);
+                sb.append('=');
+                StrUtils.partialURLEncodeVal(sb, val);
+              }
+            });
     return sb.toString();
   }
 
-  private Set<String> getParamNamesToLog(MultivaluedMap<String, String> queryParameters) {
+  private static Set<String> getParamNamesToLog(MultivaluedMap<String, String> queryParameters) {
     if (CollectionUtil.isEmpty(queryParameters.get(LOG_PARAMS_LIST))) {
       return queryParameters.keySet();
     }
