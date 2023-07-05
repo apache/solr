@@ -19,6 +19,7 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.IndexSearcher;
@@ -395,7 +396,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
           zkController.getClusterState().getCollection(toCoreDescriptor.getCollectionName());
 
       final String shardId = toCoreDescriptor.getShardId();
-      final DocRouter.Range toRange = toCollection.getSlice(shardId).getRange();
       boolean isFromSideCheckRequired =
           checkToSideRouter(toCore, toField, localParams, fromCollection, toCollection);
 
@@ -416,19 +416,30 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     final Slice fromShardReplicas = fromCollection.getActiveSlicesMap().get(toShardId);
     for (Replica collocatedFrom :
         fromShardReplicas.getReplicas(r -> r.getNodeName().equals(nodeName))) {
+      final String fromCore = collocatedFrom.getCoreName();
       if (log.isDebugEnabled()) {
-        log.debug("<-{} @ {}", collocatedFrom.getCoreName(), toCoreDescriptor.getCoreNodeName());
+        log.debug("<-{} @ {}", fromCore, toCoreDescriptor.getCoreNodeName());
       }
       // which replica to pick if there are many one?
       // if router field is not set, "from" may fall back to uniqueKey, but only we attempt to pick
       // local shard.
       if (isFromSideCheckRequired) {
-        try (final SolrCore fromCore =
-            toCore.getCoreContainer().getCore(collocatedFrom.getCoreName())) {
-          checkRouterField(fromCore, fromCollection, fromField);
+        SolrCore fromCoreOnDemand[] = new SolrCore[1];
+        try {
+          checkRouterField(
+              () ->
+                  fromCoreOnDemand[0] == null
+                      ? fromCoreOnDemand[0] = toCore.getCoreContainer().getCore(fromCore)
+                      : fromCoreOnDemand[0],
+              fromCollection,
+              fromField);
+        } finally {
+          if (fromCoreOnDemand[0] != null) {
+            fromCoreOnDemand[0].close();
+          }
         }
       }
-      return collocatedFrom.getCoreName();
+      return fromCore;
     }
     final String shards =
         fromShardReplicas.getReplicas().stream()
@@ -457,19 +468,19 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     switch (routerName) {
       case PlainIdRouter.NAME: // mandatory field check
         checkFromRouterField = true;
-        checkRouterField(toCore, toCollection, toField);
+        checkRouterField(() -> toCore, toCollection, toField);
         break;
       case CompositeIdRouter.NAME: // let you shoot your legs
         if (localParams.getBool(CHECK_ROUTER_FIELD, true)) {
           checkFromRouterField = true;
-          checkRouterField(toCore, toCollection, toField);
+          checkRouterField(() -> toCore, toCollection, toField);
         }
         break;
       case ImplicitDocRouter.NAME: // don't check field, you know what you do
       default:
         // if router field is not set, "to" may fallback to uniqueKey
         if (localParams.getBool(CHECK_ROUTER_FIELD, true)) {
-          checkRouterField(toCore, toCollection, toField);
+          checkRouterField(() -> toCore, toCollection, toField);
         }
         break;
     }
@@ -558,10 +569,10 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
   }
 
   private static void checkRouterField(
-      SolrCore toCore, DocCollection fromCollection, String fromField) {
+      Supplier<SolrCore> toCore, DocCollection fromCollection, String fromField) {
     String routeField = fromCollection.getRouter().getRouteField(fromCollection);
     if (routeField == null) {
-      routeField = toCore.getLatestSchema().getUniqueKeyField().getName();
+      routeField = toCore.get().getLatestSchema().getUniqueKeyField().getName();
     }
     if (!fromField.equals(routeField)) {
       throw new SolrException(
@@ -577,7 +588,6 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
   }
 
   private static String checkRouters(DocCollection collection, DocCollection fromCollection) {
-
     final String routerName = collection.getRouter().getName();
     if (!routerName.equals(fromCollection.getRouter().getName())) {
       throw new SolrException(
