@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -47,6 +48,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -475,5 +478,54 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     }
     assertTrue(found);
     return (String) docs.get(0).getFieldValue("_core_");
+  }
+
+  public void testWatch() throws Exception {
+    final int DATA_NODE_COUNT = 2;
+    MiniSolrCloudCluster cluster =
+        configureCluster(DATA_NODE_COUNT)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .configure();
+    final String TEST_COLLECTION = "c1";
+
+    try {
+      CloudSolrClient client = cluster.getSolrClient();
+      CollectionAdminRequest.createCollection(TEST_COLLECTION, "conf1", 1, 2).process(client);
+      cluster.waitForActiveCollection(TEST_COLLECTION, 1, 2);
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      JettySolrRunner coordinatorJetty;
+      try {
+        coordinatorJetty = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+
+      ZkStateReader zkStateReader =
+          coordinatorJetty.getCoreContainer().getZkController().getZkStateReader();
+      ZkStateReaderAccessor zkWatchAccessor = new ZkStateReaderAccessor(zkStateReader);
+
+      // no watch at first
+      assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+      new QueryRequest(new SolrQuery("*:*"))
+          .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+          .process(client, TEST_COLLECTION);
+
+      // now it should be watching it after the query
+      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+
+      CollectionAdminRequest.deleteReplica(TEST_COLLECTION, "shard1", 1).process(client);
+      cluster.waitForActiveCollection(TEST_COLLECTION, 1, 1);
+
+      // still one replica left, should not remove the watch
+      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+
+      CollectionAdminRequest.deleteCollection(TEST_COLLECTION).process(client);
+      zkStateReader.waitForState(TEST_COLLECTION, 30, TimeUnit.SECONDS, Objects::isNull);
+
+      // watch should be removed after collection deletion
+      assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+    } finally {
+      cluster.shutdown();
+    }
   }
 }

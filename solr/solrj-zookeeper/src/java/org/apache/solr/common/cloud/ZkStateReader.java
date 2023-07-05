@@ -2072,6 +2072,11 @@ public class ZkStateReader implements SolrCloseable {
     return watchers;
   }
 
+  /* package-private for testing*/
+  Map<String, StatefulCollectionWatch> getCollectionWatches() {
+    return Collections.unmodifiableMap(collectionWatches.statefulWatchesByCollectionName);
+  }
+
   public void registerCollectionPropsWatcher(
       final String collection, CollectionPropsWatcher propsWatcher) {
     AtomicBoolean watchSet = new AtomicBoolean(false);
