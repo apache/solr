@@ -203,7 +203,7 @@ Just for simplification we use the example of joining `from` "many" `to` "one". 
 |node 1 |products_shard1_replica1 |skus_shard1_replica2
 |node 2 |products_shard1_replica2 |skus_shard1_replica1
 |node 3 |products_shard2_replica1 |skus_shard2_replica1
-|node 4 |products_shard2_replica2 |skus_shard2_replica1
+|node 4 |products_shard2_replica2 |skus_shard2_replica2
 |===
 
 Notice how shardN corresponds to its' counterpart from other side collection.
