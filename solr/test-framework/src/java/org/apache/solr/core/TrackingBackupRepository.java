@@ -34,6 +34,9 @@ import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 
 public class TrackingBackupRepository implements BackupRepository {
   private static final List<URI> COPIED_FILES = Collections.synchronizedList(new ArrayList<>());
+  private static final List<URI> DIRECTORIES_CREATED =
+      Collections.synchronizedList(new ArrayList<>());
+  private static final List<URI> OUTPUTS_CREATED = Collections.synchronizedList(new ArrayList<>());
 
   private BackupRepository delegate;
 
@@ -84,11 +87,13 @@ public class TrackingBackupRepository implements BackupRepository {
 
   @Override
   public OutputStream createOutput(URI path) throws IOException {
+    OUTPUTS_CREATED.add(path);
     return delegate.createOutput(path);
   }
 
   @Override
   public void createDirectory(URI path) throws IOException {
+    DIRECTORIES_CREATED.add(path);
     delegate.createDirectory(path);
   }
 
@@ -136,9 +141,19 @@ public class TrackingBackupRepository implements BackupRepository {
     return new ArrayList<>(COPIED_FILES);
   }
 
+  public static List<URI> directoriesCreated() {
+    return new ArrayList<>(DIRECTORIES_CREATED);
+  }
+
+  public static List<URI> outputsCreated() {
+    return new ArrayList<>(OUTPUTS_CREATED);
+  }
+
   /** Clear all tracking data */
   public static void clear() {
     COPIED_FILES.clear();
+    DIRECTORIES_CREATED.clear();
+    OUTPUTS_CREATED.clear();
   }
 
   @Override

@@ -52,6 +52,13 @@ Other Changes
 
 ==================  9.3.0 ==================
 
+Upgrade Notes
+---------------------
+
+* SOLR-13396: Add property to control the deletion of unknown cores.  The default setting is to not delete unknown cores.
+  This is a change to behaviour introduced in Solr 7.3.1 by SOLR-12066. To continue using the previous behaviour, Solr can be
+  started with the system property `solr.deleteUnknownCores` set to `true`. (Colvin Cowie, janhoy)
+
 New Features
 ---------------------
 * SOLR-16697: Solr now provides an "Install Shard"  API that allows users who have built (per-shard) indices offline to import
@@ -71,6 +78,11 @@ New Features
   across a given set of nodes. No v1 API is available. (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
 * SOLR-16827: Add min/max scaling to the reranker (Joel Bernstein)
+
+* SOLR-16844: Added new parameter `backupConfigset` to collection Backup to optionally skip backing up configsets. (Tomás Fernández Löbbe)
+
+* SOLR-16837: Introducing AffinityPlacementFactory.withCollectionShards to collocate corresponding shards of two collections.
+  eg primaryColl.shard1 will be placed to the node where secondaryColl.shard1 resides, etc. (Mikhail Khludnev)
 
 Improvements
 ---------------------
@@ -184,6 +196,9 @@ Improvements
   specify where to download Solr from. If the url includes "apache.org", then GPG checks will be computed, otherwise
   the GPG checks will be skipped. (Houston Putman)
 
+* SOLR-16470: `/coreName/replication?command=filelist` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/replication/files?generation=123` (Matthew Biscocho via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -249,6 +264,12 @@ Bug Fixes
 * SOLR-16807: DenseVectorField breaks catch-all copyFields (Joel Bernstein)
 
 * SOLR-16831: Fixed bin/solr healthcheck command returning cluster status details. Removed SolrCloudTool class that is no longer used. (Eric Pugh)
+
+* SOLR-16848: Flaky DeleteReplicaTest.raceConditionOnDeleteAndRegisterReplica (Alex Deparvu, Paul McArthur)
+
+* SOLR-16619: Fix solr scripts running on IBM i (Jesse Gorzinski via Eric Pugh)
+
+* SOLR-16809: The configuration for hiding sensitive sysProp information has been joined under `-Dsolr.hiddenSysProps` and `SOLR_HIDDEN_SYS_PROPS`. (Houston Putman, David Smiley)
 
 Dependency Upgrades
 ---------------------
