@@ -58,7 +58,8 @@ public class JerseyApplications {
       register(MessageBodyWriters.XmlMessageBodyWriter.class);
       register(MessageBodyWriters.CsvMessageBodyWriter.class);
       register(MessageBodyWriters.RawMessageBodyWriter.class);
-      register(JacksonJsonProvider.class);
+      register(JacksonJsonProvider.class, 5);
+      register(MessageBodyReaders.CachingJsonMessageBodyReader.class, 10);
       register(SolrJacksonMapper.class);
 
       // Request lifecycle logic
