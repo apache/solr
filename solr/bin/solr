@@ -566,9 +566,6 @@ function print_usage() {
   elif [ "$CMD" == "package" ]; then
     echo ""
     run_tool package -solrUrl "http://fake.to.allow.help.to.run" "help"
-  elif [ "$CMD" == "post" ]; then
-    echo ""
-    echo "Usage: solr post could come here, but we have the help docs in the java code........"
   fi
 } # end print_usage
 

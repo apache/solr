@@ -107,3 +107,9 @@ setup() {
   assert_output --partial 'usage: assert'
   refute_output --partial 'ERROR'
 }
+
+@test "post help flag prints help" {
+  run solr post -help
+  assert_output --partial 'usage: post'
+  refute_output --partial 'ERROR'
+}
