@@ -17,7 +17,6 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -108,20 +107,15 @@ public class RandomPlacementFactory
 
     @Override
     protected boolean addProjectedReplicaWeights(Replica replica) {
+      randomTiebreaker = random.nextInt();
       // NO-OP
       return false;
     }
 
     @Override
     protected void removeProjectedReplicaWeights(Replica replica) {
-      // NO-OP
-    }
-
-    @Override
-    public void addToSortedCollection(
-        Collection<OrderedNodePlacementPlugin.WeightedNode> collection) {
       randomTiebreaker = random.nextInt();
-      super.addToSortedCollection(collection);
+      // NO-OP
     }
   }
 }
