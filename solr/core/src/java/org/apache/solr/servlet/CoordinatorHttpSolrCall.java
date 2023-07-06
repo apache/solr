@@ -101,7 +101,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
               zkStateReader.getClusterState().getCollectionOrNull(syntheticCollectionName);
         }
         List<Replica> nodeNameSyntheticReplicas =
-                syntheticColl.getReplicas(solrCall.cores.getZkController().getNodeName());
+            syntheticColl.getReplicas(solrCall.cores.getZkController().getNodeName());
         if (nodeNameSyntheticReplicas == null || nodeNameSyntheticReplicas.isEmpty()) {
           // this node does not have a replica. add one
           if (log.isInfoEnabled()) {
