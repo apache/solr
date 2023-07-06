@@ -75,7 +75,7 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
     }
     if (!responseContext.hasEntity()
         || !SolrJerseyResponse.class.isInstance(responseContext.getEntity())) {
-      log.debug("Skipping QTime assignment because response was not a SolrJerseyResponse");
+      log.debug("Skipping v2 API logging because response is of an unexpected type");
       return;
     }
     final SolrJerseyResponse response = (SolrJerseyResponse) responseContext.getEntity();
@@ -85,7 +85,8 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
         (solrQueryRequest.getCore() != null) ? solrQueryRequest.getCore().getSolrConfig() : null;
 
     final Logger requestLogger = (solrConfig != null) ? coreRequestLogger : nonCoreRequestLogger;
-    final String templatedPath = buildTemplatedPath();
+    final String templatedPath =
+        buildTemplatedPath(requestContext.getUriInfo().getAbsolutePath().getPath());
     requestLogger.info(
         MarkerFactory.getMarker(templatedPath),
         "method={} path={} query-params={{}} status={} QTime={}",
@@ -111,7 +112,15 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
     }
   }
 
-  private String buildTemplatedPath() {
+  private String buildTemplatedPath(String fallbackPath) {
+    // We won't have a resource class or method in the case of a 404, so don't try to template out
+    // the path-variables
+    if (resourceInfo == null
+        || resourceInfo.getResourceClass() == null
+        || resourceInfo.getResourceMethod() == null) {
+      return fallbackPath;
+    }
+
     final var classPathAnnotation = resourceInfo.getResourceClass().getAnnotation(Path.class);
     final var classPathAnnotationVal =
         (classPathAnnotation != null) ? classPathAnnotation.value() : "";
