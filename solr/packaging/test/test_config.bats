@@ -17,38 +17,38 @@
 
 load bats_helper
 
-setup() {
+setup_file() {
   common_clean_setup
+  solr start -c
+}
+
+teardown_file() {
+  common_setup
+  solr stop -all
+}
+
+setup() {
+  common_setup
 }
 
 teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  delete_all_collections
 }
 
-@test "status detects locally running solr" {
-  run solr status
-  assert_output --partial "No Solr nodes are running."
-  solr start
-  run solr status
-  assert_output --partial "Found 1 Solr nodes:"
-  solr stop
-  run solr status
-  assert_output --partial "No Solr nodes are running."
+@test "setting property" {
+  solr create_collection -c COLL_NAME
 
+  run solr config -c COLL_NAME -action set-property -property updateHandler.autoCommit.maxDocs -value 100 -solrUrl http://localhost:8983/solr
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
 }
 
-@test "status shell script ignores passed in -solrUrl cli parameter from user" {
-  solr start
-  run solr status -solrUrl http://localhost:9999/solr
-  assert_output --partial "Found 1 Solr nodes:"
-  assert_output --partial "running on port 8983"
-}
+@test "short form of setting property" {
+  solr create_collection -c COLL_NAME
 
-@test "status help flag outputs message highlighting not to use solrUrl." {
-  run solr status -help
-  assert_output --partial 'usage: status'
-  refute_output --partial 'ERROR'
+  run solr config -c COLL_NAME -property updateHandler.autoCommit.maxDocs -value 100
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
+  assert_output --partial "assuming solrUrl is http://localhost:8983/solr"
 }

@@ -60,11 +60,11 @@ public class HealthcheckTool extends ToolBase {
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_ZKHOST,
         Option.builder("c")
-            .argName("COLLECTION")
+            .longOpt("name")
+            .argName("NAME")
             .hasArg()
             .required(false)
-            .desc("Name of collection; no default.")
-            .longOpt("collection")
+            .desc("Name of the collection to check.")
             .build());
   }
 
@@ -104,7 +104,7 @@ public class HealthcheckTool extends ToolBase {
 
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String collection = cli.getOptionValue("collection");
+    String collection = cli.getOptionValue("name");
     if (collection == null) {
       throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
     }

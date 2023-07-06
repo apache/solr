@@ -191,7 +191,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   protected void doTestHealthcheck(String testCollectionName, String zkHost) throws Exception {
     String[] args =
         new String[] {
-          "-collection", testCollectionName,
+          "-name", testCollectionName,
           "-zkHost", zkHost
         };
     HealthcheckTool tool = new HealthcheckTool();
@@ -218,7 +218,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
    * collection.
    */
   protected void doTestConfigUpdate(String testCollectionName, String solrUrl) throws Exception {
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
       NamedList<Object> configJson =
@@ -233,7 +232,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
       Integer maxTime = 3000;
       String[] args =
           new String[] {
-            "-collection", testCollectionName,
+            "-name", testCollectionName,
             "-property", prop,
             "-value", maxTime.toString(),
             "-solrUrl", solrUrl

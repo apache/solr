@@ -17,8 +17,7 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
+import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -43,6 +42,51 @@ import org.noggit.JSONWriter;
 /** Supports create_collection command in the bin/solr script. */
 public class CreateCollectionTool extends ToolBase {
 
+  public static final List<Option> CREATE_COLLECTION_OPTIONS =
+      List.of(
+          SolrCLI.OPTION_ZKHOST,
+          SolrCLI.OPTION_SOLRURL,
+          Option.builder("c")
+              .longOpt("name")
+              .argName("NAME")
+              .hasArg()
+              .required(true)
+              .desc("Name of collection to create.")
+              .build(),
+          Option.builder("s")
+              .longOpt("shards")
+              .argName("#")
+              .hasArg()
+              .required(false)
+              .desc("Number of shards; default is 1.")
+              .build(),
+          Option.builder("rf")
+              .longOpt("replicationFactor")
+              .argName("#")
+              .hasArg()
+              .required(false)
+              .desc(
+                  "Number of copies of each document across the collection (replicas per shard); default is 1.")
+              .build(),
+          Option.builder("d")
+              .longOpt("confdir")
+              .argName("NAME")
+              .hasArg()
+              .required(false)
+              .desc(
+                  "Configuration directory to copy when creating the new collection; default is "
+                      + SolrCLI.DEFAULT_CONFIG_SET
+                      + '.')
+              .build(),
+          Option.builder("n")
+              .longOpt("confname")
+              .argName("NAME")
+              .hasArg()
+              .required(false)
+              .desc("Configuration name; default is the collection name.")
+              .build(),
+          SolrCLI.OPTION_VERBOSE);
+
   public CreateCollectionTool() {
     this(CLIO.getOutStream());
   }
@@ -58,7 +102,7 @@ public class CreateCollectionTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return SolrCLI.CREATE_COLLECTION_OPTIONS;
+    return CREATE_COLLECTION_OPTIONS;
   }
 
   @Override
@@ -67,9 +111,7 @@ public class CreateCollectionTool extends ToolBase {
     String zkHost = SolrCLI.getZkHost(cli);
     if (zkHost == null) {
       throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("solrUrl")
-              + " is running in standalone server mode, please use the create_core command instead;\n"
+          "Solr at is running in standalone server mode, please use the create_core command instead;\n"
               + "create_collection can only be used when running in SolrCloud mode.\n");
     }
 
@@ -84,6 +126,13 @@ public class CreateCollectionTool extends ToolBase {
 
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
 
+    String collectionName = cli.getOptionValue("name");
+    final String solrInstallDir = System.getProperty("solr.install.dir");
+    String confName = cli.getOptionValue("confname");
+    String confDir = cli.getOptionValue("confdir", "_default");
+    ensureConfDirExists(confDir, solrInstallDir);
+    printDefaultConfigsetWarningIfNecessary(cli);
+
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
     if (liveNodes.isEmpty())
       throw new IllegalStateException(
@@ -96,46 +145,42 @@ public class CreateCollectionTool extends ToolBase {
       solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
     }
 
-    String collectionName = cli.getOptionValue(NAME);
-
     // build a URL to create the collection
     int numShards = Integer.parseInt(cli.getOptionValue("shards", String.valueOf(1)));
     int replicationFactor =
         Integer.parseInt(cli.getOptionValue("replicationFactor", String.valueOf(1)));
 
-    String confname = cli.getOptionValue("confname");
-    String confdir = cli.getOptionValue("confdir");
-    String configsetsDir = cli.getOptionValue("configsetsDir");
+    final String configsetsDir = solrInstallDir + "/server/solr/configsets";
 
     boolean configExistsInZk =
-        confname != null
-            && !confname.trim().isEmpty()
+        confName != null
+            && !confName.trim().isEmpty()
             && ZkStateReader.from(cloudSolrClient)
                 .getZkClient()
-                .exists("/configs/" + confname, true);
+                .exists("/configs/" + confName, true);
 
     if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
       // do nothing
     } else if (configExistsInZk) {
-      echo("Re-using existing configuration directory " + confname);
-    } else if (confdir != null && !confdir.trim().isEmpty()) {
-      if (confname == null || confname.trim().isEmpty()) {
-        confname = collectionName;
+      echo("Re-using existing configuration directory " + confName);
+    } else { // if (confdir != null && !confdir.trim().isEmpty()) {
+      if (confName == null || confName.trim().isEmpty()) {
+        confName = collectionName;
       }
-      Path confPath = ConfigSetService.getConfigsetPath(confdir, configsetsDir);
+      Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDir);
 
       echoIfVerbose(
           "Uploading "
               + confPath.toAbsolutePath()
               + " for config "
-              + confname
+              + confName
               + " to ZooKeeper at "
               + cloudSolrClient.getClusterStateProvider().getQuorumHosts(),
           cli);
       ZkMaintenanceUtils.uploadToZK(
           ZkStateReader.from(cloudSolrClient).getZkClient(),
           confPath,
-          ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confname,
+          ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName,
           ZkMaintenanceUtils.UPLOAD_FILENAME_EXCLUDE_PATTERN);
     }
 
@@ -156,7 +201,7 @@ public class CreateCollectionTool extends ToolBase {
       response =
           cloudSolrClient.request(
               CollectionAdminRequest.createCollection(
-                  collectionName, confname, numShards, replicationFactor));
+                  collectionName, confName, numShards, replicationFactor));
     } catch (SolrServerException sse) {
       throw new Exception(
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
@@ -174,11 +219,56 @@ public class CreateCollectionTool extends ToolBase {
               collectionName,
               numShards,
               replicationFactor);
-      if (confname != null && !confname.trim().isEmpty()) {
-        endMessage += String.format(Locale.ROOT, " with config-set '%s'", confname);
+      if (confName != null && !confName.trim().isEmpty()) {
+        endMessage += String.format(Locale.ROOT, " with config-set '%s'", confName);
       }
 
       echo(endMessage);
+    }
+  }
+
+  /**
+   * Ensure the confDirName is a path to a directory by itself or when it is combined with the
+   * solrInstallDir.
+   */
+  private void ensureConfDirExists(String confDirName, String solrInstallDir) {
+    if (!new File(confDirName).isDirectory()) {
+      final String fullConfDir = solrInstallDir + "/server/solr/configsets/" + confDirName;
+      if (!new File(fullConfDir).isDirectory()) {
+        echo("Specified configuration directory " + confDirName + " not found!");
+        System.exit(1);
+      }
+    }
+  }
+
+  private void printDefaultConfigsetWarningIfNecessary(CommandLine cli) {
+    final String confDirectoryName = cli.getOptionValue("confdir", "_default"); // CREATE_CONFDIR
+    final String confName = cli.getOptionValue("confname", "");
+
+    if (confDirectoryName.equals("_default")
+        && (confName.equals("") || confName.equals("_default"))) {
+      final String collectionName = cli.getOptionValue("name");
+      final String solrUrl = cli.getOptionValue("solrUrl");
+      final String curlCommand =
+          String.format(
+              Locale.ROOT,
+              "curl %s/%s/config -d "
+                  + "'{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'",
+              solrUrl,
+              collectionName);
+      final String configCommand =
+          String.format(
+              Locale.ROOT,
+              "bin/solr config -c %s -p 8983 -action set-user-property -property update.autoCreateFields -value false",
+              collectionName);
+      echo(
+          "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is");
+      echo("         NOT RECOMMENDED for production use.");
+      echo("");
+      echo("         To turn it off:");
+      echo("            " + curlCommand);
+      echo("         Or:");
+      echo("            " + configCommand);
     }
   }
 }

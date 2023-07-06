@@ -26,7 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -56,14 +58,13 @@ public class StatusTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("solr")
+        // Unlike most of the other tools, this is an internal, not end user
+        // focused setting.  Therefore, no default value is provided.
+        Option.builder("solrUrl")
             .argName("URL")
             .hasArg()
             .required(false)
-            .desc(
-                "Address of the Solr Web application, defaults to: "
-                    + SolrCLI.DEFAULT_SOLR_URL
-                    + '.')
+            .desc("Property set by calling scripts, not meant for user configuration.")
             .build(),
         Option.builder("maxWaitSecs")
             .argName("SECS")
@@ -75,8 +76,19 @@ public class StatusTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    // Override the default help behaviour to put out a customized message that omits the internally
+    // focused Options.
+    if ((cli.getOptions().length == 0 && cli.getArgs().length == 0)
+        || cli.hasOption("h")
+        || cli.hasOption("help")) {
+      final Options options = new Options();
+      getOptions().forEach(options::addOption);
+      new HelpFormatter().printHelp("status", options);
+      return;
+    }
+
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
-    String solrUrl = cli.getOptionValue("solr", SolrCLI.DEFAULT_SOLR_URL);
+    String solrUrl = cli.getOptionValue("solrUrl");
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
@@ -136,8 +148,6 @@ public class StatusTool extends ToolBase {
 
   public Map<String, Object> getStatus(String solrUrl) throws Exception {
     Map<String, Object> status;
-
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
       NamedList<Object> systemInfo =
