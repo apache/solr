@@ -84,6 +84,8 @@ New Features
 * SOLR-16837: Introducing AffinityPlacementFactory.withCollectionShards to collocate corresponding shards of two collections.
   eg primaryColl.shard1 will be placed to the node where secondaryColl.shard1 resides, etc. (Mikhail Khludnev)
 
+* SOLR-16812: Support CBOR format for update/query (noble)
+
 * SOLR-16855: Solr now provides a MigrateReplicas API at `POST /api/cluster/replicas/migrate` (v2), to move replicas
   off of a given set of nodes. This extends the functionality of the existing ReplaceNode API. (Houston Putman)
 
@@ -273,6 +275,10 @@ Bug Fixes
 * SOLR-16619: Fix solr scripts running on IBM i (Jesse Gorzinski via Eric Pugh)
 
 * SOLR-16809: The configuration for hiding sensitive sysProp information has been joined under `-Dsolr.hiddenSysProps` and `SOLR_HIDDEN_SYS_PROPS`. (Houston Putman, David Smiley)
+
+* SOLR-16860: Coordinator ZkStateReader's watch is not removed upon collection deletion (Patson Luk)
+
+* SOLR-16861: Coordinator node does not have the correct collection/core in MDCLoggingContext (Patson Luk)
 
 Dependency Upgrades
 ---------------------

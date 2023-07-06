@@ -443,19 +443,32 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
       new QueryRequest(new SolrQuery("*:*"))
           .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
-          .process(client, TEST_COLLECTION);
+          .process(client, TEST_COLLECTION); // ok no exception thrown
 
       // now it should be watching it after the query
       assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
 
       CollectionAdminRequest.deleteReplica(TEST_COLLECTION, "shard1", 1).process(client);
       cluster.waitForActiveCollection(TEST_COLLECTION, 1, 1);
+      new QueryRequest(new SolrQuery("*:*"))
+          .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+          .process(client, TEST_COLLECTION); // ok no exception thrown
 
       // still one replica left, should not remove the watch
       assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
 
       CollectionAdminRequest.deleteCollection(TEST_COLLECTION).process(client);
       zkStateReader.waitForState(TEST_COLLECTION, 30, TimeUnit.SECONDS, Objects::isNull);
+      assertNull(zkStateReader.getCollection(TEST_COLLECTION)); // check the cluster state
+
+      // ensure querying throws exception
+      assertExceptionThrownWithMessageContaining(
+          SolrException.class,
+          List.of("Collection not found"),
+          () ->
+              new QueryRequest(new SolrQuery("*:*"))
+                  .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+                  .process(client, TEST_COLLECTION));
 
       // watch should be removed after collection deletion
       assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
