@@ -1023,6 +1023,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DwaitForZk=%SOLR_WAIT_FOR_ZK%"
   )
 
+  IF NOT "%SOLR_DELETE_UNKNOWN_CORES%"=="" (
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -Dsolr.deleteUnknownCores=%SOLR_DELETE_UNKNOWN_CORES%"
+  )
+
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (

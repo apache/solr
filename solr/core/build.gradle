@@ -79,6 +79,7 @@ dependencies {
   implementation 'org.glassfish.hk2:hk2-api'
   implementation 'org.glassfish.hk2.external:jakarta.inject'
   implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
+  implementation 'jakarta.annotation:jakarta.annotation-api'
 
   // Non-API below; although there are exceptions
 

@@ -1110,6 +1110,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Optional<String> indexBackupStrategy = Optional.empty();
     protected boolean incremental = true;
     protected Optional<Integer> maxNumBackupPoints = Optional.empty();
+    protected boolean backupConfigset = true;
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
@@ -1188,6 +1189,22 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
+    /**
+     * Indicates weather the Backup operation should also backup the configset files (such as
+     * schema.xml, solrconfig.xml. etc).
+     *
+     * <p>Note that the configset is needed to restore the collection, so only set this to false if
+     * you know the cluster will have the configset available before restoring.
+     *
+     * @param backupConfigset {@code true} if you want to backup configsets (default). {@code false}
+     *     to skip configset files.
+     * @return {@code this} builder
+     */
+    public Backup setBackupConfigset(boolean backupConfigset) {
+      this.backupConfigset = backupConfigset;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1207,6 +1224,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints.get());
       }
       params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
+      params.set(CoreAdminParams.BACKUP_CONFIGSET, backupConfigset);
       return params;
     }
   }
