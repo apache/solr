@@ -33,6 +33,8 @@ Deprecation Removals
 
 * SOLR-16661: Removed deprecated 'analytics' component (janhoy)
 
+* SOLR-16823: Remove backcompatiblity of -upconfig and -downconfig for bin/solr zk upconfig and downconfig commands.  (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -46,7 +48,18 @@ Other Changes
 
 * PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
 
+* SOLR-16798: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command. (Bence Szabo via Eric Pugh)
+
+* SOLR-16829: Delegate arg parsing and help usage from bin/solr and bin/solr.cmd to java layer for create, create_core, create_collection, delete, healthcheck and status commands. (Eric Pugh, Will White, Mikhail Khludnev)  
+
 ==================  9.3.0 ==================
+
+Upgrade Notes
+---------------------
+
+* SOLR-13396: Add property to control the deletion of unknown cores.  The default setting is to not delete unknown cores.
+  This is a change to behaviour introduced in Solr 7.3.1 by SOLR-12066. To continue using the previous behaviour, Solr can be
+  started with the system property `solr.deleteUnknownCores` set to `true`. (Colvin Cowie, janhoy)
 
 New Features
 ---------------------
@@ -58,8 +71,25 @@ New Features
 
 * SOLR-16674: Introduced support for byte vector encoding in DenseVectorField and KnnQParser (Elia Porciani via Alessandro Benedetti).
 
-* SOLR-16719: AffinityPlacementFactory now supports spreading replicas across domains within the availablity zone and
+* SOLR-16719: AffinityPlacementFactory now supports spreading replicas across domains within the availability zone and
   optionally fail the request if more than a configurable number of replicas need to be placed in a single domain. (Houston Putman, Tomás Fernández Löbbe)
+
+* SOLR-16836: Introduced support for high dimensional vectors (Alessandro Benedetti).
+
+* SOLR-16806: Solr now provides a BalanceReplicas API at `POST /api/cluster/replicas/balance` (v2), to spread replicas
+  across a given set of nodes. No v1 API is available. (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
+
+* SOLR-16827: Add min/max scaling to the reranker (Joel Bernstein)
+
+* SOLR-16844: Added new parameter `backupConfigset` to collection Backup to optionally skip backing up configsets. (Tomás Fernández Löbbe)
+
+* SOLR-16837: Introducing AffinityPlacementFactory.withCollectionShards to collocate corresponding shards of two collections.
+  eg primaryColl.shard1 will be placed to the node where secondaryColl.shard1 resides, etc. (Mikhail Khludnev)
+
+* SOLR-16812: Support CBOR format for update/query (noble)
+
+* SOLR-16855: Solr now provides a MigrateReplicas API at `POST /api/cluster/replicas/migrate` (v2), to move replicas
+  off of a given set of nodes. This extends the functionality of the existing ReplaceNode API. (Houston Putman)
 
 Improvements
 ---------------------
@@ -129,6 +159,53 @@ Improvements
 
 * SOLR-16759: Introducing logAll parameter in the feature logger (Anna Ruggero, Alessandro Benedetti)
 
+* SOLR-16394: The v2 list and delete (collection) backup APIs have been tweaked to be more intuitive: backup listing now uses
+  `GET /api/backups/bName/versions`, backup deletion by ID now uses `DELETE /api/backups/bName/versions/1`, backup deletion by
+  recency now uses `DELETE /api/backups/bName/versions?retainLatest=3`, and index-file "garbage collection" now uses
+  `PUT /api/backups/backupName/purgeUnused` (Jason Gerlowski)
+
+* SOLR-16470: `/coreName/replication?commit=indexversion` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/replication/indexversion` (Matthew Biscocho via Jason Gerlowski)
+
+* SOLR-16687: Add support of SolrClassLoader to SolrZkClient (Lamine Idjeraoui via Jason Gerlowski & Houston Putman)
+
+* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
+  only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
+
+* SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster
+  information after the previous selections are implemented. (Houston Putman)
+
+* SOLR-16392: The v2 "create shard" API has been tweaked to be more intuitive, by removing the top-level "create"
+  command specifier.  The rest of the API remains unchanged. (Jason Gerlowski)
+
+* SOLR-16392: The v2 "add-replica" API has been tweaked to be more intuitive, by removing the top-level command specifier and
+  changing the path.  The v2 functionality can now be accessed at: `POST /api/collections/cName/shards/sName/replicas {...}`
+  (Jason Gerlowski)
+
+* SOLR-16398: Several v2 "command" APIs have been tweaked to be more intuitive. "FORCELEADER" is now available at
+  `POST /api/collections/cName/shards/sName/force-leader`, "RELOAD" is now available at `POST /api/collections/cName/reload`,
+  "SYNCSHARD" is now available at `POST /api/collections/cName/shards/sName/sync-shard`, and "RENAME" is now available at
+  `POST /api/collections/cName/rename`. (Jason Gerlowski)
+
+* SOLR-16398: The v2 "balance-shard-unique" API has been tweaked to be more intuitive, by removing the top-level command
+  specifier from the request body, and changing the path. The v2 functionality can now be accessed at:
+  `POST /api/collections/cName/balance-shard-unique {...}` (Jason Gerlowski)
+
+* SOLR-16806: The included PlacementPlugins (Random, Simple, MinimizeCores and Affinity) now all implement the
+  OrderedNodePlacementPlugin, which provides the implementation for computePlacements() and computeBalancing().
+  Each implementing PlacementPlugin provides a way of weighting Solr Nodes, and the OrderedNodePlacement plugin
+  then uses the weights to decide the optimal strategy for placing new replicas or balancing existing replicas.
+  (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
+
+* SOLR-16820: Align allowed collection names and the validation of them in the CreateCollectionAPI and the PackageTool. (Will White via Eric Pugh)
+
+* SOLR-16748: The Official Solr Dockerfile has been cleaned up. The SOLR_DOWNLOAD_SERVER arg is now the only way to
+  specify where to download Solr from. If the url includes "apache.org", then GPG checks will be computed, otherwise
+  the GPG checks will be skipped. (Houston Putman)
+
+* SOLR-16470: `/coreName/replication?command=filelist` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/replication/files?generation=123` (Matthew Biscocho via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
@@ -143,6 +220,16 @@ Optimizations
 
 * SOLR-16764: Clarify that ExportTool exports documents in JSON with Lines format, not standard JSON.  Add explicit -compress option for gzipping output.
   Add ability to specific a directory for output along with a specific file when using -out. (Eric Pugh)
+
+* SOLR-14630: When querying with the `_route_` or `shards.preference` parameter and if there are multiple replicas for a
+  collection on the receiving node, there was sometimes an extra HTTP hop or the non-intended replica may receive the
+  request. SolrJ will now form the URL directly to the intended replica of the collection (and not the collection itself).
+  (Pierre Salagnac, Ivan Djurasevic, Jason Baik)
+
+* SOLR-16273: Improve the performance of the Prometheus Metric Exporter scraping metrics (Matthew Biscocho via David Smiley & Christine Poerschke
+
+* SOLR-16846: Use IndexOrDocValuesQuery for PointFields on Set queries. This improves the performance in some scenarios when
+  the set query is combined with other selective queries. (Tomás Fernández Löbbe, Alex Deparvu)
 
 Bug Fixes
 ---------------------
@@ -175,11 +262,35 @@ Bug Fixes
 
 * SOLR-16765: bin/solr export tool limit property was off by 1.  Now limit results exported to the exact number. (Eric Pugh)
 
+* SOLR-16801: Reset the thread's contextClassloader after loading the CoreContainer (Thomas Wöckinger, Houston Putman)
+
+* SOLR-16808: Stop publishing environment variables via the Metrics API (Houston Putman)
+
+* SOLR-16811: /update/json/docs?echo and mapUniqueKeyOnly params doesn't work (Mikhail Khludnev)
+
+* SOLR-16807: DenseVectorField breaks catch-all copyFields (Joel Bernstein)
+
+* SOLR-16831: Fixed bin/solr healthcheck command returning cluster status details. Removed SolrCloudTool class that is no longer used. (Eric Pugh)
+
+* SOLR-16848: Flaky DeleteReplicaTest.raceConditionOnDeleteAndRegisterReplica (Alex Deparvu, Paul McArthur)
+
+* SOLR-16619: Fix solr scripts running on IBM i (Jesse Gorzinski via Eric Pugh)
+
+* SOLR-16809: The configuration for hiding sensitive sysProp information has been joined under `-Dsolr.hiddenSysProps` and `SOLR_HIDDEN_SYS_PROPS`. (Houston Putman, David Smiley)
+
+* SOLR-16860: Coordinator ZkStateReader's watch is not removed upon collection deletion (Patson Luk)
+
+* SOLR-16861: Coordinator node does not have the correct collection/core in MDCLoggingContext (Patson Luk)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
 
 * SOLR-16642: Upgrade to Lucene 9.5.0 (Vinayak Hegde, David Smiley)
+
+* SOLR-16799: upgrade Solr to use Lucene 9.6.0 (Alex Deparvu, Tomás Fernández Löbbe)
+
+* SOLR-16853: Upgrade Lucene to 9.7.0 (Alex Deparvu)
 
 Other Changes
 ---------------------
@@ -205,6 +316,8 @@ Other Changes
 * SOLR-16745: Consolidate DelegatedSolrQueryRequest and DelegatingSolrQueryRequest (Kevin Risden)
 
 * PR#1566: Removed deprecated members from Tuple class (janhoy)
+
+* SOLR-16841: Added QueryResponseWriter benchmarks (Alex Deparvu via Tomás Fernández Löbbe)
 
 ==================  9.2.1 ==================
 

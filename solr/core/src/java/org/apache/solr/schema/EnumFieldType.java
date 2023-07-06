@@ -24,6 +24,7 @@ import java.util.Locale;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
@@ -180,6 +181,11 @@ public class EnumFieldType extends AbstractEnumField {
       @Override
       public Number numericValue() {
         return NumericUtils.sortableBytesToInt(((BytesRef) fieldsData).bytes, 0);
+      }
+
+      @Override
+      public StoredValue storedValue() {
+        return new StoredValue(NumericUtils.sortableBytesToInt(((BytesRef) fieldsData).bytes, 0));
       }
     };
   }

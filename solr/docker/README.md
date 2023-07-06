@@ -23,7 +23,7 @@ This allows for local images to be completely compatible with the official Solr 
 
 In order to build/test/tag your Docker images using local Solr source code, please refer to `./gradlew helpDocker` in a git checkout or a source-release download.
 
-Please refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr-in-docker.html) for information on using the Solr Docker image.
+Please refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html) for information on using the Solr Docker image.
 
 Building from the Solr Binary Distribution
 ----

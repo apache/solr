@@ -43,14 +43,13 @@ public class CreateTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return SolrCLI.CREATE_COLLECTION_OPTIONS;
+    return CreateCollectionTool.CREATE_COLLECTION_OPTIONS;
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     ToolBase tool;
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {

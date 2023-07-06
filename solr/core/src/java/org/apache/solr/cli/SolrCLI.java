@@ -19,6 +19,8 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.packagemanager.PackageUtils.print;
+import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
@@ -37,8 +39,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
@@ -79,10 +79,13 @@ public class SolrCLI implements CLIO {
 
   public static final Option OPTION_ZKHOST =
       Option.builder("z")
+          .longOpt("zkHost")
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST)
+          .desc(
+              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
+                  + ZK_HOST)
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
@@ -97,26 +100,15 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_VERBOSE =
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
 
+  // should this be boolean or just a otption?
   public static final Option OPTION_RECURSE =
-      Option.builder("recurse")
+      Option.builder("r")
+          .longOpt("recurse")
           .argName("recurse")
           .hasArg()
           .required(false)
           .desc("Recurse (true|false), default is false.")
-          // .type(Boolean.class)
           .build();
-
-  public static final List<Option> cloudOptions =
-      List.of(
-          OPTION_ZKHOST,
-          Option.builder("c")
-              .argName("COLLECTION")
-              .hasArg()
-              .required(false)
-              .desc("Name of collection; no default.")
-              .longOpt("collection")
-              .build(),
-          OPTION_VERBOSE);
 
   public static void exit(int exitStatus) {
     try {
@@ -130,16 +122,16 @@ public class SolrCLI implements CLIO {
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
     if (args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0) {
-      CLIO.err(
-          "Invalid command-line args! Must pass the name of a tool to run.\n"
-              + "Supported tools:\n");
-      displayToolOptions();
+      printHelp();
       exit(1);
     }
 
-    if (args.length == 1 && Arrays.asList("-v", "-version", "version").contains(args[0])) {
+    if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
       // Simple version tool, no need for its own class
-      CLIO.out(SolrVersion.LATEST.toString());
+      if (args.length != 1) {
+        CLIO.err("Version tool does not accept any parameters!");
+      }
+      CLIO.out("Solr version is: " + SolrVersion.LATEST);
       exit(0);
     }
 
@@ -255,33 +247,6 @@ public class SolrCLI implements CLIO {
     throw new IllegalArgumentException(toolType + " is not a valid command!");
   }
 
-  private static void displayToolOptions() throws Exception {
-    HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp("healthcheck", getToolOptions(new HealthcheckTool()));
-    formatter.printHelp("status", getToolOptions(new StatusTool()));
-    formatter.printHelp("api", getToolOptions(new ApiTool()));
-    formatter.printHelp("create_collection", getToolOptions(new CreateCollectionTool()));
-    formatter.printHelp("create_core", getToolOptions(new CreateCoreTool()));
-    formatter.printHelp("create", getToolOptions(new CreateTool()));
-    formatter.printHelp("delete", getToolOptions(new DeleteTool()));
-    formatter.printHelp("config", getToolOptions(new ConfigTool()));
-    formatter.printHelp("run_example", getToolOptions(new RunExampleTool()));
-    formatter.printHelp("upconfig", getToolOptions(new ConfigSetUploadTool()));
-    formatter.printHelp("downconfig", getToolOptions(new ConfigSetDownloadTool()));
-    formatter.printHelp("rm", getToolOptions(new ZkRmTool()));
-    formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
-    formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
-    formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
-    formatter.printHelp("export", getToolOptions(new ExportTool()));
-    formatter.printHelp("package", getToolOptions(new PackageTool()));
-
-    List<Class<? extends Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
-    for (Class<? extends Tool> next : toolClasses) {
-      Tool tool = next.getConstructor().newInstance();
-      formatter.printHelp(tool.getName(), getToolOptions(tool));
-    }
-  }
-
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
     options.addOption("help", false, "Print this message");
@@ -291,18 +256,6 @@ public class SolrCLI implements CLIO {
       options.addOption(toolOpt);
     }
     return options;
-  }
-
-  public static List<Option> joinOptions(List<Option> lhs, List<Option> rhs) {
-    if (lhs == null) {
-      return rhs == null ? List.of() : rhs;
-    }
-
-    if (rhs == null) {
-      return lhs;
-    }
-
-    return Stream.concat(lhs.stream(), rhs.stream()).collect(Collectors.toUnmodifiableList());
   }
 
   /** Parses the command-line arguments passed by the user. */
@@ -467,52 +420,28 @@ public class SolrCLI implements CLIO {
         numSeconds);
   }
 
-  public static final List<Option> CREATE_COLLECTION_OPTIONS =
-      List.of(
-          OPTION_ZKHOST,
-          OPTION_SOLRURL,
-          Option.builder(NAME)
-              .argName("NAME")
-              .hasArg()
-              .required(true)
-              .desc("Name of collection to create.")
-              .build(),
-          Option.builder("shards")
-              .argName("#")
-              .hasArg()
-              .required(false)
-              .desc("Number of shards; default is 1.")
-              .build(),
-          Option.builder("replicationFactor")
-              .argName("#")
-              .hasArg()
-              .required(false)
-              .desc(
-                  "Number of copies of each document across the collection (replicas per shard); default is 1.")
-              .build(),
-          Option.builder("confdir")
-              .argName("NAME")
-              .hasArg()
-              .required(false)
-              .desc(
-                  "Configuration directory to copy when creating the new collection; default is "
-                      + DEFAULT_CONFIG_SET
-                      + '.')
-              .build(),
-          Option.builder("confname")
-              .argName("NAME")
-              .hasArg()
-              .required(false)
-              .desc("Configuration name; default is the collection name.")
-              .build(),
-          Option.builder("configsetsDir")
-              .argName("DIR")
-              .hasArg()
-              .required(true)
-              .desc("Path to configsets directory on the local system.")
-              .build(),
-          OPTION_VERBOSE);
+  private static void printHelp() {
 
+    print("Usage: solr COMMAND OPTIONS");
+    print(
+        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package");
+    print("");
+    print("  Standalone server example (start Solr running in the background on port 8984):");
+    print("");
+    printGreen("    ./solr start -p 8984");
+    print("");
+    print(
+        "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):");
+    print("");
+    printGreen(
+        "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\"");
+    print("");
+    print(
+        "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
+    print("");
+    print("Pass -help or -h after any COMMAND to see command-specific usage information,");
+    print("such as:    ./solr start -help or ./solr stop -h");
+  }
   /**
    * Get the base URL of a live Solr instance from either the solrUrl command-line option from
    * ZooKeeper.
@@ -521,21 +450,27 @@ public class SolrCLI implements CLIO {
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
-      if (zkHost == null)
-        throw new IllegalStateException(
-            "Must provide either the '-solrUrl' or '-zkHost' parameters!");
+      if (zkHost == null) {
+        solrUrl = DEFAULT_SOLR_URL;
+        CLIO.getOutStream()
+            .println(
+                "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                    + DEFAULT_SOLR_URL
+                    + ".");
+      } else {
 
-      try (CloudSolrClient cloudSolrClient =
-          new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-              .build()) {
-        cloudSolrClient.connect();
-        Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-        if (liveNodes.isEmpty())
-          throw new IllegalStateException(
-              "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
+        try (CloudSolrClient cloudSolrClient =
+            new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+                .build()) {
+          cloudSolrClient.connect();
+          Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+          if (liveNodes.isEmpty())
+            throw new IllegalStateException(
+                "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
 
-        String firstLiveNode = liveNodes.iterator().next();
-        solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+          String firstLiveNode = liveNodes.iterator().next();
+          solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+        }
       }
     }
     return solrUrl;
@@ -547,15 +482,20 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
     String zkHost = cli.getOptionValue("zkHost");
-    if (zkHost != null) return zkHost;
+    if (zkHost != null && !zkHost.isBlank()) {
+      return zkHost;
+    }
 
     // find it using the localPort
     String solrUrl = cli.getOptionValue("solrUrl");
-    if (solrUrl == null)
-      throw new IllegalStateException(
-          "Must provide either the -zkHost or -solrUrl parameters to use the create_collection command!");
-
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
+    if (solrUrl == null) {
+      solrUrl = DEFAULT_SOLR_URL;
+      CLIO.getOutStream()
+          .println(
+              "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                  + DEFAULT_SOLR_URL
+                  + ".");
+    }
 
     try (var solrClient = getSolrClient(solrUrl)) {
       // hit Solr to get system info

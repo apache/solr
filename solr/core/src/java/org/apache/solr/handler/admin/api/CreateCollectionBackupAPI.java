@@ -24,6 +24,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_CONFIGSET;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_INCREMENTAL;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
@@ -34,8 +35,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,14 +45,11 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
@@ -70,7 +66,7 @@ import org.apache.zookeeper.common.StringUtils;
  * <p>This API is analogous to the v1 /admin/collections?action=BACKUP command.
  */
 @Path("/collections/{collectionName}/backups/{backupName}/versions")
-public class CreateCollectionBackupAPI extends AdminAPIBase {
+public class CreateCollectionBackupAPI extends BackupAPIBase {
   private final ObjectMapper objectMapper;
 
   @Inject
@@ -109,26 +105,12 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
         resolveAndValidateAliasIfEnabled(
             collectionName, Boolean.TRUE.equals(requestBody.followAliases));
 
-    final BackupRepository repository = coreContainer.newBackupRepository(requestBody.repository);
-    requestBody.location = getLocation(coreContainer, repository, requestBody.location);
+    requestBody.location =
+        getAndValidateBackupLocation(requestBody.repository, requestBody.location);
+
     if (requestBody.incremental == null) {
       requestBody.incremental = Boolean.TRUE;
     }
-
-    // Check if the specified location is valid for this repository.
-    final URI uri = repository.createDirectoryURI(requestBody.location);
-    try {
-      if (!repository.exists(uri)) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
-      }
-    } catch (IOException ex) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Failed to check the existence of " + uri + ". Is it valid?",
-          ex);
-    }
-
     if (requestBody.backupStrategy == null) {
       requestBody.backupStrategy = CollectionAdminParams.COPY_FILES_STRATEGY;
     }
@@ -181,6 +163,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     requestBody.backupStrategy = params.get(INDEX_BACKUP_STRATEGY);
     requestBody.snapshotName = params.get(COMMIT_NAME);
     requestBody.incremental = params.getBool(BACKUP_INCREMENTAL);
+    requestBody.backupConfigset = params.getBool(BACKUP_CONFIGSET);
     requestBody.maxNumBackupPoints = params.getInt(MAX_NUM_BACKUP_POINTS);
     requestBody.async = params.get(ASYNC);
 
@@ -198,29 +181,6 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     return createBackupApi.createCollectionBackup(collectionName, backupName, requestBody);
   }
 
-  public static String getLocation(
-      CoreContainer coreContainer, BackupRepository repository, String location)
-      throws IOException {
-    location = repository.getBackupLocation(location);
-    if (location != null) {
-      return location;
-    }
-
-    // Refresh the cluster property file to make sure the value set for location is the
-    // latest. Check if the location is specified in the cluster property.
-    location =
-        new ClusterProperties(coreContainer.getZkController().getZkClient())
-            .getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
-    if (location != null) {
-      return location;
-    }
-
-    throw new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST,
-        "'location' is not specified as a query"
-            + " parameter or as a default repository property or as a cluster property.");
-  }
-
   public static class CreateCollectionBackupRequestBody implements JacksonReflectMapWriter {
     @JsonProperty public String location;
     @JsonProperty public String repository;
@@ -228,6 +188,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     @JsonProperty public String backupStrategy;
     @JsonProperty public String snapshotName;
     @JsonProperty public Boolean incremental;
+    @JsonProperty public Boolean backupConfigset;
     @JsonProperty public Integer maxNumBackupPoints;
     @JsonProperty public String async;
   }
@@ -235,7 +196,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
   public static class CreateCollectionBackupResponseBody
       extends SubResponseAccumulatingJerseyResponse {
     @JsonProperty("response")
-    public CollectionBackupData backupDataResponse;
+    public CollectionBackupDetails backupDataResponse;
 
     @JsonProperty("deleted")
     public List<BackupDeletionData> deleted;
@@ -243,7 +204,7 @@ public class CreateCollectionBackupAPI extends AdminAPIBase {
     @JsonProperty public String collection;
   }
 
-  public static class CollectionBackupData implements JacksonReflectMapWriter {
+  public static class CollectionBackupDetails implements JacksonReflectMapWriter {
     @JsonProperty public String collection;
     @JsonProperty public Integer numShards;
     @JsonProperty public Integer backupId;

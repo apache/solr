@@ -37,7 +37,7 @@ teardown() {
   assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Default replica placement plugin set in solr\.placementplugin\.default to affinity'
 }
 
-@test "Affinity placement plugin using ENV" {
+@test "Random placement plugin using ENV" {
   export SOLR_PLACEMENTPLUGIN_DEFAULT=random
   run solr start -c
   solr assert -c http://localhost:8983/solr -t 3000

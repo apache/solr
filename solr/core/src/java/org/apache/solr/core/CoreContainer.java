@@ -108,7 +108,6 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.ClusterAPI;
-import org.apache.solr.handler.CollectionBackupsAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -746,12 +745,22 @@ public class CoreContainer {
       reason =
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void load() {
+    final ClassLoader originalContextClassLoader = Thread.currentThread().getContextClassLoader();
+    try {
+      // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
+      // and have dependencies that use the thread's contextClassLoader
+      Thread.currentThread().setContextClassLoader(loader.getClassLoader());
+      loadInternal();
+    } finally {
+      Thread.currentThread().setContextClassLoader(originalContextClassLoader);
+    }
+  }
+
+  /** Load the cores defined for this CoreContainer */
+  private void loadInternal() {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
-    // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
-    Thread.currentThread().setContextClassLoader(loader.getClassLoader());
-
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
@@ -842,8 +851,6 @@ public class CoreContainer {
     collectionsHandler =
         createHandler(
             COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
-    final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
-    registerV2ApiIfEnabled(collectionBackupsAPI);
     configSetsHandler =
         createHandler(
             CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
@@ -1674,8 +1681,18 @@ public class CoreContainer {
     } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
-        // this mostly happen when the core is deleted when this node is down
-        unload(dcore.getName(), true, true, true);
+        // this mostly happens when the core is deleted when this node is down
+        // but it can also happen if connecting to the wrong zookeeper
+        final boolean deleteUnknownCores =
+            Boolean.parseBoolean(System.getProperty("solr.deleteUnknownCores", "false"));
+        log.error(
+            "SolrCore {} in {} is not in cluster state.{}",
+            dcore.getName(),
+            dcore.getInstanceDir(),
+            (deleteUnknownCores
+                ? " It will be deleted. See SOLR-13396 for more information."
+                : ""));
+        unload(dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
         throw e;
       }
       solrCores.removeCoreDescriptor(dcore);

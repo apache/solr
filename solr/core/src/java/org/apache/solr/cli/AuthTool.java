@@ -133,14 +133,6 @@ public class AuthTool extends ToolBase {
   @Override
   public int runTool(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    if (cli.getOptions().length == 0
-        || cli.getArgs().length == 0
-        || cli.getArgs().length > 1
-        || cli.hasOption("h")) {
-      new HelpFormatter()
-          .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
-      return 1;
-    }
 
     ensureArgumentIsValidBooleanIfPresent(cli, "blockUnknown");
     ensureArgumentIsValidBooleanIfPresent(cli, "updateIncludeFileOnly");
@@ -223,12 +215,9 @@ public class AuthTool extends ToolBase {
               zkClient.setData(
                   "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
             } catch (Exception ex) {
-              if (!zkInaccessible) {
-                CLIO.out(
-                    "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
-                        + securityJson);
-                zkInaccessible = true;
-              }
+              CLIO.out(
+                  "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
+                      + securityJson);
             }
           }
         }

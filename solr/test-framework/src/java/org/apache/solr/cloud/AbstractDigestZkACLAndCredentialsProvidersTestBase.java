@@ -57,8 +57,6 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
   private static final String READONLY_USERNAME = "readonlyACLUsername";
   private static final String READONLY_PASSWORD = "readonlyACLPassword";
 
-  public static final String SECRET_NAME = "zkCredentialsSecret";
-
   protected ZkTestServer zkServer;
 
   protected Path zkDir;

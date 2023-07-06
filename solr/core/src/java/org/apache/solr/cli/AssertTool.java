@@ -26,7 +26,6 @@ import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -135,7 +134,7 @@ public class AssertTool extends ToolBase {
   public int runTool(CommandLine cli) throws Exception {
     verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
 
-    int toolExitStatus = 0;
+    int toolExitStatus;
     try {
       toolExitStatus = runAssert(cli);
     } catch (Exception exc) {
@@ -168,13 +167,6 @@ public class AssertTool extends ToolBase {
    * @throws Exception if a tool failed, e.g. authentication failure
    */
   protected int runAssert(CommandLine cli) throws Exception {
-    if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
-      new HelpFormatter()
-          .printHelp(
-              "bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]",
-              SolrCLI.getToolOptions(this));
-      return 1;
-    }
     if (cli.hasOption("m")) {
       message = cli.getOptionValue("m");
     }
