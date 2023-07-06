@@ -288,6 +288,8 @@ Dependency Upgrades
 
 * SOLR-16799: upgrade Solr to use Lucene 9.6.0 (Alex Deparvu, Tomás Fernández Löbbe)
 
+* SOLR-16853: Upgrade Lucene to 9.7.0 (Alex Deparvu)
+
 Other Changes
 ---------------------
 
