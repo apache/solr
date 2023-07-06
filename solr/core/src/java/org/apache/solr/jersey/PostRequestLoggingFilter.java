@@ -135,7 +135,7 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
         .replaceAll("//", "/");
   }
 
-  private String buildRequestBodyString(ContainerRequestContext requestContext) {
+  public static String buildRequestBodyString(ContainerRequestContext requestContext) {
     if (requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY) == null) {
       return "{}";
     }

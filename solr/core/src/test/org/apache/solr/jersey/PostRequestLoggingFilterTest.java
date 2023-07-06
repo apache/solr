@@ -17,9 +17,17 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.jersey.MessageBodyReaders.CachingDelegatingMessageBodyReader.DESERIALIZED_REQUEST_BODY_KEY;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.List;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.UriInfo;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.handler.admin.api.CreateReplicaAPI;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -29,6 +37,12 @@ import org.junit.Test;
  * log message.
  */
 public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
+
   @Test
   public void testBuildQueryParameterString_Simple() {
     final var queryParams = new MultivaluedHashMap<String, String>();
@@ -80,5 +94,45 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
         PostRequestLoggingFilter.filterAndStringifyQueryParameters(queryParams);
 
     assertEquals("paramName1=paramValue1&paramName2=paramValue2", queryParamStr);
+  }
+
+  @Test
+  public void testRequestBodyStringIsEmptyIfNoRequestBodyFound() {
+    // NOTE: no request body is set on the context.
+    final var mockContext = mock(ContainerRequestContext.class);
+
+    final var requestBodyStr = PostRequestLoggingFilter.buildRequestBodyString(mockContext);
+
+    assertEquals("{}", requestBodyStr);
+  }
+
+  @Test
+  public void testRequestBodyStringIsEmptyIfRequestBodyWasUnexpectedType() {
+    // NOTE: Request body is set, but of an unexpected type (i.e. not a JacksonReflectMapWriter)
+    final var mockContext = mock(ContainerRequestContext.class);
+    final var mockUriInfo = mock(UriInfo.class);
+    when(mockUriInfo.getPath()).thenReturn("/somepath");
+    when(mockContext.getUriInfo()).thenReturn(mockUriInfo);
+    when(mockContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY)).thenReturn("unexpectedType");
+
+    final var requestBodyStr = PostRequestLoggingFilter.buildRequestBodyString(mockContext);
+
+    assertEquals("{}", requestBodyStr);
+  }
+
+  @Test
+  public void testRequestBodyRepresentedAsJsonWhenFound() {
+    final var requestBody = new CreateReplicaAPI.AddReplicaRequestBody();
+    requestBody.name = "someReplicaName";
+    requestBody.type = "NRT";
+    requestBody.asyncId = "someAsyncId";
+    final var mockContext = mock(ContainerRequestContext.class);
+    when(mockContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY)).thenReturn(requestBody);
+
+    final var requestBodyStr = PostRequestLoggingFilter.buildRequestBodyString(mockContext);
+
+    assertEquals(
+        "{  \"name\":\"someReplicaName\",  \"type\":\"NRT\",  \"async\":\"someAsyncId\"}",
+        requestBodyStr);
   }
 }
