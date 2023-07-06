@@ -24,7 +24,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,9 +45,11 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.TaskObject;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.MDC;
 
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
 
@@ -525,5 +529,46 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         "Missing required parameter: core",
         e.getMessage());
     admin.close();
+  }
+
+  @Test
+  public void testStressExpensiveTaskQueue() {
+    final CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
+    CoreAdminHandler.CoreAdminAsyncTracker tracker = admin.getCoreAdminAsyncTracker();
+
+    AtomicInteger counter = new AtomicInteger();
+    AtomicInteger concurrentTasks = new AtomicInteger();
+    int taskCount = random().nextInt(10_000);
+
+    for (int i = 0; i < taskCount; i++) {
+      String id = "id_" + random().nextLong();
+      String action = "action_" + random().nextLong();
+
+      Callable<SolrQueryResponse> task =
+          () -> {
+            // ensure we never have too many concurrent expensive tasks
+            int concurrent = concurrentTasks.incrementAndGet();
+            assertTrue(
+                concurrent
+                    <= CoreAdminHandler.CoreAdminAsyncTracker.MAX_CONCURRENT_EXPENSIVE_TASKS);
+
+            // assert MDC is always set (mostly when the task was added to the queue)
+            assertEquals(id, MDC.get("CoreAdminHandler.asyncId"));
+            assertEquals(action, MDC.get("CoreAdminHandler.action"));
+
+            // Sleep for a couple of millis before considering the task is done
+            int delay = random().nextInt(10);
+            Thread.sleep(delay);
+            concurrentTasks.decrementAndGet();
+            counter.incrementAndGet();
+            return null;
+          };
+
+      TaskObject taskObject = new TaskObject(id, action, true, task);
+      tracker.submitAsyncTask(taskObject);
+    }
+
+    admin.shutdown();
+    assertEquals(taskCount, counter.intValue());
   }
 }

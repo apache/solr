@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -95,7 +96,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   protected final CoreAdminAsyncTracker coreAdminAsyncTracker;
 
   public static String RESPONSE_STATUS = "STATUS";
-
   public static String RESPONSE_MESSAGE = "msg";
   public static String OPERATION_RESPONSE = "response";
 
@@ -217,13 +217,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       if (taskId == null) {
         callInfo.call();
       } else {
-        Callable<SolrQueryResponse> task = () -> {
-          callInfo.call();
-          return callInfo.rsp;
-        };
+        Callable<SolrQueryResponse> task =
+            () -> {
+              callInfo.call();
+              return callInfo.rsp;
+            };
 
         final CoreAdminAsyncTracker.TaskObject taskObject =
-                new CoreAdminAsyncTracker.TaskObject(taskId, action, task);
+            new CoreAdminAsyncTracker.TaskObject(taskId, action, op.isExpensive(), task);
 
         coreAdminAsyncTracker.submitAsyncTask(taskObject);
       }
@@ -391,6 +392,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   public interface CoreAdminOp {
+
+    default boolean isExpensive() {
+      return false;
+    }
+
     /**
      * @param it request/response object
      *     <p>If the request is invalid throw a SolrException with
@@ -404,10 +410,17 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
   public static class CoreAdminAsyncTracker {
     private static final int MAX_TRACKED_REQUESTS = 100;
+    public static final String PENDING = "pending";
     public static final String RUNNING = "running";
     public static final String COMPLETED = "completed";
     public static final String FAILED = "failed";
     public final Map<String, Map<String, TaskObject>> requestStatusMap;
+
+    static final int MAX_CONCURRENT_EXPENSIVE_TASKS =
+        Integer.getInteger("solr.admin.maxConcurrentExpensiveTasks", 5);
+    private volatile boolean shutdown;
+    private int expensiveRunningTasks;
+    private final ConcurrentLinkedQueue<TaskObject> expensiveTaskQueue;
 
     private ExecutorService parallelExecutor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
@@ -415,13 +428,33 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
     public CoreAdminAsyncTracker() {
       HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
+      map.put(PENDING, Collections.synchronizedMap(new LinkedHashMap<>()));
       map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<>()));
       map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<>()));
       map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
       requestStatusMap = Collections.unmodifiableMap(map);
+
+      expensiveTaskQueue = new ConcurrentLinkedQueue<>();
     }
 
     public void shutdown() {
+
+      shutdown = true;
+
+      // Before shutting down the thread pool, we have to execute all the expensive tasks that
+      // are already in the queue
+      synchronized (this) {
+        if (!expensiveTaskQueue.isEmpty()) {
+          try {
+            wait(60000L);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(
+                "Interrupted while waiting for pool expensive tasks to complete");
+          }
+        }
+      }
+
       ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
     }
 
@@ -430,30 +463,51 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
 
     public void submitAsyncTask(TaskObject taskObject) throws SolrException {
+      if (shutdown) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "CoreAdminHandler is being shutdown.");
+      }
+
       ensureTaskIdNotInUse(taskObject.taskId);
-      addTask(RUNNING, taskObject);
 
       try {
         MDC.put("CoreAdminHandler.asyncId", taskObject.taskId);
         MDC.put("CoreAdminHandler.action", taskObject.action);
-        parallelExecutor.execute(
-            () -> {
-              boolean exceptionCaught = false;
-              try {
-                final SolrQueryResponse response = taskObject.task.call();
-                taskObject.setRspObject(response);
-                taskObject.setOperationRspObject(response);
-              } catch (Exception e) {
-                exceptionCaught = true;
-                taskObject.setRspObjectFromException(e);
-              } finally {
-                finishTask(taskObject, !exceptionCaught);
-              }
-            });
+
+        if (!taskObject.expensive) {
+          addTask(RUNNING, taskObject);
+          parallelExecutor.execute(createRunner(taskObject));
+        } else {
+          synchronized (this) {
+            if (expensiveRunningTasks < MAX_CONCURRENT_EXPENSIVE_TASKS) {
+              expensiveRunningTasks++;
+              addTask(RUNNING, taskObject);
+              parallelExecutor.execute(createRunner(taskObject));
+            } else {
+              addTask(PENDING, taskObject);
+              expensiveTaskQueue.add(taskObject);
+            }
+          }
+        }
       } finally {
         MDC.remove("CoreAdminHandler.asyncId");
         MDC.remove("CoreAdminHandler.action");
       }
+    }
+
+    private Runnable createRunner(TaskObject taskObject) {
+      return () -> {
+        boolean exceptionCaught = false;
+        try {
+          final SolrQueryResponse response = taskObject.task.call();
+          taskObject.setRspObject(response);
+          taskObject.setOperationRspObject(response);
+        } catch (Exception e) {
+          exceptionCaught = true;
+          taskObject.setRspObjectFromException(e);
+        } finally {
+          finishTask(taskObject, !exceptionCaught);
+        }
+      };
     }
 
     /** Helper method to add a task to a tracking type. */
@@ -481,7 +535,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
 
     private void ensureTaskIdNotInUse(String taskId) throws SolrException {
-      if (getRequestStatusMap(RUNNING).containsKey(taskId)
+      if (getRequestStatusMap(PENDING).containsKey(taskId)
+          || getRequestStatusMap(RUNNING).containsKey(taskId)
           || getRequestStatusMap(COMPLETED).containsKey(taskId)
           || getRequestStatusMap(FAILED).containsKey(taskId)) {
         throw new SolrException(
@@ -492,6 +547,28 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     private void finishTask(TaskObject taskObject, boolean successful) {
       removeTask(RUNNING, taskObject.taskId);
       addTask(successful ? COMPLETED : FAILED, taskObject, true);
+
+      if (taskObject.expensive) {
+        synchronized (this) {
+          TaskObject next = expensiveTaskQueue.poll();
+          if (next != null) {
+            removeTask(PENDING, next.taskId);
+            try {
+              MDC.put("CoreAdminHandler.asyncId", next.taskId);
+              MDC.put("CoreAdminHandler.action", next.action);
+              addTask(RUNNING, next);
+              parallelExecutor.execute(createRunner(next));
+            } finally {
+              MDC.remove("CoreAdminHandler.asyncId");
+              MDC.remove("CoreAdminHandler.action");
+            }
+          } else {
+            expensiveRunningTasks--;
+            // if the queue is empty, maybe a thread is waiting in shutdown() method
+            notifyAll();
+          }
+        }
+      }
     }
 
     /**
@@ -499,15 +576,18 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
      * response (if available).
      */
     public static class TaskObject {
-      public final String taskId;
+      final String taskId;
       final String action;
+      final boolean expensive;
       final Callable<SolrQueryResponse> task;
       public String rspInfo;
       public Object operationRspInfo;
 
-      public TaskObject(String taskId, String action, Callable<SolrQueryResponse> task) {
+      public TaskObject(
+          String taskId, String action, boolean expensive, Callable<SolrQueryResponse> task) {
         this.taskId = taskId;
         this.action = action;
+        this.expensive = expensive;
         this.task = task;
       }
 

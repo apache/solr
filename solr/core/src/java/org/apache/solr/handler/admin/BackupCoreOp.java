@@ -34,6 +34,11 @@ import org.apache.solr.handler.SnapShooter;
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
   @Override
+  public boolean isExpensive() {
+    return true;
+  }
+
+  @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     final SolrParams params = it.req.getParams();
 

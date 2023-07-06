@@ -32,6 +32,12 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.RestoreCore;
 
 class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
+
+  @Override
+  public boolean isExpensive() {
+    return true;
+  }
+
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     final SolrParams params = it.req.getParams();

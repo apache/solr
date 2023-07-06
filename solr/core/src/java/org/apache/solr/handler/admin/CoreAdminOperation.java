@@ -46,6 +46,7 @@ import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.FAILED;
+import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.PENDING;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.RUNNING;
 import static org.apache.solr.handler.admin.CoreAdminHandler.OPERATION_RESPONSE;
 import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_MESSAGE;
@@ -220,7 +221,9 @@ public enum CoreAdminOperation implements CoreAdminOp {
 
         final CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
             it.handler.getCoreAdminAsyncTracker();
-        if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(requestId)) {
+        if (coreAdminAsyncTracker.getRequestStatusMap(PENDING).containsKey(requestId)) {
+          it.rsp.add(RESPONSE_STATUS, PENDING);
+        } else if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(requestId)) {
           it.rsp.add(RESPONSE_STATUS, RUNNING);
         } else if (coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
           it.rsp.add(RESPONSE_STATUS, COMPLETED);
