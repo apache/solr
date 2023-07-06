@@ -211,9 +211,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         return;
       }
 
-      final CoreAdminAsyncTracker.TaskObject taskObject =
-              new CoreAdminAsyncTracker.TaskObject(taskId, action);
-
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
       final String coreName =
           req.getParams().get(CoreAdminParams.CORE, req.getParams().get(CoreAdminParams.NAME));
@@ -222,12 +219,15 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       if (taskId == null) {
         callInfo.call();
       } else {
-        coreAdminAsyncTracker.submitAsyncTask(
-            taskObject,
-            () -> {
-              callInfo.call();
-              return callInfo.rsp;
-            });
+        Callable<SolrQueryResponse> task = () -> {
+          callInfo.call();
+          return callInfo.rsp;
+        };
+
+        final CoreAdminAsyncTracker.TaskObject taskObject =
+                new CoreAdminAsyncTracker.TaskObject(taskId, action, task);
+
+        coreAdminAsyncTracker.submitAsyncTask(taskObject);
       }
     } finally {
       rsp.setHttpCaching(false);
@@ -432,9 +432,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       return requestStatusMap.get(key);
     }
 
-    public void submitAsyncTask(
-        TaskObject taskObject, Callable<SolrQueryResponse> task)
-        throws SolrException {
+    public void submitAsyncTask(TaskObject taskObject) throws SolrException {
       ensureTaskIdNotInUse(taskObject.taskId);
       addTask(RUNNING, taskObject);
 
@@ -445,7 +443,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             () -> {
               boolean exceptionCaught = false;
               try {
-                final SolrQueryResponse response = task.call();
+                final SolrQueryResponse response = taskObject.task.call();
                 taskObject.setRspObject(response);
                 taskObject.setOperationRspObject(response);
               } catch (Exception e) {
@@ -505,13 +503,15 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
      */
     public static class TaskObject {
       public final String taskId;
-      public final String action;
+      final String action;
+      final Callable<SolrQueryResponse> task;
       public String rspInfo;
       public Object operationRspInfo;
 
-      public TaskObject(String taskId, String action) {
+      public TaskObject(String taskId, String action, Callable<SolrQueryResponse> task) {
         this.taskId = taskId;
         this.action = action;
+        this.task = task;
       }
 
       public String getRspObject() {

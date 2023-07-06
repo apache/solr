@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -79,21 +80,21 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "Core container instance missing");
       }
-      final CoreAdminHandler.CoreAdminAsyncTracker.TaskObject taskObject =
-          new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(taskId, actionName);
 
       MDCLoggingContext.setCoreName(coreName);
       TraceUtils.setDbInstance(req, coreName);
       if (taskId == null) {
         return supplier.get();
       } else {
-        coreAdminAsyncTracker.submitAsyncTask(
-            taskObject,
-            () -> {
-              T response = supplier.get();
-              V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
-              return rsp;
-            });
+        Callable<SolrQueryResponse> task = () -> {
+          T response = supplier.get();
+          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+          return rsp;
+        };
+
+        final CoreAdminHandler.CoreAdminAsyncTracker.TaskObject taskObject =
+                new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(taskId, actionName, task);
+        coreAdminAsyncTracker.submitAsyncTask(taskObject);
       }
     } catch (CoreAdminAPIBaseException e) {
       throw e.trueException;
