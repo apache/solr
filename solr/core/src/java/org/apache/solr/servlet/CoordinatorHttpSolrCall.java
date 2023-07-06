@@ -118,19 +118,19 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
           // for the watcher, only remove on collection deletion (ie collection == null), since
           // watch from coordinator is collection specific
           solrCall
-                  .cores
-                  .getZkController()
-                  .getZkStateReader()
-                  .registerDocCollectionWatcher(
-                          collectionName,
-                          collection -> {
-                            if (collection == null) {
-                              factory.collectionVsCoreNameMapping.remove(collectionName);
-                              return true;
-                            } else {
-                              return false;
-                            }
-                          });
+              .cores
+              .getZkController()
+              .getZkStateReader()
+              .registerDocCollectionWatcher(
+                  collectionName,
+                  collection -> {
+                    if (collection == null) {
+                      factory.collectionVsCoreNameMapping.remove(collectionName);
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  });
           if (log.isDebugEnabled()) {
             log.debug("coordinator node, returns synthetic core: {}", core.getName());
           }

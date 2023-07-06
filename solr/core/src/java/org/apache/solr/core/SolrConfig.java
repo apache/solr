@@ -458,6 +458,12 @@ public class SolrConfig implements MapSerializable {
           new SolrPluginInfo(
               SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
           new SolrPluginInfo(
+              FacetParserFactory.class,
+              "facetParserFactory",
+              REQUIRE_NAME,
+              REQUIRE_CLASS,
+              MULTI_OK),
+          new SolrPluginInfo(
               UpdateRequestProcessorFactory.class,
               "updateProcessor",
               REQUIRE_NAME,
