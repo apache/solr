@@ -282,26 +282,6 @@ IF "%SCRIPT_CMD%"=="auth" goto auth_usage
 IF "%SCRIPT_CMD%"=="status" goto run_solrcli
 goto done
 
-:script_usage
-@echo.
-@echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package
-@echo.
-@echo   Standalone server example (start Solr running in the background on port 8984):
-@echo.
-@echo     solr start -p 8984
-@echo.
-@echo   SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):
-@echo.
-@echo     solr start -c -m 1g -z localhost:2181 -a "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044"
-@echo.
-@echo   Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.cmd.
-@echo.
-@echo Pass -help after any COMMAND to see command-specific usage information,
-@echo   such as:    solr start -help or solr stop -help
-@echo.
-goto done
-
 :start_usage
 @echo.
 @echo Usage: solr %SCRIPT_CMD% [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [-a "additional-options"] [-V]
@@ -1664,8 +1644,6 @@ IF "%FIRST_ARG%"=="start" (
   goto auth_usage
 ) ELSE IF "%FIRST_ARG%"=="status" (
   goto run_solrcli
-) ELSE (
-  goto script_usage
 )
 
 :need_java_home
