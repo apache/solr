@@ -469,7 +469,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     if (at != -1) {
       leaderUrl = leaderUrl.substring(at + 3);
     }
-    return Integer.parseInt(leaderUrl.replaceAll("/", ""));
+    return Integer.parseInt(leaderUrl.replace("/", ""));
   }
 
   @Test

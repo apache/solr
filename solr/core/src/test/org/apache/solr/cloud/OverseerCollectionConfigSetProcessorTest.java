@@ -387,7 +387,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       liveNodes.add(address);
 
       when(zkStateReaderMock.getBaseUrlForNodeName(address))
-          .thenAnswer(invocation -> address.replaceAll("_", "/"));
+          .thenAnswer(invocation -> address.replace("_", "/"));
     }
 
     when(solrZkClientMock.getZkClientTimeout()).thenReturn(30000);
@@ -685,7 +685,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           collectionsSet.put(
               collName,
               new ClusterState.CollectionRef(
-                  new DocCollection(
+                  DocCollection.create(
                       collName,
                       new HashMap<>(),
                       props.getProperties(),
@@ -764,7 +764,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<>();
     List<String> nodeUrlWithoutProtocolPartForLiveNodes = new ArrayList<>(createNodes.size());
     for (String nodeName : createNodes) {
-      String nodeUrlWithoutProtocolPart = nodeName.replaceAll("_", "/");
+      String nodeUrlWithoutProtocolPart = nodeName.replace("_", "/");
       if (nodeUrlWithoutProtocolPart.startsWith("http://"))
         nodeUrlWithoutProtocolPart = nodeUrlWithoutProtocolPart.substring(7);
       nodeUrlWithoutProtocolPartForLiveNodes.add(nodeUrlWithoutProtocolPart);

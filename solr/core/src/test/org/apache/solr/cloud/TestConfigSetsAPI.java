@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -56,7 +55,7 @@ import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -184,14 +183,14 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         "baseConfigSet2",
         "configSet2",
         null,
-        ImmutableMap.<String, String>of("immutable", "true", "key1", "value1"),
+        Map.of("immutable", "true", "key1", "value1"),
         "solr");
 
     // old, no new
     verifyCreate(
         "baseConfigSet3",
         "configSet3",
-        ImmutableMap.<String, String>of("immutable", "false", "key2", "value2"),
+        Map.of("immutable", "false", "key2", "value2"),
         null,
         "solr");
 
@@ -199,8 +198,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     verifyCreate(
         "baseConfigSet4",
         "configSet4",
-        ImmutableMap.<String, String>of("immutable", "true", "onlyOld", "onlyOldValue"),
-        ImmutableMap.<String, String>of("immutable", "false", "onlyNew", "onlyNewValue"),
+        Map.of("immutable", "true", "onlyOld", "onlyOldValue"),
+        Map.of("immutable", "false", "onlyNew", "onlyNewValue"),
         "solr");
   }
 
@@ -289,17 +288,17 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
       throws Exception {
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    final File tmpConfigDir = createTempDir().toFile();
-    tmpConfigDir.deleteOnExit();
-    FileUtils.copyDirectory(configDir, tmpConfigDir);
+    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path tmpConfigDir = createTempDir();
+    tmpConfigDir.toFile().deleteOnExit();
+    PathUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
-      FileUtils.write(
-          new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
+      Files.writeString(
+          tmpConfigDir.resolve(ConfigSetProperties.DEFAULT_FILENAME),
           getConfigSetProps(oldProps),
           UTF_8);
     }
-    getConfigSetService().uploadConfig(baseConfigSetName, tmpConfigDir.toPath());
+    getConfigSetService().uploadConfig(baseConfigSetName, tmpConfigDir);
   }
 
   private void verifyCreate(
@@ -361,12 +360,9 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     }
 
     if (oldPropsData != null) {
-      InputStreamReader reader =
-          new InputStreamReader(new ByteArrayInputStream(oldPropsData), UTF_8);
-      try {
+      try (InputStreamReader reader =
+          new InputStreamReader(new ByteArrayInputStream(oldPropsData), UTF_8)) {
         return ConfigSetProperties.readFromInputStream(reader);
-      } finally {
-        reader.close();
       }
     }
     return null;
@@ -1875,16 +1871,16 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public void testDeleteErrors() throws Exception {
     final String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    final File tmpConfigDir = createTempDir().toFile();
-    tmpConfigDir.deleteOnExit();
+    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path tmpConfigDir = createTempDir();
+    tmpConfigDir.toFile().deleteOnExit();
     // Ensure ConfigSet is immutable
-    FileUtils.copyDirectory(configDir, tmpConfigDir);
-    FileUtils.write(
-        new File(tmpConfigDir, "configsetprops.json"),
-        getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")),
+    PathUtils.copyDirectory(configDir, tmpConfigDir);
+    Files.writeString(
+        tmpConfigDir.resolve("configsetprops.json"),
+        getConfigSetProps(Map.of("immutable", "true")),
         UTF_8);
-    getConfigSetService().uploadConfig("configSet", tmpConfigDir.toPath());
+    getConfigSetService().uploadConfig("configSet", tmpConfigDir);
 
     // no ConfigSet name
     DeleteNoErrorChecking delete = new DeleteNoErrorChecking();

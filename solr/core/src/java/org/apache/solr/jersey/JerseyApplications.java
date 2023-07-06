@@ -21,9 +21,11 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
 import java.util.Map;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SolrVersion;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
@@ -62,6 +64,7 @@ public class JerseyApplications {
       // Request lifecycle logic
       register(CatchAllExceptionMapper.class);
       register(NotFoundExceptionMapper.class);
+      register(MediaTypeOverridingFilter.class);
       register(RequestMetricHandling.PreRequestMetricsFilter.class);
       register(RequestMetricHandling.PostRequestMetricsFilter.class);
       register(PostRequestDecorationFilter.class);
@@ -84,9 +87,12 @@ public class JerseyApplications {
             }
           });
 
+      // Explicit Jersey logging is disabled by default but useful for debugging (pt 1)
+      // register(LoggingFeature.class);
+
       setProperties(
           Map.of(
-              // Explicit Jersey logging is disabled by default but useful for debugging
+              // Explicit Jersey logging is disabled by default but useful for debugging (pt 2)
               // "jersey.config.server.tracing.type", "ALL",
               // "jersey.config.server.tracing.threshold", "VERBOSE",
               "jersey.config.server.wadl.disableWadl", "true",
@@ -111,6 +117,12 @@ public class JerseyApplications {
             protected void configure() {
               bindFactory(InjectionFactories.ReuseFromContextSolrCoreFactory.class)
                   .to(SolrCore.class)
+                  .in(RequestScoped.class);
+              bindFactory(InjectionFactories.ReuseFromContextIndexSchemaFactory.class)
+                  .to(IndexSchema.class)
+                  .in(RequestScoped.class);
+              bindFactory(InjectionFactories.ReuseFromContextSolrParamsFactory.class)
+                  .to(SolrParams.class)
                   .in(RequestScoped.class);
             }
           });

@@ -217,7 +217,7 @@ def pushLocal(version, root, rcNum, localDir):
   rev = open('%s/solr/distribution/build/release/.gitrev' % root, encoding='UTF-8').read()
 
   dir = 'solr-%s-RC%d-rev-%s' % (version, rcNum, rev)
-  os.makedirs('%s/%s/solr' % (localDir, dir))
+  os.makedirs('%s/%s/solr/%s' % (localDir, dir, version))
   print('  Solr')
   solr_dist_dir = '%s/solr/distribution/build/release' % root
   os.chdir(solr_dist_dir)
@@ -227,7 +227,7 @@ def pushLocal(version, root, rcNum, localDir):
   run('tar cf solr.tar *')
 
   print('    extract...')
-  os.chdir('%s/%s/solr' % (localDir, dir))
+  os.chdir('%s/%s/solr/%s' % (localDir, dir, version))
   run('tar xf "%s/solr.tar"' % solr_dist_dir)
   os.remove('%s/solr.tar' % solr_dist_dir)
   os.chdir('..')

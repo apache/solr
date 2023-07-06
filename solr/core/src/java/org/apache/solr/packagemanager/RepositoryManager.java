@@ -17,13 +17,16 @@
 
 package org.apache.solr.packagemanager;
 
+import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -34,24 +37,23 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
-import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.SolrPackageLoader;
-import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -64,9 +66,9 @@ public class RepositoryManager {
 
   private final PackageManager packageManager;
 
-  final HttpSolrClient solrClient;
+  final SolrClient solrClient;
 
-  public RepositoryManager(HttpSolrClient solrClient, PackageManager packageManager) {
+  public RepositoryManager(SolrClient solrClient, PackageManager packageManager) {
     this.packageManager = packageManager;
     this.solrClient = solrClient;
   }
@@ -129,22 +131,23 @@ public class RepositoryManager {
           true);
     }
 
-    addKey(IOUtils.toByteArray(new URL(uri + "/publickey.der").openStream()), repoName + ".der");
+    try (InputStream is = new URL(uri + "/publickey.der").openStream()) {
+      addKey(is.readAllBytes(), repoName + ".der");
+    }
   }
 
   public void addKey(byte[] key, String destinationKeyFilename) throws Exception {
     // get solr_home directory from info servlet
-    String systemInfoUrl = solrClient.getBaseURL() + "/solr/admin/info/system";
-    Map<String, Object> systemInfo =
-        SolrCLI.getJson(solrClient.getHttpClient(), systemInfoUrl, 2, true);
+    NamedList<Object> systemInfo =
+        solrClient.request(
+            new GenericSolrRequest(SolrRequest.METHOD.GET, "/solr" + SYSTEM_INFO_PATH));
     String solrHome = (String) systemInfo.get("solr_home");
 
     // put the public key into package store's trusted key store and request a sync.
     String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Paths.get(solrHome));
     PackageUtils.getJsonStringFromUrl(
-        solrClient.getHttpClient(),
-        solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");
+        solrClient, "/api/node/files" + path, new ModifiableSolrParams().add("sync", "true"));
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient)
@@ -199,7 +202,7 @@ public class RepositoryManager {
       for (int i = 0; i < release.artifacts.size(); i++) {
         PackageUtils.postFile(
             solrClient,
-            ByteBuffer.wrap(FileUtils.readFileToByteArray(downloaded.get(i).toFile())),
+            ByteBuffer.wrap(Files.readAllBytes(downloaded.get(i))),
             String.format(
                 Locale.ROOT,
                 "/package/%s/%s/%s",
@@ -228,15 +231,16 @@ public class RepositoryManager {
       add.manifest = "/package/" + packageName + "/" + version + "/manifest.json";
       add.manifestSHA512 = manifestSHA512;
 
-      V2Request req =
-          new V2Request.Builder(PackageUtils.PACKAGE_PATH)
-              .forceV2(true)
-              .withMethod(SolrRequest.METHOD.POST)
-              .withPayload(Collections.singletonMap("add", add))
-              .build();
-
+      GenericSolrRequest request =
+          new GenericSolrRequest(SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH) {
+            @Override
+            public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+              return new RequestWriter.StringPayloadContentWriter(
+                  "{add:" + add.jsonStr() + "}", "application/json");
+            }
+          };
       try {
-        V2Response resp = req.process(solrClient);
+        NamedList<Object> resp = solrClient.request(request);
         PackageUtils.printGreen("Response: " + resp.jsonStr());
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);

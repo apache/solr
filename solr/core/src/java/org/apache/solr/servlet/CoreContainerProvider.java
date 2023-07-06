@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -251,8 +250,7 @@ public class CoreContainerProvider implements ServletContextListener {
       }
     } catch (Throwable t) {
       // catch this so our filter still works
-      log.error("Could not start Solr. Check solr/home property and the logs");
-      SolrCore.log(t);
+      log.error("Could not start Solr. Check solr/home property and the logs", t);
       if (t instanceof Error) {
         throw (Error) t;
       }
@@ -416,7 +414,7 @@ public class CoreContainerProvider implements ServletContextListener {
   private void setupJvmMetrics(CoreContainer coresInit, MetricsConfig config) {
     metricManager = coresInit.getMetricManager();
     registryName = SolrMetricManager.getRegistryName(Group.jvm);
-    final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
+    final NodeConfig nodeConfig = coresInit.getConfig();
     try {
       metricManager.registerAll(
           registryName, new AltBufferPoolMetricSet(), ResolutionStrategy.IGNORE, "buffers");
@@ -456,8 +454,7 @@ public class CoreContainerProvider implements ServletContextListener {
                   System.getProperties()
                       .forEach(
                           (k, v) -> {
-                            //noinspection SuspiciousMethodCalls
-                            if (!hiddenSysProps.contains(k)) {
+                            if (!nodeConfig.isSysPropHidden(String.valueOf(k))) {
                               map.putNoEx(String.valueOf(k), v);
                             }
                           }));
@@ -469,18 +466,6 @@ public class CoreContainerProvider implements ServletContextListener {
           ResolutionStrategy.IGNORE,
           "properties",
           "system");
-      MetricsMap sysenv =
-          new MetricsMap(
-              map ->
-                  System.getenv()
-                      .forEach(
-                          (k, v) -> {
-                            if (!hiddenSysProps.contains(k)) {
-                              map.putNoEx(String.valueOf(k), v);
-                            }
-                          }));
-      metricManager.registerGauge(
-          null, registryName, sysenv, metricTag, ResolutionStrategy.IGNORE, "env", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }

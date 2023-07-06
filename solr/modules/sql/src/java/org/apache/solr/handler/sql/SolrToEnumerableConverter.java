@@ -16,11 +16,11 @@
  */
 package org.apache.solr.handler.sql;
 
-import com.google.common.collect.Lists;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
@@ -164,6 +164,6 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
    * ConstantExpression("y")}".
    */
   private static <T> List<Expression> constantList(List<T> values) {
-    return Lists.transform(values, Expressions::constant);
+    return values.stream().map(Expressions::constant).collect(Collectors.toUnmodifiableList());
   }
 }

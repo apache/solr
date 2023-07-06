@@ -18,6 +18,7 @@ package org.apache.solr.analytics;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
@@ -84,6 +85,86 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
       throw new RuntimeException(e);
     }
     cloudReq = new UpdateRequest();
+  }
+
+  public static final int INT = 7;
+  public static final int LONG = 2;
+  public static final int FLOAT = 6;
+  public static final int DOUBLE = 5;
+  public static final int DATE = 3;
+  public static final int STRING = 4;
+  public static final int NUM_LOOPS = 20;
+
+  protected static void populateDocsForAnalyticsTests() {
+    for (int j = 0; j < NUM_LOOPS; ++j) {
+      int i = j % INT;
+      long l = j % LONG;
+      float f = j % FLOAT;
+      double d = j % DOUBLE;
+      String dt = (1800 + j % DATE) + "-12-31T23:59:59Z";
+      String dtm = (1800 + j % DATE + 10) + "-12-31T23:59:59Z";
+      String s = "str" + (j % STRING);
+      List<String> fields = new ArrayList<>();
+      fields.add("id");
+      fields.add("1000" + j);
+
+      if (i != 0) {
+        fields.add("int_i");
+        fields.add("" + i);
+        fields.add("int_im");
+        fields.add("" + i);
+        fields.add("int_im");
+        fields.add("" + (i + 10));
+      }
+
+      if (l != 0l) {
+        fields.add("long_l");
+        fields.add("" + l);
+        fields.add("long_lm");
+        fields.add("" + l);
+        fields.add("long_lm");
+        fields.add("" + (l + 10));
+      }
+
+      if (f != 0.0f) {
+        fields.add("float_f");
+        fields.add("" + f);
+        fields.add("float_fm");
+        fields.add("" + f);
+        fields.add("float_fm");
+        fields.add("" + (f + 10));
+      }
+
+      if (d != 0.0d) {
+        fields.add("double_d");
+        fields.add("" + d);
+        fields.add("double_dm");
+        fields.add("" + d);
+        fields.add("double_dm");
+        fields.add("" + (d + 10));
+      }
+
+      if ((j % DATE) != 0) {
+        fields.add("date_dt");
+        fields.add(dt);
+        fields.add("date_dtm");
+        fields.add(dt);
+        fields.add("date_dtm");
+        fields.add(dtm);
+      }
+
+      if ((j % STRING) != 0) {
+        fields.add("string_s");
+        fields.add(s);
+        fields.add("string_sm");
+        fields.add(s);
+        fields.add("string_sm");
+        fields.add(s + "_second");
+      }
+
+      addDoc(fields);
+    }
+    commitDocs();
   }
 
   private void testResults(SolrParams params, String analyticsRequest, String... tests) {

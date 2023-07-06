@@ -27,8 +27,6 @@ dependencies {
 
   implementation 'org.slf4j:slf4j-api'
 
-  implementation 'com.google.guava:guava'
-
   // SQL Parser via Calcite
   implementation ('org.apache.calcite:calcite-core', {
     exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
@@ -49,8 +47,6 @@ dependencies {
   testImplementation 'junit:junit'
 
   testRuntimeOnly project(':solr:modules:analysis-extras')
-
-  testImplementation 'org.apache.commons:commons-lang3'
 }
 
 

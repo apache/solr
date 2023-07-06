@@ -31,8 +31,6 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import io.opentracing.Tracer;
 import io.opentracing.noop.NoopTracer;
 import io.opentracing.noop.NoopTracerFactory;
@@ -44,6 +42,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -60,7 +59,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
@@ -102,14 +100,14 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.ClusterAPI;
-import org.apache.solr.handler.CollectionBackupsAPI;
-import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -743,11 +741,26 @@ public class CoreContainer {
   // -------------------------------------------------------------------
 
   /** Load the cores defined for this CoreContainer */
+  @SuppressForbidden(
+      reason =
+          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void load() {
+    final ClassLoader originalContextClassLoader = Thread.currentThread().getContextClassLoader();
+    try {
+      // Set the thread's contextClassLoader for any plugins that are loaded via Modules or Packages
+      // and have dependencies that use the thread's contextClassLoader
+      Thread.currentThread().setContextClassLoader(loader.getClassLoader());
+      loadInternal();
+    } finally {
+      Thread.currentThread().setContextClassLoader(originalContextClassLoader);
+    }
+  }
+
+  /** Load the cores defined for this CoreContainer */
+  private void loadInternal() {
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
-
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
@@ -838,11 +851,6 @@ public class CoreContainer {
     collectionsHandler =
         createHandler(
             COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
-    final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
-    registerV2ApiIfEnabled(collectionsAPI);
-    registerV2ApiIfEnabled(collectionsAPI.collectionsCommands);
-    final CollectionBackupsAPI collectionBackupsAPI = new CollectionBackupsAPI(collectionsHandler);
-    registerV2ApiIfEnabled(collectionBackupsAPI);
     configSetsHandler =
         createHandler(
             CONFIGSETS_HANDLER_PATH, cfg.getConfigSetsHandlerClass(), ConfigSetsHandler.class);
@@ -1016,7 +1024,7 @@ public class CoreContainer {
                     try {
                       zkSys.registerInZk(core, true, false);
                     } catch (RuntimeException e) {
-                      SolrException.log(log, "Error registering SolrCore", e);
+                      log.error("Error registering SolrCore", e);
                     }
                     return core;
                   }));
@@ -1166,14 +1174,14 @@ public class CoreContainer {
     }
 
     if (authenticationPlugin != null
-        && StringUtils.isEmpty(System.getProperty("solr.jetty.https.port"))) {
+        && StrUtils.isNullOrEmpty(System.getProperty("solr.jetty.https.port"))) {
       log.warn(
           "Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
     }
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {
-    Map<String, Path> addedCores = Maps.newHashMap();
+    Map<String, Path> addedCores = new HashMap<>();
     for (CoreDescriptor cd : cds) {
       final String name = cd.getName();
       if (addedCores.containsKey(name))
@@ -1381,7 +1389,7 @@ public class CoreContainer {
       try {
         core.getSolrCoreState().cancelRecovery();
       } catch (Exception e) {
-        SolrException.log(log, "Error canceling recovery for core", e);
+        log.error("Error canceling recovery for core", e);
       }
     }
   }
@@ -1541,11 +1549,11 @@ public class CoreContainer {
             getZkController().unregister(coreName, cd);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            SolrException.log(log, null, e);
+            log.error("interrupted", e);
           } catch (KeeperException e) {
-            SolrException.log(log, null, e);
+            log.error("KeeperException unregistering core {}", coreName, e);
           } catch (Exception e) {
-            SolrException.log(log, null, e);
+            log.error("Exception unregistering core {}", coreName, e);
           }
         }
 
@@ -1673,8 +1681,18 @@ public class CoreContainer {
     } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
-        // this mostly happen when the core is deleted when this node is down
-        unload(dcore.getName(), true, true, true);
+        // this mostly happens when the core is deleted when this node is down
+        // but it can also happen if connecting to the wrong zookeeper
+        final boolean deleteUnknownCores =
+            Boolean.parseBoolean(System.getProperty("solr.deleteUnknownCores", "false"));
+        log.error(
+            "SolrCore {} in {} is not in cluster state.{}",
+            dcore.getName(),
+            dcore.getInstanceDir(),
+            (deleteUnknownCores
+                ? " It will be deleted. See SOLR-13396 for more information."
+                : ""));
+        unload(dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
         throw e;
       }
       solrCores.removeCoreDescriptor(dcore);
@@ -1803,7 +1821,7 @@ public class CoreContainer {
         df.release(dir);
         df.doneWithDirectory(dir);
       } catch (IOException e) {
-        SolrException.log(log, e);
+        log.error("Exception releasing {}", dir, e);
       }
     }
   }
@@ -1886,7 +1904,7 @@ public class CoreContainer {
    * </ul>
    */
   public Map<String, CoreLoadFailure> getCoreInitFailures() {
-    return ImmutableMap.copyOf(coreInitFailures);
+    return Map.copyOf(coreInitFailures);
   }
 
   // ---------------- Core name related methods ---------------
@@ -2192,6 +2210,9 @@ public class CoreContainer {
    * @see SolrCore#close()
    */
   public SolrCore getCore(String name, UUID id) {
+    if (name == null) {
+      return null;
+    }
 
     // Do this in two phases since we don't want to lock access to the cores over a load.
     SolrCore core = solrCores.getCoreFromAnyList(name, true, id);

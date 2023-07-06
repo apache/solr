@@ -42,6 +42,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   private static final String configName = MethodHandles.lookup().lookupClass() + "_configSet";
 
   private static boolean compoundMergePolicySort = false;
+  private String collectionName;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -60,7 +61,6 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   @After
   public void ensureClusterEmpty() throws Exception {
     cluster.deleteAllCollections();
-    cluster.getSolrClient().setDefaultCollection(null);
     System.clearProperty("mergePolicySort");
     System.clearProperty("solr.tests.id.docValues");
   }
@@ -68,7 +68,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   @Before
   public void createCollection() throws Exception {
 
-    final String collectionName = testName.getMethodName();
+    collectionName = testName.getMethodName();
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
 
     final Map<String, String> collectionProperties = new HashMap<>();
@@ -87,8 +87,6 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       assertEquals(RequestStatusState.COMPLETED, cmd.processAndWait(cloudSolrClient, 30));
     }
     cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
-
-    cloudSolrClient.setDefaultCollection(collectionName);
   }
 
   public void testSegmentTerminateEarly() throws Exception {
@@ -97,40 +95,40 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
 
     // add some documents, then optimize to get merged-sorted segments
-    tstes.addDocuments(cloudSolrClient, 10, 10, true);
+    tstes.addDocuments(collectionName, cloudSolrClient, 10, 10, true);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter intentionally absent
-    tstes.queryTimestampDescending(cloudSolrClient);
+    tstes.queryTimestampDescending(collectionName, cloudSolrClient);
 
     // add a few more documents, but don't optimize to have some not-merge-sorted segments
-    tstes.addDocuments(cloudSolrClient, 2, 10, false);
+    tstes.addDocuments(collectionName, cloudSolrClient, 2, 10, false);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
     tstes.queryTimestampDescendingSegmentTerminateEarlyYes(
-        cloudSolrClient, false /* appendKeyDescendingToSort */);
+        collectionName, cloudSolrClient, false /* appendKeyDescendingToSort */);
     tstes.queryTimestampDescendingSegmentTerminateEarlyNo(
-        cloudSolrClient, false /* appendKeyDescendingToSort */);
+        collectionName, cloudSolrClient, false /* appendKeyDescendingToSort */);
 
     // CommonParams.SEGMENT_TERMINATE_EARLY parameter present, but it won't be used
     tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
-        cloudSolrClient, false /* appendKeyDescendingToSort */);
+        collectionName, cloudSolrClient, false /* appendKeyDescendingToSort */);
     // uses a sort order that is _not_ compatible with the merge sort order
     tstes.queryTimestampAscendingSegmentTerminateEarlyYes(
-        cloudSolrClient, false /* appendKeyDescendingToSort */);
+        collectionName, cloudSolrClient, false /* appendKeyDescendingToSort */);
 
     if (compoundMergePolicySort) {
       // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
       tstes.queryTimestampDescendingSegmentTerminateEarlyYes(
-          cloudSolrClient, true /* appendKeyDescendingToSort */);
+          collectionName, cloudSolrClient, true /* appendKeyDescendingToSort */);
       tstes.queryTimestampDescendingSegmentTerminateEarlyNo(
-          cloudSolrClient, true /* appendKeyDescendingToSort */);
+          collectionName, cloudSolrClient, true /* appendKeyDescendingToSort */);
 
-      // CommonParams.SEGMENT_TERMINATE_EARLY parameter present but it won't be used
+      // CommonParams.SEGMENT_TERMINATE_EARLY parameter present, but it won't be used
       tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(
-          cloudSolrClient, true /* appendKeyDescendingToSort */);
+          collectionName, cloudSolrClient, true /* appendKeyDescendingToSort */);
       // uses a sort order that is _not_ compatible with the merge sort order
       tstes.queryTimestampAscendingSegmentTerminateEarlyYes(
-          cloudSolrClient, true /* appendKeyDescendingToSort */);
+          collectionName, cloudSolrClient, true /* appendKeyDescendingToSort */);
     }
   }
 
@@ -154,7 +152,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
                 params(
                     "includeDynamic", "true",
                     "showDefaults", "true"))
-            .process(cloudSolrClient)
+            .process(cloudSolrClient, collectionName)
             .getField();
     assertEquals(true, schemaOpts.get("docValues"));
     assertEquals(false, schemaOpts.get("indexed"));
@@ -163,9 +161,9 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     // add some documents
     final int numDocs = atLeast(1000);
     for (int id = 1; id <= numDocs; id++) {
-      cloudSolrClient.add(sdoc("id", id, updateField, random().nextInt(60)));
+      cloudSolrClient.add(collectionName, sdoc("id", id, updateField, random().nextInt(60)));
     }
-    cloudSolrClient.commit();
+    cloudSolrClient.commit(collectionName);
 
     // do some random iterations of replacing docs, atomic updates against segment sort field, and
     // commits (at this point we're just sanity checking no serious failures)
@@ -174,34 +172,40 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       for (int i = 0; i < iterSize; i++) {
         // replace
         cloudSolrClient.add(
+            collectionName,
             sdoc("id", TestUtil.nextInt(random(), 1, numDocs), updateField, random().nextInt(60)));
         // atomic update
         cloudSolrClient.add(
+            collectionName,
             sdoc(
                 "id",
                 TestUtil.nextInt(random(), 1, numDocs),
                 updateField,
                 map("set", random().nextInt(60))));
       }
-      cloudSolrClient.commit();
+      cloudSolrClient.commit(collectionName);
     }
 
     // pick a random doc, and verify that doing an atomic update causes the docid to change
-    // ie: not an inplace update
+    // ie: not an in-place update
     final int id = TestUtil.nextInt(random(), 1, numDocs);
     final int oldDocId =
-        (Integer) cloudSolrClient.getById("" + id, params("fl", "[docid]")).get("[docid]");
+        (Integer)
+            cloudSolrClient
+                .getById(collectionName, "" + id, params("fl", "[docid]"))
+                .get("[docid]");
 
-    cloudSolrClient.add(sdoc("id", id, updateField, map("inc", "666")));
-    cloudSolrClient.commit();
+    cloudSolrClient.add(collectionName, sdoc("id", id, updateField, map("inc", "666")));
+    cloudSolrClient.commit(collectionName);
 
-    // loop incase we're waiting for a newSearcher to be opened
+    // loop in case we're waiting for a newSearcher to be opened
     int newDocId = -1;
     int attempts = 10;
     while ((newDocId < 0) && (0 < attempts--)) {
       SolrDocumentList docs =
           cloudSolrClient
               .query(
+                  collectionName,
                   params(
                       "q", "id:" + id,
                       "fl", "[docid]",

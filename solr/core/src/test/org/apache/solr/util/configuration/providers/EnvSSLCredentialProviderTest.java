@@ -20,7 +20,6 @@ package org.apache.solr.util.configuration.providers;
 import static org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider.DEFAULT_CREDENTIAL_KEY_MAP;
 import static org.hamcrest.core.Is.is;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.configuration.SSLCredentialProvider;
@@ -34,7 +33,7 @@ public class EnvSSLCredentialProviderTest extends SolrTestCase {
   public void testGetCredentials() {
     int cnt = 0;
     Map<String, String> envvars =
-        ImmutableMap.of(
+        Map.of(
             EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, "pw" + ++cnt,
             EnvSSLCredentialProvider.EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD, "pw" + ++cnt,
             EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD, "pw" + ++cnt,

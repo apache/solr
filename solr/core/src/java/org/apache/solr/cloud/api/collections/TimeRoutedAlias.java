@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.ASYNC_PREEMPTIVE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.NONE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.SYNCHRONOUS;
@@ -25,7 +24,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonParams.TZ;
 
-import com.google.common.base.MoreObjects;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.time.Instant;
@@ -56,6 +54,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.RequiredSolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.RoutedAliasUpdateProcessor;
@@ -249,13 +248,13 @@ public class TimeRoutedAlias extends RoutedAlias {
     return aliasName + TYPE.getSeparatorPrefix() + nextCollName;
   }
 
-  private Instant parseStringAsInstant(String str, TimeZone zone) {
+  public static Instant parseStringAsInstant(String str, TimeZone zone) {
     Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
     checkMillis(start);
     return start;
   }
 
-  private void checkMillis(Instant date) {
+  private static void checkMillis(Instant date) {
     if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
       throw new SolrException(
           BAD_REQUEST,
@@ -324,15 +323,22 @@ public class TimeRoutedAlias extends RoutedAlias {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("aliasName", aliasName)
-        .add("routeField", routeField)
-        .add("intervalMath", intervalMath)
-        .add("maxFutureMs", maxFutureMs)
-        .add("preemptiveCreateMath", preemptiveCreateMath)
-        .add("autoDeleteAgeMath", autoDeleteAgeMath)
-        .add("timeZone", timeZone)
-        .toString();
+    return "TimeRoutedAlias=("
+        + "aliasName="
+        + aliasName
+        + ",routeField="
+        + routeField
+        + ",intervalMath="
+        + intervalMath
+        + ",maxFutureMs="
+        + maxFutureMs
+        + ",preemptiveCreateMath="
+        + preemptiveCreateMath
+        + ",autoDeleteAgeMath="
+        + autoDeleteAgeMath
+        + ",timeZone="
+        + timeZone
+        + ')';
   }
 
   /**
@@ -547,7 +553,7 @@ public class TimeRoutedAlias extends RoutedAlias {
           }
 
           if (candidate.getCreationType() == NONE
-              && isNotBlank(getPreemptiveCreateWindow())
+              && StrUtils.isNotBlank(getPreemptiveCreateWindow())
               && !this.preemptiveCreateOnceAlready) {
             // are we getting close enough to the (as yet uncreated) next collection to warrant
             // preemptive creation?

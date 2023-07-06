@@ -22,16 +22,15 @@ import static org.apache.solr.util.configuration.SSLCredentialProvider.Credentia
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD;
 import static org.apache.solr.util.configuration.SSLCredentialProvider.CredentialType.SSL_TRUST_STORE_PASSWORD;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import java.util.EnumMap;
+import java.util.Map;
 import org.apache.solr.util.configuration.SSLCredentialProvider;
 
 /** Abstract provider with default implementation */
 public abstract class AbstractSSLCredentialProvider implements SSLCredentialProvider {
   public static final EnumMap<CredentialType, String> DEFAULT_CREDENTIAL_KEY_MAP =
-      Maps.newEnumMap(
-          ImmutableMap.of(
+      new EnumMap<>(
+          Map.of(
               SSL_KEY_STORE_PASSWORD, "solr.jetty.keystore.password",
               SSL_TRUST_STORE_PASSWORD, "solr.jetty.truststore.password",
               SSL_CLIENT_KEY_STORE_PASSWORD, "javax.net.ssl.keyStorePassword",

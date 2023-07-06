@@ -208,7 +208,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
           success = result.isSuccess();
         } catch (Exception e) {
-          SolrException.log(log, "Exception while trying to sync", e);
+          log.error("Exception while trying to sync", e);
           result = PeerSync.PeerSyncResult.failure();
         }
 
@@ -312,7 +312,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               ErrorCode.SERVER_ERROR,
               "ZK session expired - cancelling election for " + collection + " " + shardId);
         } catch (Exception e) {
-          SolrException.log(log, "There was a problem trying to register as the leader", e);
+          log.error("There was a problem trying to register as the leader", e);
 
           try (SolrCore core = cc.getCore(coreName)) {
 
@@ -455,7 +455,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                 ErrorCode.SERVER_ERROR,
                 "ZK session expired - cancelling election for " + collection + " " + shardId);
           }
-          SolrException.log(log, "Error checking for the number of election participants", e);
+          log.error("Error checking for the number of election participants", e);
         }
 
         // on startup and after connection timeout, wait for all known shards
@@ -514,7 +514,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               ErrorCode.SERVER_ERROR,
               "ZK session expired - cancelling election for " + collection + " " + shardId);
         }
-        SolrException.log(log, "Error checking for the number of election participants", e);
+        log.error("Error checking for the number of election participants", e);
       }
 
       if (found >= slices.getReplicasMap().size()) {

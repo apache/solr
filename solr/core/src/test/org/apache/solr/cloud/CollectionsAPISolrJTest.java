@@ -23,7 +23,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.NUM_SHARDS_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -148,12 +147,12 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       Object clusterProperty =
           cluster
               .getZkStateReader()
-              .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
+              .getClusterProperty(List.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
       assertEquals("2", String.valueOf(clusterProperty));
       clusterProperty =
           cluster
               .getZkStateReader()
-              .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
+              .getClusterProperty(List.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
       assertEquals("2", String.valueOf(clusterProperty));
       CollectionAdminResponse response =
           CollectionAdminRequest.createCollection(COLL_NAME, "conf", null, null, null, null)
@@ -193,14 +192,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         clusterProperty =
             cluster
                 .getZkStateReader()
-                .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
+                .getClusterProperty(List.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
         if (clusterProperty == null) break;
       }
       assertNull(clusterProperty);
       clusterProperty =
           cluster
               .getZkStateReader()
-              .getClusterProperty(ImmutableList.of(COLLECTION_DEF, NRT_REPLICAS), null);
+              .getClusterProperty(List.of(COLLECTION_DEF, NRT_REPLICAS), null);
       assertNull(clusterProperty);
 
       // delete all defaults the old way
@@ -216,14 +215,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         clusterProperty =
             cluster
                 .getZkStateReader()
-                .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
+                .getClusterProperty(List.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
         if (clusterProperty == null) break;
       }
       assertNull(clusterProperty);
       clusterProperty =
           cluster
               .getZkStateReader()
-              .getClusterProperty(ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP), null);
+              .getClusterProperty(List.of(COLLECTION_DEF, NUM_SHARDS_PROP), null);
       assertNull(clusterProperty);
     } finally {
       // clean up in case there was an exception during the test
@@ -256,12 +255,12 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       Object clusterProperty =
           cluster
               .getZkStateReader()
-              .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
+              .getClusterProperty(List.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
       assertEquals("2", String.valueOf(clusterProperty));
       clusterProperty =
           cluster
               .getZkStateReader()
-              .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
+              .getClusterProperty(List.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
       assertEquals("2", String.valueOf(clusterProperty));
       CollectionAdminResponse response =
           CollectionAdminRequest.createCollection(COLL_NAME, "conf", null, null, null, null)
@@ -302,7 +301,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         clusterProperty =
             cluster
                 .getZkStateReader()
-                .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
+                .getClusterProperty(List.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
         if (clusterProperty == null) break;
       }
       assertNull(clusterProperty);
@@ -319,14 +318,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         clusterProperty =
             cluster
                 .getZkStateReader()
-                .getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
+                .getClusterProperty(List.of(DEFAULTS, COLLECTION, NUM_SHARDS_PROP), null);
         if (clusterProperty == null) break;
       }
       assertNull(clusterProperty);
       clusterProperty =
           cluster
               .getZkStateReader()
-              .getClusterProperty(ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP), null);
+              .getClusterProperty(List.of(COLLECTION_DEF, NUM_SHARDS_PROP), null);
       assertNull(clusterProperty);
     } finally {
       V2Response rsp =
@@ -824,11 +823,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Test
   public void testReadOnlyCollection() throws Exception {
     String collectionName = getSaferTestName();
-    CloudSolrClient solrClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).process(solrClient);
-
-    solrClient.setDefaultCollection(collectionName);
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
+        .process(cluster.getSolrClient());
+    CloudSolrClient solrClient = cluster.getSolrClient(collectionName);
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
 

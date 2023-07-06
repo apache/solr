@@ -17,7 +17,6 @@
 package org.apache.solr.core;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FilterInputStream;
@@ -225,7 +224,7 @@ public class SolrResourceLoader
           "Added {} libs to classloader, from paths: {}",
           urls.size(),
           urls.stream()
-              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
+              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf('/')))
               .sorted()
               .distinct()
               .collect(Collectors.toList()));
@@ -841,7 +840,7 @@ public class SolrResourceLoader
 
   /** If these components are trying to load classes, use schema classloader */
   private static final Set<Class<?>> schemaResourceLoaderComponents =
-      ImmutableSet.of(
+      Set.of(
           CharFilterFactory.class,
           TokenFilterFactory.class,
           TokenizerFactory.class,

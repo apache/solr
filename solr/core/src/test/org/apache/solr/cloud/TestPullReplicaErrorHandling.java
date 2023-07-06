@@ -110,7 +110,6 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     super.setUp();
     collectionName = suggestedCollectionName();
     expectThrows(SolrException.class, () -> getCollectionState(collectionName));
-    cluster.getSolrClient().setDefaultCollection(collectionName);
     cluster.waitForAllNodes(30);
   }
 
@@ -201,7 +200,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
           getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
         assertNumDocs(10, pullReplicaClient);
       }
-      assertNumDocs(10, cluster.getSolrClient());
+      assertNumDocs(10, cluster.getSolrClient(collectionName));
     } finally {
       log.info("Opening leader node");
       proxy.reopen();
@@ -271,6 +270,8 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     long numFound = -1;
     while (!t.hasTimedOut()) {
       Thread.sleep(200);
+      // if client is an HttpSolrClient, then the collection is in the path
+      // otherwise with a CloudSolrClient then it's the defaultCollection
       numFound = client.query(new SolrQuery("*:*")).getResults().getNumFound();
       if (numFound == numDocs) {
         return;

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -34,7 +33,6 @@ import javax.security.auth.Subject;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -140,7 +138,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
             try {
               String credentials =
                   new String(Base64.getDecoder().decode(st.nextToken()), StandardCharsets.UTF_8);
-              int p = credentials.indexOf(":");
+              int p = credentials.indexOf(':');
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();
                 String pwd = credentials.substring(p + 1).trim();
@@ -274,7 +272,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   public static final String PROPERTY_REALM = "realm";
   public static final String FORWARD_CREDENTIALS = "forwardCredentials";
   private static final Set<String> PROPS =
-      ImmutableSet.of(PROPERTY_BLOCK_UNKNOWN, PROPERTY_REALM, FORWARD_CREDENTIALS);
+      Set.of(PROPERTY_BLOCK_UNKNOWN, PROPERTY_REALM, FORWARD_CREDENTIALS);
 
   /**
    * Check if the request is an AJAX request, i.e. from the Admin UI or other SPA front
@@ -325,10 +323,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
 
     @Override
     public String toString() {
-      return new ToStringBuilder(this)
-          .append("username", username)
-          .append("pwd", "*****")
-          .toString();
+      return "BasicAuthPlugin [username=" + username + ",pwd=*****]";
     }
   }
 }

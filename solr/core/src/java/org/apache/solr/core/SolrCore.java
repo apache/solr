@@ -20,8 +20,6 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.MapMaker;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -53,7 +51,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -64,6 +65,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.stream.StreamSupport;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
@@ -122,9 +124,10 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
+import org.apache.solr.response.CborResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
-import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.PHPResponseWriter;
 import org.apache.solr.response.PHPSerializedResponseWriter;
 import org.apache.solr.response.PythonResponseWriter;
@@ -275,7 +278,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private final Map<IndexReader.CacheKey, IndexFingerprint> perSegmentFingerprintCache =
-      new MapMaker().weakKeys().makeMap();
+      new WeakHashMap<>();
 
   public long getStartNanoTime() {
     return startNanoTime;
@@ -426,16 +429,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
       lastNewIndexDir = result;
       return result;
     } catch (IOException e) {
-      SolrException.log(log, "", e);
+      String errorMessage = "Error in getNewIndexDir, exception: ";
+      log.error(errorMessage, e);
       // See SOLR-11687. It is inadvisable to assume we can do the right thing for any but a small
       // number of exceptions that ware caught and swallowed in getIndexProperty.
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error in getNewIndexDir, exception: ", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, errorMessage, e);
     } finally {
       if (dir != null) {
         try {
           getDirectoryFactory().release(dir);
         } catch (IOException e) {
-          SolrException.log(log, "", e);
+          log.error("Exception releasing {}", dir, e);
         }
       }
     }
@@ -511,7 +515,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         }
       }
     } catch (IOException e) {
-      SolrException.log(log, "IO error while trying to get the size of the Directory", e);
+      log.error("IO error while trying to get the size of the Directory", e);
     }
     return size;
   }
@@ -1497,7 +1501,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         try {
           directoryFactory.release(dir);
         } catch (IOException e) {
-          SolrException.log(log, "", e);
+          log.error("Exception releasing {}", dir, e);
         }
       }
     }
@@ -1774,7 +1778,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     try {
       coreMetricManager.close();
     } catch (Throwable e) {
-      SolrException.log(log, e);
+      log.error("Exception closing coreMetricManager", e);
       if (e instanceof Error) {
         throw (Error) e;
       }
@@ -1785,7 +1789,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         try {
           hook.preClose(this);
         } catch (Throwable e) {
-          SolrException.log(log, e);
+          log.error("Exception during preclose of hook {}", hook, e);
           if (e instanceof Error) {
             throw (Error) e;
           }
@@ -1806,7 +1810,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         updateHandler.close();
       }
     } catch (Throwable e) {
-      SolrException.log(log, e);
+      log.error("Exception closing updateHandler", e);
       if (e instanceof Error) {
         throw (Error) e;
       }
@@ -1822,7 +1826,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         }
       }
     } catch (Throwable e) {
-      SolrException.log(log, e);
+      log.error("Exception calling decrefSolrCoreState", e);
       if (e instanceof Error) {
         throw (Error) e;
       }
@@ -1831,7 +1835,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(searcherExecutor);
     } catch (Throwable e) {
-      SolrException.log(log, e);
+      log.error("Exception shutting down searcherExecutor", e);
       if (e instanceof Error) {
         throw (Error) e;
       }
@@ -1848,7 +1852,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // tries to use it, and the exception handling code should close it.
       closeSearcher();
     } catch (Throwable e) {
-      SolrException.log(log, e);
+      log.error("Exception closingSearcher", e);
       if (e instanceof Error) {
         throw (Error) e;
       }
@@ -1858,14 +1862,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
       try {
         cleanupOldIndexDirectories(false);
       } catch (Exception e) {
-        SolrException.log(log, e);
+        log.error("Exception cleanupOldIndexDirectories", e);
       }
     }
 
     try {
       infoRegistry.clear();
     } catch (Throwable e) {
-      SolrException.log(log, e);
+      log.error("Exception clearing infoRegistry", e);
       if (e instanceof Error) {
         throw (Error) e;
       }
@@ -1876,18 +1880,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
     try {
       this.directoryFactory.release(snapshotsDir);
     } catch (Throwable e) {
-      SolrException.log(log, e);
+      log.error("Exception releasing snapshotsDir {}", snapshotsDir, e);
       if (e instanceof Error) {
         throw (Error) e;
       }
     }
 
     if (coreStateClosed) {
-
       try {
         directoryFactory.close();
       } catch (Throwable e) {
-        SolrException.log(log, e);
+        log.error("Exception closing directoryFactory", e);
         if (e instanceof Error) {
           throw (Error) e;
         }
@@ -1899,7 +1902,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         try {
           hook.postClose(this);
         } catch (Throwable e) {
-          SolrException.log(log, e);
+          log.error("Exception during postClose of hook {}", hook, e);
           if (e instanceof Error) {
             throw (Error) e;
           }
@@ -2645,7 +2648,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
                     try {
                       newSearcher.warm(currSearcher);
                     } catch (Throwable e) {
-                      SolrException.log(log, e);
+                      log.error("Exception warming new searcher", e);
                       if (e instanceof Error) {
                         throw (Error) e;
                       }
@@ -2660,14 +2663,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
           future =
               searcherExecutor.submit(
                   () -> {
-                    try {
-                      for (SolrEventListener listener : firstSearcherListeners) {
+                    for (SolrEventListener listener : firstSearcherListeners) {
+                      try {
                         listener.newSearcher(newSearcher, null);
-                      }
-                    } catch (Throwable e) {
-                      SolrException.log(log, null, e);
-                      if (e instanceof Error) {
-                        throw (Error) e;
+                      } catch (Throwable e) {
+                        log.error("Exception firing listener {} for new searcher", listener, e);
+                        if (e instanceof Error) {
+                          throw e;
+                        }
                       }
                     }
                     return null;
@@ -2678,14 +2681,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
           future =
               searcherExecutor.submit(
                   () -> {
-                    try {
-                      for (SolrEventListener listener : newSearcherListeners) {
+                    for (SolrEventListener listener : newSearcherListeners) {
+                      try {
                         listener.newSearcher(newSearcher, currSearcher);
-                      }
-                    } catch (Throwable e) {
-                      SolrException.log(log, null, e);
-                      if (e instanceof Error) {
-                        throw (Error) e;
+                      } catch (Throwable e) {
+                        log.error("Exception firing listener {} for new searcher", listener, e);
+                        if (e instanceof Error) {
+                          throw (Error) e;
+                        }
                       }
                     }
                     return null;
@@ -2705,7 +2708,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
                     // do a notify, even if it fails.
                     registerSearcher(newSearchHolder);
                   } catch (Throwable e) {
-                    SolrException.log(log, e);
+                    log.error("Exception registering new searcher", e);
                     if (e instanceof Error) {
                       throw (Error) e;
                     }
@@ -2790,7 +2793,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
             } catch (Exception e) {
               // do not allow decref() operations to fail since they are typically called in finally
               // blocks and throwing another exception would be very unexpected.
-              SolrException.log(log, "Error closing searcher:" + this, e);
+              log.error("Error closing searcher: {}", this, e);
             }
           }
         };
@@ -2850,7 +2853,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       } catch (Exception e) {
         // an exception in register() shouldn't be fatal.
-        log(e);
+        log.error("Exception in register()", e);
       } finally {
         // wake up anyone waiting for a searcher
         // even in the face of errors.
@@ -2957,7 +2960,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
             @Override
             public Iterator<String> getParameterNamesIterator() {
-              return Iterators.filter(params.getParameterNamesIterator(), lpSet::contains);
+              return StreamSupport.stream(
+                      Spliterators.spliteratorUnknownSize(
+                          params.getParameterNamesIterator(), Spliterator.ORDERED),
+                      false)
+                  .filter(lpSet::contains)
+                  .iterator();
             }
 
             @Override
@@ -3026,10 +3034,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  public static final void log(Throwable e) {
-    SolrException.log(log, null, e);
-  }
-
   public PluginBag<QueryResponseWriter> getResponseWriters() {
     return responseWriters;
   }
@@ -3041,7 +3045,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   static {
     HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
     m.put("xml", new XMLResponseWriter());
-    m.put(CommonParams.JSON, new JSONResponseWriter());
+    m.put(CommonParams.JSON, new JacksonJsonWriter());
     m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
@@ -3051,6 +3055,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
     m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
+    m.put("cbor", new CborResponseWriter());
     m.put("csv", new CSVResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
     m.put("smile", new SmileResponseWriter());
@@ -3307,16 +3312,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
       try {
         directoryFactory.remove(getIndexDir());
       } catch (Exception e) {
-        SolrException.log(
-            log, "Failed to flag index dir for removal for core:" + name + " dir:" + getIndexDir());
+        log.error(
+            "Failed to flag index dir for removal for core: {} dir: {}", name, getIndexDir(), e);
       }
     }
     if (deleteDataDir) {
       try {
         directoryFactory.remove(getDataDir(), true);
       } catch (Exception e) {
-        SolrException.log(
-            log, "Failed to flag data dir for removal for core:" + name + " dir:" + getDataDir());
+        log.error(
+            "Failed to flag data dir for removal for core: {} dir: {}", name, getDataDir(), e);
       }
     }
     if (deleteInstanceDir) {
@@ -3328,12 +3333,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
                 try {
                   PathUtils.deleteDirectory(desc.getInstanceDir());
                 } catch (IOException e) {
-                  SolrException.log(
-                      log,
-                      "Failed to delete instance dir for core:"
-                          + core.getName()
-                          + " dir:"
-                          + desc.getInstanceDir());
+                  log.error(
+                      "Failed to delete instance dir for core: {} dir: {}",
+                      core.getName(),
+                      desc.getInstanceDir(),
+                      e);
                 }
               }
             }

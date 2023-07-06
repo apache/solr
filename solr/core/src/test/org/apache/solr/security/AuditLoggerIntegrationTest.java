@@ -34,12 +34,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,9 +50,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -258,8 +257,10 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     expectThrows(
         FileNotFoundException.class,
         () -> {
-          IOUtils.toString(
-              new URL(baseUrl.replace("/solr", "") + "/api/node/foo"), StandardCharsets.UTF_8);
+          try (InputStream is =
+              new URL(baseUrl.replace("/solr", "") + "/api/node/foo").openStream()) {
+            new String(is.readAllBytes(), StandardCharsets.UTF_8);
+          }
         });
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(1);
     assertAuditEvent(events.get(0), ERROR, "/api/node/foo", ADMIN, null, 404);
@@ -509,8 +510,8 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       boolean async, String semaphoreName, boolean enableAuth, String... muteRulesJson)
       throws Exception {
     String securityJson =
-        FileUtils.readFileToString(
-            TEST_PATH().resolve("security").resolve("auditlog_plugin_security.json").toFile(),
+        Files.readString(
+            TEST_PATH().resolve("security").resolve("auditlog_plugin_security.json"),
             StandardCharsets.UTF_8);
     securityJson = securityJson.replace("_PORT_", Integer.toString(testHarness.get().callbackPort));
     securityJson = securityJson.replace("_ASYNC_", Boolean.toString(async));
@@ -531,8 +532,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       muteRules.add("\"path:/admin/info/key\"");
     }
 
-    securityJson =
-        securityJson.replace("_MUTERULES_", "[" + StringUtils.join(muteRules, ",") + "]");
+    securityJson = securityJson.replace("_MUTERULES_", "[" + String.join(",", muteRules) + "]");
 
     MiniSolrCloudCluster myCluster =
         new MiniSolrCloudCluster.Builder(NUM_SERVERS, createTempDir())

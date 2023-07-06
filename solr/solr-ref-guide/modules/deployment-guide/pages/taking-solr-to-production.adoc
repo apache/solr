@@ -248,12 +248,10 @@ For more information about garbage collection settings refer to following articl
 
 You can also refer to xref:jvm-settings.adoc[] for tuning your memory and garbage collection settings.
 
-==== Out-of-Memory Shutdown Hook
+==== Out-of-Memory Handling
 
-The `bin/solr` script registers the `bin/oom_solr.sh` script to be called by the JVM if an OutOfMemoryError occurs.
-The `oom_solr.sh` script will issue a `kill -9` to the Solr process that experiences the `OutOfMemoryError`.
-This behavior is recommended when running in SolrCloud mode so that ZooKeeper is immediately notified that a node has experienced a non-recoverable error.
-Take a moment to inspect the contents of the `/opt/solr/bin/oom_solr.sh` script so that you are familiar with the actions the script will perform if it is invoked by the JVM.
+The `bin/solr` script uses the `-XX:+CrashOnOutOfMemoryError` JVM option to crash Solr on `OutOfMemoryError` exceptions.
+This behavior is recommended. In SolrCloud mode ZooKeeper will be immediately notified that a node has experienced a non-recoverable error.
 
 === Going to Production with SolrCloud
 
@@ -291,6 +289,19 @@ bin/solr zk mkroot /solr -z <ZK_node>:<ZK_PORT>
 If you also want to bootstrap ZooKeeper with existing `solr_home`, you can instead use the `zkcli.sh` / `zkcli.bat` `bootstrap` command, which will also create the chroot path if it does not exist.
 See xref:zookeeper-utilities.adoc[] for more info.
 ====
+
+==== Unknown core deletion
+
+When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper. If no corresponding entry exists the core will be skipped and a warning will be logged.
+This protects against misconfiguration (e.g. connecting to the wrong ZooKeeper instance or chroot) where the index would still be valid once the configuration is corrected. However you may
+need to manually delete unwanted cores that have not been removed successfully as part of intentional deletion of a collection.
+
+If you would prefer to automatically remove the orphaned files you can edit your include file to set `SOLR_DELETE_UNKNOWN_CORES` to `true`.
+
+[source,bash]
+----
+SOLR_DELETE_UNKNOWN_CORES=true
+----
 
 === Solr Hostname
 

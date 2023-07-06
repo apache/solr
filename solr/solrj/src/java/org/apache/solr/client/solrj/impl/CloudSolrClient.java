@@ -75,6 +75,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
@@ -90,7 +91,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private volatile String defaultCollection;
+  protected volatile String defaultCollection;
   // no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES =
       Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
@@ -341,7 +342,12 @@ public abstract class CloudSolrClient extends SolrClient {
     getLbClient().setRequestWriter(requestWriter);
   }
 
-  /** Sets the default collection for request */
+  /**
+   * Sets the default collection for request.
+   *
+   * @deprecated use {@link CloudHttp2SolrClient.Builder#withDefaultCollection(String)} instead
+   */
+  @Deprecated
   public void setDefaultCollection(String collection) {
     this.defaultCollection = collection;
   }
@@ -474,7 +480,8 @@ public abstract class CloudSolrClient extends SolrClient {
     long start = System.nanoTime();
 
     if (parallelUpdates) {
-      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<>(routes.size());
+      final Map<String, Future<NamedList<?>>> responseFutures =
+          CollectionUtil.newHashMap(routes.size());
       for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
         final String url = entry.getKey();
         final LBSolrClient.Req lbRequest = entry.getValue();
@@ -813,6 +820,7 @@ public abstract class CloudSolrClient extends SolrClient {
     } else if (collection == null) {
       collection = defaultCollection;
     }
+
     List<String> inputCollections =
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
     return requestWithRetryOnStaleState(request, 0, inputCollections);
@@ -1143,8 +1151,9 @@ public abstract class CloudSolrClient extends SolrClient {
           String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
               || replica.getState()
-                  != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
-          continue;
+                  != Replica.State.ACTIVE) { // Must be an ACTIVE replica to continue
+            continue;
+          }
           if (sendToLeaders && replica.equals(leader)) {
             sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
           } else {
@@ -1167,8 +1176,14 @@ public abstract class CloudSolrClient extends SolrClient {
       sortedReplicas.forEach(
           replica -> {
             if (seenNodes.add(replica.getNodeName())) {
-              theUrlList.add(
-                  ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              if (inputCollections.size() == 1 && collectionNames.size() == 1) {
+                // If we have a single collection name (and not a alias to multiple collection),
+                // send the query directly to a replica of this collection.
+                theUrlList.add(replica.getCoreUrl());
+              } else {
+                theUrlList.add(
+                    ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              }
             }
           });
 

@@ -1445,7 +1445,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   List<String> getAlternatives(String field) {
-    int idx = field.lastIndexOf("_");
+    int idx = field.lastIndexOf('_');
     if (idx <= 0 || idx >= field.length()) return Collections.singletonList(field);
     String suffix = field.substring(idx);
     String[] alternativeSuffixes = suffixMap.get(suffix);

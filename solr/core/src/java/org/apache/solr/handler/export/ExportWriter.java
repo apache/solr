@@ -55,7 +55,6 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.PushWriter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
@@ -66,6 +65,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BoolField;
@@ -180,7 +180,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                       singletonList(singletonMap("EXCEPTION", e.getMessage()))));
         });
     if (logException) {
-      SolrException.log(log, e);
+      log.error("Exception", e);
     }
   }
 
@@ -191,7 +191,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   private void _write(OutputStream os) throws IOException {
     QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
-    if (rw instanceof BinaryResponseWriter) {
+    if (rw instanceof JacksonJsonWriter) {
+      writer = ((JacksonJsonWriter) rw).getWriter(os, req, res);
+    } else if (rw instanceof BinaryResponseWriter) {
       // todo add support for other writers after testing
       writer = new JavaBinCodec(os, null);
     } else {

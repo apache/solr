@@ -23,7 +23,6 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEQ
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
-import com.google.common.collect.ImmutableSet;
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 import java.io.IOException;
@@ -81,8 +80,7 @@ public class V2HttpCall extends HttpSolrCall {
   private boolean servedByJaxRs =
       false; // A flag indicating whether the request was served by JAX-RS or the native framework
   HashMap<String, String> parts = new HashMap<>();
-  static final Set<String> knownPrefixes =
-      ImmutableSet.of("cluster", "node", "collections", "cores", "c");
+  static final Set<String> knownPrefixes = Set.of("cluster", "node", "collections", "cores", "c");
 
   public V2HttpCall(
       SolrDispatchFilter solrDispatchFilter,
@@ -140,7 +138,7 @@ public class V2HttpCall extends HttpSolrCall {
         assert core == null;
       }
 
-      if ("c".equals(prefix) || "collections".equals(prefix)) {
+      if (pathSegments.size() > 1 && ("c".equals(prefix) || "collections".equals(prefix))) {
         origCorename = pathSegments.get(1);
 
         DocCollection collection =
@@ -151,6 +149,11 @@ public class V2HttpCall extends HttpSolrCall {
                 SolrException.ErrorCode.BAD_REQUEST, "no such collection or alias");
           }
         } else {
+          // Certain HTTP methods are only used for admin APIs, check for those and short-circuit
+          if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))) {
+            initAdminRequest(path);
+            return;
+          }
           boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
           core = getCoreByCollection(collection.getName(), isPreferLeader);
           if (core == null) {

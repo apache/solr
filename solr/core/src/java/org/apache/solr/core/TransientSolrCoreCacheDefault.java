@@ -22,9 +22,9 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
     }
     transientCores = transientCoresCacheBuilder.build();
 
-    transientDescriptors = new LinkedHashMap<>(initialCapacity);
+    transientDescriptors = CollectionUtil.newLinkedHashMap(initialCapacity);
   }
 
   private void onEvict(SolrCore core) {

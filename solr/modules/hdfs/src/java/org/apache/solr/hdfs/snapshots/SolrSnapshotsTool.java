@@ -17,7 +17,6 @@
 
 package org.apache.solr.hdfs.snapshots;
 
-import com.google.common.base.Preconditions;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -45,8 +44,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.fs.Path;
+import org.apache.solr.cli.CLIO;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -58,7 +57,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.util.CLIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,8 +101,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
 
   public SolrSnapshotsTool(String solrZkEnsemble) {
     solrClient =
-        new CloudLegacySolrClient.Builder(
-                Collections.singletonList(solrZkEnsemble), Optional.empty())
+        new CloudSolrClient.Builder(Collections.singletonList(solrZkEnsemble), Optional.empty())
             .build();
   }
 
@@ -121,9 +118,10 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     CollectionAdminResponse resp;
     try {
       resp = createSnap.process(solrClient);
-      Preconditions.checkState(
-          resp.getStatus() == 0,
-          "The CREATESNAPSHOT request failed. The status code is " + resp.getStatus());
+      if (resp.getStatus() != 0) {
+        throw new IllegalStateException(
+            "The CREATESNAPSHOT request failed. The status code is " + resp.getStatus());
+      }
       CLIO.out(
           "Successfully created snapshot with name "
               + snapshotName
@@ -152,9 +150,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     CollectionAdminResponse resp;
     try {
       resp = deleteSnap.process(solrClient);
-      Preconditions.checkState(
-          resp.getStatus() == 0,
-          "The DELETESNAPSHOT request failed. The status code is " + resp.getStatus());
+      checkResponse(resp, "DELETESNAPSHOT");
       CLIO.out(
           "Successfully deleted snapshot with name "
               + snapshotName
@@ -177,15 +173,20 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     }
   }
 
+  private static void checkResponse(CollectionAdminResponse resp, String requestType) {
+    if (resp.getStatus() != 0) {
+      throw new IllegalStateException(
+          "The " + requestType + " request failed. The status code is " + resp.getStatus());
+    }
+  }
+
   public void listSnapshots(String collectionName) {
     CollectionAdminRequest.ListSnapshots listSnaps =
         new CollectionAdminRequest.ListSnapshots(collectionName);
     CollectionAdminResponse resp;
     try {
       resp = listSnaps.process(solrClient);
-      Preconditions.checkState(
-          resp.getStatus() == 0,
-          "The LISTSNAPSHOTS request failed. The status code is " + resp.getStatus());
+      checkResponse(resp, "LISTSNAPSHOTS");
 
       NamedList<?> apiResult =
           (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);
@@ -327,8 +328,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
     backup.setIndexBackupStrategy(CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY);
     backup.setLocation(backupLoc);
     CollectionAdminResponse resp = backup.process(solrClient);
-    Preconditions.checkState(
-        resp.getStatus() == 0, "The request failed. The status code is " + resp.getStatus());
+    checkResponse(resp, "BACKUP");
   }
 
   /**
@@ -569,7 +569,7 @@ public class SolrSnapshotsTool implements Closeable, CLIO {
         new CollectionAdminRequest.ListSnapshots(collectionName);
     CollectionAdminResponse resp = listSnapshots.process(solrClient);
 
-    Preconditions.checkState(resp.getStatus() == 0);
+    checkResponse(resp, "LISTSNAPSHOTS");
 
     NamedList<?> apiResult =
         (NamedList<?>) resp.getResponse().get(SolrSnapshotManager.SNAPSHOTS_INFO);

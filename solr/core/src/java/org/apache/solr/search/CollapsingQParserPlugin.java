@@ -39,7 +39,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
@@ -75,6 +74,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -180,7 +180,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public static NullPolicy fromString(String nullPolicy) {
-      if (StringUtils.isEmpty(nullPolicy)) {
+      if (StrUtils.isNullOrEmpty(nullPolicy)) {
         return DEFAULT_POLICY;
       }
       switch (nullPolicy) {
@@ -270,9 +270,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     /** returns a new GroupHeadSelector based on the specified local params */
     public static GroupHeadSelector build(final SolrParams localParams) {
-      final String sortString = StringUtils.defaultIfBlank(localParams.get(SORT), null);
-      final String max = StringUtils.defaultIfBlank(localParams.get("max"), null);
-      final String min = StringUtils.defaultIfBlank(localParams.get("min"), null);
+      final String sortString =
+          StrUtils.isBlank(localParams.get(SORT)) ? null : localParams.get(SORT);
+      final String max = StrUtils.isBlank(localParams.get("max")) ? null : localParams.get("max");
+      final String min = StrUtils.isBlank(localParams.get("min")) ? null : localParams.get("min");
 
       if (1 < numNotNull(min, max, sortString)) {
         throw new SolrException(
@@ -2129,7 +2130,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       FieldType minMaxFieldType = null;
       if (GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type)) {
         final String text = groupHeadSelector.selectorText;
-        if (text.indexOf("(") == -1) {
+        if (!text.contains("(")) {
           minMaxFieldType = searcher.getSchema().getField(text).getType();
         } else {
           SolrParams params = new ModifiableSolrParams();
@@ -2277,7 +2278,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * sources if they depend on score
      */
     public static boolean wantsCScore(final String text) {
-      return (0 <= text.indexOf("cscore()"));
+      return (text.contains("cscore()"));
     }
 
     private CollapseScore() {

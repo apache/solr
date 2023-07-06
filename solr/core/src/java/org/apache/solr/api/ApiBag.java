@@ -23,13 +23,10 @@ import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -150,8 +147,8 @@ public class ApiBag {
     private Collection<AnnotatedApi> combinedApis;
 
     protected CommandAggregatingAnnotatedApi(AnnotatedApi api) {
-      super(api.spec, api.getEndPoint(), Maps.newHashMap(api.getCommands()), null);
-      combinedApis = Lists.newArrayList();
+      super(api.spec, api.getEndPoint(), new HashMap<>(api.getCommands()), null);
+      combinedApis = new ArrayList<>();
     }
 
     public void combineWith(AnnotatedApi api) {
@@ -196,7 +193,7 @@ public class ApiBag {
       PathTrie<Api> registry = apis.get(method);
 
       if (registry == null)
-        apis.put(method, registry = new CommandAggregatingPathTrie(ImmutableSet.of("_introspect")));
+        apis.put(method, registry = new CommandAggregatingPathTrie(Set.of("_introspect")));
       ValidatingJsonMap url = spec.getMap("url", NOT_NULL);
       ValidatingJsonMap params = url.getMap("params", null);
       if (params != null) {
@@ -213,8 +210,7 @@ public class ApiBag {
           if (!wildCardNames.contains(o.toString()))
             throw new RuntimeException("" + o + " is not a valid part name");
           ValidatingJsonMap pathMeta = parts.getMap(o.toString(), NOT_NULL);
-          pathMeta.get(
-              "type", ENUM_OF, ImmutableSet.of("enum", "string", "int", "number", "boolean"));
+          pathMeta.get("type", ENUM_OF, Set.of("enum", "string", "int", "number", "boolean"));
         }
       }
       verifyCommands(api.getSpec());
@@ -376,21 +372,20 @@ public class ApiBag {
   }
 
   public static List<Api> wrapRequestHandlers(final SolrRequestHandler rh, String... specs) {
-    ImmutableList.Builder<Api> b = ImmutableList.builder();
-    for (String spec : specs) b.add(new ReqHandlerToApi(rh, Utils.getSpec(spec)));
-    return b.build();
+    return Arrays.stream(specs)
+        .map(spec -> new ReqHandlerToApi(rh, Utils.getSpec(spec)))
+        .collect(Collectors.toUnmodifiableList());
   }
 
   public static final String HANDLER_NAME = "handlerName";
   public static final SpecProvider EMPTY_SPEC = () -> ValidatingJsonMap.EMPTY;
   public static final Set<String> KNOWN_TYPES =
-      ImmutableSet.of("string", "boolean", "list", "int", "double", "object");
-
+      Set.of("string", "boolean", "list", "int", "double", "object");
   // A Spec template for GET AND POST APIs using the /$handlerName template-variable.
   public static final SpecProvider HANDLER_NAME_SPEC_PROVIDER =
       () -> {
         final ValidatingJsonMap spec = new ValidatingJsonMap();
-        spec.put("methods", Lists.newArrayList("GET", "POST"));
+        spec.put("methods", List.of("GET", "POST"));
         final ValidatingJsonMap urlMap = new ValidatingJsonMap();
         urlMap.put("paths", Collections.singletonList("$" + HANDLER_NAME));
         spec.put("url", urlMap);

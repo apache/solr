@@ -18,7 +18,6 @@ package org.apache.solr.cloud.overseer;
 
 import static org.apache.solr.cloud.overseer.CollectionMutator.checkCollectionKeyExistence;
 
-import com.google.common.collect.ImmutableSet;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -50,8 +49,7 @@ public class SliceMutator {
   public static final String PREFERRED_LEADER_PROP =
       CollectionAdminParams.PROPERTY_PREFIX + "preferredleader";
 
-  public static final Set<String> SLICE_UNIQUE_BOOLEAN_PROPERTIES =
-      ImmutableSet.of(PREFERRED_LEADER_PROP);
+  public static final Set<String> SLICE_UNIQUE_BOOLEAN_PROPERTIES = Set.of(PREFERRED_LEADER_PROP);
 
   protected final SolrCloudManager cloudManager;
   protected final DistribStateManager stateManager;
