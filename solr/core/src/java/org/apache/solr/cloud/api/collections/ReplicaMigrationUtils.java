@@ -304,6 +304,20 @@ public class ReplicaMigrationUtils {
     return cleanupLatch.await(5, TimeUnit.MINUTES);
   }
 
+  static List<Replica> getReplicasOfNodes(Collection<String> nodeNames, ClusterState state) {
+    List<Replica> sourceReplicas = new ArrayList<>();
+    for (Map.Entry<String, DocCollection> e : state.getCollectionsMap().entrySet()) {
+      for (Slice slice : e.getValue().getSlices()) {
+        for (Replica replica : slice.getReplicas()) {
+          if (nodeNames.contains(replica.getNodeName())) {
+            sourceReplicas.add(replica);
+          }
+        }
+      }
+    }
+    return sourceReplicas;
+  }
+
   static List<Replica> getReplicasOfNode(String nodeName, ClusterState state) {
     List<Replica> sourceReplicas = new ArrayList<>();
     for (Map.Entry<String, DocCollection> e : state.getCollectionsMap().entrySet()) {

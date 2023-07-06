@@ -41,6 +41,9 @@ New Features
 
 * SOLR-16812: Support CBOR format for update/query (noble)
 
+* SOLR-16855: Solr now provides a MigrateReplicas API at `POST /api/cluster/replicas/migrate` (v2), to move replicas
+  off of a given set of nodes. This extends the functionality of the existing ReplaceNode API. (Houston Putman)
+
 Improvements
 ---------------------
 
