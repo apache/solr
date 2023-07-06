@@ -20,7 +20,6 @@ package org.apache.solr.jersey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Type;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.WebApplicationException;
@@ -32,8 +31,6 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** A collection point for various {@link MessageBodyReader} implementations. */
 public class MessageBodyReaders {
@@ -66,8 +63,6 @@ public class MessageBodyReaders {
       implements MessageBodyReader<Object> {
     public static final String DESERIALIZED_REQUEST_BODY_KEY = "request-body";
 
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
     @Context ServiceLocator serviceLocator;
     private final MessageBodyReader<Object> delegate;
 
@@ -96,7 +91,6 @@ public class MessageBodyReaders {
       final Object object =
           delegate.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
       if (requestContext != null) {
-        log.info("object is {}", object);
         requestContext.setProperty(DESERIALIZED_REQUEST_BODY_KEY, object);
       }
       return object;
