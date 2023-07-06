@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -539,8 +538,10 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       int THREAD_COUNT = 10;
       int RUN_COUNT = 20;
       // final AtomicInteger runCounter = new AtomicInteger();
-      // 10 threads to concurrently access the collections and ensure data is not mixed up
-      ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT);
+      // 10 threads to concurrently access the collections and ensure data are not mixed up
+      ExecutorService executorService =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
+              THREAD_COUNT, new SolrNamedThreadFactory(this.getClass().getSimpleName()));
       List<Future<?>> testFutures = new ArrayList<>();
 
       for (int i = 0; i < RUN_COUNT; i++) {
