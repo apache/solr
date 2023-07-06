@@ -111,6 +111,72 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     }
   }
 
+  public void testMultiCollectionMultiNode() throws Exception {
+    MiniSolrCloudCluster cluster =
+        configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
+    try {
+      CloudSolrClient client = cluster.getSolrClient();
+      String COLLECTION_NAME = "test_coll";
+      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.SYNTHETIC_COLL_PREFIX + "conf";
+      for (int j = 1; j <= 10; j++) {
+        String collname = COLLECTION_NAME + "_" + j;
+        CollectionAdminRequest.createCollection(collname, "conf", 2, 2)
+            .process(cluster.getSolrClient());
+        cluster.waitForActiveCollection(collname, 2, 4);
+        UpdateRequest ur = new UpdateRequest();
+        for (int i = 0; i < 10; i++) {
+          SolrInputDocument doc2 = new SolrInputDocument();
+          doc2.addField("id", "" + i);
+          ur.add(doc2);
+        }
+
+        ur.commit(client, collname);
+        QueryResponse rsp = client.query(collname, new SolrQuery("*:*"));
+        assertEquals(10, rsp.getResults().getNumFound());
+      }
+
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      final JettySolrRunner coordinatorJetty1;
+      final JettySolrRunner coordinatorJetty2;
+      try {
+        coordinatorJetty1 = cluster.startJettySolrRunner();
+        coordinatorJetty2 = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+      for (int j = 1; j <= 10; j++) {
+        String collname = COLLECTION_NAME + "_" + j;
+        QueryResponse rslt =
+            new QueryRequest(new SolrQuery("*:*"))
+                .setPreferredNodes(List.of(coordinatorJetty1.getNodeName()))
+                .process(client, collname);
+
+        assertEquals(10, rslt.getResults().size());
+      }
+
+      for (int j = 1; j <= 10; j++) {
+        String collname = COLLECTION_NAME + "_" + j;
+        QueryResponse rslt =
+            new QueryRequest(new SolrQuery("*:*"))
+                .setPreferredNodes(List.of(coordinatorJetty2.getNodeName()))
+                .process(client, collname);
+
+        assertEquals(10, rslt.getResults().size());
+      }
+
+      DocCollection collection =
+          cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION);
+      assertNotNull(collection);
+
+      int coordNode1NumCores = coordinatorJetty1.getCoreContainer().getNumAllCores();
+      assertEquals("Unexpected number of cores found for coordinator node", 1, coordNode1NumCores);
+      int coordNode2NumCores = coordinatorJetty2.getCoreContainer().getNumAllCores();
+      assertEquals("Unexpected number of cores found for coordinator node", 1, coordNode2NumCores);
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
   public void testNRTRestart() throws Exception {
     // we restart jetty and expect to find on disk data - need a local fs directory
     useFactory(null);
