@@ -326,98 +326,98 @@ public class RunExampleTool extends ToolBase {
             "exampledocs directory not found, skipping indexing step for the techproducts example");
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
-      SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build();
+      try (SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build()) {
+        echo("Adding dense vector field type to films schema \"_default\"");
+        try {
+          SolrCLI.postJsonToSolr(
+              solrClient,
+              "/" + collectionName + "/schema",
+              "{\n"
+                  + "        \"add-field-type\" : {\n"
+                  + "          \"name\":\"knn_vector_10\",\n"
+                  + "          \"class\":\"solr.DenseVectorField\",\n"
+                  + "          \"vectorDimension\":10,\n"
+                  + "          \"similarityFunction\":cosine\n"
+                  + "          \"knnAlgorithm\":hnsw\n"
+                  + "        }\n"
+                  + "      }");
+        } catch (Exception ex) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+        }
 
-      echo("Adding dense vector field type to films schema \"_default\"");
-      try {
-        SolrCLI.postJsonToSolr(
-            solrClient,
-            "/" + collectionName + "/schema",
-            "{\n"
-                + "        \"add-field-type\" : {\n"
-                + "          \"name\":\"knn_vector_10\",\n"
-                + "          \"class\":\"solr.DenseVectorField\",\n"
-                + "          \"vectorDimension\":10,\n"
-                + "          \"similarityFunction\":cosine\n"
-                + "          \"knnAlgorithm\":hnsw\n"
-                + "        }\n"
-                + "      }");
-      } catch (Exception ex) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+        echo(
+            "Adding name, initial_release_date, and film_vector fields to films schema \"_default\"");
+        try {
+          SolrCLI.postJsonToSolr(
+              solrClient,
+              "/" + collectionName + "/schema",
+              "{\n"
+                  + "        \"add-field\" : {\n"
+                  + "          \"name\":\"name\",\n"
+                  + "          \"type\":\"text_general\",\n"
+                  + "          \"multiValued\":false,\n"
+                  + "          \"stored\":true\n"
+                  + "        },\n"
+                  + "        \"add-field\" : {\n"
+                  + "          \"name\":\"initial_release_date\",\n"
+                  + "          \"type\":\"pdate\",\n"
+                  + "          \"stored\":true\n"
+                  + "        },\n"
+                  + "        \"add-field\" : {\n"
+                  + "          \"name\":\"film_vector\",\n"
+                  + "          \"type\":\"knn_vector_10\",\n"
+                  + "          \"indexed\":true\n"
+                  + "          \"stored\":true\n"
+                  + "        }\n"
+                  + "      }");
+        } catch (Exception ex) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+        }
+
+        echo("Adding paramsets \"algo\" and \"algo_b\" to films configuration for relevancy tuning");
+        try {
+          SolrCLI.postJsonToSolr(
+              solrClient,
+              "/" + collectionName + "/config/params",
+              "{\n"
+                  + "        \"set\": {\n"
+                  + "        \"algo_a\":{\n"
+                  + "               \"defType\":\"dismax\",\n"
+                  + "               \"qf\":\"name\"\n"
+                  + "             }\n"
+                  + "           },\n"
+                  + "           \"set\": {\n"
+                  + "             \"algo_b\":{\n"
+                  + "               \"defType\":\"dismax\",\n"
+                  + "               \"qf\":\"name\",\n"
+                  + "               \"mm\":\"100%\"\n"
+                  + "             }\n"
+                  + "            }\n"
+                  + "        }\n");
+        } catch (Exception ex) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+        }
+
+        File filmsJsonFile = new File(exampleDir, "films/films.json");
+        String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
+        echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
+        String currentPropVal = System.getProperty("url");
+        System.setProperty("url", updateUrl);
+        SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
+        if (currentPropVal != null) {
+          System.setProperty("url", currentPropVal); // reset
+        } else {
+          System.clearProperty("url");
+        }
       }
 
       echo(
-          "Adding name, initial_release_date, and film_vector fields to films schema \"_default\"");
-      try {
-        SolrCLI.postJsonToSolr(
-            solrClient,
-            "/" + collectionName + "/schema",
-            "{\n"
-                + "        \"add-field\" : {\n"
-                + "          \"name\":\"name\",\n"
-                + "          \"type\":\"text_general\",\n"
-                + "          \"multiValued\":false,\n"
-                + "          \"stored\":true\n"
-                + "        },\n"
-                + "        \"add-field\" : {\n"
-                + "          \"name\":\"initial_release_date\",\n"
-                + "          \"type\":\"pdate\",\n"
-                + "          \"stored\":true\n"
-                + "        },\n"
-                + "        \"add-field\" : {\n"
-                + "          \"name\":\"film_vector\",\n"
-                + "          \"type\":\"knn_vector_10\",\n"
-                + "          \"indexed\":true\n"
-                + "          \"stored\":true\n"
-                + "        }\n"
-                + "      }");
-      } catch (Exception ex) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
-      }
-
-      echo("Adding paramsets \"algo\" and \"algo_b\" to films configuration for relevancy tuning");
-      try {
-        SolrCLI.postJsonToSolr(
-            solrClient,
-            "/" + collectionName + "/config/params",
-            "{\n"
-                + "        \"set\": {\n"
-                + "        \"algo_a\":{\n"
-                + "               \"defType\":\"dismax\",\n"
-                + "               \"qf\":\"name\"\n"
-                + "             }\n"
-                + "           },\n"
-                + "           \"set\": {\n"
-                + "             \"algo_b\":{\n"
-                + "               \"defType\":\"dismax\",\n"
-                + "               \"qf\":\"name\",\n"
-                + "               \"mm\":\"100%\"\n"
-                + "             }\n"
-                + "            }\n"
-                + "        }\n");
-      } catch (Exception ex) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
-      }
-
-      File filmsJsonFile = new File(exampleDir, "films/films.json");
-      String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
-      echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
-      String currentPropVal = System.getProperty("url");
-      System.setProperty("url", updateUrl);
-      SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
-      if (currentPropVal != null) {
-        System.setProperty("url", currentPropVal); // reset
-      } else {
-        System.clearProperty("url");
-      }
+          "\nSolr "
+              + exampleName
+              + " example launched successfully. Direct your Web browser to "
+              + solrUrl
+              + " to visit the Solr Admin UI");
     }
-
-    echo(
-        "\nSolr "
-            + exampleName
-            + " example launched successfully. Direct your Web browser to "
-            + solrUrl
-            + " to visit the Solr Admin UI");
   }
 
   protected void runCloudExample(CommandLine cli) throws Exception {
