@@ -54,6 +54,31 @@ Other Changes
 
 * SOLR-6994: Implement Windows version of bin/post via implementing bin/solr post command that works on Windows and Unix.  Deprecate bin/post.  (Eric Pugh, Will White)
 
+==================  9.4.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
