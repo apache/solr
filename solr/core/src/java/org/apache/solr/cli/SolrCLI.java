@@ -234,6 +234,7 @@ public class SolrCLI implements CLIO {
     else if ("auth".equals(toolType)) return new AuthTool();
     else if ("export".equals(toolType)) return new ExportTool();
     else if ("package".equals(toolType)) return new PackageTool();
+    else if ("post".equals(toolType)) return new PostTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -275,6 +276,7 @@ public class SolrCLI implements CLIO {
     try {
       cli = (new DefaultParser()).parse(options, args);
     } catch (ParseException exp) {
+      // Check if we passed in a help argument with a non parsing set of arguments.
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
@@ -286,10 +288,12 @@ public class SolrCLI implements CLIO {
       }
       if (!hasHelpArg) {
         CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage());
+        exit(1);
+      } else {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp(toolName, options);
+        exit(0);
       }
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(toolName, options);
-      exit(1);
     }
 
     if (cli.hasOption("help")) {
@@ -420,7 +424,7 @@ public class SolrCLI implements CLIO {
 
     print("Usage: solr COMMAND OPTIONS");
     print(
-        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package");
+        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package, post");
     print("");
     print("  Standalone server example (start Solr running in the background on port 8984):");
     print("");

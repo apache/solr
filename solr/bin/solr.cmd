@@ -236,6 +236,7 @@ IF "%1"=="assert" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
 IF "%1"=="package" goto run_solrcli
 IF "%1"=="api" goto run_solrcli
+IF "%1"=="post" goto run_solrcli
 
 REM Only allow the command to be the first argument, assume start if not supplied
 IF "%1"=="start" goto set_script_cmd

@@ -315,11 +315,19 @@ public class RunExampleTool extends ToolBase {
 
         String currentPropVal = System.getProperty("url");
         System.setProperty("url", updateUrl);
+        String currentTypeVal = System.getProperty("type");
+        // We assume that example docs are always in XML.
+        System.setProperty("type", "application/xml");
         SimplePostTool.main(new String[] {exampledocsDir.getAbsolutePath() + "/*.xml"});
         if (currentPropVal != null) {
           System.setProperty("url", currentPropVal); // reset
         } else {
           System.clearProperty("url");
+        }
+        if (currentTypeVal != null) {
+          System.setProperty("type", currentTypeVal); // reset
+        } else {
+          System.clearProperty("type");
         }
       } else {
         echo(
