@@ -231,6 +231,9 @@ Optimizations
 * SOLR-16846: Use IndexOrDocValuesQuery for PointFields on Set queries. This improves the performance in some scenarios when
   the set query is combined with other selective queries. (Tomás Fernández Löbbe, Alex Deparvu)
 
+* SOLR-16879: Limit the number of concurrent backup and restore operations. Add a queue for async processing
+  of additional task. (Pierre Salagnac)
+
 Bug Fixes
 ---------------------
 
