@@ -316,6 +316,8 @@ Bug Fixes
 
 * SOLR-16861: Coordinator node does not have the correct collection/core in MDCLoggingContext (Patson Luk)
 
+* SOLR-16877: BackupManager now allows ConfigSet "files" to be empty, which previously caused NPEs. (Paul Blanchaert via Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
