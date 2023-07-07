@@ -29,12 +29,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -419,8 +420,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     static final int MAX_CONCURRENT_EXPENSIVE_TASKS =
         Integer.getInteger("solr.admin.maxConcurrentExpensiveTasks", 5);
     private volatile boolean shutdown;
+
+    // Both expensiveRunningTasks and expensiveTaskQueue are guarded by this
     private int expensiveRunningTasks;
-    private final ConcurrentLinkedQueue<TaskObject> expensiveTaskQueue;
+    private final Queue<TaskObject> expensiveTaskQueue;
 
     private ExecutorService parallelExecutor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
@@ -434,7 +437,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
       requestStatusMap = Collections.unmodifiableMap(map);
 
-      expensiveTaskQueue = new ConcurrentLinkedQueue<>();
+      expensiveTaskQueue = new LinkedList<>();
     }
 
     public void shutdown() {
