@@ -1134,6 +1134,13 @@ if !JAVA_MAJOR_VERSION! GEQ 17  (
   echo Java %JAVA_MAJOR_VERSION% detected. Enabled workaround for SOLR-16463
 )
 
+REM Vector optimizations are only supported for Java 20 and 21 for now.
+REM This will need to change as Lucene is upgraded and newer Java versions are released
+if !JAVA_MAJOR_VERSION! GEQ 20 if !JAVA_MAJOR_VERSION! LEQ 21 (
+  set SOLR_OPTS=%SOLR_OPTS% --add-modules jdk.incubator.vector
+  echo Java %JAVA_MAJOR_VERSION% detected. Incubating Panama Vector APIs have been enabled
+)
+
 if !JAVA_MAJOR_VERSION! GEQ 9 if NOT "%JAVA_VENDOR%" == "OpenJ9" (
   IF NOT "%GC_LOG_OPTS%"=="" (
     echo ERROR: On Java 9 you cannot set GC_LOG_OPTS, only default GC logging is available. Exiting

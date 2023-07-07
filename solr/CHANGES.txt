@@ -235,6 +235,9 @@ Optimizations
 * SOLR-16846: Use IndexOrDocValuesQuery for PointFields on Set queries. This improves the performance in some scenarios when
   the set query is combined with other selective queries. (Tomás Fernández Löbbe, Alex Deparvu)
 
+* SOLR-16869: Enable Incubating Java Panama Vector APIs when using Java 20 or 21.
+  When run using compatible hardware, Vector search will see considerable speed up. (Houston Putman, Uwe Schindler)
+
 Bug Fixes
 ---------------------
 
