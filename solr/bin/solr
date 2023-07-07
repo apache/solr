@@ -2344,6 +2344,13 @@ function start_solr() {
     echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
   fi
 
+  # Vector optimizations are only supported for Java 20 and 21 for now.
+  # This will need to change as Lucene is upgraded and newer Java versions are released
+  if [[ "$JAVA_VER_NUM" -ge "20" ]] && [[ "$JAVA_VER_NUM" -le "21" ]] ; then
+    SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
+    echo "Java $JAVA_VER_NUM detected. Incubating Panama Vector APIs have been enabled"
+  fi
+
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" ${SOLR_LOG_LEVEL_OPT:-} -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
