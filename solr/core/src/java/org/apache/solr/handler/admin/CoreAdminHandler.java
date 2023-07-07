@@ -449,6 +449,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       synchronized (this) {
         if (!expensiveTaskQueue.isEmpty()) {
           try {
+            // notifyAll() is in finishTask(), invoked when the queue is empty
             wait(60000L);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
