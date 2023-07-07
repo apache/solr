@@ -326,10 +326,8 @@ public class RunExampleTool extends ToolBase {
             "exampledocs directory not found, skipping indexing step for the techproducts example");
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
-      SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build();
-
-      echo("Adding dense vector field type to films schema \"_default\"");
-      try {
+      try (SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build()) {
+        echo("Adding dense vector field type to films schema \"_default\"");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
@@ -342,13 +340,9 @@ public class RunExampleTool extends ToolBase {
                 + "          \"knnAlgorithm\":hnsw\n"
                 + "        }\n"
                 + "      }");
-      } catch (Exception ex) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
-      }
 
-      echo(
-          "Adding name, initial_release_date, and film_vector fields to films schema \"_default\"");
-      try {
+        echo(
+            "Adding name, initial_release_date, and film_vector fields to films schema \"_default\"");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
@@ -371,12 +365,9 @@ public class RunExampleTool extends ToolBase {
                 + "          \"stored\":true\n"
                 + "        }\n"
                 + "      }");
-      } catch (Exception ex) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
-      }
 
-      echo("Adding paramsets \"algo\" and \"algo_b\" to films configuration for relevancy tuning");
-      try {
+        echo(
+            "Adding paramsets \"algo\" and \"algo_b\" to films configuration for relevancy tuning");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/config/params",
@@ -395,29 +386,29 @@ public class RunExampleTool extends ToolBase {
                 + "             }\n"
                 + "            }\n"
                 + "        }\n");
+
+        File filmsJsonFile = new File(exampleDir, "films/films.json");
+        String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
+        echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
+        String currentPropVal = System.getProperty("url");
+        System.setProperty("url", updateUrl);
+        SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
+        if (currentPropVal != null) {
+          System.setProperty("url", currentPropVal); // reset
+        } else {
+          System.clearProperty("url");
+        }
       } catch (Exception ex) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
       }
 
-      File filmsJsonFile = new File(exampleDir, "films/films.json");
-      String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
-      echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
-      String currentPropVal = System.getProperty("url");
-      System.setProperty("url", updateUrl);
-      SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
-      if (currentPropVal != null) {
-        System.setProperty("url", currentPropVal); // reset
-      } else {
-        System.clearProperty("url");
-      }
+      echo(
+          "\nSolr "
+              + exampleName
+              + " example launched successfully. Direct your Web browser to "
+              + solrUrl
+              + " to visit the Solr Admin UI");
     }
-
-    echo(
-        "\nSolr "
-            + exampleName
-            + " example launched successfully. Direct your Web browser to "
-            + solrUrl
-            + " to visit the Solr Admin UI");
   }
 
   protected void runCloudExample(CommandLine cli) throws Exception {
