@@ -44,6 +44,8 @@ New Features
 * SOLR-16855: Solr now provides a MigrateReplicas API at `POST /api/cluster/replicas/migrate` (v2), to move replicas
   off of a given set of nodes. This extends the functionality of the existing ReplaceNode API. (Houston Putman)
 
+* SOLR-16717: {!join} can join collections with multiple shards on both sides. (Mikhail Khludnev)
+
 Improvements
 ---------------------
 
@@ -120,7 +122,7 @@ Improvements
 
 * SOLR-16759: Introducing logAll parameter in the feature logger (Anna Ruggero, Alessandro Benedetti)
 
-* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
+* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning
   only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
 
 * SOLR-16394: The v2 list and delete (collection) backup APIs have been tweaked to be more intuitive: backup listing now uses
