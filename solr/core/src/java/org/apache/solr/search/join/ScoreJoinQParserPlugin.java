@@ -17,7 +17,9 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -25,9 +27,14 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -45,6 +52,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.RefCounted;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Create a query-time join query with scoring. It just calls {@link
@@ -80,7 +89,10 @@ import org.apache.solr.util.RefCounted;
  */
 public class ScoreJoinQParserPlugin extends QParserPlugin {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String SCORE = "score";
+  public static final String CHECK_ROUTER_FIELD = "checkRouterField";
 
   static class OtherCoreJoinQuery extends SameCoreJoinQuery {
     private final String fromIndex;
@@ -112,8 +124,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "Cross-core join: no such core " + fromIndex);
       }
-      RefCounted<SolrIndexSearcher> fromHolder = null;
-      fromHolder = fromCore.getRegisteredSearcher();
+      RefCounted<SolrIndexSearcher> fromHolder = fromCore.getRegisteredSearcher();
       final Query joinQuery;
       try {
         joinQuery =
@@ -236,16 +247,13 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
         final String v = localParams.get(CommonParams.VALUE);
 
-        final Query q =
-            createQuery(
-                fromField,
-                v,
-                fromIndex,
-                toField,
-                scoreMode,
-                CommonParams.TRUE.equals(localParams.get("TESTenforceSameCoreAsAnotherOne")));
-
-        return q;
+        return createQuery(
+            fromField,
+            v,
+            fromIndex,
+            toField,
+            scoreMode,
+            CommonParams.TRUE.equals(localParams.get("TESTenforceSameCoreAsAnotherOne")));
       }
 
       private Query createQuery(
@@ -262,7 +270,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
           CoreContainer container = req.getCoreContainer();
 
-          final String coreName = getCoreName(fromIndex, container);
+          final String coreName =
+              getCoreName(fromIndex, container, req.getCore(), toField, fromField, localParams);
           final SolrCore fromCore = container.getCore(coreName);
           RefCounted<SolrIndexSearcher> fromHolder = null;
 
@@ -299,29 +308,40 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
   }
 
   /**
-   * Returns an String with the name of a core.
+   * Returns a String with the name of a core.
    *
    * <p>This method searches the core with fromIndex name in the core's container. If fromIndex
-   * isn't name of collection or alias it's returns fromIndex without changes. If fromIndex is name
-   * of alias but if the alias points to multiple collections it's throw
+   * isn't name of collection or alias it returns fromIndex without changes. If fromIndex is name of
+   * alias but if the alias points to multiple collections it's throw
    * SolrException.ErrorCode.BAD_REQUEST because multiple shards not yet supported.
    *
    * @param fromIndex name of the index
    * @param container the core container for searching the core with fromIndex name or alias
+   * @param toCore core which it joins to ie executing this request
+   * @param toField to side field
+   * @param fromField from side field
+   * @param localParams local params for this qparser invocation
    * @return the string with name of core
    */
-  public static String getCoreName(final String fromIndex, CoreContainer container) {
+  public static String getCoreName(
+      final String fromIndex,
+      CoreContainer container,
+      SolrCore toCore,
+      String toField,
+      String fromField,
+      SolrParams localParams) {
     if (container.isZooKeeperAware()) {
       ZkController zkController = container.getZkController();
-      final String resolved = resolveAlias(fromIndex, zkController);
+      final String fromCollection = resolveAlias(fromIndex, zkController);
       // TODO DWS: no need for this since later, clusterState.getCollection will throw a reasonable
       // error
-      if (!zkController.getClusterState().hasCollection(resolved)) {
+      if (!zkController.getClusterState().hasCollection(fromCollection)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "SolrCloud join: Collection '" + fromIndex + "' not found!");
       }
-      return findLocalReplicaForFromIndex(zkController, resolved);
+      return findLocalReplicaForFromIndex(
+          zkController, fromCollection, toCore, toField, fromField, localParams);
     }
     return fromIndex;
   }
@@ -355,43 +375,163 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     }
   }
 
-  private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex) {
-    String fromReplica = null;
+  private static String findLocalReplicaForFromIndex(
+      ZkController zkController,
+      String fromIndex,
+      SolrCore toCore,
+      String toField,
+      String fromField,
+      SolrParams localParams) {
+    final DocCollection fromCollection = zkController.getClusterState().getCollection(fromIndex);
+    final String nodeName = zkController.getNodeName();
+    final String hitTheRoad =
+        "SolrCloud join: To join with a collection that might not be co-located, use method=crossCollection.";
+    if (fromCollection.getSlices().size() == 1) {
+      String fromReplica = null;
 
-    String nodeName = zkController.getNodeName();
-    for (Slice slice :
-        zkController.getClusterState().getCollection(fromIndex).getActiveSlicesArr()) {
-      if (fromReplica != null)
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "SolrCloud join: To join with a sharded collection, use method=crossCollection.");
+      for (Slice slice : fromCollection.getActiveSlicesArr()) {
+        if (fromReplica != null)
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, hitTheRoad);
 
-      for (Replica replica : slice.getReplicas()) {
-        if (replica.getNodeName().equals(nodeName)) {
-          fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-          // found local replica, but is it Active?
-          if (replica.getState() != Replica.State.ACTIVE)
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST,
-                "SolrCloud join: "
-                    + fromIndex
-                    + " has a local replica ("
-                    + fromReplica
-                    + ") on "
-                    + nodeName
-                    + ", but it is "
-                    + replica.getState());
+        for (Replica replica : slice.getReplicas()) {
+          if (replica.getNodeName().equals(nodeName)) {
+            fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+            // found local replica, but is it Active?
+            if (replica.getState() != Replica.State.ACTIVE)
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "SolrCloud join: "
+                      + fromIndex
+                      + " has a local replica ("
+                      + fromReplica
+                      + ") on "
+                      + nodeName
+                      + ", but it is "
+                      + replica.getState());
 
-          break;
+            break;
+          }
         }
       }
-    }
 
-    if (fromReplica == null)
+      if (fromReplica == null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, hitTheRoad);
+
+      return fromReplica;
+    } else { // sharded from
+      final CloudDescriptor toCoreDescriptor = toCore.getCoreDescriptor().getCloudDescriptor();
+      final String toShardId = toCoreDescriptor.getShardId();
+      final DocCollection toCollection =
+          zkController.getClusterState().getCollection(toCoreDescriptor.getCollectionName());
+
+      String routerName = checkRouters(toCollection, fromCollection, hitTheRoad);
+      boolean checkField = false;
+      switch (routerName) {
+        case PlainIdRouter.NAME: // mandatory field check
+          checkField = true;
+          checkRouterField(toCore, toCollection, toField, hitTheRoad);
+          break;
+        case CompositeIdRouter.NAME: // let you shoot your legs
+          if (localParams.getBool(CHECK_ROUTER_FIELD, true)) {
+            checkField = true;
+            checkRouterField(toCore, toCollection, toField, hitTheRoad);
+          }
+          break;
+        case ImplicitDocRouter.NAME: // don't check field, you know what you do
+        default:
+          break;
+      }
+      // if router field is not set, "to" may fallback to uniqueKey
+      if (localParams.getBool(CHECK_ROUTER_FIELD, true)) {
+        checkRouterField(toCore, toCollection, toField, hitTheRoad);
+      }
+      checkShardNumber(toCollection, fromCollection, hitTheRoad);
+      final Slice fromShardReplicas = fromCollection.getActiveSlicesMap().get(toShardId);
+      for (Replica collocatedFrom :
+          fromShardReplicas.getReplicas(r -> r.getNodeName().equals(nodeName))) {
+        if (log.isDebugEnabled()) {
+          log.debug("<-{} @ {}", collocatedFrom.getCoreName(), toCoreDescriptor.getCoreNodeName());
+        }
+        // which replica to pick if there are many one?
+        // if router field is not set, "from" may fallback to uniqueKey, but only we attempt to pick
+        // local shard.
+        if (checkField) {
+          try (final SolrCore fromCore =
+              toCore.getCoreContainer().getCore(collocatedFrom.getCoreName())) {
+            checkRouterField(fromCore, fromCollection, fromField, hitTheRoad);
+          }
+        }
+        return collocatedFrom.getCoreName();
+      }
+      final String shards =
+          fromShardReplicas.getReplicas().stream()
+              .map(r -> r.getShard() + ":" + r.getCoreName() + "@" + r.getNodeName())
+              .collect(Collectors.joining(","));
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "SolrCloud join: To join with a collection that might not be co-located, use method=crossCollection.");
+          "Unable to find collocated \"from\" replica: "
+              + shards
+              + " at node: "
+              + nodeName
+              + " for "
+              + toShardId
+              + ". "
+              + hitTheRoad);
+    }
+  }
 
-    return fromReplica;
+  private static void checkShardNumber(
+      DocCollection toCollection, DocCollection fromCollection, String hitTheRoad) {
+    final boolean shardsNumberCheck =
+        toCollection.getSlices().size() == fromCollection.getSlices().size();
+    if (!shardsNumberCheck) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Expecting same number of shards, got: "
+              + toCollection.getSlices().size()
+              + "; "
+              + fromCollection.getSlices().size()
+              + ". "
+              + hitTheRoad);
+    }
+  }
+
+  private static void checkRouterField(
+      SolrCore toCore, DocCollection fromCollection, String fromField, String hitTheRoad) {
+    String routeField = fromCollection.getRouter().getRouteField(fromCollection);
+    if (routeField == null) {
+      routeField = toCore.getLatestSchema().getUniqueKeyField().getName();
+    }
+    if (!fromField.equals(routeField)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          fromCollection.getName()
+              + " can be joined by its router field "
+              + routeField
+              + ", but one of field param is "
+              + fromField
+              + ". "
+              + hitTheRoad);
+    }
+  }
+
+  private static String checkRouters(
+      DocCollection collection, DocCollection fromCollection, String hitTheRoad) {
+
+    final String routerName = collection.getRouter().getName();
+    if (!routerName.equals(fromCollection.getRouter().getName())) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          collection.getName()
+              + " and "
+              + fromCollection
+              + " should the same routers, but: "
+              + collection.getRouter()
+              + ", "
+              + fromCollection.getRouter()
+              + ". "
+              + hitTheRoad);
+    }
+    return routerName;
   }
 }
