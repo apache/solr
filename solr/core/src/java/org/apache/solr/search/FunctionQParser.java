@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -268,19 +269,21 @@ public class FunctionQParser extends QParser {
             values.add(sp.getFloat());
             break;
           default:
-            throw new SyntaxError(String.format("Unexpected vector encoding", encoding));
+            throw new SyntaxError(
+                String.format(Locale.ROOT, "Unexpected vector encoding", encoding));
         }
         valueExpected = false;
       } else if (ch == ',') {
         if (valueExpected) {
-          throw new SyntaxError(String.format("Unexpected vector encoding", encoding));
+          throw new SyntaxError(String.format(Locale.ROOT, "Unexpected vector encoding", encoding));
         }
         sp.pos++;
         valueExpected = true;
       } else if (ch == ']' && !valueExpected) {
         break;
       } else {
-        throw new SyntaxError(String.format("Unexpected {} at position {}", ch, sp.pos));
+        throw new SyntaxError(
+            String.format(Locale.ROOT, "Unexpected {} at position {}", ch, sp.pos));
       }
     }
     if (sp.pos >= sp.end) {

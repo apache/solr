@@ -28,7 +28,7 @@ import org.junit.Test;
 public class TestDenseVectorValueSourceParser {
 
   @Test
-  public void fkiatVectorParsing_shouldReturnConstKnnFloatValueSource()
+  public void floatVectorParsing_shouldReturnConstKnnFloatValueSource()
       throws SyntaxError, IOException {
     FunctionQParser qp = new FunctionQParser("[1,2,3,4]", null, null, null);
     var valueSource = qp.parseConstVector(0);
