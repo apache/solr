@@ -224,7 +224,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
               return callInfo.rsp;
             };
 
-        final CoreAdminAsyncTracker.TaskObject taskObject =
+        final var taskObject =
             new CoreAdminAsyncTracker.TaskObject(taskId, action, op.isExpensive(), task);
 
         coreAdminAsyncTracker.submitAsyncTask(taskObject);
