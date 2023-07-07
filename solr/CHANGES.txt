@@ -52,6 +52,8 @@ Other Changes
 
 * SOLR-16829: Delegate arg parsing and help usage from bin/solr and bin/solr.cmd to java layer for create, create_core, create_collection, delete, healthcheck and status commands. (Eric Pugh, Will White, Mikhail Khludnev)
 
+* SOLR-6994: Implement Windows version of bin/post via implementing bin/solr post command that works on Windows and Unix.  Deprecate bin/post.  (Eric Pugh, Will White)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
