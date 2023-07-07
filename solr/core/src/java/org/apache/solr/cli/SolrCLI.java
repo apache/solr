@@ -242,6 +242,7 @@ public class SolrCLI implements CLIO {
     else if ("package".equals(toolType)) return new PackageTool();
     else if ("postlogs".equals(toolType)) return new PostLogsTool();
     else if ("version".equals(toolType)) return new VersionTool();
+    else if ("post".equals(toolType)) return new PostTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -322,6 +323,7 @@ public class SolrCLI implements CLIO {
     try {
       cli = (new GnuParser()).parse(options, args);
     } catch (ParseException exp) {
+      // Check if we passed in a help argument with a non parsing set of arguments.
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
@@ -333,10 +335,12 @@ public class SolrCLI implements CLIO {
       }
       if (!hasHelpArg) {
         CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage());
+        exit(1);
+      } else {
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp(toolName, options);
+        exit(0);
       }
-      HelpFormatter formatter = new HelpFormatter();
-      formatter.printHelp(toolName, options);
-      exit(1);
     }
 
     if (cli.hasOption("help")) {

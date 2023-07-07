@@ -51,6 +51,8 @@ Other Changes
 
 * SOLR-16915: Lower the AffinityPlacementPlugin's default minimalFreeDiskGB to 5 GB (Houston Putman)
 
+* SOLR-6994: Implement Windows version of bin/post via implementing bin/solr post command that works on Windows and Unix.  Deprecate bin/post.  (Eric Pugh, Will White)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes

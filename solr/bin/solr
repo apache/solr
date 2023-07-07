@@ -690,7 +690,6 @@ function print_usage() {
   elif [ "$CMD" == "package" ]; then
     echo ""
     run_tool package -solrUrl "http://fake.to.allow.help.to.run" "help"
-
   fi
 } # end print_usage
 
@@ -1477,12 +1476,6 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   exit $?
 fi
 
-
-if [[ "$SCRIPT_CMD" == "export" ]]; then
-  run_tool export "$@"
-  exit $?
-fi
-
 if [[ "$SCRIPT_CMD" == "package" ]]; then
   if [ $# -gt 0 ]; then
     while true; do
@@ -1644,7 +1637,7 @@ fi
 
 
 # verify the command given is supported
-if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ] && [ "$SCRIPT_CMD" != "assert" ]; then
+if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ]; then
   # handoff this command to the SolrCLI and let it handle the option parsing and validation
   run_tool "$SCRIPT_CMD" "$@"
   exit $?
