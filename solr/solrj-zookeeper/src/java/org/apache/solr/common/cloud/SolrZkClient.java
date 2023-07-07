@@ -453,9 +453,6 @@ public class SolrZkClient implements Closeable {
     metrics.reads.increment();
     if (result != null) {
       metrics.bytesRead.add(result.length);
-    } else {
-      // prevent NPE with empty zk node
-      result = new byte[0];
     }
     return result;
   }
