@@ -50,7 +50,9 @@ Other Changes
 
 * SOLR-16798: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command. (Bence Szabo via Eric Pugh)
 
-* SOLR-16829: Delegate arg parsing and help usage from bin/solr and bin/solr.cmd to java layer for create, create_core, create_collection, delete, healthcheck and status commands. (Eric Pugh, Will White, Mikhail Khludnev)  
+* SOLR-16829: Delegate arg parsing and help usage from bin/solr and bin/solr.cmd to java layer for create, create_core, create_collection, delete, healthcheck and status commands. (Eric Pugh, Will White, Mikhail Khludnev)
+
+* SOLR-6994: Implement Windows version of bin/post via implementing bin/solr post command that works on Windows and Unix.  Deprecate bin/post.  (Eric Pugh, Will White)
 
 ==================  9.3.0 ==================
 
@@ -90,6 +92,8 @@ New Features
 
 * SOLR-16855: Solr now provides a MigrateReplicas API at `POST /api/cluster/replicas/migrate` (v2), to move replicas
   off of a given set of nodes. This extends the functionality of the existing ReplaceNode API. (Houston Putman)
+
+* SOLR-16717: {!join} can join collections with multiple shards on both sides. (Mikhail Khludnev)
 
 Improvements
 ---------------------
@@ -230,6 +234,9 @@ Optimizations
 
 * SOLR-16846: Use IndexOrDocValuesQuery for PointFields on Set queries. This improves the performance in some scenarios when
   the set query is combined with other selective queries. (Tomás Fernández Löbbe, Alex Deparvu)
+
+* SOLR-16869: Enable Incubating Java Panama Vector APIs when using Java 20 or 21.
+  When run using compatible hardware, Vector search will see considerable speed up. (Houston Putman, Uwe Schindler)
 
 * SOLR-16879: Limit the number of concurrent backup and restore operations. Add a queue for async processing
   of additional task. (Pierre Salagnac)
