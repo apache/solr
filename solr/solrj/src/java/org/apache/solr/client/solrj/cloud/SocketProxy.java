@@ -386,6 +386,7 @@ public class SocketProxy {
             if (len > 0) out.write(buf, 0, len);
           }
         } catch (Exception e) {
+          log.error(e.getMessage(), e);
           if (log.isDebugEnabled()) {
             log.debug("read/write failed, reason: {}", e.getLocalizedMessage());
           }
