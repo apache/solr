@@ -462,7 +462,7 @@ public class SolrCLI implements CLIO {
         solrUrl = DEFAULT_SOLR_URL;
         CLIO.getOutStream()
             .println(
-                "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                "Neither --zkHost or --solrUrl parameters provided so assuming solrUrl is "
                     + DEFAULT_SOLR_URL
                     + ".");
       } else {
@@ -500,7 +500,7 @@ public class SolrCLI implements CLIO {
       solrUrl = DEFAULT_SOLR_URL;
       CLIO.getOutStream()
           .println(
-              "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+              "Neither --zkHost or --solrUrl parameters provided so assuming solrUrl is "
                   + DEFAULT_SOLR_URL
                   + ".");
     }

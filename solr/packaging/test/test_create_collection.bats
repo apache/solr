@@ -61,7 +61,7 @@ teardown() {
 }
 
 @test "accept d option with builtin config" {
-  run solr create_collection -c COLL_NAME -d sample_techproducts_configs -s http://localhost:8983/solr
+  run solr create_collection -c COLL_NAME -d sample_techproducts_configs --solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME'"
 }
 
