@@ -259,7 +259,9 @@ public class FunctionQParser extends QParser {
     boolean valueExpected = true;
     while (sp.pos < sp.end) {
       char ch = sp.val.charAt(sp.pos);
-      if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
+      if (Character.isWhitespace(ch)) {
+        sp.pos++;
+      } else if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
         switch (encoding) {
           case BYTE:
             values.add(sp.getByte());

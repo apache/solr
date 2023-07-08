@@ -30,7 +30,7 @@ public class TestDenseVectorValueSourceParser {
   @Test
   public void floatVectorParsing_shouldReturnConstKnnFloatValueSource()
       throws SyntaxError, IOException {
-    FunctionQParser qp = new FunctionQParser("[1,2,3,4]", null, null, null);
+    FunctionQParser qp = new FunctionQParser("[1, 2,3,4]", null, null, null);
     var valueSource = qp.parseConstVector(0);
     Assert.assertEquals(ConstKnnFloatValueSource.class, valueSource.getClass());
     var floatVectorValueSource = (ConstKnnFloatValueSource) valueSource;
@@ -43,7 +43,7 @@ public class TestDenseVectorValueSourceParser {
   @Test
   public void byteVectorParsing_shouldReturnConstKnnByterValueSource()
       throws SyntaxError, IOException {
-    FunctionQParser qp = new FunctionQParser("[1,2,3,4]", null, null, null);
+    FunctionQParser qp = new FunctionQParser("[1, 2,3, 4]", null, null, null);
     var valueSource = qp.parseConstVector(FunctionQParser.FLAG_PARSE_VECTOR_BYTE_ENCODING);
     Assert.assertEquals(ConstKnnByteVectorValueSource.class, valueSource.getClass());
 
