@@ -88,7 +88,8 @@ public class RunExampleTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("noprompt")
+        Option.builder("n")
+            .longOpt("noprompt")
             .required(false)
             .desc(
                 "Don't prompt for input; accept all defaults when running examples that accept user input.")
@@ -100,7 +101,8 @@ public class RunExampleTool extends ToolBase {
             .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
             .longOpt("example")
             .build(),
-        Option.builder("script")
+        Option.builder("s")
+            .longOpt("script")
             .argName("PATH")
             .hasArg()
             .required(false)
@@ -113,7 +115,8 @@ public class RunExampleTool extends ToolBase {
             .desc("Path to the Solr server directory.")
             .longOpt("serverDir")
             .build(),
-        Option.builder("force")
+        Option.builder("f")
+            .longOpt("force")
             .argName("FORCE")
             .desc("Force option in case Solr is run as root.")
             .build(),

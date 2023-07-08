@@ -55,21 +55,24 @@ public class ConfigTool extends ToolBase {
             .required(true)
             .desc("Name of the collection.")
             .build(),
-        Option.builder("action")
+        Option.builder("a")
+            .longOpt("action")
             .argName("ACTION")
             .hasArg()
             .required(false)
             .desc(
                 "Config API action, one of: set-property, unset-property, set-user-property, unset-user-property; default is 'set-property'.")
             .build(),
-        Option.builder("property")
+        Option.builder("p")
+            .longOpt("property")
             .argName("PROP")
             .hasArg()
             .required(true)
             .desc(
                 "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
             .build(),
-        Option.builder("value")
+        Option.builder("v")
+            .longOpt("value")
             .argName("VALUE")
             .hasArg()
             .required(false)

@@ -41,14 +41,14 @@ teardown() {
 @test "setting property" {
   solr create_collection -c COLL_NAME
 
-  run solr config -c COLL_NAME -action set-property -property updateHandler.autoCommit.maxDocs -value 100 -solrUrl http://localhost:8983/solr
+  run solr config -c COLL_NAME --action set-property --property updateHandler.autoCommit.maxDocs --value 100 --solrUrl http://localhost:8983/solr
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
 }
 
 @test "short form of setting property" {
   solr create_collection -c COLL_NAME
 
-  run solr config -c COLL_NAME -property updateHandler.autoCommit.maxDocs -value 100
+  run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs -v 100
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
   assert_output --partial "assuming solrUrl is http://localhost:8983/solr"
 }

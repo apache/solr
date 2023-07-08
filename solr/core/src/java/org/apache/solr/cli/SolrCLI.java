@@ -89,7 +89,8 @@ public class SolrCLI implements CLIO {
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
-      Option.builder("solrUrl")
+      Option.builder("s")
+          .longOpt("solrUrl")
           .argName("HOST")
           .hasArg()
           .required(false)
@@ -98,7 +99,14 @@ public class SolrCLI implements CLIO {
                   + DEFAULT_SOLR_URL)
           .build();
   public static final Option OPTION_VERBOSE =
-      Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
+      Option.builder("v")
+          .longOpt("verbose")
+          .argName("verbose")
+          .required(false)
+          .desc("Enable more verbose command output.")
+          .build();
+  public static final Option OPTION_HELP =
+      Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
   // should this be boolean or just a otption?
   public static final Option OPTION_RECURSE =
@@ -249,7 +257,7 @@ public class SolrCLI implements CLIO {
 
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
-    options.addOption("help", false, "Print this message");
+    options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
@@ -263,7 +271,7 @@ public class SolrCLI implements CLIO {
       String toolName, List<Option> customOptions, String[] args) {
     Options options = new Options();
 
-    options.addOption("help", false, "Print this message");
+    options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
 
     if (customOptions != null) {
@@ -280,7 +288,7 @@ public class SolrCLI implements CLIO {
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
-          if ("-h".equals(arg) || "-help".equals(arg)) {
+          if ("-h".equals(arg) || "--help".equals(arg)) {
             hasHelpArg = true;
             break;
           }

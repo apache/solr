@@ -72,14 +72,16 @@ public class DeleteTool extends ToolBase {
             .required(true)
             .desc("Name of the core / collection to delete.")
             .build(),
-        Option.builder("deleteConfig")
+        Option.builder("d")
+            .longOpt("deleteConfig")
             .argName("true|false")
             .hasArg()
             .required(false)
             .desc(
                 "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
             .build(),
-        Option.builder("forceDeleteConfig")
+        Option.builder("f")
+            .longOpt("forceDeleteConfig")
             .required(false)
             .desc(
                 "Skip safety checks when deleting the configuration directory used by a collection.")

@@ -66,6 +66,6 @@ teardown() {
   solr create_collection -c "COLL_NAME"
   assert config_exists "COLL_NAME"
 
-  solr delete -c "COLL_NAME" -deleteConfig false
+  solr delete -c "COLL_NAME" --deleteConfig false
   assert config_exists "COLL_NAME"
 }

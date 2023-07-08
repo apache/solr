@@ -45,7 +45,7 @@ teardown() {
   assert_output --partial 'usage: post'
   refute_output --partial 'ERROR'
   
-  run solr post -help
+  run solr post --help
   assert_output --partial 'usage: post'
   refute_output --partial 'ERROR'  
   
@@ -57,7 +57,7 @@ teardown() {
   run solr create_collection -c monitors -d _default
   assert_output --partial "Created collection 'monitors'"
   
-  run solr post -type application/xml -url http://localhost:8983/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post --type application/xml --url http://localhost:8983/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -67,7 +67,7 @@ teardown() {
   
   solr create_collection -c monitors_no_type -d _default
   
-  run solr post -url http://localhost:8983/solr/monitors_no_type/update -commit ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post --url http://localhost:8983/solr/monitors_no_type/update --commit ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -76,7 +76,7 @@ teardown() {
   
   solr create_collection -c books_no_type -d _default
   
-  run solr post -url http://localhost:8983/solr/books_no_type/update -commit ${SOLR_TIP}/example/exampledocs/books.json
+  run solr post -u http://localhost:8983/solr/books_no_type/update -c ${SOLR_TIP}/example/exampledocs/books.json
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -85,7 +85,7 @@ teardown() {
   
   solr create_collection -c books_csv_no_type -d _default
   
-  run solr post -url http://localhost:8983/solr/books_csv_no_type/update -commit ${SOLR_TIP}/example/exampledocs/books.csv
+  run solr post --url http://localhost:8983/solr/books_csv_no_type/update --commit ${SOLR_TIP}/example/exampledocs/books.csv
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -98,7 +98,7 @@ teardown() {
   solr create_collection -c mixed_content -d _default
   
   # We filter to xml,json,and csv as we don't want to invoke the Extract handler.
-  run solr post -filetypes xml,json,csv -url http://localhost:8983/solr/mixed_content/update -commit ${SOLR_TIP}/example/exampledocs
+  run solr post --filetypes xml,json,csv --url http://localhost:8983/solr/mixed_content/update --commit ${SOLR_TIP}/example/exampledocs
 
   assert_output --partial '16 files indexed.'
   refute_output --partial 'ERROR'
@@ -118,7 +118,7 @@ teardown() {
     }
   }' 'http://localhost:8983/solr/webcrawl/config'
   
-  run solr post -mode web -url http://localhost:8983/webcrawl/update -recursive 1 -delay 1 https://solr.apache.org
+  run solr post --mode web --url http://localhost:8983/webcrawl/update --recursive 1 --delay 1 https://solr.apache.org
   assert_output --partial 'Entering crawl at level 0'
 }
 
@@ -127,7 +127,7 @@ teardown() {
   run solr create_collection -c monitors2 -d _default
   assert_output --partial "Created collection 'monitors2'"
   
-  run solr post -url http://localhost:8983/solr/monitors2/update -type application/xml -commit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post --url http://localhost:8983/solr/monitors2/update --type application/xml --commit --optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   assert_output --partial 'COMMITting Solr index'
@@ -141,18 +141,18 @@ teardown() {
   run solr create_collection -c test_args -d _default
   assert_output --partial "Created collection 'test_args'"
   
-  run solr post -url http://localhost:8983/solr/test_args/update -mode args -type application/xml -out -commit "<delete><query>*:*</query></delete>"
+  run solr post --url http://localhost:8983/solr/test_args/update --mode args --type application/xml --out --commit "<delete><query>*:*</query></delete>"
   assert_output --partial '<int name="status">0</int>'
   
   # confirm default type
-  run solr post -url http://localhost:8983/solr/test_args/update -mode args -out -commit "{'delete': {'query': '*:*'}}"
+  run solr post --url http://localhost:8983/solr/test_args/update --mode args --out --commit "{'delete': {'query': '*:*'}}"
   assert_output --partial '"status":0'
   
   # confirm we don't get back output without -out
-  run solr post -url http://localhost:8983/solr/test_args/update -mode args -commit "{'delete': {'query': '*:*'}}"
+  run solr post --url http://localhost:8983/solr/test_args/update --mode args --commit "{'delete': {'query': '*:*'}}"
   refute_output --partial '"status":0'
   
-  run solr post -url http://localhost:8983/solr/test_args/update -mode args -commit -type text/csv -out $'id,value\nROW1,0.47' 
+  run solr post --url http://localhost:8983/solr/test_args/update --mode args --commit --type text/csv --out $'id,value\nROW1,0.47' 
   assert_output --partial '"status":0'
   run curl 'http://localhost:8983/solr/test_args/select?q=id:ROW1'
   assert_output --partial '"numFound":1'
@@ -160,7 +160,7 @@ teardown() {
 
 # function used because run echo | solr ends up being (run echo) | solr and we loose the output capture.
 capture_echo_to_solr() {
-    echo "{'commit': {}}" | solr post -url http://localhost:8983/solr/test_stdin/update -mode stdin -type application/json -out
+    echo "{'commit': {}}" | solr post --url http://localhost:8983/solr/test_stdin/update --mode stdin --type application/json --out
 }
 
 @test "stdin mode" {

@@ -231,34 +231,44 @@ public class ExportTool extends ToolBase {
 
   private static final List<Option> OPTIONS =
       List.of(
-          Option.builder("url")
+          Option.builder("u")
+              .longOpt("url")
               .hasArg()
               .required()
               .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
               .build(),
-          Option.builder("out")
+          Option.builder("o")
+              .longOpt("out")
               .hasArg()
               .required(false)
               .desc(
                   "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
               .build(),
-          Option.builder("format")
+          Option.builder("f")
+              .longOpt("format")
               .hasArg()
               .required(false)
               .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
               .build(),
-          Option.builder("compress").required(false).desc("Compress the output.").build(),
-          Option.builder("limit")
+          Option.builder("c")
+              .longOpt("compress")
+              .required(false)
+              .desc("Compress the output.")
+              .build(),
+          Option.builder("l")
+              .longOpt("limit")
               .hasArg()
               .required(false)
               .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
               .build(),
-          Option.builder("query")
+          Option.builder("q")
+              .longOpt("query")
               .hasArg()
               .required(false)
               .desc("A custom query, default is '*:*'.")
               .build(),
-          Option.builder("fields")
+          Option.builder("f")
+              .longOpt("fields")
               .hasArg()
               .required(false)
               .desc("Comma separated list of fields to export. By default all fields are fetched.")

@@ -57,31 +57,31 @@ setup() {
 }
 
 @test "healthcheck help flag prints help" {
-  run solr healthcheck -help
+  run solr healthcheck --help
   assert_output --partial 'usage: healthcheck'
   refute_output --partial 'ERROR'
 }
 
 @test "create help flag prints help" {
-  run solr create -help
+  run solr create --help
   assert_output --partial 'usage: create'
   refute_output --partial 'ERROR'
 }
 
 @test "createcore help flag prints help" {
-  run solr create_core -help
+  run solr create_core --help
   assert_output --partial 'usage: create_core'
   refute_output --partial 'ERROR'
 }
 
 @test "createcollection help flag prints help" {
-  run solr create_collection -help
+  run solr create_collection -h
   assert_output --partial 'usage: create_collection'
   refute_output --partial 'ERROR'
 }
 
 @test "delete help flag prints help" {
-  run solr delete -help
+  run solr delete -h
   assert_output --partial 'usage: delete'
   refute_output --partial 'ERROR'
 }
@@ -109,7 +109,7 @@ setup() {
 }
 
 @test "post help flag prints help" {
-  run solr post -help
+  run solr post --help
   assert_output --partial 'usage: post'
   refute_output --partial 'ERROR'
 }

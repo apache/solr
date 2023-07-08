@@ -41,56 +41,73 @@ public class PostTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("url")
+        Option.builder("u")
+            .longOpt("url")
             .argName("url")
             .hasArg()
             .required(true)
             .desc("<base Solr update URL>")
             .build(),
-        Option.builder("commit").required(false).desc("Issue a commit at end of post").build(),
-        Option.builder("optimize").required(false).desc("Issue an optimize at end of post").build(),
-        Option.builder("mode")
+        Option.builder("c")
+            .longOpt("commit")
+            .required(false)
+            .desc("Issue a commit at end of post")
+            .build(),
+        Option.builder("o")
+            .longOpt("optimize")
+            .required(false)
+            .desc("Issue an optimize at end of post")
+            .build(),
+        Option.builder("m")
+            .longOpt("mode")
             .argName("mode")
             .hasArg(true)
             .required(false)
             .desc("Files crawls files, web crawls website. default: files.")
             .build(),
-        Option.builder("recursive")
+        Option.builder("r")
+            .longOpt("recursive")
             .argName("recursive")
             .hasArg(true)
             .required(false)
             .desc("For web crawl, how deep to go. default: 1")
             .build(),
-        Option.builder("delay")
+        Option.builder("d")
+            .longOpt("delay")
             .argName("delay")
             .hasArg(true)
             .required(false)
             .desc(
                 "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
             .build(),
-        Option.builder("type")
+        Option.builder("t")
+            .longOpt("type")
             .argName("content-type")
             .hasArg(true)
             .required(false)
             .desc("default: application/json")
             .build(),
-        Option.builder("filetypes")
+        Option.builder("ft")
+            .longOpt("filetypes")
             .argName("<type>[,<type>,...]")
             .hasArg(true)
             .required(false)
             .desc("default: " + SimplePostTool.DEFAULT_FILE_TYPES)
             .build(),
-        Option.builder("params")
+        Option.builder("p")
+            .longOpt("params")
             .argName("<key>=<value>[&<key>=<value>...]")
             .hasArg(true)
             .required(false)
             .desc("values must be URL-encoded; these pass through to Solr update request")
             .build(),
-        Option.builder("out")
+        Option.builder("o")
+            .longOpt("out")
             .required(false)
             .desc("sends Solr response outputs to console")
             .build(),
-        Option.builder("format")
+        Option.builder("f")
+            .longOpt("format")
             .required(false)
             .desc(
                 "sends application/json content as Solr commands to /update instead of /update/json/docs")
