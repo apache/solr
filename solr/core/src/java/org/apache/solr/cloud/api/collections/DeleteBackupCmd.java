@@ -127,10 +127,10 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
     purgeGraph.build(repository, backupPath);
 
     BackupFilePaths backupPaths = new BackupFilePaths(repository, backupPath);
-    repository.delete(backupPaths.getIndexDir(), purgeGraph.indexFileDeletes, true);
+    repository.delete(backupPaths.getIndexDir(), purgeGraph.indexFileDeletes);
     repository.delete(
-        backupPaths.getShardBackupMetadataDir(), purgeGraph.shardBackupMetadataDeletes, true);
-    repository.delete(backupPath, purgeGraph.backupIdDeletes, true);
+        backupPaths.getShardBackupMetadataDir(), purgeGraph.shardBackupMetadataDeletes);
+    repository.delete(backupPath, purgeGraph.backupIdDeletes);
 
     NamedList<Integer> details = new NamedList<>();
     details.add("numBackupIds", purgeGraph.backupIdDeletes.size());
@@ -205,9 +205,8 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         incBackupFiles.getShardBackupMetadataDir(),
         shardBackupIdFileDeletes.stream()
             .map(ShardBackupId::getBackupMetadataFilename)
-            .collect(Collectors.toList()),
-        true);
-    repository.delete(incBackupFiles.getIndexDir(), unusedFiles, true);
+            .collect(Collectors.toList()));
+    repository.delete(incBackupFiles.getIndexDir(), unusedFiles);
     try {
       for (BackupId backupId : backupIdsDeletes) {
         repository.deleteDirectory(
@@ -223,8 +222,7 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
         backupUri,
         backupIdsDeletes.stream()
             .map(id -> BackupFilePaths.getBackupPropsName(id))
-            .collect(Collectors.toList()),
-        true);
+            .collect(Collectors.toList()));
   }
 
   private void addResult(

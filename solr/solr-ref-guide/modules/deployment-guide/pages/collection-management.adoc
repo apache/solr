@@ -321,28 +321,14 @@ http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the `reload` command is provided as part of the JSON data that contains the required parameters:
+With the v2 API, the `reload` command is provided as a part of URL path. The request body is optional if the optional `async` parameter is omitted:
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
   {
-    "reload": {}
+    "async": "someAsyncId"
   }
-'
-----
-
-Additional parameters can be passed in via the `reload` key:
-
-[source,bash]
-----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
-  {
-    "reload": {
-      "async": "reload1"
-    }
-  }
-'
 ----
 ====
 --
@@ -357,7 +343,8 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 |===
 +
 The name of the collection to reload.
-This parameter is required by the V1 API.
+This parameter is required.
+It appears as a query-parameter on v1 requests, and in the URL path of v2 requests.
 
 `async`::
 +
@@ -542,7 +529,7 @@ Aliases that refer to more than 1 collection are not supported.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=renamedCollection
+http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=newName
 ----
 ====
 
@@ -554,7 +541,7 @@ http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
   {
-    "to": "new_name"
+    "to": "newName"
   }
 '
 ----
@@ -1677,6 +1664,15 @@ The upper-bound on how many backups should be retained at the backup location.
 If the current number exceeds this bound, older backups will be deleted until only `maxNumBackupPoints` backups remain.
 This parameter has no effect if `incremental=false` is specified.
 
+`backupConfigset`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: true
+|===
++
+Indicates if configset files should be included with the index backup or not. Note that in order to restore a collection, the configset must either exist in ZooKeeper or be part of the backup. Only set this to `false` if you can restore configsets by other means external to Solr (i.e. you have it stored with your application source code, is part of your ZooKeeper backups, etc).
+
 `incremental`::
 +
 [%autowidth,frame=none]
@@ -1820,14 +1816,7 @@ http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=myBackupName
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d '
-  {
-    "list-backups" : {
-      "name": "myBackupName",
-      "location": "/path/to/my/shared/drive"
-    }
-  }
-'
+curl -X GET "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
 ----
 ====
 --
@@ -1878,7 +1867,7 @@ Restores Solr indexes and associated configurations to a specified collection.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3
+curl -X GET http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3&nrtReplicas=2&createNodeSet=node1,node2&property.foo=bar
 
 ----
 ====
@@ -1887,17 +1876,19 @@ http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_ba
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the `restore-collection` command is provided as part of the JSON data that contains the required parameters:
-
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/backups/techproducts_backup/restore -H 'Content-Type: application/json' -d '
   {
-    "restore-collection": {
-      "name": "techproducts_backup",
       "collection": "techproducts_v3",
-      "location": "file:///path/to/my/shared/drive"
-    }
+      "location": "file:///path/to/my/shared/drive",
+      "create-collection": {
+        "nrtReplicas": 2,
+        "nodeSet": ["node1", "node2"],
+        "properties": {
+          "foo": "bar"
+        }
+      }
   }
 '
 ----
@@ -1908,8 +1899,8 @@ The RESTORE operation will replace the content of a collection with files from t
 
 If the provided `collection` value matches an existing collection, Solr will use it for restoration, assuming it is compatible (same number of shards, etc.) with the stored backup files.
 If the provided `collection` value doesn't exist, a new collection with that name is created in a way compatible with the stored backup files.
-The collection created will be have the same number of shards and replicas as the original collection, preserving routing information, etc.
-Optionally, you can override some parameters documented below.
+The collection created will have the same number of shards and replicas as the original collection, preserving routing information, etc.
+Optionally, you can override some parameters (see below).
 
 While restoring, if a configset with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configset in ZooKeeper and use that.
 
@@ -1935,6 +1926,8 @@ s|Required |Default: none
 |===
 +
 The name of the existing backup that you want to restore.
+This parameter is required.
+Provided as a query-parameter for v1 requests, and in the URL path for v2 requests.
 
 `location`::
 +
@@ -1943,7 +1936,7 @@ The name of the existing backup that you want to restore.
 |Optional |Default: none
 |===
 +
-The location on a shared drive for the RESTORE command to read from.
+The location within a backup repository for the RESTORE command to read from.
 Alternately it can be set as a xref:cluster-node-management.adoc#clusterprop[cluster property].+
 +
 This must be the same value as was given as the `location` option when <<#backup,creating the backup>>.
@@ -1980,16 +1973,13 @@ Backup locations can hold multiple backups of the same collection.
 This parameter allows users to choose which of those backups should be used to restore from.
 If not specified the most recent backup point is used.
 
-There are also optional parameters that determine the target collection layout.
-The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
-`createNodeSet`, `createNodeSet.shuffle`.
-
-Note: for `createNodeSet` the special value of `EMPTY` is not allowed with this command.
 
 *Overridable Parameters*
 
-Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup (described in detail in the <<create,CREATE collection>> section):
-`collection.configName`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`, `property._name_=_value_`.
+Additionally, users may provide a number of collection creation parameters to be used when the collection being restored to doesn't already exist.
+These include: `collection.configName`, `createNodeSet` (`EMPTY` not supported), `createNodeSet.shuffle`, `nrtReplicas`, `property._name_=_value_` (i.e. arbitrary collection properties), `pullReplicas`, `replicationFactor`, and `tlogReplicas`.
+
+See the <<create,collection creation>> documentation for more information on each of these parameters and details on their v1 or v2 specific syntaxes.
 
 [[deletebackup]]
 == DELETEBACKUP: Delete backup files from the remote repository
@@ -2004,21 +1994,23 @@ The DELETEBACKUP API does not support the deprecated format and attempts to use 
 ====
 
 Solr allows storing multiple backups for the same collection at any given logical "location".
-These backup points are each given an identifier (`backupId`) which can be used to delete them specifically with this API.
+These backup points are each given an identifier (`backupId`) which can be used to delete them individually with this API.
 Alternatively Solr can be told to keep the last `maxNumBackupPoints` backups, deleting everything else at the given location.
 Deleting backup points in these ways can orphan index files that are no longer referenced by any backup points.
 These orphaned files can be detected and deleted using the `purgeUnused` option.
-See the parameter descriptions below for more information.
 
-=== DELETEBACKUP Example
+Alternately, Solr's v2 API offers separate API endpoints for each of these backup-deletion mechanisms.
+See the examples and parameter descriptions below for more information.
+
+=== DELETEBACKUP Examples
+
+==== Deleting by Backup ID
 
 *Input*
 
-The following API command deletes the first backup (`backupId=0`) at the specified repository location.
-
 [.dynamic-tabs]
 --
-[example.tab-pane#v1deletebackup]
+[example.tab-pane#v1deletebackupsingle]
 ====
 [.tab-label]*V1 API*
 
@@ -2028,21 +2020,13 @@ http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupNa
 ----
 ====
 
-[example.tab-pane#v2deletebackup]
+[example.tab-pane#v2deletebackupsingle]
 ====
 [.tab-label]*V2 API*
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d '
-  {
-    "delete-backups" : {
-      "name": "myBackupName",
-      "location": "/path/to/my/shared/drive",
-      "backupId": 0
-    }
-  }
-'
+curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions/0?location=/path/to/my/shared/drive"
 ----
 ====
 --
@@ -2063,6 +2047,62 @@ curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: appl
   "collection":"books"}
 ----
 
+==== Deleting all but N recent backups
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletebackupmulti]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&maxNumBackupsPoints=2
+----
+====
+
+[example.tab-pane#v2deletebackupmulti]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+
+curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions?retainLatest=2&location=/path/to/my/shared/drive"
+----
+====
+--
+
+==== "Garbage collecting" unused files
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletebackupgc]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&purgeUnused=true
+----
+====
+
+[example.tab-pane#v2deletebackupgc]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+
+curl -X PUT -H "Content-type: application/json" "http://localhost:8983/api/backups/myBackupName/purgeUnused" '
+  {
+    "location": "/path/to/my/shared/drive"
+  }
+'
+----
+====
+--
+
 === DELETEBACKUP Parameters
 
 `name`::
@@ -2073,6 +2113,7 @@ s|Required |Default: none
 |===
 +
 The backup name to delete backup files from.
+Provided as a query parameter in v1 requests, and as a path parameter in v2 requests.
 
 `location`::
 +
@@ -2107,15 +2148,17 @@ If no repository is specified then the local filesystem repository will be used 
 |===
 +
 Explicitly specify a single backup-ID to delete.
-Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per v1 DELETEBACKUP request.
+Provided as a query parameter in v1 requests, and as a path parameter in v2 requests.
 
-`maxNumBackupPoints`::
+`maxNumBackupPoints` (v1), `retainLatest` (v2)::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
+TODO
 Specify how many backups should be retained, deleting all others.
 Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
 
@@ -2129,7 +2172,7 @@ Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified
 Solr's incremental backup support can orphan files if the backups referencing them are deleted.
 The `purgeUnused` flag parameter triggers a scan to detect these orphaned files and delete them.
 Administrators doing repeated backups at the same location should plan on using this parameter sporadically to reclaim disk space.
-Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per v1 DELETEBACKUP request.
 
 `async`::
 +
@@ -2325,7 +2368,7 @@ curl -X POST http://localhost:8983/api/collections/techproducts/snapshots/snapsh
     "status": 0,
     "QTime": 214
   },
-  "requestid": "someAsyncId"
+  "requestid": "someAsyncId",
   "collection": "techproducts",
   "snapshot": "snapshot0",
   "followAliases": true

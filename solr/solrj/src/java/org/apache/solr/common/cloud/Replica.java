@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
@@ -145,13 +146,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String core;
   public final Type type;
   public final String shard, collection;
-  private DocCollection.PrsSupplier prsSupplier;
+  private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
   // mutable
   private State state;
 
-  void setPrsSupplier(DocCollection.PrsSupplier prsSupplier) {
-    this.prsSupplier = prsSupplier;
+  void setPerReplicaStatesRef(AtomicReference<PerReplicaStates> perReplicaStatesRef) {
+    this.perReplicaStatesRef = perReplicaStatesRef;
   }
 
   public Replica(String name, Map<String, Object> map, String collection, String shard) {
@@ -293,8 +294,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   /** Returns the {@link State} of this replica. */
   public State getState() {
-    if (prsSupplier != null) {
-      PerReplicaStates.State s = prsSupplier.get().get(name);
+    if (perReplicaStatesRef != null) {
+      PerReplicaStates.State s = perReplicaStatesRef.get().get(name);
       if (s != null) {
         return s.state;
       } else {
@@ -318,8 +319,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public boolean isLeader() {
-    if (prsSupplier != null) {
-      PerReplicaStates.State st = prsSupplier.get().get(name);
+    if (perReplicaStatesRef != null) {
+      PerReplicaStates.State st = perReplicaStatesRef.get().get(name);
       return st == null ? false : st.isLeader;
     }
     return getBool(ReplicaStateProps.LEADER, false);
@@ -360,8 +361,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public PerReplicaStates.State getReplicaState() {
-    if (prsSupplier != null) {
-      return prsSupplier.get().get(name);
+    if (perReplicaStatesRef != null) {
+      return perReplicaStatesRef.get().get(name);
     }
     return null;
   }
@@ -424,6 +425,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public interface ReplicaStateProps {
     String COLLECTION = "collection";
     String SHARD_ID = "shard";
+    String REPLICA_ID = "replica";
     String LEADER = "leader";
     String STATE = "state";
     String CORE_NAME = "core";
@@ -436,5 +438,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Set<String> WELL_KNOWN_PROPS =
         Set.of(
             LEADER, STATE, CORE_NAME, CORE_NODE_NAME, TYPE, NODE_NAME, BASE_URL, FORCE_SET_STATE);
+  }
+
+  public ZkNodeProps toFullProps() {
+    return new ZkNodeProps()
+        .plus(propMap)
+        .plus(ReplicaStateProps.COLLECTION, getCollection())
+        .plus(ReplicaStateProps.SHARD_ID, getShard())
+        .plus(ReplicaStateProps.REPLICA_ID, getName());
   }
 }

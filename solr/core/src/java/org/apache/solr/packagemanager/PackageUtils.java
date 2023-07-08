@@ -16,6 +16,8 @@
  */
 package org.apache.solr.packagemanager;
 
+import static org.apache.solr.client.solrj.util.SolrIdentifierValidator.validateCollectionName;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
@@ -268,17 +270,8 @@ public class PackageUtils {
   }
 
   public static String[] validateCollections(String collections[]) {
-    String collectionNameRegex = "^[a-zA-Z0-9_-]*$";
     for (String c : collections) {
-      if (c.matches(collectionNameRegex) == false) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Invalid collection name: "
-                + c
-                + ". Didn't match the pattern: '"
-                + collectionNameRegex
-                + "'");
-      }
+      validateCollectionName(c);
     }
     return collections;
   }

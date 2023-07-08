@@ -498,14 +498,7 @@ public class SearchHandler extends RequestHandlerBase
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
-              params.remove(ShardParams.SHARDS); // not a top-level request
-              params.set(DISTRIB, "false"); // not a top-level request
-              params.remove("indent");
-              params.remove(CommonParams.HEADER_ECHO_PARAMS);
-              params.set(ShardParams.IS_SHARD, true); // a sub (shard) request
-              params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
-              params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
-              params.set(CommonParams.OMIT_HEADER, false);
+              params.setShardAttributesToParams(sreq.purpose);
 
               // Distributed request -- need to send queryID as a part of the distributed request
               params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
