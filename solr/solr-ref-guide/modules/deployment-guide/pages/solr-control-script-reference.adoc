@@ -508,7 +508,7 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
                                should be for root Solr path.
  -e,--exitcode                 Return an exit code instead of printing
                                error message on assert fail.
- -help                         Print this message
+ -h,--help                     Print this message.
  -m,--message <message>        Exception message to be used in place of
                                the default error message.
  -R,--not-root                 Asserts that we are NOT the root user.
@@ -521,7 +521,7 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
                                timeout.
  -u,--same-user <directory>    Asserts that we run as same user that owns
                                <directory>.
- -verbose                      Enable more verbose command output.
+ -v,--verbose                  Enable more verbose command output.
  -x,--exists <directory>       Asserts that directory <directory> exists.
  -X,--not-exists <directory>   Asserts that directory <directory> does NOT
                                exist.
@@ -549,7 +549,7 @@ Name of the collection to run a healthcheck against.
 +
 *Example*: `bin/solr healthcheck -c gettingstarted`
 
-`-solrUrl <url>`::
+`--solrUrl <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -558,7 +558,7 @@ Name of the collection to run a healthcheck against.
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
-`-z <zkhost>` or `-zkHost <zkhost>`::
+`-z <zkhost>` or `--zkHost <zkhost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -687,7 +687,7 @@ Only applies when Solr is running in SolrCloud mode.
 +
 *Example*: `bin/solr create -s 2`
 
-`-rf <replicas>` or `-replicationFactor <replicas>`::
+`-rf <replicas>` or `--replicationFactor <replicas>`::
 +
 [%autowidth,frame=none]
 |===
@@ -709,7 +709,7 @@ The default is `1` (no replication).
 If attempting to run create as "root" user, the script will exit with a warning that running Solr or actions against Solr as "root" can cause problems.
 It is possible to override this warning with the -force parameter.
 +
-*Example*: `bin/solr create -c foo -force`
+*Example*: `bin/solr create -c foo --force`
 
 === Create a Collection
 
@@ -717,7 +717,7 @@ The `create_collection` command creates a collection, and is only available when
 
 `bin/solr create_collection [options]`
 
-`bin/solr create_collection -help`
+`bin/solr create_collection --help`
 
 ==== Create Collection Parameters
 
@@ -764,23 +764,8 @@ Alternatively, if you want to reuse an existing directory or create a confdir in
 +
 Name the configuration directory in Zookeeper.
 By default, the configuration will be uploaded to Zookeeper using the collection name (-c), but if you want to use an existing directory or override the name of the configuration in Zookeeper, then use the -c option.
-UMMMM...   I COPIED THE ABOVE LINE FROM bin/solr create_collection -h output, but I don't get it.  And bin/solr create_collection -n basic -c mycoll works, it create a copy of _default as "basic" configset... UMMM?
 +
 *Example*: `bin/solr create_collection -n basic -c mycoll`
-
-`-p <port>` or `-port <port>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: _see description_
-|===
-+
-Port of a local Solr instance where you want to create the new collection.
-If not specified, the script will search the local system for a running Solr instance and will use the port of the first server it finds.
-+
-This option is useful if you are running multiple Solr instances on the same host, thus requiring you to be specific about which instance to create the core in.
-+
-*Example*: `bin/solr create -p 8983`
 
 `-s <shards>` or `-shards <shards>`::
 +
@@ -813,9 +798,9 @@ The default is `1` (no replication).
 |===
 +
 If attempting to run create as "root" user, the script will exit with a warning that running Solr or actions against Solr as "root" can cause problems.
-It is possible to override this warning with the -force parameter.
+It is possible to override this warning with the --force parameter.
 +
-*Example*: `bin/solr create_collection -c foo -force`
+*Example*: `bin/solr create_collection -c foo --force`
 
 === Create a Core
 
@@ -823,7 +808,7 @@ The `create_core` command creates a core and is only available when running in u
 
 `bin/solr create_core [options]`
 
-`bin/solr create_core -help`
+`bin/solr create_core --help`
 
 ==== Create Core Parameters
 
@@ -853,21 +838,7 @@ Alternatively, you can pass the path to your own configuration directory instead
 +
 *Example*: `bin/solr create_collection -c mycore -d /tmp/myconfig`
 
-`-p <port>` or `-port <port>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: _see description_
-|===
-+
-The port of a local Solr instance to create the new core.
-By default the script tries to detect the port by looking for running Solr instances.
-+
-This option is useful if you are running multiple Solr instances on the same host, thus requiring you to be specific about which instance to create the core in.
-+
-*Example*: `bin/solr create -p 8983`
-
-`-force`::
+`--force`::
 +
 [%autowidth,frame=none]
 |===
@@ -875,9 +846,9 @@ This option is useful if you are running multiple Solr instances on the same hos
 |===
 +
 If attempting to run create as "root" user, the script will exit with a warning that running Solr or actions against Solr as "root" can cause problems.
-It is possible to override this warning with the -force parameter.
+It is possible to override this warning with the --force parameter.
 +
-*Example*: `bin/solr create -c foo -force`
+*Example*: `bin/solr create -c foo --force`
 
 ==== Configuration Directories and SolrCloud
 
@@ -917,7 +888,7 @@ Consequently, we recommend that you do not share data-driven configurations betw
 You can turn off schemaless functionality for a collection with the following command, assuming the collection name is `mycollection`.
 
 [source,bash]
-$ bin/solr config -c mycollection -action set-user-property -property update.autoCreateFields -value false
+$ bin/solr config -c mycollection --action set-user-property --property update.autoCreateFields --value false
 
 See also the section <<Set or Unset Configuration Properties>>.
 
@@ -927,7 +898,7 @@ The `delete` command detects the mode that Solr is running in and then deletes t
 
 `bin/solr delete [options]`
 
-`bin/solr delete -help`
+`bin/solr delete --help`
 
 If you're deleting a collection in SolrCloud mode, the default behavior is to also delete the configuration directory from Zookeeper so long as it is not being used by another collection.
 
@@ -947,7 +918,7 @@ Name of the core or collection to delete.
 +
 *Example*: `bin/solr delete -c mycoll`
 
-`-deleteConfig`::
+`--deleteConfig`::
 +
 [%autowidth,frame=none]
 |===
@@ -956,9 +927,9 @@ Name of the core or collection to delete.
 +
 Whether or not the configuration directory should also be deleted from ZooKeeper.
 +
-If the configuration directory is being used by another collection, then it will not be deleted even if you pass `-deleteConfig` as `true`.
+If the configuration directory is being used by another collection, then it will not be deleted even if you pass `--deleteConfig` as `true`.
 +
-*Example*: `bin/solr delete -deleteConfig false`
+*Example*: `bin/solr delete --deleteConfig false`
 
 `-forceDeleteConfig`::
 +
@@ -1139,35 +1110,35 @@ The `bin/solr` script enables a subset of the Config API: xref:configuration-gui
 
 `bin/solr config [options]`
 
-`bin/solr config -help`
+`bin/solr config --help`
 
 === Set or Unset Common Properties
 
 To set the common property `updateHandler.autoCommit.maxDocs` to `100` on collection `mycollection`:
 
-`bin/solr config -c mycollection -action set-property -property updateHandler.autoCommit.maxDocs -value 100`
+`bin/solr config -c mycollection --action set-property --property updateHandler.autoCommit.maxDocs --value 100`
 
-The default `-action` is `set-property`, so the above can be shortened by not mentioning it:
+The default `--action` is `set-property`, so the above can be shortened by not mentioning it:
 
-`bin/solr config -c mycollection -property updateHandler.autoCommit.maxDocs -value 100`
+`bin/solr config -c mycollection --property updateHandler.autoCommit.maxDocs --value 100`
 
-To unset a previously set common property, specify `-action unset-property` with no `-value`:
+To unset a previously set common property, specify `--action unset-property` with no `--value`:
 
-`bin/solr config -c mycollection -action unset-property -property updateHandler.autoCommit.maxDocs`
+`bin/solr config -c mycollection --action unset-property --property updateHandler.autoCommit.maxDocs`
 
 === Set or Unset User-Defined Properties
 
 To set the user-defined property `update.autoCreateFields` to `false` (to disable xref:indexing-guide:schemaless-mode.adoc[]):
 
-`bin/solr config -c mycollection -action set-user-property -property update.autoCreateFields -value false`
+`bin/solr config -c mycollection --action set-user-property --property update.autoCreateFields --value false`
 
-To unset a previously set user-defined property, specify `-action unset-user-property` with no `-value`:
+To unset a previously set user-defined property, specify `--action unset-user-property` with no `--value`:
 
-`bin/solr config -c mycollection -action unset-user-property -property update.autoCreateFields`
+`bin/solr config -c mycollection --action unset-user-property --property update.autoCreateFields`
 
 === Config Parameters
 
-`-c <name>` or `-name <name>`::
+`-c <name>` or `--name <name>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1176,7 +1147,7 @@ s|Required |Default: none
 +
 Name of the core or collection on which to change configuration.
 
-`-action <name>`::
+`--action <name>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1185,7 +1156,7 @@ Name of the core or collection on which to change configuration.
 +
 Config API action, one of: `set-property`, `unset-property`, `set-user-property`, `unset-user-property`.
 
-`-property <name>`::
+`--property <name>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1194,7 +1165,7 @@ s|Required |Default: none
 +
 Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.
 
-`-value <new-value>`::
+`--value <new-value>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1203,7 +1174,7 @@ Name of the Config API property to apply the action to, such as: 'updateHandler.
 +
 Set the property to this value; accepts JSON objects and strings.
 
-`-z <zkHost>` or `-zkHost <zkHost>`::
+`-z <zkHost>` or `--zkHost <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1213,7 +1184,7 @@ Set the property to this value; accepts JSON objects and strings.
 The ZooKeeper connection string, usable in SolrCloud mode.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-solrUrl <url>`::
+`-u <url>` or --solrUrl <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1221,16 +1192,6 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 |===
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
-
-`-s <scheme>` or `-scheme <scheme>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `http`
-|===
-+
-The scheme for accessing Solr. Accepted values: http or https.  Default is 'http'
-
 
 == ZooKeeper Operations
 
@@ -1680,11 +1641,11 @@ NOTE: The `export` command only works with in a Solr running in cloud mode.
 
 `bin/solr export [options]`
 
-`bin/solr export -help`
+`bin/solr export --help`
 
 The `bin/solr export` command takes the following parameters:
 
-`-url <url>`::
+`--url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1693,9 +1654,9 @@ s|Required |Default: none
 +
 Fully-qualified address to a collection.
 +
-*Example*: `-url http://localhost:8983/solr/techproducts`
+*Example*: `--url http://localhost:8983/solr/techproducts`
 
-`-format <format>`::
+`--format <format>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1706,7 +1667,7 @@ The file format of the export, `json`, `jsonl`, or `javabin`.
 Choosing `javabin` exports in the native Solr format, and is compact and fast to import.
 `jsonl` is the Json with Lines format, learn more at https://jsonlines.org/.
 
-`-out <path>`::
+`--out <path>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1717,16 +1678,16 @@ Either the path to the directory for the exported data to be written to, or a sp
 +
 If only a directory is specified then the file will be created with the name of the collection, as in `<collection>.json`.
 
-`-compress`::
+`--compress`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: false
 |===
 +
-If you specify `-compress` then the resulting outputting file with will be gzipped, for example `<collection>.json.gz`.
+If you specify `--compress` then the resulting outputting file with will be gzipped, for example `<collection>.json.gz`.
 
-`-query <query string>`::
+`--query <query string>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1736,7 +1697,7 @@ If you specify `-compress` then the resulting outputting file with will be gzipp
 A custom query.
 The default is `\*:*` which will export all documents.
 
-`-fields <fields>`::
+`--fields <fields>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1747,7 +1708,7 @@ Comma separated list of fields to be exported.
 By default all fields are fetched.
 
 
-`-limit <number of documents>`::
+`--limit <number of documents>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1762,13 +1723,13 @@ The value `-1` will export all documents.
 Export all documents from a collection `gettingstarted`:
 
 [source,bash]
-bin/solr export -url http://localhost:8983/solr/gettingstarted limit -1
+bin/solr export --url http://localhost:8983/solr/gettingstarted --limit -1
 
 Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a compressed JSON file:
 
 [source,bash]
 ----
-bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -format json -compress -out 1MDocs
+bin/solr export --url http://localhost:8983/solr/gettingstarted --limit -1 --format json --compress --out 1MDocs
 ----
 
 === Importing Documents into a Collection
@@ -1781,7 +1742,7 @@ First export the documents, making sure to ignore any fields that are populated 
 
 [,console]
 ----
-$ bin/solr export -url http://localhost:8983/solr/gettingstarted -fields id,name,manu,cat,features
+$ bin/solr export --url http://localhost:8983/solr/gettingstarted --fields id,name,manu,cat,features
 ----
 
 Create a new collection to import the exported documents into:
@@ -1807,7 +1768,7 @@ $ curl -H 'Content-Type: application/json' -X POST -d @gettingstarted.json 'http
 
 [,console]
 ----
-$ bin/solr export -url http://localhost:8983/solr/gettingstarted -format javabin -fields id,name,manu,cat,features
+$ bin/solr export --url http://localhost:8983/solr/gettingstarted --format javabin --fields id,name,manu,cat,features
 $ curl -X POST --header "Content-Type: application/javabin" --data-binary @gettingstarted.javabin 'http://localhost:8983/solr/test_collection/update?commit=true'
 ----
 
@@ -1815,9 +1776,9 @@ $ curl -X POST --header "Content-Type: application/javabin" --data-binary @getti
 
 The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
 
-`bin/solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
+`bin/solr api --get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
 
-`bin/solr api -help`
+`bin/solr api --help`
 
 The `bin/solr api` command takes the following parameters:
 
@@ -1830,7 +1791,7 @@ The `bin/solr api` command takes the following parameters:
 +
 Send a GET request to a Solr API endpoint.
 +
-*Example*: `bin/solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
+*Example*: `bin/solr api --get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
 
 === API
 
@@ -1838,12 +1799,12 @@ The `api` command will allow you to send an arbitrary HTTP request to a Solr API
 If you have configured basicAuth or TLS with your Solr you may find this easier than using a separate tool like `curl`.
 
 [source,bash]
-$ bin/solr api api -get http://localhost:8983/solr/techproducts/select?q=*:*
+$ bin/solr api api --get http://localhost:8983/solr/techproducts/select?q=*:*
 
 
 Here is an example of sending a SQL query to the techproducts /sql end point (assumes you started Solr in Cloud mode with the SQL module enabled):
 
 [source,bash]
-$ bin/solr api api -get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
+$ bin/solr api api --get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
 
 Results are streamed to the terminal.
