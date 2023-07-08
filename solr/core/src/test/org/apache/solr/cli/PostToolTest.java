@@ -42,7 +42,7 @@ public class PostToolTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collection, "config", 1, 1)
         .process(cluster.getSolrClient());
 
-    String[] args = {"post", "-url", "http://localhost:8983/solr/aliasedCollection", "blah.json"};
+    String[] args = {"post", "--url", "http://localhost:8983/solr/aliasedCollection", "blah.json"};
     assertEquals(0, runTool(args));
   }
 
