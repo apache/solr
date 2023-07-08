@@ -223,11 +223,11 @@ set FIRST_ARG=%1
 
 IF [%1]==[] goto usage
 
-IF "%1"=="-help" goto usage
-IF "%1"=="-usage" goto usage
-IF "%1"=="-h" goto usage
-IF "%1"=="--help" goto usage
-IF "%1"=="/?" goto usage
+IF "%1"=="-help" goto run_solrcli
+IF "%1"=="-usage" goto run_solrcli
+IF "%1"=="-h" goto run_solrcli
+IF "%1"=="--help" goto run_solrcli
+IF "%1"=="/?" goto run_solrcli
 IF "%1"=="status" goto get_status
 IF "%1"=="version" goto get_version
 IF "%1"=="-v" goto get_version
@@ -263,12 +263,12 @@ goto parse_args
 
 :usage
 IF NOT "%SCRIPT_ERROR%"=="" ECHO %SCRIPT_ERROR%
-IF [%FIRST_ARG%]==[] goto script_usage
-IF "%FIRST_ARG%"=="-help" goto script_usage
-IF "%FIRST_ARG%"=="-usage" goto script_usage
-IF "%FIRST_ARG%"=="-h" goto script_usage
-IF "%FIRST_ARG%"=="--help" goto script_usage
-IF "%FIRST_ARG%"=="/?" goto script_usage
+IF [%FIRST_ARG%]==[] goto run_solrcli
+IF "%FIRST_ARG%"=="-help" goto run_solrcli
+IF "%FIRST_ARG%"=="-usage" goto run_solrcli
+IF "%FIRST_ARG%"=="-h" goto run_solrcli
+IF "%FIRST_ARG%"=="--help" goto run_solrcli
+IF "%FIRST_ARG%"=="/?" goto run_solrcli
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
 IF "%SCRIPT_CMD%"=="stop" goto stop_usage
