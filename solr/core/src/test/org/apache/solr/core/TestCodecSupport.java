@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene95.Lucene95Codec.Mode;
+import org.apache.lucene.codecs.lucene95.Lucene95HnswVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldKnnVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
@@ -274,7 +275,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
     PerFieldKnnVectorsFormat format = (PerFieldKnnVectorsFormat) codec.knnVectorsFormat();
     assertEquals(
-        "Lucene95HnswVectorsFormat",
+        Lucene95HnswVectorsFormat.class.getSimpleName(),
         format.getKnnVectorsFormatForField(schemaField.getName()).getName());
   }
 
