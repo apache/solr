@@ -89,7 +89,7 @@ public class SolrCLI implements CLIO {
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
-      Option.builder("s")
+      Option.builder("u")
           .longOpt("solrUrl")
           .argName("HOST")
           .hasArg()
