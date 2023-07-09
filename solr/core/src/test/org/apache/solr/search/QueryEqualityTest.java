@@ -908,6 +908,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("vector(foo_i,sum(4,bar_i))", "vector(foo_i, sum(4,bar_i))");
   }
 
+  public void testFuncKnnVector() throws Exception {
+    assertFuncEquals(
+        "vectorSimilarity(FLOAT32,COSINE,[1,2,3],[4,5,6])",
+        "vectorSimilarity(FLOAT32, COSINE, [1, 2, 3], [4, 5, 6])");
+
+    assertFuncEquals(
+        "vectorSimilarity(BYTE, EUCLIDEAN, bar_i, [4,5,6])",
+        "vectorSimilarity(BYTE, EUCLIDEAN, field(bar_i), [4, 5,  6])");
+  }
+
   public void testFuncQuery() throws Exception {
     SolrQueryRequest req = req("myQ", "asdf");
     try {
