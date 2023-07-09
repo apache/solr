@@ -71,6 +71,8 @@ New Features
 
 * SOLR-16717: {!join} can join collections with multiple shards on both sides. (Mikhail Khludnev)
 
+* SOLR-16675: Added function queries for dense vector similarity. (Elia Porciani, Alessandro Benedetti)
+
 Improvements
 ---------------------
 
