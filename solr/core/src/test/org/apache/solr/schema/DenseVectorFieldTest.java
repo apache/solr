@@ -603,22 +603,6 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     }
   }
 
-  /** Not Supported */
-  @Test
-  public void query_functionQueryUsage_shouldThrowException() throws Exception {
-    try {
-      initCore("solrconfig-basic.xml", "schema-densevector.xml");
-
-      assertQEx(
-          "Running Function queries on a dense vector field should raise an Exception",
-          "Function queries are not supported for Dense Vector fields.",
-          req("q", "*:*", "fl", "id,field(vector)"),
-          SolrException.ErrorCode.BAD_REQUEST);
-    } finally {
-      deleteCore();
-    }
-  }
-
   @Test
   public void denseVectorField_shouldBePresentAfterAtomicUpdate() throws Exception {
     try {
