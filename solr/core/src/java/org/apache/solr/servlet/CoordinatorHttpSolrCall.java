@@ -208,9 +208,12 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
   private static void addReplica(String syntheticCollectionName, CoreContainer cores) {
     SolrQueryResponse rsp = new SolrQueryResponse();
     try {
+      String coreName = syntheticCollectionName + "_" + "r1";
       CollectionAdminRequest.AddReplica addReplicaRequest =
           CollectionAdminRequest.addReplicaToShard(syntheticCollectionName, "shard1")
-              .setCreateNodeSet(cores.getZkController().getNodeName());
+              // we are fixing the name, so that no two replicas are created in the same node
+              .setCoreName(coreName)
+              .setNode(cores.getZkController().getNodeName());
       addReplicaRequest.setWaitForFinalState(true);
       cores
           .getCollectionsHandler()
@@ -221,6 +224,15 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
             "Could not auto-create collection: " + Utils.toJSONString(rsp.getValues()));
       }
     } catch (SolrException e) {
+      if (e.getMessage().contains("replica with the same core name already exists")) {
+        // another request has already created a replica for this synthetic collection
+        if (log.isInfoEnabled()) {
+          log.info(
+              "A replica is already created in this node for synthetic collection: {}",
+              syntheticCollectionName);
+        }
+        return;
+      }
       throw e;
 
     } catch (Exception e) {
