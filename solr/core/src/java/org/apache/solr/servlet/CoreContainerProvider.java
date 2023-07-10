@@ -46,6 +46,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -55,6 +56,8 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.UnavailableException;
 import org.apache.http.client.HttpClient;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -225,6 +228,21 @@ public class CoreContainerProvider implements ServletContextListener {
         log.info("Log level override, property solr.log.level={}", logLevel);
         StartupLoggingUtils.changeLogLevel(logLevel);
       }
+
+      // Do initial logs for experimental Lucene classes.
+      // TODO: Use "MethodHandles.lookup().ensureClassInitialized()" instead of "Class.forName()"
+      //   once JDK 15+ is mandatory
+      Stream.of(MMapDirectory.class, VectorUtil.class)
+          .forEach(
+              cls -> {
+                try {
+                  Class.forName(cls.getName());
+                } catch (ReflectiveOperationException re) {
+                  throw new SolrException(
+                      ErrorCode.SERVER_ERROR, "Could not load Lucene class: " + cls.getName());
+                }
+              });
+      VectorUtil.dotProduct(new byte[0], new byte[0]);
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
