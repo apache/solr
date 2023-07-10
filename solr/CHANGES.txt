@@ -122,6 +122,8 @@ New Features
 
 * SOLR-16675: Added function queries for dense vector similarity. (Elia Porciani, Alessandro Benedetti)
 
+* SOLR-16884: Solr Javadocs now have searching enabled. (Mike Drob, Houston Putman)
+
 Improvements
 ---------------------
 
