@@ -68,7 +68,7 @@ allprojects {
 
       relativeProjectLinks = true
 
-      noindex = false
+      enableSearch = true
 
       // Place the documentation under Lucene or Solr's documentation directory.
       // docroot is defined in 'documentation.gradle'
@@ -221,7 +221,7 @@ class RenderJavadocTask extends DefaultTask {
   boolean linksource = false
 
   @Input
-  boolean noindex = true
+  boolean enableSearch = false
 
   @Input
   boolean relativeProjectLinks = false
@@ -291,7 +291,7 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '-encoding', 'UTF-8' ]
     opts << [ '-charset', 'UTF-8' ]
     opts << [ '-docencoding', 'UTF-8' ]
-    if (noindex) {
+    if (!enableSearch) {
       opts << '-noindex'
     }
     opts << '-author'
