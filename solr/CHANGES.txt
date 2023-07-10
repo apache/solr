@@ -180,6 +180,8 @@ Improvements
 * SOLR-16470: `/coreName/replication?command=filelist` now has a v2 equivalent, available at
   `GET /api/cores/coreName/replication/files?generation=123` (Matthew Biscocho via Jason Gerlowski)
 
+* SOLR-16878: Use Log4J JUL manager when starting Java. This is necessary for Lucene logs to be included with Solr logs. (Houston Putman, Uwe Schindler)
+
 Optimizations
 ---------------------
 
