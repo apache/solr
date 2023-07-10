@@ -600,6 +600,7 @@ public class RunExampleTool extends ToolBase {
     String memArg = (memory != null) ? " -m " + memory : "";
     String cloudModeArg = cloudMode ? "-cloud " : "";
     String forceArg = cli.hasOption("force") ? " -force" : "";
+    String verboseArg = verbose ? "-V" : "";
 
     String addlOpts = cli.getOptionValue('a');
     String addlOptsArg = (addlOpts != null) ? " -a \"" + addlOpts + "\"" : "";
@@ -620,7 +621,7 @@ public class RunExampleTool extends ToolBase {
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,
@@ -629,6 +630,7 @@ public class RunExampleTool extends ToolBase {
             zkHostArg,
             memArg,
             forceArg,
+            verboseArg,
             extraArgs,
             addlOptsArg);
     startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
