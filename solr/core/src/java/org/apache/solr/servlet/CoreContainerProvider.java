@@ -242,7 +242,6 @@ public class CoreContainerProvider implements ServletContextListener {
                       ErrorCode.SERVER_ERROR, "Could not load Lucene class: " + cls.getName());
                 }
               });
-      VectorUtil.dotProduct(new byte[0], new byte[0]);
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
