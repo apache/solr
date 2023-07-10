@@ -55,6 +55,7 @@ dependencies {
   api 'org.slf4j:slf4j-api'
 
   api project(':solr:solrj')
+  api project(':solr:solrj-model')
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
 
