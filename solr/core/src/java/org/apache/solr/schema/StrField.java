@@ -24,13 +24,19 @@ import java.util.Map;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
+import org.apache.solr.query.DynamicComplementPrefixQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
@@ -73,6 +79,28 @@ public class StrField extends PrimitiveFieldType {
       ByteArrayUtf8CharSequence utf8 = (ByteArrayUtf8CharSequence) value;
       return new BytesRef(utf8.getBuf(), utf8.offset(), utf8.size());
     } else return new BytesRef(value.toString());
+  }
+
+  @Override
+  public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
+    if ("".equals(termStr)) {
+      return getExistenceQuery(parser, sf);
+    }
+    Term term = new Term(sf.getName(), termStr);
+    MultiTermQuery query;
+    SolrParams lParams = parser == null ? null : parser.getLocalParams();
+    if (lParams == null || !lParams.getBool("forceAutomaton", false)) {
+      boolean noInvert =
+          !sf.hasDocValues() || (lParams != null && lParams.getBool("noInvert", false));
+      boolean multivalued = sf.multiValued() || sf.getType().multiValuedFieldCache();
+      boolean forceCacheFieldExists =
+          !noInvert && lParams != null && lParams.getBool("forceCacheFieldExists", false);
+      query = new DynamicComplementPrefixQuery(term, noInvert, multivalued, forceCacheFieldExists);
+    } else {
+      query = new PrefixQuery(term);
+    }
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    return query;
   }
 
   @Override
