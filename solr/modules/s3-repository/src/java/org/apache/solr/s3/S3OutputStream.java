@@ -163,13 +163,17 @@ public class S3OutputStream extends OutputStream {
       return;
     }
 
-    if (multiPartUpload == null || !multiPartUpload.aborted) {
-      // flush first
-      uploadPart();
+    if (multiPartUpload != null && multiPartUpload.aborted) {
+      multiPartUpload = null;
+      closed = true;
+      return;
+    }
 
-      if (multiPartUpload != null) {
-        multiPartUpload.complete();
-      }
+    // flush first
+    uploadPart();
+
+    if (multiPartUpload != null) {
+      multiPartUpload.complete();
     }
     multiPartUpload = null;
     closed = true;
@@ -204,7 +208,7 @@ public class S3OutputStream extends OutputStream {
     void uploadPart(ByteArrayInputStream inputStream, long partSize) {
       if (aborted) {
         throw new IllegalStateException(
-            "Can't upload new parts on an MultipartUpload that was aborted. id '" + uploadId + "'");
+            "Can't upload new parts on a MultipartUpload that was aborted. id '" + uploadId + "'");
       }
       int currentPartNumber = completedParts.size() + 1;
 
@@ -228,7 +232,8 @@ public class S3OutputStream extends OutputStream {
     /** To be invoked when closing the stream to mark upload is done. */
     void complete() {
       if (aborted) {
-        return;
+        throw new IllegalStateException(
+            "Can't complete a MultipartUpload that was aborted. id '" + uploadId + "'");
       }
       if (log.isDebugEnabled()) {
         log.debug("Completing multi-part upload for key '{}', id '{}'", key, uploadId);
@@ -247,11 +252,13 @@ public class S3OutputStream extends OutputStream {
       }
       try {
         s3Client.abortMultipartUpload(b -> b.bucket(bucketName).key(key).uploadId(uploadId));
-        aborted = true;
       } catch (Exception e) {
         // ignoring failure on abort.
         log.error("Unable to abort multipart upload, you may need to purge uploaded parts: ", e);
       }
+      // Even if the abort operation failed, we consider this MultiPartUpload aborted,
+      // and we'll not try to complete it.
+      aborted = true;
     }
   }
 }
