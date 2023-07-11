@@ -29,7 +29,6 @@ import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
-import software.amazon.awssdk.services.s3.model.MultipartUpload;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 
@@ -205,7 +204,7 @@ public class S3OutputStream extends OutputStream {
     void uploadPart(ByteArrayInputStream inputStream, long partSize) {
       if (aborted) {
         throw new IllegalStateException(
-                "Can't upload new parts on an MultipartUpload that was aborted. id '" + uploadId + "'");
+            "Can't upload new parts on an MultipartUpload that was aborted. id '" + uploadId + "'");
       }
       int currentPartNumber = completedParts.size() + 1;
 
