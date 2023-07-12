@@ -297,10 +297,6 @@ public abstract class ServletUtils {
     return (Tracer) req.getAttribute(SolrDispatchFilter.ATTR_TRACING_TRACER);
   }
 
-  private static RateLimitManager getRateLimitManager(HttpServletRequest req) {
-    return (RateLimitManager) req.getAttribute(SolrDispatchFilter.ATTR_RATELIMIT_MANAGER);
-  }
-
   protected static Span buildSpan(Tracer tracer, HttpServletRequest request) {
     if (tracer instanceof NoopTracer) {
       return NoopSpan.INSTANCE;
