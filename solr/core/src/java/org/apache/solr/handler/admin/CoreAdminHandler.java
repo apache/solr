@@ -23,13 +23,13 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PER
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -437,7 +437,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
       requestStatusMap = Collections.unmodifiableMap(map);
 
-      expensiveTaskQueue = new LinkedList<>();
+      expensiveTaskQueue = new ArrayDeque<>();
     }
 
     public void shutdown() {
