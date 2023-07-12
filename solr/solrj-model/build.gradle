@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+plugins {
+  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+}
+
 apply plugin: 'java-library'
 
 description = 'Solrj-Model- Interfaces and classes used to represent Solrs APIs'
@@ -30,8 +34,23 @@ dependencies {
         exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
     }
 
+ext {
+    openapispecdir = "${buildDir}/generated/openapi"
+//    openapispecfile = "${project.ext.openapispecdir}/openapi.json"
+}
+
+resolve {
+  classpath = sourceSets.main.runtimeClasspath
+  outputDir = file(project.ext.openapispecdir)
+  prettyPrint = true
+}
+
     // declare dependencies we use even though already declared by solrj-core
     implementation 'org.slf4j:slf4j-api'
+
+    implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+    implementation 'io.swagger.core.v3:swagger-annotations'
 
     testImplementation project(':solr:test-framework')
     testImplementation project(':solr:core')

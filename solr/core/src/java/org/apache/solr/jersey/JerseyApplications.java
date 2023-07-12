@@ -36,13 +36,6 @@ import org.glassfish.jersey.server.ResourceConfig;
  * JAX-RS "application" configurations for Solr's {@link org.apache.solr.core.CoreContainer} and
  * {@link SolrCore} instances
  */
-@OpenAPIDefinition(
-    info =
-        @Info(
-            title = "v2 API",
-            description = "OpenAPI spec for Solr's v2 API endpoints",
-            license = @License(name = "ASL 2.0"),
-            version = SolrVersion.LATEST_STRING))
 public class JerseyApplications {
 
   public static class CoreContainerApp extends ResourceConfig {
