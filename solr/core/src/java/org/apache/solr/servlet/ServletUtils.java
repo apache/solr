@@ -216,11 +216,7 @@ public abstract class ServletUtils {
       }
 
       if (!accepted) {
-        String errorMessage =
-            "Too many requests for this request type."
-                + "Please try after some time or increase the quota for this request type";
-
-        response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, errorMessage);
+        response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
         return;
       }
       // todo: this shouldn't be required, tracing and rate limiting should be independently
