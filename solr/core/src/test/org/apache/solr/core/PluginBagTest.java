@@ -105,12 +105,13 @@ public class PluginBagTest extends SolrTestCaseJ4 {
 
   @Test
   public void testApiConfig() {
-    var handlerPluginBag = new PluginBag<>(SolrRequestHandler.class, null);
-    final ResourceConfig config = handlerPluginBag.getJerseyEndpoints();
+    PluginBag<SolrRequestHandler> handlerPluginBag =
+        new PluginBag<>(SolrRequestHandler.class, null);
+    ResourceConfig config = handlerPluginBag.getJerseyEndpoints();
 
     assertFalse(config.isRegistered(APIConfigProviderBinder.class));
 
-    var handler1 = new EmptyRequestHandler();
+    EmptyRequestHandler handler1 = new EmptyRequestHandler();
     handlerPluginBag.put("/foo", handler1);
 
     // check v2 api was registered
