@@ -208,7 +208,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
   private static void addReplica(String syntheticCollectionName, CoreContainer cores) {
     SolrQueryResponse rsp = new SolrQueryResponse();
     try {
-      String coreName = syntheticCollectionName + "_" + "r1";
+      String coreName = syntheticCollectionName + "_" + cores.getZkController().getNodeName();
       CollectionAdminRequest.AddReplica addReplicaRequest =
           CollectionAdminRequest.addReplicaToShard(syntheticCollectionName, "shard1")
               // we are fixing the name, so that no two replicas are created in the same node
