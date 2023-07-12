@@ -447,7 +447,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       // Before shutting down the thread pool, we have to execute all the expensive tasks that
       // are already in the queue
       synchronized (this) {
-        if (!expensiveTaskQueue.isEmpty()) {
+        while (!expensiveTaskQueue.isEmpty()) {
           try {
             // notifyAll() is in finishTask(), invoked when the queue is empty
             wait(60000L);
