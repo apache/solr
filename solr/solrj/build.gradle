@@ -15,12 +15,59 @@
  * limitations under the License.
  */
 
+plugins {
+  id "org.openapi.generator" version "6.6.0"
+}
+
 
 apply plugin: 'java-library'
 
 description = 'Solrj - Solr Java Client'
 
+configurations {
+  openApiSpecFile {
+    canBeConsumed = false
+  }
+  generatedCode
+}
+
+tasks.register("copySpec", Copy) {
+  from("../solrj-model/build/generated/openapi")
+  into(layout.buildDirectory.dir("openapispec"))
+}
+
+openApiGenerate {
+  generatorName = "java"
+  // TODO - pretty hacky to specify inputSpec this way...ideally I'd just rely on a property defined in
+  // solrj-model, as below, but it doesn't appear to be working
+  //inputSpec = project(":solr:solrj-model").ext.openapispecfile
+  inputSpec = "${buildDir}/openapispec/openapi.json"
+
+  //globalProperties.set([models: "", modelDocs: "false", apis: ""])
+  //templateDir = "$rootDir/solr/solrj/src/resources/java-template" // maybe use $projectDir to start this string off
+  outputDir = "${buildDir}/generated/main/java"
+  generateApiTests = false
+  generateModelTests = false
+}
+tasks.getByName("copySpec").dependsOn configurations.getByName("openApiSpecFile")
+tasks.getByName("openApiGenerate").dependsOn tasks.copySpec
+
+sourceSets {
+  main {
+    java {
+      srcDir "${buildDir}/generated/main/java"
+    }
+  }
+}
+tasks.compileJava.dependsOn(configurations.generatedCode)
+
+
 dependencies {
+
+  openApiSpecFile(project(path: ":solr:solrj-model", configuration: "openapiSpec"))
+  generatedCode files("${buildDir}/generated/main/java") {
+    builtBy tasks.openApiGenerate
+  }
 
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
