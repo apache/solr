@@ -72,7 +72,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     try {
       CloudSolrClient client = cluster.getSolrClient();
       String COLLECTION_NAME = "test_coll";
-      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.SYNTHETIC_COLL_PREFIX + "conf";
+      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.getSyntheticCollectionName("conf");
       CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 2)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
@@ -120,7 +120,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     try {
       CloudSolrClient client = cluster.getSolrClient();
       String COLLECTION_NAME = "test_coll";
-      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.SYNTHETIC_COLL_PREFIX + "conf";
+      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.getSyntheticCollectionName("conf");
       for (int j = 1; j <= 10; j++) {
         String collname = COLLECTION_NAME + "_" + j;
         CollectionAdminRequest.createCollection(collname, "conf", 2, 2)
@@ -486,7 +486,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
   public void testConcurrentAccess() throws Exception {
     final int DATA_NODE_COUNT = 2;
-    final int COORDINATOR_NODE_COUNT = 2;
+    final int COORDINATOR_NODE_COUNT = 4;
     MiniSolrCloudCluster cluster =
         configureCluster(DATA_NODE_COUNT).addConfig("conf", configset("cloud-minimal")).configure();
 
@@ -568,6 +568,15 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       for (Future<?> testFuture : testFutures) {
         testFuture.get(); // check for any exceptions/failures
       }
+
+      // number of replicas created in the synthetic collection should be one per coordinator node
+      assertEquals(
+          COORDINATOR_NODE_COUNT,
+          client
+              .getClusterState()
+              .getCollection(CoordinatorHttpSolrCall.getSyntheticCollectionName("conf"))
+              .getReplicas()
+              .size());
 
       executorService.shutdown();
       executorService.awaitTermination(10, TimeUnit.SECONDS);
