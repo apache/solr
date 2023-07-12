@@ -200,13 +200,13 @@ public abstract class ServletUtils {
    * @param trace a boolean that turns tracing on or off
    */
   static void rateLimitRequest(
+      RateLimitManager rateLimitManager,
       HttpServletRequest request,
       HttpServletResponse response,
       Runnable limitedExecution,
       boolean trace)
       throws ServletException, IOException {
     boolean accepted = false;
-    RateLimitManager rateLimitManager = getRateLimitManager(request);
     try {
       try {
         accepted = rateLimitManager.handleRequest(request);
@@ -220,7 +220,8 @@ public abstract class ServletUtils {
             "Too many requests for this request type."
                 + "Please try after some time or increase the quota for this request type";
 
-        response.sendError(429, errorMessage);
+        response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, errorMessage);
+        return;
       }
       // todo: this shouldn't be required, tracing and rate limiting should be independently
       // composable

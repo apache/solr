@@ -209,8 +209,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     Tracer t = getCores() == null ? GlobalTracer.get() : getCores().getTracer();
     request.setAttribute(Tracer.class.getName(), t);
     RateLimitManager rateLimitManager = coreService.getService().getRateLimitManager();
-    request.setAttribute(RateLimitManager.class.getName(), rateLimitManager);
     ServletUtils.rateLimitRequest(
+        rateLimitManager,
         request,
         response,
         () -> {
