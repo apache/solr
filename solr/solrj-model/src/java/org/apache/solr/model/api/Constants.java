@@ -15,12 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey;
+package org.apache.solr.model.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
+public class Constants {
+    private Constants() { /* Private ctor prevents instantiation */ }
 
-public class AsyncJerseyResponse extends SolrJerseyResponse {
-  @JsonProperty("requestid")
-  public String requestId;
+    public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }

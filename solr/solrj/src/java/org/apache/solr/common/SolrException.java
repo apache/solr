@@ -16,16 +16,18 @@
  */
 package org.apache.solr.common;
 
-import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
+import java.util.Map;
+
+import static org.apache.solr.common.util.ModelConstants.ERROR_CLASS;
+import static org.apache.solr.common.util.ModelConstants.ROOT_ERROR_CLASS;
+
 /** */
 public class SolrException extends RuntimeException {
 
-  public static final String ROOT_ERROR_CLASS = "root-error-class";
-  public static final String ERROR_CLASS = "error-class";
   private final Map<String, String> mdcContext;
 
   /**

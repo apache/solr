@@ -17,17 +17,21 @@
 
 package org.apache.solr.handler.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-import static org.apache.solr.common.params.CommonParams.WT;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
+import org.apache.solr.model.api.response.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.common.params.CommonParams.WT;
 
 /** Utilities helpful for common V2 API declaration tasks. */
 public class V2ApiUtils {
@@ -56,33 +60,33 @@ public class V2ApiUtils {
 
   /**
    * Convert a JacksonReflectMapWriter (typically a {@link
-   * org.apache.solr.jersey.SolrJerseyResponse}) into the NamedList on a SolrQueryResponse, omitting
+   * SolrJerseyResponse}) into the NamedList on a SolrQueryResponse, omitting
    * the response header
    *
    * @param rsp the response to attach the resulting NamedList to
    * @param mw the input object to be converted into a NamedList
    */
   public static void squashIntoSolrResponseWithoutHeader(
-      SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
-    squashIntoNamedList(rsp.getValues(), mw, true);
+      SolrQueryResponse rsp, Object mw) {
+    squashObjectIntoNamedList(rsp.getValues(), mw, true);
   }
 
   /**
    * Convert a JacksonReflectMapWriter (typically a {@link
-   * org.apache.solr.jersey.SolrJerseyResponse}) into the NamedList on a SolrQueryResponse,
+   * SolrJerseyResponse}) into the NamedList on a SolrQueryResponse,
    * including the response header
    *
    * @param rsp the response to attach the resulting NamedList to
    * @param mw the input object to be converted into a NamedList
    */
   public static void squashIntoSolrResponseWithHeader(
-      SolrQueryResponse rsp, JacksonReflectMapWriter mw) {
-    squashIntoNamedList(rsp.getValues(), mw, false);
+      SolrQueryResponse rsp, Object mw) {
+    squashObjectIntoNamedList(rsp.getValues(), mw, false);
   }
 
   public static void squashIntoNamedList(
-      NamedList<Object> destination, JacksonReflectMapWriter mw) {
-    squashIntoNamedList(destination, mw, false);
+      NamedList<Object> destination, Object mw) {
+    squashObjectIntoNamedList(destination, mw, false);
   }
 
   public static String getMediaTypeFromWtParam(
@@ -101,23 +105,28 @@ public class V2ApiUtils {
     }
   }
 
-  private static void squashIntoNamedList(
-      NamedList<Object> destination, JacksonReflectMapWriter mw, boolean trimHeader) {
-    try {
-      mw.writeMap(
-          new EntryWriter() {
-            @Override
-            public EntryWriter put(CharSequence key, Object value) {
-              var kStr = key.toString();
-              if (trimHeader && kStr.equals("responseHeader")) {
-                return null;
-              }
-              destination.add(kStr, value);
-              return this; // returning "this" means we can't use a lambda :-(
-            }
-          });
-    } catch (IOException e) {
-      throw new RuntimeException(e); // impossible
-    }
+  public static void squashObjectIntoNamedList(
+          NamedList<Object> destination, Object o, boolean trimHeader) {
+      final var ew = new EntryWriter() {
+        @Override
+        public EntryWriter put(CharSequence key, Object value) {
+          var kStr = key.toString();
+          if (trimHeader && kStr.equals("responseHeader")) {
+            return null;
+          }
+          destination.add(kStr, value);
+          return this; // returning "this" means we can't use a lambda :-(
+        }
+      };
+      Utils.reflectWrite(
+              ew,
+              o,
+              // TODO Should we be lenient here and accept both the Jackson and our homegrown annotation?
+              field -> field.getAnnotation(JsonProperty.class) != null,
+              JsonAnyGetter.class,
+              field -> {
+                final JsonProperty prop = field.getAnnotation(JsonProperty.class);
+                return prop.value().isEmpty() ? field.getName() : prop.value();
+              });
   }
 }

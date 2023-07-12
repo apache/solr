@@ -24,6 +24,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.model.api.response.SolrJerseyResponse;
 import org.junit.Test;
 
 /**

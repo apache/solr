@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey;
+package org.apache.solr.common.util;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
+// TODO This probably shouldn't exist in a final product, but it's fine for a POC
+/**
+ * Constants duplicated from solrj-model so we can avoid depending on it directly
+ */
+public class ModelConstants {
 
-public class AsyncJerseyResponse extends SolrJerseyResponse {
-  @JsonProperty("requestid")
-  public String requestId;
+    private ModelConstants() { /* Private ctor prevents instantiation */ }
+
+    public static final String ROOT_ERROR_CLASS = "root-error-class";
+    public static final String ERROR_CLASS = "error-class";
 }

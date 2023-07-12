@@ -15,12 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
-
-public class AsyncJerseyResponse extends SolrJerseyResponse {
-  @JsonProperty("requestid")
-  public String requestId;
-}
+/**
+ * Model classes representing Solr individual Solr APIs.
+ */
+package org.apache.solr.model.api;

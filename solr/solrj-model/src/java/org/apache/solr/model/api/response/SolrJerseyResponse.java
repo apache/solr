@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey;
+package org.apache.solr.model.api.response;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.model.api.response.ErrorInfo;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,7 +31,7 @@ import java.util.Map;
  * <p>Contains fields common to all Solr API responses, particularly the 'responseHeader' and
  * 'error' fields.
  */
-public class SolrJerseyResponse implements JacksonReflectMapWriter {
+public class SolrJerseyResponse {
 
   @JsonProperty("responseHeader")
   public ResponseHeader responseHeader = new ResponseHeader();
@@ -37,7 +39,7 @@ public class SolrJerseyResponse implements JacksonReflectMapWriter {
   @JsonProperty("error")
   public ErrorInfo error;
 
-  public static class ResponseHeader implements JacksonReflectMapWriter {
+  public static class ResponseHeader {
     @JsonProperty("status")
     public int status;
 
