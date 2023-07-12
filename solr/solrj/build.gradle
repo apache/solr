@@ -43,7 +43,7 @@ openApiGenerate {
   //inputSpec = project(":solr:solrj-model").ext.openapispecfile
   inputSpec = "${buildDir}/openapispec/openapi.json"
 
-  //globalProperties.set([models: "", modelDocs: "false", apis: ""])
+  globalProperties.set([models: "", modelDocs: "false", apis: ""])
   //templateDir = "$rootDir/solr/solrj/src/resources/java-template" // maybe use $projectDir to start this string off
   outputDir = "${buildDir}/generated/main/java"
   generateApiTests = false
