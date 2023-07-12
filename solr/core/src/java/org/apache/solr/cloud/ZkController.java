@@ -1409,7 +1409,14 @@ public class ZkController implements Closeable {
         // we will call register again after zk expiration and on reload
         if (!afterExpiration && !core.isReloaded() && ulog != null && !isTlogReplicaAndNotLeader) {
           // disable recovery in case shard is in construction state (for shard splits)
-          Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
+          DocCollection coll = getClusterState().getCollectionOrNull(collection);
+          if(coll == null) {
+            //unlikely. But if we missed a zk state update we can do a force update
+            // and get again
+            zkStateReader.forceUpdateCollection(collection);
+            coll = getClusterState().getCollection(collection);
+          }
+          Slice slice = coll.getSlice(shardId);
           if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
             Future<UpdateLog.RecoveryInfo> recoveryFuture =
                 core.getUpdateHandler().getUpdateLog().recoverFromLog();
