@@ -38,7 +38,8 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.model.api.IDeleteCollection;
+import org.apache.solr.model.api.response.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -48,8 +49,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * <p>This API (DELETE /v2/collections/collectionName) is equivalent to the v1
  * /admin/collections?action=DELETE command.
  */
-@Path("collections/")
-public class DeleteCollectionAPI extends AdminAPIBase {
+public class DeleteCollectionAPI extends AdminAPIBase implements IDeleteCollection {
 
   @Inject
   public DeleteCollectionAPI(
@@ -59,9 +59,6 @@ public class DeleteCollectionAPI extends AdminAPIBase {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @DELETE
-  @Path("{collectionName}")
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse deleteCollection(
       @PathParam("collectionName") String collectionName,

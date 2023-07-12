@@ -56,7 +56,7 @@ import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.model.api.response.SolrJerseyResponse;
-import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.model.api.response.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 

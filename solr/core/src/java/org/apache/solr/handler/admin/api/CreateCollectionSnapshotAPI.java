@@ -44,7 +44,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.AsyncJerseyResponse;
+import org.apache.solr.model.api.response.AsyncJerseyResponse;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;

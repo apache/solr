@@ -15,12 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey;
+package org.apache.solr.model.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
+import org.apache.solr.model.api.response.SubResponseAccumulatingJerseyResponse;
 
-public class AsyncJerseyResponse extends SolrJerseyResponse {
-  @JsonProperty("requestid")
-  public String requestId;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+
+import static org.apache.solr.model.api.Constants.BINARY_CONTENT_TYPE_V2;
+
+@Path("/collections/{collectionName}")
+public interface IDeleteCollection {
+
+    @DELETE
+    @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+    SubResponseAccumulatingJerseyResponse deleteCollection(@PathParam("collectionName") String collectionName, @QueryParam("followAliases") Boolean followAliases, @QueryParam("async") String asyncId) throws Exception;
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey;
+package org.apache.solr.model.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
