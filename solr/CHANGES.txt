@@ -239,6 +239,8 @@ Improvements
 
 * SOLR-16878: Use Log4J JUL manager when starting Java. This is necessary for Lucene logs to be included with Solr logs. (Houston Putman, Uwe Schindler)
 
+* SOLR-16856: The default auto-soft-commit time has been set to 3 seconds. Previously, auto-soft-commit was disabled by default. (Houston Putman)
+
 Optimizations
 ---------------------
 
