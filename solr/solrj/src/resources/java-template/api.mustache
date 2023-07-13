@@ -2,93 +2,75 @@
 
 package {{package}};
 
-import {{invokerPackage}}.ApiCallback;
-import {{invokerPackage}}.ApiClient;
-import {{invokerPackage}}.ApiException;
-{{#dynamicOperations}}
-import {{invokerPackage}}.ApiOperation;
-{{/dynamicOperations}}
-import {{invokerPackage}}.ApiResponse;
-import {{invokerPackage}}.Configuration;
-import {{invokerPackage}}.Pair;
-import {{invokerPackage}}.ProgressRequestBody;
-import {{invokerPackage}}.ProgressResponseBody;
-{{#performBeanValidation}}
-import {{invokerPackage}}.BeanValidationException;
-{{/performBeanValidation}}
-
-import com.google.gson.reflect.TypeToken;
-{{#dynamicOperations}}
-import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.parameters.Parameter;
-{{/dynamicOperations}}
-
-import java.io.IOException;
-
-{{#useBeanValidation}}
-import {{javaxPackage}}.validation.constraints.*;
-{{/useBeanValidation}}
-{{#performBeanValidation}}
-import {{javaxPackage}}.validation.ConstraintViolation;
-import {{javaxPackage}}.validation.Validation;
-import {{javaxPackage}}.validation.ValidatorFactory;
-import {{javaxPackage}}.validation.executable.ExecutableValidator;
-import java.util.Set;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-{{/performBeanValidation}}
-
-{{#imports}}import {{import}};
-{{/imports}}
-
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-{{#supportStreaming}}
-import java.io.InputStream;
-{{/supportStreaming}}
 
-// JEGERLOW
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+
 {{#operations}}
 public class {{classname}} {
-    private ApiClient localVarApiClient;
-    private int localHostIndex;
-    private String localCustomBaseUrl;
 
-    public {{classname}}() {
-        this(Configuration.getDefaultApiClient());
-    }
+    {{#operation}}
+        // TODO JEGERLOW Figure out the request class setup, and then circle back here to a different response
+        public static class {{operationIdCamelCase}} extends SolrRequest<SimpleSolrResponse> {
+            {{#requiredParams}}
+            private final {{{dataType}}} {{paramName}};
+            {{/requiredParams}}
+            {{#optionalParams}}
+            private {{{dataType}}} {{paramName}};
+            {{/optionalParams}}
 
-    public {{classname}}(ApiClient apiClient) {
-        this.localVarApiClient = apiClient;
-    }
+            public {{operationIdCamelCase}}({{#requiredParams}}{{{dataType}}} {{paramName}}{{^-last}}, {{/-last}}{{/requiredParams}}) {
+                super(
+                  SolrRequest.METHOD.valueOf("{{httpMethod}}"),
+                  "{{{path}}}"{{#pathParams}}
+                    .replace("{" + "{{baseName}}" + "}", {{paramName}}){{/pathParams}}
+                );
 
-    public ApiClient getApiClient() {
-        return localVarApiClient;
-    }
+                {{#requiredParams}}
+                this.{{paramName}} = {{paramName}};
+                {{/requiredParams}}
+            }
 
-    public void setApiClient(ApiClient apiClient) {
-        this.localVarApiClient = apiClient;
-    }
+            {{#optionalParams}}
+            public void {{schema.setter}}({{dataType}} {{paramName}}) {
+                this.{{paramName}} = {{paramName}};
+            }
 
-    public int getHostIndex() {
-        return localHostIndex;
-    }
+            {{/optionalParams}}
+            // TODO Hardcode this for now, but in reality we'll want to parse this out of the Operation data somehow
+            @Override
+            public String getRequestType() {
+              return SolrRequestType.ADMIN.toString();
+            }
 
-    public void setHostIndex(int hostIndex) {
-        this.localHostIndex = hostIndex;
-    }
+            @Override
+            public SolrParams getParams() {
+              final ModifiableSolrParams params = new ModifiableSolrParams();
+              {{#queryParams}}
+              if ({{paramName}} != null) {
+                  params.add("{{baseName}}", {{paramName}}{{^isString}}.toString(){{/isString}});
+              }
+              {{/queryParams}}
+              return params;
+            }
 
-    public String getCustomBaseUrl() {
-        return localCustomBaseUrl;
-    }
+            @Override
+            protected SimpleSolrResponse createResponse(SolrClient client) {
+              return new SimpleSolrResponse();
+            }
+        }
+    {{/operation}}
 
-    public void setCustomBaseUrl(String customBaseUrl) {
-        this.localCustomBaseUrl = customBaseUrl;
-    }
-
+    {{#nonexistent}}
+    // Below is content from the original template file, kept around for reference
     {{#operation}}
     {{^vendorExtensions.x-group-parameters}}/**
      * Build call for {{operationId}}{{#allParams}}
@@ -571,5 +553,6 @@ public class {{classname}} {
     }
     {{/vendorExtensions.x-group-parameters}}
     {{/operation}}
+    {{/nonexistent}}
 }
 {{/operations}}

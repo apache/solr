@@ -43,9 +43,11 @@ openApiGenerate {
   //inputSpec = project(":solr:solrj-model").ext.openapispecfile
   inputSpec = "${buildDir}/openapispec/openapi.json"
 
-  globalProperties.set([models: "", modelDocs: "false", apis: ""])
+  // 'debugModels: ""' or 'debugOperations: ""' to get the JSON input to moustache templating for those components
+  globalProperties.set([modelDocs: "false", apis: ""])
   templateDir = "$projectDir/src/resources/java-template"
-  outputDir = "${buildDir}/generated/main/java"
+  apiPackage = "org.apache.solr.client.solrj.request"
+  outputDir = "${buildDir}/generated/"
   generateApiTests = false
   generateModelTests = false
 }
@@ -55,7 +57,7 @@ tasks.getByName("openApiGenerate").dependsOn tasks.copySpec
 sourceSets {
   main {
     java {
-      srcDir "${buildDir}/generated/main/java"
+      srcDir "${buildDir}/generated/src/main/java"
     }
   }
 }
