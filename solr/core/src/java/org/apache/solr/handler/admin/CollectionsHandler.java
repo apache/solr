@@ -281,7 +281,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     // Initial logging/tracing setup
     final String collection = params.get(COLLECTION);
     MDCLoggingContext.setCollection(collection);
-    TraceUtils.setDbInstance(req, collection);
+    TraceUtils.setCoreOrColName(req, collection);
     if (log.isDebugEnabled()) {
       log.debug(
           "Invoked Collection Action: {} with params {}", action.toLower(), req.getParamString());

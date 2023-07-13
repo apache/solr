@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.opentracing.noop.NoopSpan;
+import io.opentelemetry.api.trace.Span;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.solr.SolrTestCaseJ4;
@@ -73,7 +73,7 @@ public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
     when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong()))
         .thenReturn(new OverseerSolrResponse(new NamedList<>()));
     mockQueryRequest = mock(SolrQueryRequest.class);
-    when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
+    when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
     queryResponse = new SolrQueryResponse();
     messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
 

@@ -48,7 +48,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
-import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -215,7 +214,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     }
 
     for (CommandOperation cmd : cmds) {
-      TraceUtils.ifNotNoop(req.getSpan(), (span) -> span.log("Command: " + cmd.name));
       commands.get(cmd.name).invoke(req, rsp, cmd);
     }
 

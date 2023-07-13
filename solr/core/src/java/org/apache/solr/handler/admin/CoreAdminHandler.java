@@ -216,7 +216,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       final String coreName =
           req.getParams().get(CoreAdminParams.CORE, req.getParams().get(CoreAdminParams.NAME));
       MDCLoggingContext.setCoreName(coreName);
-      TraceUtils.setDbInstance(req, coreName);
+      TraceUtils.setCoreOrColName(req, coreName);
       if (taskId == null) {
         callInfo.call();
       } else {

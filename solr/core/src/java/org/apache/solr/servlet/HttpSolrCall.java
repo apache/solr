@@ -32,8 +32,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
-import io.opentracing.Span;
-import io.opentracing.tag.Tags;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -626,10 +626,14 @@ public class HttpSolrCall {
         "handleOrForwardRequest should not be invoked when serving v1 requests.");
   }
 
-  /** Get the span for this request. Not null. */
-  protected Span getSpan() {
-    // Span was put into the request by SolrDispatchFilter
-    return (Span) Objects.requireNonNull(req.getAttribute(Span.class.getName()));
+  /** Get the Tracer for this request. Not null. */
+  public Tracer getTracer() {
+    return Objects.requireNonNull(TraceUtils.getTracer(req));
+  }
+
+  /** Get the Span for this request. Not null. */
+  public Span getSpan() {
+    return Objects.requireNonNull(TraceUtils.getSpan(req));
   }
 
   // called after init().
@@ -639,9 +643,7 @@ public class HttpSolrCall {
     if (coreOrColName == null && getCore() != null) {
       coreOrColName = getCore().getName();
     }
-    if (coreOrColName != null) {
-      span.setTag(Tags.DB_INSTANCE, coreOrColName);
-    }
+    TraceUtils.setCoreOrColName(span, coreOrColName);
 
     // Set operation name.
     String path = getPath();
@@ -655,7 +657,7 @@ public class HttpSolrCall {
     }
     String verb =
         getQueryParams().get(CoreAdminParams.ACTION, req.getMethod()).toLowerCase(Locale.ROOT);
-    span.setOperationName(verb + ":" + path);
+    span.updateName(verb + ":" + path);
   }
 
   public boolean shouldAudit() {
@@ -977,12 +979,29 @@ public class HttpSolrCall {
       }
 
       if (Method.HEAD != reqMethod) {
-        OutputStream out = response.getOutputStream();
-        QueryResponseWriterUtil.writeQueryResponse(out, responseWriter, solrReq, solrRsp, ct);
+        writeQueryResponseWithTracing(responseWriter, solrRsp, ct);
       }
       // else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {
       log.info("Unable to write response, client closed connection or we are shutting down", e);
+    }
+  }
+
+  private void writeQueryResponseWithTracing(
+      QueryResponseWriter responseWriter, SolrQueryResponse solrResponse, String contentType)
+      throws IOException {
+
+    Tracer tracer = TraceUtils.getTracer(req);
+    Span span = tracer.spanBuilder(TraceUtils.WRITE_QUERY_RESPONSE_SPAN_NAME).startSpan();
+    try (var scope = span.makeCurrent()) {
+      assert scope != null; // prevent javac warning about scope being unused
+      span.setAttribute(TraceUtils.TAG_RESPONSE_WRITER, responseWriter.getClass().getSimpleName());
+      span.setAttribute(TraceUtils.TAG_CONTENT_TYPE, contentType);
+      OutputStream out = response.getOutputStream();
+      QueryResponseWriterUtil.writeQueryResponse(
+          out, responseWriter, solrReq, solrResponse, contentType);
+    } finally {
+      span.end();
     }
   }
 

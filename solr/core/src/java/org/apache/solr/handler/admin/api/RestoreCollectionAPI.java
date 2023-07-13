@@ -108,8 +108,8 @@ public class RestoreCollectionAPI extends BackupAPIBase {
     }
 
     final String collectionName = requestBody.collection;
-    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
     SolrIdentifierValidator.validateCollectionName(collectionName);
+    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
     if (coreContainer.getAliases().hasAlias(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,

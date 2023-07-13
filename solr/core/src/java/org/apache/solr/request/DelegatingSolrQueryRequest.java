@@ -16,8 +16,8 @@
  */
 package org.apache.solr.request;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;

@@ -14,30 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.util.tracing;
 
-import io.opentracing.propagation.TextMap;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import java.util.Iterator;
-import java.util.Map;
-import org.apache.solr.client.solrj.SolrRequest;
+import javax.servlet.http.HttpServletRequest;
 
-/** An OpenTracing Carrier for injecting Span context through SolrRequest */
-public class SolrRequestCarrier implements TextMap {
+public class HttpServletRequestGetter implements TextMapGetter<HttpServletRequest> {
 
-  private final SolrRequest<?> solrRequest;
-
-  public SolrRequestCarrier(SolrRequest<?> solrRequest) {
-    this.solrRequest = solrRequest;
+  @Override
+  public Iterable<String> keys(HttpServletRequest carrier) {
+    return new Iterable<String>() {
+      @Override
+      public Iterator<String> iterator() {
+        return carrier.getHeaderNames().asIterator();
+      }
+    };
   }
 
   @Override
-  public Iterator<Map.Entry<String, String>> iterator() {
-    throw new UnsupportedOperationException("carrier is write-only");
-  }
-
-  @Override
-  public void put(String key, String value) {
-    solrRequest.addHeader(key, value);
+  public String get(HttpServletRequest carrier, String key) {
+    if (carrier == null) {
+      return null;
+    }
+    return carrier.getHeader(key);
   }
 }

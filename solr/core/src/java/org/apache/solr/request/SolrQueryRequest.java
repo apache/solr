@@ -16,10 +16,8 @@
  */
 package org.apache.solr.request;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.noop.NoopSpan;
-import io.opentracing.util.GlobalTracer;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +32,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.RTimerTree;
+import org.apache.solr.util.tracing.TraceUtils;
 
 /**
  * Container for a request to execute a query.
@@ -136,21 +135,25 @@ public interface SolrQueryRequest extends AutoCloseable {
     return null;
   }
 
-  /**
-   * Distributed tracing Tracer. Never null but might implement {@link
-   * io.opentracing.noop.NoopTracer}.
-   */
+  /** Distributed tracing Tracer. Never null. */
   default Tracer getTracer() {
-    return GlobalTracer.get(); // default impl is only for some tests
+    final HttpSolrCall call = getHttpSolrCall();
+    if (call != null) {
+      return call.getTracer();
+    }
+    return TraceUtils.noop();
   }
 
   /**
    * The distributed tracing Span for the request itself; never null. This is useful for adding tags
-   * or updating the operation name of the request span. If you need the current span, which might
-   * not necessarily be the request span, do this instead: {@code tracer.activeSpan()}.
+   * or updating the operation name of the request span.
    */
   default Span getSpan() {
-    return NoopSpan.INSTANCE;
+    final HttpSolrCall call = getHttpSolrCall();
+    if (call != null) {
+      return call.getSpan();
+    }
+    return Span.getInvalid();
   }
 
   default CoreContainer getCoreContainer() {
