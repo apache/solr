@@ -27,6 +27,12 @@ public class {{classname}} {
             private {{{dataType}}} {{paramName}};
             {{/optionalParams}}
 
+            /**
+             * Create a {{operationIdCamelCase}} request object.
+             *
+             {{#requiredParams}}* @param {{paramName}} {{description}}
+             {{/requiredParams}}
+             */
             public {{operationIdCamelCase}}({{#requiredParams}}{{{dataType}}} {{paramName}}{{^-last}}, {{/-last}}{{/requiredParams}}) {
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
@@ -40,6 +46,11 @@ public class {{classname}} {
             }
 
             {{#optionalParams}}
+            {{#description}}
+            /**
+             * @param {{paramName}} {{description}}
+             */
+            {{/description}}
             public void {{schema.setter}}({{dataType}} {{paramName}}) {
                 this.{{paramName}} = {{paramName}};
             }

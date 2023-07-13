@@ -18,6 +18,7 @@
 package org.apache.solr.model.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.apache.solr.model.api.response.SubResponseAccumulatingJerseyResponse;
 
 import javax.ws.rs.DELETE;
@@ -34,7 +35,12 @@ public interface IDeleteCollection {
     @DELETE
     @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
     @Operation(
-            summary = "Delete collection",
+            summary = "Deletes a collection from SolrCloud",
             tags = {"collections"})
-    SubResponseAccumulatingJerseyResponse deleteCollection(@PathParam("collectionName") String collectionName, @QueryParam("followAliases") Boolean followAliases, @QueryParam("async") String asyncId) throws Exception;
+    SubResponseAccumulatingJerseyResponse deleteCollection(
+            @Parameter(description = "The name of the collection to be deleted.", required = true)
+            @PathParam("collectionName") String collectionName,
+            @QueryParam("followAliases") Boolean followAliases,
+            @Parameter(description = "An ID to track the request asynchronously")
+            @QueryParam("async") String asyncId) throws Exception;
 }
