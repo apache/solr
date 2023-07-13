@@ -17,6 +17,7 @@
 
 package org.apache.solr.model.api;
 
+import io.swagger.v3.oas.annotations.Operation;
 import org.apache.solr.model.api.response.SubResponseAccumulatingJerseyResponse;
 
 import javax.ws.rs.DELETE;
@@ -32,5 +33,8 @@ public interface IDeleteCollection {
 
     @DELETE
     @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+    @Operation(
+            summary = "Delete collection",
+            tags = {"collections"})
     SubResponseAccumulatingJerseyResponse deleteCollection(@PathParam("collectionName") String collectionName, @QueryParam("followAliases") Boolean followAliases, @QueryParam("async") String asyncId) throws Exception;
 }
