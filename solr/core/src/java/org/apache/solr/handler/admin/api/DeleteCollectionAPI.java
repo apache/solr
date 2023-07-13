@@ -61,9 +61,9 @@ public class DeleteCollectionAPI extends AdminAPIBase implements IDeleteCollecti
 
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse deleteCollection(
-      @PathParam("collectionName") String collectionName,
-      @QueryParam("followAliases") Boolean followAliases,
-      @QueryParam("async") String asyncId)
+      String collectionName,
+      Boolean followAliases,
+      String asyncId)
       throws Exception {
     final SubResponseAccumulatingJerseyResponse response =
         instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
