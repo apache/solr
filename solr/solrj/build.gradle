@@ -71,6 +71,12 @@ dependencies {
     builtBy tasks.openApiGenerate
   }
 
+  // TODO Most likely temporary, due to historical pushback on adding Jackson deps to solrj, but it does _hugely_
+  //  simplify the parsing code and there are new compelling reasons, given the claims around CBOR performance relative
+  //  to JSON, javabin, etc.
+  implementation 'com.fasterxml.jackson.core:jackson-databind' // Came from a testImplementation line below.
+  implementation project(":solr:solrj-model")
+
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
 
@@ -111,7 +117,6 @@ dependencies {
   testImplementation 'org.hamcrest:hamcrest'
 
   testImplementation 'commons-io:commons-io'
-  testImplementation 'com.fasterxml.jackson.core:jackson-databind'
   testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
 
   testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
