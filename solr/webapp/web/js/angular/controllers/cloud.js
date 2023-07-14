@@ -34,7 +34,7 @@ solrAdminApp.controller('CloudController',
             treeSubController($scope, Zookeeper);
         } else if (view === "graph") {
             $scope.resetMenu("cloud-graph", Constants.IS_ROOT_PAGE);
-            graphSubController($scope, Zookeeper, false);
+            graphSubController($scope, Collections, Zookeeper, false);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
             nodesSubController($scope, Collections, System, Metrics);
@@ -613,7 +613,7 @@ function secondsForHumans ( seconds ) {
     return returntext.trim() === '' ? '0m' : returntext.trim();
 }
 
-var graphSubController = function ($scope, Zookeeper) {
+var graphSubController = function ($scope, Collections, Zookeeper) {
     $scope.showZkStatus = false;
     $scope.showTree = false;
     $scope.showGraph = true;
@@ -669,8 +669,8 @@ var graphSubController = function ($scope, Zookeeper) {
                 params.filter = filter;
             }
 
-            Zookeeper.clusterState(params, function (data) {
-                    var state = $.parseJSON(data.znode.data);
+            Collections.status(params, function (data) {
+                    var state = data.cluster.collections;
 
                     var leaf_count = 0;
                     var graph_data = {
