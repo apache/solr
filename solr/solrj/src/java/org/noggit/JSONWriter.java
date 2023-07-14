@@ -19,11 +19,10 @@
 
 package org.noggit;
 
-import org.apache.solr.common.MapWriter;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.solr.common.MapWriter;
 
 public class JSONWriter {
 

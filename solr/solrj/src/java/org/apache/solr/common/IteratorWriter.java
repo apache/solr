@@ -17,12 +17,11 @@
 
 package org.apache.solr.common;
 
-import org.noggit.JSONWriter;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.noggit.JSONWriter;
 
 /** Interface to help do push writing to an array */
 public interface IteratorWriter extends JSONWriter.Writable {
@@ -94,21 +93,21 @@ public interface IteratorWriter extends JSONWriter.Writable {
     writer.startArray();
     try {
       writeIter(
-              new IteratorWriter.ItemWriter() {
-                boolean first = true;
+          new IteratorWriter.ItemWriter() {
+            boolean first = true;
 
-                @Override
-                public IteratorWriter.ItemWriter add(Object o) {
-                  if (first) {
-                    first = false;
-                  } else {
-                    writer.writeValueSeparator();
-                  }
-                  writer.indent();
-                  write(writer);
-                  return this;
-                }
-              });
+            @Override
+            public IteratorWriter.ItemWriter add(Object o) {
+              if (first) {
+                first = false;
+              } else {
+                writer.writeValueSeparator();
+              }
+              writer.indent();
+              write(writer);
+              return this;
+            }
+          });
     } catch (IOException e) {
       throw new RuntimeException("this should never happen", e);
     }

@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -47,23 +47,23 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
     writer.startObject();
     try {
       writeMap(
-              new MapWriter.EntryWriter() {
-                boolean first = true;
+          new MapWriter.EntryWriter() {
+            boolean first = true;
 
-                @Override
-                public MapWriter.EntryWriter put(CharSequence k, Object v) {
-                  if (first) {
-                    first = false;
-                  } else {
-                    writer.writeValueSeparator();
-                  }
-                  writer.indent();
-                  writer.writeString(k.toString());
-                  writer.writeNameSeparator();
-                  writer.write(v);
-                  return this;
-                }
-              });
+            @Override
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              if (first) {
+                first = false;
+              } else {
+                writer.writeValueSeparator();
+              }
+              writer.indent();
+              writer.writeString(k.toString());
+              writer.writeNameSeparator();
+              writer.write(v);
+              return this;
+            }
+          });
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -159,6 +159,4 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
   }
 
   MapWriter EMPTY = new MapWriterMap(Collections.emptyMap());
-
-
 }

@@ -34,7 +34,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.util.CollectionUtil;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
