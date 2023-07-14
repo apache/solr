@@ -45,12 +45,12 @@ has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_
 
 === SolrCLI
 
-The Solr CLI has gone through some signficant rennovations to reduce technical debt, and have more predictable parameter names.
-You will need to review any custom scripts that use the `bin/solr` command to ensure you have the correct parameters.
+The Solr CLI has gone through some signficant rennovations to reduce technical debt, and function more consistently and predictably.
+You will need to review any custom scripts that use the `bin/solr` command to ensure that you are using the correct options. 
 
 Here are changes from Solr 9.3 and Solr 10 in the CLI.
 
 We've migrated to short options being single character ie -c and long options being --name.
 For example `-help` is now `--help`.
 
-* Healthcheck: Add long option for
+TODO: Provide more detail as we complete SOLR-16757.
