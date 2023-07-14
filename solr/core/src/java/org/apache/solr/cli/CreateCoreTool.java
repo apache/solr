@@ -79,6 +79,7 @@ public class CreateCoreTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    echo("This command has been deprecated in favour of using 'bin/solr create'.");
     String coreName = cli.getOptionValue("name");
     String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
 
