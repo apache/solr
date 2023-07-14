@@ -16,15 +16,10 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
-
 import java.io.PrintStream;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.util.NamedList;
 
 public class CreateTool extends ToolBase {
 
@@ -53,9 +48,7 @@ public class CreateTool extends ToolBase {
 
     ToolBase tool;
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
-      NamedList<Object> systemInfo =
-          solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
-      if ("solrcloud".equals(systemInfo.get("mode"))) {
+      if (SolrCLI.isCloudMode(solrClient)) {
         tool = new CreateCollectionTool(stdout);
       } else {
         tool = new CreateCoreTool(stdout);
