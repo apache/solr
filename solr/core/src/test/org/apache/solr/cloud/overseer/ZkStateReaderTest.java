@@ -688,13 +688,13 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
     // create new collection
     DocCollection state =
-        new DocCollection(
+        DocCollection.create(
             collectionName,
             Map.of(sliceName, slice),
             Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
             DocRouter.DEFAULT,
             0,
-            new PerReplicaStatesFetcher.LazyPrsSupplier(
+            PerReplicaStatesFetcher.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath(collectionName)));
     ZkWriteCommand wc = new ZkWriteCommand(collectionName, state);
     writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);

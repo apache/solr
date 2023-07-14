@@ -18,7 +18,6 @@ package org.apache.solr.servlet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -76,7 +75,7 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
               new CoresMetricsApiCaller()));
 
   private final Map<String, PrometheusMetricType> cacheMetricTypes =
-      ImmutableMap.of(
+      Map.of(
           "bytesUsed", PrometheusMetricType.GAUGE,
           "lookups", PrometheusMetricType.COUNTER,
           "hits", PrometheusMetricType.COUNTER,

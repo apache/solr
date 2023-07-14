@@ -22,7 +22,6 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.STATUS;
 
 import com.codahale.metrics.Counter;
-import com.google.common.collect.Iterators;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -34,8 +33,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.StreamSupport;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -641,8 +643,12 @@ public class SearchHandler extends RequestHandlerBase
         new SolrParams() {
           @Override
           public Iterator<String> getParameterNamesIterator() {
-            return Iterators.filter(
-                params.getParameterNamesIterator(), s -> !VERBOSE_LOGGING_PARAMS.contains(s));
+            return StreamSupport.stream(
+                    Spliterators.spliteratorUnknownSize(
+                        params.getParameterNamesIterator(), Spliterator.ORDERED),
+                    false)
+                .filter(s -> !VERBOSE_LOGGING_PARAMS.contains(s))
+                .iterator();
           }
 
           @Override

@@ -54,19 +54,15 @@ public class DocCollectionTest extends SolrTestCaseJ4 {
     String prsState = "replicacore:1:A:L";
     List<String> prsStates = new ArrayList<>();
     prsStates.add(prsState);
-    PerReplicaStates prs = new PerReplicaStates(collName, 1, prsStates);
+    final PerReplicaStates prs = new PerReplicaStates(collName, 1, prsStates);
     propMap.put(DocCollection.CollectionStateProps.PER_REPLICA_STATE, Boolean.TRUE);
-    docCollection =
-        new DocCollection(
-            collName, sliceMap, propMap, docRouter, 1, new DocCollection.PrsSupplier(prs));
-    docCollection2 =
-        new DocCollection(
-            collName, sliceMap, propMap, docRouter, 1, new DocCollection.PrsSupplier(prs));
+    docCollection = DocCollection.create(collName, sliceMap, propMap, docRouter, 1, () -> prs);
+    docCollection2 = DocCollection.create(collName, sliceMap, propMap, docRouter, 1, () -> prs);
     prsState = "replicacore:1:D:L";
     prsStates = new ArrayList<>();
     prsStates.add(prsState);
-    prs = new PerReplicaStates(collName, 2, prsStates);
-    docCollection2 = docCollection2.copyWith(prs);
+    docCollection2 =
+        docCollection2.setPerReplicaStates(new PerReplicaStates(collName, 2, prsStates));
 
     assertFalse("collection'equal method should NOT be same", docCollection.equals(docCollection2));
     assertFalse(
