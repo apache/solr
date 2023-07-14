@@ -105,9 +105,6 @@ public class HealthcheckTool extends ToolBase {
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String collection = cli.getOptionValue("name");
-    if (collection == null) {
-      throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
-    }
 
     log.debug("Running healthcheck for {}", collection);
 
