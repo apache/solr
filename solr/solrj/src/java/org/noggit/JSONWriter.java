@@ -22,7 +22,6 @@ package org.noggit;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.solr.common.MapWriter;
 
 public class JSONWriter {
 
@@ -91,8 +90,6 @@ public class JSONWriter {
       write(((Boolean) o).booleanValue());
     } else if (o instanceof CharSequence) {
       writeString((CharSequence) o);
-    } else if (o instanceof MapWriter) {
-      ((Writable) o).write(this);
     } else if (o instanceof Writable) {
       ((Writable) o).write(this);
     } else if (o instanceof Object[]) {
