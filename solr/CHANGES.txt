@@ -322,7 +322,7 @@ Bug Fixes
 
 * SOLR-16877: BackupManager now allows ConfigSet "files" to be empty, which previously caused NPEs. (Paul Blanchaert via Houston Putman)
 
-* SOLR-16891: The Admin UI - Cloud - Graph screen now uses the ClusterStatus API as its source of cluster information. (Houston Putman, Tomás Fernández Löbbe)
+* SOLR-16891: DocCollection, Slice and Replica now write to Json and write to Maps identically. (Houston Putman, Tomás Fernández Löbbe)
 
 Dependency Upgrades
 ---------------------
