@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -125,7 +126,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       if (perReplicaStatesRef == null || perReplicaStatesRef.get() == null) {
         throw new RuntimeException(
             CollectionStateProps.PER_REPLICA_STATE
-                + " = true , but perReplicatStates param is not provided");
+                + " = true , but perReplicaStates param is not provided");
       }
       this.perReplicaStatesRef = perReplicaStatesRef;
       for (Slice s : this.slices.values()) { // set the same reference to all slices too
@@ -398,11 +399,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   @Override
-  public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, Object> all = CollectionUtil.newLinkedHashMap(slices.size() + 1);
-    all.putAll(propMap);
-    all.put(CollectionStateProps.SHARDS, slices);
-    jsonWriter.write(all);
+  public void writeMap(EntryWriter ew) throws IOException {
+    propMap.forEach(ew.getBiConsumer());
+    ew.put(CollectionStateProps.SHARDS, slices);
   }
 
   public Replica getReplica(String coreNodeName) {

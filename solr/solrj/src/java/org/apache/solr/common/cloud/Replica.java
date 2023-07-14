@@ -372,11 +372,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return new Replica(name, node, collection, shard, core, getState(), type, propMap);
   }
 
-  @Override
-  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
-    _allPropsWriter().writeMap(ew);
-  }
-
   private static final Map<String, State> STATES = new HashMap<>();
 
   static {
@@ -390,28 +385,21 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return STATES.get(shortName);
   }
 
-  private MapWriter _allPropsWriter() {
-    return w -> {
-      w.putIfNotNull(ReplicaStateProps.CORE_NAME, core)
-          .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
-          .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
-          .putIfNotNull(ReplicaStateProps.STATE, getState().toString())
-          .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? "true" : null)
-          .putIfNotNull(
-              ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
-          .putIfNotNull(ReplicaStateProps.BASE_URL, propMap.get(ReplicaStateProps.BASE_URL));
-      for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        if (!ReplicaStateProps.WELL_KNOWN_PROPS.contains(e.getKey())) {
-          w.putIfNotNull(e.getKey(), e.getValue());
-        }
-      }
-    };
-  }
-
   @Override
-  public void write(JSONWriter jsonWriter) {
-    // this serializes also our declared properties
-    jsonWriter.write(_allPropsWriter());
+  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
+    ew.putIfNotNull(ReplicaStateProps.CORE_NAME, core)
+        .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
+        .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
+        .putIfNotNull(ReplicaStateProps.STATE, getState().toString())
+        .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? "true" : null)
+        .putIfNotNull(
+            ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
+        .putIfNotNull(ReplicaStateProps.BASE_URL, propMap.get(ReplicaStateProps.BASE_URL));
+    for (Map.Entry<String, Object> e : propMap.entrySet()) {
+      if (!ReplicaStateProps.WELL_KNOWN_PROPS.contains(e.getKey())) {
+        ew.putIfNotNull(e.getKey(), e.getValue());
+      }
+    }
   }
 
   @Override

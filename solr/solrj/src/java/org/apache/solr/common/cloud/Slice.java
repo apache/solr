@@ -327,11 +327,6 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     return name + ':' + toJSONString(propMap);
   }
 
-  @Override
-  public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(propMap);
-  }
-
   /** JSON properties related to a slice's state. */
   public interface SliceStateProps {
 
