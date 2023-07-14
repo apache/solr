@@ -60,9 +60,13 @@ public class SolrLogPostTool {
       CLIO.out("");
       return;
     }
-
     String baseUrl = args[0];
     String root = args[1];
+    SolrLogPostTool solrLogPostTool = new SolrLogPostTool();
+    solrLogPostTool.runCommand(baseUrl, root);
+  }
+
+  public void runCommand(String baseUrl, String root) throws IOException {
 
     Http2SolrClient.Builder builder = new Http2SolrClient.Builder(baseUrl);
     try (SolrClient client = builder.build()) {
@@ -114,7 +118,7 @@ public class SolrLogPostTool {
     }
   }
 
-  private static void sendBatch(SolrClient client, UpdateRequest request, boolean lastRequest) {
+  private void sendBatch(SolrClient client, UpdateRequest request, boolean lastRequest) {
     final String beginMessage =
         lastRequest ? "Sending last batch ..." : "Sending batch of 300 log records...";
     CLIO.out(beginMessage);
