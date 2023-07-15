@@ -71,6 +71,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -834,7 +835,8 @@ public class SolrResourceLoader
           TokenFilterFactory.class,
           TokenizerFactory.class,
           QParserPlugin.class,
-          FieldType.class
+          FieldType.class,
+          StatsCache.class
         });
   }
 
