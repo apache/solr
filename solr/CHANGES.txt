@@ -16,7 +16,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-16845: BinaryResponseWriter should not attempt cast to Utf8CharSequence (Alex Deparvu via Houston Putman)
 
 Bug Fixes
 ---------------------
