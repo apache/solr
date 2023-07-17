@@ -207,6 +207,7 @@ public abstract class ServletUtils {
       boolean trace)
       throws ServletException, IOException {
     boolean accepted = false;
+    boolean needsCleanup = true;
     try {
       try {
         accepted = rateLimitManager.handleRequest(request);
@@ -219,10 +220,16 @@ public abstract class ServletUtils {
         response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
         return;
       }
+      needsCleanup = false;
       // todo: this shouldn't be required, tracing and rate limiting should be independently
       // composable
       traceHttpRequestExecution2(request, response, limitedExecution, trace);
     } finally {
+      if (needsCleanup) {
+        consumeInputFully(request, response);
+        SolrRequestInfo.reset();
+        SolrRequestParsers.cleanupMultipartFiles(request);
+      }
       if (accepted) {
         rateLimitManager.decrementActiveRequests(request);
       }
