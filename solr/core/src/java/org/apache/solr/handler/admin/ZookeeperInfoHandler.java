@@ -31,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -55,7 +56,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -529,11 +529,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           if (dc != null) {
             // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the
             // state to render correctly for the UI?
-            @SuppressWarnings("unchecked")
-            Map<String, Object> collectionState =
-                dc.isPerReplicaState()
-                    ? (Map<String, Object>) Utils.fromJSONString(Utils.toJSONString(dc))
-                    : dc.getProperties();
+            Map<String, Object> collectionState = dc.toMap(new LinkedHashMap<>());
             if (applyStatusFilter) {
               // verify this collection matches the filtered state
               if (page.matchesStatusFilter(collectionState, liveNodes)) {
