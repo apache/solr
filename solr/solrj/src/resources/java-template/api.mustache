@@ -1,6 +1,9 @@
 {{>licenseInfo}}
 
 package {{package}};
+{{#imports}}
+import {{import}};
+{{/imports}}
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -13,13 +16,22 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.client.solrj.JacksonParsingResponse;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.ResponseParser;
 
 {{#operations}}
 public class {{classname}} {
 
     {{#operation}}
         // TODO JEGERLOW Figure out the request class setup, and then circle back here to a different response
-        public static class {{operationIdCamelCase}} extends SolrRequest<SimpleSolrResponse> {
+        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{returnType}}> {
+          public {{operationIdCamelCase}}Response() {
+            super({{returnType}}.class);
+          }
+        }
+
+        public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
             {{#requiredParams}}
             private final {{{dataType}}} {{paramName}};
             {{/requiredParams}}
@@ -74,8 +86,13 @@ public class {{classname}} {
             }
 
             @Override
-            protected SimpleSolrResponse createResponse(SolrClient client) {
-              return new SimpleSolrResponse();
+            protected {{operationIdCamelCase}}Response createResponse(SolrClient client) {
+              return new {{operationIdCamelCase}}Response();
+            }
+
+            @Override
+            public ResponseParser getResponseParser() {
+              return new InputStreamResponseParser("json");
             }
         }
     {{/operation}}
