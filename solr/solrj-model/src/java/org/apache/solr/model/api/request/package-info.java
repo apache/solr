@@ -16,6 +16,6 @@
  */
 
 /**
- * Model classes used in representing and sending API responses
+ * Model classes used in making and representing API requests
  */
-package org.apache.solr.model.api.response;
+package org.apache.solr.model.api.request;

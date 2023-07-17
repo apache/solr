@@ -34,6 +34,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.model.api.request.AddReplicaPropertyRequestBody;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
@@ -44,8 +45,7 @@ import org.mockito.ArgumentCaptor;
 /** Unit tests for {@link AddReplicaPropertyAPI} */
 public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
 
-  private static final AddReplicaPropertyAPI.AddReplicaPropertyRequestBody ANY_REQ_BODY =
-      new AddReplicaPropertyAPI.AddReplicaPropertyRequestBody("anyValue");
+  private static final AddReplicaPropertyRequestBody ANY_REQ_BODY = new AddReplicaPropertyRequestBody("anyValue");
 
   private CoreContainer mockCoreContainer;
   private DistributedCollectionConfigSetCommandRunner mockCommandRunner;

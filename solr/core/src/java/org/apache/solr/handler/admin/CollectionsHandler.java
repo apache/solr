@@ -199,6 +199,7 @@ import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShardAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.model.api.request.AddReplicaPropertyRequestBody;
 import org.apache.solr.model.api.response.SolrJerseyResponse;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -988,8 +989,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ADDREPLICAPROP,
         (req, rsp, h) -> {
           final RequiredSolrParams requiredParams = req.getParams().required();
-          final AddReplicaPropertyAPI.AddReplicaPropertyRequestBody requestBody =
-              new AddReplicaPropertyAPI.AddReplicaPropertyRequestBody();
+          final var requestBody = new AddReplicaPropertyRequestBody();
           requestBody.value = requiredParams.get(PROPERTY_VALUE_PROP);
           requestBody.shardUnique = req.getParams().getBool(SHARD_UNIQUE);
           final String propName = requiredParams.get(PROPERTY_PROP);
