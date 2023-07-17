@@ -106,7 +106,10 @@ public class UploadConfigSetAPI extends ConfigSetAPIBase {
 
     // If the request is doing a full trusted overwrite of an untrusted configSet (overwrite=true,
     // cleanup=true), then trust the configSet.
-    if (cleanup && requestIsTrusted && overwritesExisting && !isCurrentlyTrusted(configSetName)) {
+    if (cleanup
+        && requestIsTrusted
+        && overwritesExisting
+        && !configSetService.isConfigSetTrusted(configSetName)) {
       Map<String, Object> metadata = Collections.singletonMap("trusted", true);
       configSetService.setConfigMetadata(configSetName, metadata);
     }

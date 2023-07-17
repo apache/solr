@@ -100,6 +100,7 @@ The sysProp `-Dsolr.redaction.system.pattern` has been deprecated, use the above
 The `<hiddenSysProps>` solr.xml element under `<metrics>` has been deprecated.
 Instead, use the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[<hiddenSysProps>] tag under `<solr>`, which accepts a comma-separated string.
 
+* The xref:indexing-guide:schema-designer.adoc[] now utilizes the same trust model as the xref:configuration-guide:configsets-api.adoc#configsets-upload[ConfigSet Upload API].
 
 === Official Docker Image
 * The customization of the Official Solr Dockerfile has been changed.

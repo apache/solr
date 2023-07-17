@@ -65,7 +65,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-16845: BinaryResponseWriter should not attempt cast to Utf8CharSequence (Alex Deparvu via Houston Putman)
 
 Bug Fixes
 ---------------------
@@ -77,6 +78,8 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
+
+* SOLR-16842: Eliminate special case code in Solr CLI by introducing explicit VersionTool.java.  (Eric Pugh, Will White)
 
 * SOLR-16856: The default auto-soft-commit time has been set to 3 seconds. Previously, auto-soft-commit was disabled by default. (Houston Putman)
 
@@ -122,6 +125,8 @@ New Features
 * SOLR-16717: {!join} can join collections with multiple shards on both sides. (Mikhail Khludnev)
 
 * SOLR-16675: Added function queries for dense vector similarity. (Elia Porciani, Alessandro Benedetti)
+
+* SOLR-16884: Solr Javadocs now have searching enabled. (Mike Drob, Houston Putman)
 
 Improvements
 ---------------------
@@ -287,7 +292,7 @@ Bug Fixes
 
 * SOLR-13605: Fix setting client scoped socket and connect timeouts when using HttpSolrClient.Builder.withHttpClient() method.  (Eric Pugh, Alex Deparvu)
 
-* SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets (Ishan Chattopadhyaya, Skay)
+* SOLR-16777: Schema Designer now correctly manages trust of the ConfigSets it is managing. (Ishan Chattopadhyaya, Skay, Houston Putman)
 
 * SOLR-16771: Fixed behavior and handling of 'unset' logging levels in /admin/info/logging API and related Admin UI (hossman)
 
