@@ -263,6 +263,8 @@ Bug Fixes
 
 * SOLR-16877: BackupManager now allows ConfigSet "files" to be empty, which previously caused NPEs. (Paul Blanchaert via Houston Putman)
 
+* SOLR-16753: PRS state is now always updated at the end of a splitShard. (Houston Putman, hossman)
+
 Dependency Upgrades
 ---------------------
 * PR#1744: Update software.amazon.awssdk:* to v2.20.97 (solrbot)
