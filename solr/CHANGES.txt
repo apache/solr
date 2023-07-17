@@ -31,6 +31,8 @@ Other Changes
 ---------------------
 (No changes)
 
+* SOLR-16856: The default auto-soft-commit time has been set to 3 seconds. Previously, auto-soft-commit was disabled by default. (Houston Putman)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
