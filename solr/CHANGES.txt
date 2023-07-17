@@ -81,6 +81,8 @@ Other Changes
 
 * SOLR-16842: Eliminate special case code in Solr CLI by introducing explicit VersionTool.java.  (Eric Pugh, Will White)
 
+* SOLR-16856: The default auto-soft-commit time has been set to 3 seconds. Previously, auto-soft-commit was disabled by default. (Houston Putman)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
