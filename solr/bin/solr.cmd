@@ -229,9 +229,9 @@ IF "%1"=="-h" goto usage
 IF "%1"=="--help" goto usage
 IF "%1"=="/?" goto usage
 IF "%1"=="status" goto get_status
-IF "%1"=="version" goto get_version
-IF "%1"=="-v" goto get_version
-IF "%1"=="-version" goto get_version
+IF "%1"=="version" goto run_solrcli
+IF "%1"=="-v" goto run_solrcli
+IF "%1"=="-version" goto run_solrcli
 IF "%1"=="assert" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
 IF "%1"=="package" goto run_solrcli
