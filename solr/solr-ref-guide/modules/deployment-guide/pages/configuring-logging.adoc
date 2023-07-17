@@ -172,6 +172,22 @@ The log file under which you can find all these queries is called `solr_slow_req
 In addition to the logging options described above, it's possible to log only a selected list of request parameters (such as those sent with queries) with an additional request parameter called `logParamsList`.
 See the section on xref:query-guide:common-query-parameters.adoc#logparamslist-parameter[logParamsList Parameter] for more information.
 
+== Selective Logging on SolrCore
+
+Solr logs all core requests at INFO level using the o.a.s.c.SolrCore.Request. This can be disabled entirely by changing the level of these loggers to WARN or ERROR, or more selectively by using the `MarkerFilter` on request paths in `log4j2.xml`.
+
+For example:
+
+[source,xml]
+----
+<Logger name="org.apache.solr.core.SolrCore.Request" level="info">
+  <Filters>
+    <MarkerFilter marker="/get" onMatch="DENY" onMismatch="NEUTRAL"/>
+    <MarkerFilter marker="/replication" onMatch="DENY" onMismatch="NEUTRAL"/>
+  </Filters>
+</Logger>
+----
+
 == Request Logging
 
 Every incoming HTTP(s) request is by default logged in the standard https://en.wikipedia.org/wiki/Common_Log_Format[`NCSA format`]

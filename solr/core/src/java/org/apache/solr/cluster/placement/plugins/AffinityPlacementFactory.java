@@ -111,7 +111,7 @@ import org.slf4j.LoggerFactory;
 public class AffinityPlacementFactory implements PlacementPluginFactory<AffinityPlacementConfig> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private AffinityPlacementConfig config = AffinityPlacementConfig.DEFAULT;
+  AffinityPlacementConfig config = AffinityPlacementConfig.DEFAULT;
 
   /**
    * Empty public constructor is used to instantiate this factory. Using a factory pattern to allow
@@ -171,7 +171,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      * The factory has decoded the configuration for the plugin instance and passes it the
      * parameters it needs.
      */
-    private AffinityPlacementPlugin(
+    AffinityPlacementPlugin(
         long minimalFreeDiskGB,
         long prioritizedFreeDiskGB,
         Map<String, String> withCollections,
