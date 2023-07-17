@@ -78,7 +78,8 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+
+* SOLR-16842: Eliminate special case code in Solr CLI by introducing explicit VersionTool.java.  (Eric Pugh, Will White)
 
 ==================  9.3.0 ==================
 
