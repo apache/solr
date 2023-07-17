@@ -329,6 +329,8 @@ Bug Fixes
 
 * SOLR-16753: PRS state is now always updated at the end of a splitShard. (Houston Putman, hossman)
 
+* SOLR-16891: DocCollection, Slice and Replica now write to Json and write to Maps identically. (Houston Putman, Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
