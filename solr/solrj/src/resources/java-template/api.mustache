@@ -17,6 +17,8 @@ import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.client.solrj.JacksonParsingResponse;
+import org.apache.solr.client.solrj.JacksonContentWriter;
+import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.ResponseParser;
 
@@ -24,7 +26,6 @@ import org.apache.solr.client.solrj.ResponseParser;
 public class {{classname}} {
 
     {{#operation}}
-        // TODO JEGERLOW Figure out the request class setup, and then circle back here to a different response
         public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{returnType}}> {
           public {{operationIdCamelCase}}Response() {
             super({{returnType}}.class);
@@ -33,7 +34,12 @@ public class {{classname}} {
 
         public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
             {{#requiredParams}}
+            {{#isBodyParam}}
+            private final {{{dataType}}} requestBody;
+            {{/isBodyParam}}
+            {{^isBodyParam}}
             private final {{{dataType}}} {{paramName}};
+            {{/isBodyParam}}
             {{/requiredParams}}
             {{#optionalParams}}
             private {{{dataType}}} {{paramName}};
@@ -42,10 +48,10 @@ public class {{classname}} {
             /**
              * Create a {{operationIdCamelCase}} request object.
              *
-             {{#requiredParams}}* @param {{paramName}} {{description}}
+             {{#requiredParams}}{{^isBodyParam}}* @param {{paramName}} {{description}}{{/isBodyParam}}
              {{/requiredParams}}
              */
-            public {{operationIdCamelCase}}({{#requiredParams}}{{{dataType}}} {{paramName}}{{^-last}}, {{/-last}}{{/requiredParams}}) {
+            public {{operationIdCamelCase}}({{#requiredParams}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{/requiredParams}}) {
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
                   "{{{path}}}"{{#pathParams}}
@@ -53,7 +59,13 @@ public class {{classname}} {
                 );
 
                 {{#requiredParams}}
-                this.{{paramName}} = {{paramName}};
+                {{^isBodyParam}}
+                    this.{{paramName}} = {{paramName}};
+                {{/isBodyParam}}
+                {{#isBodyParam}}
+                    this.requestBody = new {{baseName}}();
+                    addHeader("Content-type", "application/json");
+                {{/isBodyParam}}
                 {{/requiredParams}}
             }
 
@@ -68,6 +80,26 @@ public class {{classname}} {
             }
 
             {{/optionalParams}}
+
+            {{#bodyParam}}
+            {{#vars}}
+            // TODO find a way to add required parameters in the request body to the class constructor
+            {{#description}}
+            /**
+             * @param {{baseName}} {{description}}
+             */
+             {{/description}}
+             public void {{setter}}({{dataType}} {{baseName}}) {
+               this.requestBody.{{setter}}({{baseName}});
+            }
+            {{/vars}}
+
+            @Override
+            public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+                return new JacksonContentWriter(expectedType, requestBody);
+            }
+            {{/bodyParam}}
+
             // TODO Hardcode this for now, but in reality we'll want to parse this out of the Operation data somehow
             @Override
             public String getRequestType() {
