@@ -247,6 +247,7 @@ public abstract class ServletUtils {
     } catch (ExceptionWhileTracing e) {
       if (e.e instanceof SolrAuthenticationException) {
         // done, the response and status code have already been sent
+        return;
       }
       if (e.e instanceof ServletException) {
         throw (ServletException) e.e;
