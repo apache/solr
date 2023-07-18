@@ -45,7 +45,6 @@ import org.apache.http.HttpHeaders;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.tracing.HttpServletCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -218,9 +217,6 @@ public abstract class ServletUtils {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
     } finally {
-      consumeInputFully(request, response);
-      SolrRequestInfo.reset();
-      SolrRequestParsers.cleanupMultipartFiles(request);
       if (accepted) {
         rateLimitManager.decrementActiveRequests(request);
       }
@@ -246,26 +242,23 @@ public abstract class ServletUtils {
 
       assert scope != null; // prevent javac warning about scope being unused
       MDCLoggingContext.setTracerId(span.context().toTraceId()); // handles empty string
-      try {
-        tracedExecution.run();
-      } catch (ExceptionWhileTracing e) {
-        if (e.e instanceof SolrAuthenticationException) {
-          throw (SolrAuthenticationException) e.e;
-        }
-        if (e.e instanceof ServletException) {
-          throw (ServletException) e.e;
-        }
-        if (e.e instanceof IOException) {
-          throw (IOException) e.e;
-        }
-        if (e.e instanceof RuntimeException) {
-          throw (RuntimeException) e.e;
-        } else {
-          throw new RuntimeException(e.e);
-        }
+
+      tracedExecution.run();
+    } catch (ExceptionWhileTracing e) {
+      if (e.e instanceof SolrAuthenticationException) {
+        // done, the response and status code have already been sent
       }
-    } catch (SolrAuthenticationException e) {
-      // done, the response and status code have already been sent
+      if (e.e instanceof ServletException) {
+        throw (ServletException) e.e;
+      }
+      if (e.e instanceof IOException) {
+        throw (IOException) e.e;
+      }
+      if (e.e instanceof RuntimeException) {
+        throw (RuntimeException) e.e;
+      } else {
+        throw new RuntimeException(e.e);
+      }
     } finally {
       span.setTag(Tags.HTTP_STATUS, response.getStatus());
       span.finish();
@@ -297,7 +290,7 @@ public abstract class ServletUtils {
   // we make sure we read the full client request so that the client does
   // not hit a connection reset and we can reuse the
   // connection - see SOLR-8453 and SOLR-8683
-  private static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
+  static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
     try {
       ServletInputStream is = req.getInputStream();
       //noinspection StatementWithEmptyBody

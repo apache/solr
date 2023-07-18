@@ -52,6 +52,7 @@ import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.logging.MDCSnapshot;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
@@ -208,17 +209,23 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     Tracer t = getCores() == null ? GlobalTracer.get() : getCores().getTracer();
     request.setAttribute(ATTR_TRACING_TRACER, t);
     RateLimitManager rateLimitManager = coreService.getService().getRateLimitManager();
-    ServletUtils.rateLimitRequest(
-        rateLimitManager,
-        request,
-        response,
-        () -> {
-          try {
-            dispatch(chain, request, response, retry);
-          } catch (IOException | ServletException | SolrAuthenticationException e) {
-            throw new ExceptionWhileTracing(e);
-          }
-        });
+    try {
+      ServletUtils.rateLimitRequest(
+          rateLimitManager,
+          request,
+          response,
+          () -> {
+            try {
+              dispatch(chain, request, response, retry);
+            } catch (IOException | ServletException | SolrAuthenticationException e) {
+              throw new ExceptionWhileTracing(e);
+            }
+          });
+    } finally {
+      ServletUtils.consumeInputFully(request, response);
+      SolrRequestInfo.reset();
+      SolrRequestParsers.cleanupMultipartFiles(request);
+    }
   }
 
   private static Span getSpan(HttpServletRequest req) {
