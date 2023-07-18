@@ -13,7 +13,6 @@ public class {{classname}} {
   public {{classname}}() {}
 
   {{#vars}}
-
   {{^isReadOnly}}
   public {{classname}} {{name}}({{{datatypeWithEnum}}} {{name}}) {
     this.{{name}} = {{name}};
@@ -42,23 +41,9 @@ public class {{classname}} {
 {{#deprecated}}
   @Deprecated
 {{/deprecated}}
-{{> jackson_annotations}}
-  public {{{datatypeWithEnum}}} {{getter}}() {
+{{> jackson_annotations}}  public {{{datatypeWithEnum}}} {{getter}}() {
     return {{name}};
   }
-
-  {{#vendorExtensions.x-is-jackson-optional-nullable}}
-{{> jackson_annotations}}
-  public JsonNullable<{{{datatypeWithEnum}}}> {{getter}}_JsonNullable() {
-    return {{name}};
-  }
-  {{/vendorExtensions.x-is-jackson-optional-nullable}}{{#vendorExtensions.x-is-jackson-optional-nullable}}
-  @JsonProperty(JSON_PROPERTY_{{nameInSnakeCase}})
-  {{#isReadOnly}}private{{/isReadOnly}}{{^isReadOnly}}public{{/isReadOnly}} void {{setter}}_JsonNullable(JsonNullable<{{{datatypeWithEnum}}}> {{name}}) {
-    {{! For getters/setters that have name differing from attribute name, we must include setter (albeit private) for jackson to be able to set the attribute}}
-    this.{{name}} = {{name}};
-  }
-  {{/vendorExtensions.x-is-jackson-optional-nullable}}
 
   {{^isReadOnly}}
 {{> jackson_annotations}}  public void {{setter}}({{{datatypeWithEnum}}} {{name}}) {
