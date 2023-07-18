@@ -206,7 +206,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       return;
     }
     Tracer t = getCores() == null ? GlobalTracer.get() : getCores().getTracer();
-    request.setAttribute(Tracer.class.getName(), t);
+    request.setAttribute(ATTR_TRACING_TRACER, t);
     RateLimitManager rateLimitManager = coreService.getService().getRateLimitManager();
     ServletUtils.rateLimitRequest(
         rateLimitManager,
@@ -218,8 +218,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
           } catch (IOException | ServletException | SolrAuthenticationException e) {
             throw new ExceptionWhileTracing(e);
           }
-        },
-        true);
+        });
   }
 
   private static Span getSpan(HttpServletRequest req) {

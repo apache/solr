@@ -197,39 +197,30 @@ public abstract class ServletUtils {
    * @param request The request to limit
    * @param response The associated response
    * @param limitedExecution code that will be traced
-   * @param trace a boolean that turns tracing on or off
    */
   static void rateLimitRequest(
       RateLimitManager rateLimitManager,
       HttpServletRequest request,
       HttpServletResponse response,
-      Runnable limitedExecution,
-      boolean trace)
+      Runnable limitedExecution)
       throws ServletException, IOException {
     boolean accepted = false;
-    boolean needsCleanup = true;
     try {
-      try {
-        accepted = rateLimitManager.handleRequest(request);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
-      }
-
+      accepted = rateLimitManager.handleRequest(request);
       if (!accepted) {
         response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
         return;
       }
-      needsCleanup = false;
       // todo: this shouldn't be required, tracing and rate limiting should be independently
       // composable
-      traceHttpRequestExecution2(request, response, limitedExecution, trace);
+      traceHttpRequestExecution2(request, response, limitedExecution);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
     } finally {
-      if (needsCleanup) {
-        consumeInputFully(request, response);
-        SolrRequestInfo.reset();
-        SolrRequestParsers.cleanupMultipartFiles(request);
-      }
+      consumeInputFully(request, response);
+      SolrRequestInfo.reset();
+      SolrRequestParsers.cleanupMultipartFiles(request);
       if (accepted) {
         rateLimitManager.decrementActiveRequests(request);
       }
@@ -240,59 +231,44 @@ public abstract class ServletUtils {
    * Sets up tracing for an HTTP request. Perhaps should be converted to a servlet filter at some
    * point.
    *
+   * @param request The request to limit
+   * @param response The associated response
    * @param tracedExecution the executed code
    */
   private static void traceHttpRequestExecution2(
-      HttpServletRequest request,
-      HttpServletResponse response,
-      Runnable tracedExecution,
-      boolean required)
+      HttpServletRequest request, HttpServletResponse response, Runnable tracedExecution)
       throws ServletException, IOException {
     Tracer tracer = getTracer(request);
-    if (tracer != null) {
-      Span span = buildSpan(tracer, request);
+    Span span = buildSpan(tracer, request);
 
-      request.setAttribute(Span.class.getName(), span);
-      try (var scope = tracer.scopeManager().activate(span)) {
+    request.setAttribute(SolrDispatchFilter.ATTR_TRACING_SPAN, span);
+    try (var scope = tracer.scopeManager().activate(span)) {
 
-        assert scope != null; // prevent javac warning about scope being unused
-        MDCLoggingContext.setTracerId(span.context().toTraceId()); // handles empty string
-        try {
-          tracedExecution.run();
-        } catch (ExceptionWhileTracing e) {
-          if (e.e instanceof SolrAuthenticationException) {
-            throw (SolrAuthenticationException) e.e;
-          }
-          if (e.e instanceof ServletException) {
-            throw (ServletException) e.e;
-          }
-          if (e.e instanceof IOException) {
-            throw (IOException) e.e;
-          }
-          if (e.e instanceof RuntimeException) {
-            throw (RuntimeException) e.e;
-          } else {
-            throw new RuntimeException(e.e);
-          }
-        }
-      } catch (SolrAuthenticationException e) {
-        // done, the response and status code have already been sent
-      } finally {
-        consumeInputFully(request, response);
-        SolrRequestInfo.reset();
-        SolrRequestParsers.cleanupMultipartFiles(request);
-
-        span.setTag(Tags.HTTP_STATUS, response.getStatus());
-        span.finish();
-      }
-    } else {
-      if (required) {
-        throw new IllegalStateException(
-            "Tracing required, but could not find Tracer in request attribute:"
-                + SolrDispatchFilter.ATTR_TRACING_TRACER);
-      } else {
+      assert scope != null; // prevent javac warning about scope being unused
+      MDCLoggingContext.setTracerId(span.context().toTraceId()); // handles empty string
+      try {
         tracedExecution.run();
+      } catch (ExceptionWhileTracing e) {
+        if (e.e instanceof SolrAuthenticationException) {
+          throw (SolrAuthenticationException) e.e;
+        }
+        if (e.e instanceof ServletException) {
+          throw (ServletException) e.e;
+        }
+        if (e.e instanceof IOException) {
+          throw (IOException) e.e;
+        }
+        if (e.e instanceof RuntimeException) {
+          throw (RuntimeException) e.e;
+        } else {
+          throw new RuntimeException(e.e);
+        }
       }
+    } catch (SolrAuthenticationException e) {
+      // done, the response and status code have already been sent
+    } finally {
+      span.setTag(Tags.HTTP_STATUS, response.getStatus());
+      span.finish();
     }
   }
 
