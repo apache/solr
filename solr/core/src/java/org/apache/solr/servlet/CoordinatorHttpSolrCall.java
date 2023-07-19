@@ -250,7 +250,8 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     SolrQueryResponse rsp = new SolrQueryResponse();
     try {
       CollectionAdminRequest.Create collCreationRequest =
-          CollectionAdminRequest.createCollection(syntheticCollectionName, confName, 1,0);
+          CollectionAdminRequest.createCollection(syntheticCollectionName, confName, 1, 1)
+              .setCreateNodeSet(cores.getZkController().getNodeName());
       collCreationRequest.setWaitForFinalState(true);
       SolrParams params = collCreationRequest.getParams();
       if (log.isInfoEnabled()) {
