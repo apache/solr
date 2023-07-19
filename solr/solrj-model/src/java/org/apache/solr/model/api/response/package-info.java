@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Model classes used in representing and sending API responses
- */
+/** Model classes used in representing and sending API responses */
 package org.apache.solr.model.api.response;

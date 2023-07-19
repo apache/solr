@@ -28,13 +28,17 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.ReplicasApi;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Test;
 
 /**
  * Tests that default {@link CollectionAdminRequest#getParams()} returns only the required

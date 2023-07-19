@@ -16,6 +16,21 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import javax.inject.Inject;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
@@ -29,22 +44,6 @@ import org.apache.solr.model.api.request.AddReplicaPropertyRequestBody;
 import org.apache.solr.model.api.response.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
-import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 /**
  * V2 API for adding a property to a collection replica
@@ -62,7 +61,12 @@ public class AddReplicaPropertyAPI extends AdminAPIBase implements IAddReplicaPr
   }
 
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse addReplicaProperty(String collName, String shardName, String replicaName, String propertyName, AddReplicaPropertyRequestBody requestBody)
+  public SolrJerseyResponse addReplicaProperty(
+      String collName,
+      String shardName,
+      String replicaName,
+      String propertyName,
+      AddReplicaPropertyRequestBody requestBody)
       throws Exception {
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");

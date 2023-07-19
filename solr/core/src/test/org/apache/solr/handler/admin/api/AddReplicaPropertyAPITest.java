@@ -45,7 +45,8 @@ import org.mockito.ArgumentCaptor;
 /** Unit tests for {@link AddReplicaPropertyAPI} */
 public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
 
-  private static final AddReplicaPropertyRequestBody ANY_REQ_BODY = new AddReplicaPropertyRequestBody("anyValue");
+  private static final AddReplicaPropertyRequestBody ANY_REQ_BODY =
+      new AddReplicaPropertyRequestBody("anyValue");
 
   private CoreContainer mockCoreContainer;
   private DistributedCollectionConfigSetCommandRunner mockCommandRunner;

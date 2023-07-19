@@ -18,7 +18,6 @@
 package org.apache.solr.model.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Represents API responses composed of the responses of various sub-requests.

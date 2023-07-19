@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Model classes representing Solr individual Solr APIs.
- */
+/** Model classes representing Solr individual Solr APIs. */
 package org.apache.solr.model.api;

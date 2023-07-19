@@ -18,13 +18,13 @@
 package org.apache.solr.common.util;
 
 // TODO This probably shouldn't exist in a final product, but it's fine for a POC
-/**
- * Constants duplicated from solrj-model so we can avoid depending on it directly
- */
+/** Constants duplicated from solrj-model so we can avoid depending on it directly */
 public class ModelConstants {
 
-    private ModelConstants() { /* Private ctor prevents instantiation */ }
+  private ModelConstants() {
+    /* Private ctor prevents instantiation */
+  }
 
-    public static final String ROOT_ERROR_CLASS = "root-error-class";
-    public static final String ERROR_CLASS = "error-class";
+  public static final String ROOT_ERROR_CLASS = "root-error-class";
+  public static final String ERROR_CLASS = "error-class";
 }

@@ -18,34 +18,29 @@
 package org.apache.solr.client.solrj;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import java.io.InputStream;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-
 public class JacksonParsingResponse<T extends Object> extends SimpleSolrResponse {
 
-    private final Class<T> typeParam;
+  private final Class<T> typeParam;
 
-    public JacksonParsingResponse(Class<T> typeParam) {
-        this.typeParam = typeParam;
-    }
+  public JacksonParsingResponse(Class<T> typeParam) {
+    this.typeParam = typeParam;
+  }
 
-    public T getParsed() {
-        // TODO - reuse the ObjectMapper - no reason to recreate each time.
-        final NamedList<Object> resp = getResponse();
-        final var stream = (InputStream) resp.get("stream");
-        try {
-            final T parsedVal = new ObjectMapper().readValue(stream, typeParam);
-            assert ObjectReleaseTracker.release(stream);
-            return parsedVal;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+  public T getParsed() {
+    // TODO - reuse the ObjectMapper - no reason to recreate each time.
+    final NamedList<Object> resp = getResponse();
+    final var stream = (InputStream) resp.get("stream");
+    try {
+      final T parsedVal = new ObjectMapper().readValue(stream, typeParam);
+      assert ObjectReleaseTracker.release(stream);
+      return parsedVal;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
+  }
 }

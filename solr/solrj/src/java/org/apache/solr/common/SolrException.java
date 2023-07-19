@@ -16,14 +16,13 @@
  */
 package org.apache.solr.common;
 
+import static org.apache.solr.common.util.ModelConstants.ERROR_CLASS;
+import static org.apache.solr.common.util.ModelConstants.ROOT_ERROR_CLASS;
+
+import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
-
-import java.util.Map;
-
-import static org.apache.solr.common.util.ModelConstants.ERROR_CLASS;
-import static org.apache.solr.common.util.ModelConstants.ROOT_ERROR_CLASS;
 
 /** */
 public class SolrException extends RuntimeException {

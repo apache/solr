@@ -40,8 +40,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
 import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.model.api.response.SolrJerseyResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

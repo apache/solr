@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Model classes used in making and representing API requests
- */
+/** Model classes used in making and representing API requests */
 package org.apache.solr.model.api.request;

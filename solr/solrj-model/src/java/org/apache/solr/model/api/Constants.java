@@ -18,7 +18,9 @@
 package org.apache.solr.model.api;
 
 public class Constants {
-    private Constants() { /* Private ctor prevents instantiation */ }
+  private Constants() {
+    /* Private ctor prevents instantiation */
+  }
 
-    public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }

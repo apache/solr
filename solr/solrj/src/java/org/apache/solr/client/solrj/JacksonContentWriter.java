@@ -18,28 +18,27 @@
 package org.apache.solr.client.solrj;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.solr.client.solrj.request.RequestWriter;
-
 import java.io.IOException;
 import java.io.OutputStream;
+import org.apache.solr.client.solrj.request.RequestWriter;
 
 public class JacksonContentWriter implements RequestWriter.ContentWriter {
 
-    private final Object toWrite;
-    private final String contentType;
+  private final Object toWrite;
+  private final String contentType;
 
-    public JacksonContentWriter(String contentType, Object toWrite) {
-        this.contentType = contentType;
-        this.toWrite = toWrite;
-    }
+  public JacksonContentWriter(String contentType, Object toWrite) {
+    this.contentType = contentType;
+    this.toWrite = toWrite;
+  }
 
-    @Override
-    public void write(OutputStream os) throws IOException {
-        new ObjectMapper().writeValue(os, toWrite);
-    }
+  @Override
+  public void write(OutputStream os) throws IOException {
+    new ObjectMapper().writeValue(os, toWrite);
+  }
 
-    @Override
-    public String getContentType() {
-        return contentType;
-    }
+  @Override
+  public String getContentType() {
+    return contentType;
+  }
 }

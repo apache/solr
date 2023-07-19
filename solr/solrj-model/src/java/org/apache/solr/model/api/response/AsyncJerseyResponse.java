@@ -18,7 +18,6 @@
 package org.apache.solr.model.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
 
 public class AsyncJerseyResponse extends SolrJerseyResponse {
   @JsonProperty("requestid")

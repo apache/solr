@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -27,11 +26,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -61,10 +55,7 @@ public class DeleteCollectionAPI extends AdminAPIBase implements IDeleteCollecti
 
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse deleteCollection(
-      String collectionName,
-      Boolean followAliases,
-      String asyncId)
-      throws Exception {
+      String collectionName, Boolean followAliases, String asyncId) throws Exception {
     final SubResponseAccumulatingJerseyResponse response =
         instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();

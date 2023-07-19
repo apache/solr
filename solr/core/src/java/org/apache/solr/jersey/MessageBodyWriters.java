@@ -108,8 +108,7 @@ public class MessageBodyWriters {
     }
   }
 
-  public abstract static class BaseMessageBodyWriter
-      implements MessageBodyWriter<Object> {
+  public abstract static class BaseMessageBodyWriter implements MessageBodyWriter<Object> {
 
     @Context protected ResourceContext resourceContext;
     private final QueryResponseWriter responseWriter = createResponseWriter();

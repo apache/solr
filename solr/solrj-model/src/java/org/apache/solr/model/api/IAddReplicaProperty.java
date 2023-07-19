@@ -17,44 +17,44 @@
 
 package org.apache.solr.model.api;
 
+import static org.apache.solr.model.api.Constants.BINARY_CONTENT_TYPE_V2;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import org.apache.solr.model.api.request.AddReplicaPropertyRequestBody;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
-
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-
-import static org.apache.solr.model.api.Constants.BINARY_CONTENT_TYPE_V2;
+import org.apache.solr.model.api.request.AddReplicaPropertyRequestBody;
+import org.apache.solr.model.api.response.SolrJerseyResponse;
 
 @Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
 public interface IAddReplicaProperty {
 
-    @PUT
-    @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
-    @Operation(
-            summary = "Adds a property to the specified replica",
-            tags = {"replicas"})
-    public SolrJerseyResponse addReplicaProperty(
-            @Parameter(
-                    description = "The name of the collection the replica belongs to.",
-                    required = true)
-            @PathParam("collName")
-            String collName,
-            @Parameter(description = "The name of the shard the replica belongs to.", required = true)
-            @PathParam("shardName")
-            String shardName,
-            @Parameter(description = "The replica, e.g., `core_node1`.", required = true)
-            @PathParam("replicaName")
-            String replicaName,
-            @Parameter(description = "The name of the property to add.", required = true)
-            @PathParam("propName")
-            String propertyName,
-            @RequestBody(
-                    description = "The value of the replica property to create or update",
-                    required = true)
-            AddReplicaPropertyRequestBody requestBody) throws Exception;
+  @PUT
+  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Operation(
+      summary = "Adds a property to the specified replica",
+      tags = {"replicas"})
+  public SolrJerseyResponse addReplicaProperty(
+      @Parameter(
+              description = "The name of the collection the replica belongs to.",
+              required = true)
+          @PathParam("collName")
+          String collName,
+      @Parameter(description = "The name of the shard the replica belongs to.", required = true)
+          @PathParam("shardName")
+          String shardName,
+      @Parameter(description = "The replica, e.g., `core_node1`.", required = true)
+          @PathParam("replicaName")
+          String replicaName,
+      @Parameter(description = "The name of the property to add.", required = true)
+          @PathParam("propName")
+          String propertyName,
+      @RequestBody(
+              description = "The value of the replica property to create or update",
+              required = true)
+          AddReplicaPropertyRequestBody requestBody)
+      throws Exception;
 }
