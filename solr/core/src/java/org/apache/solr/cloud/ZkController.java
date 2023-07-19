@@ -83,7 +83,6 @@ import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.NodesSysPropsCacher;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
@@ -1814,7 +1813,7 @@ public class ZkController implements Closeable {
       // as overseer does not and should not handle those entries
       if (coll != null && coll.isPerReplicaState() && coreNodeName != null) {
         PerReplicaStates perReplicaStates =
-            PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+            PerReplicaStatesOps.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
             .persist(coll.getZNode(), zkClient);
       }
@@ -1899,7 +1898,7 @@ public class ZkController implements Closeable {
               docCollection.getName());
         }
         PerReplicaStates perReplicaStates =
-            PerReplicaStatesFetcher.fetch(
+            PerReplicaStatesOps.fetch(
                 docCollection.getZNode(), zkClient, docCollection.getPerReplicaStates());
         PerReplicaStatesOps.deleteReplica(coreNodeName, perReplicaStates)
             .persist(docCollection.getZNode(), zkClient);
@@ -2979,7 +2978,7 @@ public class ZkController implements Closeable {
                 });
             PerReplicaStatesOps.downReplicas(
                     replicasToDown,
-                    PerReplicaStatesFetcher.fetch(
+                    PerReplicaStatesOps.fetch(
                         coll.getZNode(), zkClient, coll.getPerReplicaStates()))
                 .persist(coll.getZNode(), zkClient);
           }

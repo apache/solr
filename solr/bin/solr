@@ -943,11 +943,7 @@ if [ $# -eq 1 ]; then
     -help|-h)
         print_usage ""
         exit
-    ;;
-    -version|-v|version)
-        run_tool version
-        exit
-    ;;
+    ;;    
   esac
 fi
 
