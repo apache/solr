@@ -124,17 +124,18 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
             }
           }
         }
-        synchronized(CoordinatorHttpSolrCall.class) {
-          //get docCollection again to ensure we get the fresh state
-          syntheticColl = zkStateReader.getClusterState().getCollectionOrNull(syntheticCollectionName);
+        synchronized (CoordinatorHttpSolrCall.class) {
+          // get docCollection again to ensure we get the fresh state
+          syntheticColl =
+              zkStateReader.getClusterState().getCollectionOrNull(syntheticCollectionName);
           List<Replica> nodeNameSyntheticReplicas =
-                  syntheticColl.getReplicas(solrCall.cores.getZkController().getNodeName());
+              syntheticColl.getReplicas(solrCall.cores.getZkController().getNodeName());
           if (nodeNameSyntheticReplicas == null || nodeNameSyntheticReplicas.isEmpty()) {
             // this node does not have a replica. add one
             if (log.isInfoEnabled()) {
               log.info(
-                      "this node does not have a replica of the synthetic collection: {} , adding replica ",
-                      syntheticCollectionName);
+                  "this node does not have a replica of the synthetic collection: {} , adding replica ",
+                  syntheticCollectionName);
             }
 
             addReplica(syntheticCollectionName, solrCall.cores);
@@ -145,25 +146,25 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
           // hence creating a calling loop
           try {
             zkStateReader.waitForState(
-                    syntheticCollectionName,
-                    10,
-                    TimeUnit.SECONDS,
-                    docCollection -> {
-                      for (Replica nodeNameSyntheticReplica :
-                              docCollection.getReplicas(solrCall.cores.getZkController().getNodeName())) {
-                        if (nodeNameSyntheticReplica.getState() == Replica.State.ACTIVE) {
-                          return true;
-                        }
-                      }
-                      return false;
-                    });
+                syntheticCollectionName,
+                10,
+                TimeUnit.SECONDS,
+                docCollection -> {
+                  for (Replica nodeNameSyntheticReplica :
+                      docCollection.getReplicas(solrCall.cores.getZkController().getNodeName())) {
+                    if (nodeNameSyntheticReplica.getState() == Replica.State.ACTIVE) {
+                      return true;
+                    }
+                  }
+                  return false;
+                });
           } catch (Exception e) {
             throw new SolrException(
-                    SolrException.ErrorCode.SERVER_ERROR,
-                    "Failed to wait for active replica for synthetic collection ["
-                            + syntheticCollectionName
-                            + "]",
-                    e);
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Failed to wait for active replica for synthetic collection ["
+                    + syntheticCollectionName
+                    + "]",
+                e);
           }
         }
 
