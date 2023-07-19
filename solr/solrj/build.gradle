@@ -1,3 +1,5 @@
+import com.diffplug.gradle.spotless.SpotlessTask
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +23,11 @@ plugins {
 
 
 apply plugin: 'java-library'
+apply plugin: 'com.diffplug.spotless'
+
+import com.diffplug.gradle.spotless.JavaExtension
+import com.diffplug.spotless.LineEnding
+
 
 description = 'Solrj - Solr Java Client'
 
@@ -35,6 +42,21 @@ tasks.register("copySpec", Copy) {
   from("../solrj-model/build/generated/openapi")
   into(layout.buildDirectory.dir("openapispec"))
 }
+
+////////////////////////////////////
+// TODO Move to spotless.gradle
+Action<JavaExtension> generatedSetup = {
+  it.target "build/generated/src/**/*.java"
+  it.setLineEndings LineEnding.UNIX
+  it.endWithNewline()
+  it.googleJavaFormat('1.15.0')
+}
+
+def generated = new JavaExtension(spotless)
+generatedSetup.execute(generated)
+def generatedSpotlessTask = generated.createIndependentApplyTask("generated")
+////////////////////////////////////
+
 
 openApiGenerate {
   generatorName = "java"
@@ -55,7 +77,8 @@ openApiGenerate {
 
 tasks.getByName("copySpec").dependsOn configurations.getByName("openApiSpecFile")
 tasks.getByName("openApiGenerate").dependsOn tasks.copySpec
-tasks.getByName("openApiGenerate").finalizedBy tasks.tidy
+tasks.getByName("openApiGenerate").finalizedBy generatedSpotlessTask
+generatedSpotlessTask.dependsOn tasks.openApiGenerate
 
 sourceSets {
   main {
