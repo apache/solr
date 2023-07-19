@@ -53,8 +53,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
         new BackupCoreAPI(
             it.handler.coreContainer, it.req, it.rsp, it.handler.coreAdminAsyncTracker);
     try {
-      SolrJerseyResponse response =
-          backupCoreAPI.createBackup(cname, name, backupCoreRequestBody, null);
+      SolrJerseyResponse response = backupCoreAPI.createBackup(cname, name, backupCoreRequestBody);
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       V2ApiUtils.squashIntoNamedListWithoutHeader(namedList, response);
       it.rsp.addResponse(namedList);

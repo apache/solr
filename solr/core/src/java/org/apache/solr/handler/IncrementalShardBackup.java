@@ -81,7 +81,7 @@ public class IncrementalShardBackup {
     this.commitNameOption = commitNameOption;
   }
 
-  public IncrementalBackupCoreResponse backup() throws Exception {
+  public IncrementalShardSnapshotResponse backup() throws Exception {
     final IndexCommit indexCommit = getAndSaveIndexCommit();
     try {
       return backup(indexCommit);
@@ -135,12 +135,13 @@ public class IncrementalShardBackup {
   }
 
   // note: remember to reserve the indexCommit first so it won't get deleted concurrently
-  protected IncrementalBackupCoreResponse backup(final IndexCommit indexCommit) throws Exception {
+  protected IncrementalShardSnapshotResponse backup(final IndexCommit indexCommit)
+      throws Exception {
     assert indexCommit != null;
     URI backupLocation = incBackupFiles.getBackupLocation();
     log.info(
         "Creating backup snapshot at {} shardBackupMetadataFile:{}", backupLocation, shardBackupId);
-    IncrementalBackupCoreResponse details = new IncrementalBackupCoreResponse();
+    IncrementalShardSnapshotResponse details = new IncrementalShardSnapshotResponse();
     details.startTime = Instant.now().toString();
 
     Collection<String> files = indexCommit.getFileNames();
@@ -242,7 +243,7 @@ public class IncrementalShardBackup {
     }
   }
 
-  public static class IncrementalBackupCoreResponse extends SolrJerseyResponse {
+  public static class IncrementalShardSnapshotResponse extends SolrJerseyResponse {
     @Schema(description = "The time at which backup snapshot started at.")
     @JsonProperty("startTime")
     public String startTime;

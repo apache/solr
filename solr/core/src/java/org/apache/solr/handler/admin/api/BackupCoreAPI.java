@@ -31,9 +31,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.BackupFilePaths;
@@ -47,7 +45,7 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-@Path(("/cores/{coreName}/backup/{name}"))
+@Path("/cores/{coreName}/backup/{name}")
 public class BackupCoreAPI extends CoreAdminAPIBase {
   @Inject
   public BackupCoreAPI(
@@ -62,23 +60,18 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse createBackup(
-      @Schema(description = "The name of the core.") @PathParam("core") String coreName,
+      @Parameter(description = "The name of the core.") @PathParam("coreName") String coreName,
       @Schema(description = "The backup will be created in a directory called snapshot.<name>")
           @PathParam("name")
           String name,
       @Schema(description = "The POJO for representing additional backup params.") @RequestBody
-          BackupCoreRequestBody backupCoreRequestBody,
-      @Parameter(description = "The id to associate with the async task.") @QueryParam("async")
-          String taskId)
+          BackupCoreRequestBody backupCoreRequestBody)
       throws Exception {
-    if (coreName == null)
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Missing required parameter: " + CoreAdminParams.CORE);
+    ensureRequiredParameterProvided("coreName", coreName);
     return handlePotentiallyAsynchronousTask(
         null,
         coreName,
-        taskId,
+        backupCoreRequestBody.async,
         "backup",
         () -> {
           try (BackupRepository repository =
@@ -88,8 +81,7 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
             if (location == null) {
               throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,
-                  "'location' is not specified as a query"
-                      + " parameter or as a default repository property");
+                  "'location' parameter is not specified in the request body or as a default repository property");
             }
             URI locationUri = repository.createDirectoryURI(location);
             repository.createDirectory(locationUri);
@@ -98,11 +90,7 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
               if ("file".equals(locationUri.getScheme())) {
                 core.getCoreContainer().assertPathAllowed(Paths.get(locationUri));
               }
-              if (backupCoreRequestBody.shardBackupId == null) {
-                throw new SolrException(
-                    SolrException.ErrorCode.BAD_REQUEST,
-                    "Missing required parameter: shardBackupId");
-              }
+              ensureRequiredParameterProvided("shardBackupId", backupCoreRequestBody.shardBackupId);
               final ShardBackupId shardBackupId =
                   ShardBackupId.from(backupCoreRequestBody.shardBackupId);
               final ShardBackupId prevShardBackupId =
@@ -174,6 +162,10 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
 
     @Schema(description = "To turn on incremental backup feature")
     @JsonProperty("incremental")
-    public boolean incremental;
+    public Boolean incremental;
+
+    @Schema(description = "Request ID to track this action which will be processed asynchronously.")
+    @JsonProperty("async")
+    public String async;
   }
 }

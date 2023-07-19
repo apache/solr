@@ -174,7 +174,7 @@ public class SnapShooter {
     }
   }
 
-  public SnapShooterBackupCoreResponse createSnapshot() throws Exception {
+  public CoreSnapshotResponse createSnapshot() throws Exception {
     final IndexCommit indexCommit = getAndSaveIndexCommit();
     try {
       return createSnapshot(indexCommit);
@@ -281,8 +281,7 @@ public class SnapShooter {
    * @see IndexDeletionPolicyWrapper#saveCommitPoint
    * @see IndexDeletionPolicyWrapper#releaseCommitPoint
    */
-  protected SnapShooterBackupCoreResponse createSnapshot(final IndexCommit indexCommit)
-      throws Exception {
+  protected CoreSnapshotResponse createSnapshot(final IndexCommit indexCommit) throws Exception {
     assert indexCommit != null;
     if (log.isInfoEnabled()) {
       log.info(
@@ -292,7 +291,7 @@ public class SnapShooter {
     }
     boolean success = false;
     try {
-      SnapShooterBackupCoreResponse details = new SnapShooterBackupCoreResponse();
+      CoreSnapshotResponse details = new CoreSnapshotResponse();
       details.startTime = Instant.now().toString();
 
       Collection<String> files = indexCommit.getFileNames();
@@ -395,7 +394,7 @@ public class SnapShooter {
 
   public static final String DATE_FMT = "yyyyMMddHHmmssSSS";
 
-  public static class SnapShooterBackupCoreResponse extends SolrJerseyResponse {
+  public static class CoreSnapshotResponse extends SolrJerseyResponse {
     @Schema(description = "The time at which snapshot started at.")
     @JsonProperty("startTime")
     public String startTime;
