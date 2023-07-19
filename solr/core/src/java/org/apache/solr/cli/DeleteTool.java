@@ -65,7 +65,8 @@ public class DeleteTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         SolrCLI.OPTION_SOLRURL,
-        Option.builder(NAME)
+        Option.builder("c")
+            .longOpt("name")
             .argName("NAME")
             .hasArg()
             .required(true)
@@ -91,7 +92,6 @@ public class DeleteTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
 
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
       Map<String, Object> systemInfo =
@@ -234,4 +234,4 @@ public class DeleteTool extends ToolBase {
       echoIfVerbose("\n", cli);
     }
   }
-} // end DeleteTool class
+}

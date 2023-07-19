@@ -50,6 +50,40 @@ Other Changes
 
 * SOLR-16798: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command. (Bence Szabo via Eric Pugh)
 
+* SOLR-16829: Delegate arg parsing and help usage from bin/solr and bin/solr.cmd to java layer for create, create_core, create_collection, delete, healthcheck and status commands. (Eric Pugh, Will White, Mikhail Khludnev)
+
+* SOLR-6994: Implement Windows version of bin/post via implementing bin/solr post command that works on Windows and Unix.  Deprecate bin/post.  (Eric Pugh, Will White)
+
+==================  9.4.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+
+* SOLR-16845: BinaryResponseWriter should not attempt cast to Utf8CharSequence (Alex Deparvu via Houston Putman)
+
+Bug Fixes
+---------------------
+
+* SOLR-16886: Don't commit multi-part uploads that have been aborted (Tomás Fernández Löbbe, Houston Putman)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+
+* SOLR-16842: Eliminate special case code in Solr CLI by introducing explicit VersionTool.java.  (Eric Pugh, Will White)
+
+* SOLR-16856: The default auto-soft-commit time has been set to 3 seconds. Previously, auto-soft-commit was disabled by default. (Houston Putman)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
@@ -83,6 +117,17 @@ New Features
 
 * SOLR-16837: Introducing AffinityPlacementFactory.withCollectionShards to collocate corresponding shards of two collections.
   eg primaryColl.shard1 will be placed to the node where secondaryColl.shard1 resides, etc. (Mikhail Khludnev)
+
+* SOLR-16812: Support CBOR format for update/query (noble)
+
+* SOLR-16855: Solr now provides a MigrateReplicas API at `POST /api/cluster/replicas/migrate` (v2), to move replicas
+  off of a given set of nodes. This extends the functionality of the existing ReplaceNode API. (Houston Putman)
+
+* SOLR-16717: {!join} can join collections with multiple shards on both sides. (Mikhail Khludnev)
+
+* SOLR-16675: Added function queries for dense vector similarity. (Elia Porciani, Alessandro Benedetti)
+
+* SOLR-16884: Solr Javadocs now have searching enabled. (Mike Drob, Houston Putman)
 
 Improvements
 ---------------------
@@ -199,6 +244,8 @@ Improvements
 * SOLR-16470: `/coreName/replication?command=filelist` now has a v2 equivalent, available at
   `GET /api/cores/coreName/replication/files?generation=123` (Matthew Biscocho via Jason Gerlowski)
 
+* SOLR-16878: Use Log4J JUL manager when starting Java. This is necessary for Lucene logs to be included with Solr logs. (Houston Putman, Uwe Schindler)
+
 Optimizations
 ---------------------
 
@@ -224,6 +271,9 @@ Optimizations
 * SOLR-16846: Use IndexOrDocValuesQuery for PointFields on Set queries. This improves the performance in some scenarios when
   the set query is combined with other selective queries. (Tomás Fernández Löbbe, Alex Deparvu)
 
+* SOLR-16869: Enable Incubating Java Panama Vector APIs when using Java 20 or 21.
+  When run using compatible hardware, Vector search will see considerable speed up. (Houston Putman, Uwe Schindler)
+
 Bug Fixes
 ---------------------
 
@@ -243,7 +293,7 @@ Bug Fixes
 
 * SOLR-13605: Fix setting client scoped socket and connect timeouts when using HttpSolrClient.Builder.withHttpClient() method.  (Eric Pugh, Alex Deparvu)
 
-* SOLR-16777: Fix for Schema Designer blindly trusting potentially malicious configsets (Ishan Chattopadhyaya, Skay)
+* SOLR-16777: Schema Designer now correctly manages trust of the ConfigSets it is managing. (Ishan Chattopadhyaya, Skay, Houston Putman)
 
 * SOLR-16771: Fixed behavior and handling of 'unset' logging levels in /admin/info/logging API and related Admin UI (hossman)
 
@@ -269,6 +319,18 @@ Bug Fixes
 
 * SOLR-16619: Fix solr scripts running on IBM i (Jesse Gorzinski via Eric Pugh)
 
+* SOLR-16809: The configuration for hiding sensitive sysProp information has been joined under `-Dsolr.hiddenSysProps` and `SOLR_HIDDEN_SYS_PROPS`. (Houston Putman, David Smiley)
+
+* SOLR-16860: Coordinator ZkStateReader's watch is not removed upon collection deletion (Patson Luk)
+
+* SOLR-16861: Coordinator node does not have the correct collection/core in MDCLoggingContext (Patson Luk)
+
+* SOLR-16877: BackupManager now allows ConfigSet "files" to be empty, which previously caused NPEs. (Paul Blanchaert via Houston Putman)
+
+* SOLR-16753: PRS state is now always updated at the end of a splitShard. (Houston Putman, hossman)
+
+* SOLR-16891: DocCollection, Slice and Replica now write to Json and write to Maps identically. (Houston Putman, Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
@@ -276,6 +338,8 @@ Dependency Upgrades
 * SOLR-16642: Upgrade to Lucene 9.5.0 (Vinayak Hegde, David Smiley)
 
 * SOLR-16799: upgrade Solr to use Lucene 9.6.0 (Alex Deparvu, Tomás Fernández Löbbe)
+
+* SOLR-16853: Upgrade Lucene to 9.7.0 (Alex Deparvu)
 
 Other Changes
 ---------------------

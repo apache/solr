@@ -315,21 +315,27 @@ public class RunExampleTool extends ToolBase {
 
         String currentPropVal = System.getProperty("url");
         System.setProperty("url", updateUrl);
+        String currentTypeVal = System.getProperty("type");
+        // We assume that example docs are always in XML.
+        System.setProperty("type", "application/xml");
         SimplePostTool.main(new String[] {exampledocsDir.getAbsolutePath() + "/*.xml"});
         if (currentPropVal != null) {
           System.setProperty("url", currentPropVal); // reset
         } else {
           System.clearProperty("url");
         }
+        if (currentTypeVal != null) {
+          System.setProperty("type", currentTypeVal); // reset
+        } else {
+          System.clearProperty("type");
+        }
       } else {
         echo(
             "exampledocs directory not found, skipping indexing step for the techproducts example");
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
-      SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build();
-
-      echo("Adding dense vector field type to films schema \"_default\"");
-      try {
+      try (SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build()) {
+        echo("Adding dense vector field type to films schema \"_default\"");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
@@ -342,13 +348,9 @@ public class RunExampleTool extends ToolBase {
                 + "          \"knnAlgorithm\":hnsw\n"
                 + "        }\n"
                 + "      }");
-      } catch (Exception ex) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
-      }
 
-      echo(
-          "Adding name, initial_release_date, and film_vector fields to films schema \"_default\"");
-      try {
+        echo(
+            "Adding name, initial_release_date, and film_vector fields to films schema \"_default\"");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
@@ -371,12 +373,9 @@ public class RunExampleTool extends ToolBase {
                 + "          \"stored\":true\n"
                 + "        }\n"
                 + "      }");
-      } catch (Exception ex) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
-      }
 
-      echo("Adding paramsets \"algo\" and \"algo_b\" to films configuration for relevancy tuning");
-      try {
+        echo(
+            "Adding paramsets \"algo\" and \"algo_b\" to films configuration for relevancy tuning");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/config/params",
@@ -395,29 +394,29 @@ public class RunExampleTool extends ToolBase {
                 + "             }\n"
                 + "            }\n"
                 + "        }\n");
+
+        File filmsJsonFile = new File(exampleDir, "films/films.json");
+        String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
+        echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
+        String currentPropVal = System.getProperty("url");
+        System.setProperty("url", updateUrl);
+        SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
+        if (currentPropVal != null) {
+          System.setProperty("url", currentPropVal); // reset
+        } else {
+          System.clearProperty("url");
+        }
       } catch (Exception ex) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
       }
 
-      File filmsJsonFile = new File(exampleDir, "films/films.json");
-      String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
-      echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
-      String currentPropVal = System.getProperty("url");
-      System.setProperty("url", updateUrl);
-      SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
-      if (currentPropVal != null) {
-        System.setProperty("url", currentPropVal); // reset
-      } else {
-        System.clearProperty("url");
-      }
+      echo(
+          "\nSolr "
+              + exampleName
+              + " example launched successfully. Direct your Web browser to "
+              + solrUrl
+              + " to visit the Solr Admin UI");
     }
-
-    echo(
-        "\nSolr "
-            + exampleName
-            + " example launched successfully. Direct your Web browser to "
-            + solrUrl
-            + " to visit the Solr Admin UI");
   }
 
   protected void runCloudExample(CommandLine cli) throws Exception {
@@ -517,39 +516,7 @@ public class RunExampleTool extends ToolBase {
     // create the collection
     String collectionName = createCloudExampleCollection(numNodes, readInput, prompt, solrUrl);
 
-    // update the config to enable soft auto-commit
-    echo("\nEnabling auto soft-commits with maxTime 3 secs using the Config API");
-    setCollectionConfigProperty(solrUrl, collectionName);
-
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
-  }
-
-  protected void setCollectionConfigProperty(String solrUrl, String collectionName) {
-    ConfigTool configTool = new ConfigTool(stdout);
-    String[] configArgs =
-        new String[] {
-          "-collection",
-          collectionName,
-          "-property",
-          "updateHandler.autoSoftCommit.maxTime",
-          "-value",
-          "3000",
-          "-solrUrl",
-          solrUrl
-        };
-
-    // let's not fail if we get this far ... just report error and finish up
-    try {
-      configTool.runTool(
-          SolrCLI.processCommandLineArgs(
-              configTool.getName(), configTool.getOptions(), configArgs));
-    } catch (Exception exc) {
-      CLIO.err(
-          "Failed to update '"
-              + "updateHandler.autoSoftCommit.maxTime"
-              + "' property due to: "
-              + exc);
-    }
   }
 
   /** wait until the number of live nodes == numNodes. */
@@ -609,6 +576,7 @@ public class RunExampleTool extends ToolBase {
     String memArg = (memory != null) ? " -m " + memory : "";
     String cloudModeArg = cloudMode ? "-cloud " : "";
     String forceArg = cli.hasOption("force") ? " -force" : "";
+    String verboseArg = verbose ? "-V" : "";
 
     String addlOpts = cli.getOptionValue('a');
     String addlOptsArg = (addlOpts != null) ? " -a \"" + addlOpts + "\"" : "";
@@ -629,7 +597,7 @@ public class RunExampleTool extends ToolBase {
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,
@@ -638,6 +606,7 @@ public class RunExampleTool extends ToolBase {
             zkHostArg,
             memArg,
             forceArg,
+            verboseArg,
             extraArgs,
             addlOptsArg);
     startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing

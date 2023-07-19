@@ -133,14 +133,6 @@ public class AuthTool extends ToolBase {
   @Override
   public int runTool(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    if (cli.getOptions().length == 0
-        || cli.getArgs().length == 0
-        || cli.getArgs().length > 1
-        || cli.hasOption("h")) {
-      new HelpFormatter()
-          .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
-      return 1;
-    }
 
     ensureArgumentIsValidBooleanIfPresent(cli, "blockUnknown");
     ensureArgumentIsValidBooleanIfPresent(cli, "updateIncludeFileOnly");

@@ -64,6 +64,15 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.4
+=== The Built-In Config Sets
+* The build in ConfigSets (`_default` and `sample_techproducts_configs`), now use a default `autoSoftCommit` time of 3 seconds,
+meaning that documents will be searchable within 3 seconds of uploading them.
+Please refer to the xref:configuration-guide:commits-transaction-logs.html#hard-commits-vs-soft-commits[Soft Commit documentation]
+for more information on how this change will effect you.
+Upgrading existing clouds and use-cases that have custom configSets will not be affected by this change.
+
+
 == Solr 9.3
 === Binary Releases
 * Solr now comes with two xref:deployment-guide:installing-solr.adoc#available-solr-packages[binary releases] and xref:deployment-guide:solr-in-docker.adoc#available-images[docker images], **full** and **slim**.
@@ -81,6 +90,18 @@ Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site 
 Older configuration now does nothing.
 Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
 
+* The method for specifying sysProps that contain sensitive information has been streamlined.
+Now the sysProp `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` are available to provide a comma-separated
+list of patterns to match sysProps that should be hidden or redacted.
+Please see the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[hiddenSysProps section] for more information.
++
+The sysProp `-Dsolr.redaction.system.pattern` has been deprecated, use the above options instead.
++
+The `<hiddenSysProps>` solr.xml element under `<metrics>` has been deprecated.
+Instead, use the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[<hiddenSysProps>] tag under `<solr>`, which accepts a comma-separated string.
+
+* The xref:indexing-guide:schema-designer.adoc[] now utilizes the same trust model as the xref:configuration-guide:configsets-api.adoc#configsets-upload[ConfigSet Upload API].
+
 === Official Docker Image
 * The customization of the Official Solr Dockerfile has been changed.
 The customization options `SOLR_DOWNLOAD_URL`, `SOLR_CLOSER_URL`, `SOLR_DIST_URL` and `SOLR_ARCHIVE_URL`, have been removed.
@@ -95,6 +116,13 @@ The custom version of Solr will include this Dockerfile when it is built.
  * When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper.
 Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files.
 As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[Unknown core deletion].
+
+=== v2 API 
+* Solr's experimental "v2" API has seen a number of improvements in the 9.3 release.
++
+It is now approaching parity with the functionality offered by Solr's v1 API.  In particular 9.3 adds v2 "CRUD" endpoints for interacting with alias properties and collection snapshots.  Several lower-level "replication" APIs now also offer v2 equivalents.
++
+Additionally, the v2 API as a whole is being redesigned to be more REST-ful and intuitive.  To this end, 9.3 introduces backwards-incompatible changes to the v2 shard, replica, and backup creation and deletion APIs.  A number of lower-level "command" APIs have also been tweaked, including: collection reloading, collection renaming, "force leader", "balance shard unique", and all of Solr's "log level" and "log watcher" APIs.  Clients using Solr's v2 endpoints should check their usage against the full list of modified APIs in CHANGES.txt prior to upgrading.  Details on each are available in the 9.3 reference guide.
 
 == Solr 9.2
 === Upgrade to Jetty 10.x
