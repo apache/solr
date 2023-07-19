@@ -74,7 +74,7 @@ solrAdminApp.controller('LoginController',
               var isCodePKCE = flow == 'code_pkce';
               if (isCodePKCE) {
                 // code flow with PKCE
-                console.log("Callback. Using code flow with PKCE");
+                console.debug("Callback. Using code flow with PKCE");
                 var code = hp['code'];
                 var tokenEndpoint = $scope.authData['tokenEndpoint'];
                 // concurrent Solr API calls will trigger 401 and erase session's "auth.realm" in app.js
@@ -90,7 +90,7 @@ solrAdminApp.controller('LoginController',
                   "client_id": $scope.authData['client_id']
                 };
 
-                console.log(`Callback. Got code: ${code} \nCalling token endpoint:: ${tokenEndpoint} `);
+                console.debug(`Callback. Got code: ${code} \nCalling token endpoint:: ${tokenEndpoint} `);
                 AuthenticationService.getOAuthTokens(tokenEndpoint, data).then(function(response) {
                     var accessToken = response.access_token;
                     var idToken = response.id_token;
@@ -110,9 +110,9 @@ solrAdminApp.controller('LoginController',
                   }
                 });
               }
-              else if(true) {
+              else {
                 // implicit flow
-                console.log("Callback. Using implicit flow");
+                console.debug("Callback. Using implicit flow");
                 processTokensResponse(hp['access_token'], hp['id_token'], hp['token_type'], expectedState, hp);
               }
             }
@@ -122,7 +122,7 @@ solrAdminApp.controller('LoginController',
       function validateState(state, expectedState) {
         if (state !== expectedState) {
           $scope.error = "Problem with auth callback";
-          console.log("Expected state param " + expectedState + " but got " + state);
+          console.error("Expected state param " + expectedState + " but got " + state);
           errorText += "Invalid values in state parameter. ";
           return false;
         }
@@ -137,7 +137,7 @@ solrAdminApp.controller('LoginController',
             tokenType = "bearer";
           }
           else if(tokenType.toLowerCase() !== "bearer") {
-            console.log("Expected token_type param 'bearer', but got " + tokenType);
+            console.error("Expected token_type param 'bearer', but got " + tokenType);
             errorText += "Invalid values in token_type parameter. ";
           }
           // Unpack ID token and validate nonce, get username
@@ -164,15 +164,15 @@ solrAdminApp.controller('LoginController',
                 $location.path(redirectTo).hash("");
               }
             } else {
-              console.log("Expected JWT compact id_token param but got " + idTokenArray);
+              console.error("Expected JWT compact id_token param but got " + idTokenArray);
               errorText += "Invalid values in id_token parameter. ";
             }
           } else {
-            console.log("Callback was missing the id_token parameter, could not validate nonce.");
+            console.error("Callback was missing the id_token parameter, could not validate nonce.");
             errorText += "Callback was missing the id_token parameter, could not validate nonce. ";
           }
           if (accessToken.split(".").length !== 3) {
-            console.log("Expected JWT compact access_token param but got " + accessToken);
+            console.error("Expected JWT compact access_token param but got " + accessToken);
             errorText += "Invalid values in access_token parameter. ";
           }
           if (errorText !== "") {
@@ -183,7 +183,7 @@ solrAdminApp.controller('LoginController',
           // End callback processing
         } else if (hp['error']) {
           // The callback had errors
-          console.log("Error received from idp: " + hp['error']);
+          console.error("Error received from idp: " + hp['error']);
           var errorDescriptions = {};
           errorDescriptions['invalid_request'] = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.";
           errorDescriptions['unauthorized_client'] = "The client is not authorized to request an access token using this method.";
@@ -207,7 +207,7 @@ solrAdminApp.controller('LoginController',
           sessionStorage.setItem("auth.state", "error");
         }
         else{
-          console.log(`Invalid data received from idp: accessToken: ${accessToken},
+          console.error(`Invalid data received from idp: accessToken: ${accessToken},
                       idToken: ${idToken}, state: ${hp['state']}`);
           errorText += "Invalid data received from the OpenID provider. ";
           $scope.http401 = "true";
@@ -255,7 +255,7 @@ solrAdminApp.controller('LoginController',
 
           var params = {};
           if (isCodePKCE) {
-            console.log("Login with 'Code PKCE' flow");
+            console.debug("Login with 'Code PKCE' flow");
             var codeVerifier = AuthenticationService.generateCodeVerifier();
             var code_challenge = await AuthenticationService.generateCodeChallengeFromVerifier(codeVerifier);
             var codeChallengeMethod = AuthenticationService.getCodeChallengeMethod();
@@ -273,7 +273,7 @@ solrAdminApp.controller('LoginController',
             };
           }
           else {
-            console.log("Login with 'Implicit' flow");
+            console.debug("Login with 'Implicit' flow");
             params = {
               "response_type": "id_token token",
               "client_id": $scope.authData['client_id'],
