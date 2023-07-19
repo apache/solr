@@ -693,7 +693,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
             DocRouter.DEFAULT,
             0,
-            PerReplicaStatesFetcher.getZkClientPrsSupplier(
+                PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath(collectionName)));
     ZkWriteCommand wc = new ZkWriteCommand(collectionName, state);
     writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
@@ -746,7 +746,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       // the state.json and
       // PRS entries to trigger the race condition
       CommonTestInjection.setBreakpoint(
-          PerReplicaStatesFetcher.class.getName() + "/beforePrsFetch",
+          PerReplicaStatesOps.class.getName() + "/beforePrsFetch",
           (args) -> {
             try {
               // this is invoked after ZkStateReader.fetchCollectionState has fetched the state.json
@@ -768,7 +768,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       CommonTestInjection.setBreakpoint(
           ZkStateReader.class.getName() + "/exercised",
           (args) -> {
-            if (args[0] instanceof PerReplicaStatesFetcher.PrsZkNodeNotFoundException) {
+            if (args[0] instanceof PerReplicaStatesOps.PrsZkNodeNotFoundException) {
               prsZkNodeNotFoundExceptionThrown.set(true);
             }
           });
@@ -786,7 +786,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     } finally {
       // clear breakpoints
       CommonTestInjection.setBreakpoint(
-          PerReplicaStatesFetcher.class.getName() + "/beforePrsFetch", null);
+              PerReplicaStatesOps.class.getName() + "/beforePrsFetch", null);
       CommonTestInjection.setBreakpoint(ZkStateReader.class.getName() + "/exercised", null);
     }
   }
