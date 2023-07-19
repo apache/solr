@@ -124,42 +124,48 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
             }
           }
         }
-        List<Replica> nodeNameSyntheticReplicas =
-            syntheticColl.getReplicas(solrCall.cores.getZkController().getNodeName());
-        if (nodeNameSyntheticReplicas == null || nodeNameSyntheticReplicas.isEmpty()) {
-          // this node does not have a replica. add one
-          if (log.isInfoEnabled()) {
-            log.info(
-                "this node does not have a replica of the synthetic collection: {} , adding replica ",
-                syntheticCollectionName);
+        synchronized (CoordinatorHttpSolrCall.class) {
+          // get docCollection again to ensure we get the fresh state
+          syntheticColl =
+              zkStateReader.getClusterState().getCollectionOrNull(syntheticCollectionName);
+          List<Replica> nodeNameSyntheticReplicas =
+              syntheticColl.getReplicas(solrCall.cores.getZkController().getNodeName());
+          if (nodeNameSyntheticReplicas == null || nodeNameSyntheticReplicas.isEmpty()) {
+            // this node does not have a replica. add one
+            if (log.isInfoEnabled()) {
+              log.info(
+                  "this node does not have a replica of the synthetic collection: {} , adding replica ",
+                  syntheticCollectionName);
+            }
+
+            addReplica(syntheticCollectionName, solrCall.cores);
           }
 
-          addReplica(syntheticCollectionName, solrCall.cores);
-        }
-        // still have to ensure that it's active, otherwise super.getCoreByCollection
-        // will return null and then CoordinatorHttpSolrCall will call getCore again
-        // hence creating a calling loop
-        try {
-          zkStateReader.waitForState(
-              syntheticCollectionName,
-              10,
-              TimeUnit.SECONDS,
-              docCollection -> {
-                for (Replica nodeNameSyntheticReplica :
-                    docCollection.getReplicas(solrCall.cores.getZkController().getNodeName())) {
-                  if (nodeNameSyntheticReplica.getState() == Replica.State.ACTIVE) {
-                    return true;
+          // still have to ensure that it's active, otherwise super.getCoreByCollection
+          // will return null and then CoordinatorHttpSolrCall will call getCore again
+          // hence creating a calling loop
+          try {
+            zkStateReader.waitForState(
+                syntheticCollectionName,
+                10,
+                TimeUnit.SECONDS,
+                docCollection -> {
+                  for (Replica nodeNameSyntheticReplica :
+                      docCollection.getReplicas(solrCall.cores.getZkController().getNodeName())) {
+                    if (nodeNameSyntheticReplica.getState() == Replica.State.ACTIVE) {
+                      return true;
+                    }
                   }
-                }
-                return false;
-              });
-        } catch (Exception e) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Failed to wait for active replica for synthetic collection ["
-                  + syntheticCollectionName
-                  + "]",
-              e);
+                  return false;
+                });
+          } catch (Exception e) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Failed to wait for active replica for synthetic collection ["
+                    + syntheticCollectionName
+                    + "]",
+                e);
+          }
         }
 
         core = solrCall.getCoreByCollection(syntheticCollectionName, isPreferLeader);
@@ -212,12 +218,9 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
   private static void addReplica(String syntheticCollectionName, CoreContainer cores) {
     SolrQueryResponse rsp = new SolrQueryResponse();
     try {
-      String coreName =
-          syntheticCollectionName + "_" + cores.getZkController().getNodeName().replace(':', '_');
       CollectionAdminRequest.AddReplica addReplicaRequest =
           CollectionAdminRequest.addReplicaToShard(syntheticCollectionName, "shard1")
               // we are fixing the name, so that no two replicas are created in the same node
-              .setCoreName(coreName)
               .setNode(cores.getZkController().getNodeName());
       addReplicaRequest.setWaitForFinalState(true);
       cores
@@ -228,18 +231,6 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
             SolrException.ErrorCode.SERVER_ERROR,
             "Could not auto-create collection: " + Utils.toJSONString(rsp.getValues()));
       }
-    } catch (SolrException e) {
-      if (e.getMessage().contains("replica with the same core name already exists")) {
-        // another request has already created a replica for this synthetic collection
-        if (log.isInfoEnabled()) {
-          log.info(
-              "A replica is already created in this node for synthetic collection: {}",
-              syntheticCollectionName);
-        }
-        return;
-      }
-      throw e;
-
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
