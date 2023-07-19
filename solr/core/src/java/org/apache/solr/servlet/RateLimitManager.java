@@ -47,6 +47,8 @@ import org.slf4j.LoggerFactory;
 public class RateLimitManager implements ClusterPropertiesListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String ERROR_MESSAGE =
+      "Too many requests for this request type. Please try after some time or increase the quota for this request type";
   public static final int DEFAULT_CONCURRENT_REQUESTS =
       (Runtime.getRuntime().availableProcessors()) * 3;
   public static final long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;

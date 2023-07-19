@@ -73,6 +73,8 @@ Bug Fixes
 
 * SOLR-16886: Don't commit multi-part uploads that have been aborted (Tomás Fernández Löbbe, Houston Putman)
 
+* SOLR-16889: Rate Limiter should stop processing on 429 (Alex Deparvu, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
