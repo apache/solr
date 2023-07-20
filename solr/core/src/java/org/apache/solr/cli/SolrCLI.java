@@ -240,7 +240,6 @@ public class SolrCLI implements CLIO {
     else if ("auth".equals(toolType)) return new AuthTool();
     else if ("export".equals(toolType)) return new ExportTool();
     else if ("package".equals(toolType)) return new PackageTool();
-    else if ("post".equals(toolType)) return new PostTool();
     else if ("version".equals(toolType)) return new VersionTool();
 
     // If you add a built-in tool to this class, add it here to avoid
