@@ -103,7 +103,8 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
             try {
               createColl(syntheticCollectionName, solrCall.cores, confName);
             } catch (SolrException exception) {
-              // concurrent requests could have created the collection hence causing collection exists
+              // concurrent requests could have created the collection hence causing collection
+              // exists
               // exception
               createException = exception;
             } finally {
@@ -111,11 +112,13 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
                   zkStateReader.getClusterState().getCollectionOrNull(syntheticCollectionName);
             }
 
-            // then indeed the collection was not created properly, either by this or other concurrent
+            // then indeed the collection was not created properly, either by this or other
+            // concurrent
             // requests
             if (syntheticColl == null) {
               if (createException != null) {
-                throw createException; // rethrow the exception since such collection was not created
+                throw createException; // rethrow the exception since such collection was not
+                // created
               } else {
                 throw new SolrException(
                     SolrException.ErrorCode.SERVER_ERROR,
