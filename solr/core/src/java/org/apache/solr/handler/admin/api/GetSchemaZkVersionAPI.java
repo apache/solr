@@ -32,7 +32,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.solr.security.PermissionNameProvider;

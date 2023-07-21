@@ -15,5 +15,7 @@
  * limitations under the License.
  */
 
-/** Model classes used in representing and sending API responses */
-package org.apache.solr.model.api.response;
+/**
+ * POJOs representing various inputs and outputs of the v2 APIs described in {@link org.apache.solr.api.endpoint}
+ */
+package org.apache.solr.api.model;

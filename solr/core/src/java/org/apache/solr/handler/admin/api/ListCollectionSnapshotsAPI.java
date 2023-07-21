@@ -35,7 +35,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.model.api.response.AsyncJerseyResponse;
+import org.apache.solr.api.model.AsyncJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 

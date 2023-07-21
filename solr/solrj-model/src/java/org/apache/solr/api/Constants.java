@@ -15,23 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.model.api;
+package org.apache.solr.api;
 
-import static org.apache.solr.model.api.Constants.BINARY_CONTENT_TYPE_V2;
+public class Constants {
+  private Constants() {
+    /* Private ctor prevents instantiation */
+  }
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
-
-@Path("/aliases/{aliasName}")
-public interface IDeleteAlias {
-
-  @DELETE
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
-  SolrJerseyResponse deleteAlias(
-      @PathParam("aliasName") String aliasName, @QueryParam("async") String asyncId)
-      throws Exception;
+  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }

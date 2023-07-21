@@ -41,7 +41,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.slf4j.Logger;

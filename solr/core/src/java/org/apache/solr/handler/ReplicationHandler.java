@@ -93,7 +93,7 @@ import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;

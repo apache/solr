@@ -32,8 +32,8 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.model.api.IDeleteCollection;
-import org.apache.solr.model.api.response.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.api.endpoint.IDeleteCollection;
+import org.apache.solr.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 

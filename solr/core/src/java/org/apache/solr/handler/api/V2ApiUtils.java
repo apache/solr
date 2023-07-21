@@ -27,7 +27,7 @@ import java.util.Map;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 

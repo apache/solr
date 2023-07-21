@@ -30,7 +30,7 @@ import javax.ws.rs.core.HttpHeaders;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 
 /**
  * V2 API for adding or updating a single file within a configset.

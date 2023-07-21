@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.model.api.response;
+package org.apache.solr.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.api.model.AsyncJerseyResponse;
 
 /**
  * Represents API responses composed of the responses of various sub-requests.

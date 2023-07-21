@@ -24,7 +24,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.jersey.CatchAllExceptionMapper;
-import org.apache.solr.model.api.response.SolrJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.servlet.HttpSolrCall;
 
 /**

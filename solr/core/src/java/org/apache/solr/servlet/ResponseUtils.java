@@ -21,7 +21,7 @@ import java.io.StringWriter;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.model.api.response.ErrorInfo;
+import org.apache.solr.api.model.ErrorInfo;
 import org.slf4j.Logger;
 
 /** Response helper methods. */
