@@ -126,7 +126,7 @@ configure(project(":solr:modules:langid")) {
 configure(project(":solr:solrj")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages SOLR-15604
-    javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded", "org.apache.solr.client.solrj.model"]
+    javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded"]
   }
 }
 
