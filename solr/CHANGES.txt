@@ -19,6 +19,9 @@ Optimizations
 
 * SOLR-16845: BinaryResponseWriter should not attempt cast to Utf8CharSequence (Alex Deparvu via Houston Putman)
 
+* SOLR-16273: Improve the performance of the Prometheus Metric Exporter scraping metrics (Matthew Biscocho via David Smiley & Christine Poerschke)
+
+
 Bug Fixes
 ---------------------
 
@@ -301,6 +304,50 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
+* PR#1744: Update software.amazon.awssdk:* to v2.20.97 (solrbot)
+
+* PR#1712: Update dependency biz.aQute.bnd:biz.aQute.bnd.annotation to v6.4.1 (solrbot)
+
+* PR#1713: Update dependency io.swagger.core.v3:swagger-annotations to v2.2.12 (solrbot)
+
+* PR#1715: Update io.grpc:grpc-* to v1.56.0 (solrbot)
+
+* PR#1714: Update dependency org.xerial.snappy:snappy-java to v1.1.10.1 (solrbot)
+
+* PR#1611: Update dependency org.mockito:mockito-core to v5 (solrbot)
+
+* PR#1606: Update dependency com.google.cloud:google-cloud-bom to v0.197.0 (solrbot)
+
+* PR#1641: Update dependency org.carrot2:carrot2-core to v4.5.1 (solrbot)
+
+* PR#1686: Update dependency com.google.guava:guava to v32 (solrbot)
+
+* PR#1584: Update io.netty:* to v4.1.93.Final (solrbot)
+
+* PR#1582: Update dependency com.github.ben-manes.caffeine:caffeine to v3.1.6 (solrbot)
+
+* PR#1685: Update io.dropwizard.metrics:* to v4.2.19 (solrbot)
+
+* PR#1599: Update dependency com.fasterxml.jackson:jackson-bom to v2.15.2 (solrbot)
+
+* PR#1532: Update dependency joda-time:joda-time to v2.12.5 (solrbot)
+
+* PR#1529: Update dependency com.jayway.jsonpath:json-path to v2.8.0 (solrbot)
+
+* PR#1521: Update dependency org.hsqldb:hsqldb to v2.7.1 (solrbot)
+
+* PR#1530: Update dependency org.apache.commons:commons-configuration2 to v2.9.0 (solrbot)
+
+* PR#1515: Update org.apache.hadoop:* to v3.3.5 (solrbot)
+
+* PR#1493: Update dependency org.apache.commons:commons-compress to v1.23.0 (solrbot)
+
+* PR#1473: Update org.apache.calcite to v1.34.0 (solrbot)
+
+* PR#1472: Update Jetty to 10.0.14, slf4j to 2.0.7, io.dropwizard.metrics to v4.2.18 (solrbot)
+
+* PR#1451: Update dependency org.semver4j:semver4j to v4.3.0 (solrbot)
+
 * PR#1494: Upgrade forbiddenapis to 3.5 (Uwe Schindler)
 
 * SOLR-16642: Upgrade to Lucene 9.5.0 (Vinayak Hegde, David Smiley)
