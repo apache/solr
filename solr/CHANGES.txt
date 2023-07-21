@@ -4,6 +4,55 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
+==================  10.0.0 ==================
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Deprecation Removals
+----------------------
+
+* SOLR-16535: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry' (janhoy)
+
+* SOLR-16601: Removed deprecated methods on the various Solr Clients. (Eric Pugh, Kevin Risden)
+
+* SOLR-15703: Removed deprecated SolrException#log methods (Kevin Risden)
+
+* SOLR-16661: Removed deprecated 'analytics' component (janhoy)
+
+* SOLR-16823: Remove backcompatiblity of -upconfig and -downconfig for bin/solr zk upconfig and downconfig commands.  (Eric Pugh)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+
+* SOLR-15730: SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective.
+  Previously, the modules would come transitively.
+  (David Smiley)
+
+* PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
+
+* SOLR-16798: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command. (Bence Szabo via Eric Pugh)
+
+* SOLR-16829: Delegate arg parsing and help usage from bin/solr and bin/solr.cmd to java layer for create, create_core, create_collection, delete, healthcheck and status commands. (Eric Pugh, Will White, Mikhail Khludnev)
+
+* SOLR-6994: Implement Windows version of bin/post via implementing bin/solr post command that works on Windows and Unix.  Deprecate bin/post.  (Eric Pugh, Will White)
 
 ==================  9.4.0 ==================
 New Features
@@ -18,8 +67,6 @@ Optimizations
 ---------------------
 
 * SOLR-16845: BinaryResponseWriter should not attempt cast to Utf8CharSequence (Alex Deparvu via Houston Putman)
-
-* SOLR-16273: Improve the performance of the Prometheus Metric Exporter scraping metrics (Matthew Biscocho via David Smiley & Christine Poerschke)
 
 
 Bug Fixes
@@ -91,8 +138,6 @@ Improvements
 * SOLR-16183: XML update allows <doc> <doc name="child"> ... </doc> </doc>.
   (Vinayak Hegde via Mikhail Khludnev)
 
-* SOLR-16638: Fix Http2SolrClient's exception message when serverBaseUrl is null (Alex Deparvu via Kevin Risden)
-
 * SOLR-16393: The path of the v2 "delete alias" API has been tweaked slightly to be more intuitive, and is now available at
   `DELETE /api/aliases/aliasName`. (Jason Gerlowski)
 
@@ -119,12 +164,6 @@ Improvements
   `PUT /api/node/logging/messages/threshold`.  (Jason Gerlowski, Calvince Otieno)
 
 * SOLR-16504: Convert CLI tools to use Jetty HTTP 2 client.  (Bence Szabo via Eric Pugh)
-
-* SOLR-16752: Docker: Leave out optional apt packages, slightly reducing image size and lowering attack surface (Quang-Cuong Bui)
-
-* SOLR-16711: Extract SolrCLI tool implementations into their own classes and reorganize CLI related classes into new org.apache.solr.cli package. (Eric Pugh)
-
-* SOLR-15493: Throw an error message if the feature store doesn't exist.  (Ilaria Petreti via Alessandro Benedetti)
 
 * SOLR-15737: Solr's collection-level "snapshot" APIs now have v2 equivalents.  Snapshots can be created at `POST
   /api/collections/collName/snapshots/snapshotName`, listed at `GET /api/collections/collName/snapshots`, and deleted at
@@ -161,9 +200,6 @@ Improvements
 
 * SOLR-16759: Introducing logAll parameter in the feature logger (Anna Ruggero, Alessandro Benedetti)
 
-* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning
-  only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
-
 * SOLR-16394: The v2 list and delete (collection) backup APIs have been tweaked to be more intuitive: backup listing now uses
   `GET /api/backups/bName/versions`, backup deletion by ID now uses `DELETE /api/backups/bName/versions/1`, backup deletion by
   recency now uses `DELETE /api/backups/bName/versions?retainLatest=3`, and index-file "garbage collection" now uses
@@ -182,12 +218,6 @@ Improvements
 
 * SOLR-16392: The v2 "create shard" API has been tweaked to be more intuitive, by removing the top-level "create"
   command specifier.  The rest of the API remains unchanged. (Jason Gerlowski)
-
-* SOLR-16806: The included PlacementPlugins (Random, Simple, MinimizeCores and Affinity) now all implement the
-  OrderedNodePlacementPlugin, which provides the implementation for computePlacements() and computeBalancing().
-  Each implementing PlacementPlugin provides a way of weighting Solr Nodes, and the OrderedNodePlacement plugin
-  then uses the weights to decide the optimal strategy for placing new replicas or balancing existing replicas.
-  (Houston Putman, Tomás Fernández Löbbe, Jason Gerlowski, Radu Gheorghe)
 
 * SOLR-16392: The v2 "add-replica" API has been tweaked to be more intuitive, by removing the top-level command specifier and
   changing the path.  The v2 functionality can now be accessed at: `POST /api/collections/cName/shards/sName/replicas {...}`
@@ -244,6 +274,8 @@ Optimizations
 
 * SOLR-16869: Enable Incubating Java Panama Vector APIs when using Java 20 or 21.
   When run using compatible hardware, Vector search will see considerable speed up. (Houston Putman, Uwe Schindler)
+
+* SOLR-16273: Improve the performance of the Prometheus Metric Exporter scraping metrics (Matthew Biscocho via David Smiley & Christine Poerschke)
 
 Bug Fixes
 ---------------------
@@ -369,11 +401,11 @@ Other Changes
 
 * SOLR-16715: Replace new HashMap(int) and new HashSet(int) with CollectionUtil.newHashMap / CollectionUtil.newHashSet (Kevin Risden)
 
+* SOLR-16604: Use Solr Client Builders directly in unit tests instead of delegating to SolrTestCaseJ4. (Eric Pugh, David Smiley)
+
 * SOLR-16507: Change SplitShardCmd to not use NodeStateProvider (Vinayak Hegde, David Smiley)
 
 * SOLR-15703: replace all SolrException.log usage in Solr to just call log.error(...) directly (Kevin Risden)
-
-* SOLR-16604: Use Solr Client Builders directly in unit tests instead of delegating to SolrTestCaseJ4. (Eric Pugh, David Smiley)
 
 * PR#1567: Remove deprecated constructor in MetricsMap (janhoy)
 
@@ -463,20 +495,19 @@ Improvements
   bin/solr.cmd, Solr would execute a script that killed the Solr pid, leaving a very small time
   window where Solr would continue to execute in an unpredictable state. (Shawn Heisey, Kevin Risden)
 
-* SOLR-15748: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
+* SOLR-15478: A v2 equivalent of CLUSTERSTATUS command is now available at `GET /api/cluster`. Collection listing,
   previously at this path, can still be accessed at `GET /api/collections`. (Joshua Ouma via Jason Gerlowski)
 
 * SOLR-16475: Make the default replica placement plugin configurable as system property on startup (janhoy)
 
 * SOLR-13626: Document the SystemInfoHandler in the Ref Guide.  (Tony Cook via Eric Pugh)
 
-* SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality for SolrCloud.
-  (Mikhail Khludnev)
+* SOLR-15479: A v2 equivalent of the RENAME command is now available at `POST /api/collections/collName/rename`. (Anakhe Ajayi via Jason Gerlowski)
 
 * SOLR-11028: A v2 equivalent of the `/admin/collections?action= REPLACE` command is now available at
   `POST /api/cluster/nodes/nodeName/replace`. (Joshua Ouma via Jason Gerlowski)
 
-* SOLR-15479: A v2 equivalent of the RENAME command is now available at `POST /api/collections/collName/rename`. (Anakhe Ajayi via Jason Gerlowski)
+* SOLR-16420: Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality for SolrCloud. (Mikhail Khludnev)
 
 * SOLR-16158: Certain Jetty "server" jars (jetty-util, jetty-io, etc.) are no longer duplicated between server/lib and WEB-INF/lib. All shared jars now live in server/lib/ext.
   By default, Jetty does not allow these jars to be shared by the Jetty server and the web-app (Solr).
@@ -489,7 +520,8 @@ Improvements
 * SOLR-8975: Introduce Builder setters for setters that exist on SolrClients for responseParser, requestWriter.
   Deprecated these SolrClient setters useMultiPartPost, and followRedirects. (Eric Pugh, David Smiley, Kevin Risden)
 
-* SOLR-16438: Support optional split.setPreferredLeaders prop in shard split command. (Bruno Roustant)
+* SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
+ for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
 
 * SOLR-10463: Introduce Builder setter for retryExpiryTime on cloud SolrClients.  Deprecated
   direct setter setRetryExpiryTime on cloud SolrClients. (Eric Pugh)
@@ -514,9 +546,6 @@ Improvements
 
 * SOLR-15772: More visible security warnings in Admin UI (janhoy)
 
-* SOLR-15787: FileSystemConfigSetService: implement the abstraction completely.  It could be useful
-  for putting ConfigSets on a shared file system.  (Nazerke Seidan, David Smiley)
-
 * SOLR-6312: SolrJ Cloud clients now correctly support isUpdatesToLeaders() being false.  This behavior can also be
   configured per AbstractUpdateRequest instance.  (hossman)
 
@@ -531,10 +560,10 @@ Improvements
 * SOLR-16595: Standardize Builder methods handling of times to use require a TimeUnit to be passed in.  Deprecated methods that
   do not specify a TimeUnit.  (Eric Pugh)
 
-* SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
-
 * SOLR-11029: A v2 equivalent of the `/admin/collections?action=DELETENODE` command is now available at
   `POST /api/cluster/nodes/nodeName/clear`. (Bence Szabo via Jason Gerlowski)
+
+* SOLR-16665: The base docker image has been upgraded from Ubuntu 20 (Focal) to Ubuntu 22 (Jammy). (Houston Putman)
 
 * SOLR-16462: v2 equivalents of the "Core Admin" `LISTSNAPSHOT`, `CREATESNAPSHOT`, and `DELETESNAPSHOT` commands are now available at
   `GET /api/cores/coreName/snapshots`, `POST /api/cores/coreName/snapshots/snapshotName`, and
