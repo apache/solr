@@ -1,9 +1,6 @@
 {{>licenseInfo}}
 
 package {{package}};
-{{#imports}}
-import {{import}};
-{{/imports}}
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -21,8 +18,13 @@ import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.ResponseParser;
-
 {{#operations}}
+{{#operation}}
+{{#imports}}
+import {{modelPackage}}.{{.}};
+{{/imports}}
+{{/operation}}
+
 public class {{classname}} {
 
     {{#operation}}
@@ -90,7 +92,7 @@ public class {{classname}} {
              */
              {{/description}}
              public void {{setter}}({{dataType}} {{baseName}}) {
-               this.requestBody.{{setter}}({{baseName}});
+               this.requestBody.{{baseName}} = {{baseName}};
             }
             {{/vars}}
 
