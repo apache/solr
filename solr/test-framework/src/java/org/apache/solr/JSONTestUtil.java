@@ -77,7 +77,6 @@ public class JSONTestUtil {
     int pos = pathAndExpected.indexOf("==");
     String path = pos >= 0 ? pathAndExpected.substring(0, pos) : null;
     String expected = pos >= 0 ? pathAndExpected.substring(pos + 2) : pathAndExpected;
-    System.out.println("IN-PUT: " + input);
     return match(path, input, expected, delta);
   }
 

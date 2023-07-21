@@ -24,13 +24,14 @@ import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.apache.solr.common.util.Utils;
+import org.noggit.JSONWriter;
 
 /**
  * Use this class to push all entries of a Map into an output. This avoids creating map instances
  * and is supposed to be memory efficient. If the entries are primitives, unnecessary boxing is also
  * avoided.
  */
-public interface MapWriter extends MapSerializable, NavigableObject {
+public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.Writable {
 
   default String jsonStr() {
     return Utils.toJSONString(this);
@@ -39,6 +40,34 @@ public interface MapWriter extends MapSerializable, NavigableObject {
   @Override
   default Map<String, Object> toMap(Map<String, Object> map) {
     return Utils.convertToMap(this, map);
+  }
+
+  @Override
+  default void write(JSONWriter writer) {
+    writer.startObject();
+    try {
+      writeMap(
+          new MapWriter.EntryWriter() {
+            boolean first = true;
+
+            @Override
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              if (first) {
+                first = false;
+              } else {
+                writer.writeValueSeparator();
+              }
+              writer.indent();
+              writer.writeString(k.toString());
+              writer.writeNameSeparator();
+              writer.write(v);
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    writer.endObject();
   }
 
   void writeMap(EntryWriter ew) throws IOException;

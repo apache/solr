@@ -816,11 +816,7 @@ if [ $# -eq 1 ]; then
     -help|-h)    
         run_tool ""    
         exit
-    ;;
-    -version|-v|version)
-        run_tool version
-        exit
-    ;;
+    ;;    
   esac
 fi
 
