@@ -345,6 +345,10 @@ public class BackupManager {
           log.debug("Writing file {}", filePath);
           // ConfigSetService#downloadFileFromConfig requires '/' in fle path separator
           byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
+          // replace empty zk node (data==null) with empty array
+          if (data == null) {
+            data = new byte[0];
+          }
           try (OutputStream os = repository.createOutput(uri)) {
             os.write(data);
           }

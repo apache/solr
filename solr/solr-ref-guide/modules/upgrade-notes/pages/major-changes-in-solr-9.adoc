@@ -64,6 +64,15 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.4
+=== The Built-In Config Sets
+* The build in ConfigSets (`_default` and `sample_techproducts_configs`), now use a default `autoSoftCommit` time of 3 seconds,
+meaning that documents will be searchable within 3 seconds of uploading them.
+Please refer to the xref:configuration-guide:commits-transaction-logs.html#hard-commits-vs-soft-commits[Soft Commit documentation]
+for more information on how this change will effect you.
+Upgrading existing clouds and use-cases that have custom configSets will not be affected by this change.
+
+
 == Solr 9.3
 === Binary Releases
 * Solr now comes with two xref:deployment-guide:installing-solr.adoc#available-solr-packages[binary releases] and xref:deployment-guide:solr-in-docker.adoc#available-images[docker images], **full** and **slim**.
@@ -91,6 +100,7 @@ The sysProp `-Dsolr.redaction.system.pattern` has been deprecated, use the above
 The `<hiddenSysProps>` solr.xml element under `<metrics>` has been deprecated.
 Instead, use the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[<hiddenSysProps>] tag under `<solr>`, which accepts a comma-separated string.
 
+* The xref:indexing-guide:schema-designer.adoc[] now utilizes the same trust model as the xref:configuration-guide:configsets-api.adoc#configsets-upload[ConfigSet Upload API].
 
 === Official Docker Image
 * The customization of the Official Solr Dockerfile has been changed.

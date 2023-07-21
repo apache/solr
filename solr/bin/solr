@@ -548,7 +548,6 @@ function print_usage() {
   elif [ "$CMD" == "package" ]; then
     echo ""
     run_tool package -solrUrl "http://fake.to.allow.help.to.run" "help"
-
   fi
 } # end print_usage
 
@@ -799,11 +798,7 @@ if [ $# -eq 1 ]; then
     -help|-h)    
         run_tool ""    
         exit
-    ;;
-    -version|-v|version)
-        run_tool version
-        exit
-    ;;
+    ;;    
   esac
 fi
 
@@ -996,12 +991,6 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   exit $?
 fi
 
-
-if [[ "$SCRIPT_CMD" == "export" ]]; then
-  run_tool export "$@"
-  exit $?
-fi
-
 if [[ "$SCRIPT_CMD" == "package" ]]; then
   if [ $# -gt 0 ]; then
     while true; do
@@ -1167,7 +1156,7 @@ if [[ "$SCRIPT_CMD" == "api" ]]; then
 fi
 
 # verify the command given is supported
-if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ] && [ "$SCRIPT_CMD" != "assert" ]; then
+if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ]; then
   # handoff this command to the SolrCLI and let it handle the option parsing and validation
   run_tool "$SCRIPT_CMD" "$@"
   ret=$?
@@ -1570,7 +1559,8 @@ if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
   SOLR_LOGS_DIR="$SOLR_HOME/../logs"
 fi
 
-LOG4J_CONFIG=()
+# Set the logging manager by default, so that Lucene JUL logs are included with Solr logs.
+LOG4J_CONFIG=("-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager")
 if [ -n "${LOG4J_PROPS:-}" ]; then
   LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
 fi
@@ -1866,6 +1856,13 @@ function start_solr() {
   if [[ "$JAVA_VER_NUM" -ge "17" ]] ; then
     SOLR_OPTS+=("-XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put")
     echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
+  fi
+
+  # Vector optimizations are only supported for Java 20 and 21 for now.
+  # This will need to change as Lucene is upgraded and newer Java versions are released
+  if [[ "$JAVA_VER_NUM" -ge "20" ]] && [[ "$JAVA_VER_NUM" -le "21" ]] ; then
+    SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
+    echo "Java $JAVA_VER_NUM detected. Incubating Panama Vector APIs have been enabled"
   fi
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \

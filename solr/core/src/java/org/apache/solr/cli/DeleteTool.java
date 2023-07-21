@@ -234,4 +234,4 @@ public class DeleteTool extends ToolBase {
       echoIfVerbose("\n", cli);
     }
   }
-} // end DeleteTool class
+}

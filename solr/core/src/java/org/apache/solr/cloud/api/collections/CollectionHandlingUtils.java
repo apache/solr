@@ -528,18 +528,19 @@ public class CollectionHandlingUtils {
               try {
                 Thread.sleep(1000);
               } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
               }
               break;
             }
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
-                "Invalid status request for requestId: "
+                "Invalid status request for requestId: '"
                     + requestId
-                    + ""
+                    + "' - '"
                     + srsp.getSolrResponse().getResponse().get("STATUS")
-                    + "retried "
+                    + "'. Retried "
                     + counter
-                    + "times");
+                    + " times");
           } else {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
