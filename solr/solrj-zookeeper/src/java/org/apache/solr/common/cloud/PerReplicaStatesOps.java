@@ -58,7 +58,7 @@ public class PerReplicaStatesOps {
       String path, SolrZkClient zkClient, PerReplicaStates current) {
     try {
       assert CommonTestInjection.injectBreakpoint(
-              PerReplicaStatesOps.class.getName() + "/beforePrsFetch");
+          PerReplicaStatesOps.class.getName() + "/beforePrsFetch");
       if (current != null) {
         Stat stat = zkClient.exists(current.path, null, true);
         if (stat == null) return new PerReplicaStates(path, 0, Collections.emptyList());
@@ -69,9 +69,9 @@ public class PerReplicaStatesOps {
       return new PerReplicaStates(path, stat.getCversion(), Collections.unmodifiableList(children));
     } catch (KeeperException.NoNodeException e) {
       throw new PrsZkNodeNotFoundException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Error fetching per-replica states. The node [" + path + "] is not found",
-              e);
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error fetching per-replica states. The node [" + path + "] is not found",
+          e);
     } catch (KeeperException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Error fetching per-replica states", e);

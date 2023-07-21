@@ -693,7 +693,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             Collections.singletonMap(DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
             DocRouter.DEFAULT,
             0,
-                PerReplicaStatesOps.getZkClientPrsSupplier(
+            PerReplicaStatesOps.getZkClientPrsSupplier(
                 fixture.zkClient, DocCollection.getCollectionPath(collectionName)));
     ZkWriteCommand wc = new ZkWriteCommand(collectionName, state);
     writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
@@ -786,7 +786,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     } finally {
       // clear breakpoints
       CommonTestInjection.setBreakpoint(
-              PerReplicaStatesOps.class.getName() + "/beforePrsFetch", null);
+          PerReplicaStatesOps.class.getName() + "/beforePrsFetch", null);
       CommonTestInjection.setBreakpoint(ZkStateReader.class.getName() + "/exercised", null);
     }
   }
