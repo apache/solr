@@ -120,8 +120,10 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-    final boolean hasNoCommand = args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
-    final boolean isHelpCommand = Arrays.asList("-h", "--help", "/?").contains(args[0]);
+    final boolean hasNoCommand =
+        args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
+    final boolean isHelpCommand =
+        !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
 
     if (hasNoCommand || isHelpCommand) {
       printHelp();
