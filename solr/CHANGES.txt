@@ -19,8 +19,6 @@ Optimizations
 
 * SOLR-16845: BinaryResponseWriter should not attempt cast to Utf8CharSequence (Alex Deparvu via Houston Putman)
 
-* SOLR-16273: Improve the performance of the Prometheus Metric Exporter scraping metrics (Matthew Biscocho via David Smiley & Christine Poerschke)
-
 
 Bug Fixes
 ---------------------
@@ -244,6 +242,8 @@ Optimizations
 
 * SOLR-16869: Enable Incubating Java Panama Vector APIs when using Java 20 or 21.
   When run using compatible hardware, Vector search will see considerable speed up. (Houston Putman, Uwe Schindler)
+
+* SOLR-16273: Improve the performance of the Prometheus Metric Exporter scraping metrics (Matthew Biscocho via David Smiley & Christine Poerschke)
 
 Bug Fixes
 ---------------------
