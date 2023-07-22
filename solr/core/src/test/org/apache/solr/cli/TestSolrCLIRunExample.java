@@ -316,7 +316,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
-  // @LuceneTestCase.Nightly
+  @LuceneTestCase.Nightly
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
   }
