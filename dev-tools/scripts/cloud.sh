@@ -70,7 +70,7 @@
 #
 # Create a brand new 4 node cluster deployed in a directory named for today
 #
-#   ./cloud.sh new
+  #   ./cloud.sh new
 #
 # Create a brand new 4 node cluster deployed in a directory named SOLR-1234567
 #
@@ -341,7 +341,7 @@ start(){
     -Dsolr.solrxml.location=zookeeper -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
     FINAL_COMMAND="${SOLR}/bin/solr ${argsArray[@]}"
     echo ${FINAL_COMMAND}
-    ${SOLR}/bin/solr "${argsArray[@]}"
+    ${SOLR}/bin/solr start "${argsArray[@]}"
   done
 
   touch ${CLUSTER_WD}  # make this the most recently updated dir for ls -t
