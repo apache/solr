@@ -70,7 +70,7 @@
 #
 # Create a brand new 4 node cluster deployed in a directory named for today
 #
-  #   ./cloud.sh new
+#   ./cloud.sh new
 #
 # Create a brand new 4 node cluster deployed in a directory named SOLR-1234567
 #
