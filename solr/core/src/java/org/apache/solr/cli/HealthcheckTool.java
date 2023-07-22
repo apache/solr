@@ -88,7 +88,7 @@ public class HealthcheckTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
-    if (zkHost == null){
+    if (zkHost == null) {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
       System.exit(1);
     }
