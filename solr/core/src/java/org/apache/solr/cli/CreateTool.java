@@ -16,10 +16,11 @@
  */
 package org.apache.solr.cli;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -134,9 +135,11 @@ public class CreateTool extends ToolBase {
     final String confDirName = cli.getOptionValue("confdir", SolrCLI.DEFAULT_CONFIG_SET);
 
     // we allow them to pass a directory instead of a configset name
-    File configsetDir = new File(confDirName);
-    if (!configsetDir.isDirectory()) {
-      ensureConfDirExists(confDirName, solrInstallDir);
+    Path configsetDir = Paths.get(confDirName);
+    Path solrInstallDirPath = Paths.get(solrInstallDir);
+
+    if (!Files.isDirectory(configsetDir)) {
+      ensureConfDirExists(configsetDir, solrInstallDirPath);
     }
     printDefaultConfigsetWarningIfNecessary(cli);
 
@@ -157,20 +160,20 @@ public class CreateTool extends ToolBase {
               + "' already exists!\nChecked core existence using Core API command");
     }
 
-    File coreInstanceDir = new File(coreRootDirectory, coreName);
-    File confDir = new File(getFullConfDir(confDirName, solrInstallDir), "conf");
-    if (!coreInstanceDir.isDirectory()) {
-      coreInstanceDir.mkdirs();
-      if (!coreInstanceDir.isDirectory()) {
+    Path coreInstanceDir = Paths.get(coreRootDirectory, coreName);
+    Path confDir = Paths.get(getFullConfDir(configsetDir, solrInstallDirPath).toString(), "conf");
+    if (!Files.isDirectory(coreInstanceDir)) {
+      Files.createDirectories(coreInstanceDir);
+      if (!Files.isDirectory(coreInstanceDir)) {
         throw new IOException(
-            "Failed to create new core instance directory: " + coreInstanceDir.getAbsolutePath());
+            "Failed to create new core instance directory: " + coreInstanceDir.toAbsolutePath());
       }
 
-      FileUtils.copyDirectoryToDirectory(confDir, coreInstanceDir);
+      FileUtils.copyDirectoryToDirectory(confDir.toFile(), coreInstanceDir.toFile());
 
       echoIfVerbose(
           "\nCopying configuration to new core instance directory:\n"
-              + coreInstanceDir.getAbsolutePath(),
+              + coreInstanceDir.toAbsolutePath(),
           cli);
     }
 
@@ -186,7 +189,7 @@ public class CreateTool extends ToolBase {
       }
     } catch (Exception e) {
       /* create-core failed, cleanup the copied configset before propagating the error. */
-      PathUtils.deleteDirectory(coreInstanceDir.toPath());
+      PathUtils.deleteDirectory(coreInstanceDir);
       throw e;
     }
   }
@@ -213,7 +216,7 @@ public class CreateTool extends ToolBase {
     final String solrInstallDir = System.getProperty("solr.install.dir");
     String confName = cli.getOptionValue("confname");
     String confDir = cli.getOptionValue("confdir", "_default");
-    ensureConfDirExists(confDir, solrInstallDir);
+    ensureConfDirExists(Paths.get(confDir), Paths.get(solrInstallDir));
     printDefaultConfigsetWarningIfNecessary(cli);
 
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -310,15 +313,15 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  private String getFullConfDir(String confDirName, String solrInstallDir) {
-    return solrInstallDir + "/server/solr/configsets/" + confDirName;
+  private Path getFullConfDir(Path confDirName, Path solrInstallDir) {
+    return Paths.get(solrInstallDir.toString(), "/server/solr/configsets/", confDirName.toString());
   }
 
-  private void ensureConfDirExists(String confDirName, String solrInstallDir) {
-    if (!new File(confDirName).isDirectory()) {
+  private void ensureConfDirExists(Path confDirName, Path solrInstallDir) {
+    if (!Files.isDirectory(confDirName)) {
 
-      String fullConfDir = getFullConfDir(confDirName, solrInstallDir);
-      if (!new File(fullConfDir).isDirectory()) {
+      Path fullConfDir = getFullConfDir(confDirName, solrInstallDir);
+      if (!Files.isDirectory(fullConfDir)) {
         echo("Specified configuration directory " + confDirName + " not found!");
         System.exit(1);
       }
