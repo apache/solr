@@ -37,7 +37,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cli.SimplePostTool;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -50,6 +49,7 @@ import org.apache.solr.handler.TestSolrConfigHandlerConcurrent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.util.BinaryUtils;
 import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
@@ -99,14 +99,14 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
-    SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
+    BinaryUtils.BAOS bos = new BinaryUtils.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
       for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
         ByteBuffer b =
-            SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+            BinaryUtils.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
         zipOut.putNextEntry(entry);
         zipOut.write(b.array(), b.arrayOffset(), b.limit());
         zipOut.closeEntry();

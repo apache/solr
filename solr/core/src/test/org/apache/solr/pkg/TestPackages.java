@@ -41,7 +41,6 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilterFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.solr.cli.SimplePostTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -77,6 +76,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.util.BinaryUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.data.Stat;
@@ -903,14 +903,14 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
-    SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
+    BinaryUtils.BAOS bos = new BinaryUtils.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
       for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
         ByteBuffer b =
-            SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+            BinaryUtils.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
         zipOut.putNextEntry(entry);
         zipOut.write(b.array(), b.arrayOffset(), b.limit());
         zipOut.closeEntry();
