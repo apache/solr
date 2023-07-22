@@ -19,7 +19,6 @@ package org.apache.solr.cli;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import org.apache.solr.util.BinaryUtils;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -66,6 +65,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import org.apache.solr.util.BinaryUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrVersion;
 import org.w3c.dom.Document;
