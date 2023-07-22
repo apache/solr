@@ -318,7 +318,7 @@ public class RunExampleTool extends ToolBase {
         String[] args =
             new String[] {
               "post",
-                    "-commit",
+              "-commit",
               "-url",
               updateUrl,
               "-type",
@@ -400,7 +400,13 @@ public class RunExampleTool extends ToolBase {
         echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
         String[] args =
             new String[] {
-              "post",  "-commit", "-url", updateUrl, "-type", "application/json", exampleDir.toString()
+              "post",
+              "-commit",
+              "-url",
+              updateUrl,
+              "-type",
+              "application/json",
+              exampleDir.toString()
             };
         PostTool postTool = new PostTool();
         CommandLine postToolCli = parseCmdLine(postTool.getName(), args, postTool.getOptions());
