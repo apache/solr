@@ -19,6 +19,7 @@ package org.apache.solr.cli;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import org.apache.solr.util.BinaryUtils;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,7 +37,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -760,39 +760,6 @@ public class SimplePostTool {
     return numPages;
   }
 
-  public static class BAOS extends ByteArrayOutputStream {
-    public ByteBuffer getByteBuffer() {
-      return ByteBuffer.wrap(super.buf, 0, super.count);
-    }
-  }
-
-  public static ByteBuffer inputStreamToByteArray(InputStream is) throws IOException {
-    return inputStreamToByteArray(is, Integer.MAX_VALUE);
-  }
-
-  /**
-   * Reads an input stream into a byte array
-   *
-   * @param is the input stream
-   * @return the byte array
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public static ByteBuffer inputStreamToByteArray(InputStream is, long maxSize) throws IOException {
-    try (BAOS bos = new BAOS()) {
-      long sz = 0;
-      int next = is.read();
-      while (next > -1) {
-        if (++sz > maxSize) {
-          throw new BufferOverflowException();
-        }
-        bos.write(next);
-        next = is.read();
-      }
-      bos.flush();
-      return bos.getByteBuffer();
-    }
-  }
-
   /**
    * Computes the full URL based on a base url and a possibly relative link found in the href param
    * of an HTML anchor.
@@ -1325,7 +1292,7 @@ public class SimplePostTool {
             }
 
             // Read into memory, so that we later can pull links from the page without re-fetching
-            res.content = inputStreamToByteArray(is);
+            res.content = BinaryUtils.inputStreamToByteArray(is);
             is.close();
           } else {
             warn("Skipping URL with unsupported type " + type);

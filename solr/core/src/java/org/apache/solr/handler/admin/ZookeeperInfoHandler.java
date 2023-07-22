@@ -41,7 +41,7 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.cli.SimplePostTool.BAOS;
+import org.apache.solr.util.BinaryUtils.BAOS;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
