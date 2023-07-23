@@ -117,6 +117,13 @@ The custom version of Solr will include this Dockerfile when it is built.
 Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files.
 As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[Unknown core deletion].
 
+=== use of timeAllowed
+* Query timeouts with `timeAllowed` are implemented differently.
+It should be faster albeit have less fidelity – will not timeout a query outside of core query processing (e.g. won't cancel spellcheck or faceting).
+Use `solr.useExitableDirectoryReader` to use the previous behavior.
+Please share your experience with Solr developers!
+The previous behavior should not be enabled if timeAllowed isn't used because unfortunately its performance tax is now imposed on all queries, even those without timeAllowed.
+
 === v2 API 
 * Solr's experimental "v2" API has seen a number of improvements in the 9.3 release.
 +
