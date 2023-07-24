@@ -161,7 +161,7 @@ public class CreateTool extends ToolBase {
     }
 
     Path coreInstanceDir = Paths.get(coreRootDirectory, coreName);
-    Path confDir = Paths.get(getFullConfDir(configsetDir, solrInstallDirPath).toString(), "conf");
+    Path confDir = getFullConfDir(configsetDir, solrInstallDirPath).resolve("conf");
     if (!Files.isDirectory(coreInstanceDir)) {
       Files.createDirectories(coreInstanceDir);
       if (!Files.isDirectory(coreInstanceDir)) {
@@ -314,7 +314,8 @@ public class CreateTool extends ToolBase {
   }
 
   private Path getFullConfDir(Path confDirName, Path solrInstallDir) {
-    return Paths.get(solrInstallDir.toString(), "/server/solr/configsets/", confDirName.toString());
+    Path configSetsPath = Paths.get("server/solr/configsets/");
+    return solrInstallDir.resolve(configSetsPath).resolve(confDirName);
   }
 
   private void ensureConfDirExists(Path confDirName, Path solrInstallDir) {
