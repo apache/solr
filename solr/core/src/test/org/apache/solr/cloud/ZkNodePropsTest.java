@@ -23,7 +23,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.BinaryUtils;
+import org.apache.solr.util.InputStreamUtils;
 import org.junit.Test;
 
 public class ZkNodePropsTest extends SolrTestCaseJ4 {
@@ -43,7 +43,7 @@ public class ZkNodePropsTest extends SolrTestCaseJ4 {
     ZkNodeProps props2 = ZkNodeProps.load(bytes);
 
     props.forEach((s, o) -> assertEquals(o, props2.get(s)));
-    BinaryUtils.BAOS baos = new BinaryUtils.BAOS();
+    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(zkProps.getProperties(), baos);
     }

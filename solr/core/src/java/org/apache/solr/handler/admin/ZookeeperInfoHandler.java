@@ -62,7 +62,7 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.BinaryUtils.BAOS;
+import org.apache.solr.util.InputStreamUtils.BAOS;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;

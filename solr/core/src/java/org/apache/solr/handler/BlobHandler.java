@@ -69,7 +69,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.util.BinaryUtils;
+import org.apache.solr.util.InputStreamUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,7 +112,7 @@ public class BlobHandler extends RequestHandlerBase
       for (ContentStream stream : req.getContentStreams()) {
         ByteBuffer payload;
         try (InputStream is = stream.getStream()) {
-          payload = BinaryUtils.inputStreamToByteArray(is, maxSize);
+          payload = InputStreamUtils.toByteArray(is, maxSize);
         }
         MessageDigest m = MessageDigest.getInstance("MD5");
         m.update(payload.array(), payload.arrayOffset() + payload.position(), payload.limit());

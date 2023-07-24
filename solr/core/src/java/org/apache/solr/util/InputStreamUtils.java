@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
-public class BinaryUtils {
+public class InputStreamUtils {
 
   public static class BAOS extends ByteArrayOutputStream {
     public ByteBuffer getByteBuffer() {
@@ -31,8 +31,8 @@ public class BinaryUtils {
     }
   }
 
-  public static ByteBuffer inputStreamToByteArray(InputStream is) throws IOException {
-    return inputStreamToByteArray(is, Integer.MAX_VALUE);
+  public static ByteBuffer toByteArray(InputStream is) throws IOException {
+    return toByteArray(is, Integer.MAX_VALUE);
   }
 
   /**
@@ -42,7 +42,7 @@ public class BinaryUtils {
    * @return the byte array
    * @throws IOException If there is a low-level I/O error.
    */
-  public static ByteBuffer inputStreamToByteArray(InputStream is, long maxSize) throws IOException {
+  public static ByteBuffer toByteArray(InputStream is, long maxSize) throws IOException {
     try (BAOS bos = new BAOS()) {
       long sz = 0;
       int next = is.read();

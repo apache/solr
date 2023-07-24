@@ -65,7 +65,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import org.apache.solr.util.BinaryUtils;
+import org.apache.solr.util.InputStreamUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrVersion;
 import org.w3c.dom.Document;
@@ -1292,7 +1292,7 @@ public class SimplePostTool {
             }
 
             // Read into memory, so that we later can pull links from the page without re-fetching
-            res.content = BinaryUtils.inputStreamToByteArray(is);
+            res.content = InputStreamUtils.toByteArray(is);
             is.close();
           } else {
             warn("Skipping URL with unsupported type " + type);

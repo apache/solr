@@ -49,7 +49,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.BinaryUtils;
+import org.apache.solr.util.InputStreamUtils;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -232,7 +232,7 @@ public class BlobRepository {
       }
 
       try (InputStream is = entity.getContent()) {
-        b = BinaryUtils.inputStreamToByteArray(is, MAX_JAR_SIZE);
+        b = InputStreamUtils.toByteArray(is, MAX_JAR_SIZE);
       }
     } catch (Exception e) {
       if (e instanceof SolrException) {
