@@ -17,8 +17,6 @@
 
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -326,7 +324,8 @@ public class RunExampleTool extends ToolBase {
               exampledocsDir.getAbsolutePath() + "/*.xml"
             };
         PostTool postTool = new PostTool();
-        CommandLine postToolCli = parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        CommandLine postToolCli =
+            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
         postTool.runTool(postToolCli);
 
       } else {
@@ -409,7 +408,8 @@ public class RunExampleTool extends ToolBase {
               exampleDir.toString()
             };
         PostTool postTool = new PostTool();
-        CommandLine postToolCli = parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        CommandLine postToolCli =
+            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
         postTool.runTool(postToolCli);
 
       } catch (Exception ex) {
