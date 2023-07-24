@@ -29,8 +29,8 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.FastStreamingDocsCallback;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
+import org.apache.solr.common.InputStreamUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
@@ -38,7 +38,7 @@ import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
 public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
   public void testTagRead() throws Exception {
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
     FastOutputStream faos = FastOutputStream.wrap(baos);
 
     try (JavaBinCodec codec = new JavaBinCodec(faos, null)) {
@@ -75,7 +75,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSONString(sampleObj);
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(m, baos);
     }
@@ -131,7 +131,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
   }
 
   public void testFastJavabinStreamingDecoder() throws IOException {
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
     try (InputStream is = getClass().getResourceAsStream("/solrj/javabin_sample.bin")) {
       is.transferTo(baos);
     }
@@ -216,7 +216,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
     SimpleOrderedMap<SolrDocumentList> orderedMap = new SimpleOrderedMap<>();
     orderedMap.add("response", sdocs);
 
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(orderedMap, baos);
     }

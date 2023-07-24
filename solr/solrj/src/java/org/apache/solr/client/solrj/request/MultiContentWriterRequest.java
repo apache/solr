@@ -28,7 +28,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.common.InputStreamUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
@@ -121,7 +121,7 @@ public class MultiContentWriterRequest extends AbstractUpdateRequest {
   }
 
   public static ByteBuffer readByteBuffer(InputStream is) throws IOException {
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
     is.transferTo(baos);
     return ByteBuffer.wrap(baos.getbuf(), 0, baos.size());
   }
