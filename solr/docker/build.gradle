@@ -471,13 +471,19 @@ if (''.equals(releaseGpgFingerprint)) {
 
           // *NOW* we can actually run our docker build command...
           logger.lifecycle('Running docker build on Dockerfile.official...');
+          def downloadHost = "mock-downloads.apache.org"
+          // We are not signing, so do not use an apache.org host, as that will check the
+          // GPG signature, which will not be created.
+          if (!project(":solr:distribution").ext.withSignedArtifacts) {
+            downloadHost = "mock-downloads.test.org"
+          }
           exec {
             standardInput = file("${dockerfilesDirPath}/Dockerfile.official-${lowerVariant}").newDataInputStream()
             commandLine 'docker', 'build',
-                '--add-host', "mock-downloads.apache.org:${mockServerIp}",
+                '--add-host', "${downloadHost}:${mockServerIp}",
                 '--no-cache', // force fresh downloads from our current network
                 "--iidfile", imageIdFileOfficial(variant),
-                '--build-arg', "SOLR_DOWNLOAD_SERVER=http://mock-downloads.apache.org:9876",
+                '--build-arg', "SOLR_DOWNLOAD_SERVER=http://${downloadHost}:9876",
                 '--tag', officialDockerImageName(variant),
                 '-'
           }
