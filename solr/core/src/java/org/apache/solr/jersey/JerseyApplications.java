@@ -58,7 +58,8 @@ public class JerseyApplications {
       register(MessageBodyWriters.XmlMessageBodyWriter.class);
       register(MessageBodyWriters.CsvMessageBodyWriter.class);
       register(MessageBodyWriters.RawMessageBodyWriter.class);
-      register(JacksonJsonProvider.class);
+      register(JacksonJsonProvider.class, 5);
+      register(MessageBodyReaders.CachingJsonMessageBodyReader.class, 10);
       register(SolrJacksonMapper.class);
 
       // Request lifecycle logic
@@ -68,6 +69,7 @@ public class JerseyApplications {
       register(RequestMetricHandling.PreRequestMetricsFilter.class);
       register(RequestMetricHandling.PostRequestMetricsFilter.class);
       register(PostRequestDecorationFilter.class);
+      register(PostRequestLoggingFilter.class);
       register(
           new AbstractBinder() {
             @Override

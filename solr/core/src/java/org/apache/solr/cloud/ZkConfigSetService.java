@@ -101,9 +101,9 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader)
-      throws IOException {
+  protected NamedList<Object> loadConfigSetFlags(SolrResourceLoader loader) throws IOException {
     try {
+      // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
       return ConfigSetProperties.readFromResourceLoader(loader, ".");
     } catch (Exception ex) {
       log.debug("No configSet flags", ex);

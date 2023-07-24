@@ -62,7 +62,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.SolrVersion;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
@@ -137,10 +136,9 @@ public class SolrCLI implements CLIO {
       exit(1);
     }
 
-    if (args.length == 1 && Arrays.asList("-v", "-version", "version").contains(args[0])) {
-      // Simple version tool, no need for its own class
-      CLIO.out(SolrVersion.LATEST.toString());
-      exit(0);
+    if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
+      // select the version tool to be run
+      args[0] = "version";
     }
 
     SSLConfigurationsFactory.current().init();
@@ -242,6 +240,7 @@ public class SolrCLI implements CLIO {
     else if ("auth".equals(toolType)) return new AuthTool();
     else if ("export".equals(toolType)) return new ExportTool();
     else if ("package".equals(toolType)) return new PackageTool();
+    else if ("version".equals(toolType)) return new VersionTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning

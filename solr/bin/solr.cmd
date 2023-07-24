@@ -229,9 +229,9 @@ IF "%1"=="-h" goto usage
 IF "%1"=="--help" goto usage
 IF "%1"=="/?" goto usage
 IF "%1"=="status" goto get_status
-IF "%1"=="version" goto get_version
-IF "%1"=="-v" goto get_version
-IF "%1"=="-version" goto get_version
+IF "%1"=="version" goto run_solrcli
+IF "%1"=="-v" goto run_solrcli
+IF "%1"=="-version" goto run_solrcli
 IF "%1"=="assert" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
 IF "%1"=="package" goto run_solrcli
@@ -1290,6 +1290,13 @@ if !JAVA_MAJOR_VERSION! GEQ 17  (
   echo Java %JAVA_MAJOR_VERSION% detected. Enabled workaround for SOLR-16463
 )
 
+REM Vector optimizations are only supported for Java 20 and 21 for now.
+REM This will need to change as Lucene is upgraded and newer Java versions are released
+if !JAVA_MAJOR_VERSION! GEQ 20 if !JAVA_MAJOR_VERSION! LEQ 21 (
+  set SOLR_OPTS=%SOLR_OPTS% --add-modules jdk.incubator.vector
+  echo Java %JAVA_MAJOR_VERSION% detected. Incubating Panama Vector APIs have been enabled
+)
+
 if !JAVA_MAJOR_VERSION! GEQ 9 if NOT "%JAVA_VENDOR%" == "OpenJ9" (
   IF NOT "%GC_LOG_OPTS%"=="" (
     echo ERROR: On Java 9 you cannot set GC_LOG_OPTS, only default GC logging is available. Exiting
@@ -1386,7 +1393,7 @@ IF NOT "%SOLR_LOG_LEVEL%"=="" set "START_OPTS=%START_OPTS% -Dsolr.log.level=%SOL
 set SOLR_LOGS_DIR_QUOTED="%SOLR_LOGS_DIR%"
 set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 
-set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
+set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED% -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
 IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 

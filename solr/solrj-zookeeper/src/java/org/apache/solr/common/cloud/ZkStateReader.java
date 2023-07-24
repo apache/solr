@@ -1627,7 +1627,7 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
         return null;
-      } catch (PerReplicaStatesFetcher.PrsZkNodeNotFoundException e) {
+      } catch (PerReplicaStatesOps.PrsZkNodeNotFoundException e) {
         CommonTestInjection.injectBreakpoint(ZkStateReader.class.getName() + "/exercised", e);
         // could be a race condition that state.json and PRS entries are deleted between the
         // state.json fetch and PRS entry fetch
