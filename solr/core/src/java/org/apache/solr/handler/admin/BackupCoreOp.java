@@ -41,7 +41,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
     backupCoreRequestBody.commitName = params.get(CoreAdminParams.COMMIT_NAME);
 
     String cname = params.required().get(CoreAdminParams.CORE);
-    final String name = parseBackupName(params);
+    backupCoreRequestBody.backupName = parseBackupName(params);
     boolean incremental = isIncrementalBackup(params);
     if (incremental) {
       backupCoreRequestBody.shardBackupId = params.required().get(CoreAdminParams.SHARD_BACKUP_ID);
@@ -53,7 +53,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
         new BackupCoreAPI(
             it.handler.coreContainer, it.req, it.rsp, it.handler.coreAdminAsyncTracker);
     try {
-      SolrJerseyResponse response = backupCoreAPI.createBackup(cname, name, backupCoreRequestBody);
+      SolrJerseyResponse response = backupCoreAPI.createBackup(cname, backupCoreRequestBody);
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       V2ApiUtils.squashIntoNamedListWithoutHeader(namedList, response);
       it.rsp.addResponse(namedList);

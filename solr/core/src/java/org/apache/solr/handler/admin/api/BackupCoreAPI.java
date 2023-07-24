@@ -45,7 +45,7 @@ import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-@Path("/cores/{coreName}/backup/{name}")
+@Path("/cores/{coreName}/backups")
 public class BackupCoreAPI extends CoreAdminAPIBase {
   @Inject
   public BackupCoreAPI(
@@ -61,9 +61,6 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse createBackup(
       @Parameter(description = "The name of the core.") @PathParam("coreName") String coreName,
-      @Schema(description = "The backup will be created in a directory called snapshot.<name>")
-          @PathParam("name")
-          String name,
       @Schema(description = "The POJO for representing additional backup params.") @RequestBody
           BackupCoreRequestBody backupCoreRequestBody)
       throws Exception {
@@ -86,7 +83,7 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
             URI locationUri = repository.createDirectoryURI(location);
             repository.createDirectory(locationUri);
 
-            if (backupCoreRequestBody.incremental) {
+            if (Boolean.TRUE.equals(backupCoreRequestBody.incremental)) {
               if ("file".equals(locationUri.getScheme())) {
                 core.getCoreContainer().assertPathAllowed(Paths.get(locationUri));
               }
@@ -110,7 +107,11 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
             } else {
               SnapShooter snapShooter =
                   new SnapShooter(
-                      repository, core, locationUri, name, backupCoreRequestBody.commitName);
+                      repository,
+                      core,
+                      locationUri,
+                      backupCoreRequestBody.backupName,
+                      backupCoreRequestBody.commitName);
               // validateCreateSnapshot will create parent dirs instead of throw; that choice is
               // dubious.
               // But we want to throw. One reason is that this dir really should, in fact must,
@@ -153,6 +154,11 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
 
     @JsonProperty("prevShardBackupId")
     public String prevShardBackupId;
+
+    @Schema(
+        description = "A descriptive name for the backup.  Only used by non-incremental backups.")
+    @JsonProperty("name")
+    public String backupName;
 
     @Schema(
         description =

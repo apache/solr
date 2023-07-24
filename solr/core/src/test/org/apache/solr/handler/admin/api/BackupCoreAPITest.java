@@ -66,9 +66,10 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
   public void testCreateNonIncrementalBackupReturnsValidResponse() throws Exception {
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.incremental = false;
+    backupCoreRequestBody.backupName = backupName;
     SnapShooter.CoreSnapshotResponse response =
         (SnapShooter.CoreSnapshotResponse)
-            backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody);
+            backupCoreAPI.createBackup(coreName, backupCoreRequestBody);
 
     assertEquals(backupName, response.snapshotName);
     assertEquals("snapshot." + backupName, response.directoryName);
@@ -81,11 +82,12 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.location = null;
     backupCoreRequestBody.incremental = false;
+    backupCoreRequestBody.backupName = backupName;
     final SolrException solrException =
         expectThrows(
             SolrException.class,
             () -> {
-              backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody);
+              backupCoreAPI.createBackup(coreName, backupCoreRequestBody);
             });
     assertEquals(500, solrException.code());
     assertTrue(
@@ -100,12 +102,13 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.location = null;
     backupCoreRequestBody.incremental = false;
+    backupCoreRequestBody.backupName = backupName;
 
     final SolrException solrException =
         expectThrows(
             SolrException.class,
             () -> {
-              backupCoreAPI.createBackup(null, backupName, backupCoreRequestBody);
+              backupCoreAPI.createBackup(null, backupCoreRequestBody);
             });
     assertEquals(400, solrException.code());
     assertTrue(
@@ -118,11 +121,12 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
     backupCoreRequestBody.location = null;
     backupCoreRequestBody.incremental = false;
+    backupCoreRequestBody.backupName = backupName;
     final SolrException solrException =
         expectThrows(
             SolrException.class,
             () -> {
-              backupCoreAPI.createBackup("non-existent-core", backupName, backupCoreRequestBody);
+              backupCoreAPI.createBackup("non-existent-core", backupCoreRequestBody);
             });
     assertEquals(500, solrException.code());
   }
@@ -134,7 +138,7 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     backupCoreRequestBody.shardBackupId = "md_shard1_0";
     IncrementalShardBackup.IncrementalShardSnapshotResponse response =
         (IncrementalShardBackup.IncrementalShardSnapshotResponse)
-            backupCoreAPI.createBackup(coreName, backupName, backupCoreRequestBody);
+            backupCoreAPI.createBackup(coreName, backupCoreRequestBody);
 
     assertEquals(1, response.indexFileCount);
     assertEquals(1, response.uploadedIndexFileCount);
