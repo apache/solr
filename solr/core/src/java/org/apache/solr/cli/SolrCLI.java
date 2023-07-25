@@ -383,8 +383,9 @@ public class SolrCLI implements CLIO {
   }
 
   public static SolrClient getSolrClient(String solrUrl) {
-    // today we require all urls to end in /solr, however in the future we will need to support the /api url end point instead.
-    if (solrUrl.indexOf("/solr") == 0){
+    // today we require all urls to end in /solr, however in the future we will need to support the
+    // /api url end point instead.
+    if (!solrUrl.endsWith(("/solr"))) {
       solrUrl = solrUrl + "/solr";
     }
     return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
@@ -449,8 +450,31 @@ public class SolrCLI implements CLIO {
     print("Pass -help or -h after any COMMAND to see command-specific usage information,");
     print("such as:    ./solr start -help or ./solr stop -h");
   }
+
   /**
-   * Get the base URL of a live Solr instance from either the solrUrl command-line option from
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and warns those users. In the future we'll have url's with /api as well.
+   *
+   * @param solrUrl with /solr stripped off.
+   * @return the truncated if need solrUrl.
+   */
+  public static String resolveSolrUrl(String solrUrl) {
+    if (solrUrl != null) {
+      if (solrUrl.indexOf("/solr") > -1) { //
+        solrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+        CLIO.out(
+            "The solrUrl parameter only needs to only point to the root of Solr ("
+                + solrUrl
+                + ").");
+      }
+      if (solrUrl.endsWith("/")) {
+        solrUrl = solrUrl.substring(0, solrUrl.length() - 1);
+      }
+    }
+    return solrUrl;
+  }
+  /**
+   * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
    * ZooKeeper.
    */
   public static String resolveSolrUrl(CommandLine cli) throws Exception {
@@ -479,15 +503,8 @@ public class SolrCLI implements CLIO {
           solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
         }
       }
-    }
-    else {
-      if (solrUrl.indexOf("/solr") > -1) { // warn users on the old legacy http://localhost:8983/solr pattern for Solr urls.
-        solrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
-        CLIO.out("The solrUrl parameter only needs to only point to the root of Solr (" + solrUrl + ").");
-      }
-      if (solrUrl.endsWith("/")){
-        solrUrl = solrUrl.substring(0,solrUrl.length()-1);
-      }
+    } else {
+      solrUrl = resolveSolrUrl(solrUrl);
     }
     return solrUrl;
   }
@@ -502,7 +519,6 @@ public class SolrCLI implements CLIO {
       return zkHost;
     }
 
-    // find it using the localPort
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       solrUrl = DEFAULT_SOLR_URL;
@@ -511,6 +527,8 @@ public class SolrCLI implements CLIO {
               "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
                   + DEFAULT_SOLR_URL
                   + ".");
+    } else {
+      solrUrl = resolveSolrUrl(solrUrl);
     }
 
     try (var solrClient = getSolrClient(solrUrl)) {

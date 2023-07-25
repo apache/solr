@@ -16,28 +16,15 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-
 public class SolrCLITest extends SolrTestCase {
   @Test
-  public void testResolveSolrUrl() throws Exception {
-    Tool testTool = new CreateTool();
-
-    String[] args = new String[] { "create", "-c","test", "-solrUrl", "http://localhost:8983/solr"};
-    CommandLine cli = parseCmdLine(testTool.getName(), args, testTool.getOptions());
-    assertEquals(SolrCLI.resolveSolrUrl(cli),"http://localhost:8983");
-
-    args = new String[] { "create", "-c","test", "-solrUrl", "http://localhost:8983"};
-    cli = parseCmdLine(testTool.getName(), args, testTool.getOptions());
-    assertEquals(SolrCLI.resolveSolrUrl(cli),"http://localhost:8983");
-
-    args = new String[] { "create", "-c","test", "-solrUrl", "http://localhost:8983/"};
-    cli = parseCmdLine(testTool.getName(), args, testTool.getOptions());
-    assertEquals(SolrCLI.resolveSolrUrl(cli),"http://localhost:8983");
+  public void testResolveSolrUrl() {
+    assertEquals(SolrCLI.resolveSolrUrl("http://localhost:8983/solr"), "http://localhost:8983");
+    assertEquals(SolrCLI.resolveSolrUrl("http://localhost:8983"), "http://localhost:8983");
+    assertEquals(SolrCLI.resolveSolrUrl("http://localhost:8983/"), "http://localhost:8983");
   }
 
   @Test
