@@ -12,7 +12,8 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
+  `GET /api/cores/coreName/backups` (Sanjay Dutt via Jason Gerlowski)
 
 Optimizations
 ---------------------
