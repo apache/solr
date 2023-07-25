@@ -54,6 +54,8 @@ Other Changes
 
 * SOLR-6994: Implement Windows version of bin/post via implementing bin/solr post command that works on Windows and Unix.  Deprecate bin/post.  (Eric Pugh, Will White)
 
+* SOLR-16892: bin/solr create command supports both standalone and cloud modes, and deprecate create_core and create_collection commands.   (Eric Pugh)
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
@@ -64,7 +66,6 @@ Improvements
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
   `GET /api/cores/coreName/backups` (Sanjay Dutt via Jason Gerlowski)
 
-* SOLR-16892: bin/solr create command supports both standalone and cloud modes, and deprecate create_core and create_collection commands.   (Eric Pugh)
 
 Optimizations
 ---------------------
