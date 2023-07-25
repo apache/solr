@@ -139,7 +139,7 @@ public class CreateTool extends ToolBase {
     Path solrInstallDirPath = Paths.get(solrInstallDir);
 
     if (!Files.isDirectory(configsetDir)) {
-      ensureConfDirExists(configsetDir, solrInstallDirPath);
+      ensureConfDirExists(solrInstallDirPath, configsetDir);
     }
     printDefaultConfigsetWarningIfNecessary(cli);
 
@@ -216,7 +216,9 @@ public class CreateTool extends ToolBase {
     final String solrInstallDir = System.getProperty("solr.install.dir");
     String confName = cli.getOptionValue("confname");
     String confDir = cli.getOptionValue("confdir", "_default");
-    ensureConfDirExists(Paths.get(confDir), Paths.get(solrInstallDir));
+    Path solrInstallDirPath = Paths.get(solrInstallDir);
+    Path confDirPath = Paths.get(confDir);
+    ensureConfDirExists(solrInstallDirPath, confDirPath);
     printDefaultConfigsetWarningIfNecessary(cli);
 
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -318,7 +320,7 @@ public class CreateTool extends ToolBase {
     return solrInstallDir.resolve(configSetsPath).resolve(confDirName);
   }
 
-  private void ensureConfDirExists(Path confDirName, Path solrInstallDir) {
+  private void ensureConfDirExists(Path solrInstallDir, Path confDirName) {
     if (!Files.isDirectory(confDirName)) {
 
       Path fullConfDir = getFullConfDir(confDirName, solrInstallDir);
