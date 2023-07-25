@@ -39,7 +39,11 @@ import org.apache.solr.core.ConfigSetService;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-/** Supports create_collection command in the bin/solr script. */
+/**
+ * Supports create_collection command in the bin/solr script.
+ *
+ * @deprecated Please use {@link CreateTool}
+ */
 @Deprecated(since = "9.4")
 public class CreateCollectionTool extends ToolBase {
 

@@ -51,6 +51,10 @@ import org.apache.solr.core.ConfigSetService;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
+/**
+ * Supports create command in the bin/solr script.
+ *
+ */
 public class CreateTool extends ToolBase {
 
   public CreateTool() {

@@ -29,8 +29,13 @@ import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
+/**
+ * Supports api command in the bin/solr script.
+ *
+ * Used to send an arbitrary HTTP request to a Solr API
+ * endpoint.
+ */
 public class ApiTool extends ToolBase {
-  /** Used to send an arbitrary HTTP request to a Solr API endpoint. */
   public ApiTool() {
     this(CLIO.getOutStream());
   }

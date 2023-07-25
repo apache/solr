@@ -36,6 +36,7 @@ import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Supports assert command in the bin/solr script. */
 /** Asserts various conditions and exists with error code if fails, else continues with no output */
 public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

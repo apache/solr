@@ -43,6 +43,10 @@ import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Supports package command in the bin/solr script.
+ *
+ */
 public class PackageTool extends ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

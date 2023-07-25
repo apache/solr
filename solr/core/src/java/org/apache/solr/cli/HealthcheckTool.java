@@ -51,6 +51,10 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Supports healthcheck command in the bin/solr script.
+ *
+ */
 public class HealthcheckTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

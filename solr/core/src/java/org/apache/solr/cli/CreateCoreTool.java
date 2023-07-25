@@ -27,11 +27,17 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.params.CommonParams;
 
+/**
+ * Supports create command in the bin/solr script.
+ *
+ * @deprecated Please use {@link CreateTool}
+ */
 @Deprecated(since = "9.4")
 public class CreateCoreTool extends ToolBase {
 
