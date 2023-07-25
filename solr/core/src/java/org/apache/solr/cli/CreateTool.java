@@ -238,8 +238,6 @@ public class CreateTool extends ToolBase {
     int replicationFactor =
         Integer.parseInt(cli.getOptionValue("replicationFactor", String.valueOf(1)));
 
-    final String configsetsDir = solrInstallDir + "/server/solr/configsets";
-
     boolean configExistsInZk =
         confName != null
             && !confName.trim().isEmpty()
@@ -255,7 +253,9 @@ public class CreateTool extends ToolBase {
       if (confName == null || confName.trim().isEmpty()) {
         confName = collectionName;
       }
-      Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDir);
+
+      final Path configsetsDirPath = getConfigSetsDir(solrInstallDirPath);
+      Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
       echoIfVerbose(
           "Uploading "
@@ -315,9 +315,13 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
+  private Path getConfigSetsDir(Path solrInstallDir) {
     Path configSetsPath = Paths.get("server/solr/configsets/");
-    return solrInstallDir.resolve(configSetsPath).resolve(confDirName);
+    return solrInstallDir.resolve(configSetsPath);
+  }
+
+  private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
+    return getConfigSetsDir(solrInstallDir).resolve(confDirName);
   }
 
   private void ensureConfDirExists(Path solrInstallDir, Path confDirName) {
