@@ -45,15 +45,15 @@ teardown() {
 }
 
 @test "create collection using solrUrl" {
-  run solr create -c COLL_NAME -solrUrl http://localhost:8983/solr
-  assert_output --partial "Created collection 'COLL_NAME'"  
+  run solr create -c COLL_NAME -solrUrl http://localhost:8983
+  assert_output --partial "Created collection 'COLL_NAME'"
   refute_output --partial "assuming solrUrl is http://localhost:8983"
 }
 
 @test "create collection using legacy solrUrl" {
-  run solr create -c COLL_NAME -solrUrl http://localhost:8983
-  assert_output --partial "Created collection 'COLL_NAME'"  
-  assert_output --partial "The solrUrl parameter should only point to the root of Solr."  
+  run solr create -c COLL_NAME -solrUrl http://localhost:8983/solr
+  assert_output --partial "Created collection 'COLL_NAME'"
+  assert_output --partial "The solrUrl parameter only needs to only point to the root of Solr (http://localhost:8983)."
   refute_output --partial "assuming solrUrl is http://localhost:8983"
 }
 
