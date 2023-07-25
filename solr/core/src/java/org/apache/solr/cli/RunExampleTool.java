@@ -520,39 +520,7 @@ public class RunExampleTool extends ToolBase {
     // create the collection
     String collectionName = createCloudExampleCollection(numNodes, readInput, prompt, solrUrl);
 
-    // update the config to enable soft auto-commit
-    echo("\nEnabling auto soft-commits with maxTime 3 secs using the Config API");
-    setCollectionConfigProperty(solrUrl, collectionName);
-
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
-  }
-
-  protected void setCollectionConfigProperty(String solrUrl, String collectionName) {
-    ConfigTool configTool = new ConfigTool(stdout);
-    String[] configArgs =
-        new String[] {
-          "-collection",
-          collectionName,
-          "-property",
-          "updateHandler.autoSoftCommit.maxTime",
-          "-value",
-          "3000",
-          "-solrUrl",
-          solrUrl
-        };
-
-    // let's not fail if we get this far ... just report error and finish up
-    try {
-      configTool.runTool(
-          SolrCLI.processCommandLineArgs(
-              configTool.getName(), configTool.getOptions(), configArgs));
-    } catch (Exception exc) {
-      CLIO.err(
-          "Failed to update '"
-              + "updateHandler.autoSoftCommit.maxTime"
-              + "' property due to: "
-              + exc);
-    }
   }
 
   /** wait until the number of live nodes == numNodes. */

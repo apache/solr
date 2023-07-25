@@ -223,15 +223,15 @@ set FIRST_ARG=%1
 
 IF [%1]==[] goto usage
 
-IF "%1"=="-help" goto usage
-IF "%1"=="-usage" goto usage
-IF "%1"=="-h" goto usage
-IF "%1"=="--help" goto usage
-IF "%1"=="/?" goto usage
+IF "%1"=="-help" goto run_solrcli
+IF "%1"=="-usage" goto run_solrcli
+IF "%1"=="-h" goto run_solrcli
+IF "%1"=="--help" goto run_solrcli
+IF "%1"=="/?" goto run_solrcli
 IF "%1"=="status" goto get_status
-IF "%1"=="version" goto get_version
-IF "%1"=="-v" goto get_version
-IF "%1"=="-version" goto get_version
+IF "%1"=="version" goto run_solrcli
+IF "%1"=="-v" goto run_solrcli
+IF "%1"=="-version" goto run_solrcli
 IF "%1"=="assert" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
 IF "%1"=="package" goto run_solrcli
@@ -264,12 +264,12 @@ goto parse_args
 
 :usage
 IF NOT "%SCRIPT_ERROR%"=="" ECHO %SCRIPT_ERROR%
-IF [%FIRST_ARG%]==[] goto script_usage
-IF "%FIRST_ARG%"=="-help" goto script_usage
-IF "%FIRST_ARG%"=="-usage" goto script_usage
-IF "%FIRST_ARG%"=="-h" goto script_usage
-IF "%FIRST_ARG%"=="--help" goto script_usage
-IF "%FIRST_ARG%"=="/?" goto script_usage
+IF [%FIRST_ARG%]==[] goto run_solrcli
+IF "%FIRST_ARG%"=="-help" goto run_solrcli
+IF "%FIRST_ARG%"=="-usage" goto run_solrcli
+IF "%FIRST_ARG%"=="-h" goto run_solrcli
+IF "%FIRST_ARG%"=="--help" goto run_solrcli
+IF "%FIRST_ARG%"=="/?" goto run_solrcli
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
 IF "%SCRIPT_CMD%"=="stop" goto stop_usage
@@ -281,26 +281,6 @@ IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
 IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
 IF "%SCRIPT_CMD%"=="auth" goto auth_usage
 IF "%SCRIPT_CMD%"=="status" goto run_solrcli
-goto done
-
-:script_usage
-@echo.
-@echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package
-@echo.
-@echo   Standalone server example (start Solr running in the background on port 8984):
-@echo.
-@echo     solr start -p 8984
-@echo.
-@echo   SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):
-@echo.
-@echo     solr start -c -m 1g -z localhost:2181 -a "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044"
-@echo.
-@echo   Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.cmd.
-@echo.
-@echo Pass -help after any COMMAND to see command-specific usage information,
-@echo   such as:    solr start -help or solr stop -help
-@echo.
 goto done
 
 :start_usage
@@ -1376,13 +1356,6 @@ SHIFT
 SHIFT
 goto parse_config_args
 
-:get_version
-"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
-  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
-  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI version
-goto done
-
 REM Clumsy to do the state machine thing for -d and -n, but that's required for back-compat
 :parse_zk_args
 IF "%1"=="-V" (
@@ -1672,8 +1645,6 @@ IF "%FIRST_ARG%"=="start" (
   goto auth_usage
 ) ELSE IF "%FIRST_ARG%"=="status" (
   goto run_solrcli
-) ELSE (
-  goto script_usage
 )
 
 :need_java_home

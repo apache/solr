@@ -144,7 +144,7 @@ You can also specify 'soft' autoCommits with the `autoSoftCommit` tag.
 [source,xml]
 ----
 <autoSoftCommit>
-  <maxTime>60000</maxTime>
+  <maxTime>5000</maxTime>
 </autoSoftCommit>
 ----
 
@@ -154,7 +154,7 @@ Determining the best `autoCommit` settings is a tradeoff between performance and
 Settings that cause frequent updates will improve the accuracy of searches because new content will be searchable more quickly, but performance may suffer because of the frequent updates.
 Less frequent updates may improve performance but it will take longer for updates to show up in queries.
 
-Here is an example NRT configuration for the two flavors of commit, a hard commit every 60 seconds and a soft commit every 30 seconds.
+Here is an example NRT configuration for the two flavors of commit, a hard commit every 60 seconds and a soft commit every 10 seconds.
 Note that these are _not_ the values in the examples shipped with Solr!
 
 [source,xml]
@@ -165,7 +165,7 @@ Note that these are _not_ the values in the examples shipped with Solr!
 </autoCommit>
 
 <autoSoftCommit>
-   <maxTime>${solr.autoSoftCommit.maxTime:30000}</maxTime>
+   <maxTime>${solr.autoSoftCommit.maxTime:10000}</maxTime>
  </autoSoftCommit>
 ----
 
