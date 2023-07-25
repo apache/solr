@@ -28,17 +28,15 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Supports assert command in the bin/solr script. */
 /** Asserts various conditions and exists with error code if fails, else continues with no output */
 public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -373,15 +371,7 @@ public class AssertTool extends ToolBase {
 
   private static boolean runningSolrIsCloud(String url) throws Exception {
     try (final SolrClient client = new Http2SolrClient.Builder(url).build()) {
-      final SolrRequest<CollectionAdminResponse> request =
-          new CollectionAdminRequest.ClusterStatus();
-      final CollectionAdminResponse response = request.process(client);
-      return true; // throws an exception otherwise
-    } catch (Exception e) {
-      if (SolrCLI.exceptionIsAuthRelated(e)) {
-        throw e;
-      }
-      return false;
+      return SolrCLI.isCloudMode(client);
     }
   }
 }
