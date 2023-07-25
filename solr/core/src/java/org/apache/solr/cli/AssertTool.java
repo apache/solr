@@ -348,11 +348,11 @@ public class AssertTool extends ToolBase {
     }
   }
 
-  private static int exitOrException(String msg) throws SolrCLI.AssertionFailureException {
+  private static int exitOrException(String msg) throws AssertionFailureException {
     if (useExitCode) {
       return 1;
     } else {
-      throw new SolrCLI.AssertionFailureException(message != null ? message : msg);
+      throw new AssertionFailureException(message != null ? message : msg);
     }
   }
 
@@ -372,6 +372,12 @@ public class AssertTool extends ToolBase {
   private static boolean runningSolrIsCloud(String url) throws Exception {
     try (final SolrClient client = new Http2SolrClient.Builder(url).build()) {
       return SolrCLI.isCloudMode(client);
+    }
+  }
+
+  public static class AssertionFailureException extends Exception {
+    public AssertionFailureException(String message) {
+      super(message);
     }
   }
 }

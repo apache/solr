@@ -569,10 +569,4 @@ public class SolrCLI implements CLIO {
         solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
     return "solrcloud".equals(systemInfo.get("mode"));
   }
-
-  public static class AssertionFailureException extends Exception {
-    public AssertionFailureException(String message) {
-      super(message);
-    }
-  }
 }
