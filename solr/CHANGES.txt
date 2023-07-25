@@ -64,6 +64,8 @@ Improvements
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
   `GET /api/cores/coreName/backups` (Sanjay Dutt via Jason Gerlowski)
 
+* SOLR-16892: bin/solr create command supports both standalone and cloud modes, and deprecate create_core and create_collection commands.   (Eric Pugh)
+
 Optimizations
 ---------------------
 
