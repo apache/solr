@@ -40,6 +40,7 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
 /** Supports create_collection command in the bin/solr script. */
+@Deprecated(since = "9.4")
 public class CreateCollectionTool extends ToolBase {
 
   public static final List<Option> CREATE_COLLECTION_OPTIONS =

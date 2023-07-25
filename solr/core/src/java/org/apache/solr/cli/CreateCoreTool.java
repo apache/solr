@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.params.CommonParams;
 
+@Deprecated(since = "9.4")
 public class CreateCoreTool extends ToolBase {
 
   public CreateCoreTool() {
