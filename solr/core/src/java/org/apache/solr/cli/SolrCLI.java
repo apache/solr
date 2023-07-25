@@ -75,7 +75,7 @@ public class SolrCLI implements CLIO {
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";
+  public static final String DEFAULT_SOLR_URL = "http://localhost:8983";
   public static final String ZK_HOST = "localhost:9983";
 
   public static final Option OPTION_ZKHOST =
