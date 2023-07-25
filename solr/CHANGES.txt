@@ -12,7 +12,8 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* SOLR-16850: Notify a user if they run healthcheck against standalone Solr that it is a SolrCloud only command. (Eric Pugh)
 
 Optimizations
 ---------------------
