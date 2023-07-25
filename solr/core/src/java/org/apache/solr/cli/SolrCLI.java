@@ -383,6 +383,10 @@ public class SolrCLI implements CLIO {
   }
 
   public static SolrClient getSolrClient(String solrUrl) {
+    // today we require all urls to end in /solr, however in the future we will need to support the /api url end point instead.
+    if (solrUrl.indexOf("/solr") == 0){
+      solrUrl = solrUrl + "/solr";
+    }
     return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
   }
 
@@ -474,6 +478,15 @@ public class SolrCLI implements CLIO {
           String firstLiveNode = liveNodes.iterator().next();
           solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
         }
+      }
+    }
+    else {
+      if (solrUrl.indexOf("/solr") > -1) { // warn users on the old legacy http://localhost:8983/solr pattern for Solr urls.
+        solrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+        CLIO.out("The solrUrl parameter only needs to only point to the root of Solr (" + solrUrl + ").");
+      }
+      if (solrUrl.endsWith("/")){
+        solrUrl = solrUrl.substring(0,solrUrl.length()-1);
       }
     }
     return solrUrl;

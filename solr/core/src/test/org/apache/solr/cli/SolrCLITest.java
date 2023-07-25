@@ -16,10 +16,30 @@
  */
 package org.apache.solr.cli;
 
+import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class SolrCliUptimeTest extends SolrTestCase {
+import static org.apache.solr.cli.SolrCLI.parseCmdLine;
+
+public class SolrCLITest extends SolrTestCase {
+  @Test
+  public void testResolveSolrUrl() throws Exception {
+    Tool testTool = new CreateTool();
+
+    String[] args = new String[] { "create", "-c","test", "-solrUrl", "http://localhost:8983/solr"};
+    CommandLine cli = parseCmdLine(testTool.getName(), args, testTool.getOptions());
+    assertEquals(SolrCLI.resolveSolrUrl(cli),"http://localhost:8983");
+
+    args = new String[] { "create", "-c","test", "-solrUrl", "http://localhost:8983"};
+    cli = parseCmdLine(testTool.getName(), args, testTool.getOptions());
+    assertEquals(SolrCLI.resolveSolrUrl(cli),"http://localhost:8983");
+
+    args = new String[] { "create", "-c","test", "-solrUrl", "http://localhost:8983/"};
+    cli = parseCmdLine(testTool.getName(), args, testTool.getOptions());
+    assertEquals(SolrCLI.resolveSolrUrl(cli),"http://localhost:8983");
+  }
+
   @Test
   public void testUptime() {
     assertEquals("?", SolrCLI.uptime(0));
