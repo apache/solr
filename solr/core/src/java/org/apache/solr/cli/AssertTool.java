@@ -29,7 +29,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -198,10 +197,10 @@ public class AssertTool extends ToolBase {
       ret += assertSolrNotRunning(cli.getOptionValue("S"));
     }
     if (cli.hasOption("c")) {
-      ret += assertSolrRunningInCloudMode(cli.getOptionValue("c"));
+      ret += assertSolrRunningInCloudMode(SolrCLI.resolveSolrUrl(cli.getOptionValue("c")));
     }
     if (cli.hasOption("C")) {
-      ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("C"));
+      ret += assertSolrNotRunningInCloudMode(SolrCLI.resolveSolrUrl(cli.getOptionValue("C")));
     }
     return ret;
   }
@@ -370,7 +369,7 @@ public class AssertTool extends ToolBase {
   }
 
   private static boolean runningSolrIsCloud(String url) throws Exception {
-    try (final SolrClient client = new Http2SolrClient.Builder(url).build()) {
+    try (final SolrClient client = SolrCLI.getSolrClient(url)) {
       return SolrCLI.isCloudMode(client);
     }
   }

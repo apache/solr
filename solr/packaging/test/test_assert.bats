@@ -30,24 +30,26 @@ teardown() {
 
 @test "assert for non cloud mode" {
   run solr start
-  
+
   run solr assert --not-cloud http://localhost:8983/solr
+  assert_output --partial "The solrUrl parameter only needs to only point to the root of Solr (http://localhost:8983)."
   refute_output --partial "ERROR"
-  
-  run solr assert --cloud http://localhost:8983/solr
+
+  run solr assert --cloud http://localhost:8983
   assert_output --partial "ERROR: Solr is not running in cloud mode"
-  
+
   run ! solr assert --cloud http://localhost:8983/solr -e
 }
 
 @test "assert for cloud mode" {
-  run solr start -c 
-  
-  run solr assert --cloud http://localhost:8983/solr
+  run solr start -c
+
+  run solr assert --cloud http://localhost:8983
   refute_output --partial "ERROR"
-  
+
   run solr assert --not-cloud http://localhost:8983/solr
+  assert_output --partial "The solrUrl parameter only needs to only point to the root of Solr (http://localhost:8983)."
   assert_output --partial "ERROR: Solr is not running in standalone mode"
-  
-  run ! solr assert --not-cloud http://localhost:8983/solr -e
+
+  run ! solr assert --not-cloud http://localhost:8983 -e
 }
