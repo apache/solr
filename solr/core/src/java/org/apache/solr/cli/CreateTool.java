@@ -161,7 +161,7 @@ public class CreateTool extends ToolBase {
     }
 
     Path coreInstanceDir = Paths.get(coreRootDirectory, coreName);
-    Path confDir = getFullConfDir(configsetDir, solrInstallDirPath).resolve("conf");
+    Path confDir = getFullConfDir(solrInstallDirPath, configsetDir).resolve("conf");
     if (!Files.isDirectory(coreInstanceDir)) {
       Files.createDirectories(coreInstanceDir);
       if (!Files.isDirectory(coreInstanceDir)) {
@@ -315,7 +315,7 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  private Path getFullConfDir(Path confDirName, Path solrInstallDir) {
+  private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
     Path configSetsPath = Paths.get("server/solr/configsets/");
     return solrInstallDir.resolve(configSetsPath).resolve(confDirName);
   }
@@ -323,7 +323,7 @@ public class CreateTool extends ToolBase {
   private void ensureConfDirExists(Path solrInstallDir, Path confDirName) {
     if (!Files.isDirectory(confDirName)) {
 
-      Path fullConfDir = getFullConfDir(confDirName, solrInstallDir);
+      Path fullConfDir = getFullConfDir(solrInstallDir, confDirName);
       if (!Files.isDirectory(fullConfDir)) {
         echo("Specified configuration directory " + confDirName + " not found!");
         System.exit(1);
