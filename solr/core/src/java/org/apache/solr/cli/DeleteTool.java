@@ -41,10 +41,7 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Supports delete command in the bin/solr script.
- *
- */
+/** Supports delete command in the bin/solr script. */
 public class DeleteTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

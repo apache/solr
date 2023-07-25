@@ -23,10 +23,7 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 
-/**
- * Supports post command in the bin/solr script.
- *
- */
+/** Supports post command in the bin/solr script. */
 public class PostTool extends ToolBase {
 
   public PostTool() {

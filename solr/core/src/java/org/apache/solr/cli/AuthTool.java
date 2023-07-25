@@ -39,10 +39,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.zookeeper.KeeperException;
 
-/**
- * Supports auth command in the bin/solr script.
- *
- */
+/** Supports auth command in the bin/solr script. */
 public class AuthTool extends ToolBase {
   public AuthTool() {
     this(CLIO.getOutStream());

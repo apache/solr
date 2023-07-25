@@ -28,10 +28,11 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
+
 /**
  * Supports config command in the bin/solr script.
  *
- * Sends a POST to the Config API to perform a specified action.
+ * <p>Sends a POST to the Config API to perform a specified action.
  */
 public class ConfigTool extends ToolBase {
 

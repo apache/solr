@@ -41,7 +41,7 @@ import org.noggit.JSONWriter;
 /**
  * Supports status command in the bin/solr script.
  *
- * Get the status of a Solr server.
+ * <p>Get the status of a Solr server.
  */
 public class StatusTool extends ToolBase {
   public StatusTool() {

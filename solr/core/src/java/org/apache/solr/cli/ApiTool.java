@@ -32,8 +32,7 @@ import org.noggit.JSONWriter;
 /**
  * Supports api command in the bin/solr script.
  *
- * Used to send an arbitrary HTTP request to a Solr API
- * endpoint.
+ * <p>Used to send an arbitrary HTTP request to a Solr API endpoint.
  */
 public class ApiTool extends ToolBase {
   public ApiTool() {
