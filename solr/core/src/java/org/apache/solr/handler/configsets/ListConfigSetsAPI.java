@@ -28,9 +28,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.api.model.SolrJerseyResponse;
 
 /**
  * V2 API for adding or updating a single file within a configset.

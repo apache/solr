@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Interfaces representing individual Solr v2 APIs.
- */
+/** Interfaces representing individual Solr v2 APIs. */
 package org.apache.solr.api.endpoint;

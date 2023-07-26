@@ -20,8 +20,6 @@ package org.apache.solr.api.model;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.api.model.ErrorInfo;
-
 import java.util.HashMap;
 import java.util.Map;
 

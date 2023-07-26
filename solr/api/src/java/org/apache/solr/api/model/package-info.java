@@ -16,6 +16,7 @@
  */
 
 /**
- * POJOs representing various inputs and outputs of the v2 APIs described in {@link org.apache.solr.api.endpoint}
+ * POJOs representing various inputs and outputs of the v2 APIs described in {@link
+ * org.apache.solr.api.endpoint}
  */
 package org.apache.solr.api.model;
