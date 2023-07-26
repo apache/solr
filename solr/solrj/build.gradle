@@ -115,13 +115,6 @@ ext {
   javaTemplateDir = "${projectDir}/src/resources/java-template"
 }
 
-/*tasks.register("copySpec", Copy) {
-  dependsOn configurations.openApiSpecFile
-
-  from(configurations.openApiSpecFile.singleFile)
-  into(layout.buildDirectory.dir("openapispec"))
-}*/
-
 dependencies {
   openApiSpecFile(project(path: ":solr:api", configuration: "openapiSpec"))
   generatedCode files("${project.generatedCodeDir}/main/java") {
