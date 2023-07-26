@@ -27,6 +27,6 @@ import io.swagger.v3.oas.annotations.info.License;
             title = "v2 API",
             description = "OpenAPI spec for Solr's v2 API endpoints",
             license = @License(name = "ASL 2.0"),
-            version = "10.0.0")) // TODO Move core's SolrVersion into solrj-model and use
+            version = "10.0.0")) // TODO Move core's SolrVersion into :solr:api and use
 // SolrVersion.LATEST_STRING here instead of the hardcode.
 public class ApiMetadata {}

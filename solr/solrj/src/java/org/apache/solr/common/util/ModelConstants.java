@@ -18,7 +18,7 @@
 package org.apache.solr.common.util;
 
 // TODO This probably shouldn't exist in a final product, but it's fine for a POC
-/** Constants duplicated from solrj-model so we can avoid depending on it directly */
+/** Constants duplicated from :solr:api so we can avoid depending on it directly */
 public class ModelConstants {
 
   private ModelConstants() {

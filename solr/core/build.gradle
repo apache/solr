@@ -42,8 +42,8 @@ dependencies {
   // We export logging api with dependencies, which is useful for all modules
   api 'org.slf4j:slf4j-api'
 
+  api project(':solr:api')
   api project(':solr:solrj')
-  api project(':solr:solrj-model')
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
 

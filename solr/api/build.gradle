@@ -21,7 +21,12 @@ plugins {
 
 apply plugin: 'java-library'
 
-description = 'Solrj-Model- Interfaces and classes used to represent Solrs APIs'
+description = 'API - Interfaces and classes used to represent Solrs APIs'
+
+ext {
+    openApiSpecDir = "${buildDir}/generated/openapi"
+    openApiSpecFile = "${project.openApiSpecDir}/openapi.json"
+}
 
 configurations {
     openapiSpec {
@@ -30,18 +35,11 @@ configurations {
     }
 }
 
-ext {
-    openapispecdir = "${buildDir}/generated/openapi"
-//    openapispecfile = "${project.ext.openapispecdir}/openapi.json"
-}
-
 resolve {
   classpath = sourceSets.main.runtimeClasspath
-  outputDir = file(project.ext.openapispecdir)
+  outputDir = file(project.openApiSpecDir)
   prettyPrint = true
 }
-
-
 
 dependencies {
     // declare dependencies we use even though already declared by solrj-core

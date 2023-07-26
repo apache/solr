@@ -29,7 +29,7 @@ import java.util.Map;
 public class ErrorInfo {
 
   // TODO These are used by some classes in 'solrj' - should we just duplicate, or should we have
-  // solrj rely on solrj-model directly?
+  // solrj rely on :solr:api directly?
   // (though if so, how do we avoid pulling in jackson-annotations - is a dependency exclude
   // sufficient for that?)
   public static final String ROOT_ERROR_CLASS = "root-error-class";
