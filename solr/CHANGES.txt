@@ -81,6 +81,8 @@ Bug Fixes
 
 * SOLR-16889: Rate Limiter should stop processing on 429 (Alex Deparvu, David Smiley)
 
+* SOLR-16906: Correctly capture REPLICATION metrics in Prometheus config (Daisuke Aritomo via Houston Putman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
