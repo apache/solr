@@ -14,21 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.admin.api;
+package org.apache.solr.jersey;
 
-import org.apache.solr.handler.admin.api.APIConfigProvider.APIConfig;
-import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
 /**
- * Interface to be implemented by the Request Handlers that need to provide some custom
- * configuration to the V2 APIs
+ * Jersey binder for APIConfigProvider
  */
-public interface APIConfigProvider<T extends APIConfig> extends Factory<T> {
+public class APIConfigProviderBinder extends AbstractBinder {
+
+  private final APIConfigProvider<?> cfgProvider;
+
+  public APIConfigProviderBinder(APIConfigProvider<?> cfgProvider) {
+    this.cfgProvider = cfgProvider;
+  }
 
   @Override
-  default void dispose(T instance) {}
-
-  Class<T> getConfigClass();
-
-  public interface APIConfig {}
+  protected void configure() {
+    bindFactory(cfgProvider).to(cfgProvider.getConfigClass());
+  }
 }

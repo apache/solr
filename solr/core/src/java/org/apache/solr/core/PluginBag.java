@@ -41,16 +41,16 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.APIConfigProvider;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.APIConfigProviderBinder;
 import org.apache.solr.jersey.JerseyApplications;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -292,20 +292,6 @@ public class PluginBag<T> implements AutoCloseable {
       closeQuietly(old);
     }
     return old;
-  }
-
-  static final class APIConfigProviderBinder extends AbstractBinder {
-
-    private final APIConfigProvider<?> cfgProvider;
-
-    public APIConfigProviderBinder(APIConfigProvider<?> cfgProvider) {
-      this.cfgProvider = cfgProvider;
-    }
-
-    @Override
-    protected void configure() {
-      bindFactory(cfgProvider).to(cfgProvider.getConfigClass());
-    }
   }
 
   void setDefault(String def) {

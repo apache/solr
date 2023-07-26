@@ -21,17 +21,18 @@ import static org.mockito.Mockito.mock;
 
 import java.util.Collection;
 import java.util.List;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.core.PluginBag.APIConfigProviderBinder;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.handler.admin.api.APIConfigProvider;
-import org.apache.solr.handler.admin.api.APIConfigProvider.APIConfig;
 import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.configsets.ListConfigSetsAPI;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.APIConfigProvider.APIConfig;
+import org.apache.solr.jersey.APIConfigProviderBinder;
 import org.apache.solr.jersey.JerseyApplications;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
