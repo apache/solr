@@ -98,7 +98,7 @@ dependencies {
 }
 
 /**
- * Generate Code
+ * Java Code Generation for Solr API
  */
 
 evaluationDependsOn(":solr:api")
@@ -117,21 +117,14 @@ ext {
 
 dependencies {
   openApiSpecFile(project(path: ":solr:api", configuration: "openapiSpec"))
-  generatedCode files("${project.generatedCodeDir}/main/java") {
+  generatedCode files("${project.generatedCodeDir}/src/main/java") {
     builtBy tasks.openApiGenerate
   }
 }
 
 /**
- * Setup Spotless (Code formatting) for the generated files
+ * Code Generation task
  */
-def generatedExt = new JavaExtension(spotless)
-project.ext.spotlessJavaSetup.execute(generatedExt)
-generatedExt.target("${project.generatedCodeDir}/src/**/*.java")
-def generatedSpotlessTask = generatedExt.createIndependentApplyTask("generatedSpotless")
-generatedSpotlessTask.group("build")
-generatedSpotlessTask.description("Apply formatting for generated code")
-
 openApiGenerate {
   generatorName = "java"
   inputSpec = project(":solr:api").openApiSpecFile
@@ -149,17 +142,30 @@ openApiGenerate {
 }
 
 tasks.openApiGenerate.dependsOn configurations.openApiSpecFile
+
+/**
+ * Setup Spotless (Code formatting) for the generated java files
+ */
+def generatedExt = new JavaExtension(spotless)
+project.spotlessJavaSetup.execute(generatedExt)
+generatedExt.target(files("${project.generatedCodeDir}/src"))
+def generatedSpotlessTask = generatedExt.createIndependentApplyTask("generatedSpotless")
+generatedSpotlessTask.group("build")
+generatedSpotlessTask.description("Apply formatting for generated code")
+
 tasks.openApiGenerate.finalizedBy generatedSpotlessTask
 // the generatedSpotlessTask has a super-task that we are not given, that should also depend on the code generation.
 generatedSpotlessTask.taskDependencies.getDependencies(generatedSpotlessTask).each {
-  it.dependsOn tasks.openApiGenerate
+  if (it.name.startsWith(generatedSpotlessTask.name)) {
+    it.dependsOn tasks.openApiGenerate
+  }
 }
 generatedSpotlessTask.dependsOn tasks.openApiGenerate
 
 sourceSets {
   main {
     java {
-      srcDir "${buildDir}/generated/src/main/java"
+      srcDir "${project.generatedCodeDir}/src/main/java"
     }
   }
 }
