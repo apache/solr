@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import io.opentelemetry.api.trace.Tracer;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
 
 /** Produces a {@link Tracer} from configuration. */
@@ -30,6 +31,9 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
           loader.newInstance(info.className, TracerConfigurator.class);
       configurator.init(info.initArgs);
       return configurator.getTracer();
+
+    } else if (Boolean.getBoolean("solr.otel.simplePropagatorOnly")) {
+      return SimplePropagator.load();
     } else {
       return TraceUtils.noop();
     }
