@@ -21,7 +21,6 @@ import static org.mockito.Mockito.mock;
 
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.api.JerseyResource;

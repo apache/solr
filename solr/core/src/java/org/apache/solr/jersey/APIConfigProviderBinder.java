@@ -18,9 +18,7 @@ package org.apache.solr.jersey;
 
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
-/**
- * Jersey binder for APIConfigProvider
- */
+/** Jersey binder for APIConfigProvider */
 public class APIConfigProviderBinder extends AbstractBinder {
 
   private final APIConfigProvider<?> cfgProvider;
