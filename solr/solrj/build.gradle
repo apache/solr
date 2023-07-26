@@ -157,6 +157,10 @@ openApiGenerate {
 
 tasks.openApiGenerate.dependsOn configurations.openApiSpecFile
 tasks.openApiGenerate.finalizedBy generatedSpotlessTask
+// the generatedSpotlessTask has a super-task that we are not given, that should also depend on the code generation.
+generatedSpotlessTask.taskDependencies.getDependencies(generatedSpotlessTask).each {
+  it.dependsOn tasks.openApiGenerate
+}
 generatedSpotlessTask.dependsOn tasks.openApiGenerate
 
 sourceSets {
