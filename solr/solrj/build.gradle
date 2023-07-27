@@ -107,7 +107,6 @@ configurations {
   openApiSpecFile {
     canBeConsumed = false
   }
-  generatedCode
 }
 
 ext {
@@ -117,9 +116,6 @@ ext {
 
 dependencies {
   openApiSpecFile(project(path: ":solr:api", configuration: "openapiSpec"))
-  generatedCode files("${project.generatedCodeDir}/src/main/java") {
-    builtBy tasks.openApiGenerate
-  }
 }
 
 /**
@@ -162,11 +158,16 @@ generatedSpotlessTask.taskDependencies.getDependencies(generatedSpotlessTask).ea
 }
 generatedSpotlessTask.dependsOn tasks.openApiGenerate
 
+/**
+ * Add the Generated code to the SolrJ Source paths
+ */
+
 sourceSets {
   main {
     java {
-      srcDir "${project.generatedCodeDir}/src/main/java"
+      srcDir files("${project.generatedCodeDir}/src/main/java") {
+        builtBy tasks.openApiGenerate
+      }
     }
   }
 }
-tasks.compileJava.dependsOn(configurations.generatedCode)
