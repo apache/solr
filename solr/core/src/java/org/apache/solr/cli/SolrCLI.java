@@ -462,7 +462,12 @@ public class SolrCLI implements CLIO {
     if (solrUrl != null) {
       if (solrUrl.indexOf("/solr") > -1) { //
         String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
-        CLIO.out("'solrUrl' needn't include Solr's context-root (e.g. \"/solr\"); correcting from [" + solrUrl + "] to [" + newSolrUrl + "]");
+        CLIO.out(
+            "'solrUrl' needn't include Solr's context-root (e.g. \"/solr\"); correcting from ["
+                + solrUrl
+                + "] to ["
+                + newSolrUrl
+                + "]");
         solrUrl = newSolrUrl;
       }
       if (solrUrl.endsWith("/")) {
