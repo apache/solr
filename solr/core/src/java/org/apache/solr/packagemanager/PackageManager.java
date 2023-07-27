@@ -870,7 +870,7 @@ public class PackageManager implements Closeable {
         if (pkg.version.equals(version)) {
           return pkg;
         }
-        if (PackageUtils.compareVersions(latest.version, pkg.version) <= 0) {
+        if (SolrVersion.compareVersions(latest.version, pkg.version) <= 0) {
           latest = pkg;
         }
       }
@@ -918,20 +918,12 @@ public class PackageManager implements Closeable {
     }
 
     Manifest manifest = packageInstance.manifest;
-    try {
-      if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
-        PackageUtils.printRed(
-            "Version incompatible! Solr version: "
-                + SolrVersion.LATEST
-                + ", package version constraint: "
-                + manifest.versionConstraint);
-        System.exit(1);
-      }
-    } catch (SolrVersion.InvalidSemVerExpressionException ex) {
+    if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
       PackageUtils.printRed(
-          "Error in version constraint given in package manifest: "
-              + manifest.versionConstraint
-              + ". It does not a valid SemVer expression.");
+          "Version incompatible! Solr version: "
+              + SolrVersion.LATEST
+              + ", package version constraint: "
+              + manifest.versionConstraint);
       System.exit(1);
     }
 

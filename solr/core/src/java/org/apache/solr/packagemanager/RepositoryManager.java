@@ -54,6 +54,7 @@ import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.SolrPackageLoader;
+import org.apache.solr.util.SolrVersion;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -287,7 +288,7 @@ public class RepositoryManager {
       return getLastPackageRelease(pkg);
     }
     for (SolrPackageRelease release : pkg.versions) {
-      if (PackageUtils.compareVersions(version, release.version) == 0) {
+      if (SolrVersion.compareVersions(version, release.version) == 0) {
         return release;
       }
     }
@@ -310,7 +311,7 @@ public class RepositoryManager {
       if (latest == null) {
         latest = release;
       } else {
-        if (PackageUtils.compareVersions(latest.version, release.version) < 0) {
+        if (SolrVersion.compareVersions(latest.version, release.version) < 0) {
           latest = release;
         }
       }
@@ -329,7 +330,7 @@ public class RepositoryManager {
     }
     String installedVersion = packageManager.getPackageInstance(packageName, null).version;
     SolrPackageRelease last = getLastPackageRelease(packageName);
-    return last != null && PackageUtils.compareVersions(last.version, installedVersion) > 0;
+    return last != null && SolrVersion.compareVersions(last.version, installedVersion) > 0;
   }
 
   /**
