@@ -47,8 +47,6 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
-* PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
-
 * SOLR-16798: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command. (Bence Szabo via Eric Pugh)
 
 * SOLR-16829: Delegate arg parsing and help usage from bin/solr and bin/solr.cmd to java layer for create, create_core, create_collection, delete, healthcheck and status commands. (Eric Pugh, Will White, Mikhail Khludnev)
@@ -93,6 +91,8 @@ Other Changes
 * SOLR-16842: Eliminate special case code in Solr CLI by introducing explicit VersionTool.java.  (Eric Pugh, Will White)
 
 * SOLR-16856: The default auto-soft-commit time has been set to 3 seconds. Previously, auto-soft-commit was disabled by default. (Houston Putman)
+
+* PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
 
 ==================  9.3.0 ==================
 
