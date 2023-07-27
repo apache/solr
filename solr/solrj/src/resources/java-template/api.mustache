@@ -68,7 +68,7 @@ public class {{classname}} {
             /**
              * Create a {{operationIdCamelCase}} request object.
              *
-             {{#requiredParams}}{{^isBodyParam}}* @param {{paramName}} {{description}}{{/isBodyParam}}
+             {{#requiredParams}}{{^isBodyParam}}* @param {{paramName}} Path param - {{description}}{{/isBodyParam}}
              {{/requiredParams}}
              */
             public {{operationIdCamelCase}}({{#requiredParams}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{/requiredParams}}) {

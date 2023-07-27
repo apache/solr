@@ -42,14 +42,10 @@ resolve {
 }
 
 dependencies {
+    // declare dependencies we use even though already declared by solrj-core
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
     api 'io.swagger.core.v3:swagger-annotations'
-
-    testImplementation project(':solr:test-framework')
-    testImplementation project(':solr:core')
-
-    testImplementation 'junit:junit'
 }
 
 artifacts {
