@@ -28,10 +28,8 @@ import com.diffplug.gradle.spotless.JavaExtension
 description = 'Solrj - Solr Java Client'
 
 dependencies {
-  // TODO Most likely temporary, due to historical pushback on adding Jackson deps to solrj, but it does _hugely_
-  //  simplify the parsing code and there are new compelling reasons, given the claims around CBOR performance relative
-  //  to JSON, javabin, etc.
-  implementation 'com.fasterxml.jackson.core:jackson-databind' // Came from a testImplementation line below.
+  // NOCOMMIT - to shade, or not to shade?
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation project(":solr:api")
 
   implementation 'org.slf4j:slf4j-api'

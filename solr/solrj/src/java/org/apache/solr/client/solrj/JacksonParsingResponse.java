@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.util.NamedList;
@@ -32,11 +31,10 @@ public class JacksonParsingResponse<T extends Object> extends SimpleSolrResponse
   }
 
   public T getParsed() {
-    // TODO - reuse the ObjectMapper - no reason to recreate each time.
     final NamedList<Object> resp = getResponse();
     final var stream = (InputStream) resp.get("stream");
     try {
-      final T parsedVal = new ObjectMapper().readValue(stream, typeParam);
+      final T parsedVal = JacksonContentWriter.DEFAULT_MAPPER.readValue(stream, typeParam);
       assert ObjectReleaseTracker.release(stream);
       return parsedVal;
     } catch (Exception e) {

@@ -31,6 +31,8 @@ dependencies {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
 
+  implementation 'io.swagger.core.v3:swagger-annotations'
+
   // Export these dependencies so that they're imported transitively by
   // other modules.
 
@@ -69,8 +71,6 @@ dependencies {
   implementation 'org.glassfish.hk2.external:jakarta.inject'
   implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
   implementation 'jakarta.annotation:jakarta.annotation-api'
-  // TODO Only remporarily re-added for POC to avoid complaints about remaining swagger annotations in core haven't moved yet
-  implementation 'io.swagger.core.v3:swagger-annotations'
 
   // Non-API below; although there are exceptions
 

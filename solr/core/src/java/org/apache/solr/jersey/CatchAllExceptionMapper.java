@@ -55,7 +55,6 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
 
   @Override
   public Response toResponse(Exception exception) {
-    log.error("Found exception in CatchAllExceptionMapper: ", exception);
     final ContainerRequestContext containerRequestContext =
         resourceContext.getResource(ContainerRequestContext.class);
 

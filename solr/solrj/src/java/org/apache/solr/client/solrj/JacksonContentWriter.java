@@ -24,6 +24,8 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 
 public class JacksonContentWriter implements RequestWriter.ContentWriter {
 
+  public static final ObjectMapper DEFAULT_MAPPER = new ObjectMapper();
+
   private final Object toWrite;
   private final String contentType;
 
@@ -34,7 +36,7 @@ public class JacksonContentWriter implements RequestWriter.ContentWriter {
 
   @Override
   public void write(OutputStream os) throws IOException {
-    new ObjectMapper().writeValue(os, toWrite);
+    DEFAULT_MAPPER.writeValue(os, toWrite);
   }
 
   @Override

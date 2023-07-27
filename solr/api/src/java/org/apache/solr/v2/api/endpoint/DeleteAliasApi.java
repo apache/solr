@@ -19,6 +19,7 @@ package org.apache.solr.v2.api.endpoint;
 
 import static org.apache.solr.v2.api.Constants.BINARY_CONTENT_TYPE_V2;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
@@ -32,6 +33,9 @@ public interface DeleteAliasApi {
 
   @DELETE
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Operation(
+      summary = "Deletes an alias by its name",
+      tags = {"aliases"})
   SolrJerseyResponse deleteAlias(
       @Parameter(description = "The name of the alias to delete", required = true)
           @PathParam("aliasName")
