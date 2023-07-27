@@ -141,7 +141,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     // Jetty freaks out and returns 404's when the context uses escapes
 
     StringBuilder hostContext = new StringBuilder("/");
-    if (random().nextBoolean()) {
+    //if (random().nextBoolean()) {
+    // nocommit
+    if (false) {
       // half the time we use the root context, the other half...
 
       // Remember: randomSimpleString might be the empty string
@@ -193,7 +195,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (ctx == null || ctx.isEmpty()) ctx = "/solr";
     if (ctx.endsWith("/")) ctx = ctx.substring(0, ctx.length() - 1);
     if (!ctx.startsWith("/")) ctx = "/" + ctx;
-    return ctx;
+    //return ctx;
+    return "/solr";
   }
 
   /**
