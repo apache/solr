@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Utilities for working with Solr api interfaces and model classes.
- */
+/** Utilities for working with Solr api interfaces and model classes. */
 package org.apache.solr.util;
