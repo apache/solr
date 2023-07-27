@@ -72,8 +72,8 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricManager.ResolutionStrategy;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.servlet.RateLimitManager.Builder;
-import org.apache.solr.util.SolrVersion;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.v2.api.util.SolrVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

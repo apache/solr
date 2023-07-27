@@ -15,11 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api.model;
+package org.apache.solr.v2.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-public class AsyncJerseyResponse extends SolrJerseyResponse {
-  @JsonProperty("requestid")
-  public String requestId;
+public class AddReplicaPropertyRequestBody {
+  public AddReplicaPropertyRequestBody() {}
+
+  public AddReplicaPropertyRequestBody(String value) {
+    this.value = value;
+  }
+
+  @Schema(description = "The value to assign to the property.", required = true)
+  @JsonProperty("value")
+  public String value;
+
+  @Schema(
+      description =
+          "If `true`, then setting this property in one replica will remove the property from all other replicas in that shard. The default is `false`.\\nThere is one pre-defined property `preferredLeader` for which `shardUnique` is forced to `true` and an error returned if `shardUnique` is explicitly set to `false`.",
+      defaultValue = "false")
+  @JsonProperty("shardUnique")
+  public Boolean shardUnique;
 }

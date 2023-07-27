@@ -16,4 +16,4 @@
  */
 
 /** Utilities for working with Solr api interfaces and model classes. */
-package org.apache.solr.util;
+package org.apache.solr.v2.api.util;

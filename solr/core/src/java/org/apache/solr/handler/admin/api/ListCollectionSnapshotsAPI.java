@@ -29,7 +29,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import org.apache.solr.api.model.AsyncJerseyResponse;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.CoreContainer;
@@ -38,6 +37,7 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.v2.api.model.AsyncJerseyResponse;
 
 /** V2 API for Listing Collection Snapshots. */
 @Path("/collections/{collName}/snapshots")

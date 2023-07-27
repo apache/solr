@@ -29,7 +29,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
@@ -41,6 +40,7 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.v2.api.model.SolrJerseyResponse;
 
 /**
  * <code>GetSchemaFieldAPI</code> contains the V2 APIs for all field related endpoint which are

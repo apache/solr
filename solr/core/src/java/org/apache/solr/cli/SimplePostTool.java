@@ -67,7 +67,7 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.apache.solr.util.RTimer;
-import org.apache.solr.util.SolrVersion;
+import org.apache.solr.v2.api.util.SolrVersion;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;

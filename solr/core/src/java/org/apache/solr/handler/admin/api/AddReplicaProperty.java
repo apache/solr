@@ -31,9 +31,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import javax.inject.Inject;
-import org.apache.solr.api.endpoint.AddReplicaPropertyApi;
-import org.apache.solr.api.model.AddReplicaPropertyRequestBody;
-import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
@@ -44,6 +41,9 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.v2.api.endpoint.AddReplicaPropertyApi;
+import org.apache.solr.v2.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.v2.api.model.SolrJerseyResponse;
 
 /**
  * V2 API for adding a property to a collection replica

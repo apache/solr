@@ -15,17 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey;
+package org.apache.solr.v2.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.v2.api.model.SolrJerseyResponse;
+public class Constants {
+  private Constants() {
+    /* Private ctor prevents instantiation */
+  }
 
-/**
- * {@link SolrJerseyResponse} implementation with a warning field indicating that the format may
- * change
- */
-public class ExperimentalResponse extends SolrJerseyResponse {
-  @JsonProperty("WARNING")
-  public String warning =
-      "This response format is experimental.  It is likely to change in the future.";
+  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }
