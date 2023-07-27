@@ -19,29 +19,19 @@ package org.apache.solr.api.endpoint;
 
 import static org.apache.solr.api.Constants.BINARY_CONTENT_TYPE_V2;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import org.apache.solr.api.model.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 
-@Path("/collections/{collectionName}")
-public interface IDeleteCollection {
+@Path("/aliases/{aliasName}")
+public interface DeleteAliasApi {
 
   @DELETE
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
-  @Operation(
-      summary = "Deletes a collection from SolrCloud",
-      tags = {"collections"})
-  SubResponseAccumulatingJerseyResponse deleteCollection(
-      @Parameter(description = "The name of the collection to be deleted.", required = true)
-          @PathParam("collectionName")
-          String collectionName,
-      @QueryParam("followAliases") Boolean followAliases,
-      @Parameter(description = "An ID to track the request asynchronously") @QueryParam("async")
-          String asyncId)
+  SolrJerseyResponse deleteAlias(
+      @PathParam("aliasName") String aliasName, @QueryParam("async") String asyncId)
       throws Exception;
 }

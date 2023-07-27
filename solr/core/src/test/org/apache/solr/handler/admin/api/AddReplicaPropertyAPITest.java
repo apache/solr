@@ -42,7 +42,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for {@link AddReplicaPropertyAPI} */
+/** Unit tests for {@link AddReplicaProperty} */
 public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
 
   private static final AddReplicaPropertyRequestBody ANY_REQ_BODY =
@@ -54,7 +54,7 @@ public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
   private SolrQueryResponse queryResponse;
   private ArgumentCaptor<ZkNodeProps> messageCapturer;
 
-  private AddReplicaPropertyAPI addReplicaPropApi;
+  private AddReplicaProperty addReplicaPropApi;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -77,8 +77,7 @@ public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
     queryResponse = new SolrQueryResponse();
     messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
 
-    addReplicaPropApi =
-        new AddReplicaPropertyAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+    addReplicaPropApi = new AddReplicaProperty(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test

@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
@@ -26,8 +26,11 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
-import org.apache.solr.api.endpoint.IDeleteCollection;
-import org.apache.solr.api.model.SubResponseAccumulatingJerseyResponse;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import org.apache.solr.api.endpoint.DeleteAliasApi;
+import org.apache.solr.api.model.AsyncJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -37,16 +40,9 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/**
- * V2 API for deleting collections.
- *
- * <p>This API (DELETE /v2/collections/collectionName) is equivalent to the v1
- * /admin/collections?action=DELETE command.
- */
-public class DeleteCollectionAPI extends AdminAPIBase implements IDeleteCollection {
-
+public class DeleteAlias extends AdminAPIBase implements DeleteAliasApi {
   @Inject
-  public DeleteCollectionAPI(
+  public DeleteAlias(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
@@ -54,20 +50,19 @@ public class DeleteCollectionAPI extends AdminAPIBase implements IDeleteCollecti
   }
 
   @PermissionName(COLL_EDIT_PERM)
-  public SubResponseAccumulatingJerseyResponse deleteCollection(
-      String collectionName, Boolean followAliases, String asyncId) throws Exception {
-    final SubResponseAccumulatingJerseyResponse response =
-        instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+  public SolrJerseyResponse deleteAlias(
+      @PathParam("aliasName") String aliasName, @QueryParam("async") String asyncId)
+      throws Exception {
+    final AsyncJerseyResponse response = instantiateJerseyResponse(AsyncJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, followAliases, asyncId);
+    final ZkNodeProps remoteMessage = createRemoteMessage(aliasName, asyncId);
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer,
             coreContainer.getDistributedCollectionCommandRunner(),
             remoteMessage,
-            CollectionParams.CollectionAction.DELETE,
+            CollectionParams.CollectionAction.DELETEALIAS,
             DEFAULT_COLLECTION_OP_TIMEOUT);
     if (remoteResponse.getException() != null) {
       throw remoteResponse.getException();
@@ -75,23 +70,15 @@ public class DeleteCollectionAPI extends AdminAPIBase implements IDeleteCollecti
 
     if (asyncId != null) {
       response.requestId = asyncId;
-      return response;
     }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
 
     return response;
   }
 
-  public static ZkNodeProps createRemoteMessage(
-      String collectionName, Boolean followAliases, String asyncId) {
+  public static ZkNodeProps createRemoteMessage(String aliasName, String asyncId) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower());
-    remoteMessage.put(NAME, collectionName);
-    if (followAliases != null) remoteMessage.put(FOLLOW_ALIASES, followAliases);
+    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETEALIAS.toLower());
+    remoteMessage.put(NAME, aliasName);
     if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);

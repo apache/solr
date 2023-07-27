@@ -30,7 +30,7 @@ import org.apache.solr.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.api.model.SolrJerseyResponse;
 
 @Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
-public interface IAddReplicaProperty {
+public interface AddReplicaPropertyApi {
 
   @PUT
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})

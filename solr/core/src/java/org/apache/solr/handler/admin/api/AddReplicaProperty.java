@@ -31,7 +31,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import javax.inject.Inject;
-import org.apache.solr.api.endpoint.IAddReplicaProperty;
+import org.apache.solr.api.endpoint.AddReplicaPropertyApi;
 import org.apache.solr.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -50,10 +50,10 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>This API is analogous to the v1 /admin/collections?action=ADDREPLICAPROP command.
  */
-public class AddReplicaPropertyAPI extends AdminAPIBase implements IAddReplicaProperty {
+public class AddReplicaProperty extends AdminAPIBase implements AddReplicaPropertyApi {
 
   @Inject
-  public AddReplicaPropertyAPI(
+  public AddReplicaProperty(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {

@@ -162,7 +162,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasPropertyAPI;
 import org.apache.solr.handler.admin.api.BalanceReplicasAPI;
@@ -175,8 +175,8 @@ import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.CreateReplicaAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
-import org.apache.solr.handler.admin.api.DeleteAliasAPI;
-import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
+import org.apache.solr.handler.admin.api.DeleteAlias;
+import org.apache.solr.handler.admin.api.DeleteCollection;
 import org.apache.solr.handler.admin.api.DeleteCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.DeleteCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.DeleteNodeAPI;
@@ -544,8 +544,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DELETE,
         (req, rsp, h) -> {
           final RequiredSolrParams requiredParams = req.getParams().required();
-          final DeleteCollectionAPI deleteCollectionAPI =
-              new DeleteCollectionAPI(h.coreContainer, req, rsp);
+          final DeleteCollection deleteCollectionAPI =
+              new DeleteCollection(h.coreContainer, req, rsp);
           final SolrJerseyResponse deleteCollResponse =
               deleteCollectionAPI.deleteCollection(
                   requiredParams.get(NAME),
@@ -624,7 +624,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEALIAS_OP(
         DELETEALIAS,
         (req, rsp, h) -> {
-          final DeleteAliasAPI deleteAliasAPI = new DeleteAliasAPI(h.coreContainer, req, rsp);
+          final DeleteAlias deleteAliasAPI = new DeleteAlias(h.coreContainer, req, rsp);
           final SolrJerseyResponse response =
               deleteAliasAPI.deleteAlias(
                   req.getParams().required().get(NAME), req.getParams().get(ASYNC));
@@ -998,8 +998,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   ? propName.substring(PROPERTY_PREFIX.length())
                   : propName;
 
-          final AddReplicaPropertyAPI addReplicaPropertyAPI =
-              new AddReplicaPropertyAPI(h.coreContainer, req, rsp);
+          final AddReplicaProperty addReplicaPropertyAPI =
+              new AddReplicaProperty(h.coreContainer, req, rsp);
           final SolrJerseyResponse addReplicaPropResponse =
               addReplicaPropertyAPI.addReplicaProperty(
                   requiredParams.get(COLLECTION_PROP),
@@ -1364,15 +1364,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         CreateReplicaAPI.class,
-        AddReplicaPropertyAPI.class,
+        AddReplicaProperty.class,
         BalanceShardUniqueAPI.class,
         CreateAliasAPI.class,
         CreateCollectionAPI.class,
         CreateCollectionBackupAPI.class,
         CreateShardAPI.class,
-        DeleteAliasAPI.class,
+        DeleteAlias.class,
         DeleteCollectionBackupAPI.class,
-        DeleteCollectionAPI.class,
+        DeleteCollection.class,
         DeleteReplicaAPI.class,
         DeleteReplicaPropertyAPI.class,
         DeleteShardAPI.class,
