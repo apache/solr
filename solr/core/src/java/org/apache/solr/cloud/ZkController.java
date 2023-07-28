@@ -323,13 +323,10 @@ public class ZkController implements Closeable {
 
     this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
-    String localHostContext = "/solr";
-
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
     this.hostName = normalizeHostName(cloudConfig.getHost());
-    this.nodeName =
-        generateNodeName(this.hostName, Integer.toString(this.localHostPort), localHostContext);
+    this.nodeName = generateNodeName(this.hostName, Integer.toString(this.localHostPort));
     MDCLoggingContext.setNode(nodeName);
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
@@ -2361,13 +2358,10 @@ public class ZkController implements Closeable {
    *
    * @param hostName - must not be null or the empty string
    * @param hostPort - must consist only of digits, must not be null or the empty string
-   * @param hostContext - should not begin or end with a slash (leading/trailin slashes will be
-   *     ignored), must not be null, may be the empty string to denote the root context
    * @lucene.experimental
    * @see ZkStateReader#getBaseUrlForNodeName
    */
-  static String generateNodeName(
-      final String hostName, final String hostPort, final String hostContext) {
+  static String generateNodeName(final String hostName, final String hostPort) {
     return hostName + ':' + hostPort + '_' + "solr";
   }
 
