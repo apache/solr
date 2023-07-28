@@ -33,7 +33,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -324,11 +323,7 @@ public class ZkController implements Closeable {
 
     this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
-    // be forgiving and strip this off leading/trailing slashes
-    // this allows us to support users specifying hostContext="/" in
-    // solr.xml to indicate the root context, instead of hostContext=""
-    // which means the default of "solr"
-    String localHostContext = trimLeadingAndTrailingSlashes(cloudConfig.getSolrHostContext());
+    String localHostContext = "/solr";
 
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
@@ -2373,28 +2368,7 @@ public class ZkController implements Closeable {
    */
   static String generateNodeName(
       final String hostName, final String hostPort, final String hostContext) {
-    return hostName
-        + ':'
-        + hostPort
-        + '_'
-        + URLEncoder.encode(trimLeadingAndTrailingSlashes(hostContext), StandardCharsets.UTF_8);
-  }
-
-  /**
-   * Utility method for trimming and leading and/or trailing slashes from its input. May return the
-   * empty string. May return null if and only if the input is null.
-   */
-  public static String trimLeadingAndTrailingSlashes(final String in) {
-    if (null == in) return in;
-
-    String out = in;
-    if (out.startsWith("/")) {
-      out = out.substring(1);
-    }
-    if (out.endsWith("/")) {
-      out = out.substring(0, out.length() - 1);
-    }
-    return out;
+    return hostName + ':' + hostPort + '_' + "solr";
   }
 
   public void rejoinOverseerElection(String electionNode, boolean joinAtHead) {

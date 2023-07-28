@@ -411,13 +411,6 @@ public class SolrXmlConfig {
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
   }
 
-  private static Set<String> separateStringsToSet(String commaSeparatedString) {
-    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
-      return Collections.emptySet();
-    }
-    return Set.of(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
-  }
-
   private static Set<Path> separatePaths(String commaSeparatedString) {
     if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptySet();
@@ -518,12 +511,10 @@ public class SolrXmlConfig {
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
 
     // We no longer require or support the hostContext property, but legacy users may have it, so
-    // remove it.
+    // remove it from the list.
     removeValue(nl, "hostContext");
-    String hostContext = "/solr"; // nocommit
 
-    CloudConfig.CloudConfigBuilder builder =
-        new CloudConfig.CloudConfigBuilder(hostName, hostPort, hostContext);
+    CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort);
     // set the defaultZkHost until/unless it's overridden in the "cloud section" (below)...
     builder.setZkHost(defaultZkHost);
 

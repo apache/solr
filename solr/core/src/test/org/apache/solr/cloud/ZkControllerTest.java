@@ -197,8 +197,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       ZkController zkController = null;
 
       try {
-        CloudConfig cloudConfig =
-            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
         zkController =
             new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
       } catch (IllegalArgumentException e) {
@@ -258,8 +257,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       ZkController zkController = null;
 
       try {
-        CloudConfig cloudConfig =
-            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
+        CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
         zkController =
             new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
         zkControllerRef.set(zkController);
@@ -365,8 +363,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
               .build()) {
         CoreContainer cc = getCoreContainer();
         try {
-          CloudConfig cloudConfig =
-              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
+          CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
           try (ZkController zkController =
               new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null)) {
             final Path dir = createTempDir();
@@ -447,8 +444,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
                         cc,
                         server.getZkAddress(),
                         TIMEOUT,
-                        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983 + index, "solr")
-                            .build(),
+                        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983 + index).build(),
                         () -> null);
               } catch (Exception e) {
                 exception.compareAndSet(null, e);

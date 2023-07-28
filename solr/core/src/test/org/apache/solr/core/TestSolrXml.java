@@ -97,7 +97,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("max update conn", 3, ucfg.getMaxUpdateConnections());
     assertEquals("max update conn/host", 37, ucfg.getMaxUpdateConnectionsPerHost());
     assertEquals("host", "testHost", ccfg.getHost());
-    assertEquals("zk host context", "/solr", ccfg.getSolrHostContext());
     assertEquals("solr host port", 44, ccfg.getSolrHostPort());
     assertEquals("leader vote wait", 55, ccfg.getLeaderVoteWait());
     assertEquals("logging class", "testLoggingClass", cfg.getLogWatcherConfig().getLoggingClass());
