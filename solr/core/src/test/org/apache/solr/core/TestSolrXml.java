@@ -160,7 +160,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             + "<solrcloud>"
             + "<str name=\"host\">host</str>"
             + "<int name=\"hostPort\">0</int>"
-            + "<str name=\"hostContext\">solr</str>"
             + "<null name=\"leaderVoteWait\"/>"
             + "</solrcloud></solr>";
 
@@ -317,7 +316,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testFailAtConfigParseTimeWhenUnrecognizedSolrCloudOptionWasFound() {
     String solrXml =
-        "<solr><solrcloud><str name=\"host\">host</str><int name=\"hostPort\">8983</int><str name=\"hostContext\"></str><bool name=\"unknown-option\">true</bool></solrcloud></solr>";
+        "<solr><solrcloud><str name=\"host\">host</str><int name=\"hostPort\">8983</int><bool name=\"unknown-option\">true</bool></solrcloud></solr>";
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
