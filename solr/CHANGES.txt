@@ -29,6 +29,8 @@ Bug Fixes
 
 * SOLR-16906: Correctly capture REPLICATION metrics in Prometheus config (Daisuke Aritomo via Houston Putman)
 
+* SOLR-16905: Allow access to specified "solr.allowPaths" in Security Manager (daylicron, Houston Putman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
