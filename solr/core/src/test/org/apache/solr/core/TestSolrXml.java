@@ -97,7 +97,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("max update conn", 3, ucfg.getMaxUpdateConnections());
     assertEquals("max update conn/host", 37, ucfg.getMaxUpdateConnectionsPerHost());
     assertEquals("host", "testHost", ccfg.getHost());
-    assertEquals("zk host context", "testHostContext", ccfg.getSolrHostContext());
+    assertEquals("zk host context", "/solr", ccfg.getSolrHostContext());
     assertEquals("solr host port", 44, ccfg.getSolrHostPort());
     assertEquals("leader vote wait", 55, ccfg.getLeaderVoteWait());
     assertEquals("logging class", "testLoggingClass", cfg.getLogWatcherConfig().getLoggingClass());
@@ -447,12 +447,10 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("solrcloud section missing required entry 'host'", thrown.getMessage());
   }
 
-  public void testCloudConfigRequiresHostContext() {
+  public void testCloudConfigContinuesToWorkIfHostContextDefined() {
     String solrXml =
-        "<solr><solrcloud><str name=\"host\">host</str><int name=\"hostPort\">8983</int></solrcloud></solr>";
-    SolrException thrown =
-        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
-    assertEquals("solrcloud section missing required entry 'hostContext'", thrown.getMessage());
+        "<solr><solrcloud><str name=\"host\">host</str><str name=\"hostContext\">legacyHostContent</str><int name=\"hostPort\">8983</int></solrcloud></solr>";
+    SolrXmlConfig.fromString(solrHome, solrXml);
   }
 
   public void testMultiBackupSectionError() {

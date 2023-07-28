@@ -516,7 +516,11 @@ public class SolrXmlConfig {
       hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
     }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
-    String hostContext = "/solr"; //nocommit
+
+    // We no longer require or support the hostContext property, but legacy users may have it, so
+    // remove it.
+    removeValue(nl, "hostContext");
+    String hostContext = "/solr"; // nocommit
 
     CloudConfig.CloudConfigBuilder builder =
         new CloudConfig.CloudConfigBuilder(hostName, hostPort, hostContext);
