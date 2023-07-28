@@ -34,6 +34,7 @@ teardown() {
   mkdir -p "${backup_dir}"
   backup_dir="$(cd -P "${backup_dir}" && pwd)"
 
+  export SOLR_SECURITY_MANAGER_ENABLED=true
   run solr start -c -Dsolr.allowPaths="${backup_dir}"
   run solr create_collection -c COLL_NAME
   run solr api -get "http://localhost:8983/solr/admin/collections?action=BACKUP&name=test&collection=COLL_NAME&location=file://${backup_dir}"
