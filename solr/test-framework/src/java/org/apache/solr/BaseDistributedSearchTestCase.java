@@ -46,7 +46,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.Filter;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -139,7 +138,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     return ctx;
   }
-
 
   protected BaseDistributedSearchTestCase() {
     this.context = "/solr";
