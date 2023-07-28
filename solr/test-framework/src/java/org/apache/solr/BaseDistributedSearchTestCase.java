@@ -122,60 +122,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     r = new Random(random().nextLong());
   }
 
-  /**
-   * Set's the value of the "hostContext" system property to a random path like string (which may or
-   * may not contain sub-paths). This is used in the default constructor for this test to help
-   * ensure no code paths have hardcoded assumptions about the servlet context used to run solr.
-   *
-   * <p>Test configs may use the <code>${hostContext}</code> variable to access this system
-   * property.
-   *
-   * @see #BaseDistributedSearchTestCase()
-   * @see #clearHostContext
-   */
-  @BeforeClass
-  public static void initHostContext() {
-    // Can't use randomRealisticUnicodeString because unescaped unicode is
-    // not allowed in URL paths
-    // Can't use URLEncoder.encode(randomRealisticUnicodeString) because
-    // Jetty freaks out and returns 404's when the context uses escapes
-
-    StringBuilder hostContext = new StringBuilder("/");
-    if (random().nextBoolean()) {
-      // half the time we use the root context, the other half...
-
-      // Remember: randomSimpleString might be the empty string
-      hostContext.append(TestUtil.randomSimpleString(random(), 2));
-      if (random().nextBoolean()) {
-        hostContext.append("_");
-      }
-      hostContext.append(TestUtil.randomSimpleString(random(), 3));
-      if (!"/".equals(hostContext.toString())) {
-        // if our random string is empty, this might add a trailing slash,
-        // but our code should be ok with that
-        hostContext.append("/").append(TestUtil.randomSimpleString(random(), 2));
-      } else {
-        // we got 'lucky' and still just have the root context,
-        // NOOP: don't try to add a subdir to nothing (ie "//" is bad)
-      }
-    }
-    // paranoia, we *really* don't want to ever get "//" in a path...
-    final String hc = hostContext.toString().replaceAll("/+", "/");
-
-    log.info("Setting hostContext system property: {}", hc);
-    System.setProperty("hostContext", hc);
-  }
-
-  /**
-   * Clears the "hostContext" system property
-   *
-   * @see #initHostContext
-   */
-  @AfterClass
-  public static void clearHostContext() throws Exception {
-    System.clearProperty("hostContext");
-  }
-
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void setSolrDisableShardsWhitelist() throws Exception {
@@ -189,38 +135,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   private static String getHostContextSuitableForServletContext() {
-    String ctx = System.getProperty("hostContext", "/solr");
-    if (ctx == null || ctx.isEmpty()) ctx = "/solr";
-    if (ctx.endsWith("/")) ctx = ctx.substring(0, ctx.length() - 1);
-    if (!ctx.startsWith("/")) ctx = "/" + ctx;
+    String ctx = "/solr";
+
     return ctx;
   }
 
-  /**
-   * Constructs a test in which the jetty+solr instances as well as the solr clients all use the
-   * value of the "hostContext" system property.
-   *
-   * <p>If the system property is not set, or is set to the empty string (neither of which should
-   * normally happen unless a subclass explicitly modifies the property set by {@link
-   * #initHostContext} prior to calling this constructor) a servlet context of "/solr" is used.
-   * (this is for consistency with the default behavior of solr.xml parsing when using <code>
-   * hostContext="${hostContext:}"</code>
-   *
-   * <p>If the system property is set to a value which does not begin with a "/" (which should
-   * normally happen unless a subclass explicitly modifies the property set by {@link
-   * #initHostContext} prior to calling this constructor) a leading "/" will be prepended.
-   *
-   * @see #initHostContext
-   */
-  protected BaseDistributedSearchTestCase() {
-    this(getHostContextSuitableForServletContext());
-  }
 
-  /**
-   * @param context explicit servlet context path to use (eg: "/solr")
-   */
-  protected BaseDistributedSearchTestCase(final String context) {
-    this.context = context;
+  protected BaseDistributedSearchTestCase() {
+    this.context = "/solr";
     this.deadServers =
         new String[] {DEAD_HOST_1 + context, DEAD_HOST_2 + context, DEAD_HOST_3 + context};
 
