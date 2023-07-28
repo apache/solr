@@ -140,9 +140,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected BaseDistributedSearchTestCase() {
-    this.context = "/solr";
+    String solrHostContext = "/solr";
     this.deadServers =
-        new String[] {DEAD_HOST_1 + context, DEAD_HOST_2 + context, DEAD_HOST_3 + context};
+        new String[] {
+          DEAD_HOST_1 + solrHostContext,
+          DEAD_HOST_2 + solrHostContext,
+          DEAD_HOST_3 + solrHostContext
+        };
 
     // Speed up the test cycle by only running a single configuration instead of the repeat rule
     if (TEST_NIGHTLY == false) {
@@ -170,7 +174,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected final List<SolrClient> clients = Collections.synchronizedList(new ArrayList<>());
   protected final List<JettySolrRunner> jettys = Collections.synchronizedList(new ArrayList<>());
 
-  protected volatile String context;
   protected volatile String[] deadServers;
   protected volatile String shards;
   protected volatile String[] shardsArr;
@@ -428,7 +431,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
             props,
             JettyConfig.builder()
                 .stopAtShutdown(true)
-                .setContext(context)
                 .withFilters(getExtraRequestFilters())
                 .withServlets(getExtraServlets())
                 .withSSLConfig(sslConfig.buildServerSSLConfig())
@@ -464,10 +466,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     } else {
       return baseUrl + "/" + DEFAULT_TEST_CORENAME;
     }
-  }
-
-  protected String buildUrl(int port) {
-    return buildUrl(port, context);
   }
 
   protected static void addFields(SolrInputDocument doc, Object... fields) {

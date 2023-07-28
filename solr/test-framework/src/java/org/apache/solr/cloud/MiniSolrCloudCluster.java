@@ -180,61 +180,6 @@ public class MiniSolrCloudCluster {
    * Create a MiniSolrCloudCluster
    *
    * @param numServers number of Solr servers to start
-   * @param hostContext context path of Solr servers used by Jetty
-   * @param baseDir base directory that the mini cluster should be run from
-   * @param solrXml solr.xml file to be uploaded to ZooKeeper
-   * @param extraServlets Extra servlets to be started by Jetty
-   * @param extraRequestFilters extra filters to be started by Jetty
-   * @throws Exception if there was an error starting the cluster
-   */
-  public MiniSolrCloudCluster(
-      int numServers,
-      String hostContext,
-      Path baseDir,
-      String solrXml,
-      SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class<? extends Filter>, String> extraRequestFilters)
-      throws Exception {
-    this(numServers, hostContext, baseDir, solrXml, extraServlets, extraRequestFilters, null);
-  }
-
-  /**
-   * Create a MiniSolrCloudCluster
-   *
-   * @param numServers number of Solr servers to start
-   * @param hostContext context path of Solr servers used by Jetty
-   * @param baseDir base directory that the mini cluster should be run from
-   * @param solrXml solr.xml file to be uploaded to ZooKeeper
-   * @param extraServlets Extra servlets to be started by Jetty
-   * @param extraRequestFilters extra filters to be started by Jetty
-   * @param sslConfig SSL configuration
-   * @throws Exception if there was an error starting the cluster
-   */
-  public MiniSolrCloudCluster(
-      int numServers,
-      String hostContext,
-      Path baseDir,
-      String solrXml,
-      SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class<? extends Filter>, String> extraRequestFilters,
-      SSLConfig sslConfig)
-      throws Exception {
-    this(
-        numServers,
-        baseDir,
-        solrXml,
-        JettyConfig.builder()
-            .setContext(hostContext)
-            .withSSLConfig(sslConfig)
-            .withFilters(extraRequestFilters)
-            .withServlets(extraServlets)
-            .build());
-  }
-
-  /**
-   * Create a MiniSolrCloudCluster
-   *
-   * @param numServers number of Solr servers to start
    * @param baseDir base directory that the mini cluster should be run from
    * @param solrXml solr.xml file to be uploaded to ZooKeeper
    * @param jettyConfig Jetty configuration
@@ -369,7 +314,7 @@ public class MiniSolrCloudCluster {
 
     List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
     for (int i = 0; i < numServers; ++i) {
-      startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig));
+      startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig));
     }
 
     final ExecutorService executorLauncher =
@@ -509,13 +454,12 @@ public class MiniSolrCloudCluster {
       SortedMap<ServletHolder, String> extraServlets,
       SortedMap<Class<? extends Filter>, String> extraRequestFilters)
       throws Exception {
-    return startJettySolrRunner(name, hostContext, extraServlets, extraRequestFilters, null);
+    return startJettySolrRunner(name, extraServlets, extraRequestFilters, null);
   }
 
   /**
    * Start a new Solr instance
    *
-   * @param hostContext context path of Solr servers used by Jetty
    * @param extraServlets Extra servlets to be started by Jetty
    * @param extraRequestFilters extra filters to be started by Jetty
    * @param sslConfig SSL configuration
@@ -523,14 +467,12 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner startJettySolrRunner(
       String name,
-      String hostContext,
       SortedMap<ServletHolder, String> extraServlets,
       SortedMap<Class<? extends Filter>, String> extraRequestFilters,
       SSLConfig sslConfig)
       throws Exception {
     return startJettySolrRunner(
         name,
-        hostContext,
         JettyConfig.builder()
             .withServlets(extraServlets)
             .withFilters(extraRequestFilters)
@@ -546,19 +488,16 @@ public class MiniSolrCloudCluster {
    * Start a new Solr instance on a particular servlet context
    *
    * @param name the instance name
-   * @param hostContext the context to run on
    * @param config a JettyConfig for the instance's {@link org.apache.solr.embedded.JettySolrRunner}
    * @return a JettySolrRunner
    */
-  public JettySolrRunner startJettySolrRunner(String name, String hostContext, JettyConfig config)
-      throws Exception {
+  public JettySolrRunner startJettySolrRunner(String name, JettyConfig config) throws Exception {
     // tell solr node to look in zookeeper for solr.xml
     final Properties nodeProps = new Properties();
     nodeProps.setProperty("zkHost", zkServer.getZkAddress());
 
     Path runnerPath = createInstancePath(name);
-    String context = getHostContextSuitableForServletContext(hostContext);
-    JettyConfig newConfig = JettyConfig.builder(config).setContext(context).build();
+    JettyConfig newConfig = JettyConfig.builder(config).build();
     JettySolrRunner jetty =
         !trackJettyMetrics
             ? new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig)
@@ -577,7 +516,7 @@ public class MiniSolrCloudCluster {
    * @return a JettySolrRunner
    */
   public JettySolrRunner startJettySolrRunner() throws Exception {
-    return startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig);
+    return startJettySolrRunner(newNodeName(), jettyConfig);
   }
 
   /**
@@ -1116,7 +1055,7 @@ public class MiniSolrCloudCluster {
       this.nodeCount = nodeCount;
       this.baseDir = baseDir;
 
-      jettyConfigBuilder = JettyConfig.builder().setContext("/solr");
+      jettyConfigBuilder = JettyConfig.builder();
       if (SolrTestCaseJ4.sslConfig != null) {
         jettyConfigBuilder =
             jettyConfigBuilder.withSSLConfig(SolrTestCaseJ4.sslConfig.buildServerSSLConfig());
