@@ -28,7 +28,6 @@ import com.diffplug.gradle.spotless.JavaExtension
 description = 'Solrj - Solr Java Client'
 
 dependencies {
-  // NOCOMMIT - to shade, or not to shade?
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation project(":solr:api")
 
