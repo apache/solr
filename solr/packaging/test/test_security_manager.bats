@@ -39,6 +39,9 @@ teardown() {
   run solr api -get "http://localhost:8983/solr/admin/collections?action=BACKUP&name=test&collection=COLL_NAME&location=file://${backup_dir}"
   assert_output --partial '"status":0'
 
-  run solr api -get "http://localhost:8983/solr/admin/collections?action=BACKUP&name=test&collection=COLL_NAME&location=file://${backup_dir}-not-permissioned"
+  # Solr is not permissioned for this directory, so it should fail
+  backup_dir_other="${backup_dir}-other"
+  mkdir -p "${backup_dir_other}"
+  run solr api -get "http://localhost:8983/solr/admin/collections?action=BACKUP&name=test-fail&collection=COLL_NAME&location=file://${backup_dir_other}"
   assert_output --partial 'access denied'
 }
