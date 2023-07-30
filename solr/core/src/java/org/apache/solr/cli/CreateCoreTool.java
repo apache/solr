@@ -32,6 +32,12 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.params.CommonParams;
 
+/**
+ * Supports create command in the bin/solr script.
+ *
+ * @deprecated Please use {@link CreateTool}
+ */
+@Deprecated(since = "9.4")
 public class CreateCoreTool extends ToolBase {
 
   public CreateCoreTool() {
@@ -79,6 +85,7 @@ public class CreateCoreTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    echo("This command has been deprecated in favour of using 'bin/solr create'.");
     String coreName = cli.getOptionValue("name");
     String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
 
