@@ -39,7 +39,7 @@ teardown() {
 }
 
 @test "post solr log into solr via script" {
-  run solr create_collection -c COLL_NAME
+  run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
   run postlogs http://localhost:8983/solr/COLL_NAME ${SOLR_LOGS_DIR}/solr.log
@@ -51,7 +51,7 @@ teardown() {
 }
 
 @test "post solr log into solr via cli" {
-  run solr create_collection -c COLL_NAME
+  run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
   run solr postlogs -url http://localhost:8983/solr/COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log

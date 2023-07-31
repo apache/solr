@@ -68,18 +68,6 @@ setup() {
   refute_output --partial 'ERROR'
 }
 
-@test "createcore help flag prints help" {
-  run solr create_core -help
-  assert_output --partial 'usage: create_core'
-  refute_output --partial 'ERROR'
-}
-
-@test "createcollection help flag prints help" {
-  run solr create_collection -help
-  assert_output --partial 'usage: create_collection'
-  refute_output --partial 'ERROR'
-}
-
 @test "delete help flag prints help" {
   run solr delete -help
   assert_output --partial 'usage: delete'

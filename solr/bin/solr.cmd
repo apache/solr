@@ -244,8 +244,6 @@ IF "%1"=="stop" goto set_script_cmd
 IF "%1"=="restart" goto set_script_cmd
 IF "%1"=="healthcheck" goto run_solrcli
 IF "%1"=="create" goto run_solrcli
-IF "%1"=="create_core" goto run_solrcli
-IF "%1"=="create_collection" goto run_solrcli
 IF "%1"=="delete" goto run_solrcli
 IF "%1"=="postlogs" goto run_solrcli
 IF "%1"=="zk" (
@@ -276,8 +274,6 @@ IF "%SCRIPT_CMD%"=="restart" goto start_usage
 IF "%SCRIPT_CMD%"=="stop" goto stop_usage
 IF "%SCRIPT_CMD%"=="healthcheck" goto run_solrcli
 IF "%SCRIPT_CMD%"=="create" goto run_solrcli
-IF "%SCRIPT_CMD%"=="create_core" goto run_solrcli
-IF "%SCRIPT_CMD%"=="create_collection" goto run_solrcli
 IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
 IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
 IF "%SCRIPT_CMD%"=="auth" goto auth_usage
@@ -1636,10 +1632,6 @@ IF "%FIRST_ARG%"=="start" (
 ) ELSE IF "%FIRST_ARG%"=="healthcheck" (
   goto run_solrcli
 ) ELSE IF "%FIRST_ARG%"=="create" (
-  goto run_solrcli
-) ELSE IF "%FIRST_ARG%"=="create_core" (
-  goto run_solrcli
-) ELSE IF "%FIRST_ARG%"=="create_collection" (
   goto run_solrcli
 ) ELSE IF "%FIRST_ARG%"=="zk" (
   goto zk_short_usage
