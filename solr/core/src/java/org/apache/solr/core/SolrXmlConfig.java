@@ -512,7 +512,10 @@ public class SolrXmlConfig {
 
     // We no longer require or support the hostContext property, but legacy users may have it, so
     // remove it from the list.
-    removeValue(nl, "hostContext");
+    String hostContext = removeValue(nl, "hostContext");
+    if (hostContext != null) {
+      log.warn("solr.xml hostContext -- hostContext is deprecated and ignored.");
+    }
 
     CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort);
     // set the defaultZkHost until/unless it's overridden in the "cloud section" (below)...
