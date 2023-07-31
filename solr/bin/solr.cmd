@@ -296,7 +296,7 @@ goto done
 @echo                   solr.in.cmd, an embedded ZooKeeper instance is started on Solr port+1000,
 @echo                   such as 9983 if Solr is bound to 8983
 @echo.
-@echo   -h host       Specify the hostname for this Solr instance
+@echo   -host host    Specify the hostname for this Solr instance
 @echo.
 @echo   -p port       Specify the port to start the Solr HTTP listener on; default is 8983
 @echo                   The specified port (SOLR_PORT) will also be used to determine the stop port
@@ -507,6 +507,7 @@ set "firstTwo=%arg:~0,2%"
 IF "%SCRIPT_CMD%"=="" set SCRIPT_CMD=start
 IF [%1]==[] goto process_script_cmd
 IF "%1"=="-help" goto usage
+IF "%1"=="-h" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
 IF "%1"=="-f" goto set_foreground_mode
@@ -524,7 +525,6 @@ IF "%1"=="-t" goto set_solr_data_dir
 IF "%1"=="-solr.home" goto set_solr_home_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="-example" goto set_example
-IF "%1"=="-h" goto set_host
 IF "%1"=="-host" goto set_host
 IF "%1"=="-m" goto set_memory
 IF "%1"=="-memory" goto set_memory
