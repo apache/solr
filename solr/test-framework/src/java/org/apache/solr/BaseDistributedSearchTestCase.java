@@ -134,9 +134,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   private static String getHostContextSuitableForServletContext() {
-    String ctx = "/solr";
-
-    return ctx;
+    return "/solr";
   }
 
   protected BaseDistributedSearchTestCase() {
