@@ -19,11 +19,13 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
@@ -235,6 +237,7 @@ public class SolrCLI implements CLIO {
     else if ("export".equals(toolType)) return new ExportTool();
     else if ("package".equals(toolType)) return new PackageTool();
     else if ("post".equals(toolType)) return new PostTool();
+    else if ("postlogs".equals(toolType)) return new PostLogsTool();
     else if ("version".equals(toolType)) return new VersionTool();
 
     // If you add a built-in tool to this class, add it here to avoid
@@ -560,6 +563,12 @@ public class SolrCLI implements CLIO {
       // just ignore it since we're only interested in a positive result here
     }
     return exists;
+  }
+
+  public static boolean isCloudMode(SolrClient solrClient) throws SolrServerException, IOException {
+    NamedList<Object> systemInfo =
+        solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
+    return "solrcloud".equals(systemInfo.get("mode"));
   }
 
   public static class AssertionFailureException extends Exception {

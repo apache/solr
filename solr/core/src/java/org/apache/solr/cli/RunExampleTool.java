@@ -51,7 +51,12 @@ import org.apache.solr.common.SolrException;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-/** Supports an interactive session with the user to launch (or relaunch the -e cloud example) */
+/**
+ * Supports start command in the bin/solr script.
+ *
+ * <p>Enhances start command by providing an interactive session with the user to launch (or
+ * relaunch the -e cloud example)
+ */
 public class RunExampleTool extends ToolBase {
 
   private static final String PROMPT_FOR_NUMBER = "Please enter %s [%d]: ";
@@ -818,7 +823,7 @@ public class RunExampleTool extends ToolBase {
       }
     }
 
-    // invoke the CreateCollectionTool
+    // invoke the CreateTool
     String[] createArgs =
         new String[] {
           "-name", collectionName,
@@ -830,11 +835,11 @@ public class RunExampleTool extends ToolBase {
           "-solrUrl", solrUrl
         };
 
-    CreateCollectionTool createCollectionTool = new CreateCollectionTool(stdout);
+    CreateTool createTool = new CreateTool(stdout);
     int createCode =
-        createCollectionTool.runTool(
+        createTool.runTool(
             SolrCLI.processCommandLineArgs(
-                createCollectionTool.getName(), createCollectionTool.getOptions(), createArgs));
+                createTool.getName(), createTool.getOptions(), createArgs));
 
     if (createCode != 0)
       throw new Exception(

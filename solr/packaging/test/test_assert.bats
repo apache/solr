@@ -28,16 +28,26 @@ teardown() {
   solr stop -all >/dev/null 2>&1
 }
 
-@test "healthcheck on cloud solr" {
-  solr start -c -e films
-  run solr healthcheck -c films
-  refute_output --partial 'error'
+@test "assert for non cloud mode" {
+  run solr start
   
+  run solr assert --not-cloud http://localhost:8983/solr
+  refute_output --partial "ERROR"
+  
+  run solr assert --cloud http://localhost:8983/solr
+  assert_output --partial "ERROR: Solr is not running in cloud mode"
+  
+  run ! solr assert --cloud http://localhost:8983/solr -e
 }
 
-@test "healthcheck errors on standalone solr" {
-  solr start -e films
-  run solr healthcheck -c films
-  assert_output --partial 'Healthcheck tool only works in Solr Cloud mode'
+@test "assert for cloud mode" {
+  run solr start -c 
   
+  run solr assert --cloud http://localhost:8983/solr
+  refute_output --partial "ERROR"
+  
+  run solr assert --not-cloud http://localhost:8983/solr
+  assert_output --partial "ERROR: Solr is not running in standalone mode"
+  
+  run ! solr assert --not-cloud http://localhost:8983/solr -e
 }

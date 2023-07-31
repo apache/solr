@@ -39,7 +39,12 @@ import org.apache.solr.core.ConfigSetService;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-/** Supports create_collection command in the bin/solr script. */
+/**
+ * Supports create_collection command in the bin/solr script.
+ *
+ * @deprecated Please use {@link CreateTool}
+ */
+@Deprecated(since = "9.4")
 public class CreateCollectionTool extends ToolBase {
 
   public static final List<Option> CREATE_COLLECTION_OPTIONS =
@@ -108,6 +113,7 @@ public class CreateCollectionTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
+    echo("This command has been deprecated in favour of using 'bin/solr create'.");
     String zkHost = SolrCLI.getZkHost(cli);
     if (zkHost == null) {
       throw new IllegalStateException(
