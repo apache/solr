@@ -390,20 +390,14 @@ public class RunExampleTool extends ToolBase {
         File filmsJsonFile = new File(exampleDir, "films/films.json");
         String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
         echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
-        String[] args =
-            new String[] {
-              "post",
-              "-commit",
-              "-url",
-              updateUrl,
-              "-type",
-              "application/json",
-              exampleDir.toString()
-            };
-        PostTool postTool = new PostTool();
-        CommandLine postToolCli =
-            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
-        postTool.runTool(postToolCli);
+        String currentPropVal = System.getProperty("url");
+        System.setProperty("url", updateUrl);
+        SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
+        if (currentPropVal != null) {
+          System.setProperty("url", currentPropVal); // reset
+        } else {
+          System.clearProperty("url");
+        }
 
       } catch (Exception ex) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
