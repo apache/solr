@@ -18,7 +18,8 @@ package org.apache.solr.cluster.events.impl;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
-import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.api.framework.ContainerPluginsRegistry;
+import org.apache.solr.api.framework.ContainerPluginsRegistry.PluginRegistryListener;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class ClusterEventProducerFactory extends ClusterEventProducerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private ContainerPluginsRegistry.PluginRegistryListener initialPluginListener;
+  private PluginRegistryListener initialPluginListener;
   private boolean created = false;
 
   public ClusterEventProducerFactory(CoreContainer cc) {
@@ -43,7 +44,7 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
     // this initial listener is used only for capturing plugin registrations
     // done by other nodes while this CoreContainer is still loading
     initialPluginListener =
-        new ContainerPluginsRegistry.PluginRegistryListener() {
+        new PluginRegistryListener() {
           @Override
           public void added(ContainerPluginsRegistry.ApiInfo plugin) {
             if (plugin == null || plugin.getInstance() == null) {
@@ -86,7 +87,7 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
    *
    * @return initial listener
    */
-  public ContainerPluginsRegistry.PluginRegistryListener getPluginRegistryListener() {
+  public PluginRegistryListener getPluginRegistryListener() {
     return initialPluginListener;
   }
 
@@ -95,8 +96,7 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
    *
    * <p>NOTE: this method can only be called once because it has side-effects, such as transferring
    * the initially collected listeners to the resulting producer's instance, and installing a {@link
-   * org.apache.solr.api.ContainerPluginsRegistry.PluginRegistryListener}. Calling this method more
-   * than once will result in an exception.
+   * PluginRegistryListener}. Calling this method more than once will result in an exception.
    *
    * @param plugins current plugin configurations
    * @return configured instance of cluster event producer (with side-effects, see above)
@@ -125,8 +125,8 @@ public class ClusterEventProducerFactory extends ClusterEventProducerBase {
 
     // install plugin registry listener that maintains plugin-based listeners in
     // the event producer impl
-    ContainerPluginsRegistry.PluginRegistryListener pluginListener =
-        new ContainerPluginsRegistry.PluginRegistryListener() {
+    PluginRegistryListener pluginListener =
+        new PluginRegistryListener() {
           @Override
           public void added(ContainerPluginsRegistry.ApiInfo plugin) {
             if (plugin == null || plugin.getInstance() == null) {

@@ -17,7 +17,7 @@
 package org.apache.solr.core;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.api.ApiBag.HANDLER_NAME;
+import static org.apache.solr.api.framework.ApiBag.HANDLER_NAME;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -34,10 +34,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
-import org.apache.solr.api.ApiSupport;
-import org.apache.solr.api.JerseyResource;
+import org.apache.solr.api.framework.Api;
+import org.apache.solr.api.framework.ApiBag;
+import org.apache.solr.api.framework.ApiSupport;
+import org.apache.solr.api.framework.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;

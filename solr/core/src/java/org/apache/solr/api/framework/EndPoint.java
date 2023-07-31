@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api;
+package org.apache.solr.api.framework;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.security.PermissionNameProvider;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Command {
-  /**
-   * if this is not a json command , leave it empty. Keep in mind that you cannot have duplicates.
-   * Only one method per name
-   */
-  String name() default "";
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface EndPoint {
+  SolrRequest.METHOD[] method();
+
+  String[] path();
+
+  PermissionNameProvider.Name permission();
 }

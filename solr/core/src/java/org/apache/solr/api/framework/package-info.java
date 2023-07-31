@@ -14,5 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** Commonly used classes for Solr V2 API. */
-package org.apache.solr.api;
+
+/** Classes used to implement Solr's legacy (non-JAX-RS) v2 API framework. */
+package org.apache.solr.api.framework;

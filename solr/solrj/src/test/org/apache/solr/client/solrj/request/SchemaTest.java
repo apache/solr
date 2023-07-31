@@ -69,7 +69,7 @@ public class SchemaTest extends RestTestBase {
         expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, runnable);
     SimpleOrderedMap<?> errorMap = (SimpleOrderedMap<?>) e.getMetaData().get("error");
     assertEquals(
-        "org.apache.solr.api.ApiBag$ExceptionWithErrObject",
+        "org.apache.solr.api.framework.ApiBag$ExceptionWithErrObject",
         ((NamedList) errorMap.get("metadata")).get("error-class"));
     List<?> details = (List<?>) errorMap.get("details");
     assertTrue(

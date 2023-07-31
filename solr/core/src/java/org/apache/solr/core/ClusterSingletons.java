@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.api.framework.ContainerPluginsRegistry;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.framework.AnnotatedApi;
 import org.apache.solr.handler.BlobHandler;
 import org.apache.solr.handler.admin.api.GetBlobInfoAPI;
 import org.apache.solr.handler.admin.api.UploadBlobAPI;

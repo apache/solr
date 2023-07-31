@@ -18,7 +18,7 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 
-import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.framework.EndPoint;
 import org.apache.solr.handler.RealTimeGetHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;

@@ -31,8 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.framework.Api;
+import org.apache.solr.api.framework.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.core.CoreContainer;
 

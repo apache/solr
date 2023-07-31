@@ -17,7 +17,7 @@
 
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.api.ConfigurablePlugin;
+import org.apache.solr.api.framework.ConfigurablePlugin;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 
 /**
@@ -25,8 +25,8 @@ import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
  * org.apache.solr.handler.admin.ContainerPluginsApi#editAPI}) allowing the creation of instances of
  * {@link PlacementPlugin} to be used for replica placement computation.
  *
- * <p>Note: configurable factory implementations should also implement {@link
- * org.apache.solr.api.ConfigurablePlugin} with the appropriate configuration bean type.
+ * <p>Note: configurable factory implementations should also implement {@link ConfigurablePlugin}
+ * with the appropriate configuration bean type.
  */
 public interface PlacementPluginFactory<T extends PlacementPluginConfig>
     extends ConfigurablePlugin<T> {

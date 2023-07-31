@@ -20,9 +20,9 @@ package org.apache.solr.security.jwt.api;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT_PERM;
 
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
+import org.apache.solr.api.framework.Command;
+import org.apache.solr.api.framework.EndPoint;
+import org.apache.solr.api.framework.PayloadObj;
 
 /** V2 API for modifying configuration for Solr's JWTAuthPlugin. */
 @EndPoint(

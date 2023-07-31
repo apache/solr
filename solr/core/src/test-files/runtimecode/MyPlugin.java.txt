@@ -17,8 +17,8 @@
 
 package runtimecode;
 
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.framework.Command;
+import org.apache.solr.api.framework.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;

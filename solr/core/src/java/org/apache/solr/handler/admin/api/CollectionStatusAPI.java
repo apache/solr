@@ -24,7 +24,7 @@ import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import java.lang.invoke.MethodHandles;
-import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.framework.EndPoint;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.handler.admin.CollectionsHandler;

@@ -25,7 +25,7 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import org.apache.solr.api.JerseyResource;
+import org.apache.solr.api.framework.JerseyResource;
 import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.jersey.PermissionName;
 

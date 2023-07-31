@@ -20,7 +20,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
 import java.io.InputStream;
-import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.framework.EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.params.ConfigSetParams;

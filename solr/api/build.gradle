@@ -50,7 +50,8 @@ dependencies {
     implementation 'org.semver4j:semver4j'
 
     testImplementation project(':solr:test-framework')
-    testImplementation 'junit:junit'
+    testImplementation project(':solr:api')
+    testImplementation 'org.apache.lucene:lucene-test-framework'
 }
 
 artifacts {

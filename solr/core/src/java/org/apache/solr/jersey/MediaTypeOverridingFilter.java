@@ -27,7 +27,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
-import org.apache.solr.api.JerseyResource;
+import org.apache.solr.api.framework.JerseyResource;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;

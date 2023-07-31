@@ -19,7 +19,7 @@ package org.apache.solr.common.util;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.api.ApiBag.HANDLER_NAME;
+import static org.apache.solr.api.framework.ApiBag.HANDLER_NAME;
 
 import java.util.HashMap;
 import java.util.HashSet;

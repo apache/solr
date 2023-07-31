@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api;
+package org.apache.solr.api.framework;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;

@@ -15,21 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api;
+package org.apache.solr.api.framework;
 
-import org.apache.solr.common.MapWriter;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * Implement this interface if your plugin needs to accept some configuration
- *
- * @param <T> the configuration Object type
- */
-public interface ConfigurablePlugin<T extends MapWriter> {
-
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Command {
   /**
-   * This is invoked soon after the Object is initialized.
-   *
-   * @param cfg value deserialized from JSON
+   * if this is not a json command , leave it empty. Keep in mind that you cannot have duplicates.
+   * Only one method per name
    */
-  void configure(T cfg);
+  String name() default "";
 }

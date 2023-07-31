@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api;
+package org.apache.solr.api.framework;
 
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.request.SolrQueryRequest;
