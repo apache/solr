@@ -692,7 +692,7 @@ public class Http2SolrClient extends SolrClient {
 
       if (contentWriter != null) {
         Request req = httpClient.newRequest(url + wparams.toQueryString()).method(method);
-        BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+        Utils.BAOS baos = new Utils.BAOS();
         contentWriter.write(baos);
 
         // SOLR-16265: TODO reduce memory usage
