@@ -65,6 +65,8 @@ Improvements
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
   `GET /api/cores/coreName/backups` (Sanjay Dutt via Jason Gerlowski)
 
+* SOLR-16883: Postlogs tool for indexing Solr logs in Solr now supported on Windows by converting it to a Solr CLI command: `bin/solr postlogs`.   `bin/postlogs` script marked deprected.  (Eric Pugh, Will White)
+
 
 Optimizations
 ---------------------

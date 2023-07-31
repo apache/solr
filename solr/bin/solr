@@ -795,10 +795,10 @@ function stop_solr() {
 
 if [ $# -eq 1 ]; then
   case $1 in
-    -help|-h)    
-        run_tool ""    
+    -help|-h)
+        run_tool ""
         exit
-    ;;    
+    ;;
   esac
 fi
 
@@ -861,7 +861,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
         upconfig|downconfig|cp|rm|mv|ls|mkroot)
             ZK_OP=$1
             shift 1
-        ;;      
+        ;;
         -z|-zkhost|-zkHost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"

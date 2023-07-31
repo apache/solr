@@ -22,20 +22,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cli.SolrLogPostTool.LogRecordReader;
+import org.apache.solr.cli.PostLogsTool.LogRecordReader;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class SolrLogPostToolTest extends SolrTestCaseJ4 {
+public class PostLogsToolTest extends SolrTestCaseJ4 {
 
   private static boolean solr9Format;
 
   @BeforeClass
   public static void beforeClass() {
     solr9Format = random().nextBoolean();
-    System.out.println("Solr 9 Format: " + solr9Format);
   }
 
   private String sometimesSolr9Format(String record) {
@@ -310,7 +309,7 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(collection.getValue(), "test");
   }
 
-  // Ensure SolrLogPostTool parses _all_ log lines into searchable records
+  // Ensure PostLogsTool parses _all_ log lines into searchable records
   @Test
   public void testOtherRecord() throws Exception {
     final String record =
