@@ -16,8 +16,8 @@
  */
 package org.apache.solr.common;
 
-import static org.apache.solr.v2.api.model.ErrorInfo.ERROR_CLASS;
-import static org.apache.solr.v2.api.model.ErrorInfo.ROOT_ERROR_CLASS;
+import static org.apache.solr.api.model.ErrorInfo.ERROR_CLASS;
+import static org.apache.solr.api.model.ErrorInfo.ROOT_ERROR_CLASS;
 
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;

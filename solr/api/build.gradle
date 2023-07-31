@@ -49,10 +49,8 @@ dependencies {
     api 'io.swagger.core.v3:swagger-annotations'
     implementation 'org.semver4j:semver4j'
 
-
-    testImplementation project(':solr:api')
     testImplementation project(':solr:test-framework')
-    testImplementation 'org.apache.lucene:lucene-test-framework'
+    testImplementation 'junit:junit'
 }
 
 artifacts {

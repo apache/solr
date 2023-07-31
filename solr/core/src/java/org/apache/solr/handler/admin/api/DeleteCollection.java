@@ -26,6 +26,8 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
+import org.apache.solr.api.endpoint.DeleteCollectionApi;
+import org.apache.solr.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -34,8 +36,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.v2.api.endpoint.DeleteCollectionApi;
-import org.apache.solr.v2.api.model.SubResponseAccumulatingJerseyResponse;
 
 /**
  * V2 API for deleting collections.

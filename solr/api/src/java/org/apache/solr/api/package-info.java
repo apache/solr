@@ -15,18 +15,5 @@
  * limitations under the License.
  */
 
-package org.apache.solr.v2.api;
-
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.info.License;
-import org.apache.solr.v2.api.util.SolrVersion;
-
-@OpenAPIDefinition(
-    info =
-        @Info(
-            title = "v2 API",
-            description = "OpenAPI spec for Solr's v2 API endpoints",
-            license = @License(name = "ASL 2.0"),
-            version = SolrVersion.LATEST_STRING))
-public class ApiMetadata {}
+/** Root package for interfaces and POJOs used to describe Solr's v2 APIs */
+package org.apache.solr.api;

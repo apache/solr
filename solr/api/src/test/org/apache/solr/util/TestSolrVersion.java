@@ -17,7 +17,6 @@
 package org.apache.solr.util;
 
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.v2.api.util.SolrVersion;
 import org.semver4j.SemverException;
 
 public class TestSolrVersion extends SolrTestCase {

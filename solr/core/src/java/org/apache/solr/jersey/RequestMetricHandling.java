@@ -30,10 +30,10 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.v2.api.model.SolrJerseyResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

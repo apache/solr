@@ -24,12 +24,12 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.v2.api.model.SolrJerseyResponse;
 
 /** Utilities helpful for common V2 API declaration tasks. */
 public class V2ApiUtils {

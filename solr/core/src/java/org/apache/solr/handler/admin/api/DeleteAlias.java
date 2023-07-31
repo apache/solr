@@ -28,6 +28,9 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import org.apache.solr.api.endpoint.DeleteAliasApi;
+import org.apache.solr.api.model.AsyncJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -36,9 +39,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.v2.api.endpoint.DeleteAliasApi;
-import org.apache.solr.v2.api.model.AsyncJerseyResponse;
-import org.apache.solr.v2.api.model.SolrJerseyResponse;
 
 public class DeleteAlias extends AdminAPIBase implements DeleteAliasApi {
   @Inject

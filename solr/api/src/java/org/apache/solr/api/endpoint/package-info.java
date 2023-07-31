@@ -16,4 +16,4 @@
  */
 
 /** Interfaces representing individual Solr v2 APIs. */
-package org.apache.solr.v2.api.endpoint;
+package org.apache.solr.api.endpoint;

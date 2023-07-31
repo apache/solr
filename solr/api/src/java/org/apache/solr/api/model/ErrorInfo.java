@@ -15,26 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.solr.v2.api.model;
+package org.apache.solr.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
+import java.util.Map;
 
-public class AddReplicaPropertyRequestBody {
-  public AddReplicaPropertyRequestBody() {}
+/**
+ * A value type representing an error.
+ *
+ * <p>Based on the fields exposed in responses from Solr's v1/requestHandler API.
+ */
+public class ErrorInfo {
 
-  public AddReplicaPropertyRequestBody(String value) {
-    this.value = value;
+  public static final String ROOT_ERROR_CLASS = "root-error-class";
+  public static final String ERROR_CLASS = "error-class";
+
+  @JsonProperty("metadata")
+  public ErrorMetadata metadata;
+
+  @JsonProperty("details")
+  public List<Map<String, Object>> details;
+
+  @JsonProperty("msg")
+  public String msg;
+
+  @JsonProperty("trace")
+  public String trace;
+
+  @JsonProperty("code")
+  public Integer code;
+
+  public static class ErrorMetadata {
+    @JsonProperty(ERROR_CLASS)
+    public String errorClass;
+
+    @JsonProperty(ROOT_ERROR_CLASS)
+    public String rootErrorClass;
   }
-
-  @Schema(description = "The value to assign to the property.", required = true)
-  @JsonProperty("value")
-  public String value;
-
-  @Schema(
-      description =
-          "If `true`, then setting this property in one replica will remove the property from all other replicas in that shard. The default is `false`.\\nThere is one pre-defined property `preferredLeader` for which `shardUnique` is forced to `true` and an error returned if `shardUnique` is explicitly set to `false`.",
-      defaultValue = "false")
-  @JsonProperty("shardUnique")
-  public Boolean shardUnique;
 }

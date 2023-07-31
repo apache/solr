@@ -21,6 +21,7 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 
 import java.util.Map;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -32,7 +33,6 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.apache.solr.v2.api.model.SubResponseAccumulatingJerseyResponse;
 
 /** A common parent for "admin" (i.e. container-level) APIs. */
 public abstract class AdminAPIBase extends JerseyResource {

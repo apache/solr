@@ -15,42 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.solr.v2.api.model;
+package org.apache.solr.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
-import java.util.Map;
 
-/**
- * A value type representing an error.
- *
- * <p>Based on the fields exposed in responses from Solr's v1/requestHandler API.
- */
-public class ErrorInfo {
-
-  public static final String ROOT_ERROR_CLASS = "root-error-class";
-  public static final String ERROR_CLASS = "error-class";
-
-  @JsonProperty("metadata")
-  public ErrorMetadata metadata;
-
-  @JsonProperty("details")
-  public List<Map<String, Object>> details;
-
-  @JsonProperty("msg")
-  public String msg;
-
-  @JsonProperty("trace")
-  public String trace;
-
-  @JsonProperty("code")
-  public Integer code;
-
-  public static class ErrorMetadata {
-    @JsonProperty(ERROR_CLASS)
-    public String errorClass;
-
-    @JsonProperty(ROOT_ERROR_CLASS)
-    public String rootErrorClass;
-  }
+public class AsyncJerseyResponse extends SolrJerseyResponse {
+  @JsonProperty("requestid")
+  public String requestId;
 }

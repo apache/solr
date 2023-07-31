@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.v2.api.model;
+package org.apache.solr.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

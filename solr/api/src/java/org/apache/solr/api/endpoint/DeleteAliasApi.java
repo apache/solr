@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.v2.api.endpoint;
+package org.apache.solr.api.endpoint;
 
-import static org.apache.solr.v2.api.Constants.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.api.Constants.BINARY_CONTENT_TYPE_V2;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,7 +26,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import org.apache.solr.v2.api.model.SolrJerseyResponse;
+import org.apache.solr.api.model.SolrJerseyResponse;
 
 @Path("/aliases/{aliasName}")
 public interface DeleteAliasApi {
