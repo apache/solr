@@ -21,6 +21,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -70,7 +71,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.common.InputStreamUtils;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -174,7 +174,7 @@ public class Utils {
 
   public static InputStream toJavabin(Object o) throws IOException {
     try (final JavaBinCodec jbc = new JavaBinCodec()) {
-      InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
+      BAOS baos = new BAOS();
       jbc.marshal(o, baos);
       return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
     }
@@ -743,7 +743,7 @@ public class Utils {
 
   public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize) {
     return is -> {
-      try (InputStreamUtils.BAOS bos = new InputStreamUtils.BAOS()) {
+      try (BAOS bos = new BAOS()) {
         long sz = 0;
         int next = is.read();
         while (next > -1) {
@@ -1010,5 +1010,45 @@ public class Utils {
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
+  }
+
+  public static class BAOS extends ByteArrayOutputStream {
+    public ByteBuffer getByteBuffer() {
+      return ByteBuffer.wrap(super.buf, 0, super.count);
+    }
+
+    /*
+     * A hack to get access to the protected internal buffer and avoid an additional copy
+     */
+    public byte[] getbuf() {
+      return super.buf;
+    }
+  }
+
+  public static ByteBuffer toByteArray(InputStream is) throws IOException {
+    return toByteArray(is, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Reads an input stream into a byte array
+   *
+   * @param is the input stream
+   * @return the byte array
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public static ByteBuffer toByteArray(InputStream is, long maxSize) throws IOException {
+    try (BAOS bos = new BAOS()) {
+      long sz = 0;
+      int next = is.read();
+      while (next > -1) {
+        if (++sz > maxSize) {
+          throw new BufferOverflowException();
+        }
+        bos.write(next);
+        next = is.read();
+      }
+      bos.flush();
+      return bos.getByteBuffer();
+    }
   }
 }

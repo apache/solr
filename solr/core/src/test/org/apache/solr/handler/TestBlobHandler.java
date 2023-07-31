@@ -39,11 +39,11 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.InputStreamUtils;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
 import org.junit.Test;
 import org.noggit.JSONParser;
@@ -168,7 +168,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
 
     HttpGet httpGet = new HttpGet(url);
     HttpResponse entity = httpClient.execute(httpGet);
-    ByteBuffer b = InputStreamUtils.toByteArray(entity.getEntity().getContent());
+    ByteBuffer b = Utils.toByteArray(entity.getEntity().getContent());
     try {
       assertEquals(b.limit(), bytarr.length);
       for (int i = 0; i < bytarr.length; i++) {

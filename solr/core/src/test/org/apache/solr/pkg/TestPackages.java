@@ -57,7 +57,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.InputStreamUtils;
 import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
@@ -903,13 +902,13 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
-    InputStreamUtils.BAOS bos = new InputStreamUtils.BAOS();
+    Utils.BAOS bos = new Utils.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
       for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
-        ByteBuffer b = InputStreamUtils.toByteArray(c.getClassLoader().getResourceAsStream(path));
+        ByteBuffer b = Utils.toByteArray(c.getClassLoader().getResourceAsStream(path));
         zipOut.putNextEntry(entry);
         zipOut.write(b.array(), b.arrayOffset(), b.limit());
         zipOut.closeEntry();

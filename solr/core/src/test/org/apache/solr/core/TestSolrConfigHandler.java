@@ -38,7 +38,6 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.common.InputStreamUtils;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.StrUtils;
@@ -99,13 +98,13 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
-    InputStreamUtils.BAOS bos = new InputStreamUtils.BAOS();
+    Utils.BAOS bos = new Utils.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
       for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
-        ByteBuffer b = InputStreamUtils.toByteArray(c.getClassLoader().getResourceAsStream(path));
+        ByteBuffer b = Utils.toByteArray(c.getClassLoader().getResourceAsStream(path));
         zipOut.putNextEntry(entry);
         zipOut.write(b.array(), b.arrayOffset(), b.limit());
         zipOut.closeEntry();

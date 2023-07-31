@@ -30,7 +30,6 @@ import java.util.Objects;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.FastStreamingDocsCallback;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
-import org.apache.solr.common.InputStreamUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
@@ -38,7 +37,7 @@ import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
 public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
   public void testTagRead() throws Exception {
-    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
+    Utils.BAOS baos = new Utils.BAOS();
     FastOutputStream faos = FastOutputStream.wrap(baos);
 
     try (JavaBinCodec codec = new JavaBinCodec(faos, null)) {
@@ -75,7 +74,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSONString(sampleObj);
-    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
+    Utils.BAOS baos = new Utils.BAOS();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(m, baos);
     }
@@ -131,7 +130,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
   }
 
   public void testFastJavabinStreamingDecoder() throws IOException {
-    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
+    Utils.BAOS baos = new Utils.BAOS();
     try (InputStream is = getClass().getResourceAsStream("/solrj/javabin_sample.bin")) {
       is.transferTo(baos);
     }
@@ -216,7 +215,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
     SimpleOrderedMap<SolrDocumentList> orderedMap = new SimpleOrderedMap<>();
     orderedMap.add("response", sdocs);
 
-    InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
+    Utils.BAOS baos = new Utils.BAOS();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(orderedMap, baos);
     }

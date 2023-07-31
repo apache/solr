@@ -64,7 +64,6 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.InputStreamUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -693,7 +692,7 @@ public class Http2SolrClient extends SolrClient {
 
       if (contentWriter != null) {
         Request req = httpClient.newRequest(url + wparams.toQueryString()).method(method);
-        InputStreamUtils.BAOS baos = new InputStreamUtils.BAOS();
+        Utils.BAOS baos = new Utils.BAOS();
         contentWriter.write(baos);
 
         // SOLR-16265: TODO reduce memory usage
