@@ -15,6 +15,8 @@ Improvements
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
   `GET /api/cores/coreName/backups` (Sanjay Dutt via Jason Gerlowski)
 
+* SOLR-16883: Postlogs tool for indexing Solr logs in Solr now supported on Windows by converting it to a Solr CLI command: `bin/solr postlogs`.   `bin/postlogs` script marked deprected.  (Eric Pugh, Will White)
+
 Optimizations
 ---------------------
 
@@ -179,7 +181,7 @@ Improvements
 
 * SOLR-16687: Add support of SolrClassLoader to SolrZkClient (Lamine Idjeraoui via Jason Gerlowski & Houston Putman)
 
-* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
+* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning
   only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
 
 * SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster

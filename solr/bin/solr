@@ -940,7 +940,7 @@ if [ $# -eq 1 ]; then
     -help|-h)
         print_usage ""
         exit
-    ;;    
+    ;;
   esac
 fi
 
