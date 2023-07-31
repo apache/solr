@@ -236,6 +236,7 @@ IF "%1"=="assert" goto run_solrcli
 IF "%1"=="export" goto run_solrcli
 IF "%1"=="package" goto run_solrcli
 IF "%1"=="api" goto run_solrcli
+IF "%1"=="postlogs" goto run_solrcli
 
 REM Only allow the command to be the first argument, assume start if not supplied
 IF "%1"=="start" goto set_script_cmd
@@ -307,12 +308,13 @@ IF "%SCRIPT_CMD%"=="delete" goto delete_usage
 IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
 IF "%SCRIPT_CMD%"=="auth" goto auth_usage
 IF "%SCRIPT_CMD%"=="status" goto status_usage
+IF "%SCRIPT_CMD%"=="postlogs" goto run_solrcli
 goto done
 
 :script_usage
 @echo.
 @echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package
+@echo        where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package, postlogs
 @echo.
 @echo   Standalone server example (start Solr running in the background on port 8984):
 @echo.
