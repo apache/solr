@@ -46,6 +46,7 @@ import java.util.function.Predicate;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.common.ConditionalKeyMapWriter;
+import org.apache.solr.common.DelegateMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
@@ -396,18 +397,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     }
     if (val instanceof ReflectWritable) {
-      writeTag(MAP_ENTRY_ITER);
-      Utils.reflectWrite(
-              ew,
-              val,
-              // TODO Should we be lenient here and accept both the Jackson and our homegrown annotation?
-              field -> field.getAnnotation(JsonProperty.class) != null,
-              JsonAnyGetter.class,
-              field -> {
-                final JsonProperty prop = field.getAnnotation(JsonProperty.class);
-                return prop.value().isEmpty() ? field.getName() : prop.value();
-              });
-      writeTag(END);
+      writeMap(new DelegateMapWriter(val));
       return true;
     }
     if (val instanceof Map) {
