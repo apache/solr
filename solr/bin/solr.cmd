@@ -247,6 +247,7 @@ IF "%1"=="create" goto run_solrcli
 IF "%1"=="create_core" goto run_solrcli
 IF "%1"=="create_collection" goto run_solrcli
 IF "%1"=="delete" goto run_solrcli
+IF "%1"=="postlogs" goto run_solrcli
 IF "%1"=="zk" (
   set SCRIPT_CMD=zk
   SHIFT
@@ -281,6 +282,7 @@ IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
 IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
 IF "%SCRIPT_CMD%"=="auth" goto auth_usage
 IF "%SCRIPT_CMD%"=="status" goto run_solrcli
+IF "%SCRIPT_CMD%"=="postlogs" goto run_solrcli
 goto done
 
 :start_usage

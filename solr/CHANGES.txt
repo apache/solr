@@ -47,8 +47,6 @@ Other Changes
   Previously, the modules would come transitively.
   (David Smiley)
 
-* PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
-
 * SOLR-16798: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command. (Bence Szabo via Eric Pugh)
 
 * SOLR-16829: Delegate arg parsing and help usage from bin/solr and bin/solr.cmd to java layer for create, create_core, create_collection, delete, healthcheck and status commands. (Eric Pugh, Will White, Mikhail Khludnev)
@@ -67,6 +65,8 @@ Improvements
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
   `GET /api/cores/coreName/backups` (Sanjay Dutt via Jason Gerlowski)
 
+* SOLR-16883: Postlogs tool for indexing Solr logs in Solr now supported on Windows by converting it to a Solr CLI command: `bin/solr postlogs`.   `bin/postlogs` script marked deprected.  (Eric Pugh, Will White)
+
 
 Optimizations
 ---------------------
@@ -81,6 +81,10 @@ Bug Fixes
 
 * SOLR-16889: Rate Limiter should stop processing on 429 (Alex Deparvu, David Smiley)
 
+* SOLR-16906: Correctly capture REPLICATION metrics in Prometheus config (Daisuke Aritomo via Houston Putman)
+
+* SOLR-16905: Allow access to specified "solr.allowPaths" in Security Manager (daylicron, Houston Putman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -91,6 +95,10 @@ Other Changes
 * SOLR-16842: Eliminate special case code in Solr CLI by introducing explicit VersionTool.java.  (Eric Pugh, Will White)
 
 * SOLR-16856: The default auto-soft-commit time has been set to 3 seconds. Previously, auto-soft-commit was disabled by default. (Houston Putman)
+
+* PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
+
+* SOLR-16803: Remove dependencies on methods defined in the SimplePostTool from Solr core and solrj modules.
 
 ==================  9.3.0 ==================
 
