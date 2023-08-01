@@ -41,6 +41,11 @@ New Features
 
 * SOLR-16812: Support CBOR format for update/query (noble)
 
+* SOLR-16855: Solr now provides a MigrateReplicas API at `POST /api/cluster/replicas/migrate` (v2), to move replicas
+  off of a given set of nodes. This extends the functionality of the existing ReplaceNode API. (Houston Putman)
+
+* SOLR-16717: {!join} can join collections with multiple shards on both sides. (Mikhail Khludnev)
+
 Improvements
 ---------------------
 
@@ -117,7 +122,7 @@ Improvements
 
 * SOLR-16759: Introducing logAll parameter in the feature logger (Anna Ruggero, Alessandro Benedetti)
 
-* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
+* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning
   only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
 
 * SOLR-16394: The v2 list and delete (collection) backup APIs have been tweaked to be more intuitive: backup listing now uses
@@ -196,6 +201,9 @@ Optimizations
 * SOLR-16846: Use IndexOrDocValuesQuery for PointFields on Set queries. This improves the performance in some scenarios when
   the set query is combined with other selective queries. (Tomás Fernández Löbbe, Alex Deparvu)
 
+* SOLR-16869: Enable Incubating Java Panama Vector APIs when using Java 20 or 21.
+  When run using compatible hardware, Vector search will see considerable speed up. (Houston Putman, Uwe Schindler)
+
 Bug Fixes
 ---------------------
 
@@ -254,6 +262,8 @@ Dependency Upgrades
 * SOLR-16642: Upgrade to Lucene 9.5.0 (Vinayak Hegde, David Smiley)
 
 * SOLR-16799: upgrade Solr to use Lucene 9.6.0 (Alex Deparvu, Tomás Fernández Löbbe)
+
+* SOLR-16853: Upgrade Lucene to 9.7.0 (Alex Deparvu)
 
 Other Changes
 ---------------------

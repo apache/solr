@@ -51,6 +51,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.INSTALLSHARDDATA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MAINTAINROUTEDALIAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE_REPLICAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_COLL_TASK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_REPLICA_TASK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_SHARD_TASK;
@@ -143,6 +144,7 @@ public class CollApiCmds {
       commandMap =
           Map.ofEntries(
               Map.entry(REPLACENODE, new ReplaceNodeCmd(ccc)),
+              Map.entry(MIGRATE_REPLICAS, new MigrateReplicasCmd(ccc)),
               Map.entry(BALANCE_REPLICAS, new BalanceReplicasCmd(ccc)),
               Map.entry(DELETENODE, new DeleteNodeCmd(ccc)),
               Map.entry(BACKUP, new BackupCmd(ccc)),
