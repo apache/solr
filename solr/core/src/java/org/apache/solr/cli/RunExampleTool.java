@@ -318,22 +318,21 @@ public class RunExampleTool extends ToolBase {
         String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
         echo("Indexing tech product example docs from " + exampledocsDir.getAbsolutePath());
 
-        String currentPropVal = System.getProperty("url");
-        System.setProperty("url", updateUrl);
-        String currentTypeVal = System.getProperty("type");
-        // We assume that example docs are always in XML.
-        System.setProperty("type", "application/xml");
-        SimplePostTool.main(new String[] {exampledocsDir.getAbsolutePath() + "/*.xml"});
-        if (currentPropVal != null) {
-          System.setProperty("url", currentPropVal); // reset
-        } else {
-          System.clearProperty("url");
-        }
-        if (currentTypeVal != null) {
-          System.setProperty("type", currentTypeVal); // reset
-        } else {
-          System.clearProperty("type");
-        }
+        String[] args =
+            new String[] {
+              "post",
+              "-commit",
+              "-url",
+              updateUrl,
+              "-type",
+              "application/xml",
+              exampledocsDir.getAbsolutePath() + "/*.xml"
+            };
+        PostTool postTool = new PostTool();
+        CommandLine postToolCli =
+            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        postTool.runTool(postToolCli);
+
       } else {
         echo(
             "exampledocs directory not found, skipping indexing step for the techproducts example");
@@ -403,14 +402,21 @@ public class RunExampleTool extends ToolBase {
         File filmsJsonFile = new File(exampleDir, "films/films.json");
         String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
         echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
-        String currentPropVal = System.getProperty("url");
-        System.setProperty("url", updateUrl);
-        SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
-        if (currentPropVal != null) {
-          System.setProperty("url", currentPropVal); // reset
-        } else {
-          System.clearProperty("url");
-        }
+        String[] args =
+            new String[] {
+              "post",
+              "-commit",
+              "-url",
+              updateUrl,
+              "-type",
+              "application/json",
+              exampleDir.toString()
+            };
+        PostTool postTool = new PostTool();
+        CommandLine postToolCli =
+            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        postTool.runTool(postToolCli);
+
       } catch (Exception ex) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
       }
