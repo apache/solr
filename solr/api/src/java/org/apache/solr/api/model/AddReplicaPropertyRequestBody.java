@@ -19,8 +19,9 @@ package org.apache.solr.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.apache.solr.util.ReflectWritable;
 
-public class AddReplicaPropertyRequestBody {
+public class AddReplicaPropertyRequestBody implements ReflectWritable {
   public AddReplicaPropertyRequestBody() {}
 
   public AddReplicaPropertyRequestBody(String value) {
