@@ -38,8 +38,12 @@ import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
+/**
+ * Supports status command in the bin/solr script.
+ *
+ * <p>Get the status of a Solr server.
+ */
 public class StatusTool extends ToolBase {
-  /** Get the status of a Solr server. */
   public StatusTool() {
     this(CLIO.getOutStream());
   }

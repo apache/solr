@@ -19,11 +19,13 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
@@ -47,7 +49,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -121,18 +122,19 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-    if (args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0) {
+    final boolean hasNoCommand =
+        args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
+    final boolean isHelpCommand =
+        !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
+
+    if (hasNoCommand || isHelpCommand) {
       printHelp();
       exit(1);
     }
 
     if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
-      // Simple version tool, no need for its own class
-      if (args.length != 1) {
-        CLIO.err("Version tool does not accept any parameters!");
-      }
-      CLIO.out("Solr version is: " + SolrVersion.LATEST);
-      exit(0);
+      // select the version tool to be run
+      args[0] = "version";
     }
 
     SSLConfigurationsFactory.current().init();
@@ -235,6 +237,8 @@ public class SolrCLI implements CLIO {
     else if ("export".equals(toolType)) return new ExportTool();
     else if ("package".equals(toolType)) return new PackageTool();
     else if ("post".equals(toolType)) return new PostTool();
+    else if ("postlogs".equals(toolType)) return new PostLogsTool();
+    else if ("version".equals(toolType)) return new VersionTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -559,6 +563,12 @@ public class SolrCLI implements CLIO {
       // just ignore it since we're only interested in a positive result here
     }
     return exists;
+  }
+
+  public static boolean isCloudMode(SolrClient solrClient) throws SolrServerException, IOException {
+    NamedList<Object> systemInfo =
+        solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
+    return "solrcloud".equals(systemInfo.get("mode"));
   }
 
   public static class AssertionFailureException extends Exception {

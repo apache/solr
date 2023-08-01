@@ -82,6 +82,11 @@ public class V2ApiUtils {
     squashObjectIntoNamedList(destination, mw, false);
   }
 
+  public static void squashIntoNamedListWithoutHeader(
+      NamedList<Object> destination, JacksonReflectMapWriter mw) {
+    squashIntoNamedList(destination, mw, true);
+  }
+
   public static String getMediaTypeFromWtParam(
       SolrQueryRequest solrQueryRequest, String defaultMediaType) {
     final String wtParam = solrQueryRequest.getParams().get(WT);

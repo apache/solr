@@ -41,7 +41,6 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilterFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.solr.cli.SimplePostTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -903,14 +902,13 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
-    SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
+    Utils.BAOS bos = new Utils.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
       for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
-        ByteBuffer b =
-            SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+        ByteBuffer b = Utils.toByteArray(c.getClassLoader().getResourceAsStream(path));
         zipOut.putNextEntry(entry);
         zipOut.write(b.array(), b.arrayOffset(), b.limit());
         zipOut.closeEntry();

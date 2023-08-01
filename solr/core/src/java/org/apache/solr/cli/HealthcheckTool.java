@@ -51,6 +51,7 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Supports healthcheck command in the bin/solr script. */
 public class HealthcheckTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -63,7 +64,7 @@ public class HealthcheckTool extends ToolBase {
             .longOpt("name")
             .argName("NAME")
             .hasArg()
-            .required(false)
+            .required(true)
             .desc("Name of the collection to check.")
             .build());
   }
@@ -88,6 +89,10 @@ public class HealthcheckTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
+    if (zkHost == null) {
+      CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
+      System.exit(1);
+    }
     try (CloudHttp2SolrClient cloudSolrClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
             .build()) {
@@ -105,9 +110,6 @@ public class HealthcheckTool extends ToolBase {
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String collection = cli.getOptionValue("name");
-    if (collection == null) {
-      throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
-    }
 
     log.debug("Running healthcheck for {}", collection);
 

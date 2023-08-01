@@ -339,25 +339,7 @@ function print_usage() {
     echo -e "\nERROR: $ERROR_MSG\n"
   fi
 
-  if [ -z "${CMD:-}" ]; then
-    echo ""
-    echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package"
-    echo ""
-    echo "  Standalone server example (start Solr running in the background on port 8984):"
-    echo ""
-    echo "    ./solr start -p 8984"
-    echo ""
-    echo "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):"
-    echo ""
-    echo "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\""
-    echo ""
-    echo "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh."
-    echo ""
-    echo "Pass -help or -h after any COMMAND to see command-specific usage information,"
-    echo "  such as:    ./solr start -help or ./solr stop -h"
-    echo ""
-  elif [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
+  if [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
     echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [-a \"additional-options\"] [-V]"
     echo ""
@@ -813,12 +795,8 @@ function stop_solr() {
 
 if [ $# -eq 1 ]; then
   case $1 in
-    -help|-h)    
-        run_tool ""    
-        exit
-    ;;
-    -version|-v|version)
-        run_tool version
+    -help|-h)
+        run_tool ""
         exit
     ;;
   esac
@@ -883,7 +861,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
         upconfig|downconfig|cp|rm|mv|ls|mkroot)
             ZK_OP=$1
             shift 1
-        ;;      
+        ;;
         -z|-zkhost|-zkHost)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
@@ -1581,7 +1559,8 @@ if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
   SOLR_LOGS_DIR="$SOLR_HOME/../logs"
 fi
 
-LOG4J_CONFIG=()
+# Set the logging manager by default, so that Lucene JUL logs are included with Solr logs.
+LOG4J_CONFIG=("-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager")
 if [ -n "${LOG4J_PROPS:-}" ]; then
   LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
 fi
