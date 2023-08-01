@@ -24,7 +24,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.solr.api.framework.CoordinatorV2HttpSolrCall;
+import org.apache.solr.api.CoordinatorV2HttpSolrCall;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.api.collections.Assign;

@@ -18,7 +18,7 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.lang.invoke.MethodHandles;
-import org.apache.solr.api.framework.ContainerPluginsRegistry;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;

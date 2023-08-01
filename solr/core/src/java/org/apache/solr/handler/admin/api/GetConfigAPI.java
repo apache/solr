@@ -20,7 +20,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
-import org.apache.solr.api.framework.EndPoint;
+import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;

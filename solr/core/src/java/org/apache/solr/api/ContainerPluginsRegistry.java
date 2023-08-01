@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api.framework;
+package org.apache.solr.api;
 
 import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 

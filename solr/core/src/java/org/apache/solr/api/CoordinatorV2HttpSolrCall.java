@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api.framework;
+package org.apache.solr.api;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

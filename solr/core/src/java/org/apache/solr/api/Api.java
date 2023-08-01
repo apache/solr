@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api.framework;
+package org.apache.solr.api;
 
 import java.util.Map;
 import org.apache.solr.common.SpecProvider;

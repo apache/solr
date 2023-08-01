@@ -28,7 +28,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import org.apache.solr.api.framework.JerseyResource;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.api.model.SolrJerseyResponse;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;

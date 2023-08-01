@@ -24,7 +24,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CORE;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
-import org.apache.solr.api.framework.EndPoint;
+import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;

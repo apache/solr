@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
-import org.apache.solr.api.framework.AnnotatedApi;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.handler.admin.api.GetConfigAPI;
 import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;

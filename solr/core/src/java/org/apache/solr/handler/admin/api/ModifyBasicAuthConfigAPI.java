@@ -22,9 +22,9 @@ import static org.apache.solr.security.PermissionNameProvider.Name.SECURITY_EDIT
 
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.api.framework.Command;
-import org.apache.solr.api.framework.EndPoint;
-import org.apache.solr.api.framework.PayloadObj;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.PayloadObj;
 
 /** V2 API to modify configuration for Solr's {@link org.apache.solr.security.BasicAuthPlugin} */
 @EndPoint(

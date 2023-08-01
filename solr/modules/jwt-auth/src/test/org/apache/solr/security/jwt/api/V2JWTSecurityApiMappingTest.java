@@ -19,9 +19,9 @@ package org.apache.solr.security.jwt.api;
 
 import java.util.HashMap;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.framework.AnnotatedApi;
-import org.apache.solr.api.framework.Api;
-import org.apache.solr.api.framework.ApiBag;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.junit.Before;
 import org.junit.Test;
 

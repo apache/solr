@@ -25,7 +25,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PER
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.solr.api.framework.EndPoint;
+import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;

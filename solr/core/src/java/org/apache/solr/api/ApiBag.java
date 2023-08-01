@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api.framework;
+package org.apache.solr.api;
 
 import static org.apache.solr.client.solrj.SolrRequest.SUPPORTED_METHODS;
 import static org.apache.solr.common.params.CommonParams.NAME;

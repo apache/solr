@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.apache.solr.api.framework.EndPoint;
+import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.core.ConfigSetService;

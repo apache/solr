@@ -20,7 +20,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 
 import java.util.Map;
-import org.apache.solr.api.framework.JerseyResource;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;

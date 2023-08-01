@@ -27,9 +27,9 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PER
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.solr.api.framework.Command;
-import org.apache.solr.api.framework.EndPoint;
-import org.apache.solr.api.framework.PayloadObj;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.RequestSyncShardPayload;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 

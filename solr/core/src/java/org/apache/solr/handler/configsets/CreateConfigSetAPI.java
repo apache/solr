@@ -24,9 +24,9 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_P
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.api.framework.Command;
-import org.apache.solr.api.framework.EndPoint;
-import org.apache.solr.api.framework.PayloadObj;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
 import org.apache.solr.cloud.ConfigSetCmds;
 import org.apache.solr.common.SolrException;
