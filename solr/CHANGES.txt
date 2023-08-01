@@ -49,6 +49,8 @@ Other Changes
 
 * SOLR-16803: Remove dependencies on methods defined in the SimplePostTool from Solr core and solrj modules.
 
+* SOLR-16915: Lower the AffinityPlacementPlugin's default minimalFreeDiskGB to 5 GB (Houston Putman)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes

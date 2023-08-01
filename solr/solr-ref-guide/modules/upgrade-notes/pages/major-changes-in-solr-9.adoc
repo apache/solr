@@ -72,6 +72,10 @@ Please refer to the xref:configuration-guide:commits-transaction-logs.html#hard-
 for more information on how this change will effect you.
 Upgrading existing clouds and use-cases that have custom configSets will not be affected by this change.
 
+=== Replica Placements
+* The default `minimalFreeDiskGB` value has been lowered from `20GB` to `5GB` when using the xref:configuration-guide:replica-placement-plugins.adoc#affinityplacementfactory[AffinityPlacementPlugin].
+Therefore, when using the default settings, nodes that were previously excluded from Replica placements due to low available disk space may be selected after upgrading.
+
 
 == Solr 9.3
 === Binary Releases
