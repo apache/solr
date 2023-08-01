@@ -96,6 +96,8 @@ Other Changes
 
 * PR#1629: Fix typos in org.apache.solr.core package (Andrey Bozhko, Marcus Eagan)
 
+* SOLR-16915: Lower the AffinityPlacementPlugin's default minimalFreeDiskGB to 5 GB (Houston Putman)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
