@@ -20,8 +20,6 @@ package org.apache.solr.api.model;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.util.ReflectWritable;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +29,7 @@ import java.util.Map;
  * <p>Contains fields common to all Solr API responses, particularly the 'responseHeader' and
  * 'error' fields.
  */
-public class SolrJerseyResponse implements ReflectWritable {
+public class SolrJerseyResponse {
 
   @JsonProperty("responseHeader")
   public ResponseHeader responseHeader = new ResponseHeader();
@@ -39,7 +37,7 @@ public class SolrJerseyResponse implements ReflectWritable {
   @JsonProperty("error")
   public ErrorInfo error;
 
-  public static class ResponseHeader implements ReflectWritable {
+  public static class ResponseHeader {
     @JsonProperty("status")
     public int status;
 

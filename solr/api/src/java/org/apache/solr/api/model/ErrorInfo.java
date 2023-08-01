@@ -18,8 +18,6 @@
 package org.apache.solr.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.util.ReflectWritable;
-
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +26,7 @@ import java.util.Map;
  *
  * <p>Based on the fields exposed in responses from Solr's v1/requestHandler API.
  */
-public class ErrorInfo implements ReflectWritable {
+public class ErrorInfo {
 
   public static final String ROOT_ERROR_CLASS = "root-error-class";
   public static final String ERROR_CLASS = "error-class";
@@ -48,7 +46,7 @@ public class ErrorInfo implements ReflectWritable {
   @JsonProperty("code")
   public Integer code;
 
-  public static class ErrorMetadata implements ReflectWritable {
+  public static class ErrorMetadata {
     @JsonProperty(ERROR_CLASS)
     public String errorClass;
 
