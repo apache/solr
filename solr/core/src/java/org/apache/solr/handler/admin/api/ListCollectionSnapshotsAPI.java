@@ -29,7 +29,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import org.apache.solr.api.model.AsyncJerseyResponse;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.CoreContainer;

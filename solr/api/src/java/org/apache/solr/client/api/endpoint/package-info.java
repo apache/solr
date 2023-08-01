@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** Root package for interfaces and POJOs used to describe Solr's v2 APIs */
-package org.apache.solr.api;
+/** Interfaces representing individual Solr v2 APIs. */
+package org.apache.solr.client.api.endpoint;

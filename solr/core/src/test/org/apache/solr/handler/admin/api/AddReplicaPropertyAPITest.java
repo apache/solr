@@ -28,7 +28,7 @@ import io.opentracing.noop.NoopSpan;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;

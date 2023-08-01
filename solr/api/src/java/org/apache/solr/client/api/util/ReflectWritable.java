@@ -15,18 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api;
+package org.apache.solr.client.api.util;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.info.License;
-import org.apache.solr.v2.api.util.SolrVersion;
-
-@OpenAPIDefinition(
-    info =
-        @Info(
-            title = "v2 API",
-            description = "OpenAPI spec for Solr's v2 API endpoints",
-            license = @License(name = "ASL 2.0"),
-            version = SolrVersion.LATEST_STRING))
-public class ApiMetadata {}
+/**
+ * A marker interface used by v2 POJOs to indicate they contain annotations that can be written out
+ * via reflection.
+ *
+ * <p>Used primarily by custom serialization/deserialization codepaths that don't natively recognize
+ * (e.g.) Jackson annotations.
+ */
+public interface ReflectWritable {}

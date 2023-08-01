@@ -18,7 +18,7 @@
 package org.apache.solr.jersey;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /**
  * {@link SolrJerseyResponse} implementation with a warning field indicating that the format may

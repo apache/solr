@@ -22,7 +22,7 @@ import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 import java.util.function.Supplier;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
-import org.apache.solr.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.jersey.CatchAllExceptionMapper;
 import org.apache.solr.servlet.HttpSolrCall;

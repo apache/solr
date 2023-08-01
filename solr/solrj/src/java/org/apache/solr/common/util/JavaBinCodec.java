@@ -42,9 +42,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.DelegateMapWriter;
 import org.apache.solr.common.EnumFieldValue;
@@ -58,7 +56,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.util.ReflectWritable;
 import org.noggit.CharArr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

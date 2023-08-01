@@ -61,7 +61,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import org.apache.solr.api.model.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;

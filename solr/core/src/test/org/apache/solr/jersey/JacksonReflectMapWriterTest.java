@@ -21,10 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.model.SolrJerseyResponse;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.junit.Test;
 
 /**

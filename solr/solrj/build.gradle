@@ -29,6 +29,7 @@ description = 'Solrj - Solr Java Client'
 
 dependencies {
   implementation 'com.fasterxml.jackson.core:jackson-databind'
+  implementation 'com.fasterxml.jackson.core:jackson-annotations'
   implementation project(":solr:api")
 
   implementation 'org.slf4j:slf4j-api'
@@ -131,7 +132,7 @@ openApiGenerate {
   generateModelTests = false
   generateApiDocumentation = false
   generateModelDocumentation = false
-  additionalProperties = ["modelPackage": "org.apache.solr.api.model"]
+  additionalProperties = ["modelPackage": "org.apache.solr.client.api.model"]
 }
 
 tasks.openApiGenerate.dependsOn configurations.openApiSpecFile

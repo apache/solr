@@ -18,7 +18,7 @@ package org.apache.solr.handler.admin.api;
 
 import java.util.function.Supplier;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;

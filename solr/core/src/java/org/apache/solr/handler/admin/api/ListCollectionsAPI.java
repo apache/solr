@@ -29,7 +29,7 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import org.apache.solr.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;

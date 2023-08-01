@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api.model;
+package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.util.ReflectWritable;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.solr.client.api.util.ReflectWritable;
 
 /**
  * Base response-body POJO to be used by Jersey resources.

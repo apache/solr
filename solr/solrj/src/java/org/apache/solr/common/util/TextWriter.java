@@ -34,14 +34,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.atomic.LongAdder;
-
+import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.DelegateMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
-import org.apache.solr.util.ReflectWritable;
 
 // Base interface for all text based writers
 public interface TextWriter extends PushWriter {

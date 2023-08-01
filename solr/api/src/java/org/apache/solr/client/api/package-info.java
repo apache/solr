@@ -15,11 +15,5 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
-
-/**
- * A marker interface used by v2 POJOs to indicate they contain annotations that can be written out via reflection.
- *
- * Used primarily by custom serialization/deserialization codepaths that don't natively recognize (e.g.) Jackson annotations.
- */
-public interface ReflectWritable { }
+/** Root package for interfaces and POJOs used to describe Solr's v2 APIs */
+package org.apache.solr.client.api;

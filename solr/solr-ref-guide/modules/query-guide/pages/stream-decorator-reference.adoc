@@ -428,7 +428,7 @@ classify(model(modelCollection,
              field="text_t")
 ----
 
-In the example above the `classify expression` is retrieving the model using the `model` function.
+In the example above the `classify expression` is retrieving the model using the `api` function.
 It is then classifying tuples returned by the `search` function.
 The `text_t` field is used for the text classification and the analyzer for the `text_t` field in the Solr schema is used to analyze the text and extract the features.
 

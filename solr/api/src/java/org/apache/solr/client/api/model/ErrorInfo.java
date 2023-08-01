@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.api.model;
+package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.util.ReflectWritable;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.api.util.ReflectWritable;
 
 /**
  * A value type representing an error.

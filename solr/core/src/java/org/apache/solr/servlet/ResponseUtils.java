@@ -19,7 +19,7 @@ package org.apache.solr.servlet;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.api.model.ErrorInfo;
+import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;

@@ -19,30 +19,28 @@ package org.apache.solr.common;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.util.Utils;
-
 import java.io.IOException;
+import org.apache.solr.common.util.Utils;
 
 public class DelegateMapWriter implements MapWriter {
 
-    private final Object delegate;
+  private final Object delegate;
 
-    public DelegateMapWriter(Object delegate) {
-        this.delegate = delegate;
-    }
+  public DelegateMapWriter(Object delegate) {
+    this.delegate = delegate;
+  }
 
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-        Utils.reflectWrite(
-                ew,
-                delegate,
-                // TODO Should we be lenient here and accept both the Jackson and our homegrown annotation?
-                field -> field.getAnnotation(JsonProperty.class) != null,
-                JsonAnyGetter.class,
-                field -> {
-                    final JsonProperty prop = field.getAnnotation(JsonProperty.class);
-                    return prop.value().isEmpty() ? field.getName() : prop.value();
-                });
-    }
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    Utils.reflectWrite(
+        ew,
+        delegate,
+        // TODO Should we be lenient here and accept both the Jackson and our homegrown annotation?
+        field -> field.getAnnotation(JsonProperty.class) != null,
+        JsonAnyGetter.class,
+        field -> {
+          final JsonProperty prop = field.getAnnotation(JsonProperty.class);
+          return prop.value().isEmpty() ? field.getName() : prop.value();
+        });
+  }
 }

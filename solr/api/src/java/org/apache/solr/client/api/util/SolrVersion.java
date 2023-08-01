@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.client.api.util;
 
 import java.util.Locale;
 import org.semver4j.Semver;
