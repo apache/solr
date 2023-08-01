@@ -83,8 +83,8 @@ public class V2ApiUtils {
   }
 
   public static void squashIntoNamedListWithoutHeader(
-      NamedList<Object> destination, JacksonReflectMapWriter mw) {
-    squashIntoNamedList(destination, mw, true);
+      NamedList<Object> destination, Object toSquash) {
+    squashObjectIntoNamedList(destination, toSquash, true);
   }
 
   public static String getMediaTypeFromWtParam(
