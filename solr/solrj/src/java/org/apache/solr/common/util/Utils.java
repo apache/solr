@@ -81,6 +81,7 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CommonParams;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -228,7 +229,7 @@ public class Utils {
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
+    new JSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }
 
