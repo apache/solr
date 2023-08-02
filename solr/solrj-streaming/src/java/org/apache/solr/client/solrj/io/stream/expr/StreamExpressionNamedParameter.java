@@ -87,16 +87,19 @@ public class StreamExpressionNamedParameter implements StreamExpressionParameter
 
     if (requiresQuote) {
       sb.append("\"");
-      sb.append(
-          ESCAPE_QUOTES
-              .matcher(parameter.toString())
-              .replaceAll(StreamExpressionNamedParameter::escapeQuoteMatch));
+      sb.append(escapeQuotes(parameter.toString()));
       sb.append("\"");
     } else {
       sb.append(parameter.toString());
     }
 
     return sb.toString();
+  }
+
+  public static String escapeQuotes(String input) {
+    return ESCAPE_QUOTES
+        .matcher(input)
+        .replaceAll(StreamExpressionNamedParameter::escapeQuoteMatch);
   }
 
   /**

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -578,7 +579,7 @@ public class StreamExpressionToExpressionTest extends SolrTestCase {
 
     // Analogous to `testCloudSolrStreamWithEscapedQuote()`, but accounts for nested escaped quotes
     String originalExpressionString =
-        "search(collection1,fl=\"id,first\",sort=\"first asc\",q={!bool filter=\"presentTitles:\\\"chief, executive officer\\\"\" filter=\"age:[36 TO *]\")";
+        "search(collection1,fl=\"id,first\",sort=\"first asc\",q={!bool filter=\"presentTitles:\\\"chief, executive officer\\\"\" filter=\"age:[36 TO *]\"})";
     try (CloudSolrStream firstStream =
         new CloudSolrStream(StreamExpressionParser.parse(originalExpressionString), factory)) {
       String firstExpressionString = firstStream.toExpression(factory).toString();
@@ -589,10 +590,35 @@ public class StreamExpressionToExpressionTest extends SolrTestCase {
 
         assertTrue(
             firstExpressionString.contains(
-                "q=\"{!bool filter=\\\"presentTitles:\\\\\\\"chief, executive officer\\\\\\\"\\\" filter=\\\"age:[36 TO *]\\\"\""));
+                "q=\"{!bool filter=\\\"presentTitles:\\\\\\\"chief, executive officer\\\\\\\"\\\" filter=\\\"age:[36 TO *]\\\"}\""));
         assertTrue(
             secondExpressionString.contains(
-                "q=\"{!bool filter=\\\"presentTitles:\\\\\\\"chief, executive officer\\\\\\\"\\\" filter=\\\"age:[36 TO *]\\\"\""));
+                "q=\"{!bool filter=\\\"presentTitles:\\\\\\\"chief, executive officer\\\\\\\"\\\" filter=\\\"age:[36 TO *]\\\"}\""));
+      }
+    }
+  }
+
+  @Test
+  public void testCloudSolrStreamWithNestedEscapedQuote2() throws Exception {
+    // Analogous to `testCloudSolrStreamWithNestedEscapedQuote2()`, but with deeper quote escaping
+    String qExpr = "summary:\"\\\"This is a summary \\\\\\\"\\\"\\+\"";
+    String escapedQExpr = StreamExpressionNamedParameter.escapeQuotes(qExpr);
+    String originalExpressionString =
+        "search(collection1,fl=\"id,first\",sort=\"first asc\",q=" + qExpr + ")";
+    try (CloudSolrStream firstStream =
+             new CloudSolrStream(StreamExpressionParser.parse(originalExpressionString), factory)) {
+      String firstExpressionString = firstStream.toExpression(factory).toString();
+
+      try (CloudSolrStream secondStream =
+               new CloudSolrStream(StreamExpressionParser.parse(firstExpressionString), factory)) {
+        String secondExpressionString = secondStream.toExpression(factory).toString();
+
+        assertTrue(
+            firstExpressionString.contains(
+                "q=\"" + escapedQExpr + "\""));
+        assertTrue(
+            secondExpressionString.contains(
+                "q=\"" + escapedQExpr + "\""));
       }
     }
   }

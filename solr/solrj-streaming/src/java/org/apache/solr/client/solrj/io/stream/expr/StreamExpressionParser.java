@@ -115,6 +115,18 @@ public class StreamExpressionParser {
     }
   }
 
+  public static String unescapeQuotes(String input) {
+    Matcher m = ESCAPED_QUOTE.matcher(input);
+    StringBuilder sb = new StringBuilder(input.length());
+    boolean hasMatch = m.find(); // position the matcher
+    assert hasMatch;
+    do {
+      m.appendReplacement(sb, unescapeQuoteMatch(m));
+    } while (m.find());
+    m.appendTail(sb);
+    return sb.toString();
+  }
+
   private static StreamExpressionNamedParameter generateNamedParameterExpression(String clause) {
     String working = clause.trim();
 
@@ -144,15 +156,7 @@ public class StreamExpressionParser {
 
         // if contain \" unwrap one level of escaping
         if (parameter.contains("\\\"")) {
-          Matcher m = ESCAPED_QUOTE.matcher(parameter);
-          StringBuilder sb = new StringBuilder(parameter.length());
-          boolean hasMatch = m.find(); // position the matcher
-          assert hasMatch;
-          do {
-            m.appendReplacement(sb, unescapeQuoteMatch(m));
-          } while (m.find());
-          m.appendTail(sb);
-          parameter = sb.toString();
+          parameter = unescapeQuotes(parameter);
           if (0 == parameter.length()) {
             throw new IllegalArgumentException(
                 String.format(Locale.ROOT, "'%s' is not a proper named parameter clause", working));

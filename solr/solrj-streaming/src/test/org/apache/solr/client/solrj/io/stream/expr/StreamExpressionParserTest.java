@@ -180,5 +180,34 @@ public class StreamExpressionParserTest extends SolrTestCase {
                 new StreamExpressionNamedParameter("sort")
                     .withParameter("fieldA desc, fieldB asc, fieldC asc"));
     assertEquals(expected, actual);
+
+    // Test even more escaping
+    actual =
+        StreamExpressionParser.parse(
+            "search(collection1, q=summary:\"\\\"This is a summary \\\\\\\"\\\"\\+\", sort=\"fieldA desc, fieldB asc, fieldC asc\")");
+    expected =
+        new StreamExpression("search")
+            .withParameter(new StreamExpressionValue("collection1"))
+            .withParameter(
+                new StreamExpressionNamedParameter("q")
+                    .withParameter("summary:\"\\\"This is a summary \\\\\\\"\\\"\\+\""))
+            .withParameter(
+                new StreamExpressionNamedParameter("sort")
+                    .withParameter("fieldA desc, fieldB asc, fieldC asc"));
+    assertEquals(expected, actual);
+
+    actual =
+        StreamExpressionParser.parse(
+            "search(collection1, q=\"summary:\\\"\\\\\\\"This is a summary \\\\\\\\\\\"\\\\\\\"\\+\\\"\", sort=\"fieldA desc, fieldB asc, fieldC asc\")");
+    expected =
+        new StreamExpression("search")
+            .withParameter(new StreamExpressionValue("collection1"))
+            .withParameter(
+                new StreamExpressionNamedParameter("q")
+                    .withParameter("summary:\"\\\"This is a summary \\\\\\\"\\\"\\+\""))
+            .withParameter(
+                new StreamExpressionNamedParameter("sort")
+                    .withParameter("fieldA desc, fieldB asc, fieldC asc"));
+    assertEquals(expected, actual);
   }
 }
