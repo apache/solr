@@ -47,7 +47,7 @@ teardown() {
   assert_output --partial "Available packages:"
 }
 
-@test "deploying and undeploying of packages" {
+@test "deploying and undeploying a collection level package" {
   run solr start -c -Denable.packages=true
 
   solr create_collection -c foo-1.2
@@ -64,4 +64,22 @@ teardown() {
   run solr package undeploy PACKAGE_NAME -collections foo-1.2
   refute_output --partial "Invalid collection"
   assert_output --partial "Package PACKAGE_NAME not deployed on collection foo-1.2"
+}
+
+@test "deploying and undeploying a cluster level pacakge" {
+  run solr start -c -Denable.packages=true
+  
+  run solr package add-repo splainer "https://raw.githubusercontent.com/epugh/solr-splainer/main/solr-splainer-plugin/repo"
+  assert_output --partial "Added repository: splainer"
+  
+  run solr package list-available
+  assert_output --partial "solr-splainer 		Splainer for Solr"
+  run solr package install solr-splainer
+  assert_output --partial "solr-splainer installed."
+
+  run solr package deploy solr-splainer -y -cluster
+  assert_output --partial "Deployment successful"
+  
+  run -0 curl -o - http://localhost:8983/v2/splainer/index.html
+  
 }
