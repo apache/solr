@@ -66,7 +66,7 @@ teardown() {
   assert_output --partial "Package PACKAGE_NAME not deployed on collection foo-1.2"
 }
 
-@test "deploying and undeploying a cluster level pacakge" {
+@test "deploying and undeploying a cluster level package" {
   run solr start -c -Denable.packages=true
   
   run solr package add-repo splainer "https://raw.githubusercontent.com/epugh/solr-splainer/main/solr-splainer-plugin/repo"
@@ -80,6 +80,6 @@ teardown() {
   run solr package deploy solr-splainer -y -cluster
   assert_output --partial "Deployment successful"
   
-  run -0 curl -o - http://localhost:8983/v2/splainer/index.html
+  run -0 curl --fail http://localhost:8983/v2/splainer/index.html
   
 }
