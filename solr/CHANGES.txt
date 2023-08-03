@@ -69,6 +69,10 @@ Improvements
 
 * SOLR-16847: v2 APIs are now able to access any applicable solrconfig.xml "requestHandler" configuration. (Alex Deparvu via Jason Gerlowski)
 
+* SOLR-16490: The semi-internal `/admin/cores?action=restorecore` API now has a v2 equivalent, available at
+  `POST /api/cores/coreName/restore {...}` (Sayanti Dey via Jason Gerlowski)
+
+
 Optimizations
 ---------------------
 
