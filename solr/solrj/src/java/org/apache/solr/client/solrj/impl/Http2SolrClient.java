@@ -736,38 +736,38 @@ public class Http2SolrClient extends SolrClient {
       throws IOException {
     if (isMultipart) {
       // multipart/form-data
-      MultiPartRequestContent content = new MultiPartRequestContent();
-      Iterator<String> iter = wparams.getParameterNamesIterator();
-      while (iter.hasNext()) {
-        String key = iter.next();
-        String[] vals = wparams.getParams(key);
-        if (vals != null) {
-          for (String val : vals) {
-            content.addFieldPart(key, new StringRequestContent(val), null);
+      try (MultiPartRequestContent content = new MultiPartRequestContent()) {
+        Iterator<String> iter = wparams.getParameterNamesIterator();
+        while (iter.hasNext()) {
+          String key = iter.next();
+          String[] vals = wparams.getParams(key);
+          if (vals != null) {
+            for (String val : vals) {
+              content.addFieldPart(key, new StringRequestContent(val), null);
+            }
           }
         }
-      }
-      if (streams != null) {
-        for (ContentStream contentStream : streams) {
-          String contentType = contentStream.getContentType();
-          if (contentType == null) {
-            contentType = "multipart/form-data"; // default
+        if (streams != null) {
+          for (ContentStream contentStream : streams) {
+            String contentType = contentStream.getContentType();
+            if (contentType == null) {
+              contentType = "multipart/form-data"; // default
+            }
+            String name = contentStream.getName();
+            if (name == null) {
+              name = "";
+            }
+            HttpFields.Mutable fields = HttpFields.build(1);
+            fields.add(HttpHeader.CONTENT_TYPE, contentType);
+            content.addFilePart(
+                name,
+                contentStream.getName(),
+                new InputStreamRequestContent(contentStream.getStream()),
+                fields);
           }
-          String name = contentStream.getName();
-          if (name == null) {
-            name = "";
-          }
-          HttpFields.Mutable fields = HttpFields.build(1);
-          fields.add(HttpHeader.CONTENT_TYPE, contentType);
-          content.addFilePart(
-              name,
-              contentStream.getName(),
-              new InputStreamRequestContent(contentStream.getStream()),
-              fields);
         }
+        req.body(content);
       }
-      content.close();
-      req.body(content);
     } else {
       // application/x-www-form-urlencoded
       Fields fields = new Fields();
