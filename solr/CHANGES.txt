@@ -86,6 +86,9 @@ Bug Fixes
 
 * SOLR-16905: Allow access to specified "solr.allowPaths" in Security Manager (daylicron, Houston Putman)
 
+* SOLR-16415: asyncId must not have '/'; enforce this.  Enhance ZK cleanup to process directories
+  instead of fail.  (David Smiley, Paul McArthur)
+
 Dependency Upgrades
 ---------------------
 (No changes)
