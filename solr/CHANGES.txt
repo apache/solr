@@ -57,6 +57,8 @@ Other Changes
 
 * SOLR-16892: bin/solr create command supports both standalone and cloud modes, and deprecate create_core and create_collection commands.   (Eric Pugh)
 
+* SOLR-16822: Change meaning of -h from shorhand for -host to instead return help information for bin/solr start and restart commands. (Eric Pugh)
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
