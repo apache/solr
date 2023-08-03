@@ -212,7 +212,7 @@ public class BoolField extends PrimitiveFieldType {
   public Object toNativeType(Object val) {
     if (val instanceof CharSequence) {
       char ch = (val.toString().length() > 0) ? val.toString().charAt(0) : 0;
-      return (ch=='1' || ch=='t' || ch=='T') ? Boolean.valueOf(true):Boolean.valueOf(false);
+      return (ch == '1' || ch == 't' || ch == 'T') ? Boolean.valueOf(true) : Boolean.valueOf(false);
     }
     return super.toNativeType(val);
   }
