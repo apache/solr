@@ -36,6 +36,8 @@ Deprecation Removals
 
 * SOLR-16823: Remove backcompatiblity of -upconfig and -downconfig for bin/solr zk upconfig and downconfig commands.  (Eric Pugh)
 
+* SOLR-16893: Remove bin/solr create_core and create_collection commands in favour of bin/solr create command.  (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)

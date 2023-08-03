@@ -63,7 +63,7 @@ teardown() {
 
 @test "export fails on non cloud mode" {
   run solr start
-  run solr create_core -c COLL_NAME
+  run solr create -c COLL_NAME
   run solr export -url "http://localhost:8983/solr/COLL_NAME"
   refute_output --partial 'Export complete'
   assert_output --partial "ERROR: Couldn't initialize a HttpClusterStateProvider"
