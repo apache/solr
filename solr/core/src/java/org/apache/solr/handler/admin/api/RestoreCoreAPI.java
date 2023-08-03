@@ -74,6 +74,7 @@ public class RestoreCoreAPI extends CoreAdminAPIBase {
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
     }
+    requestBody.validate();
     AdminAPIBase.validateZooKeeperAwareCoreContainer(coreContainer);
     return handlePotentiallyAsynchronousTask(
         response,
@@ -91,12 +92,6 @@ public class RestoreCoreAPI extends CoreAdminAPIBase {
   }
 
   private void doRestore(String coreName, RestoreCoreRequestBody requestBody) throws Exception {
-    if (requestBody.shardBackupId == null && requestBody.name == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Either 'name' or 'shardBackupId' must be specified");
-    }
-
     try (BackupRepository repository =
             coreContainer.newBackupRepository(requestBody.backupRepository);
         SolrCore core = coreContainer.getCore(coreName)) {
@@ -161,5 +156,13 @@ public class RestoreCoreAPI extends CoreAdminAPIBase {
     public String location;
 
     @JsonProperty public String async;
+
+    public void validate() {
+      if (shardBackupId == null && name == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Either 'name' or 'shardBackupId' must be specified");
+      }
+    }
   }
 }

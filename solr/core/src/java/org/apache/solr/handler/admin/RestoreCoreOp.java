@@ -34,6 +34,7 @@ class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
     requestBody.shardBackupId = params.get(CoreAdminParams.SHARD_BACKUP_ID);
     requestBody.location = params.get(CoreAdminParams.BACKUP_LOCATION);
     requestBody.backupRepository = params.get(CoreAdminParams.BACKUP_REPOSITORY);
+    requestBody.validate();
 
     final CoreContainer coreContainer = it.handler.getCoreContainer();
     final var api =
