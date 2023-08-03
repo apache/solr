@@ -875,9 +875,7 @@ public class ZkController implements Closeable {
               .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
               .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
               .build();
-      cloudManager =
-          new SolrClientCloudManager(
-              new ZkDistributedQueueFactory(zkClient), cloudSolrClient, cc.getObjectCache());
+      cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
       cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;

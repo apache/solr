@@ -46,8 +46,6 @@ public interface SolrCloudManager extends SolrCloseable {
 
   DistribStateManager getDistribStateManager();
 
-  DistributedQueueFactory getDistributedQueueFactory();
-
   ObjectCache getObjectCache();
 
   TimeSource getTimeSource();
