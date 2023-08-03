@@ -18,11 +18,11 @@ package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,10 +31,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -48,7 +50,7 @@ import org.slf4j.LoggerFactory;
  *
  * @lucene.experimental
  */
-public class ClusterState implements JSONWriter.Writable {
+public class ClusterState implements MapWriter {
 
   /** Cluster Prop that is http or https. */
   public static final String URL_SCHEME = "urlScheme";
@@ -65,7 +67,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   private static Map<String, CollectionRef> getRefMap(Map<String, DocCollection> collectionStates) {
-    Map<String, CollectionRef> collRefs = new LinkedHashMap<>(collectionStates.size());
+    Map<String, CollectionRef> collRefs = CollectionUtil.newLinkedHashMap(collectionStates.size());
     for (Entry<String, DocCollection> entry : collectionStates.entrySet()) {
       final DocCollection c = entry.getValue();
       collRefs.put(entry.getKey(), new CollectionRef(c));
@@ -78,7 +80,7 @@ public class ClusterState implements JSONWriter.Writable {
    * loaded (parameter order different from constructor above to have different erasures)
    */
   public ClusterState(Map<String, CollectionRef> collectionStates, Set<String> liveNodes) {
-    this.liveNodes = new HashSet<>(liveNodes.size());
+    this.liveNodes = CollectionUtil.newHashSet(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
     this.immutableCollectionStates = Collections.unmodifiableMap(this.collectionStates);
@@ -158,7 +160,7 @@ public class ClusterState implements JSONWriter.Writable {
    * @return a map of collection name vs DocCollection object
    */
   public Map<String, DocCollection> getCollectionsMap() {
-    Map<String, DocCollection> result = new HashMap<>(collectionStates.size());
+    Map<String, DocCollection> result = CollectionUtil.newHashMap(collectionStates.size());
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
       DocCollection collection = entry.getValue().get();
       if (collection != null) {
@@ -246,7 +248,7 @@ public class ClusterState implements JSONWriter.Writable {
       Map<String, Object> stateMap,
       Set<String> liveNodes,
       DocCollection.PrsSupplier prsSupplier) {
-    Map<String, CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
+    Map<String, CollectionRef> collections = CollectionUtil.newLinkedHashMap(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
       @SuppressWarnings({"unchecked"})
@@ -285,8 +287,8 @@ public class ClusterState implements JSONWriter.Writable {
       props = Collections.emptyMap();
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
-      props = new HashMap<>(objs);
       objs.remove(CollectionStateProps.SHARDS);
+      props = new HashMap<>(objs);
     }
 
     Object routerObj = props.get(CollectionStateProps.DOC_ROUTER);
@@ -302,19 +304,17 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version, prsSupplier);
+    return DocCollection.create(name, slices, props, router, version, prsSupplier);
   }
 
   @Override
-  public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, DocCollection> map = new LinkedHashMap<>();
+  public void writeMap(EntryWriter ew) throws IOException {
     for (Entry<String, CollectionRef> e : collectionStates.entrySet()) {
       if (e.getValue().getClass() == CollectionRef.class) {
         DocCollection coll = e.getValue().get();
-        map.put(coll.getName(), coll);
+        ew.put(coll.getName(), coll);
       }
     }
-    jsonWriter.write(map);
   }
 
   @Override

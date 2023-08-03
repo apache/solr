@@ -83,6 +83,12 @@
 # By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 #SOLR_WAIT_FOR_ZK="30"
 
+# By default Solr will log a warning for cores that are not registered in Zookeeper at startup
+# but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
+# wrong Zookeeper instance or chroot), however you need to manually delete the cores if
+# they are no longer required. Set to "true" to have Solr automatically delete unknown cores.
+#SOLR_DELETE_UNKNOWN_CORES=false
+
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"
 
@@ -267,12 +273,12 @@
 # When using this feature, it is recommended to have an external service monitoring the given dir.
 # If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
 # See https://docs.oracle.com/en/java/javase/11/troubleshoot/command-line-options1.html
-# You can test this behaviour by setting SOLR_HEAP=25m
+# You can test this behavior by setting SOLR_HEAP=25m
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps
 
 # Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
-# To restore the old behaviour, set the variable below to true
+# To restore the old behavior, set the variable below to true
 #SOLR_SOLRXML_REQUIRED=false
 
 # Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
@@ -285,3 +291,7 @@
 # Configure the default replica placement plugin to use if one is not configured in cluster properties
 # See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
 #SOLR_PLACEMENTPLUGIN_DEFAULT=simple
+
+# Solr internally doesn't use cookies other than for modules such as Kerberos/Hadoop Auth. If you don't need any of those
+# And you don't need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
+# SOLR_OPTS="$SOLR_OPTS -Dsolr.http.disableCookies=true"

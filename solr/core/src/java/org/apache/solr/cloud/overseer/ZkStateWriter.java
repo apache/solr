@@ -30,7 +30,7 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.Utils;
@@ -268,11 +268,12 @@ public class ZkStateWriter {
           // Update the Per Replica State znodes if needed
           if (cmd.ops != null) {
             cmd.ops.persist(path, reader.getZkClient());
+
             clusterState =
                 clusterState.copyWith(
                     name,
-                    cmd.collection.copyWith(
-                        PerReplicaStatesFetcher.fetch(
+                    cmd.collection.setPerReplicaStates(
+                        PerReplicaStatesOps.fetch(
                             cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
 
@@ -286,7 +287,8 @@ public class ZkStateWriter {
           } else {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (minStateByteLenForCompression > -1 && data.length > minStateByteLenForCompression) {
-              data = compressor.compressBytes(data);
+              // When compressing state.json, we expect at least a 10:1 compression ratio.
+              data = compressor.compressBytes(data, data.length / 10);
             }
             if (reader.getZkClient().exists(path, true)) {
               if (log.isDebugEnabled()) {
@@ -294,25 +296,25 @@ public class ZkStateWriter {
               }
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection =
-                  new DocCollection(
+                  DocCollection.create(
                       name,
                       c.getSlicesMap(),
                       c.getProperties(),
                       c.getRouter(),
                       stat.getVersion(),
-                      new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
+                      PerReplicaStatesOps.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               DocCollection newCollection =
-                  new DocCollection(
+                  DocCollection.create(
                       name,
                       c.getSlicesMap(),
                       c.getProperties(),
                       c.getRouter(),
                       0,
-                      new PerReplicaStatesFetcher.LazyPrsSupplier(reader.getZkClient(), path));
+                      PerReplicaStatesOps.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             }
           }
@@ -323,8 +325,8 @@ public class ZkStateWriter {
               clusterState =
                   clusterState.copyWith(
                       name,
-                      currentCollState.copyWith(
-                          PerReplicaStatesFetcher.fetch(
+                      currentCollState.setPerReplicaStates(
+                          PerReplicaStatesOps.fetch(
                               currentCollState.getZNode(), reader.getZkClient(), null)));
             }
           }

@@ -40,7 +40,8 @@ def escapeYamlSingleQuotesString(props) {
 
 // Attach building the ref guide to standard convention tasks. This
 // can be optionally turned off (see SOLR-15670).
-if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "true").toBoolean()) {
+var defaultRefGuideInclude = file('${rootDir}/.git').exists()
+if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "${defaultRefGuideInclude}").toBoolean()) {
     check.dependsOn 'checkSiteLinks'
     assemble.dependsOn 'buildLocalSite'
 }
@@ -110,7 +111,7 @@ task buildLocalAntoraYaml {
         prerelease         : prerelease,
     ]
     props.putAll([
-        solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replaceAll("\\.", "_")}",
+        solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replace(".", "_")}",
         lucene_javadocs_link :  project(':solr:documentation').luceneDocUrl,
     ])
 

@@ -38,12 +38,11 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -177,7 +176,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
-      SolrException.log(log, "REQUEST FAILED for params: " + args.toQueryString(), e2);
+      log.error("REQUEST FAILED for params: {}", args.toQueryString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }
   }
@@ -234,7 +233,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
 
     if ("json".equals(wt)) {
-      query.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      query.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> rsp = client.request(query);
       return Utils.toJSONString(rsp);
     } else {

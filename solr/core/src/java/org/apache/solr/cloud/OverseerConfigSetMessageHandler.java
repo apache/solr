@@ -93,10 +93,9 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       String configSetName = message.getStr(NAME);
 
       if (configSetName == null) {
-        SolrException.log(log, "Operation " + operation + " failed", e);
+        log.error("Operation {} failed", operation, e);
       } else {
-        SolrException.log(
-            log, "ConfigSet: " + configSetName + " operation: " + operation + " failed", e);
+        log.error("ConfigSet: {} operation: {} failed", configSetName, operation, e);
       }
 
       results.add("Operation " + operation + " caused exception:", e);

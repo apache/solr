@@ -27,7 +27,6 @@ import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 
-import com.google.common.collect.Sets;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -686,14 +685,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   SolrConfig loadSolrConfig(String configSet) {
-    SolrResourceLoader resourceLoader = cc.getResourceLoader();
-    ZkSolrResourceLoader zkLoader =
-        new ZkSolrResourceLoader(
-            resourceLoader.getInstancePath(),
-            configSet,
-            resourceLoader.getClassLoader(),
-            cc.getZkController());
-    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, true, null);
+    ZkSolrResourceLoader zkLoader = zkLoaderForConfigSet(configSet);
+    boolean trusted = isConfigSetTrusted(configSet);
+
+    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, trusted, null);
   }
 
   ManagedIndexSchema loadLatestSchema(String configSet) {
@@ -806,7 +801,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           schema.getCopyFieldsList(fieldName).stream()
               .map(cf -> cf.getDestination().getName())
               .collect(Collectors.toSet());
-      Set<String> add = Sets.difference(desired, existing);
+      Set<String> add =
+          desired.stream()
+              .filter(e -> !existing.contains(e))
+              .collect(Collectors.toUnmodifiableSet());
       if (!add.isEmpty()) {
         SchemaRequest.AddCopyField addAction =
             new SchemaRequest.AddCopyField(fieldName, new ArrayList<>(add));
@@ -818,7 +816,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
         updated = true;
       } // no additions ...
 
-      Set<String> del = Sets.difference(existing, desired);
+      Set<String> del =
+          existing.stream()
+              .filter(e -> !desired.contains(e))
+              .collect(Collectors.toUnmodifiableSet());
       if (!del.isEmpty()) {
         SchemaRequest.DeleteCopyField delAction =
             new SchemaRequest.DeleteCopyField(fieldName, new ArrayList<>(del));
@@ -1215,5 +1216,34 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       PathUtils.deleteDirectory(tmpDirectory);
     }
     return baos.toByteArray();
+  }
+
+  public boolean isConfigSetTrusted(String configSetName) {
+    try {
+      return cc.getConfigSetService().isConfigSetTrusted(configSetName);
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not load conf " + configSetName + ": " + e.getMessage(),
+          e);
+    }
+  }
+
+  public void removeConfigSetTrust(String configSetName) {
+    try {
+      Map<String, Object> metadata = Collections.singletonMap("trusted", false);
+      cc.getConfigSetService().setConfigMetadata(configSetName, metadata);
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not remove trusted flag for configSet " + configSetName + ": " + e.getMessage(),
+          e);
+    }
+  }
+
+  protected ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {
+    SolrResourceLoader loader = cc.getResourceLoader();
+    return new ZkSolrResourceLoader(
+        loader.getInstancePath(), configSet, loader.getClassLoader(), cc.getZkController());
   }
 }

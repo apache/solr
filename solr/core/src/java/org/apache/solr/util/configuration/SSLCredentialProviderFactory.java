@@ -17,7 +17,6 @@
 
 package org.apache.solr.util.configuration;
 
-import com.google.common.collect.ImmutableMap;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ public class SSLCredentialProviderFactory {
   public static final String PROVIDER_CHAIN_KEY = "solr.ssl.credential.provider.chain";
 
   private static final Map<String, Class<? extends SSLCredentialProvider>> defaultProviders =
-      ImmutableMap.of(
+      Map.of(
           "env", EnvSSLCredentialProvider.class,
           "sysprop", SysPropSSLCredentialProvider.class);
 

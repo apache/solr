@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -39,6 +38,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.highlight.Formatter;
@@ -66,6 +66,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
@@ -445,8 +446,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   public NamedList<Object> doHighlighting(
       DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
     SolrParams params = req.getParams();
-    if (!isHighlightingEnabled(params)) // also returns early if no unique key field
-    return null;
+    if (!isHighlightingEnabled(params)) { // also returns early if no unique key field
+      return null;
+    }
 
     boolean rewrite =
         query != null
@@ -544,17 +546,17 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
                   @Override
                   protected void flatten(
                       Query sourceQuery,
-                      IndexReader reader,
+                      IndexSearcher searcher,
                       Collection<Query> flatQueries,
                       float boost)
                       throws IOException {
                     if (sourceQuery instanceof ToParentBlockJoinQuery) {
                       Query childQuery = ((ToParentBlockJoinQuery) sourceQuery).getChildQuery();
                       if (childQuery != null) {
-                        flatten(childQuery, reader, flatQueries, boost);
+                        flatten(childQuery, searcher, flatQueries, boost);
                       }
                     } else {
-                      super.flatten(sourceQuery, reader, flatQueries, boost);
+                      super.flatten(sourceQuery, searcher, flatQueries, boost);
                     }
                   }
                 };
@@ -581,8 +583,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * isn't null.
    */
   protected Set<String> getDocPrefetchFieldNames(String[] hlFieldNames, SolrQueryRequest req) {
-    Set<String> preFetchFieldNames =
-        new HashSet<>(hlFieldNames.length + 1); // +1 for uniqueyKey added after
+    // +1 for uniqueKey added after
+    Set<String> preFetchFieldNames = CollectionUtil.newHashSet(hlFieldNames.length + 1);
     Collections.addAll(preFetchFieldNames, hlFieldNames);
     for (String hlFieldName : hlFieldNames) {
       String alternateField =
@@ -761,8 +763,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
               highlighter.getBestTextFragments(
                   tstream, thisText, mergeContiguousFragments, numFragments);
           for (TextFragment bestTextFragment : bestTextFragments) {
-            if (bestTextFragment == null) // can happen via mergeContiguousFragments
-            continue;
+            if (bestTextFragment == null) { // can happen via mergeContiguousFragments
+              continue;
+            }
             // normally we want a score (must be highlighted), but if preserveMulti then we return a
             // snippet regardless.
             if (bestTextFragment.getScore() > 0 || preserveMulti) {

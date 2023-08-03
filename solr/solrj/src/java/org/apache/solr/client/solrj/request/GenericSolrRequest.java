@@ -16,16 +16,23 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   public SolrParams params;
   public SimpleSolrResponse response = new SimpleSolrResponse();
   public ContentWriter contentWriter;
+
+  public GenericSolrRequest(METHOD m, String path) {
+    this(m, path, new ModifiableSolrParams());
+  }
 
   public GenericSolrRequest(METHOD m, String path, SolrParams params) {
     super(m, path);
@@ -34,6 +41,22 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
 
   public GenericSolrRequest setContentWriter(ContentWriter contentWriter) {
     this.contentWriter = contentWriter;
+    return this;
+  }
+
+  public GenericSolrRequest withContent(byte[] buf, String type) {
+    contentWriter =
+        new ContentWriter() {
+          @Override
+          public void write(OutputStream os) throws IOException {
+            os.write(buf);
+          }
+
+          @Override
+          public String getContentType() {
+            return type;
+          }
+        };
     return this;
   }
 

@@ -69,7 +69,10 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   // avoid instantiating every time...
+  @SuppressWarnings("MutablePublicArray")
   public static final char[] TRUE_TOKEN = {'T'};
+
+  @SuppressWarnings("MutablePublicArray")
   public static final char[] FALSE_TOKEN = {'F'};
 
   ////////////////////////////////////////////////////////////////////////

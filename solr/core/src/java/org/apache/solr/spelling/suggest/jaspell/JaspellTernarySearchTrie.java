@@ -204,7 +204,7 @@ public class JaspellTernarySearchTrie implements Accountable {
       int pos;
       Float occur, one = 1f;
       while ((word = in.readLine()) != null) {
-        pos = word.indexOf("\t");
+        pos = word.indexOf('\t');
         occur = one;
         if (pos != -1) {
           occur = Float.parseFloat(word.substring(pos + 1).trim());

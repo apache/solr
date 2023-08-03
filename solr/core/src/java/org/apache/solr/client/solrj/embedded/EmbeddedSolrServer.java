@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -28,14 +29,12 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.search.TotalHits.Relation;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter.BAOS;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrDocument;
@@ -48,6 +47,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
@@ -246,12 +246,17 @@ public class EmbeddedSolrServer extends SolrClient {
                 }
               };
 
-          try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+          try (var out =
+              new ByteArrayOutputStream() {
+                ByteArrayInputStream toInputStream() {
+                  return new ByteArrayInputStream(buf, 0, count);
+                }
+              }) {
             createJavaBinCodec(callback, resolver)
                 .setWritableDocFields(resolver)
                 .marshal(rsp.getValues(), out);
 
-            try (InputStream in = out.toInputStream()) {
+            try (ByteArrayInputStream in = out.toInputStream()) {
               @SuppressWarnings({"unchecked"})
               NamedList<Object> resolved =
                   (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
@@ -289,7 +294,7 @@ public class EmbeddedSolrServer extends SolrClient {
     final RequestWriter.ContentWriter contentWriter = request.getContentWriter(null);
 
     String cType;
-    final BAOS baos = new BAOS();
+    final Utils.BAOS baos = new Utils.BAOS();
     if (contentWriter != null) {
       contentWriter.write(baos);
       cType = contentWriter.getContentType();

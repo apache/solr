@@ -52,14 +52,14 @@ public final class CoreSorter implements Comparator<CoreDescriptor> {
           // with 0 down nodes than 1 down node because it will make the shard
           // complete earlier and avoid waiting by the other live nodes
           if (c1.totalReplicasInLiveNodes > 0) {
-            // means nobody else is waiting for this , so no need to prioritize
+            // means nobody else is waiting for this, so no need to prioritize
             return -1;
           }
         }
         if (c2.totalReplicasInDownNodes < c1.totalReplicasInDownNodes) {
           // same is the above, just to take care of the case where c2 has to be prioritized
           if (c2.totalReplicasInLiveNodes > 0) {
-            // means nobody else is waiting for this , so no need to priotitize
+            // means nobody else is waiting for this, so no need to prioritize
             return 1;
           }
         }

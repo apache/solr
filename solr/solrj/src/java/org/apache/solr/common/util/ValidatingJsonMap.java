@@ -78,7 +78,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   }
 
   public ValidatingJsonMap(int i) {
-    delegate = new LinkedHashMap<>(i);
+    delegate = CollectionUtil.newLinkedHashMap(i);
   }
 
   public ValidatingJsonMap() {

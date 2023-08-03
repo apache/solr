@@ -21,7 +21,8 @@ Thank you for your interest in contributing to the Apache Solr project. Solr con
 
 Your suggestions and comments can be made directly through the [Apache Solr JIRA](https://issues.apache.org/jira/projects/SOLR/issues).
 
-There are many ways to participate in and contribute to Solr, such as: code implementation, test implementation, documentation improvements.
+There are many ways to participate in and contribute to Solr, such as: code implementation, test implementation, documentation improvements.  Participating in the user mailing list, being active on [Solr Slack](https://s.apache.org/solr-slack) answering questions and providing feedback to developers are also powerful ways to contribute to Solr.
+The community is also always looking for [moderators](#be-a-mailing-list-moderator) for the mailing lists.
 
 If you have any questions along the way, you can reach out to the community using the resources provided [here](https://solr.apache.org/community.html#mailing-lists-chat).
 
@@ -53,6 +54,12 @@ Information on JVMs can be found in the [JVMs developer documentation](dev-docs/
 
 Frequently asked questions can be found in the [FAQ developer documentation](dev-docs/FAQ.adoc)
 
-## Additional information
 
-Even more hits and tips are to be found in the [Solr Wiki](https://cwiki.apache.org/confluence/display/solr/HowToContribute). 
+## Be A Mailing List Moderator
+
+Being a list moderator is incredibly easy - the basic responsibilities are:
+
+Get a copy of any email sent to one of the Solr lists from an address that is not subscribed and review it to see if it's spam or not.
+Occasionally help people with particular difficulties unsubscribing to the mailing list.
+
+If you'd like to volunteer to be the moderator of a mailing list, just contact listname-owner@solr.apache.org... (ie: users-owner@solr.apache.org...)
