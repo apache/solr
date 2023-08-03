@@ -79,7 +79,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     apiBag.registerObject(new RequestSyncShardAPI(handler));
     apiBag.registerObject(new RequestBufferUpdatesAPI(handler));
     apiBag.registerObject(new RequestCoreCommandStatusAPI(handler));
-    apiBag.registerObject(new RestoreCoreAPI(handler));
   }
 
   @Test
@@ -193,15 +192,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
         captureConvertedV1Params("/cores/coreName", "POST", "{\"request-recovery\": {}}");
 
     assertEquals("requestrecovery", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-  }
-
-  @Test
-  public void testRestoreCore() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params("/cores/coreName", "POST", "{\"restore\": {}}");
-
-    assertEquals("restorecore", v1Params.get(ACTION));
     assertEquals("coreName", v1Params.get(CORE));
   }
 

@@ -16,51 +16,150 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CoreAdminParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.CORE;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RESTORECORE;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.RestoreCorePayload;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.Parameter;
+import java.net.URI;
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.backup.ShardBackupId;
+import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.handler.RestoreCore;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SolrJerseyResponse;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * Internal V2 API triggering restore a core.
+ * V2 API for restoring a previously taken backup to a core
  *
- * <p>Only valid in SolrCloud mode. This API (POST /api/cores/coreName/restore {'restore': {}}) is
- * analogous to the v1 GET /solr/admin/cores?action=RESTORECORE command.
- *
- * @see RestoreCorePayload
+ * <p>Only valid in SolrCloud mode. This API (POST /api/cores/coreName/restore {}) is analogous to
+ * the v1 GET /solr/admin/cores?action=RESTORECORE command.
  */
-@EndPoint(
-    path = {"/cores/{core}"},
-    method = POST,
-    permission = CORE_EDIT_PERM)
-public class RestoreCoreAPI {
+@Path("/cores/{coreName}/restore")
+public class RestoreCoreAPI extends CoreAdminAPIBase {
 
-  public static final String V2_CORE_RESTORE_CMD = "restore";
-
-  private final CoreAdminHandler coreAdminHandler;
-
-  public RestoreCoreAPI(CoreAdminHandler coreAdminHandler) {
-    this.coreAdminHandler = coreAdminHandler;
+  @Inject
+  public RestoreCoreAPI(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse,
+      CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker) {
+    super(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
   }
 
-  @Command(name = V2_CORE_RESTORE_CMD)
-  public void requestCoreRecovery(PayloadObj<RestoreCorePayload> obj) throws Exception {
-    final RestoreCorePayload v2Body = obj.get();
-    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
-    v1Params.put(ACTION, RESTORECORE.name().toLowerCase(Locale.ROOT));
-    v1Params.put(CORE, obj.getRequest().getPathTemplateValues().get("core"));
+  @POST
+  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @PermissionName(CORE_EDIT_PERM)
+  public SolrJerseyResponse restoreCore(
+      @Parameter(description = "The name of the core to be restored") @PathParam("coreName")
+          String coreName,
+      RestoreCoreRequestBody requestBody)
+      throws Exception {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    ensureRequiredParameterProvided("coreName", coreName);
+    if (requestBody == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
+    }
+    AdminAPIBase.validateZooKeeperAwareCoreContainer(coreContainer);
+    return handlePotentiallyAsynchronousTask(
+        response,
+        coreName,
+        requestBody.async,
+        "restoreCore",
+        () -> {
+          try {
+            doRestore(coreName, requestBody);
+            return response;
+          } catch (Exception e) {
+            throw new CoreAdminAPIBaseException(e);
+          }
+        });
+  }
 
-    coreAdminHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  private void doRestore(String coreName, RestoreCoreRequestBody requestBody) throws Exception {
+    if (requestBody.shardBackupId == null && requestBody.name == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Either 'name' or 'shardBackupId' must be specified");
+    }
+
+    try (BackupRepository repository =
+            coreContainer.newBackupRepository(requestBody.backupRepository);
+        SolrCore core = coreContainer.getCore(coreName)) {
+
+      String location = repository.getBackupLocation(requestBody.location);
+      if (location == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "'location' is not specified as a query"
+                + " parameter or as a default repository property");
+      }
+
+      URI locationUri = repository.createDirectoryURI(location);
+      CloudDescriptor cd = core.getCoreDescriptor().getCloudDescriptor();
+      // this core must be the only replica in its shard otherwise
+      // we cannot guarantee consistency between replicas because when we add data (or restore
+      // index) to this replica
+      Slice slice =
+          coreContainer
+              .getZkController()
+              .getClusterState()
+              .getCollection(cd.getCollectionName())
+              .getSlice(cd.getShardId());
+      if (slice.getReplicas().size() != 1 && !core.readOnly) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to restore core="
+                + core.getName()
+                + ", the core must be the only replica in its shard or it must be read only");
+      }
+
+      RestoreCore restoreCore;
+      if (requestBody.shardBackupId != null) {
+        final ShardBackupId shardBackupId = ShardBackupId.from(requestBody.shardBackupId);
+        restoreCore = RestoreCore.createWithMetaFile(repository, core, locationUri, shardBackupId);
+      } else {
+        restoreCore = RestoreCore.create(repository, core, locationUri, requestBody.name);
+      }
+      boolean success = restoreCore.doRestore();
+      if (!success) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Failed to restore core=" + core.getName());
+      }
+      // other replicas to-be-created will know that they are out of date by
+      // looking at their term : 0 compare to term of this core : 1
+      coreContainer
+          .getZkController()
+          .getShardTerms(cd.getCollectionName(), cd.getShardId())
+          .ensureHighestTermsAreNotZero();
+    }
+  }
+
+  public static class RestoreCoreRequestBody implements JacksonReflectMapWriter {
+    @JsonProperty public String name;
+
+    @JsonProperty public String shardBackupId;
+
+    @JsonProperty(CoreAdminParams.BACKUP_REPOSITORY)
+    public String backupRepository;
+
+    @JsonProperty(CoreAdminParams.BACKUP_LOCATION)
+    public String location;
+
+    @JsonProperty public String async;
   }
 }

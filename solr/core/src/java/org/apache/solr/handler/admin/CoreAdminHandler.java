@@ -377,14 +377,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new RequestApplyCoreUpdatesAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RequestSyncShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RequestBufferUpdatesAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new RestoreCoreAPI(this)));
 
     return apis;
   }
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(CoreSnapshotAPI.class, InstallCoreDataAPI.class, BackupCoreAPI.class);
+    return List.of(
+        CoreSnapshotAPI.class, InstallCoreDataAPI.class, BackupCoreAPI.class, RestoreCoreAPI.class);
   }
 
   static {
