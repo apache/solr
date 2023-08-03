@@ -23,6 +23,9 @@ Improvements
   a HTTP 503 status. Switched to 510 so that CloudSolrClient will auto-retry it and probably succeed.
   (David Smiley, Alex Deparvu)
 
+* SOLR-16490: The semi-internal `/admin/cores?action=restorecore` API now has a v2 equivalent, available at
+  `POST /api/cores/coreName/restore {...}` (Sayanti Dey via Jason Gerlowski)
+
 Optimizations
 ---------------------
 
