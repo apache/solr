@@ -350,7 +350,7 @@ function print_usage() {
     echo "                          solr.in.sh, an embedded ZooKeeper instance is started on Solr port+1000,"
     echo "                          such as 9983 if Solr is bound to 8983"
     echo ""
-    echo "  -h/-host <host>       Specify the hostname for this Solr instance"
+    echo "  -host <host>          Specify the hostname for this Solr instance"
     echo ""
     echo "  -p <port>             Specify the port to start the Solr HTTP listener on; default is 8983"
     echo "                          The specified port (SOLR_PORT) will also be used to determine the stop port"
@@ -1270,13 +1270,13 @@ if [ $# -gt 0 ]; then
             FG="true"
             shift
         ;;
-        -h|-host)
+        -host)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Hostname is required when using the $1 option!"
               exit 1
             fi
             SOLR_HOST="$2"
-            PASS_TO_RUN_EXAMPLE+=("-h" "$SOLR_HOST")
+            PASS_TO_RUN_EXAMPLE+=("-host" "$SOLR_HOST")
             shift 2
         ;;
         -m|-memory)

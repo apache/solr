@@ -38,6 +38,14 @@ setup() {
   refute_output --partial 'ERROR'
 }
 
+@test "start h flag prints help" {
+  run solr start -h
+  assert_output --partial 'Usage: solr start'
+  refute_output --partial 'ERROR: Hostname is required when using the -h option!'
+}
+
+
+
 @test "stop help flag prints help" {
   run solr stop -help
   assert_output --partial 'Usage: solr stop'
