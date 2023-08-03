@@ -54,7 +54,7 @@ teardown() {
 
 @test "basic post with a type specified" {
   
-  run solr create_collection -c monitors -d _default
+  run solr create -c monitors -d _default
   assert_output --partial "Created collection 'monitors'"
   
   run solr post -type application/xml -url http://localhost:8983/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
@@ -65,7 +65,7 @@ teardown() {
 
 @test "basic post WITHOUT a type specified" {
   
-  solr create_collection -c monitors_no_type -d _default
+  solr create -c monitors_no_type -d _default
   
   run solr post -url http://localhost:8983/solr/monitors_no_type/update -commit ${SOLR_TIP}/example/exampledocs/monitor.xml
 
@@ -74,7 +74,7 @@ teardown() {
   run curl 'http://localhost:8983/solr/monitors_no_type/select?q=*:*'
   assert_output --partial '"numFound":1'
   
-  solr create_collection -c books_no_type -d _default
+  solr create -c books_no_type -d _default
   
   run solr post -url http://localhost:8983/solr/books_no_type/update -commit ${SOLR_TIP}/example/exampledocs/books.json
 
@@ -83,7 +83,7 @@ teardown() {
   run curl 'http://localhost:8983/solr/books_no_type/select?q=*:*'
   assert_output --partial '"numFound":4'
   
-  solr create_collection -c books_csv_no_type -d _default
+  solr create -c books_csv_no_type -d _default
   
   run solr post -url http://localhost:8983/solr/books_csv_no_type/update -commit ${SOLR_TIP}/example/exampledocs/books.csv
 
@@ -95,7 +95,7 @@ teardown() {
 
 @test "crawling a directory" {
   
-  solr create_collection -c mixed_content -d _default
+  solr create -c mixed_content -d _default
   
   # We filter to xml,json,and csv as we don't want to invoke the Extract handler.
   run solr post -filetypes xml,json,csv -url http://localhost:8983/solr/mixed_content/update -commit ${SOLR_TIP}/example/exampledocs
@@ -108,7 +108,7 @@ teardown() {
 
 # this test doesn't complete due to issues in posting to the /extract handler
 @test "crawling a web site" {
-  solr create_collection -c webcrawl -d _default
+  solr create -c webcrawl -d _default
   
   curl -X POST -H 'Content-type:application/json' -d '{
     "add-requesthandler": {
@@ -124,7 +124,7 @@ teardown() {
 
 @test "commit and optimize and delete" {
   
-  run solr create_collection -c monitors2 -d _default
+  run solr create -c monitors2 -d _default
   assert_output --partial "Created collection 'monitors2'"
   
   run solr post -url http://localhost:8983/solr/monitors2/update -type application/xml -commit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
@@ -138,7 +138,7 @@ teardown() {
 
 @test "args mode" {
   
-  run solr create_collection -c test_args -d _default
+  run solr create -c test_args -d _default
   assert_output --partial "Created collection 'test_args'"
   
   run solr post -url http://localhost:8983/solr/test_args/update -mode args -type application/xml -out -commit "<delete><query>*:*</query></delete>"
@@ -165,7 +165,7 @@ capture_echo_to_solr() {
 
 @test "stdin mode" {
   
-  run solr create_collection -c test_stdin -d _default
+  run solr create -c test_stdin -d _default
   assert_output --partial "Created collection 'test_stdin'"
   
   run capture_echo_to_solr

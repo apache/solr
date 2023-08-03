@@ -836,7 +836,7 @@ if [ "$SCRIPT_CMD" == "config" ]; then
 fi
 
 # create a core or collection
-if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]]; then
+if [[ "$SCRIPT_CMD" == "create" ]]; then
   run_tool $SCRIPT_CMD $@
   exit $?
 fi
