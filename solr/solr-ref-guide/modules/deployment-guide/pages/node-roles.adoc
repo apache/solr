@@ -165,7 +165,7 @@ Fetches the current node roles assignment for a specified role.
 *Input*
 [source,text]
 ----
-http://localhost:8983/api/node-roles/role/data
+http://localhost:8983/api/cluster/node-roles/role/data
 ----
 
 *Output*
@@ -184,7 +184,7 @@ http://localhost:8983/api/node-roles/role/data
 *Input*
 [source,text]
 ----
-http://localhost:8983/api/node-roles/role/data/off
+http://localhost:8983/api/cluster/node-roles/role/data/off
 ----
 
 *Output*
