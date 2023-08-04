@@ -33,6 +33,7 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.search.QueryParsing;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
@@ -217,6 +218,8 @@ public class RequestUtil {
         if ("query".equals(key)) {
           out = "q";
           isQuery = true;
+          String[] queryParsers = {"lucene"};
+          newMap.put(QueryParsing.DEFTYPE, queryParsers);
         } else if ("filter".equals(key)) {
           out = "fq";
           arr = true;
