@@ -36,6 +36,8 @@ Deprecation Removals
 
 * SOLR-16823: Remove backcompatiblity of -upconfig and -downconfig for bin/solr zk upconfig and downconfig commands.  (Eric Pugh)
 
+* SOLR-16893: Remove bin/solr create_core and create_collection commands in favour of bin/solr create command.  (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -55,6 +57,8 @@ Other Changes
 
 * SOLR-16892: bin/solr create command supports both standalone and cloud modes, and deprecate create_core and create_collection commands.   (Eric Pugh)
 
+* SOLR-16822: Change meaning of -h from shorhand for -host to instead return help information for bin/solr start and restart commands. (Eric Pugh)
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
@@ -68,6 +72,10 @@ Improvements
 * SOLR-16883: Postlogs tool for indexing Solr logs in Solr now supported on Windows by converting it to a Solr CLI command: `bin/solr postlogs`.   `bin/postlogs` script marked deprected.  (Eric Pugh, Will White)
 
 * SOLR-16847: v2 APIs are now able to access any applicable solrconfig.xml "requestHandler" configuration. (Alex Deparvu via Jason Gerlowski)
+
+* SOLR-16490: The semi-internal `/admin/cores?action=restorecore` API now has a v2 equivalent, available at
+  `POST /api/cores/coreName/restore {...}` (Sayanti Dey via Jason Gerlowski)
+
 
 Optimizations
 ---------------------

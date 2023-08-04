@@ -31,7 +31,7 @@ teardown() {
 
 @test "SQL Module" {
   run solr start -c -Dsolr.modules=sql
-  run solr create_collection -c COLL_NAME
+  run solr create -c COLL_NAME
   run solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
   assert_output --partial '"docs":'
   assert_output --partial '"EOF":true'
@@ -62,6 +62,6 @@ teardown() {
 
 @test "icu collation in analysis-extras module" {
   run solr start -c -Dsolr.modules=analysis-extras
-  run solr create_collection -c COLL_NAME -d test/analysis_extras_config/conf
+  run solr create -c COLL_NAME -d test/analysis_extras_config/conf
   assert_output --partial "Created collection 'COLL_NAME'"
 }
