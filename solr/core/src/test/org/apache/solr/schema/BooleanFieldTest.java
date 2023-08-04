@@ -25,7 +25,7 @@ import org.junit.Test;
 public class BooleanFieldTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml", "schema15.xml");
+    initCore("solrconfig-tlog.xml", "schema15.xml");
   }
 
   // Note, docValues-based boolean tests are tested elsewhere referring to more appropriate schemas
