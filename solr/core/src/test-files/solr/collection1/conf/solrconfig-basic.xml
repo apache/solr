@@ -21,6 +21,11 @@
      DO NOT ADD THINGS TO THIS CONFIG! -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <updateLog enable="${enable.update.log:true}">
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
+  </updateHandler>
   <dataDir>${solr.data.dir:}</dataDir>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>

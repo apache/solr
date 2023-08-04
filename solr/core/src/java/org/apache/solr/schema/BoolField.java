@@ -40,6 +40,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueBool;
 import org.apache.solr.analysis.SolrAnalyzer;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.OrdFieldSource;
@@ -211,8 +212,7 @@ public class BoolField extends PrimitiveFieldType {
   @Override
   public Object toNativeType(Object val) {
     if (val instanceof CharSequence) {
-      char ch = (val.toString().length() > 0) ? val.toString().charAt(0) : 0;
-      return (ch == '1' || ch == 't' || ch == 'T') ? Boolean.valueOf(true) : Boolean.valueOf(false);
+      return Boolean.valueOf(StrUtils.parseBoolean(val.toString()));
     }
     return super.toNativeType(val);
   }
