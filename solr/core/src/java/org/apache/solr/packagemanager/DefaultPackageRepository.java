@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -111,7 +110,8 @@ public class DefaultPackageRepository extends PackageRepository {
     // We need http 1.1 protocol here because we are talking to the repository server and not to
     // an actual Solr server.
     // We use an Http2SolrClient so that we do not need a raw jetty http client for this GET.
-    // We may get a text/plain mimetype for the repository.json (for instance when looking up a repo on Github), so use custom ResponseParser.
+    // We may get a text/plain mimetype for the repository.json (for instance when looking up a repo
+    // on Github), so use custom ResponseParser.
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(repositoryURL).useHttp1_1(true).build()) {
       GenericSolrRequest request =
@@ -134,8 +134,8 @@ public class DefaultPackageRepository extends PackageRepository {
   }
 
   /**
-   * Github links for repository.json are returned in JSON format but with text/plain mimetype, so this
-   * works around that issue.
+   * Github links for repository.json are returned in JSON format but with text/plain mimetype, so
+   * this works around that issue.
    */
   private static class TalkToRepoResponseParser extends JsonMapResponseParser {
 
