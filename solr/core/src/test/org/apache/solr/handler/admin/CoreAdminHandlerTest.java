@@ -301,8 +301,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Files.writeString(renamePropFile, "", StandardCharsets.UTF_8);
 
     JettySolrRunner runner =
-        new JettySolrRunner(
-            solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig("/solr"));
+        new JettySolrRunner(solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig());
     runner.start();
 
     try (SolrClient client =
@@ -374,8 +373,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
-        new JettySolrRunner(
-            solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig("/solr"));
+        new JettySolrRunner(solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig());
     runner.start();
 
     try (SolrClient client =
@@ -436,8 +434,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
-        new JettySolrRunner(
-            solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig("/solr"));
+        new JettySolrRunner(solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig());
     runner.start();
 
     try (SolrClient client =
