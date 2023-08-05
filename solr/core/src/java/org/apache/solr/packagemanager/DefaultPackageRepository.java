@@ -38,7 +38,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.response.JSONResponseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +133,11 @@ public class DefaultPackageRepository extends PackageRepository {
     }
   }
 
-  private class TalkToRepoResponseParser extends JsonMapResponseParser {
+  /**
+   * Github links for repository.json are returned in JSON format but with text/plain mimetype, so this
+   * works around that issue.
+   */
+  private static class TalkToRepoResponseParser extends JsonMapResponseParser {
 
     @Override
     public Collection<String> getContentTypes() {
