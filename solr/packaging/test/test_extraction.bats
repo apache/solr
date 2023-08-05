@@ -38,7 +38,7 @@ teardown() {
   solr start -c -Dsolr.modules=extraction
   
   
-  solr create_collection -c gettingstarted -d _default
+  solr create -c gettingstarted -d _default
 
   
   curl -X POST -H 'Content-type:application/json' -d '{
@@ -62,7 +62,7 @@ teardown() {
   export SOLR_SECURITY_MANAGER_ENABLED=false
   solr start -c -Dsolr.modules=extraction
   
-  solr create_collection -c content_extraction -d _default
+  solr create -c content_extraction -d _default
   
   curl -X POST -H 'Content-type:application/json' -d '{
     "add-requesthandler": {
@@ -89,7 +89,7 @@ teardown() {
   export SOLR_SECURITY_MANAGER_ENABLED=false
   solr start -c -Dsolr.modules=extraction
   
-  solr create_collection -c website_extraction -d _default
+  solr create -c website_extraction -d _default
   
   curl -X POST -H 'Content-type:application/json' -d '{
     "add-requesthandler": {
