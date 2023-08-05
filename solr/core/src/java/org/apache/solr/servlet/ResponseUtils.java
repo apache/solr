@@ -18,6 +18,9 @@ package org.apache.solr.servlet;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -120,10 +123,22 @@ public class ResponseUtils {
 
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
-      StringWriter sw = new StringWriter();
-      ex.printStackTrace(new PrintWriter(sw));
       log.error("500 Exception", ex);
-      errorInfo.trace = sw.toString();
+      errorInfo.trace = new ErrorInfo.ErrorStackTrace();
+      errorInfo.trace.stackTrace = Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList());
+
+      ErrorInfo.ErrorStackTrace lastTrace = errorInfo.trace;
+      Throwable causedBy = ex.getCause();
+      while (causedBy != null) {
+        ErrorInfo.ErrorCausedBy errorCausedBy = new ErrorInfo.ErrorCausedBy();
+        lastTrace.causedBy = errorCausedBy;
+        errorCausedBy.errorClass = causedBy.getClass().getName();
+        errorCausedBy.msg = causedBy.getMessage();
+        errorCausedBy.trace = new ErrorInfo.ErrorStackTrace();
+        errorCausedBy.trace.stackTrace = Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList());
+        lastTrace = errorCausedBy.trace;
+        causedBy = causedBy.getCause();
+      }
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
