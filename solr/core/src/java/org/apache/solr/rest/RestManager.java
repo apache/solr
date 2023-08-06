@@ -288,31 +288,32 @@ public class RestManager {
       final String resourceId = resolveResourceId(solrRequest.getPath());
       managedResource = restManager.getManagedResourceOrNull(resourceId);
       if (managedResource == null) {
-          int lastSlashAt;
-          String parentResourceId;
-          String initialResourceId = resourceId;
-          // Check if we have a registered endpoint, going one level up each time...
-          do {
-            lastSlashAt = initialResourceId.lastIndexOf('/');
-            parentResourceId = resourceId.substring(0, lastSlashAt);
-            log.info("Resource not found for {}, looking for parent: {}", resourceId, parentResourceId);
-            managedResource = restManager.getManagedResourceOrNull(parentResourceId);
-            initialResourceId = parentResourceId;
-          } while (managedResource == null && initialResourceId.lastIndexOf("/") != -1);
-          if (managedResource != null) {
-            // verify this resource supports child resources
-            if (!(managedResource instanceof ManagedResource.ChildResourceSupport)) {
-              String errMsg =
-                  String.format(
-                      Locale.ROOT,
-                      "%s does not support child resources!",
-                      managedResource.getResourceId());
-              throw new SolrException(ErrorCode.BAD_REQUEST, errMsg);
-            }
-
-            childId = resourceId.substring(lastSlashAt + 1);
-            log.info("Found parent resource {} for child: {}", parentResourceId, childId);
+        int lastSlashAt;
+        String parentResourceId;
+        String initialResourceId = resourceId;
+        // Check if we have a registered endpoint, going one level up each time...
+        do {
+          lastSlashAt = initialResourceId.lastIndexOf('/');
+          parentResourceId = resourceId.substring(0, lastSlashAt);
+          log.info(
+              "Resource not found for {}, looking for parent: {}", resourceId, parentResourceId);
+          managedResource = restManager.getManagedResourceOrNull(parentResourceId);
+          initialResourceId = parentResourceId;
+        } while (managedResource == null && initialResourceId.lastIndexOf("/") != -1);
+        if (managedResource != null) {
+          // verify this resource supports child resources
+          if (!(managedResource instanceof ManagedResource.ChildResourceSupport)) {
+            String errMsg =
+                String.format(
+                    Locale.ROOT,
+                    "%s does not support child resources!",
+                    managedResource.getResourceId());
+            throw new SolrException(ErrorCode.BAD_REQUEST, errMsg);
           }
+
+          childId = resourceId.substring(lastSlashAt + 1);
+          log.info("Found parent resource {} for child: {}", parentResourceId, childId);
+        }
       }
 
       if (managedResource == null) {

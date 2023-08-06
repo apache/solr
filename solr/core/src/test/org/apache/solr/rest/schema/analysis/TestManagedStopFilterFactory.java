@@ -197,7 +197,9 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
     // test for SOLR-6853 - should be able to delete stopwords with slash
     assertJPut(
-            endpoint, Utils.toJSONString(Arrays.asList("cheerful/joyful", "sleepy/tired")), "/responseHeader/status==0");
+        endpoint,
+        Utils.toJSONString(Arrays.asList("cheerful/joyful", "sleepy/tired")),
+        "/responseHeader/status==0");
 
     // verify delete works
     assertJDelete(endpoint + "/cheerful/joyful", "/responseHeader/status==0");
