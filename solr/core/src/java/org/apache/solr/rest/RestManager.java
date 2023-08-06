@@ -288,13 +288,17 @@ public class RestManager {
       final String resourceId = resolveResourceId(solrRequest.getPath());
       managedResource = restManager.getManagedResourceOrNull(resourceId);
       if (managedResource == null) {
-        // see if we have a registered endpoint one-level up ...
-        int lastSlashAt = resourceId.lastIndexOf('/');
-        if (lastSlashAt != -1) {
-          String parentResourceId = resourceId.substring(0, lastSlashAt);
-          log.info(
-              "Resource not found for {}, looking for parent: {}", resourceId, parentResourceId);
-          managedResource = restManager.getManagedResourceOrNull(parentResourceId);
+          int lastSlashAt;
+          String parentResourceId;
+          String initialResourceId = resourceId;
+          // Check if we have a registered endpoint, going one level up each time...
+          do {
+            lastSlashAt = initialResourceId.lastIndexOf('/');
+            parentResourceId = resourceId.substring(0, lastSlashAt);
+            log.info("Resource not found for {}, looking for parent: {}", resourceId, parentResourceId);
+            managedResource = restManager.getManagedResourceOrNull(parentResourceId);
+            initialResourceId = parentResourceId;
+          } while (managedResource == null && initialResourceId.lastIndexOf("/") != -1);
           if (managedResource != null) {
             // verify this resource supports child resources
             if (!(managedResource instanceof ManagedResource.ChildResourceSupport)) {
@@ -309,7 +313,6 @@ public class RestManager {
             childId = resourceId.substring(lastSlashAt + 1);
             log.info("Found parent resource {} for child: {}", parentResourceId, childId);
           }
-        }
       }
 
       if (managedResource == null) {
