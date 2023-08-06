@@ -86,7 +86,8 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + ZK_HOST)
+                  + ZK_HOST
+                  + '.')
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
@@ -96,7 +97,8 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
-                  + DEFAULT_SOLR_URL)
+                  + DEFAULT_SOLR_URL
+                  + '.')
           .build();
   public static final Option OPTION_VERBOSE =
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
