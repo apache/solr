@@ -101,9 +101,12 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   @Override
   public SolrClient getSolrClient(String name) {
     return clients.computeIfAbsent(
-        name,
-        key ->
-            new HttpSolrClient.Builder(getJetty().getBaseUrl().toString() + "/" + name).build());
+        name, key -> new HttpSolrClient.Builder(getBaseUrl() + "/" + name).build());
+  }
+
+  /** URL to Solr. */
+  public String getBaseUrl() {
+    return getJetty().getBaseUrl().toString();
   }
 
   @Override

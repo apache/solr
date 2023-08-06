@@ -437,7 +437,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     if (getJetty() != null) {
       // check system wide system handler + "/admin/info/system"
-      String url = getJetty().getBaseUrl().toString();
+      String url = getBaseUrl();
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
         q.set("qt", "/admin/info/system");

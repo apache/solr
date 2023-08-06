@@ -41,8 +41,7 @@ public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client =
-        getLBHttpSolrClient(getJetty().getBaseUrl().toString() + "/" + ANY_COLLECTION)) {
+    try (SolrClient client = getLBHttpSolrClient(getBaseUrl() + "/" + ANY_COLLECTION)) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),
@@ -69,7 +68,7 @@ public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
           });
     }
 
-    try (SolrClient client = getLBHttpSolrClient(getJetty().getBaseUrl().toString())) {
+    try (SolrClient client = getLBHttpSolrClient(getBaseUrl())) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),

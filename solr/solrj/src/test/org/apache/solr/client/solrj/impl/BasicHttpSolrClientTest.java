@@ -208,8 +208,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (SolrClient client =
-        getHttpSolrClient(
-            getJetty().getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)) {
+        getHttpSolrClient(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)) {
       SolrServerException e =
           expectThrows(SolrServerException.class, () -> client.query(q, METHOD.GET));
       assertTrue(e.getMessage().contains("Timeout"));
@@ -228,7 +227,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
         ErrorCode.UNKNOWN,
         ErrorCode.getErrorCode(status));
 
-    try (SolrClient client = getHttpSolrClient(getJetty().getBaseUrl().toString() + "/debug/foo")) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl() + "/debug/foo")) {
       DebugServlet.setErrorCode(status);
       SolrQuery q = new SolrQuery("foo");
       SolrException e = expectThrows(SolrException.class, () -> client.query(q, METHOD.GET));
@@ -241,7 +240,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testQuery() throws Exception {
     DebugServlet.clear();
-    String url = getJetty().getBaseUrl().toString() + "/debug/foo";
+    String url = getBaseUrl() + "/debug/foo";
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", "\u1234");
     try (HttpSolrClient client = getHttpSolrClient(url)) {
@@ -395,7 +394,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testDelete() throws Exception {
     DebugServlet.clear();
-    String url = getJetty().getBaseUrl().toString() + "/debug/foo";
+    String url = getBaseUrl() + "/debug/foo";
     try (HttpSolrClient client = getHttpSolrClient(url)) {
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.deleteById("id"));
 
@@ -444,7 +443,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testGetById() throws Exception {
     DebugServlet.clear();
-    try (SolrClient client = getHttpSolrClient(getJetty().getBaseUrl().toString() + "/debug/foo")) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl() + "/debug/foo")) {
       Collection<String> ids = Collections.singletonList("a");
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("a"));
       expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById(ids, null));
@@ -457,7 +456,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testUpdate() throws Exception {
     DebugServlet.clear();
-    String url = getJetty().getBaseUrl().toString() + "/debug/foo";
+    String url = getBaseUrl() + "/debug/foo";
 
     try (HttpSolrClient client = getHttpSolrClient(url)) {
       UpdateRequest req = new UpdateRequest();
@@ -540,7 +539,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testRedirect() throws Exception {
-    final String clientUrl = getJetty().getBaseUrl().toString() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + "/redirect/foo";
     SolrQuery q = new SolrQuery("*:*");
 
     // default for redirect is false.
@@ -567,7 +566,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testCompression() throws Exception {
     final SolrQuery q = new SolrQuery("*:*");
 
-    final String clientUrl = getJetty().getBaseUrl().toString() + "/debug/foo";
+    final String clientUrl = getBaseUrl() + "/debug/foo";
     try (SolrClient client = getHttpSolrClient(clientUrl)) {
       // verify request header gets set
       DebugServlet.clear();
@@ -592,8 +591,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     assertNull(DebugServlet.headers.get("Accept-Encoding"));
 
     // verify server compresses output
-    HttpGet get =
-        new HttpGet(getJetty().getBaseUrl().toString() + "/collection1" + "/select?q=foo&wt=xml");
+    HttpGet get = new HttpGet(getBaseUrl() + "/collection1" + "/select?q=foo&wt=xml");
     get.setHeader("Accept-Encoding", "gzip");
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, true);
@@ -618,8 +616,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
 
     // verify compressed response can be handled
-    try (SolrClient client =
-        getHttpSolrClient(getJetty().getBaseUrl().toString() + "/collection1")) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl() + "/collection1")) {
       QueryResponse response = client.query(new SolrQuery("foo"));
       assertEquals(0, response.getStatus());
     }
@@ -628,7 +625,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testCollectionParameters() throws IOException, SolrServerException {
 
-    try (SolrClient client = getHttpSolrClient(getJetty().getBaseUrl().toString())) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl())) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "collection");
       client.add("collection1", doc);
@@ -639,7 +636,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           client.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
     }
 
-    final String collection1Url = getJetty().getBaseUrl().toString() + "/collection1";
+    final String collection1Url = getBaseUrl() + "/collection1";
     try (SolrClient client = getHttpSolrClient(collection1Url)) {
       assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
     }
@@ -648,8 +645,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testGetRawStream() throws SolrServerException, IOException {
     CloseableHttpClient client = HttpClientUtil.createClient(null);
-    try (SolrClient solrClient =
-        getHttpSolrClient(getJetty().getBaseUrl().toString() + "/collection1", client, null); ) {
+    try (SolrClient solrClient = getHttpSolrClient(getBaseUrl() + "/collection1", client, null); ) {
 
       QueryRequest req = new QueryRequest();
       NamedList<?> response = solrClient.request(req);
@@ -715,7 +711,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     HttpClientUtil.addRequestInterceptor(changeRequestInterceptor);
     HttpClientUtil.addRequestInterceptor(cookieSettingRequestInterceptor);
 
-    final String clientUrl = getJetty().getBaseUrl().toString() + "/debug/foo";
+    final String clientUrl = getBaseUrl() + "/debug/foo";
     try (SolrClient server = getHttpSolrClient(clientUrl)) {
 
       SolrQuery q = new SolrQuery("foo");
@@ -780,7 +776,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testQueryString() throws Exception {
 
-    final String clientUrl = getJetty().getBaseUrl().toString() + "/debug/foo";
+    final String clientUrl = getBaseUrl() + "/debug/foo";
     HttpSolrClient.Builder builder = new HttpSolrClient.Builder(clientUrl);
     try (HttpSolrClient client =
         builder.withTheseParamNamesInTheUrl(Set.of("serverOnly")).build()) {
@@ -832,7 +828,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testInvariantParams() throws IOException {
     try (HttpSolrClient createdClient =
         new HttpSolrClient.Builder()
-            .withBaseSolrUrl(getJetty().getBaseUrl().toString())
+            .withBaseSolrUrl(getBaseUrl())
             .withInvariantParams(SolrTestCaseJ4.params("param", "value"))
             .build()) {
       assertEquals("value", createdClient.getInvariantParams().get("param"));
@@ -840,7 +836,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
     try (HttpSolrClient createdClient =
         new HttpSolrClient.Builder()
-            .withBaseSolrUrl(getJetty().getBaseUrl().toString())
+            .withBaseSolrUrl(getBaseUrl())
             .withInvariantParams(SolrTestCaseJ4.params("fq", "fq1", "fq", "fq2"))
             .build()) {
       assertEquals(2, createdClient.getInvariantParams().getParams("fq").length);
@@ -848,7 +844,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
     try (SolrClient createdClient =
         new HttpSolrClient.Builder()
-            .withBaseSolrUrl(getJetty().getBaseUrl().toString())
+            .withBaseSolrUrl(getBaseUrl())
             .withKerberosDelegationToken("mydt")
             .withInvariantParams(
                 SolrTestCaseJ4.params(DelegationTokenHttpSolrClient.DELEGATION_TOKEN_PARAM, "mydt"))

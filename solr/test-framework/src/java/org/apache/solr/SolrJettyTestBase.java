@@ -32,7 +32,7 @@ import org.junit.ClassRule;
 
 public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
-  
+
   protected static JettySolrRunner createAndStartJetty(
       String solrHome,
       String configFile,
@@ -109,8 +109,14 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return solrClientTestRule.getJetty();
   }
 
+  /** URL to Solr */
+  protected static String getBaseUrl() {
+    return solrClientTestRule.getBaseUrl();
+  }
+
+  /** URL to the core */
   protected String getServerUrl() {
-    return getJetty().getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
+    return getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
   }
 
   protected SolrClient getSolrClient() {
@@ -137,5 +143,4 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
       PathUtils.deleteDirectory(solrHome.toPath());
     }
   }
-
 }

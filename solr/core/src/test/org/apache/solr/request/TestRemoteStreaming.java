@@ -43,7 +43,7 @@ import org.junit.Test;
 /** See SOLR-2854. */
 @SuppressSSL // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
 public class TestRemoteStreaming extends SolrJettyTestBase {
-  
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     // this one has handleSelect=true which a test here needs
@@ -73,13 +73,10 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   @Test
   public void testStreamUrl() throws Exception {
     String streamUrl =
-        getJetty().getBaseUrl().toString()
-            + "/"
-            + DEFAULT_TEST_COLLECTION_NAME
-            + "/select?q=*:*&fl=id&wt=csv";
+        getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME + "/select?q=*:*&fl=id&wt=csv";
 
     String getUrl =
-        getJetty().getBaseUrl().toString()
+        getBaseUrl()
             + "/"
             + DEFAULT_TEST_COLLECTION_NAME
             + "/debug/dump?wt=xml&stream.url="
@@ -116,7 +113,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
   /** Compose an HTTP GET url that will delete all the data. */
   private String makeDeleteAllUrl() throws UnsupportedEncodingException {
     String deleteQuery = "<delete><query>*:*</query></delete>";
-    return getJetty().getBaseUrl().toString()
+    return getBaseUrl()
         + "/"
         + DEFAULT_TEST_COLLECTION_NAME
         + "/update?commit=true&stream.body="

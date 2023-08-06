@@ -41,18 +41,17 @@ import org.junit.ClassRule;
 
 public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
 
-  @ClassRule
-  public static SolrJettyTestRule secondJetty = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule secondJetty = new SolrJettyTestRule();
   private static String fooUrl; // first Jetty URL
   private static String barUrl; // second Jetty URL
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     createAndStartJetty(legacyExampleCollection1SolrHome());
-    fooUrl = getJetty().getBaseUrl().toString() + "/" + "collection1";
+    fooUrl = getBaseUrl() + "/" + "collection1";
 
     secondJetty.startSolr(Path.of(legacyExampleCollection1SolrHome()));
-    barUrl = secondJetty.getJetty().getBaseUrl().toString() + "/" + "collection1";
+    barUrl = secondJetty.getBaseUrl() + "/" + "collection1";
   }
 
   public void testPoolSize() throws SolrServerException, IOException {

@@ -51,7 +51,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
   public void testConcurrentUpdate() throws Exception {
     ConcurrentUpdateSolrClientTest.TestServlet.clear();
 
-    String serverUrl = getJetty().getBaseUrl().toString() + "/cuss/foo";
+    String serverUrl = getBaseUrl() + "/cuss/foo";
 
     int cussThreadCount = 2;
     int cussQueueSize = 100;
@@ -126,8 +126,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
 
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
         ConcurrentUpdateHttp2SolrClient concurrentClient =
-            (new ConcurrentUpdateHttp2SolrClient.Builder(
-                    getJetty().getBaseUrl().toString(), http2Client))
+            (new ConcurrentUpdateHttp2SolrClient.Builder(getBaseUrl(), http2Client))
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
                 .build()) {
@@ -147,8 +146,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
 
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
         ConcurrentUpdateHttp2SolrClient concurrentClient =
-            new ConcurrentUpdateHttp2SolrClient.Builder(
-                    getJetty().getBaseUrl().toString() + "/collection1", http2Client)
+            new ConcurrentUpdateHttp2SolrClient.Builder(getBaseUrl() + "/collection1", http2Client)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
                 .build()) {
@@ -169,8 +167,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
 
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
         ConcurrentUpdateHttp2SolrClient concurrentClient =
-            new ConcurrentUpdateHttp2SolrClient.Builder(
-                    getJetty().getBaseUrl().toString(), http2Client)
+            new ConcurrentUpdateHttp2SolrClient.Builder(getBaseUrl(), http2Client)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
                 .setPollQueueTime(0, TimeUnit.MILLISECONDS)
@@ -208,8 +205,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
 
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
         ConcurrentUpdateHttp2SolrClient concurrentClient =
-            new ConcurrentUpdateHttp2SolrClient.Builder(
-                    getJetty().getBaseUrl().toString() + "/collection1", http2Client)
+            new ConcurrentUpdateHttp2SolrClient.Builder(getBaseUrl() + "/collection1", http2Client)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
                 .build()) {

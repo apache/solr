@@ -47,7 +47,7 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
         SolrClient client =
             new ConcurrentUpdateHttp2SolrClient.Builder(
-                    getJetty().getBaseUrl().toString() + "/" + ANY_COLLECTION, http2Client)
+                    getBaseUrl() + "/" + ANY_COLLECTION, http2Client)
                 .withQueueSize(ANY_QUEUE_SIZE)
                 .withThreadCount(ANY_MAX_NUM_THREADS)
                 .build()) {
@@ -80,7 +80,7 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
         SolrClient client =
             new ConcurrentUpdateHttp2SolrClient.Builder(
-                    getJetty().getBaseUrl().toString() + "/" + ANY_COLLECTION, http2Client)
+                    getBaseUrl() + "/" + ANY_COLLECTION, http2Client)
                 .withQueueSize(ANY_QUEUE_SIZE)
                 .withThreadCount(ANY_MAX_NUM_THREADS)
                 .build()) {

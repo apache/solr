@@ -45,9 +45,7 @@ public class ConcurrentUpdateSolrClientBadInputTest extends SolrJettyTestBase {
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
     try (SolrClient client =
         getConcurrentUpdateSolrClient(
-            getJetty().getBaseUrl().toString() + "/" + ANY_COLLECTION,
-            ANY_QUEUE_SIZE,
-            ANY_MAX_NUM_THREADS)) {
+            getBaseUrl() + "/" + ANY_COLLECTION, ANY_QUEUE_SIZE, ANY_MAX_NUM_THREADS)) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),
@@ -75,8 +73,7 @@ public class ConcurrentUpdateSolrClientBadInputTest extends SolrJettyTestBase {
     }
 
     try (SolrClient client =
-        getConcurrentUpdateSolrClient(
-            getJetty().getBaseUrl().toString(), ANY_QUEUE_SIZE, ANY_MAX_NUM_THREADS)) {
+        getConcurrentUpdateSolrClient(getBaseUrl(), ANY_QUEUE_SIZE, ANY_MAX_NUM_THREADS)) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           Lists.newArrayList("ids", "null"),
