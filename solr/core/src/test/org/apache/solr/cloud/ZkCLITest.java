@@ -32,7 +32,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -82,7 +81,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
       log.info("####SETUP_START {}", getTestName());
     }
 
-    String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+    String exampleHome = legacyExampleCollection1SolrHome();
 
     Path tmpDir = createTempDir();
     solrHome = exampleHome;

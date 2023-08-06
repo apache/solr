@@ -17,41 +17,28 @@
 package org.apache.solr;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.UncheckedIOException;
-import java.io.Writer;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.http.client.HttpClient;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.DirectoryUtil;
-import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeSolrJettyTestBase() throws Exception {}
 
-  public static JettySolrRunner createAndStartJetty(
+  protected static JettySolrRunner createAndStartJetty(
       String solrHome,
       String configFile,
       String schemaFile,
@@ -84,25 +71,25 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return createAndStartJetty(solrHome, nodeProps, jettyConfig);
   }
 
-  public static JettySolrRunner createAndStartJetty(
+  protected static JettySolrRunner createAndStartJetty(
       String solrHome, String configFile, String context) throws Exception {
     return createAndStartJetty(solrHome, configFile, null, context, true, null);
   }
 
-  public static JettySolrRunner createAndStartJetty(String solrHome, JettyConfig jettyConfig)
+  protected static JettySolrRunner createAndStartJetty(String solrHome, JettyConfig jettyConfig)
       throws Exception {
 
     return createAndStartJetty(solrHome, new Properties(), jettyConfig);
   }
 
-  public static JettySolrRunner createAndStartJetty(String solrHome) throws Exception {
+  protected static JettySolrRunner createAndStartJetty(String solrHome) throws Exception {
     return createAndStartJetty(
         solrHome,
         new Properties(),
         JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build());
   }
 
-  public static JettySolrRunner createAndStartJetty(
+  protected static JettySolrRunner createAndStartJetty(
       String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
 
     initCore(null, null, solrHome);
@@ -125,7 +112,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return getJetty();
   }
 
-  public static JettySolrRunner getJetty() {
+  protected static JettySolrRunner getJetty() {
     return solrClientTestRule.getJetty();
   }
 
@@ -138,11 +125,11 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     solrClientTestRule.reset();
   }
 
-  public SolrClient getSolrClient() {
+  protected SolrClient getSolrClient() {
     return solrClientTestRule.getSolrClient();
   }
 
-  public HttpClient getHttpClient() {
+  protected HttpClient getHttpClient() {
     HttpSolrClient client = (HttpSolrClient) getSolrClient();
     return client.getHttpClient();
   }
@@ -150,46 +137,14 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   // Sets up the necessary config files for Jetty. At least some tests require that the solrconfig
   // from the test file directory are used, but some also require that the solr.xml file be
   // explicitly there as of SOLR-4817
-  public static void setupJettyTestHome(File solrHome, String collection) throws Exception {
+  protected static void setupJettyTestHome(File solrHome, String collection) throws Exception {
     copySolrHomeToTemp(solrHome, collection);
   }
 
-  public static void cleanUpJettyHome(File solrHome) throws Exception {
+  protected static void cleanUpJettyHome(File solrHome) throws Exception {
     if (solrHome.exists()) {
       PathUtils.deleteDirectory(solrHome.toPath());
     }
   }
 
-  public static String legacyExampleCollection1SolrHome() {
-    String sourceHome = ExternalPaths.SOURCE_HOME;
-    if (sourceHome == null)
-      throw new IllegalStateException(
-          "No source home! Cannot create the legacy example solr home directory.");
-
-    try {
-      Path tempSolrHome = LuceneTestCase.createTempDir();
-      Path serverSolr = tempSolrHome.getFileSystem().getPath(sourceHome, "server", "solr");
-      Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
-
-      Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
-      Path collection1Dir = tempSolrHome.resolve("collection1");
-
-      DirectoryUtil.copyDirectoryContents(
-          sourceConfig.resolve("conf"), collection1Dir.resolve("conf"));
-
-      Properties props = new Properties();
-      props.setProperty("name", "collection1");
-      try (Writer writer =
-          new OutputStreamWriter(
-              Files.newOutputStream(collection1Dir.resolve("core.properties")),
-              StandardCharsets.UTF_8)) {
-        props.store(writer, null);
-      }
-      return tempSolrHome.toString();
-    } catch (RuntimeException e) {
-      throw e;
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
 }
