@@ -386,7 +386,9 @@ public class SolrCLI implements CLIO {
   public static SolrClient getSolrClient(String solrUrl) {
     // today we require all urls to end in /solr, however in the future we will need to support the
     // /api url end point instead.
-    if (!solrUrl.endsWith(("/solr"))) {
+    // The /solr/ check is because sometimes a full url is passed in, like
+    // http://localhost:8983/solr/films_shard1_replica_n1/.
+    if (!solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
       solrUrl = solrUrl + "/solr";
     }
     return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
