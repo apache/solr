@@ -63,7 +63,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return getHttpSolrClient(getServerUrl());
+    return getHttpSolrClient(getCoreUrl());
   }
 
   /** query the example */

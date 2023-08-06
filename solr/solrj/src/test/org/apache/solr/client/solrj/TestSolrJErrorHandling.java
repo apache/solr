@@ -103,7 +103,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getServerUrl()).withRequestWriter(new RequestWriter()).build()) {
+        new HttpSolrClient.Builder(getCoreUrl()).withRequestWriter(new RequestWriter()).build()) {
 
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
@@ -113,7 +113,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getServerUrl())
+        new HttpSolrClient.Builder(getCoreUrl())
             .withRequestWriter(new BinaryRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!
@@ -275,7 +275,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     // sometimes succeeds with this size, but larger can cause OOM from command line
     String bodyString = getJsonDocs(200000);
 
-    String urlString = getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME + "/update";
+    String urlString = getCoreUrl() + "/update";
 
     HttpURLConnection conn = null;
     URL url = new URL(urlString);

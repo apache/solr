@@ -115,7 +115,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   }
 
   /** URL to the core */
-  protected String getServerUrl() {
+  protected static String getCoreUrl() {
     return getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
   }
 

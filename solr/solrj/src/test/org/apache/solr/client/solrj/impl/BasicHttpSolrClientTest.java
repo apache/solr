@@ -591,7 +591,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     assertNull(DebugServlet.headers.get("Accept-Encoding"));
 
     // verify server compresses output
-    HttpGet get = new HttpGet(getBaseUrl() + "/collection1" + "/select?q=foo&wt=xml");
+    HttpGet get = new HttpGet(getCoreUrl() + "/select?q=foo&wt=xml");
     get.setHeader("Accept-Encoding", "gzip");
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, true);
@@ -616,7 +616,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
 
     // verify compressed response can be handled
-    try (SolrClient client = getHttpSolrClient(getBaseUrl() + "/collection1")) {
+    try (SolrClient client = getHttpSolrClient(getCoreUrl())) {
       QueryResponse response = client.query(new SolrQuery("foo"));
       assertEquals(0, response.getStatus());
     }
@@ -636,7 +636,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
           client.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
     }
 
-    final String collection1Url = getBaseUrl() + "/collection1";
+    final String collection1Url = getCoreUrl();
     try (SolrClient client = getHttpSolrClient(collection1Url)) {
       assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
     }
@@ -645,7 +645,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   @Test
   public void testGetRawStream() throws SolrServerException, IOException {
     CloseableHttpClient client = HttpClientUtil.createClient(null);
-    try (SolrClient solrClient = getHttpSolrClient(getBaseUrl() + "/collection1", client, null); ) {
+    try (SolrClient solrClient = getHttpSolrClient(getCoreUrl(), client, null); ) {
 
       QueryRequest req = new QueryRequest();
       NamedList<?> response = solrClient.request(req);

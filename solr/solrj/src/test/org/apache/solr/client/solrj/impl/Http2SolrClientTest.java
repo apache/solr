@@ -609,7 +609,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
           client.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
     }
 
-    final String collection1Url = getBaseUrl() + "/collection1";
+    final String collection1Url = getCoreUrl();
     try (Http2SolrClient client = getHttp2SolrClient(collection1Url)) {
       assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
     }
