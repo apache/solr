@@ -92,7 +92,7 @@ public class StatusTool extends ToolBase {
     }
 
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
-    String solrUrl = cli.getOptionValue("solrUrl");
+    String solrUrl = SolrCLI.resolveSolrUrl(cli);
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
