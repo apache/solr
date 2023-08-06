@@ -14,13 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.cloud;
+package org.apache.solr.jersey;
 
-import java.io.IOException;
+import org.apache.solr.jersey.APIConfigProvider.APIConfig;
+import org.glassfish.hk2.api.Factory;
 
-/** */
-public interface DistributedQueueFactory {
-  DistributedQueue makeQueue(String path) throws IOException;
+/**
+ * Interface to be implemented by the Request Handlers that need to provide some custom
+ * configuration to the V2 APIs
+ */
+public interface APIConfigProvider<T extends APIConfig> extends Factory<T> {
 
-  void removeQueue(String path) throws IOException;
+  @Override
+  default void dispose(T instance) {}
+
+  Class<T> getConfigClass();
+
+  public interface APIConfig {}
 }

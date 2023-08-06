@@ -69,7 +69,6 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
     JettyConfig jettyConfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(stopAtShutdown)
             .withServlets(extraServlets)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
