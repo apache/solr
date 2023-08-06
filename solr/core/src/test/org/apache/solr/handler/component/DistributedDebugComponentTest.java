@@ -101,7 +101,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       collection2.close();
       collection2 = null;
     }
-    solrClientTestRule.reset();
     resetExceptionIgnores();
     systemClearPropertySolrDisableUrlAllowList();
   }

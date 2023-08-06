@@ -81,7 +81,6 @@ public class SolrStandaloneScraperTest extends RestTestBase {
       executor.shutdownNow();
       executor = null;
     }
-    solrClientTestRule.reset();
     solrScraper = null;
     solrClient = null;
   }
