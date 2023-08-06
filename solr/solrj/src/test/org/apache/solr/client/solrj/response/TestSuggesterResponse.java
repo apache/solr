@@ -34,7 +34,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// nocommit: Fails
 /** Test for SuggesterComponent's response in Solrj */
 public class TestSuggesterResponse extends SolrJettyTestBase {
 

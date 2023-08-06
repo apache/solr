@@ -21,7 +21,6 @@ import java.util.Arrays;
 import org.apache.solr.util.RandomizeSSL;
 import org.junit.BeforeClass;
 
-// nocommit: Fails with  class configuration IllegalStateException: Jetty is already running
 @RandomizeSSL(1.0)
 public class HttpSolrClientSSLAuthConPoolTest extends HttpSolrClientConPoolTest {
 

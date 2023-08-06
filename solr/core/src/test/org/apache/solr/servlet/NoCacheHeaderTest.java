@@ -25,7 +25,6 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// nocommit: Fails with java.lang.IllegalStateException: Connection pool shut down
 /** A test case for the several HTTP cache headers emitted by Solr */
 public class NoCacheHeaderTest extends CacheHeaderTestBase {
   // TODO: fix this test not to directly use the test-files copied to build/

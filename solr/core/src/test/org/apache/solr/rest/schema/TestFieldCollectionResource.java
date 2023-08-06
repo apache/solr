@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
-// nocommit: Fails with  java.lang.IllegalStateException: Connection pool shut down
 public class TestFieldCollectionResource extends SolrRestletTestBase {
   @Test
   public void testXMLGetAllFields() {

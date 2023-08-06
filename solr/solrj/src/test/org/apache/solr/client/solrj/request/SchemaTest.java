@@ -50,7 +50,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-// nocommit: Fails with  java.lang.IllegalStateException: Connection pool shut down
 /**
  * Test the functionality (accuracy and failure) of the methods exposed by the classes {@link
  * SchemaRequest} and {@link SchemaResponse}.

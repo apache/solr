@@ -37,7 +37,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
-// nocommit: Fails with  java.lang.IllegalStateException: Connection pool shut down
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBinaryField extends SolrJettyTestBase {
 

@@ -38,7 +38,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-// nocommit: Fails with  java.lang.IllegalStateException: Connection pool shut down
 public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
 
   protected static JettySolrRunner yetty;
