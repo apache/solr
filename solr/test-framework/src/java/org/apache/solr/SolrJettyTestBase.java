@@ -28,16 +28,11 @@ import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 
 public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
-
-  @BeforeClass
-  public static void beforeSolrJettyTestBase() throws Exception {}
-
+  
   protected static JettySolrRunner createAndStartJetty(
       String solrHome,
       String configFile,
@@ -92,8 +87,6 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   protected static JettySolrRunner createAndStartJetty(
       String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
 
-    initCore(null, null, solrHome);
-
     Path coresDir = createTempDir().resolve("cores");
 
     Properties props = new Properties();
@@ -120,11 +113,6 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     return getJetty().getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME;
   }
 
-  @AfterClass
-  public static void afterSolrJettyTestBase() throws Exception {
-    solrClientTestRule.reset();
-  }
-
   protected SolrClient getSolrClient() {
     return solrClientTestRule.getSolrClient();
   }
@@ -138,6 +126,9 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   // from the test file directory are used, but some also require that the solr.xml file be
   // explicitly there as of SOLR-4817
   protected static void setupJettyTestHome(File solrHome, String collection) throws Exception {
+    // TODO remove these sys props!
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
     copySolrHomeToTemp(solrHome, collection);
   }
 

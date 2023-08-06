@@ -62,7 +62,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
     } finally {
-      afterSolrJettyTestBase();
+      solrClientTestRule.reset();
     }
   }
 
@@ -85,7 +85,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
     } finally {
-      afterSolrJettyTestBase();
+      solrClientTestRule.reset();
     }
   }
 
@@ -113,7 +113,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         // expected
       }
     } finally {
-      afterSolrJettyTestBase();
+      solrClientTestRule.reset();
     }
   }
 }

@@ -16,16 +16,16 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
 import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.slf4j.Logger;
@@ -37,27 +37,17 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   private JettySolrRunner jetty;
 
   private SolrClient adminClient = null;
-  private ConcurrentHashMap<String, SolrClient> clients = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, SolrClient> clients = new ConcurrentHashMap<>();
 
   @Override
   protected void after() {
-    if (adminClient != null) {
-      try {
-        adminClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    adminClient = null;
-
     for (SolrClient solrClient : clients.values()) {
-      try {
-        solrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      IOUtils.closeQuietly(solrClient);
     }
     clients.clear();
+
+    IOUtils.closeQuietly(adminClient);
+    adminClient = null;
 
     if (jetty != null) {
       try {
@@ -71,11 +61,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
     }
   }
 
-  /**
-   * Its preferred not to have this method as it duplicates the functionality of the {@code after()}
-   * method. Due to time constraints we couldn't tend to each and every subclass of
-   * SolrJettyTestBase to avoid it.
-   */
+  /** Resets the state. DEPRECATED; please don't call! */
   @Deprecated
   public void reset() {
     after();
@@ -92,10 +78,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   }
 
   public void startSolr(Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) {
-
-    if (jetty != null) {
-      throw new IllegalStateException("Jetty is already running");
-    }
+    if (jetty != null) throw new IllegalStateException("Jetty is already running");
 
     jetty = new JettySolrRunner(solrHome.toString(), nodeProperties, jettyConfig);
     try {
@@ -117,10 +100,10 @@ public class SolrJettyTestRule extends SolrClientTestRule {
 
   @Override
   public SolrClient getSolrClient(String name) {
-
     return clients.computeIfAbsent(
         name,
-        key -> getHttpSolrClient(getJetty().getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME));
+        key ->
+            new HttpSolrClient.Builder(getJetty().getBaseUrl().toString() + "/" + name).build());
   }
 
   @Override
