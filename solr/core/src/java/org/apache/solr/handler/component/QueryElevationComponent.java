@@ -29,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -45,7 +43,6 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -570,13 +567,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     SolrParams params = rb.req.getParams();
 
     String tagStr = params.get(QueryElevationParams.ELEVATE_EXCLUDE_TAGS);
-    if (StringUtils.isEmpty(tagStr)) {
+    if (StrUtils.isNullOrEmpty(tagStr)) {
       // the parameter that specifies tags for exclusion was not provided or had no value
       return;
     }
 
     List<String> excludeTags = StrUtils.splitSmart(tagStr, ',');
-    excludeTags.removeIf(s -> StringUtils.isBlank(s));
+    excludeTags.removeIf(s -> StrUtils.isBlank(s));
     if (excludeTags.isEmpty()) {
       // the parameter that specifies tags for exclusion was provided but the tag names were blank
       return;
@@ -1158,7 +1155,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     public ElevationBuilder addExcludedIds(Collection<String> ids) {
       if (excludedIds == null) {
-        excludedIds = new HashSet<>(Math.max(10, ids.size()));
+        excludedIds = CollectionUtil.newHashSet(Math.max(10, ids.size()));
       }
       for (String id : ids) {
         excludedIds.add(toBytesRef(id));
@@ -1609,7 +1606,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       /** Gets the child node for the provided element, or creates it if it does not exist. */
       Node<E, M> getOrCreateChild(E e) {
         if (children == null) {
-          children = new HashMap<>(4);
+          children = CollectionUtil.newHashMap(4);
         }
         Node<E, M> child = children.get(e);
         if (child == null) {

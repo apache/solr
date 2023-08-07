@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -47,7 +48,7 @@ public class InfoHandler extends RequestHandlerBase {
   public InfoHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     handlers.put("threads", new ThreadDumpHandler());
-    handlers.put("properties", new PropertiesRequestHandler());
+    handlers.put("properties", new PropertiesRequestHandler(coreContainer));
     handlers.put("logging", new LoggingHandler(coreContainer));
     handlers.put("system", new SystemInfoHandler(coreContainer));
     if (coreContainer.getHealthCheckHandler() == null) {
@@ -170,10 +171,21 @@ public class InfoHandler extends RequestHandlerBase {
   }
 
   @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    final var apis = new ArrayList<Class<? extends JerseyResource>>();
+    apis.addAll(handlers.get("threads").getJerseyResources());
+    apis.addAll(handlers.get("properties").getJerseyResources());
+    apis.addAll(handlers.get("logging").getJerseyResources());
+    apis.addAll(handlers.get("system").getJerseyResources());
+    apis.addAll(handlers.get("health").getJerseyResources());
+    return apis;
+  }
+
+  @Override
   public Name getPermissionName(AuthorizationContext request) {
     // Delegate permission to the actual handler
     String path = request.getResource();
-    String lastPath = path.substring(path.lastIndexOf("/") + 1);
+    String lastPath = path.substring(path.lastIndexOf('/') + 1);
     RequestHandlerBase handler = handlers.get(lastPath.toLowerCase(Locale.ROOT));
     if (handler != null) {
       return handler.getPermissionName(request);

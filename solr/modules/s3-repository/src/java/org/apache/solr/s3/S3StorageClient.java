@@ -31,7 +31,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,14 +116,14 @@ public class S3StorageClient {
       String endpoint,
       boolean disableRetries) {
     S3Configuration.Builder configBuilder = S3Configuration.builder().pathStyleAccessEnabled(true);
-    if (!StringUtils.isEmpty(profile)) {
+    if (StrUtils.isNotNullOrEmpty(profile)) {
       configBuilder.profileName(profile);
     }
 
     ApacheHttpClient.Builder sdkHttpClientBuilder = ApacheHttpClient.builder();
     // If configured, add proxy
     ProxyConfiguration.Builder proxyConfigurationBuilder = ProxyConfiguration.builder();
-    if (!StringUtils.isEmpty(proxyUrl)) {
+    if (StrUtils.isNotNullOrEmpty(proxyUrl)) {
       proxyConfigurationBuilder.endpoint(URI.create(proxyUrl));
     } else {
       proxyConfigurationBuilder.useSystemPropertyValues(proxyUseSystemSettings);
@@ -139,7 +139,7 @@ public class S3StorageClient {
       retryPolicy = RetryPolicy.none();
     } else {
       RetryMode.Resolver retryModeResolver = RetryMode.resolver();
-      if (!StringUtils.isEmpty(profile)) {
+      if (StrUtils.isNotNullOrEmpty(profile)) {
         retryModeResolver.profileName(profile);
       }
       RetryMode retryMode = retryModeResolver.resolve();
@@ -158,7 +158,7 @@ public class S3StorageClient {
      */
     DefaultCredentialsProvider.Builder credentialsProviderBuilder =
         DefaultCredentialsProvider.builder();
-    if (!StringUtils.isEmpty(profile)) {
+    if (StrUtils.isNotNullOrEmpty(profile)) {
       credentialsProviderBuilder.profileName(profile);
     }
 
@@ -172,10 +172,10 @@ public class S3StorageClient {
             .serviceConfiguration(configBuilder.build())
             .httpClient(sdkHttpClientBuilder.build());
 
-    if (!StringUtils.isEmpty(endpoint)) {
+    if (StrUtils.isNotNullOrEmpty(endpoint)) {
       clientBuilder.endpointOverride(URI.create(endpoint));
     }
-    if (!StringUtils.isEmpty(region)) {
+    if (StrUtils.isNotNullOrEmpty(region)) {
       clientBuilder.region(Region.of(region));
     }
 
@@ -329,7 +329,8 @@ public class S3StorageClient {
           s3Client.headObject(builder -> builder.bucket(bucketName).key(s3Path));
       String contentType = objectMetadata.contentType();
 
-      return !StringUtils.isEmpty(contentType) && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
+      return StrUtils.isNotNullOrEmpty(contentType)
+          && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
     } catch (NoSuchKeyException nske) {
       return false;
     } catch (SdkException sdke) {
@@ -345,12 +346,16 @@ public class S3StorageClient {
    */
   long length(String path) throws S3Exception {
     String s3Path = sanitizedFilePath(path);
+    if (isDirectory(s3Path)) {
+      throw new S3Exception("Path is Directory");
+    }
     try {
       HeadObjectResponse objectMetadata =
           s3Client.headObject(b -> b.bucket(bucketName).key(s3Path));
       String contentType = objectMetadata.contentType();
 
-      if (StringUtils.isEmpty(contentType) || !contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE)) {
+      if (StrUtils.isNullOrEmpty(contentType)
+          || !contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE)) {
         return objectMetadata.contentLength();
       }
       throw new S3Exception("Path is Directory");

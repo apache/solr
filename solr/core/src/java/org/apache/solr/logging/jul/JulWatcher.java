@@ -16,7 +16,8 @@
  */
 package org.apache.solr.logging.jul;
 
-import com.google.common.base.Throwables;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -98,7 +99,7 @@ public class JulWatcher extends LogWatcher<LogRecord> {
       map.put(name, new JulInfo(name, logger));
 
       while (true) {
-        int dot = name.lastIndexOf(".");
+        int dot = name.lastIndexOf('.');
         if (dot < 0) break;
         name = name.substring(0, dot);
         if (!map.containsKey(name)) {
@@ -157,7 +158,9 @@ public class JulWatcher extends LogWatcher<LogRecord> {
     doc.setField("message", event.getMessage().toString());
     Throwable t = event.getThrown();
     if (t != null) {
-      doc.setField("trace", Throwables.getStackTraceAsString(t));
+      StringWriter trace = new StringWriter();
+      t.printStackTrace(new PrintWriter(trace));
+      doc.setField("trace", trace.toString());
     }
     return doc;
   }

@@ -81,8 +81,8 @@ public class LBHttpSolrClient extends LBSolrClient {
   private final HttpSolrClient.Builder httpSolrClientBuilder;
   private volatile Set<String> urlParamNames = new HashSet<>();
 
-  private Long connectionTimeoutMillis;
-  private Long soTimeoutMillis;
+  final int connectionTimeoutMillis;
+  final int soTimeoutMillis;
 
   /** The provided httpClient should use a multi-threaded connection manager */
   protected LBHttpSolrClient(Builder builder) {
@@ -118,13 +118,9 @@ public class LBHttpSolrClient extends LBSolrClient {
     if (httpSolrClientBuilder != null) {
       synchronized (this) {
         httpSolrClientBuilder.withBaseSolrUrl(server).withHttpClient(httpClient);
-        if (connectionTimeoutMillis != null) {
-          httpSolrClientBuilder.withConnectionTimeout(
-              connectionTimeoutMillis, TimeUnit.MILLISECONDS);
-        }
-        if (soTimeoutMillis != null) {
-          httpSolrClientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
-        }
+        httpSolrClientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+        httpSolrClientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+
         if (requestWriter != null) {
           httpSolrClientBuilder.withRequestWriter(requestWriter);
         }
@@ -136,12 +132,8 @@ public class LBHttpSolrClient extends LBSolrClient {
     } else {
       final HttpSolrClient.Builder clientBuilder =
           new HttpSolrClient.Builder(server).withHttpClient(httpClient).withResponseParser(parser);
-      if (connectionTimeoutMillis != null) {
-        clientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
-      }
-      if (soTimeoutMillis != null) {
-        clientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
-      }
+      clientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+      clientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
       if (requestWriter != null) {
         clientBuilder.withRequestWriter(requestWriter);
       }
@@ -181,26 +173,6 @@ public class LBHttpSolrClient extends LBSolrClient {
   /** Return the HttpClient this instance uses. */
   public HttpClient getHttpClient() {
     return httpClient;
-  }
-
-  @Deprecated
-  public Set<String> getQueryParams() {
-    return urlParamNames;
-  }
-
-  /**
-   * Expert Method.
-   *
-   * @param urlParamNames set of param keys to only send via the query string
-   */
-  @Deprecated
-  public void setQueryParams(Set<String> urlParamNames) {
-    this.urlParamNames = urlParamNames;
-  }
-
-  @Deprecated
-  public void addQueryParams(String urlParamNames) {
-    this.urlParamNames.add(urlParamNames);
   }
 
   /** Constructs {@link LBHttpSolrClient} instances from provided configuration. */

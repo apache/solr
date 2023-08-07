@@ -18,8 +18,7 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,11 +28,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.PropertiesUtil;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -212,9 +211,11 @@ public class CoreDescriptor {
       if (isUserDefinedProperty(propname)) originalExtraProperties.put(propname, propvalue);
       else originalCoreProperties.put(propname, propvalue);
 
-      if (!requiredProperties.contains(propname)) // Required props are already dealt with
-      coreProperties.setProperty(
+      // Required props are already dealt with
+      if (!requiredProperties.contains(propname)) {
+        coreProperties.setProperty(
             propname, PropertiesUtil.substituteProperty(propvalue, containerProperties));
+      }
     }
 
     loadExtraProperties();
@@ -242,24 +243,20 @@ public class CoreDescriptor {
     String filename = coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE);
     Path propertiesFile = instanceDir.resolve(filename);
     if (Files.exists(propertiesFile)) {
-      try (InputStream is = Files.newInputStream(propertiesFile)) {
+      try (Reader r = Files.newBufferedReader(propertiesFile, StandardCharsets.UTF_8)) {
         Properties externalProps = new Properties();
-        externalProps.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+        externalProps.load(r);
         coreProperties.putAll(externalProps);
       } catch (IOException e) {
         String message =
-            String.format(
-                Locale.ROOT,
-                "Could not load properties from %s: %s:",
-                propertiesFile.toString(),
-                e.toString());
+            String.format(Locale.ROOT, "Could not load properties from %s: %s:", propertiesFile, e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
       }
     }
   }
 
   /**
-   * Create the properties object used by resource loaders, etc, for property substitution. The
+   * Create the properties object used by resource loaders, etc., for property substitution. The
    * default solr properties are prefixed with 'solr.core.', so, e.g., 'name' becomes
    * 'solr.core.name'
    */
@@ -284,7 +281,7 @@ public class CoreDescriptor {
   }
 
   public static String checkPropertyIsNotEmpty(String value, String propName) {
-    if (StringUtils.isEmpty(value)) {
+    if (StrUtils.isNullOrEmpty(value)) {
       String message =
           String.format(Locale.ROOT, "Cannot create core with empty %s value", propName);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);

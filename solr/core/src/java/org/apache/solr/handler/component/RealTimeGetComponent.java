@@ -60,7 +60,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -69,6 +68,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -1305,7 +1305,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // handle version ranges
     List<Long> versions = null;
-    if (versionsStr.indexOf("...") != -1) {
+    if (versionsStr.contains("...")) {
       versions = resolveVersionRanges(versionsStr, ulog);
     } else {
       versions =
@@ -1359,7 +1359,7 @@ public class RealTimeGetComponent extends SearchComponent {
   }
 
   private List<Long> resolveVersionRanges(String versionsStr, UpdateLog ulog) {
-    if (StringUtils.isEmpty(versionsStr)) {
+    if (StrUtils.isNullOrEmpty(versionsStr)) {
       return Collections.emptyList();
     }
 
@@ -1377,7 +1377,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // This can be done with single pass over both ranges and versionsAvailable, that would require
     // merging ranges. We currently use Set to ensure there are no duplicates.
-    Set<Long> versionsToRet = new HashSet<>(ulog.getNumRecordsToKeep());
+    Set<Long> versionsToRet = CollectionUtil.newHashSet(ulog.getNumRecordsToKeep());
     for (String range : ranges) {
       String[] rangeBounds = range.split("\\.{3}");
       int indexStart =

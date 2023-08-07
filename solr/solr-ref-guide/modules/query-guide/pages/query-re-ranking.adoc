@@ -69,6 +69,26 @@ This number will be treated as a minimum, and may be increased internally automa
 +
 A multiplicative factor that will be applied to the score from the reRankQuery for each of the top matching documents, before that score is combined with the original score.
 
+`reRankScale`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Scales the rerank scores between min and max values. The format of this parameter value is `min-max` where
+min and max are positive integers. Example `reRankScale=0-1` rescales the rerank scores between 0 and 1.
+
+`reRankMainScale`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Scales the main query scores between min and max values. The format of this parameter value is `min-max` where
+min and max are positive integers. Example `reRankMainScale=0-1` rescales the main query scores between 0 and 1.
+
 `reRankOperator`::
 +
 [%autowidth,frame=none]

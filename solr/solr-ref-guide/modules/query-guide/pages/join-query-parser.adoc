@@ -185,7 +185,44 @@ If a local replica is not available or active, then the query will fail.
 At this point, it should be clear that since you're limited to a single shard and the data must be replicated across all nodes where it is needed, this approach works better with smaller data sets where there is a one-to-many relationship between the from collection and the to collection.
 Moreover, if you add a replica to the to collection, then you also need to add a replica for the from collection.
 
-For more information, Erick Erickson has written a blog post about join performance titled https://lucidworks.com/2012/06/20/solr-and-joins/[Solr and Joins].
+For more information, Erick Erickson has written a blog post about join performance titled https://lucidworks.com/post/solr-and-joins/[Solr and Joins].
+
+== Joining Multiple Shard Collections
+It's also possible to join collections with:
+
+. the same number of shards
+. same `router.name` for both collections
+. `router.field` or `uniqueKey` should correspond to fields used in `to`,`from` parameters (see details and exceptions below)
+. collections' shards are collocated (see example below)
+
+Just for simplification we use the example of joining `from` "many" `to` "one". Though, same approach may be used in other cases as well.
+
+|===
+| |"to" collection|"from" collection
+
+|node 1 |products_shard1_replica1 |skus_shard1_replica2
+|node 2 |products_shard1_replica2 |skus_shard1_replica1
+|node 3 |products_shard2_replica1 |skus_shard2_replica1
+|node 4 |products_shard2_replica2 |skus_shard2_replica2
+|===
+
+Notice how shardN corresponds to its' counterpart from other side collection.
+Use xref:configuration-guide:replica-placement-plugins.adoc[AffinityPlacementPlugin.withCollectionShards] to align collection shards.
+
+Here are the supported options for collection routing:
+
+|===
+| `router.name`| field constraint
+
+|`implicit`|`from`, `to` match  `router.field`
+|`plain` or `compositeId`| `from`, `to` match either `uniqueKey` or `router.field`
+|`compositeId` (the default one)|constraint can be disabled by `checkRouterField=false`
+
+|===
+
+Note: the third case assumes indexer assigns `sku.id=<product.id>!<sku_id>` in this case `compositeId` logic put a product's sku into shard with the same name as their product. Also, you can turn `checkRouterField=false` and manually put every document via `\_route_` pseudo field.
+
+For example, if  `skus` collection has `router.field=product_id`, we can find products of red colored skus via `q={!join to=id from=product_id fromIndex=skus}color:red`.
 
 == Cross Collection Join
 The Cross Collection Join Filter is a method for the join parser that will execute a query against a remote Solr collection to get back a set of join keys that will be used to as a filter query against the local Solr collection.

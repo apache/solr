@@ -28,8 +28,6 @@ public class CloudConfig {
 
   private final String hostName;
 
-  private final String hostContext;
-
   private final boolean useGenericCoreNames;
 
   private final int leaderVoteWait;
@@ -63,7 +61,6 @@ public class CloudConfig {
       int zkClientTimeout,
       int hostPort,
       String hostName,
-      String hostContext,
       boolean useGenericCoreNames,
       int leaderVoteWait,
       int leaderConflictResolveWait,
@@ -82,7 +79,6 @@ public class CloudConfig {
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
     this.hostName = hostName;
-    this.hostContext = hostContext;
     this.useGenericCoreNames = useGenericCoreNames;
     this.leaderVoteWait = leaderVoteWait;
     this.leaderConflictResolveWait = leaderConflictResolveWait;
@@ -107,10 +103,6 @@ public class CloudConfig {
     if (this.hostPort == -1)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "'hostPort' must be configured to run SolrCloud");
-    if (this.hostContext == null)
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "'hostContext' must be configured to run SolrCloud");
   }
 
   public String getZkHost() {
@@ -123,10 +115,6 @@ public class CloudConfig {
 
   public int getSolrHostPort() {
     return hostPort;
-  }
-
-  public String getSolrHostContext() {
-    return hostContext;
   }
 
   public String getHost() {
@@ -203,7 +191,6 @@ public class CloudConfig {
     private int zkClientTimeout = Integer.getInteger("zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);
     private final int hostPort;
     private final String hostName;
-    private final String hostContext;
     private boolean useGenericCoreNames;
     private int leaderVoteWait = DEFAULT_LEADER_VOTE_WAIT;
     private int leaderConflictResolveWait = DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT;
@@ -222,13 +209,8 @@ public class CloudConfig {
     private String stateCompressorClass;
 
     public CloudConfigBuilder(String hostName, int hostPort) {
-      this(hostName, hostPort, null);
-    }
-
-    public CloudConfigBuilder(String hostName, int hostPort, String hostContext) {
       this.hostName = hostName;
       this.hostPort = hostPort;
-      this.hostContext = hostContext;
     }
 
     public CloudConfigBuilder setZkHost(String zkHost) {
@@ -323,7 +305,6 @@ public class CloudConfig {
           zkClientTimeout,
           hostPort,
           hostName,
-          hostContext,
           useGenericCoreNames,
           leaderVoteWait,
           leaderConflictResolveWait,

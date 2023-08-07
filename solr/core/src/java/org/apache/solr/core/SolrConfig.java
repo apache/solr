@@ -128,9 +128,6 @@ public class SolrConfig implements MapSerializable {
 
   private int formUploadLimitKB;
 
-  private boolean enableRemoteStreams;
-  private boolean enableStreamBody;
-
   private boolean handleSelect;
 
   private boolean addHttpRequestToContext;
@@ -360,27 +357,25 @@ public class SolrConfig implements MapSerializable {
 
       updateHandlerInfo = loadUpdatehandlerInfo();
 
+      final var requestParsersNode = get("requestDispatcher").get("requestParsers");
+
       multipartUploadLimitKB =
-          get("requestDispatcher")
-              .get("requestParsers")
-              .intAttr("multipartUploadLimitInKB", Integer.MAX_VALUE);
+          requestParsersNode.intAttr("multipartUploadLimitInKB", Integer.MAX_VALUE);
       if (multipartUploadLimitKB == -1) multipartUploadLimitKB = Integer.MAX_VALUE;
 
-      formUploadLimitKB =
-          get("requestDispatcher")
-              .get("requestParsers")
-              .intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
+      formUploadLimitKB = requestParsersNode.intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
       if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
 
-      enableRemoteStreams =
-          get("requestDispatcher").get("requestParsers").boolAttr("enableRemoteStreaming", false);
+      if (requestParsersNode.attr("enableRemoteStreaming") != null) {
+        log.warn("Ignored deprecated enableRemoteStreaming in config; use sys-prop");
+      }
 
-      enableStreamBody =
-          get("requestDispatcher").get("requestParsers").boolAttr("enableStreamBody", false);
+      if (requestParsersNode.attr("enableStreamBody") != null) {
+        log.warn("Ignored deprecated enableStreamBody in config; use sys-prop");
+      }
 
       handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
-      addHttpRequestToContext =
-          get("requestDispatcher").get("requestParsers").boolAttr("addHttpRequestToContext", false);
+      addHttpRequestToContext = requestParsersNode.boolAttr("addHttpRequestToContext", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -541,7 +536,7 @@ public class SolrConfig implements MapSerializable {
     }
 
     public String getCleanTag() {
-      return tag.replaceAll("/", "");
+      return tag.replace("/", "");
     }
 
     public String getTagCleanLower() {
@@ -591,17 +586,7 @@ public class SolrConfig implements MapSerializable {
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
-    ConfigNode updateHandler = get("updateHandler");
-    ConfigNode autoCommit = updateHandler.get("autoCommit");
-    return new UpdateHandlerInfo(
-        updateHandler.attr("class"),
-        autoCommit.get("maxDocs").intVal(-1),
-        autoCommit.get("maxTime").intVal(-1),
-        convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt()),
-        autoCommit.get("openSearcher").boolVal(true),
-        updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1),
-        updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1),
-        updateHandler.get("commitWithin").get("softCommit").boolVal(true));
+    return new UpdateHandlerInfo(get("updateHandler"));
   }
 
   /**
@@ -773,7 +758,7 @@ public class SolrConfig implements MapSerializable {
         try {
           final Matcher ttlMatcher = MAX_AGE.matcher(cacheControlHeader);
           final String ttlStr = ttlMatcher.find() ? ttlMatcher.group(1) : null;
-          tmp = (null != ttlStr && !"".equals(ttlStr)) ? Long.valueOf(ttlStr) : null;
+          tmp = (null != ttlStr && !ttlStr.isEmpty()) ? Long.valueOf(ttlStr) : null;
         } catch (Exception e) {
           log.warn(
               "Ignoring exception while attempting to extract max-age from cacheControl config: {}",
@@ -820,6 +805,7 @@ public class SolrConfig implements MapSerializable {
     public final long autoCommitMaxSizeBytes;
     public final boolean openSearcher; // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
+    public final boolean aggregateNodeLevelMetricsEnabled;
 
     /**
      * @param autoCommmitMaxDocs set -1 as default
@@ -845,6 +831,23 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
+      this.aggregateNodeLevelMetricsEnabled = false;
+    }
+
+    public UpdateHandlerInfo(ConfigNode updateHandler) {
+      ConfigNode autoCommit = updateHandler.get("autoCommit");
+      this.className = updateHandler.attr("class");
+      this.autoCommmitMaxDocs = autoCommit.get("maxDocs").intVal(-1);
+      this.autoCommmitMaxTime = autoCommit.get("maxTime").intVal(-1);
+      this.autoCommitMaxSizeBytes =
+          convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt());
+      this.openSearcher = autoCommit.get("openSearcher").boolVal(true);
+      this.autoSoftCommmitMaxDocs = updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1);
+      this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
+      this.commitWithinSoftCommit =
+          updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.aggregateNodeLevelMetricsEnabled =
+          updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
 
     @Override
@@ -996,14 +999,6 @@ public class SolrConfig implements MapSerializable {
 
   public boolean isAddHttpRequestToContext() {
     return addHttpRequestToContext;
-  }
-
-  public boolean isEnableRemoteStreams() {
-    return enableRemoteStreams;
-  }
-
-  public boolean isEnableStreamBody() {
-    return enableStreamBody;
   }
 
   @Override

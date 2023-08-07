@@ -57,6 +57,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -163,11 +164,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
 
-    updateCommand = cmd;
-
     List<SolrCmdDistributor.Node> nodes = null;
     Replica leaderReplica = null;
-    zkCheck();
+    zkCheck(cmd);
     try {
       leaderReplica =
           zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
@@ -424,7 +423,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
-    zkCheck();
+    zkCheck(cmd);
 
     // NONE: we are the first to receive this deleteByQuery
     //       - it must be forwarded to the leader of every shard
@@ -685,11 +684,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   void setupRequest(UpdateCommand cmd) {
-    updateCommand = cmd;
-    zkCheck();
+    zkCheck(cmd);
     if (cmd instanceof AddUpdateCommand) {
       AddUpdateCommand acmd = (AddUpdateCommand) cmd;
-      nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument());
+      nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument(), null, cmd);
     } else if (cmd instanceof DeleteUpdateCommand) {
       DeleteUpdateCommand dcmd = (DeleteUpdateCommand) cmd;
       nodes =
@@ -698,16 +696,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               null,
               (null != dcmd.getRoute()
                   ? dcmd.getRoute()
-                  : req.getParams().get(ShardParams._ROUTE_)));
+                  : req.getParams().get(ShardParams._ROUTE_)),
+              cmd);
     }
   }
 
-  protected List<SolrCmdDistributor.Node> setupRequest(String id, SolrInputDocument doc) {
-    return setupRequest(id, doc, null);
-  }
-
   protected List<SolrCmdDistributor.Node> setupRequest(
-      String id, SolrInputDocument doc, String route) {
+      String id, SolrInputDocument doc, String route, UpdateCommand updateCommand) {
     // if we are in zk mode...
 
     assert TestInjection.injectUpdateRandomPause();
@@ -777,7 +772,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
       }
 
-      doDefensiveChecks(phase);
+      doDefensiveChecks(phase, updateCommand);
 
       // if request is coming from another collection then we want it to be sent to all replicas
       // even if its phase is FROMLEADER
@@ -806,7 +801,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         String[] skipList = req.getParams().getParams(TEST_DISTRIB_SKIP_SERVERS);
         Set<String> skipListSet = null;
         if (skipList != null) {
-          skipListSet = new HashSet<>(skipList.length);
+          skipListSet = CollectionUtil.newHashSet(skipList.length);
           skipListSet.addAll(Arrays.asList(skipList));
           log.info("test.distrib.skip.servers was found and contains:{}", skipListSet);
         }
@@ -858,7 +853,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   @Override
   protected boolean shouldCloneCmdDoc() {
     boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
-    return willDistrib & cloneRequiredOnLeader;
+    return willDistrib && cloneRequiredOnLeader;
   }
 
   // helper method, processAdd was getting a bit large.
@@ -891,7 +886,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private List<SolrCmdDistributor.Node> getCollectionUrls(
       String collection, EnumSet<Replica.Type> types, boolean onlyLeaders) {
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (collection == null || docCollection.getSlicesMap() == null) {
+    if (docCollection == null || docCollection.getSlicesMap() == null) {
       throw new ZooKeeperException(
           SolrException.ErrorCode.BAD_REQUEST, "Could not find collection in zk: " + clusterState);
     }
@@ -980,7 +975,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     String[] skipList = req.getParams().getParams(TEST_DISTRIB_SKIP_SERVERS);
     Set<String> skipListSet = null;
     if (skipList != null) {
-      skipListSet = new HashSet<>(skipList.length);
+      skipListSet = CollectionUtil.newHashSet(skipList.length);
       skipListSet.addAll(Arrays.asList(skipList));
       log.info("test.distrib.skip.servers was found and contains:{}", skipListSet);
     }
@@ -1144,7 +1139,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     return nodes;
   }
 
-  private void doDefensiveChecks(DistribPhase phase) {
+  private void doDefensiveChecks(DistribPhase phase, UpdateCommand updateCommand) {
     boolean isReplayOrPeersync =
         (updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     if (isReplayOrPeersync) return;
@@ -1447,7 +1442,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
   }
 
-  private void zkCheck() {
+  private void zkCheck(UpdateCommand updateCommand) {
 
     // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
     // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.

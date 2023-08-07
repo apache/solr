@@ -1025,14 +1025,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "/admin/cores",
               reader,
               zkController,
-              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "")
+              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983)
                   .setUseDistributedClusterStateUpdates(false)
                   .setUseDistributedCollectionConfigSetExecution(false)
                   .build());
       overseers.add(overseer);
       ElectionContext ec =
-          new OverseerElectionContext(
-              zkClient, overseer, server.getZkAddress().replaceAll("/", "_"));
+          new OverseerElectionContext(zkClient, overseer, server.getZkAddress().replace("/", "_"));
       overseerElector.setup(ec);
       overseerElector.joinElection(ec, false);
 
@@ -1864,12 +1863,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
             "/admin/cores",
             reader,
             zkController,
-            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "")
+            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983)
                 .setUseDistributedClusterStateUpdates(false)
                 .build());
     overseers.add(overseer);
-    ElectionContext ec =
-        new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
+    ElectionContext ec = new OverseerElectionContext(zkClient, overseer, address.replace("/", "_"));
     overseerElector.setup(ec);
     overseerElector.joinElection(ec, false);
     return zkClient;
@@ -1938,19 +1936,18 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt())).thenCallRealMethod();
     when(zkController.getLeaderProps(anyString(), anyString(), anyInt(), anyBoolean()))
         .thenCallRealMethod();
-    doReturn(getCloudDataProvider(zkAddress, zkClient)).when(zkController).getSolrCloudManager();
+    doReturn(getCloudDataProvider(zkAddress)).when(zkController).getSolrCloudManager();
     return zkController;
   }
 
-  private SolrCloudManager getCloudDataProvider(String zkAddress, SolrZkClient zkClient) {
+  private SolrCloudManager getCloudDataProvider(String zkAddress) {
     var client =
         new CloudLegacySolrClient.Builder(Collections.singletonList(zkAddress), Optional.empty())
             .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .build();
     solrClients.add(client);
-    SolrClientCloudManager sccm =
-        new SolrClientCloudManager(new ZkDistributedQueueFactory(zkClient), client);
+    SolrClientCloudManager sccm = new SolrClientCloudManager(client);
     sccm.getClusterStateProvider().connect();
     return sccm;
   }

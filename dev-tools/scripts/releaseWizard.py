@@ -102,6 +102,7 @@ def expand_jinja(text, vars=None):
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
         'release_version_refguide': state.get_refguide_release() ,
+        'release_version_jira': state.get_jira_release(),
         'state': state,
         'gpg_key' : state.get_gpg_key(),
         'gradle_cmd' : 'gradlew.bat' if is_windows() else './gradlew',
@@ -114,7 +115,7 @@ def expand_jinja(text, vars=None):
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
         'vote_close_72h_holidays': vote_close_72h_holidays(),
-        'solr_news_file': solr_news_file,
+        'solr_news_file': state.get_solr_news_file(),
         'load_lines': load_lines,
         'set_java_home': set_java_home,
         'latest_version': state.get_latest_version(),
@@ -604,6 +605,13 @@ class ReleaseState:
     def get_refguide_release(self):
         return "%s_%s" % (self.release_version_major, self.release_version_minor)
 
+    def get_jira_release(self):
+        if self.release_type == 'major' or self.release_type == 'minor':
+            return "%s.%s" % (self.release_version_major, self.release_version_minor)
+        if self.release_type == 'bugfix':
+            return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix)
+        return None
+
     def get_java_home(self):
         return self.get_java_home_for_version(self.release_version)
 
@@ -621,6 +629,10 @@ class ReleaseState:
 
     def get_java_cmd(self):
         return os.path.join(self.get_java_home(), "bin", "java")
+
+    def get_solr_news_file(self):
+        return os.path.join(state.get_website_git_folder(), 'content', 'solr', 'solr_news',
+                     "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
 
     def get_todo_states(self):
         states = {}
@@ -1311,10 +1323,6 @@ def main():
     os.environ['JAVA_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
 
-    global solr_news_file
-    solr_news_file = os.path.join(state.get_website_git_folder(), 'content', 'solr', 'solr_news',
-      "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
-
     main_menu = ConsoleMenu(title="Solr ReleaseWizard",
                             subtitle=get_releasing_text,
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
@@ -1877,9 +1885,9 @@ def vote_close_72h_holidays():
 
 
 def prepare_announce_solr(todo): # pylint: disable=unused-argument
-    if not os.path.exists(solr_news_file):
+    if not os.path.exists(state.get_solr_news_file()):
         solr_text = expand_jinja("(( template=announce_solr ))")
-        with open(solr_news_file, 'w') as fp:
+        with open(state.get_solr_news_file(), 'w') as fp:
             fp.write(solr_text)
         # print("Wrote Solr announce draft to %s" % solr_news_file)
     else:

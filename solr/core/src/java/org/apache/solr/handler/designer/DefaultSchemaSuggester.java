@@ -41,7 +41,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.LocaleUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -56,6 +55,7 @@ import org.apache.solr.update.processor.ParseBooleanFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseDateFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseDoubleFieldUpdateProcessorFactory;
 import org.apache.solr.update.processor.ParseLongFieldUpdateProcessorFactory;
+import org.apache.solr.util.LocaleUtils;
 
 // Just a quick hack to flush out the design, more intelligence is needed
 public class DefaultSchemaSuggester implements SchemaSuggester {

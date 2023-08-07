@@ -278,7 +278,7 @@
             <str name="expr">solr\.core\..*:CORE\.fs\..*</str>
             <str name="expr">solr\.core\..*:HIGHLIGHTER\..*</str>
             <str name="expr">solr\.core\..*:INDEX\..*</str>
-            <str name="expr">solr\.core\..*:REPLICATION\.replication\..*</str>
+            <str name="expr">solr\.core\..*:REPLICATION\./replication\..*</str>
             <str name="expr">solr\.core\..*:SEARCHER\.searcher\..*</str>
           </lst>
         </lst>
@@ -420,7 +420,7 @@
           </str>
           <str>
             .metrics["solr.jvm"] | to_entries | .[] | select(.key == "os.processCpuTime") as $object |
-            ($object.value / 1000.0) as $value |
+            ($object.value / 1000000000.0 ) as $value |
             {
               name         : "solr_metrics_jvm_os_cpu_time_seconds",
               type         : "COUNTER",
@@ -505,7 +505,7 @@
             $jq:node(timeouts_total, select(.key | endswith(".timeouts")), count)
           </str>
           <str>
-            $jq:node(time_seconds_total, select(.key | endswith(".totalTime")), ($object.value / 1000))
+            $jq:node(time_seconds_total, select(.key | endswith(".totalTime")), ($object.value / 1000000000.0))
           </str>
           <str>
             .metrics["solr.node"] | to_entries | .[] | select(.key | startswith("CONTAINER.cores.")) as $object |
@@ -615,7 +615,7 @@
             $jq:core(timeouts_total, select(.key | endswith(".timeouts")) | select (.value | type == "object"), count)
           </str>
           <str>
-            $jq:core(time_seconds_total, select(.key | endswith(".totalTime")), ($object.value / 1000))
+            $jq:core(time_seconds_total, select(.key | endswith(".totalTime")), ($object.value / 1000000000.0))
           </str>
           <str>
             .metrics | to_entries | .[] | select (.key | startswith("solr.core.")) as $parent |

@@ -30,17 +30,17 @@ import org.junit.Test;
 
 public class TestManagedFeatureStore extends SolrTestCaseJ4 {
 
-  private ManagedFeatureStore fstore = null;
+  private ManagedFeatureStore featureStore = null;
 
   @Before
   public void setup() throws Exception {
     initCore("solrconfig-ltr.xml", "schema.xml");
-    fstore = ManagedFeatureStore.getManagedFeatureStore(h.getCore());
+    featureStore = ManagedFeatureStore.getManagedFeatureStore(h.getCore());
   }
 
   @After
   public void cleanup() throws Exception {
-    fstore = null;
+    featureStore = null;
     deleteCore();
   }
 
@@ -59,8 +59,8 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
   public void testDefaultFeatureStoreName() {
     assertEquals("_DEFAULT_", FeatureStore.DEFAULT_FEATURE_STORE_NAME);
     final FeatureStore expectedFeatureStore =
-        fstore.getFeatureStore(FeatureStore.DEFAULT_FEATURE_STORE_NAME);
-    final FeatureStore actualFeatureStore = fstore.getFeatureStore(null);
+        featureStore.getFeatureStore(FeatureStore.DEFAULT_FEATURE_STORE_NAME);
+    final FeatureStore actualFeatureStore = featureStore.getFeatureStore(null);
     assertEquals(
         "getFeatureStore(null) should return the default feature store",
         expectedFeatureStore,
@@ -69,12 +69,12 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
 
   @Test
   public void testFeatureStoreAdd() throws FeatureException {
-    final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature");
+    final FeatureStore fs = featureStore.getFeatureStore("featureStore-testFeature");
     for (int i = 0; i < 5; i++) {
       final String name = "c" + i;
 
-      fstore.addFeature(
-          createMap(name, OriginalScoreFeature.class.getName(), null), "fstore-testFeature");
+      featureStore.addFeature(
+          createMap(name, OriginalScoreFeature.class.getName(), null), "featureStore-testFeature");
 
       final Feature f = fs.get(name);
       assertNotNull(f);
@@ -84,14 +84,14 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
 
   @Test
   public void testFeatureStoreGet() throws FeatureException {
-    final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature2");
+    final FeatureStore fs = featureStore.getFeatureStore("featureStore-testFeature2");
     for (int i = 0; i < 5; i++) {
       Map<String, Object> params = new HashMap<String, Object>();
       params.put("value", i);
       final String name = "c" + i;
 
-      fstore.addFeature(
-          createMap(name, ValueFeature.class.getName(), params), "fstore-testFeature2");
+      featureStore.addFeature(
+          createMap(name, ValueFeature.class.getName(), params), "featureStore-testFeature2");
     }
 
     for (int i = 0; i < 5; i++) {
@@ -105,21 +105,22 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
 
   @Test
   public void testMissingFeatureReturnsNull() {
-    final FeatureStore fs = fstore.getFeatureStore("fstore-testFeature3");
+    final FeatureStore fs = featureStore.getFeatureStore("featureStore-testFeature3");
     for (int i = 0; i < 5; i++) {
       Map<String, Object> params = new HashMap<String, Object>();
       params.put("value", i);
       final String name = "testc" + (float) i;
-      fstore.addFeature(
-          createMap(name, ValueFeature.class.getName(), params), "fstore-testFeature3");
+      featureStore.addFeature(
+          createMap(name, ValueFeature.class.getName(), params), "featureStore-testFeature3");
     }
     assertNull(fs.get("missing_feature_name"));
   }
 
   @Test
   public void getInstanceTest() throws FeatureException {
-    fstore.addFeature(createMap("test", OriginalScoreFeature.class.getName(), null), "testFstore");
-    final Feature feature = fstore.getFeatureStore("testFstore").get("test");
+    featureStore.addFeature(
+        createMap("test", OriginalScoreFeature.class.getName(), null), "testFeatureStore");
+    final Feature feature = featureStore.getFeatureStore("testFeatureStore").get("test");
     assertNotNull(feature);
     assertEquals("test", feature.getName());
     assertEquals(OriginalScoreFeature.class.getName(), feature.getClass().getName());
@@ -134,7 +135,8 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
         expectThrows(
             Exception.class,
             () -> {
-              fstore.addFeature(createMap("test", nonExistingClassName, null), "testFstore2");
+              featureStore.addFeature(
+                  createMap("test", nonExistingClassName, null), "testFeatureStore2");
             });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());

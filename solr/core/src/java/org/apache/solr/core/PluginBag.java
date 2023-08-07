@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Api;
@@ -44,6 +43,8 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.APIConfigProviderBinder;
 import org.apache.solr.jersey.JerseyApplications;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
@@ -256,7 +257,7 @@ public class PluginBag<T> implements AutoCloseable {
             //  resource registers under?
             Collection<Class<? extends JerseyResource>> jerseyApis =
                 apiSupport.getJerseyResources();
-            if (!CollectionUtils.isEmpty(jerseyApis)) {
+            if (jerseyApis != null) {
               for (Class<? extends JerseyResource> jerseyClazz : jerseyApis) {
                 if (log.isDebugEnabled()) {
                   log.debug("Registering jersey resource class: {}", jerseyClazz.getName());
@@ -265,9 +266,13 @@ public class PluginBag<T> implements AutoCloseable {
                 // See RequestMetricHandling javadocs for a better understanding of this
                 // resource->RH
                 // mapping
-                if (inst instanceof RequestHandlerBase) {
-                  jaxrsResourceRegistry.put(jerseyClazz, (RequestHandlerBase) inst);
+                if (apiSupport instanceof RequestHandlerBase) {
+                  jaxrsResourceRegistry.put(jerseyClazz, (RequestHandlerBase) apiSupport);
                 }
+              }
+              if (apiSupport instanceof APIConfigProvider) {
+                jerseyResources.register(
+                    new APIConfigProviderBinder((APIConfigProvider<?>) apiSupport));
               }
             }
           }
@@ -319,7 +324,7 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   /**
-   * Initializes the plugins after reading the meta data from {@link
+   * Initializes the plugins after reading the metadata from {@link
    * org.apache.solr.core.SolrConfig}.
    *
    * @param defaults These will be registered if not explicitly specified

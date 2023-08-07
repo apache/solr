@@ -52,7 +52,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -506,12 +505,13 @@ public class DistributedClusterStateUpdater {
             // Fetch the per replica states updates done previously or skip fetching if we already
             // have them
             fetchedPerReplicaStates =
-                PerReplicaStatesFetcher.fetch(
+                PerReplicaStatesOps.fetch(
                     docCollection.getZNode(), zkStateReader.getZkClient(), fetchedPerReplicaStates);
             // Transpose the per replica states into the cluster state
             updatedState =
                 updatedState.copyWith(
-                    updater.getCollectionName(), docCollection.copyWith(fetchedPerReplicaStates));
+                    updater.getCollectionName(),
+                    docCollection.setPerReplicaStates(fetchedPerReplicaStates));
           }
         }
 
