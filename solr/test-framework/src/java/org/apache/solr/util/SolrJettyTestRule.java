@@ -26,6 +26,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.slf4j.Logger;
@@ -116,5 +117,9 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   @Override
   public SolrClient getAdminClient() {
     return adminClient;
+  }
+
+  public CoreContainer getCoreContainer() {
+    return getJetty().getCoreContainer();
   }
 }

@@ -73,7 +73,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
 
     URI uri =
         URI.create(
-            getJetty().getBaseUrl()
+            getBaseUrl()
                 + "/"
                 + DEFAULT_TEST_COLLECTION_NAME
                 + "/update?"
