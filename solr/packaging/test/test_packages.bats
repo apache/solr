@@ -69,7 +69,7 @@ teardown() {
 @test "deploying and undeploying a cluster level package" {
   run solr start -c -Denable.packages=true
   
-  run solr package add-repo splainer "https://raw.githubusercontent.com/epugh/solr-splainer/main/solr-splainer-plugin/repo"
+  run solr package add-repo splainer "https://raw.githubusercontent.com/o19s/splainer/main/solr-splainer-package/repo"
   assert_output --partial "Added repository: splainer"
   
   run solr package list-available
