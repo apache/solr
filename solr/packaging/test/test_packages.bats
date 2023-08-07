@@ -50,7 +50,7 @@ teardown() {
 @test "deploying and undeploying of packages" {
   run solr start -c -Denable.packages=true
 
-  solr create_collection -c foo-1.2
+  solr create -c foo-1.2
 
   # Deploy package - the package doesn't need to exist before the collection validation kicks in
   run solr package deploy PACKAGE_NAME -collections foo-1.2

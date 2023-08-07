@@ -19,11 +19,13 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketException;
@@ -62,7 +64,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.SolrVersion;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
@@ -121,18 +122,19 @@ public class SolrCLI implements CLIO {
 
   /** Runs a tool. */
   public static void main(String[] args) throws Exception {
-    if (args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0) {
+    final boolean hasNoCommand =
+        args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
+    final boolean isHelpCommand =
+        !hasNoCommand && Arrays.asList("-h", "--help", "/?").contains(args[0]);
+
+    if (hasNoCommand || isHelpCommand) {
       printHelp();
       exit(1);
     }
 
     if (Arrays.asList("-v", "-version", "version").contains(args[0])) {
-      // Simple version tool, no need for its own class
-      if (args.length != 1) {
-        CLIO.err("Version tool does not accept any parameters!");
-      }
-      CLIO.out("Solr version is: " + SolrVersion.LATEST);
-      exit(0);
+      // select the version tool to be run
+      args[0] = "version";
     }
 
     SSLConfigurationsFactory.current().init();
@@ -217,8 +219,6 @@ public class SolrCLI implements CLIO {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool();
     else if ("status".equals(toolType)) return new StatusTool();
     else if ("api".equals(toolType)) return new ApiTool();
-    else if ("create_collection".equals(toolType)) return new CreateCollectionTool();
-    else if ("create_core".equals(toolType)) return new CreateCoreTool();
     else if ("create".equals(toolType)) return new CreateTool();
     else if ("delete".equals(toolType)) return new DeleteTool();
     else if ("config".equals(toolType)) return new ConfigTool();
@@ -235,6 +235,8 @@ public class SolrCLI implements CLIO {
     else if ("export".equals(toolType)) return new ExportTool();
     else if ("package".equals(toolType)) return new PackageTool();
     else if ("post".equals(toolType)) return new PostTool();
+    else if ("postlogs".equals(toolType)) return new PostLogsTool();
+    else if ("version".equals(toolType)) return new VersionTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -424,7 +426,7 @@ public class SolrCLI implements CLIO {
 
     print("Usage: solr COMMAND OPTIONS");
     print(
-        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package, post");
+        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, zk, auth, assert, config, export, api, package, post");
     print("");
     print("  Standalone server example (start Solr running in the background on port 8984):");
     print("");
@@ -559,6 +561,12 @@ public class SolrCLI implements CLIO {
       // just ignore it since we're only interested in a positive result here
     }
     return exists;
+  }
+
+  public static boolean isCloudMode(SolrClient solrClient) throws SolrServerException, IOException {
+    NamedList<Object> systemInfo =
+        solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
+    return "solrcloud".equals(systemInfo.get("mode"));
   }
 
   public static class AssertionFailureException extends Exception {

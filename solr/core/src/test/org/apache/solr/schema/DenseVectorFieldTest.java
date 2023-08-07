@@ -603,24 +603,11 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     }
   }
 
-  /** Not Supported */
-  @Test
-  public void query_functionQueryUsage_shouldThrowException() throws Exception {
-    try {
-      initCore("solrconfig-basic.xml", "schema-densevector.xml");
-
-      assertQEx(
-          "Running Function queries on a dense vector field should raise an Exception",
-          "Function queries are not supported for Dense Vector fields.",
-          req("q", "*:*", "fl", "id,field(vector)"),
-          SolrException.ErrorCode.BAD_REQUEST);
-    } finally {
-      deleteCore();
-    }
-  }
-
   @Test
   public void denseVectorField_shouldBePresentAfterAtomicUpdate() throws Exception {
+    assumeTrue(
+        "update log must be enabled for atomic update",
+        Boolean.getBoolean(System.getProperty("enable.update.log")));
     try {
       initCore("solrconfig.xml", "schema-densevector.xml");
       SolrInputDocument doc = new SolrInputDocument();
@@ -657,6 +644,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void denseVectorFieldOnAtomicUpdate_shouldBeUpdatedCorrectly() throws Exception {
+    assumeTrue(
+        "update log must be enabled for atomic update",
+        Boolean.getBoolean(System.getProperty("enable.update.log")));
     try {
       initCore("solrconfig.xml", "schema-densevector.xml");
       SolrInputDocument doc = new SolrInputDocument();

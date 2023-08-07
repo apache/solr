@@ -59,7 +59,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -1184,8 +1184,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    PerReplicaStates prs =
-        PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+    PerReplicaStates prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
 
     JettySolrRunner jsr = null;
@@ -1195,7 +1194,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       // Now let's do an add replica
       CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
           .process(cluster.getSolrClient());
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(5, prs.states.size());
 
       // create a collection with PRS and v2 API
@@ -1211,7 +1210,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       cluster.waitForActiveCollection(testCollection, 2, 4);
       c = cluster.getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(4, prs.states.size());
     } finally {
       if (jsr != null) {

@@ -14,13 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.cloud;
+package org.apache.solr.jersey;
 
-import java.io.IOException;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
-/** */
-public interface DistributedQueueFactory {
-  DistributedQueue makeQueue(String path) throws IOException;
+/** Jersey binder for APIConfigProvider */
+public class APIConfigProviderBinder extends AbstractBinder {
 
-  void removeQueue(String path) throws IOException;
+  private final APIConfigProvider<?> cfgProvider;
+
+  public APIConfigProviderBinder(APIConfigProvider<?> cfgProvider) {
+    this.cfgProvider = cfgProvider;
+  }
+
+  @Override
+  protected void configure() {
+    bindFactory(cfgProvider).to(cfgProvider.getConfigClass());
+  }
 }

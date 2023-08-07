@@ -52,7 +52,7 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
       server.run();
 
       CloudConfig cloudConfig =
-          new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
+          new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984)
               .setLeaderConflictResolveWait(180000)
               .setLeaderVoteWait(180000)
               .build();

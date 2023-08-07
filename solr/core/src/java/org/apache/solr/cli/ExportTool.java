@@ -85,6 +85,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
+/** Supports export command in the bin/solr script. */
 public class ExportTool extends ToolBase {
   @Override
   public String getName() {

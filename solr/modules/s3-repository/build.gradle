@@ -80,6 +80,13 @@ dependencies {
   testImplementation 'commons-io:commons-io'
 
   testRuntimeOnly 'org.eclipse.jetty:jetty-webapp'
+
+  testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
 }
 
 test {
