@@ -31,9 +31,13 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Provides a JettySolrRunner for tests. It starts and stops Solr Server instance based on jetty */
+/**
+ * A {@link SolrClientTestRule} that provides a Solr instance running in Jetty, an HTTP server. It's
+ * based off of {@link JettySolrRunner}.
+ */
 public class SolrJettyTestRule extends SolrClientTestRule {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private JettySolrRunner jetty;
 
   private SolrClient adminClient = null;

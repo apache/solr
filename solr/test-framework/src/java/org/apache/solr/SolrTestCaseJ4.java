@@ -2332,7 +2332,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   // and copies the stock files in there.
 
   /** Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf */
-  @Deprecated
+  @Deprecated // Instead use a basic config + whatever is needed or default config
   public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
     Path subHome = dstRoot.toPath().resolve(collection).resolve("conf");
     Files.createDirectories(subHome);
@@ -2361,7 +2361,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /** Creates a temp solr home using sample_techproducts_configs. Returns the home path. */
-  @Deprecated
+  @Deprecated // Instead use a basic config + whatever is needed or default config
   public static String legacyExampleCollection1SolrHome() {
     String sourceHome = ExternalPaths.SOURCE_HOME;
     if (sourceHome == null)

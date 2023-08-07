@@ -30,6 +30,7 @@ import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.ClassRule;
 
+@Deprecated // just use SolrJettyTestRule
 public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
@@ -131,6 +132,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   // Sets up the necessary config files for Jetty. At least some tests require that the solrconfig
   // from the test file directory are used, but some also require that the solr.xml file be
   // explicitly there as of SOLR-4817
+  @Deprecated // Instead use a basic config + whatever is needed or default config
   protected static void setupJettyTestHome(File solrHome, String collection) throws Exception {
     // TODO remove these sys props!
     System.setProperty("solr.test.sys.prop1", "propone");
