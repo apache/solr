@@ -211,7 +211,7 @@ public class BoolField extends PrimitiveFieldType {
   @Override
   public Object toNativeType(Object val) {
     if (val instanceof CharSequence) {
-      return Boolean.valueOf(StrUtils.parseBoolean(val.toString()));
+      return Boolean.valueOf(StrUtils.parseBoolean((CharSequence) val));
     }
     return super.toNativeType(val);
   }
