@@ -19,6 +19,10 @@ Improvements
 
 * SOLR-16847: v2 APIs are now able to access any applicable solrconfig.xml "requestHandler" configuration. (Alex Deparvu via Jason Gerlowski)
 
+* SOLR-11685: When SolrCloud shard leaders change while indexing updates arrive, Solr could fail and return
+  a HTTP 503 status. Switched to 510 so that CloudSolrClient will auto-retry it and probably succeed.
+  (David Smiley, Alex Deparvu)
+
 Optimizations
 ---------------------
 
