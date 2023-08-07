@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
@@ -448,10 +447,9 @@ public class Http2SolrClient extends SolrClient {
             @Override
             public void onHeaders(Response response) {
               super.onHeaders(response);
-              InputStreamResponseListener listener = this;
               executor.execute(
                   () -> {
-                    InputStream is = listener.getInputStream();
+                    InputStream is = getInputStream();
                     assert ObjectReleaseTracker.track(is);
                     try {
                       NamedList<Object> body =
@@ -692,14 +690,11 @@ public class Http2SolrClient extends SolrClient {
           SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
 
       if (contentWriter != null) {
-        OutputStreamRequestContent content =
-            new OutputStreamRequestContent(contentWriter.getContentType());
-        Request r =
-            httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
+        var content = new OutputStreamRequestContent(contentWriter.getContentType());
+        var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
         decorateRequest(r, solrRequest, isAsync);
         r.send(listener);
-
-        try (OutputStream output = content.getOutputStream()) {
+        try (var output = content.getOutputStream()) {
           contentWriter.write(output);
         }
         return r;
