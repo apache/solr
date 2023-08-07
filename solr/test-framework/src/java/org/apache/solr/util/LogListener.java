@@ -155,6 +155,19 @@ public final class LogListener implements Closeable, AutoCloseable {
     return create(Level.INFO, logger);
   }
 
+  /** Listens for DEBUG log messages at the ROOT logger */
+  public static LogListener debug() {
+    return debug("");
+  }
+  /** Listens for DEBUG log messages for the specified logger */
+  public static LogListener debug(final Class<?> logger) {
+    return debug(logger.getName());
+  }
+  /** Listens for DEBUG log messages for the specified logger */
+  public static LogListener debug(final String logger) {
+    return create(Level.DEBUG, logger);
+  }
+
   // TODO: more factories for other levels?
   // TODO: no-arg factory variants that use "" -- simpler syntax for ROOT logger?
 

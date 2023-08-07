@@ -138,7 +138,7 @@ public class XmlConfigFile { // formerly simply "Config"
         doc = SafeXMLParsing.parseConfigXML(log, loader, name);
       }
     } catch (SAXException e) {
-      SolrException.log(log, "Exception during parsing file: " + name, e);
+      log.error("Exception during parsing file: {}", name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
       // XML Parser should close but in exceptional cases might not; so let's be safe
@@ -242,14 +242,10 @@ public class XmlConfigFile { // formerly simply "Config"
       log.trace("{}:{}={}", name, path, nd);
       return nd;
 
-    } catch (XPathExpressionException e) {
-      SolrException.log(log, "Error in xpath", e);
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + xstr + " for " + name, e);
     } catch (SolrException e) {
       throw (e);
     } catch (Exception e) {
-      SolrException.log(log, "Error in xpath", e);
+      log.error("Error in xpath", e);
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + xstr + " for " + name, e);
     }
@@ -274,14 +270,10 @@ public class XmlConfigFile { // formerly simply "Config"
       log.trace("{}:{}={}", name, path, nodeList);
       return nodeList;
 
-    } catch (XPathExpressionException e) {
-      SolrException.log(log, "Error in xpath", e);
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + xstr + " for " + name, e);
     } catch (SolrException e) {
       throw (e);
     } catch (Exception e) {
-      SolrException.log(log, "Error in xpath", e);
+      log.error("Error in xpath", e);
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + xstr + " for " + name, e);
     }
@@ -344,7 +336,7 @@ public class XmlConfigFile { // formerly simply "Config"
       }
       message.insert(0, "Unknown attribute(s) on element(s): ");
       String msg = message.toString();
-      SolrException.log(log, msg);
+      log.error(msg);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
     }
   }
@@ -407,7 +399,7 @@ public class XmlConfigFile { // formerly simply "Config"
     return val != null ? Double.parseDouble(val) : def;
   }
 
-  /** If this config is loaded from zk the version is relevant other wise -1 is returned */
+  /** If this config is loaded from zk the version is relevant otherwise -1 is returned */
   public int getZnodeVersion() {
     return zkVersion;
   }

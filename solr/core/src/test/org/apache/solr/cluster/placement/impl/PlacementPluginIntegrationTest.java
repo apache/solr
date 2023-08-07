@@ -142,6 +142,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   public void testDynamicReconfiguration() throws Exception {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
         cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
     assertTrue(
         "wrong type " + pluginFactory.getClass().getName(),
         pluginFactory instanceof DelegatingPlacementPluginFactory);
@@ -165,6 +166,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     PlacementPluginFactory<? extends PlacementPluginConfig> factory = wrapper.getDelegate();
+    assertNotNull(factory);
     assertTrue(
         "wrong type " + factory.getClass().getName(),
         factory instanceof MinimizeCoresPlacementFactory);
@@ -183,6 +185,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     factory = wrapper.getDelegate();
+    assertNotNull(factory);
     assertTrue(
         "wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     AffinityPlacementConfig config = ((AffinityPlacementFactory) factory).getConfig();
@@ -201,6 +204,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     factory = wrapper.getDelegate();
+    assertNotNull(factory);
     assertTrue(
         "wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     config = ((AffinityPlacementFactory) factory).getConfig();
@@ -237,6 +241,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   public void testWithCollectionIntegration() throws Exception {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
         cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
     assertTrue(
         "wrong type " + pluginFactory.getClass().getName(),
         pluginFactory instanceof DelegatingPlacementPluginFactory);
@@ -330,7 +335,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
               .process(cluster.getSolrClient());
       fail("should have failed: " + rsp);
     } catch (Exception e) {
-      assertTrue(e.toString(), e.toString().contains("colocated collection"));
+      assertTrue(e.toString(), e.toString().contains("collocated collection"));
     }
   }
 
@@ -347,6 +352,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory =
         cc.getPlacementPluginFactory();
+    assertNotNull(pluginFactory);
     assertTrue(
         "wrong type " + pluginFactory.getClass().getName(),
         pluginFactory instanceof DelegatingPlacementPluginFactory);
@@ -377,8 +383,8 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       fail("should have failed due to no nodes with the types: " + rsp);
     } catch (Exception e) {
       assertTrue(
-          "should contain 'no nodes with types':" + e,
-          e.toString().contains("no nodes with types"));
+          "should contain 'Not enough eligible nodes to place':" + e,
+          e.toString().contains("Not enough eligible nodes to place"));
     }
     System.setProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_0");
     CollectionAdminResponse rsp =

@@ -19,7 +19,9 @@ package org.apache.solr.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -40,9 +42,10 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
     solrHomeDirectory = createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(
-        new File(top, "solrconfig-headers.xml"),
-        new File(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"));
+    Files.copy(
+        Path.of(top, "solrconfig-headers.xml"),
+        Path.of(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
     createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 

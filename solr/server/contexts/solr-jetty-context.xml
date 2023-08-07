@@ -29,10 +29,7 @@
       <New id="removeServerClasses" class="org.eclipse.jetty.webapp.ClassMatcher">
         <Arg>
           <Array type="java.lang.String">
-            <Item>-org.eclipse.jetty.io.</Item>
-            <Item>-org.eclipse.jetty.http.</Item>
-            <Item>-org.eclipse.jetty.http2.</Item>
-            <Item>-org.eclipse.jetty.util.</Item>
+            <Item>-org.eclipse.jetty.</Item>
           </Array>
         </Arg>
       </New>

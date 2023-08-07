@@ -50,7 +50,6 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
     JettyConfig jettyConfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(stopAtShutdown)
             .withServlets(extraServlets)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
@@ -122,6 +121,15 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
 
   protected SolrClient getSolrClient() {
     return solrClientTestRule.getSolrClient();
+  }
+
+  /**
+   * Create a new solr client. If createJetty was called, a http implementation will be created,
+   * otherwise an embedded implementation will be created. Subclasses should override for other
+   * options.
+   */
+  public SolrClient createNewSolrClient() {
+    return new HttpSolrClient.Builder(getCoreUrl()).build();
   }
 
   protected HttpClient getHttpClient() {

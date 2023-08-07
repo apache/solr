@@ -21,10 +21,12 @@ import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.TRUE;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -32,25 +34,29 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
@@ -60,15 +66,13 @@ import org.slf4j.LoggerFactory;
 public class TestCoordinatorRole extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final long DEFAULT_TOLERANCE = 500;
-
   public void testSimple() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
     try {
       CloudSolrClient client = cluster.getSolrClient();
       String COLLECTION_NAME = "test_coll";
-      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.SYNTHETIC_COLL_PREFIX + "conf";
+      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.getSyntheticCollectionName("conf");
       CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 2)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
@@ -84,7 +88,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       assertEquals(10, rsp.getResults().getNumFound());
 
       System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
-      JettySolrRunner coordinatorJetty = null;
+      final JettySolrRunner coordinatorJetty;
       try {
         coordinatorJetty = cluster.startJettySolrRunner();
       } finally {
@@ -105,6 +109,72 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       expectedNodes.add(coordinatorJetty.getNodeName());
       collection.forEachReplica((s, replica) -> expectedNodes.remove(replica.getNodeName()));
       assertTrue(expectedNodes.isEmpty());
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  public void testMultiCollectionMultiNode() throws Exception {
+    MiniSolrCloudCluster cluster =
+        configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
+    try {
+      CloudSolrClient client = cluster.getSolrClient();
+      String COLLECTION_NAME = "test_coll";
+      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.getSyntheticCollectionName("conf");
+      for (int j = 1; j <= 10; j++) {
+        String collname = COLLECTION_NAME + "_" + j;
+        CollectionAdminRequest.createCollection(collname, "conf", 2, 2)
+            .process(cluster.getSolrClient());
+        cluster.waitForActiveCollection(collname, 2, 4);
+        UpdateRequest ur = new UpdateRequest();
+        for (int i = 0; i < 10; i++) {
+          SolrInputDocument doc2 = new SolrInputDocument();
+          doc2.addField("id", "" + i);
+          ur.add(doc2);
+        }
+
+        ur.commit(client, collname);
+        QueryResponse rsp = client.query(collname, new SolrQuery("*:*"));
+        assertEquals(10, rsp.getResults().getNumFound());
+      }
+
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      final JettySolrRunner coordinatorJetty1;
+      final JettySolrRunner coordinatorJetty2;
+      try {
+        coordinatorJetty1 = cluster.startJettySolrRunner();
+        coordinatorJetty2 = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+      for (int j = 1; j <= 10; j++) {
+        String collname = COLLECTION_NAME + "_" + j;
+        QueryResponse rslt =
+            new QueryRequest(new SolrQuery("*:*"))
+                .setPreferredNodes(List.of(coordinatorJetty1.getNodeName()))
+                .process(client, collname);
+
+        assertEquals(10, rslt.getResults().size());
+      }
+
+      for (int j = 1; j <= 10; j++) {
+        String collname = COLLECTION_NAME + "_" + j;
+        QueryResponse rslt =
+            new QueryRequest(new SolrQuery("*:*"))
+                .setPreferredNodes(List.of(coordinatorJetty2.getNodeName()))
+                .process(client, collname);
+
+        assertEquals(10, rslt.getResults().size());
+      }
+
+      DocCollection collection =
+          cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION);
+      assertNotNull(collection);
+
+      int coordNode1NumCores = coordinatorJetty1.getCoreContainer().getNumAllCores();
+      assertEquals("Unexpected number of cores found for coordinator node", 1, coordNode1NumCores);
+      int coordNode2NumCores = coordinatorJetty2.getCoreContainer().getNumAllCores();
+      assertEquals("Unexpected number of cores found for coordinator node", 1, coordNode2NumCores);
     } finally {
       cluster.shutdown();
     }
@@ -153,17 +223,17 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       }
       assertNotNull(nrtJetty);
       assertNotNull(pullJetty);
-      try (HttpSolrClient client = (HttpSolrClient) pullJetty.newClient()) {
+      try (SolrClient client = pullJetty.newClient()) {
         client.add(COLL, sid);
         client.commit(COLL);
         assertEquals(
             nrtCore,
             getHostCoreName(
-                COLL, qaJettyBase, client, p -> p.add("shards.preference", "replica.type:NRT")));
+                COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")));
         assertEquals(
             pullCore,
             getHostCoreName(
-                COLL, qaJettyBase, client, p -> p.add("shards.preference", "replica.type:PULL")));
+                COLL, qaJettyBase, p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:PULL")));
         // Now , kill NRT jetty
         JettySolrRunner nrtJettyF = nrtJetty;
         JettySolrRunner pullJettyF = pullJetty;
@@ -178,8 +248,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             executor.submit(
                 () -> {
                   // we manipulate the jetty instances in a separate thread to more closely mimic
-                  // the behavior we'd
-                  // see irl.
+                  // the behavior we'd see irl.
                   try {
                     Thread.sleep(establishBaselineMs);
                     log.info("stopping NRT jetty ...");
@@ -190,10 +259,8 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                     nrtJettyF.start(true);
                     log.info("NRT jetty restarted.");
                     // once NRT is back up, we expect PULL to continue serving until the TTL on ZK
-                    // state
-                    // used for query request routing has expired (60s). But here we force a return
-                    // to NRT
-                    // by stopping the PULL replica after a brief delay ...
+                    // state used for query request routing has expired (60s). But here we force a
+                    // return to NRT by stopping the PULL replica after a brief delay ...
                     Thread.sleep(pullServiceTimeMs);
                     log.info("stopping PULL jetty ...");
                     pullJettyF.stop();
@@ -211,9 +278,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                 getHostCoreName(
                     COLL,
                     qaJettyBase,
-                    client,
-                    p -> p.add("shards.preference", "replica.type:NRT")))) {
+                    p -> p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT")))) {
           count++;
+          Thread.sleep(100);
           individualRequestStart = new Date().getTime();
         }
         long now = new Date().getTime();
@@ -224,11 +291,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             establishBaselineMs,
             now - individualRequestStart);
         // default tolerance of 500ms below should suffice. Failover to PULL for this case should be
-        // very fast,
-        // because our QA-based client already knows both replicas are active, the index is stable,
-        // so the moment
-        // the client finds NRT is down it should be able to failover immediately and transparently
-        // to PULL.
+        // very fast, because our QA-based client already knows both replicas are active, the index
+        // is stable, so the moment the client finds NRT is down it should be able to failover
+        // immediately and transparently to PULL.
         assertEquals(
             "when we break out of the NRT query loop, should be b/c routed to PULL",
             pullCore,
@@ -261,14 +326,11 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             nrtDowntimeMs,
             count);
         // NRT replica is back up, registered as available with Zk, and availability info has been
-        // pulled down by
-        // our PULL-replica-based `client`, forwarded indexing command to NRT, index/commit
-        // completed. All of this
-        // accounts for the 3000ms tolerance allowed for below. This is not a strict value, and if
-        // it causes failures
-        // regularly we should feel free to increase the tolerance; but it's meant to provide a
-        // stable baseline from
-        // which to detect regressions.
+        // pulled down by our PULL-replica-based `client`, forwarded indexing command to NRT,
+        // index/commit completed. All of this accounts for the 3000ms tolerance allowed for below.
+        // This is not a strict value, and if it causes failures regularly we should feel free to
+        // increase the tolerance; but it's meant to provide a stable baseline from which to detect
+        // regressions.
         count = 0;
         start = new Date().getTime();
         individualRequestStart = start;
@@ -277,10 +339,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
                 getHostCoreName(
                     COLL,
                     qaJettyBase,
-                    client,
                     p -> {
                       p.set(CommonParams.Q, "id:345");
-                      p.add("shards.preference", "replica.type:NRT");
+                      p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
                     }))) {
           count++;
           Thread.sleep(100);
@@ -296,7 +357,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         assertEquals(nrtCore, hostCore);
         // allow any exceptions to propagate
         jettyManipulationFuture.get();
-        if (true) return;
 
         // next phase: just toggle a bunch
         // TODO: could separate this out into a different test method, but this should suffice for
@@ -338,16 +398,16 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         start = new Date().getTime();
         try {
           do {
-            pullCore.equals(
-                hostCore =
-                    getHostCoreName(
-                        COLL,
-                        qaJettyBase,
-                        client,
-                        p -> {
-                          p.set(CommonParams.Q, "id:345");
-                          p.add("shards.preference", "replica.type:NRT");
-                        }));
+            if (pullCore.equals(
+                getHostCoreName(
+                    COLL,
+                    qaJettyBase,
+                    p -> {
+                      p.set(CommonParams.Q, "id:345");
+                      p.add(ShardParams.SHARDS_PREFERENCE, "replica.type:NRT");
+                    }))) {
+              done.set(true);
+            }
             count++;
             Thread.sleep(100);
           } while (!done.get());
@@ -380,46 +440,210 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  private String getHostCoreName(
-      String COLL, String qaNode, HttpSolrClient solrClient, Consumer<SolrQuery> p)
+  private String getHostCoreName(String COLL, String qaNode, Consumer<SolrQuery> p)
       throws Exception {
-
     boolean found = false;
-    SolrQuery q = new SolrQuery("*:*");
-    q.add("fl", "id,desc_s,_core_:[core]").add(OMIT_HEADER, TRUE);
+    SolrQuery q =
+        new SolrQuery(
+            CommonParams.Q,
+            "*:*",
+            CommonParams.FL,
+            "id,desc_s,_core_:[core]",
+            OMIT_HEADER,
+            TRUE,
+            CommonParams.WT,
+            CommonParams.JAVABIN);
     p.accept(q);
-    StringBuilder sb =
-        new StringBuilder(qaNode).append("/").append(COLL).append("/select?wt=javabin");
-    q.forEach(e -> sb.append("&").append(e.getKey()).append("=").append(e.getValue()[0]));
     SolrDocumentList docs = null;
-    for (int i = 0; i < 100; i++) {
-      try {
-        SimpleOrderedMap rsp =
-            (SimpleOrderedMap)
-                Utils.executeGET(solrClient.getHttpClient(), sb.toString(), Utils.JAVABINCONSUMER);
-        docs = (SolrDocumentList) rsp.get("response");
-        if (docs.size() > 0) {
-          found = true;
-          break;
+    try (SolrClient solrClient = new Http2SolrClient.Builder(qaNode).build()) {
+      for (int i = 0; i < 100; i++) {
+        try {
+          QueryResponse queryResponse = solrClient.query(COLL, q);
+          docs = queryResponse.getResults();
+          assertNotNull("Docs should not be null. Query response was: " + queryResponse, docs);
+          if (docs.size() > 0) {
+            found = true;
+            break;
+          }
+        } catch (SolrException ex) {
+          // we know we're doing tricky things that might cause transient errors
+          // TODO: all these query requests go to the QA node -- should QA propagate internal
+          // request errors to the external client (and the external client retry?) or should QA
+          // attempt to failover transparently in the event of an error?
+          if (i < 5) {
+            log.info("swallowing transient error", ex);
+          } else {
+            log.error("only expect actual _errors_ within a small window (e.g. 500ms)", ex);
+            fail("initial error time threshold exceeded");
+          }
         }
-      } catch (SolrException ex) {
-        // we know we're doing tricky things that might cause transient errors
-        // TODO: all these query requests go to the QA node -- should QA propagate internal request
-        // errors
-        //  to the external client (and the external client retry?) or should QA attempt to failover
-        // transparently
-        //  in the event of an error?
-        if (i < 5) {
-          log.info("swallowing transient error", ex);
-        } else {
-          log.error("only expect actual _errors_ within a small window (e.g. 500ms)", ex);
-          fail("initial error time threshold exceeded");
-        }
+        Thread.sleep(100);
       }
-      Thread.sleep(100);
     }
     assertTrue(found);
     return (String) docs.get(0).getFieldValue("_core_");
+  }
+
+  public void testConcurrentAccess() throws Exception {
+    final int DATA_NODE_COUNT = 2;
+    final int COORDINATOR_NODE_COUNT = 4;
+    MiniSolrCloudCluster cluster =
+        configureCluster(DATA_NODE_COUNT).addConfig("conf", configset("cloud-minimal")).configure();
+
+    List<String> dataNodes =
+        cluster.getJettySolrRunners().stream()
+            .map(JettySolrRunner::getNodeName)
+            .collect(Collectors.toUnmodifiableList());
+
+    try {
+      CloudSolrClient client = cluster.getSolrClient();
+      String COLLECTION_PREFIX = "test_coll_";
+
+      final int COLLECTION_COUNT = 10;
+      final int DOC_PER_COLLECTION_COUNT = 1000;
+
+      List<String> collectionNames = new ArrayList<>();
+      for (int i = 0; i < COLLECTION_COUNT; i++) {
+        String collectionName = COLLECTION_PREFIX + i;
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+            .setCreateNodeSet(String.join(",", dataNodes)) // only put data onto the 2 data nodes
+            .process(cluster.getSolrClient());
+        cluster.waitForActiveCollection(collectionName, 2, 2);
+        collectionNames.add(collectionName);
+      }
+
+      for (String collectionName : collectionNames) {
+        UpdateRequest ur = new UpdateRequest();
+        for (int i = 0; i < DOC_PER_COLLECTION_COUNT; i++) {
+          SolrInputDocument doc2 = new SolrInputDocument();
+          doc2.addField("id", collectionName + "-" + i);
+          ur.add(doc2);
+        }
+        ur.commit(client, collectionName);
+        QueryResponse rsp = client.query(collectionName, new SolrQuery("*:*"));
+        assertEquals(DOC_PER_COLLECTION_COUNT, rsp.getResults().getNumFound());
+      }
+
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      List<String> coordinatorNodes = new ArrayList<>();
+      try {
+        for (int i = 0; i < COORDINATOR_NODE_COUNT; i++) {
+          JettySolrRunner coordinatorJetty = cluster.startJettySolrRunner();
+          coordinatorNodes.add(coordinatorJetty.getNodeName());
+        }
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+
+      int THREAD_COUNT = 10;
+      int RUN_COUNT = 20;
+      // final AtomicInteger runCounter = new AtomicInteger();
+      // 10 threads to concurrently access the collections and ensure data are not mixed up
+      ExecutorService executorService =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
+              THREAD_COUNT, new SolrNamedThreadFactory(this.getClass().getSimpleName()));
+      List<Future<?>> testFutures = new ArrayList<>();
+
+      for (int i = 0; i < RUN_COUNT; i++) {
+        final int currentRun = i;
+        testFutures.add(
+            executorService.submit(
+                () -> {
+                  final String collectionName =
+                      collectionNames.get(currentRun % collectionNames.size());
+                  final String coordinatorNode =
+                      coordinatorNodes.get(currentRun % coordinatorNodes.size());
+                  QueryResponse response =
+                      new QueryRequest(new SolrQuery("*:*"))
+                          .setPreferredNodes(List.of(coordinatorNode))
+                          .process(client, collectionName);
+                  assertEquals(DOC_PER_COLLECTION_COUNT, response.getResults().getNumFound());
+                  // ensure docs have the correct id (ie not mixing up with other collections)
+                  for (SolrDocument doc : response.getResults()) {
+                    assertTrue(((String) doc.getFieldValue("id")).startsWith(collectionName));
+                  }
+                  return null;
+                }));
+      }
+      for (Future<?> testFuture : testFutures) {
+        testFuture.get(); // check for any exceptions/failures
+      }
+
+      // number of replicas created in the synthetic collection should be one per coordinator node
+      assertEquals(
+          COORDINATOR_NODE_COUNT,
+          client
+              .getClusterState()
+              .getCollection(CoordinatorHttpSolrCall.getSyntheticCollectionName("conf"))
+              .getReplicas()
+              .size());
+
+      executorService.shutdown();
+      executorService.awaitTermination(10, TimeUnit.SECONDS);
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  public void testWatch() throws Exception {
+    final int DATA_NODE_COUNT = 2;
+    MiniSolrCloudCluster cluster =
+        configureCluster(DATA_NODE_COUNT)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .configure();
+    final String TEST_COLLECTION = "c1";
+
+    try {
+      CloudSolrClient client = cluster.getSolrClient();
+      CollectionAdminRequest.createCollection(TEST_COLLECTION, "conf1", 1, 2).process(client);
+      cluster.waitForActiveCollection(TEST_COLLECTION, 1, 2);
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      JettySolrRunner coordinatorJetty;
+      try {
+        coordinatorJetty = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+
+      ZkStateReader zkStateReader =
+          coordinatorJetty.getCoreContainer().getZkController().getZkStateReader();
+      ZkStateReaderAccessor zkWatchAccessor = new ZkStateReaderAccessor(zkStateReader);
+
+      // no watch at first
+      assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+      new QueryRequest(new SolrQuery("*:*"))
+          .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+          .process(client, TEST_COLLECTION); // ok no exception thrown
+
+      // now it should be watching it after the query
+      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+
+      CollectionAdminRequest.deleteReplica(TEST_COLLECTION, "shard1", 1).process(client);
+      cluster.waitForActiveCollection(TEST_COLLECTION, 1, 1);
+      new QueryRequest(new SolrQuery("*:*"))
+          .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+          .process(client, TEST_COLLECTION); // ok no exception thrown
+
+      // still one replica left, should not remove the watch
+      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+
+      CollectionAdminRequest.deleteCollection(TEST_COLLECTION).process(client);
+      zkStateReader.waitForState(TEST_COLLECTION, 30, TimeUnit.SECONDS, Objects::isNull);
+      assertNull(zkStateReader.getCollection(TEST_COLLECTION)); // check the cluster state
+
+      // ensure querying throws exception
+      assertExceptionThrownWithMessageContaining(
+          SolrException.class,
+          List.of("Collection not found"),
+          () ->
+              new QueryRequest(new SolrQuery("*:*"))
+                  .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+                  .process(client, TEST_COLLECTION));
+
+      // watch should be removed after collection deletion
+      assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+    } finally {
+      cluster.shutdown();
+    }
   }
 }

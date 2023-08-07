@@ -31,7 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -63,7 +63,6 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.SimplePostTool.BAOS;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -359,9 +358,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
-    Map<String, String> map = new HashMap<>(1);
-    map.put(WT, "raw");
-    map.put(OMIT_HEADER, "true");
+    Map<String, String> map = Map.of(WT, "raw", OMIT_HEADER, "true");
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {
@@ -442,7 +439,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     String keeperAddr; // the address we're connected to
 
-    final BAOS baos = new BAOS();
+    final Utils.BAOS baos = new Utils.BAOS();
     final Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
     SolrZkClient zkClient;
 
@@ -532,11 +529,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           if (dc != null) {
             // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the
             // state to render correctly for the UI?
-            @SuppressWarnings("unchecked")
-            Map<String, Object> collectionState =
-                dc.isPerReplicaState()
-                    ? (Map<String, Object>) Utils.fromJSONString(Utils.toJSONString(dc))
-                    : dc.getProperties();
+            Map<String, Object> collectionState = dc.toMap(new LinkedHashMap<>());
             if (applyStatusFilter) {
               // verify this collection matches the filtered state
               if (page.matchesStatusFilter(collectionState, liveNodes)) {

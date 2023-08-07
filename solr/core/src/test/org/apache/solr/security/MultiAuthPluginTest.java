@@ -26,6 +26,7 @@ import static org.apache.solr.security.BasicAuthStandaloneTest.doHttpPostWithHea
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,6 @@ import java.util.function.Predicate;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -91,15 +91,15 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     SolrClient solrClient = null;
     try {
       httpClient = HttpClientUtil.createClient(null);
-      String baseUrl = buildUrl(jetty.getLocalPort(), "/solr");
+      String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);
 
       // Initialize security.json with multiple auth plugins configured
       String multiAuthPluginSecurityJson =
-          FileUtils.readFileToString(
-              TEST_PATH().resolve("security").resolve("multi_auth_plugin_security.json").toFile(),
+          Files.readString(
+              TEST_PATH().resolve("security").resolve("multi_auth_plugin_security.json"),
               StandardCharsets.UTF_8);
       securityConfHandler.persistConf(
           new SecurityConfHandler.SecurityConfig()

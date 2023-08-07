@@ -246,7 +246,7 @@ public class DistribPackageStore implements PackageStore {
     }
 
     String getSimpleName() {
-      int idx = path.lastIndexOf("/");
+      int idx = path.lastIndexOf('/');
       if (idx == -1) return path;
       return path.substring(idx + 1);
     }

@@ -24,11 +24,14 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.NodeRoles;
+import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LogLevel(
+    "org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG")
 public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -57,12 +60,12 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
 
   @Test
   public void testSolrClusterWithNodeRoleWithSingleReplica() throws Exception {
-    doSplit("coll_NO_HA", 1, 1, 0);
+    doSplit("coll_ONLY_NRT", 1, 1, 0);
   }
 
   @Test
-  public void testSolrClusterWithNodeRoleWithHA() throws Exception {
-    doSplit("coll_HA", 1, 1, 1);
+  public void testSolrClusterWithNodeRoleWithPull() throws Exception {
+    doSplit("coll_NRT_PULL", 1, 1, 1);
   }
 
   public void doSplit(String collName, int shard, int nrtReplica, int pullReplica)

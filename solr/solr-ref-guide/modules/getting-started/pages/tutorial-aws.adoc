@@ -123,13 +123,16 @@ You cannot use the instances until they become *“running”*.
 +
 Using SSH, if your AWS identity key file is `aws-key.pem` and the AMI uses `ec2-user` as login user, on each AWS instance, do the following:
 +
-[source,bash]
+[,console]
+----
 $ ssh-add aws-key.pem
 $ ssh -A ec2-user@<instance-public-dns>
+----
 +
 . While logged in to each of the AWS EC2 instances, configure Java 1.8 and download Solr:
 +
-[source,bash]
+[,console]
+----
 # verify default java version packaged with AWS instances is 1.7
 $ java -version
 $ sudo yum install java-1.8.0
@@ -137,8 +140,10 @@ $ sudo /usr/sbin/alternatives --config java
 # select jdk-1.8
 # verify default java version to java-1.8
 $ java -version
+----
 +
-[source,bash,subs="verbatim,attributes+"]
+[,console]
+----
 # download desired version of Solr
 $ wget http://archive.apache.org/dist/solr/solr/{solr-full-version}/solr-{solr-full-version}.tgz
 # untar
@@ -148,6 +153,7 @@ $ export SOLR_HOME=$PWD/solr-{solr-full-version}
 # put the env variable in .bashrc
 # vim ~/.bashrc
 export SOLR_HOME=/home/ec2-user/solr-{solr-full-version}
+----
 
 . Resolve the Public DNS to simpler hostnames.
 +
@@ -158,10 +164,12 @@ Let’s assume AWS instances public DNS with IPv4 Public IP are as follows:
 +
 Edit `/etc/hosts`, and add entries for the above machines:
 +
-[source,bash]
+[,console]
+----
 $ sudo vim /etc/hosts
 54.1.2.3 solr-node-1
 54.4.5.6 solr-node-2
+----
 
 . Configure Solr in running EC2 instances.
 +
@@ -171,18 +179,21 @@ See <<Deploying with External ZooKeeper>> for configure external ZooKeeper.
 +
 Inside the `ec2-101-1-2-3.us-east-2.compute.amazonaws.com` (`solr-node-1`)
 +
-[source,bash]
+[,console]
+----
 $ cd $SOLR_HOME
 # start Solr node on 8983 and ZooKeeper will start on 8983+1000 9983
 $ bin/solr start -c -p 8983 -h solr-node-1
-
+----
 +
 On the other node, `ec2-101-4-5-6.us-east-2.compute.amazonaws.com` (`solr-node-2`)
 +
-[source,bash]
+[,console]
+----
 $ cd $SOLR_HOME
 # start Solr node on 8983 and connect to ZooKeeper running on first node
 $ bin/solr start -c -p 8983 -h solr-node-2 -z solr-node-1:9983
+----
 
 . Inspect and Verify.
 Inspect the Solr nodes state from browser on local machine:
@@ -228,12 +239,12 @@ See the section xref:deployment-guide:zookeeper-ensemble.adoc[] for information 
 In this example we're using ZooKeeper v{dep-version-zookeeper}.
 On the node you're using to host ZooKeeper (`zookeeper-node`), download the package and untar it:
 +
-[source,bash,subs="attributes"]
+[,console]
 ----
 # download stable version of ZooKeeper, here {dep-version-zookeeper}
-$ wget https://archive.apache.org/dist/zookeeper/zookeeper-{dep-version-zookeeper}/zookeeper-{dep-version-zookeeper}.tar.gz
+$ wget https://archive.apache.org/dist/zookeeper/zookeeper-{dep-version-zookeeper}/apache-zookeeper-{dep-version-zookeeper}.tar.gz
 # untar
-$ tar -zxvf zookeeper-{dep-version-zookeeper}.tar.gz
+$ tar -zxvf apache-zookeeper-{dep-version-zookeeper}.tar.gz
 ----
 +
 Add an environment variable for ZooKeeper's home directory (`ZOO_HOME`) to the `.bashrc` for the user who will be running the process.
@@ -242,14 +253,14 @@ Correct the path to the ZooKeeper installation as appropriate if where you put i
 +
 [source,bash,subs="attributes"]
 ----
-$ export ZOO_HOME=$PWD/zookeeper-{dep-version-zookeeper}
+$ export ZOO_HOME=$PWD/apache-zookeeper-{dep-version-zookeeper}
 # put the env variable in .bashrc
 # vim ~/.bashrc
-export ZOO_HOME=/home/ec2-user/zookeeper-{dep-version-zookeeper}
+export ZOO_HOME=/home/ec2-user/apache-zookeeper-{dep-version-zookeeper}
 ----
 . Change directories to `ZOO_HOME`, and create the ZooKeeper configuration by using the template provided by ZooKeeper.
 +
-[source,bash]
+[,console]
 ----
 $ cd $ZOO_HOME
 # create ZooKeeper config by using zoo_sample.cfg
@@ -270,7 +281,7 @@ dataDir=data
 ----
 . Start ZooKeeper.
 +
-[source,bash]
+[,console]
 ----
 $ cd $ZOO_HOME
 # start ZooKeeper, default port: 2181
@@ -279,7 +290,7 @@ $ bin/zkServer.sh start
 
 . On the first node being used for Solr (`solr-node-1`), start Solr and tell it where to find ZooKeeper.
 +
-[source,bash]
+[,console]
 ----
 $ cd $SOLR_HOME
 # start Solr node on 8983 and connect to ZooKeeper running on ZooKeeper node
@@ -288,7 +299,7 @@ $ bin/solr start -c -p 8983 -h solr-node-1 -z zookeeper-node:2181
 +
 . On the second Solr node (`solr-node-2`), again start Solr and tell it where to find ZooKeeper.
 +
-[source,bash]
+[,console]
 ----
 $ cd $SOLR_HOME
 # start Solr node on 8983 and connect to ZooKeeper running on ZooKeeper node

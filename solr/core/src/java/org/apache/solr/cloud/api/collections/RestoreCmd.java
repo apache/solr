@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -69,6 +68,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -321,12 +321,14 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         ConfigSetService configSetService)
         throws IOException {
       if (configSetService.checkConfigExists(restoreConfigName)) {
-        log.warn(
+        log.info(
             "Config with name {} already exists. Skipping upload to Zookeeper and using existing config.",
             restoreConfigName);
         // TODO add overwrite option?
       } else {
-        log.info("Uploading config {}", restoreConfigName);
+        log.info(
+            "Config with name {} does not already exist in ZooKeeper. Will restore from Backup.",
+            restoreConfigName);
 
         backupMgr.uploadConfigDir(configName, restoreConfigName, configSetService);
       }
@@ -380,7 +382,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         // instead of a list of names, and if so uses this instead of building it. We clear the
         // replica list.
         Collection<Slice> backupSlices = backupCollectionState.getActiveSlices();
-        Map<String, Slice> newSlices = new LinkedHashMap<>(backupSlices.size());
+        Map<String, Slice> newSlices = CollectionUtil.newLinkedHashMap(backupSlices.size());
         for (Slice backupSlice : backupSlices) {
           newSlices.put(
               backupSlice.getName(),

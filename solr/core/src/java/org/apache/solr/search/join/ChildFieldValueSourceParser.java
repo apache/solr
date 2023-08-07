@@ -183,7 +183,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       childFilter =
           BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getChildQuery());
 
-      if (sortFieldName == null || sortFieldName.equals("")) {
+      if (sortFieldName == null || sortFieldName.isEmpty()) {
         throw new SyntaxError("field is omitted in " + fp.getString());
       }
 

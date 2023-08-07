@@ -19,7 +19,6 @@ package org.apache.solr.handler.loader;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.google.common.collect.Lists;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,7 +35,6 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -44,6 +42,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
@@ -110,25 +109,10 @@ public class XMLLoader extends ContentStreamLoader {
       UpdateRequestProcessor processor)
       throws Exception {
     final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
-
-    InputStream is = null;
     XMLStreamReader parser = null;
 
     // Normal XML Loader
-    try {
-      is = stream.getStream();
-      if (log.isTraceEnabled()) {
-        final byte[] body = IOUtils.toByteArray(is);
-        // TODO: The charset may be wrong, as the real charset is later
-        // determined by the XML parser, the content-type is only used as a hint!
-        if (log.isTraceEnabled()) {
-          log.trace(
-              "body: {}",
-              new String(body, (charset == null) ? ContentStreamBase.DEFAULT_CHARSET : charset));
-        }
-        IOUtils.closeQuietly(is);
-        is = new ByteArrayInputStream(body);
-      }
+    try (InputStream is = getStream(stream, charset)) {
       parser =
           (charset == null)
               ? inputFactory.createXMLStreamReader(is)
@@ -138,8 +122,24 @@ public class XMLLoader extends ContentStreamLoader {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     } finally {
       if (parser != null) parser.close();
-      IOUtils.closeQuietly(is);
     }
+  }
+
+  private InputStream getStream(ContentStream cs, String charset) throws IOException {
+    if (log.isTraceEnabled()) {
+      try (InputStream is = cs.getStream()) {
+        final byte[] body = is.readAllBytes();
+        // TODO: The charset may be wrong, as the real charset is later
+        // determined by the XML parser, the content-type is only used as a hint!
+        if (log.isTraceEnabled()) {
+          log.trace(
+              "body: {}",
+              new String(body, (charset == null) ? ContentStreamBase.DEFAULT_CHARSET : charset));
+        }
+        return new ByteArrayInputStream(body);
+      }
+    }
+    return cs.getStream();
   }
 
   /**
@@ -315,11 +315,17 @@ public class XMLLoader extends ContentStreamLoader {
    *
    * @since solr 1.3
    */
-  @SuppressWarnings({"unchecked"})
   public SolrInputDocument readDoc(XMLStreamReader parser) throws XMLStreamException {
+    return readDoc(parser, false);
+  }
+
+  @SuppressWarnings({"unchecked"})
+  protected SolrInputDocument readDoc(XMLStreamReader parser, boolean forgiveNameAttr)
+      throws XMLStreamException {
     SolrInputDocument doc = new SolrInputDocument();
 
-    String attrName = "";
+    String attrName;
+    String attrVal;
     for (int i = 0; i < parser.getAttributeCount(); i++) {
       attrName = parser.getAttributeLocalName(i);
       if ("boost".equals(attrName)) {
@@ -333,12 +339,14 @@ public class XMLLoader extends ContentStreamLoader {
           log.debug(message);
         }
       } else {
-        log.warn("XML element <doc> has invalid XML attr: {}", attrName);
+        if (!(NAME.equals(attrName) && forgiveNameAttr)) {
+          log.warn("XML element <doc> has invalid XML attr: {}", attrName);
+        }
       }
     }
 
     StringBuilder text = new StringBuilder();
-    String name = null;
+    String currentFieldName = null;
     boolean isNull = false;
     boolean isLabeledChildDoc = false;
     String update = null;
@@ -368,11 +376,8 @@ public class XMLLoader extends ContentStreamLoader {
             Object v = isNull ? null : text.toString();
             if (update != null) {
               if (updateMap == null) updateMap = new HashMap<>();
-              Map<String, Object> extendedValues = updateMap.get(name);
-              if (extendedValues == null) {
-                extendedValues = new HashMap<>(1);
-                updateMap.put(name, extendedValues);
-              }
+              Map<String, Object> extendedValues =
+                  updateMap.computeIfAbsent(currentFieldName, k -> CollectionUtil.newHashMap(1));
               Object val = extendedValues.get(update);
               if (val == null) {
                 extendedValues.put(update, v);
@@ -393,13 +398,13 @@ public class XMLLoader extends ContentStreamLoader {
             }
             if (!isLabeledChildDoc) {
               // only add data if this is not a childDoc, since it was added already
-              doc.addField(name, v);
+              doc.addField(currentFieldName, v);
             } else {
               // reset so next field is not treated as child doc
               isLabeledChildDoc = false;
             }
             // field is over
-            name = null;
+            currentFieldName = null;
           }
           break;
 
@@ -407,17 +412,27 @@ public class XMLLoader extends ContentStreamLoader {
           text.setLength(0);
           String localName = parser.getLocalName();
           if ("doc".equals(localName)) {
-            if (name != null) {
+            if (currentFieldName != null) { // enclosed in <field>
               // flag to prevent spaces after doc from being added
               isLabeledChildDoc = true;
-              if (!doc.containsKey(name)) {
-                doc.setField(name, Lists.newArrayList());
+              SolrInputDocument child = readDoc(parser);
+              if (doc.containsKey(currentFieldName)) {
+                doc.getField(currentFieldName).addValue(child);
+              } else {
+                final List<Object> list = new ArrayList<>(List.of(child));
+                doc.addField(currentFieldName, list);
               }
-              doc.addField(name, readDoc(parser));
-              break;
+            } else {
+              final String subdocName = parser.getAttributeValue(null, NAME);
+              if (subdocName != null) { // <doc name=""> enclosed in <doc>
+                doc.addField(subdocName, readDoc(parser, true));
+              } else { // unnamed <doc> enclosed in <doc>
+                if (subDocs == null) {
+                  subDocs = new ArrayList<>();
+                }
+                subDocs.add(readDoc(parser));
+              }
             }
-            if (subDocs == null) subDocs = Lists.newArrayList();
-            subDocs.add(readDoc(parser));
           } else {
             if (!"field".equals(localName)) {
               String msg = "XML element <doc> has invalid XML child element: " + localName;
@@ -426,12 +441,11 @@ public class XMLLoader extends ContentStreamLoader {
             }
             update = null;
             isNull = false;
-            String attrVal = "";
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               attrName = parser.getAttributeLocalName(i);
               attrVal = parser.getAttributeValue(i);
               if (NAME.equals(attrName)) {
-                name = attrVal;
+                currentFieldName = attrVal;
               } else if ("boost".equals(attrName)) {
                 String message =
                     "Ignoring field boost: "
@@ -457,9 +471,7 @@ public class XMLLoader extends ContentStreamLoader {
 
     if (updateMap != null) {
       for (Map.Entry<String, Map<String, Object>> entry : updateMap.entrySet()) {
-        name = entry.getKey();
-        Map<String, Object> value = entry.getValue();
-        doc.addField(name, value);
+        doc.addField(entry.getKey(), entry.getValue());
       }
     }
 

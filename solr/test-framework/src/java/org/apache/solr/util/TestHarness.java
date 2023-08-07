@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -190,9 +189,7 @@ public class TestHarness extends BaseTestHarness {
         (null == System.getProperty("zkHost"))
             ? null
             : new CloudConfig.CloudConfigBuilder(
-                    System.getProperty("host"),
-                    Integer.getInteger("hostPort", 8983),
-                    System.getProperty("hostContext", ""))
+                    System.getProperty("host"), Integer.getInteger("hostPort", 8983))
                 .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
                 .setZkHost(System.getProperty("zkHost"))
                 .build();
@@ -231,7 +228,7 @@ public class TestHarness extends BaseTestHarness {
 
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
-      return ImmutableList.of(
+      return List.of(
           new CoreDescriptor(
               coreName,
               cc.getCoreRootDirectory().resolve(coreName),

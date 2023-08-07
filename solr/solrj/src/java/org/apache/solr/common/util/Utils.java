@@ -21,6 +21,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -37,7 +38,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -70,7 +70,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -110,8 +109,8 @@ public class Utils {
     } else {
       copy =
           map instanceof LinkedHashMap
-              ? new LinkedHashMap<>(map.size())
-              : new HashMap<>(map.size());
+              ? CollectionUtil.newLinkedHashMap(map.size())
+              : CollectionUtil.newHashMap(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
@@ -174,7 +173,7 @@ public class Utils {
 
   public static InputStream toJavabin(Object o) throws IOException {
     try (final JavaBinCodec jbc = new JavaBinCodec()) {
-      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+      BAOS baos = new BAOS();
       jbc.marshal(o, baos);
       return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
     }
@@ -214,76 +213,10 @@ public class Utils {
     return writer;
   }
 
-  private static class MapWriterJSONWriter extends JSONWriter {
-
-    public MapWriterJSONWriter(CharArr out, int indentSize) {
-      super(out, indentSize);
-    }
-
-    @Override
-    public void handleUnknownClass(Object o) {
-      // avoid materializing MapWriter / IteratorWriter to Map / List
-      // instead serialize them directly
-      if (o instanceof MapWriter) {
-        MapWriter mapWriter = (MapWriter) o;
-        startObject();
-        final boolean[] first = new boolean[1];
-        first[0] = true;
-        int sz = mapWriter._size();
-        mapWriter._forEachEntry(
-            (k, v) -> {
-              if (first[0]) {
-                first[0] = false;
-              } else {
-                writeValueSeparator();
-              }
-              if (sz > 1) indent();
-              writeString(k.toString());
-              writeNameSeparator();
-              write(v);
-            });
-        endObject();
-      } else if (o instanceof IteratorWriter) {
-        IteratorWriter iteratorWriter = (IteratorWriter) o;
-        startArray();
-        final boolean[] first = new boolean[1];
-        first[0] = true;
-        try {
-          iteratorWriter.writeIter(
-              new IteratorWriter.ItemWriter() {
-                @Override
-                public IteratorWriter.ItemWriter add(Object o) throws IOException {
-                  if (first[0]) {
-                    first[0] = false;
-                  } else {
-                    writeValueSeparator();
-                  }
-                  indent();
-                  write(o);
-                  return this;
-                }
-              });
-        } catch (IOException e) {
-          throw new RuntimeException("this should never happen", e);
-        }
-        endArray();
-      } else {
-        super.handleUnknownClass(o);
-      }
-    }
-  }
-
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    //    if (!(o instanceof List) && !(o instanceof Map)) {
-    //      if (o instanceof MapWriter) {
-    //        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-    //      } else if (o instanceof IteratorWriter) {
-    //        o = ((IteratorWriter) o).toList(new ArrayList<>());
-    //      }
-    //    }
-    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
+    new JSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }
 
@@ -771,14 +704,13 @@ public class Utils {
           "nodeName does not contain expected ':' separator: " + nodeName);
     }
 
-    final int _offset = nodeName.indexOf("_", colonAt);
+    final int _offset = nodeName.indexOf('_', colonAt);
     if (_offset < 0) {
       throw new IllegalArgumentException(
           "nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
-    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2 ? "api" : path)));
+    return urlScheme + "://" + hostAndPort + "/" + (isV2 ? "api" : "solr");
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -809,7 +741,7 @@ public class Utils {
 
   public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize) {
     return is -> {
-      try (BinaryRequestWriter.BAOS bos = new BinaryRequestWriter.BAOS()) {
+      try (BAOS bos = new BAOS()) {
         long sz = 0;
         int next = is.read();
         while (next > -1) {
@@ -1076,5 +1008,45 @@ public class Utils {
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
+  }
+
+  public static class BAOS extends ByteArrayOutputStream {
+    public ByteBuffer getByteBuffer() {
+      return ByteBuffer.wrap(super.buf, 0, super.count);
+    }
+
+    /*
+     * A hack to get access to the protected internal buffer and avoid an additional copy
+     */
+    public byte[] getbuf() {
+      return super.buf;
+    }
+  }
+
+  public static ByteBuffer toByteArray(InputStream is) throws IOException {
+    return toByteArray(is, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Reads an input stream into a byte array
+   *
+   * @param is the input stream
+   * @return the byte array
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public static ByteBuffer toByteArray(InputStream is, long maxSize) throws IOException {
+    try (BAOS bos = new BAOS()) {
+      long sz = 0;
+      int next = is.read();
+      while (next > -1) {
+        if (++sz > maxSize) {
+          throw new BufferOverflowException();
+        }
+        bos.write(next);
+        next = is.read();
+      }
+      bos.flush();
+      return bos.getByteBuffer();
+    }
   }
 }

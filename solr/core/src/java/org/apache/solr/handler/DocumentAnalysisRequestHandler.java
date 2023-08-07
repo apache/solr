@@ -28,7 +28,6 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
@@ -145,11 +144,9 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     request.setShowMatch(showMatch);
 
     ContentStream stream = extractSingleContentStream(req);
-    InputStream is = null;
     XMLStreamReader parser = null;
 
-    try {
-      is = stream.getStream();
+    try (InputStream is = stream.getStream()) {
       final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       parser =
           (charset == null)
@@ -176,10 +173,8 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
             }
         }
       }
-
     } finally {
       if (parser != null) parser.close();
-      IOUtils.closeQuietly(is);
     }
   }
 

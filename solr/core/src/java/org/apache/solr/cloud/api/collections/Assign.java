@@ -452,6 +452,21 @@ public class Assign {
         throws AssignmentException, IOException, InterruptedException;
 
     /**
+     * Balance replicas across nodes.
+     *
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param nodes to compute replica balancing across.
+     * @param maxBalanceSkew to ensure strictness of replica balancing.
+     * @return Map from Replica to the Node where that Replica should be moved.
+     * @throws AssignmentException when balance request cannot produce any valid assignments.
+     */
+    default Map<Replica, String> computeReplicaBalancing(
+        SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
+        throws AssignmentException, IOException, InterruptedException {
+      return Collections.emptyMap();
+    }
+
+    /**
      * Verify that deleting a collection doesn't violate the replica assignment constraints.
      *
      * @param solrCloudManager current instance of {@link SolrCloudManager}.

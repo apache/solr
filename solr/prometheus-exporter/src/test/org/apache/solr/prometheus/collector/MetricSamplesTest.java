@@ -90,8 +90,13 @@ public class MetricSamplesTest extends SolrTestCase {
             Map.of(
                 "same",
                     samples(
-                        "test1", Collector.Type.GAUGE, sample("test1", 3.0), sample("test1", 4.0)),
+                        "test1",
+                        Collector.Type.GAUGE,
+                        sample("test1", 3.0),
+                        sample("test1", 4.0),
+                        sample("same", 1.0)),
                 "diff2", samples("diff2", Collector.Type.GAUGE, sample("diff2", 1.0))));
+
     lhs.addAll(rhs);
 
     List<Collector.MetricFamilySamples> output = lhs.asList();
@@ -99,5 +104,30 @@ public class MetricSamplesTest extends SolrTestCase {
     validateMetricSamples(output, "same", Arrays.asList(1.0, 2.0, 3.0, 4.0));
     validateMetricSamples(output, "diff1", Collections.singletonList(1.0));
     validateMetricSamples(output, "diff2", Collections.singletonList(1.0));
+  }
+
+  @Test
+  public void addSamplesIfNotPresent() {
+
+    MetricSamples testMetricSamples =
+        new MetricSamples(
+            new HashMap<>(
+                Map.of("same", samples("same", Collector.Type.GAUGE, sample("same", 1.0)))));
+
+    Collector.MetricFamilySamples sameSamples =
+        samples("same", Collector.Type.GAUGE, sample("same", 1.0));
+    Collector.MetricFamilySamples newSamples =
+        samples("new", Collector.Type.GAUGE, sample("new", 2.0), sample("new", 3.0));
+    Collector.MetricFamilySamples alreadyPresentSamples =
+        samples("new", Collector.Type.GAUGE, sample("new", 4.0));
+
+    testMetricSamples.addSamplesIfNotPresent("same", sameSamples);
+    testMetricSamples.addSamplesIfNotPresent("new", newSamples);
+    testMetricSamples.addSamplesIfNotPresent("new", alreadyPresentSamples);
+
+    List<Collector.MetricFamilySamples> output = testMetricSamples.asList();
+
+    validateMetricSamples(output, "same", Collections.singletonList(1.0));
+    validateMetricSamples(output, "new", Arrays.asList(2.0, 3.0));
   }
 }

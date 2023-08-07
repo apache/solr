@@ -67,7 +67,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
+    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig());
     JettySolrRunner runnerPrimary = miniCluster.getJettySolrRunners().get(0);
     solrClientPrimary = new HttpSolrClient.Builder(runnerPrimary.getBaseUrl().toString()).build();
     JettySolrRunner runnerSecondary = miniCluster.getJettySolrRunners().get(1);
@@ -205,8 +205,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
                   Optional.empty())
               .withLBHttpSolrClientBuilder(
                   new LBHttpSolrClient.Builder()
-                      .withSocketTimeout(30000)
-                      .withConnectionTimeout(15000)
+                      .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+                      .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
                       .withResponseParser(client.getParser())
                       .withHttpSolrClientBuilder(
                           new HttpSolrClient.Builder().withKerberosDelegationToken(token)))
