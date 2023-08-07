@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
-
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -26,6 +24,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -41,7 +40,6 @@ public class SolrJettyTestRule extends SolrClientTestRule {
 
   private JettySolrRunner jetty;
 
-  private SolrClient adminClient = null;
   private final ConcurrentHashMap<String, SolrClient> clients = new ConcurrentHashMap<>();
 
   @Override
@@ -50,9 +48,6 @@ public class SolrJettyTestRule extends SolrClientTestRule {
       IOUtils.closeQuietly(solrClient);
     }
     clients.clear();
-
-    IOUtils.closeQuietly(adminClient);
-    adminClient = null;
 
     if (jetty != null) {
       try {
@@ -95,7 +90,6 @@ public class SolrJettyTestRule extends SolrClientTestRule {
     }
     int port = jetty.getLocalPort();
     log.info("Jetty Assigned Port#{}", port);
-    adminClient = getHttpSolrClient(jetty.getBaseUrl().toString());
   }
 
   public JettySolrRunner getJetty() {
@@ -104,19 +98,21 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   }
 
   @Override
-  public SolrClient getSolrClient(String name) {
-    return clients.computeIfAbsent(
-        name, key -> new HttpSolrClient.Builder(getBaseUrl() + "/" + name).build());
+  public SolrClient getSolrClient(String collection) {
+    if (collection == null) {
+      collection = "";
+    }
+    return clients.computeIfAbsent(collection, this::newSolrClient);
+  }
+
+  protected SolrClient newSolrClient(String collection) {
+    String url = getBaseUrl() + (StrUtils.isBlank(collection) ? "" : "/" + collection);
+    return new HttpSolrClient.Builder(url).build();
   }
 
   /** URL to Solr. */
   public String getBaseUrl() {
     return getJetty().getBaseUrl().toString();
-  }
-
-  @Override
-  public SolrClient getAdminClient() {
-    return adminClient;
   }
 
   public CoreContainer getCoreContainer() {

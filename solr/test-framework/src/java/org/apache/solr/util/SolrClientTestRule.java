@@ -138,17 +138,20 @@ public abstract class SolrClientTestRule extends ExternalResource {
   /**
    * Provides a SolrClient instance for administration actions. The caller doesn't need to close it
    */
-  public abstract SolrClient getAdminClient();
+  public SolrClient getAdminClient() {
+    return getSolrClient(null);
+  }
 
   /** Provides a SolrClient instance for collection1. The caller doesn't need to close it */
   public SolrClient getSolrClient() {
     return getSolrClient("collection1");
   }
+
   /**
    * Provides a SolrClient instance for caller defined collection name. The caller doesn't need to
    * close it
    */
-  public abstract SolrClient getSolrClient(String name);
+  public abstract SolrClient getSolrClient(String collection);
 
   public void clearIndex() throws SolrServerException, IOException {
     new UpdateRequest().deleteByQuery("*:*").commit(getSolrClient(), null);
