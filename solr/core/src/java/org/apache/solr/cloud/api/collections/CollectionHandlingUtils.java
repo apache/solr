@@ -69,6 +69,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
@@ -506,30 +507,23 @@ public class CollectionHandlingUtils {
           }
 
           String r = (String) srsp.getSolrResponse().getResponse().get("STATUS");
-          if (r.equals("running")) {
+          if (r.equals(CoreAdminHandler.CoreAdminAsyncTracker.PENDING)) {
+            log.debug("The task is still PENDING to be executed, continuing to wait.");
+            sleep(1000L);
+          } else if (r.equals(CoreAdminHandler.CoreAdminAsyncTracker.RUNNING)) {
             log.debug("The task is still RUNNING, continuing to wait.");
-            try {
-              Thread.sleep(1000);
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-            }
-            continue;
-
-          } else if (r.equals("completed")) {
+            sleep(1000L);
+          } else if (r.equals(CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED)) {
             log.debug("The task is COMPLETED, returning");
             return srsp.getSolrResponse().getResponse();
-          } else if (r.equals("failed")) {
+          } else if (r.equals(CoreAdminHandler.CoreAdminAsyncTracker.FAILED)) {
             // TODO: Improve this. Get more information.
             log.debug("The task is FAILED, returning");
             return srsp.getSolrResponse().getResponse();
           } else if (r.equals("notfound")) {
             log.debug("The task is notfound, retry");
             if (counter++ < 5) {
-              try {
-                Thread.sleep(1000);
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
+              sleep(1000L);
               break;
             }
             throw new SolrException(
@@ -549,6 +543,15 @@ public class CollectionHandlingUtils {
         }
       } while (srsp != null);
     } while (true);
+  }
+
+  /** Convenience method to sleep */
+  private static void sleep(long delay) {
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   public static ShardRequestTracker syncRequestTracker(CollectionCommandContext ccc) {
