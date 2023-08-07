@@ -124,8 +124,7 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public String toInternal(String val) {
-    char ch = (val != null && val.length() > 0) ? val.charAt(0) : 0;
-    return (ch == '1' || ch == 't' || ch == 'T') ? "T" : "F";
+    return StrUtils.parseBoolean(val) ? "T" : "F";
   }
 
   @Override
