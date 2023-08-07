@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 
 public class CloudConfig {
@@ -179,7 +180,6 @@ public class CloudConfig {
 
   public static class CloudConfigBuilder {
 
-    private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 45000;
     private static final int DEFAULT_LEADER_VOTE_WAIT = 180000; // 3 minutes
     private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 180000;
     private static final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = 45; // 45 seconds
@@ -188,7 +188,7 @@ public class CloudConfig {
         -1; // By default compression for state is disabled
 
     private String zkHost;
-    private int zkClientTimeout = Integer.getInteger("zkClientTimeout", DEFAULT_ZK_CLIENT_TIMEOUT);
+    private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
     private final int hostPort;
     private final String hostName;
     private boolean useGenericCoreNames;

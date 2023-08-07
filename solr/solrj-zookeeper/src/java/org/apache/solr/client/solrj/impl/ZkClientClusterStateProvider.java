@@ -46,8 +46,8 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
   private final String zkHost;
-  private int zkConnectTimeout = 15000;
-  private int zkClientTimeout = 45000;
+  private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
+  private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
 
   private volatile boolean isClosed = false;
 

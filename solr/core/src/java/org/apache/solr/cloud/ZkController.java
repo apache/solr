@@ -62,6 +62,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -233,8 +234,6 @@ public class ZkController implements Closeable {
 
   private boolean genericCoreNodeNames;
 
-  private int clientTimeout;
-
   private volatile boolean isClosed;
 
   private final ConcurrentHashMap<String, Throwable> replicasMetTragicEvent =
@@ -331,7 +330,7 @@ public class ZkController implements Closeable {
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
-    this.clientTimeout = cloudConfig.getZkClientTimeout();
+    int clientTimeout = cloudConfig.getZkClientTimeout();
 
     String connectionStrategy = System.getProperty("solr.zookeeper.connectionStrategy");
     ZkClientConnectionStrategy strat =
@@ -1188,8 +1187,8 @@ public class ZkController implements Closeable {
     SolrZkClient tmpClient =
         new SolrZkClient.Builder()
             .withUrl(zkHost.substring(0, zkHost.indexOf('/')))
-            .withTimeout(60000, TimeUnit.MILLISECONDS)
-            .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
     boolean exists = tmpClient.exists(chrootPath, true);
     if (!exists && create) {
@@ -2337,10 +2336,6 @@ public class ZkController implements Closeable {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
-  }
-
-  public int getClientTimeout() {
-    return clientTimeout;
   }
 
   public Overseer getOverseer() {
