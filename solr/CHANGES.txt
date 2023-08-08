@@ -40,6 +40,8 @@ Bug Fixes
 
 * SOLR-16905: Allow access to specified "solr.allowPaths" in Security Manager (daylicron, Houston Putman)
 
+* SOLR-16922: Scripts wrongly prohibit embedded zookeeper when solr port is between 55535 and 64535 (Tiziano Degaetano, Colvin Cowie)
+
 Dependency Upgrades
 ---------------------
 (No changes)
