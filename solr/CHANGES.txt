@@ -21,7 +21,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-6853: Add slash support for Managed Resources. (Nikita Rusetskii)
 
 Deprecation Removals
 ----------------------
