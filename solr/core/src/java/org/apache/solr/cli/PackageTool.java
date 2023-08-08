@@ -60,8 +60,6 @@ public class PackageTool extends ToolBase {
     return "package";
   }
 
-  public static String solrUrl = null;
-  public static String solrBaseUrl = null;
   public PackageManager packageManager;
   public RepositoryManager repositoryManager;
 
@@ -79,10 +77,7 @@ public class PackageTool extends ToolBase {
         printHelp();
         return;
       }
-
-      solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length - 1];
-      solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
-      log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
+      String solrUrl = SolrCLI.normalizeSolrUrl(cli);
       String zkHost = SolrCLI.getZkHost(cli);
       if (zkHost == null) {
         throw new SolrException(ErrorCode.INVALID_STATE, "Package manager runs only in SolrCloud");
@@ -90,8 +85,8 @@ public class PackageTool extends ToolBase {
 
       log.info("ZK: {}", zkHost);
 
-      try (SolrClient solrClient = new Http2SolrClient.Builder(solrBaseUrl).build()) {
-        packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost);
+      try (SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build()) {
+        packageManager = new PackageManager(solrClient, solrUrl, zkHost);
         try {
           repositoryManager = new RepositoryManager(solrClient, packageManager);
 
@@ -242,7 +237,7 @@ public class PackageTool extends ToolBase {
 
     } catch (Exception ex) {
       // We need to print this since SolrCLI drops the stack trace in favour
-      // of brevity. Package tool should surely print full stacktraces!
+      // of brevity. Package tool should surely print the full stacktrace!
       ex.printStackTrace();
       throw ex;
     }
@@ -314,15 +309,7 @@ public class PackageTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("solrUrl")
-            .argName("URL")
-            .hasArg()
-            .required(true)
-            .desc(
-                "Address of the Solr Web application, defaults to: "
-                    + SolrCLI.DEFAULT_SOLR_URL
-                    + '.')
-            .build(),
+        SolrCLI.OPTION_SOLRURL,
         Option.builder("collections")
             .argName("COLLECTIONS")
             .hasArg()

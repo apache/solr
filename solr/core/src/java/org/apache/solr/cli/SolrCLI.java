@@ -75,7 +75,7 @@ public class SolrCLI implements CLIO {
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";
+  public static final String DEFAULT_SOLR_URL = "http://localhost:8983";
   public static final String ZK_HOST = "localhost:9983";
 
   public static final Option OPTION_ZKHOST =
@@ -86,7 +86,8 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + ZK_HOST)
+                  + ZK_HOST
+                  + '.')
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
@@ -96,7 +97,8 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
-                  + DEFAULT_SOLR_URL)
+                  + DEFAULT_SOLR_URL
+                  + '.')
           .build();
   public static final Option OPTION_VERBOSE =
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
@@ -382,6 +384,13 @@ public class SolrCLI implements CLIO {
   }
 
   public static SolrClient getSolrClient(String solrUrl) {
+    // today we require all urls to end in /solr, however in the future we will need to support the
+    // /api url end point instead.
+    // The /solr/ check is because sometimes a full url is passed in, like
+    // http://localhost:8983/solr/films_shard1_replica_n1/.
+    if (!solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
+      solrUrl = solrUrl + "/solr";
+    }
     return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
   }
 
@@ -444,11 +453,37 @@ public class SolrCLI implements CLIO {
     print("Pass -help or -h after any COMMAND to see command-specific usage information,");
     print("such as:    ./solr start -help or ./solr stop -h");
   }
+
   /**
-   * Get the base URL of a live Solr instance from either the solrUrl command-line option from
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and warns those users. In the future we'll have url's with /api as well.
+   *
+   * @param solrUrl The user supplied url to Solr.
+   * @return the solrUrl in the format that Solr expects to see internally.
+   */
+  public static String normalizeSolrUrl(String solrUrl) {
+    if (solrUrl != null) {
+      if (solrUrl.indexOf("/solr") > -1) { //
+        String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+        CLIO.out(
+            "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
+                + solrUrl
+                + "] to ["
+                + newSolrUrl
+                + "].");
+        solrUrl = newSolrUrl;
+      }
+      if (solrUrl.endsWith("/")) {
+        solrUrl = solrUrl.substring(0, solrUrl.length() - 1);
+      }
+    }
+    return solrUrl;
+  }
+  /**
+   * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
    * ZooKeeper.
    */
-  public static String resolveSolrUrl(CommandLine cli) throws Exception {
+  public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
@@ -475,6 +510,7 @@ public class SolrCLI implements CLIO {
         }
       }
     }
+    solrUrl = normalizeSolrUrl(solrUrl);
     return solrUrl;
   }
 
@@ -488,7 +524,6 @@ public class SolrCLI implements CLIO {
       return zkHost;
     }
 
-    // find it using the localPort
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       solrUrl = DEFAULT_SOLR_URL;
@@ -498,6 +533,7 @@ public class SolrCLI implements CLIO {
                   + DEFAULT_SOLR_URL
                   + ".");
     }
+    solrUrl = normalizeSolrUrl(solrUrl);
 
     try (var solrClient = getSolrClient(solrUrl)) {
       // hit Solr to get system info
@@ -567,11 +603,5 @@ public class SolrCLI implements CLIO {
     NamedList<Object> systemInfo =
         solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
     return "solrcloud".equals(systemInfo.get("mode"));
-  }
-
-  public static class AssertionFailureException extends Exception {
-    public AssertionFailureException(String message) {
-      super(message);
-    }
   }
 }
