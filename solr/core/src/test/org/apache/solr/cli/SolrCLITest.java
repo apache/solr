@@ -22,9 +22,10 @@ import org.junit.Test;
 public class SolrCLITest extends SolrTestCase {
   @Test
   public void testResolveSolrUrl() {
-    assertEquals(SolrCLI.resolveSolrUrl("http://localhost:8983/solr"), "http://localhost:8983");
-    assertEquals(SolrCLI.resolveSolrUrl("http://localhost:8983"), "http://localhost:8983");
-    assertEquals(SolrCLI.resolveSolrUrl("http://localhost:8983/"), "http://localhost:8983");
+    assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983/solr"), "http://localhost:8983");
+    assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983/solr/"), "http://localhost:8983");
+    assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983/"), "http://localhost:8983");
+    assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983"), "http://localhost:8983");
   }
 
   @Test

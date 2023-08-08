@@ -458,19 +458,18 @@ public class SolrCLI implements CLIO {
    * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
    * is used, and warns those users. In the future we'll have url's with /api as well.
    *
-   * @param solrUrl with /solr stripped off.
-   * @return the truncated if need solrUrl.
+   * @param solrUrl The user supplied url to Solr.
+   * @return the solrUrl in the format that Solr expects to see internally.
    */
-  public static String resolveSolrUrl(String solrUrl) {
+  public static String normalizeSolrUrl(String solrUrl) {
     if (solrUrl != null) {
       if (solrUrl.indexOf("/solr") > -1) { //
         String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
-        CLIO.out(
-            "'solrUrl' needn't include Solr's context-root (e.g. \"/solr\"); correcting from ["
+        CLIO.out("WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
                 + solrUrl
                 + "] to ["
                 + newSolrUrl
-                + "]");
+                + "].");
         solrUrl = newSolrUrl;
       }
       if (solrUrl.endsWith("/")) {
@@ -483,7 +482,7 @@ public class SolrCLI implements CLIO {
    * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
    * ZooKeeper.
    */
-  public static String resolveSolrUrl(CommandLine cli) throws Exception {
+  public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
@@ -510,7 +509,7 @@ public class SolrCLI implements CLIO {
         }
       }
     } else {
-      solrUrl = resolveSolrUrl(solrUrl);
+      solrUrl = normalizeSolrUrl(solrUrl);
     }
     return solrUrl;
   }
@@ -534,7 +533,7 @@ public class SolrCLI implements CLIO {
                   + DEFAULT_SOLR_URL
                   + ".");
     } else {
-      solrUrl = resolveSolrUrl(solrUrl);
+      solrUrl = normalizeSolrUrl(solrUrl);
     }
 
     try (var solrClient = getSolrClient(solrUrl)) {

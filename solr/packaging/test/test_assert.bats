@@ -32,7 +32,7 @@ teardown() {
   run solr start
 
   run solr assert --not-cloud http://localhost:8983/solr
-  assert_output --partial "'solrUrl' needn't include Solr's context-root"
+  assert_output --partial "needn't include Solr's context-root"
   refute_output --partial "ERROR"
 
   run solr assert --cloud http://localhost:8983
@@ -48,7 +48,7 @@ teardown() {
   refute_output --partial "ERROR"
 
   run solr assert --not-cloud http://localhost:8983/solr
-  assert_output --partial "'solrUrl' needn't include Solr's context-root"
+  assert_output --partial "needn't include Solr's context-root"
   assert_output --partial "ERROR: Solr is not running in standalone mode"
 
   run ! solr assert --not-cloud http://localhost:8983 -e

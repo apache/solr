@@ -84,7 +84,7 @@ public class ConfigTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String solrUrl = SolrCLI.resolveSolrUrl(cli);
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     String action = cli.getOptionValue("action", "set-property");
     String collection = cli.getOptionValue("name");
     String property = cli.getOptionValue("property");

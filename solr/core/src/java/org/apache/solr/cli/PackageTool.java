@@ -77,7 +77,7 @@ public class PackageTool extends ToolBase {
         printHelp();
         return;
       }
-      String solrUrl = SolrCLI.resolveSolrUrl(cli);
+      String solrUrl = SolrCLI.normalizeSolrUrl(cli);
       String zkHost = SolrCLI.getZkHost(cli);
       if (zkHost == null) {
         throw new SolrException(ErrorCode.INVALID_STATE, "Package manager runs only in SolrCloud");

@@ -117,7 +117,7 @@ public class CreateTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String solrUrl = SolrCLI.resolveSolrUrl(cli);
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
 
     try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
       if (SolrCLI.isCloudMode(solrClient)) {

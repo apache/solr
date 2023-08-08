@@ -197,10 +197,10 @@ public class AssertTool extends ToolBase {
       ret += assertSolrNotRunning(cli.getOptionValue("S"));
     }
     if (cli.hasOption("c")) {
-      ret += assertSolrRunningInCloudMode(SolrCLI.resolveSolrUrl(cli.getOptionValue("c")));
+      ret += assertSolrRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("c")));
     }
     if (cli.hasOption("C")) {
-      ret += assertSolrNotRunningInCloudMode(SolrCLI.resolveSolrUrl(cli.getOptionValue("C")));
+      ret += assertSolrNotRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("C")));
     }
     return ret;
   }

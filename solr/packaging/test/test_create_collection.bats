@@ -53,7 +53,7 @@ teardown() {
 @test "create collection using legacy solrUrl" {
   run solr create -c COLL_NAME -solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME'"
-  assert_output --partial "'solrUrl' needn't include Solr's context-root"
+  assert_output --partial "needn't include Solr's context-root"
   refute_output --partial "assuming solrUrl is http://localhost:8983"
 }
 
