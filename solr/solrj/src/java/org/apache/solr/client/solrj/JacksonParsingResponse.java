@@ -22,7 +22,7 @@ import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 
-public class JacksonParsingResponse<T extends Object> extends SimpleSolrResponse {
+public class JacksonParsingResponse<T> extends SimpleSolrResponse {
 
   private final Class<T> typeParam;
 
