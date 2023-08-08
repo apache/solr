@@ -60,6 +60,7 @@ public class AddReplicaProperty extends AdminAPIBase implements AddReplicaProper
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse addReplicaProperty(
       String collName,

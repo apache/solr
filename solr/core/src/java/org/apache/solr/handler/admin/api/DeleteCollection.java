@@ -53,6 +53,7 @@ public class DeleteCollection extends AdminAPIBase implements DeleteCollectionAp
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse deleteCollection(
       String collectionName, Boolean followAliases, String asyncId) throws Exception {

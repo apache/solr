@@ -49,6 +49,7 @@ public class DeleteAlias extends AdminAPIBase implements DeleteAliasApi {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse deleteAlias(
       @PathParam("aliasName") String aliasName, @QueryParam("async") String asyncId)
