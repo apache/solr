@@ -94,7 +94,7 @@ Bug Fixes
 
 * SOLR-16905: Allow access to specified "solr.allowPaths" in Security Manager (daylicron, Houston Putman)
 
-* SOLR-16360: Atomic update on boolean fields doesn't reflect when value starts with "1", "t" or "T" (Rahul Goswami)
+* SOLR-16360: Atomic update on boolean fields doesn't reflect when value starts with "1", "t" or "T" (Rahul Goswami, Justin Sweeney, David Smiley)
 
 Dependency Upgrades
 ---------------------
