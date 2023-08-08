@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common;
 
+import static org.apache.solr.client.api.model.ErrorInfo.ERROR_CLASS;
+import static org.apache.solr.client.api.model.ErrorInfo.ROOT_ERROR_CLASS;
+
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -25,8 +28,6 @@ import org.slf4j.MDC;
 /** */
 public class SolrException extends RuntimeException {
 
-  public static final String ROOT_ERROR_CLASS = "root-error-class";
-  public static final String ERROR_CLASS = "error-class";
   private final Map<String, String> mdcContext;
 
   /**

@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,19 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.solr.jersey;
+package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.client.api.util.ReflectWritable;
 
 /**
  * A value type representing an error.
  *
  * <p>Based on the fields exposed in responses from Solr's v1/requestHandler API.
  */
-public class ErrorInfo implements JacksonReflectMapWriter {
+public class ErrorInfo implements ReflectWritable {
+
+  public static final String ROOT_ERROR_CLASS = "root-error-class";
+  public static final String ERROR_CLASS = "error-class";
+
   @JsonProperty("metadata")
   public ErrorMetadata metadata;
 
@@ -43,11 +47,11 @@ public class ErrorInfo implements JacksonReflectMapWriter {
   @JsonProperty("code")
   public Integer code;
 
-  public static class ErrorMetadata implements JacksonReflectMapWriter {
-    @JsonProperty(SolrException.ERROR_CLASS)
+  public static class ErrorMetadata implements ReflectWritable {
+    @JsonProperty(ERROR_CLASS)
     public String errorClass;
 
-    @JsonProperty(SolrException.ROOT_ERROR_CLASS)
+    @JsonProperty(ROOT_ERROR_CLASS)
     public String rootErrorClass;
   }
 }

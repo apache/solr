@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.commons.math3.util.Precision;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
@@ -39,7 +40,6 @@ import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
