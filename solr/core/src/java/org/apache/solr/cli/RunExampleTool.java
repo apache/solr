@@ -400,7 +400,7 @@ public class RunExampleTool extends ToolBase {
                 + "        }\n");
 
         File filmsJsonFile = new File(exampleDir, "films/films.json");
-        String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
+        String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
         echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
         String[] args =
             new String[] {
@@ -410,6 +410,8 @@ public class RunExampleTool extends ToolBase {
               updateUrl,
               "-type",
               "application/json",
+              "-filetypes",
+              "json",
               exampleDir.toString()
             };
         PostTool postTool = new PostTool();

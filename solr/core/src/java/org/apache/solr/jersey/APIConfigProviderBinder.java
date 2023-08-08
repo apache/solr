@@ -14,26 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
+package org.apache.solr.jersey;
 
-import java.io.IOException;
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
-import org.apache.solr.common.cloud.SolrZkClient;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
-/** Implementation of {@link DistributedQueueFactory} that uses ZooKeeper. */
-public class ZkDistributedQueueFactory implements DistributedQueueFactory {
-  private final SolrZkClient zkClient;
+/** Jersey binder for APIConfigProvider */
+public class APIConfigProviderBinder extends AbstractBinder {
 
-  public ZkDistributedQueueFactory(SolrZkClient zkClient) {
-    this.zkClient = zkClient;
+  private final APIConfigProvider<?> cfgProvider;
+
+  public APIConfigProviderBinder(APIConfigProvider<?> cfgProvider) {
+    this.cfgProvider = cfgProvider;
   }
 
   @Override
-  public DistributedQueue makeQueue(String path) throws IOException {
-    return new ZkDistributedQueue(zkClient, path);
+  protected void configure() {
+    bindFactory(cfgProvider).to(cfgProvider.getConfigClass());
   }
-
-  @Override
-  public void removeQueue(String path) throws IOException {}
 }

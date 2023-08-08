@@ -842,7 +842,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
       ZkNodeProps nodeProps =
           new ZkNodeProps(
-              ZkStateReader.BASE_URL_PROP, DEAD_HOST_1 + context, ZkStateReader.CORE_NAME_PROP, "");
+              ZkStateReader.BASE_URL_PROP, DEAD_HOST_1 + "/solr", ZkStateReader.CORE_NAME_PROP, "");
       ForwardNode retryNode =
           new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
             @Override

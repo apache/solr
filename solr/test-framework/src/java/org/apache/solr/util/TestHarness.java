@@ -189,9 +189,7 @@ public class TestHarness extends BaseTestHarness {
         (null == System.getProperty("zkHost"))
             ? null
             : new CloudConfig.CloudConfigBuilder(
-                    System.getProperty("host"),
-                    Integer.getInteger("hostPort", 8983),
-                    System.getProperty("hostContext", ""))
+                    System.getProperty("host"), Integer.getInteger("hostPort", 8983))
                 .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
                 .setZkHost(System.getProperty("zkHost"))
                 .build();

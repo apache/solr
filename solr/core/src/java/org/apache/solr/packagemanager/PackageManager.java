@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
 /** Handles most of the management of packages that are already installed in Solr. */
 public class PackageManager implements Closeable {
 
-  final String solrBaseUrl;
+  final String solrUrl;
   final SolrClient solrClient;
   final SolrZkClient zkClient;
 
@@ -77,8 +77,8 @@ public class PackageManager implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public PackageManager(SolrClient solrClient, String solrBaseUrl, String zkHost) {
-    this.solrBaseUrl = solrBaseUrl;
+  public PackageManager(SolrClient solrClient, String solrUrl, String zkHost) {
+    this.solrUrl = solrUrl;
     this.solrClient = solrClient;
     this.zkClient =
         new SolrZkClient.Builder()
@@ -760,7 +760,7 @@ public class PackageManager implements Closeable {
                   plugin.name);
           String path =
               PackageUtils.resolve(cmd.path, pkg.parameterDefaults, overridesMap, systemParams);
-          PackageUtils.printGreen("Executing " + solrBaseUrl + path + " for cluster level plugin");
+          PackageUtils.printGreen("Executing " + solrUrl + path + " for cluster level plugin");
 
           if ("GET".equalsIgnoreCase(cmd.method)) {
             String response =
@@ -811,7 +811,7 @@ public class PackageManager implements Closeable {
                 PackageUtils.resolve(
                     cmd.path, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
             PackageUtils.printGreen(
-                "Executing " + solrBaseUrl + path + " for collection:" + collection);
+                "Executing " + solrUrl + path + " for collection:" + collection);
 
             if ("GET".equalsIgnoreCase(cmd.method)) {
               String response =
