@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.client.api.util;
 
 import java.util.Locale;
-import org.apache.solr.common.SolrException;
 import org.semver4j.Semver;
 
 /**
@@ -43,6 +42,14 @@ public final class SolrVersion implements Comparable<SolrVersion> {
   /** Create a SolrVersion instance from set of integer values. Must comply to the SemVer spec */
   public static SolrVersion forIntegers(int major, int minor, int patch) {
     return new SolrVersion(new Semver(String.format(Locale.ROOT, "%d.%d.%d", major, minor, patch)));
+  }
+
+  /**
+   * Compares two versions v1 and v2. Returns negative if v1 isLessThan v2, positive if v1
+   * isGreaterThan v2 and 0 if equal.
+   */
+  public static int compareVersions(String v1, String v2) {
+    return new Semver(v1).compareTo(new Semver(v2));
   }
 
   /** Return version as plain SemVer string, e.g. "9.0.1" */
@@ -117,14 +124,5 @@ public final class SolrVersion implements Comparable<SolrVersion> {
       return false;
     }
     return compareTo((SolrVersion) other) == 0;
-  }
-
-  public static class InvalidSemVerExpressionException extends SolrException {
-    public InvalidSemVerExpressionException(Exception exception, String expression) {
-      super(
-          ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT, "Invalid SemVer expression: %s", expression),
-          exception);
-    }
   }
 }
