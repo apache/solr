@@ -84,6 +84,11 @@ Improvements
   a HTTP 503 status. Switched to 510 so that CloudSolrClient will auto-retry it and probably succeed.
   (David Smiley, Alex Deparvu)
 
+* SOLR-16825: Solr now offers `SolrRequest` implementations for a subset of its v2 APIs.  These implementations
+  are experimental and should be used with caution, but may be preferable to their v1 counterparts in some
+  circumstances as they are generated and more likely to remain up-to-date with future API changes.
+  (Jason Gerlowski, David Smiley, Houston Putman)
+
 Optimizations
 ---------------------
 
