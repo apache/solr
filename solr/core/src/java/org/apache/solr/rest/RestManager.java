@@ -295,7 +295,7 @@ public class RestManager {
         do {
           lastSlashAt = initialResourceId.lastIndexOf('/');
           parentResourceId = resourceId.substring(0, lastSlashAt);
-          log.info(
+          log.debug(
               "Resource not found for {}, looking for parent: {}", resourceId, parentResourceId);
           managedResource = restManager.getManagedResourceOrNull(parentResourceId);
           initialResourceId = parentResourceId;
@@ -312,7 +312,7 @@ public class RestManager {
           }
 
           childId = resourceId.substring(lastSlashAt + 1);
-          log.info("Found parent resource {} for child: {}", parentResourceId, childId);
+          log.debug("Found parent resource {} for child: {}", parentResourceId, childId);
         }
       }
 
