@@ -78,6 +78,9 @@ Improvements
 * SOLR-16490: The semi-internal `/admin/cores?action=restorecore` API now has a v2 equivalent, available at
   `POST /api/cores/coreName/restore {...}` (Sayanti Dey via Jason Gerlowski)
 
+* SOLR-11685: When SolrCloud shard leaders change while indexing updates arrive, Solr could fail and return
+  a HTTP 503 status. Switched to 510 so that CloudSolrClient will auto-retry it and probably succeed.
+  (David Smiley, Alex Deparvu)
 
 Optimizations
 ---------------------
@@ -95,6 +98,8 @@ Bug Fixes
 * SOLR-16906: Correctly capture REPLICATION metrics in Prometheus config (Daisuke Aritomo via Houston Putman)
 
 * SOLR-16905: Allow access to specified "solr.allowPaths" in Security Manager (daylicron, Houston Putman)
+
+* SOLR-16922: Scripts wrongly prohibit embedded zookeeper when solr port is between 55535 and 64535 (Tiziano Degaetano, Colvin Cowie)
 
 Dependency Upgrades
 ---------------------
