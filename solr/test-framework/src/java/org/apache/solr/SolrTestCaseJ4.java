@@ -520,15 +520,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return result;
   }
 
-  protected static JettyConfig buildJettyConfig(String context) {
-    return JettyConfig.builder()
-        .setContext(context)
-        .withSSLConfig(sslConfig.buildServerSSLConfig())
-        .build();
+  protected static JettyConfig buildJettyConfig() {
+    return JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
   }
 
-  protected static String buildUrl(final int port, final String context) {
-    return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + context;
+  protected static String buildUrl(final int port) {
+    return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + "/solr";
   }
 
   protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {

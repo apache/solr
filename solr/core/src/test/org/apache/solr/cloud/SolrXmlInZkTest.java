@@ -183,7 +183,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
           + "  <solrcloud>"
           + "    <str name=\"host\">127.0.0.1</str>"
           + "    <int name=\"hostPort\">9045</int>"
-          + "    <str name=\"hostContext\">${hostContext:solr}</str>"
           + "  </solrcloud>"
           + "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">"
           + "    <int name=\"socketTimeout\">${socketTimeout:120000}</int>"

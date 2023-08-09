@@ -19,9 +19,9 @@ package org.apache.solr.servlet;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.jersey.ErrorInfo;
 import org.slf4j.Logger;
 
 /** Response helper methods. */
@@ -50,9 +50,9 @@ public class ResponseUtils {
       if (errorMetadata == null) {
         errorMetadata = new NamedList<>();
       }
-      errorMetadata.add(SolrException.ERROR_CLASS, ex.getClass().getName());
+      errorMetadata.add(ErrorInfo.ERROR_CLASS, ex.getClass().getName());
       errorMetadata.add(
-          SolrException.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
+          ErrorInfo.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
       info.add("metadata", errorMetadata);
       if (ex instanceof ApiBag.ExceptionWithErrObject) {
         ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;

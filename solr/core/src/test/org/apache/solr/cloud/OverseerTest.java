@@ -1025,7 +1025,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
               "/admin/cores",
               reader,
               zkController,
-              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "")
+              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983)
                   .setUseDistributedClusterStateUpdates(false)
                   .setUseDistributedCollectionConfigSetExecution(false)
                   .build());
@@ -1863,7 +1863,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             "/admin/cores",
             reader,
             zkController,
-            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "")
+            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983)
                 .setUseDistributedClusterStateUpdates(false)
                 .build());
     overseers.add(overseer);

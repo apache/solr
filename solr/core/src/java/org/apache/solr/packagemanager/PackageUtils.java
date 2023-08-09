@@ -53,7 +53,6 @@ import org.apache.solr.filestore.DistribPackageStore;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
-import org.semver4j.Semver;
 
 public class PackageUtils {
 
@@ -224,14 +223,6 @@ public class PackageUtils {
       str = str.replace("${" + entry.getKey() + "}", entry.getValue());
     }
     return str;
-  }
-
-  /**
-   * Compares two versions v1 and v2. Returns negative if v1 isLessThan v2, positive if v1
-   * isGreaterThan v2 and 0 if equal.
-   */
-  public static int compareVersions(String v1, String v2) {
-    return new Semver(v1).compareTo(new Semver(v2));
   }
 
   public static String BLACK = "\u001B[30m";

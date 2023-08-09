@@ -57,42 +57,43 @@ public class StatusTool extends ToolBase {
     return "status";
   }
 
-  // These options are not exposed to the end user, and are
-  // used directly by the bin/solr status CLI.
+  public static final Option OPTION_MAXWAITSECS =
+      Option.builder("maxWaitSecs")
+          .argName("SECS")
+          .hasArg()
+          .required(false)
+          .desc("Wait up to the specified number of seconds to see Solr running.")
+          .build();
+
   @Override
   public List<Option> getOptions() {
     return List.of(
-        // Unlike most of the other tools, this is an internal, not end user
-        // focused setting.  Therefore, no default value is provided.
+        // The solrUrl option is not exposed to the end user, and is
+        // created by the bin/solr script and passed into this too.
         Option.builder("solrUrl")
             .argName("URL")
             .hasArg()
             .required(false)
             .desc("Property set by calling scripts, not meant for user configuration.")
             .build(),
-        Option.builder("maxWaitSecs")
-            .argName("SECS")
-            .hasArg()
-            .required(false)
-            .desc("Wait up to the specified number of seconds to see Solr running.")
-            .build());
+        OPTION_MAXWAITSECS);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    // Override the default help behaviour to put out a customized message that omits the internally
-    // focused Options.
+    // Override the default help behaviour to put out a customized message that only list user
+    // settable Options.
     if ((cli.getOptions().length == 0 && cli.getArgs().length == 0)
         || cli.hasOption("h")
         || cli.hasOption("help")) {
       final Options options = new Options();
-      getOptions().forEach(options::addOption);
+      options.addOption(OPTION_MAXWAITSECS);
       new HelpFormatter().printHelp("status", options);
       return;
     }
 
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
-    String solrUrl = cli.getOptionValue("solrUrl");
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);

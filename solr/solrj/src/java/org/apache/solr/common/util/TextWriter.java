@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAccumulator;
 import java.util.concurrent.atomic.LongAdder;
+import org.apache.solr.client.api.util.ReflectWritable;
+import org.apache.solr.common.DelegateMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapSerializable;
@@ -85,6 +87,8 @@ public interface TextWriter extends PushWriter {
       writeIterator(name, (IteratorWriter) val, raw);
     } else if (val instanceof MapWriter) {
       writeMap(name, (MapWriter) val);
+    } else if (val instanceof ReflectWritable) {
+      writeMap(name, new DelegateMapWriter(val));
     } else if (val instanceof MapSerializable) {
       // todo find a better way to reuse the map more efficiently
       writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);

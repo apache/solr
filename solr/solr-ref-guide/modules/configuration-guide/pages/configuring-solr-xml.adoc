@@ -44,7 +44,6 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
 
     <str name="host">${host:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
-    <str name="hostContext">${hostContext:solr}</str>
 
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
 
@@ -353,15 +352,6 @@ Used to set the underlying `socketTimeout` for intra-cluster updates.
 |===
 +
 The hostname Solr uses to access cores.
-
-`hostContext`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The url context path.
 
 `hostPort`::
 +

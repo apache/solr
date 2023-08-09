@@ -69,7 +69,6 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       JettySolrRunner runner = jettys.get(i);
       JettyConfig config =
           JettyConfig.builder()
-              .setContext(context)
               .setPort(runner.getLocalPort())
               .stopAtShutdown(false)
               .withServlets(getExtraServlets())

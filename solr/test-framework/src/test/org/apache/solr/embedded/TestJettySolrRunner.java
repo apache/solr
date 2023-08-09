@@ -48,7 +48,7 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
             .replace("COREROOT", coresDir.toString());
     Files.write(solrHome.resolve("solr.xml"), solrxml.getBytes(StandardCharsets.UTF_8));
 
-    JettyConfig jettyConfig = buildJettyConfig("/solr");
+    JettyConfig jettyConfig = buildJettyConfig();
 
     JettySolrRunner runner =
         new JettySolrRunner(solrHome.toString(), new Properties(), jettyConfig);

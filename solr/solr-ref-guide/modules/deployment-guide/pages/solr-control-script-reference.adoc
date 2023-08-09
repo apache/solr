@@ -553,7 +553,7 @@ Name of the collection to run a healthcheck against.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: `http://localhost:8983`
 |===
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
@@ -710,6 +710,25 @@ It is possible to override this warning with the -force parameter.
 +
 *Example*: `bin/solr create -c foo -force`
 
+`-z <zkHost>` or `-zkHost <zkHost>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `localhost:9983`
+|===
++
+The ZooKeeper connection string, usable in SolrCloud mode.
+Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
+
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
 ==== Configuration Directories and SolrCloud
 
 Before creating a collection in SolrCloud, the configuration directory used by the collection must be uploaded to ZooKeeper.
@@ -799,6 +818,25 @@ If the configuration directory is being used by another collection, then it will
 |===
 +
 Skip safety checks when deleting the configuration directory used by a collection.
+
+`-z <zkHost>` or `-zkHost <zkHost>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `localhost:9983`
+|===
++
+The ZooKeeper connection string, usable in SolrCloud mode.
+Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
+
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 == Authentication
 
@@ -1048,7 +1086,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `http://localhost:8983/solr`
+|Optional |Default: `http://localhost:8983`
 |===
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.

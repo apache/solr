@@ -258,8 +258,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     Thread.sleep(1000);
 
     String urlScheme = zkStateReader.getClusterProperty(URL_SCHEME, "http");
-    String url1 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr/1", urlScheme) + "/";
-    String url2 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr/2", urlScheme) + "/";
+    String url1 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/1/";
+    String url2 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/2/";
 
     assertEquals("original leader was not registered", url1, getLeaderUrl("collection2", "slice1"));
 
