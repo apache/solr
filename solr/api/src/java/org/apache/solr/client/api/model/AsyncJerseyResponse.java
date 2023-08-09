@@ -14,26 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
 
-import java.io.IOException;
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
-import org.apache.solr.common.cloud.SolrZkClient;
+package org.apache.solr.client.api.model;
 
-/** Implementation of {@link DistributedQueueFactory} that uses ZooKeeper. */
-public class ZkDistributedQueueFactory implements DistributedQueueFactory {
-  private final SolrZkClient zkClient;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-  public ZkDistributedQueueFactory(SolrZkClient zkClient) {
-    this.zkClient = zkClient;
-  }
-
-  @Override
-  public DistributedQueue makeQueue(String path) throws IOException {
-    return new ZkDistributedQueue(zkClient, path);
-  }
-
-  @Override
-  public void removeQueue(String path) throws IOException {}
+public class AsyncJerseyResponse extends SolrJerseyResponse {
+  @JsonProperty("requestid")
+  public String requestId;
 }

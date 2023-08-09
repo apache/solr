@@ -43,7 +43,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class JettyWebappTest extends SolrTestCaseJ4 {
   int port = 0;
-  static final String context = "/test";
 
   Server server;
 
@@ -64,7 +63,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     // insecure: only use for tests!!!!
     server.setSessionIdManager(
         new DefaultSessionIdManager(server, new Random(random().nextLong())));
-    new WebAppContext(server, path, context);
+    new WebAppContext(server, path, "/solr");
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     connector.setIdleTimeout(1000 * 60 * 60);
@@ -89,10 +88,8 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   }
 
   public void testAdminUI() throws Exception {
-    // Currently not an extensive test, but it does fire up the JSP pages and make
-    // sure they compile ok
-
-    String adminPath = "http://127.0.0.1:" + port + context + "/";
+    // Not an extensive test, but it does connect to Solr and verify the Admin ui shows up.
+    String adminPath = "http://127.0.0.1:" + port + "/solr/";
     try (InputStream is = new URL(adminPath).openStream()) {
       assertNotNull(is.readAllBytes()); // real error will be an exception
     }

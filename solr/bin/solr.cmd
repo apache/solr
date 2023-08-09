@@ -223,11 +223,11 @@ set FIRST_ARG=%1
 
 IF [%1]==[] goto usage
 
-IF "%1"=="-help" goto usage
-IF "%1"=="-usage" goto usage
-IF "%1"=="-h" goto usage
-IF "%1"=="--help" goto usage
-IF "%1"=="/?" goto usage
+IF "%1"=="-help" goto run_solrcli
+IF "%1"=="-usage" goto run_solrcli
+IF "%1"=="-h" goto run_solrcli
+IF "%1"=="--help" goto run_solrcli
+IF "%1"=="/?" goto run_solrcli
 IF "%1"=="status" goto get_status
 IF "%1"=="version" goto run_solrcli
 IF "%1"=="-v" goto run_solrcli
@@ -244,9 +244,8 @@ IF "%1"=="stop" goto set_script_cmd
 IF "%1"=="restart" goto set_script_cmd
 IF "%1"=="healthcheck" goto run_solrcli
 IF "%1"=="create" goto run_solrcli
-IF "%1"=="create_core" goto run_solrcli
-IF "%1"=="create_collection" goto run_solrcli
 IF "%1"=="delete" goto run_solrcli
+IF "%1"=="postlogs" goto run_solrcli
 IF "%1"=="zk" (
   set SCRIPT_CMD=zk
   SHIFT
@@ -264,43 +263,22 @@ goto parse_args
 
 :usage
 IF NOT "%SCRIPT_ERROR%"=="" ECHO %SCRIPT_ERROR%
-IF [%FIRST_ARG%]==[] goto script_usage
-IF "%FIRST_ARG%"=="-help" goto script_usage
-IF "%FIRST_ARG%"=="-usage" goto script_usage
-IF "%FIRST_ARG%"=="-h" goto script_usage
-IF "%FIRST_ARG%"=="--help" goto script_usage
-IF "%FIRST_ARG%"=="/?" goto script_usage
+IF [%FIRST_ARG%]==[] goto run_solrcli
+IF "%FIRST_ARG%"=="-help" goto run_solrcli
+IF "%FIRST_ARG%"=="-usage" goto run_solrcli
+IF "%FIRST_ARG%"=="-h" goto run_solrcli
+IF "%FIRST_ARG%"=="--help" goto run_solrcli
+IF "%FIRST_ARG%"=="/?" goto run_solrcli
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
 IF "%SCRIPT_CMD%"=="stop" goto stop_usage
 IF "%SCRIPT_CMD%"=="healthcheck" goto run_solrcli
 IF "%SCRIPT_CMD%"=="create" goto run_solrcli
-IF "%SCRIPT_CMD%"=="create_core" goto run_solrcli
-IF "%SCRIPT_CMD%"=="create_collection" goto run_solrcli
 IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
 IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
 IF "%SCRIPT_CMD%"=="auth" goto auth_usage
 IF "%SCRIPT_CMD%"=="status" goto run_solrcli
-goto done
-
-:script_usage
-@echo.
-@echo Usage: solr COMMAND OPTIONS
-@echo        where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package
-@echo.
-@echo   Standalone server example (start Solr running in the background on port 8984):
-@echo.
-@echo     solr start -p 8984
-@echo.
-@echo   SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):
-@echo.
-@echo     solr start -c -m 1g -z localhost:2181 -a "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044"
-@echo.
-@echo   Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.cmd.
-@echo.
-@echo Pass -help after any COMMAND to see command-specific usage information,
-@echo   such as:    solr start -help or solr stop -help
-@echo.
+IF "%SCRIPT_CMD%"=="postlogs" goto run_solrcli
 goto done
 
 :start_usage
@@ -314,7 +292,7 @@ goto done
 @echo                   solr.in.cmd, an embedded ZooKeeper instance is started on Solr port+1000,
 @echo                   such as 9983 if Solr is bound to 8983
 @echo.
-@echo   -h host       Specify the hostname for this Solr instance
+@echo   -host host    Specify the hostname for this Solr instance
 @echo.
 @echo   -p port       Specify the port to start the Solr HTTP listener on; default is 8983
 @echo                   The specified port (SOLR_PORT) will also be used to determine the stop port
@@ -525,6 +503,7 @@ set "firstTwo=%arg:~0,2%"
 IF "%SCRIPT_CMD%"=="" set SCRIPT_CMD=start
 IF [%1]==[] goto process_script_cmd
 IF "%1"=="-help" goto usage
+IF "%1"=="-h" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
 IF "%1"=="-f" goto set_foreground_mode
@@ -542,7 +521,6 @@ IF "%1"=="-t" goto set_solr_data_dir
 IF "%1"=="-solr.home" goto set_solr_home_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="-example" goto set_example
-IF "%1"=="-h" goto set_host
 IF "%1"=="-host" goto set_host
 IF "%1"=="-m" goto set_memory
 IF "%1"=="-memory" goto set_memory
@@ -1031,7 +1009,7 @@ IF "%SOLR_MODE%"=="solrcloud" (
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
   ) ELSE (
-    IF %SOLR_PORT% GTR 55535 (
+    IF %SOLR_PORT% GTR 64535 (
       set "SCRIPT_ERROR=ZK_HOST is not set and Solr port is %SOLR_PORT%, which would result in an invalid embedded Zookeeper port!"
       goto err
     )
@@ -1655,18 +1633,12 @@ IF "%FIRST_ARG%"=="start" (
   goto run_solrcli
 ) ELSE IF "%FIRST_ARG%"=="create" (
   goto run_solrcli
-) ELSE IF "%FIRST_ARG%"=="create_core" (
-  goto run_solrcli
-) ELSE IF "%FIRST_ARG%"=="create_collection" (
-  goto run_solrcli
 ) ELSE IF "%FIRST_ARG%"=="zk" (
   goto zk_short_usage
 ) ELSE IF "%FIRST_ARG%"=="auth" (
   goto auth_usage
 ) ELSE IF "%FIRST_ARG%"=="status" (
   goto run_solrcli
-) ELSE (
-  goto script_usage
 )
 
 :need_java_home

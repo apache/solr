@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.solr.util.SolrVersion;
+import org.apache.solr.client.api.util.SolrVersion;
 
 public class VersionTool extends ToolBase {
 

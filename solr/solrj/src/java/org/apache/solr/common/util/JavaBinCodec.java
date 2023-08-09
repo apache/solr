@@ -42,7 +42,9 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.ConditionalKeyMapWriter;
+import org.apache.solr.common.DelegateMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
@@ -389,6 +391,10 @@ public class JavaBinCodec implements PushWriter {
     }
     if (val instanceof MapWriter) {
       writeMap((MapWriter) val);
+      return true;
+    }
+    if (val instanceof ReflectWritable) {
+      writeMap(new DelegateMapWriter(val));
       return true;
     }
     if (val instanceof Map) {

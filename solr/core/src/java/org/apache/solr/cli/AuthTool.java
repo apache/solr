@@ -39,7 +39,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.zookeeper.KeeperException;
 
-// Authentication tool
+/** Supports auth command in the bin/solr script. */
 public class AuthTool extends ToolBase {
   public AuthTool() {
     this(CLIO.getOutStream());
@@ -111,12 +111,8 @@ public class AuthTool extends ToolBase {
             .desc(
                 "This is where any authentication related configuration files, if any, would be placed.")
             .build(),
-        Option.builder("solrUrl").argName("solrUrl").hasArg().desc("Solr URL.").build(),
-        Option.builder("zkHost")
-            .argName("zkHost")
-            .hasArg()
-            .desc("ZooKeeper host to connect to.")
-            .build(),
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_VERBOSE);
   }
 
