@@ -256,7 +256,7 @@ public class StrUtils {
   }
 
   /** Return if a string starts with '1', 't', or 'T' and return false otherwise. */
-  public static boolean parseBoolean(String s) {
+  public static boolean parseBoolean(CharSequence s) {
     char ch = s.length() > 0 ? s.charAt(0) : 0;
     return (ch == '1' || ch == 't' || ch == 'T');
   }
