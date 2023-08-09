@@ -33,3 +33,17 @@ setup() {
   assert_output --partial "Argument [updateIncludeFileOnly] must be either true or false, but was [ture]"
 }
 
+@test "auth enable/disable lifecycle" {
+  solr start -c
+  solr auth enable -type basicAuth -credentials name:password
+  solr assert --started http://localhost:8983/solr --timeout 5000
+
+  run curl -u name:password --basic 'http://localhost:8983/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json'
+  assert_output --partial '"status":0'
+  
+  solr auth disable
+  run curl 'http://localhost:8983/solr/test/select?q=*:*'
+  assert_output --partial '"numFound":0'
+  
+  
+}
