@@ -19,20 +19,24 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -176,7 +180,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
                 assertEquals(numDocuments, response.getResults().getNumFound());
               } catch (Exception e) {
-                throw new RuntimeException(e.getMessage());
+                throw new RuntimeException(e.getMessage(), e);
               }
 
               return true;
@@ -188,9 +192,12 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       for (Future<?> future : futures) {
         try {
           assertNotNull(future.get());
-        } catch (Exception e) {
+        } catch (ExecutionException e) {
+          MatcherAssert.assertThat(e.getCause().getCause(), instanceOf(RemoteSolrException.class));
+          RemoteSolrException rse = (RemoteSolrException) e.getCause().getCause();
+          assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS.code, rse.code());
           MatcherAssert.assertThat(
-              e.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));
+              rse.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));
         }
       }
     } finally {

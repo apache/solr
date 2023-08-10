@@ -863,14 +863,13 @@ groups:
 
       You can build a release-candidate of the official docker images (full & slim) using the following command:
 
-      DIST_BASE={{ dist_url_base }} && \
-        RC_FOLDER={{ release_candidate_rc_folder }} && \
-        docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official-full \
-        --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}.tgz \
-        -t solr-rc:{{ release_version }}-{{ rc_number }}} && \
-        docker build $DIST_BASE/$RC_FOLDER/solr/docker/Dockerfile.official-slim \
-        --build-arg SOLR_DOWNLOAD_URL=$DIST_BASE/$RC_FOLDER/solr/solr-{{ release_version }}-slim.tgz \
-        -t solr-rc:{{ release_version }}-{{ rc_number }}-slim
+      SOLR_DOWNLOAD_SERVER={{ release_candidate_location }}/solr && \
+        docker build $SOLR_DOWNLOAD_SERVER/{{ release_version }}/docker/Dockerfile.official-full \
+          --build-arg SOLR_DOWNLOAD_SERVER=$SOLR_DOWNLOAD_SERVER \
+          -t solr-rc:{{ release_version }}-{{ rc_number }} && \
+        docker build $SOLR_DOWNLOAD_SERVER/{{ release_version }}/docker/Dockerfile.official-slim \
+          --build-arg SOLR_DOWNLOAD_SERVER=$SOLR_DOWNLOAD_SERVER \
+          -t solr-rc:{{ release_version }}-{{ rc_number }}-slim
 
       The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
@@ -1002,7 +1001,7 @@ groups:
       commands_text: This will remove maven and docker artifacts so they do not end up in the Distribution Directory
       commands:
       - !Command
-        cmd: svn rm -m "Delete the solr maven and docker artifacts"  {{ dist_stage_url }}/solr/maven  {{ dist_stage_url }}/solr/docker
+        cmd: svn rm -m "Delete the solr maven and docker artifacts"  {{ dist_stage_url }}/solr/{{ release_version }}/maven  {{ dist_stage_url }}/solr/{{ release_version }}/docker
         logfile: svn_rm_mvn_solr.log
         tee: true
   - !Todo
@@ -1019,7 +1018,7 @@ groups:
       commands_text: This will move the new release artifacts from staging repo to the release repo
       commands:
       - !Command
-        cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo"  {{ dist_stage_url }}/solr  {{ dist_release_url }}/solr/{{ release_version }}
+        cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo"  {{ dist_stage_url }}/solr/{{ release_version }}  {{ dist_release_url }}/solr/{{ release_version }}
         logfile: svn_mv_solr.log
         tee: true
       - !Command
@@ -1058,12 +1057,12 @@ groups:
           comment: Checkout the most recent main version
           logfile: solr_docker_git_checkout.log
         - !Command
-          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', 'docker', 'Dockerfile.official-full'] | path_join }} {{ docker_version }}/Dockerfile"
+          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', release_version, 'docker', 'Dockerfile.official-full'] | path_join }} {{ docker_version }}/Dockerfile"
           cwd: solr-docker
           comment: Add the new full distribution Dockerfile to the repo
           logfile: solr_docker_add_dockerfile_full.log
         - !Command
-          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', 'docker', 'Dockerfile.official-slim'] | path_join }} {{ docker_version }}-slim/Dockerfile"
+          cmd: "mkdir -p {{ docker_version }}-slim && cp {{ [dist_file_path, dist_folder, 'solr', release_version, 'docker', 'Dockerfile.official-slim'] | path_join }} {{ docker_version }}-slim/Dockerfile"
           cwd: solr-docker
           comment: Add the new slim distribution Dockerfile to the repo
           logfile: solr_docker_add_dockerfile_slim.log
@@ -1096,7 +1095,7 @@ groups:
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
         - !Command
-          cmd: bash dev-tools/scripts/upload-maven.sh -u {{ gpg.apache_id }}  -v {{ release_version }} -c {{ git_sha }} -d "{{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}"
+          cmd: bash dev-tools/scripts/upload-maven.sh -u {{ gpg.apache_id }}  -v {{ release_version }} -c {{ git_sha }} -d "{{ [dist_file_path, dist_folder, 'solr', release_version, 'maven'] | path_join }}"
           tee: true
           logfile: publish_solr_maven.log
     post_description: The artifacts are not published yet, please proceed with the next step to actually publish!

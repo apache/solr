@@ -44,7 +44,6 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
 
     <str name="host">${host:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
-    <str name="hostContext">${hostContext:solr}</str>
 
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
 
@@ -306,6 +305,22 @@ This is the same system property used in the `_default` configset for the xref:c
 <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 ----
 
+[#hiddenSysProps]
+`hiddenSysProps`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+Comma-separated list of regex patterns to match sysProps that should be redacted to hide sensitive information.
++
+The allow-list can also be configured with the `solr.hiddenSysProps` system property,
+or via the `SOLR_HIDDEN_SYS_PROPS` environment variable.
++
+By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It will also hide any sysProp that contains
+"password" or "secret" in it.
+
 === The <solrcloud> Element
 
 This element defines several parameters that relate so SolrCloud.
@@ -337,15 +352,6 @@ Used to set the underlying `socketTimeout` for intra-cluster updates.
 |===
 +
 The hostname Solr uses to access cores.
-
-`hostContext`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The url context path.
 
 `hostPort`::
 +

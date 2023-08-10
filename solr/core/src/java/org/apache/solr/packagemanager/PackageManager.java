@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -61,7 +62,6 @@ import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.pkg.SolrPackageLoader;
-import org.apache.solr.util.SolrVersion;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
 /** Handles most of the management of packages that are already installed in Solr. */
 public class PackageManager implements Closeable {
 
-  final String solrBaseUrl;
+  final String solrUrl;
   final SolrClient solrClient;
   final SolrZkClient zkClient;
 
@@ -77,8 +77,8 @@ public class PackageManager implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public PackageManager(SolrClient solrClient, String solrBaseUrl, String zkHost) {
-    this.solrBaseUrl = solrBaseUrl;
+  public PackageManager(SolrClient solrClient, String solrUrl, String zkHost) {
+    this.solrUrl = solrUrl;
     this.solrClient = solrClient;
     this.zkClient =
         new SolrZkClient.Builder()
@@ -760,7 +760,7 @@ public class PackageManager implements Closeable {
                   plugin.name);
           String path =
               PackageUtils.resolve(cmd.path, pkg.parameterDefaults, overridesMap, systemParams);
-          PackageUtils.printGreen("Executing " + solrBaseUrl + path + " for cluster level plugin");
+          PackageUtils.printGreen("Executing " + solrUrl + path + " for cluster level plugin");
 
           if ("GET".equalsIgnoreCase(cmd.method)) {
             String response =
@@ -811,7 +811,7 @@ public class PackageManager implements Closeable {
                 PackageUtils.resolve(
                     cmd.path, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
             PackageUtils.printGreen(
-                "Executing " + solrBaseUrl + path + " for collection:" + collection);
+                "Executing " + solrUrl + path + " for collection:" + collection);
 
             if ("GET".equalsIgnoreCase(cmd.method)) {
               String response =
@@ -870,7 +870,7 @@ public class PackageManager implements Closeable {
         if (pkg.version.equals(version)) {
           return pkg;
         }
-        if (PackageUtils.compareVersions(latest.version, pkg.version) <= 0) {
+        if (SolrVersion.compareVersions(latest.version, pkg.version) <= 0) {
           latest = pkg;
         }
       }
@@ -918,20 +918,12 @@ public class PackageManager implements Closeable {
     }
 
     Manifest manifest = packageInstance.manifest;
-    try {
-      if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
-        PackageUtils.printRed(
-            "Version incompatible! Solr version: "
-                + SolrVersion.LATEST
-                + ", package version constraint: "
-                + manifest.versionConstraint);
-        System.exit(1);
-      }
-    } catch (SolrVersion.InvalidSemVerExpressionException ex) {
+    if (!SolrVersion.LATEST.satisfies(manifest.versionConstraint)) {
       PackageUtils.printRed(
-          "Error in version constraint given in package manifest: "
-              + manifest.versionConstraint
-              + ". It does not a valid SemVer expression.");
+          "Version incompatible! Solr version: "
+              + SolrVersion.LATEST
+              + ", package version constraint: "
+              + manifest.versionConstraint);
       System.exit(1);
     }
 

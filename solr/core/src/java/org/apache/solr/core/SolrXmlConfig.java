@@ -172,6 +172,10 @@ public class SolrXmlConfig {
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
+    // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
+    // <hiddenSysProps> is not provided under <solr>.
+    // Remove this line in 10.0
+    configBuilder.setHiddenSysProps(getHiddenSysProps(root.get("metrics")));
     configBuilder.setMetricsConfig(getMetricsConfig(root.get("metrics")));
     configBuilder.setFromZookeeper(fromZookeeper);
     configBuilder.setDefaultZkHost(defaultZkHost);
@@ -360,6 +364,9 @@ public class SolrXmlConfig {
               case "modules":
                 builder.setModules(it.txt());
                 break;
+              case "hiddenSysProps":
+                builder.setHiddenSysProps(it.txt());
+                break;
               case "allowPaths":
                 builder.setAllowPaths(separatePaths(it.txt()));
                 break;
@@ -502,10 +509,15 @@ public class SolrXmlConfig {
       hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
     }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
-    String hostContext = required("solrcloud", "hostContext", removeValue(nl, "hostContext"));
 
-    CloudConfig.CloudConfigBuilder builder =
-        new CloudConfig.CloudConfigBuilder(hostName, hostPort, hostContext);
+    // We no longer require or support the hostContext property, but legacy users may have it, so
+    // remove it from the list.
+    String hostContext = removeValue(nl, "hostContext");
+    if (hostContext != null) {
+      log.warn("solr.xml hostContext -- hostContext is deprecated and ignored.");
+    }
+
+    CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort);
     // set the defaultZkHost until/unless it's overridden in the "cloud section" (below)...
     builder.setZkHost(defaultZkHost);
 
@@ -673,11 +685,7 @@ public class SolrXmlConfig {
     }
 
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
-    Set<String> hiddenSysProps = getHiddenSysProps(metrics);
-    return builder
-        .setMetricReporterPlugins(reporterPlugins)
-        .setHiddenSysProps(hiddenSysProps)
-        .build();
+    return builder.setMetricReporterPlugins(reporterPlugins).build();
   }
 
   private static Object decodeNullValue(Object o) {
@@ -721,20 +729,24 @@ public class SolrXmlConfig {
     return configs.toArray(new PluginInfo[configs.size()]);
   }
 
-  private static Set<String> getHiddenSysProps(ConfigNode metrics) {
+  /**
+   * Deprecated as of 9.3, will be removed in 10.0
+   *
+   * @param metrics configNode for the metrics
+   * @return a comma-separated list of hidden Sys Props
+   */
+  @Deprecated(forRemoval = true, since = "9.3")
+  private static String getHiddenSysProps(ConfigNode metrics) {
     ConfigNode p = metrics.get("hiddenSysProps");
-    if (!p.exists()) return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
+    if (!p.exists()) return null;
     Set<String> props = new HashSet<>();
     p.forEachChild(
         it -> {
-          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt())) props.add(it.txt());
+          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt()))
+            props.add(Pattern.quote(it.txt()));
           return Boolean.TRUE;
         });
-    if (props.isEmpty()) {
-      return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
-    } else {
-      return props;
-    }
+    return String.join(",", props);
   }
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {

@@ -606,7 +606,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -744,7 +744,7 @@ def testSolrExample(binaryDistPath, javaPath):
   print('      Running techproducts example on port 8983 from %s' % binaryDistPath)
   try:
     if not cygwin:
-      runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
+      runExampleStatus = subprocess.call(['bin/solr','start','-e','techproducts'])
     else:
       runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
 
@@ -756,7 +756,7 @@ def testSolrExample(binaryDistPath, javaPath):
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      run query...')
     s = load('http://localhost:8983/solr/techproducts/select/?q=video')
-    if s.find('"numFound":3,"start":0') == -1:
+    if s.find('"numFound":3,') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
     s = load('http://localhost:8983/api/cores')
@@ -1130,11 +1130,14 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   else:
     # An ordinary release has a 'solr' sub folder
     for text, subURL in getDirEntries(baseURL):
-      if text.lower() == 'solr/':
+      if text.lower() == "solr/":
+        solrPath = subURL
+    for text, subURL in getDirEntries(solrPath):
+      if text.lower() == version + "/":
         solrPath = subURL
 
   if solrPath is None:
-    raise RuntimeError('could not find solr subdir')
+    raise RuntimeError("could not find solr/%s/ subdir" % version)
 
   print()
   print('Get KEYS...')

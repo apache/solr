@@ -24,13 +24,14 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.NodeRoles;
+import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore("SOLR-16753")
+@LogLevel(
+    "org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG")
 public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

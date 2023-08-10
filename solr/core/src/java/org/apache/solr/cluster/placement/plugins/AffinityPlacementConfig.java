@@ -17,15 +17,18 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 
 /** Configuration bean for {@link AffinityPlacementFactory}. */
 public class AffinityPlacementConfig implements PlacementPluginConfig {
 
-  public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 20L;
+  public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 5L;
   public static final long DEFAULT_PRIORITIZED_FREE_DISK_GB = 100L;
 
   public static final AffinityPlacementConfig DEFAULT =
@@ -103,6 +106,11 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    * acceptable node types).
    */
   @JsonProperty public Map<String, String> collectionNodeType;
+  /**
+   * Same as {@link AffinityPlacementConfig#withCollection} but ensures shard to shard
+   * correspondence. should be disjoint with {@link AffinityPlacementConfig#withCollection}.
+   */
+  @JsonProperty public Map<String, String> withCollectionShards;
 
   /**
    * When this property is set to {@code true}, Solr will try to place replicas for the same shard
@@ -161,12 +169,40 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
       long minimalFreeDiskGB,
       long prioritizedFreeDiskGB,
       Map<String, String> withCollection,
+      Map<String, String> withCollectionShards,
       Map<String, String> collectionNodeType) {
     this.minimalFreeDiskGB = minimalFreeDiskGB;
     this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
     Objects.requireNonNull(withCollection);
+    Objects.requireNonNull(withCollectionShards);
     Objects.requireNonNull(collectionNodeType);
     this.withCollection = withCollection;
+    this.withCollectionShards = withCollectionShards;
     this.collectionNodeType = collectionNodeType;
+  }
+
+  public AffinityPlacementConfig(
+      long minimalFreeDiskGB,
+      long prioritizedFreeDiskGB,
+      Map<String, String> withCollection,
+      Map<String, String> collectionNodeType) {
+    this(
+        minimalFreeDiskGB,
+        prioritizedFreeDiskGB,
+        withCollection,
+        Collections.emptyMap(),
+        collectionNodeType);
+  }
+
+  public void validate() {
+    if (!Collections.disjoint(withCollection.keySet(), withCollectionShards.keySet())) {
+      final ArrayList<String> collections = new ArrayList<>(withCollection.keySet());
+      collections.retainAll(withCollectionShards.keySet());
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "withCollection and withCollectionShards should be disjoint. But there are "
+              + collections
+              + " in common.");
+    }
   }
 }

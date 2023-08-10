@@ -34,12 +34,12 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -49,7 +49,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * <p>This API (DELETE /v2/collections/collectionName/shards/shardName) is analogous to the v1
  * /admin/collections?action=DELETESHARD command.
  */
-@Path("/collections/{collectionName}/shards/{shardName}/replicas")
+@Path("/collections/{collectionName}/shards/{shardName}")
 public class DeleteShardAPI extends AdminAPIBase {
 
   @Inject

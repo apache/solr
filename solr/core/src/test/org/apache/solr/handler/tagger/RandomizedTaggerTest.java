@@ -69,6 +69,13 @@ public class RandomizedTaggerTest extends TaggerTestCase {
         } else { // existing word (possible multi-word from prev iteration)
           buf.append(RandomPicks.randomFrom(R, names));
         }
+
+        // This loop has an exponential effect, because we add existing an name to a new name. In
+        // case we generate a too long name, the test will fail because of a too big automaton.
+        // Stop at 500 chars to prevent this.
+        if (buf.length() > 500) {
+          break;
+        }
       }
       names.add(buf.toString());
     }

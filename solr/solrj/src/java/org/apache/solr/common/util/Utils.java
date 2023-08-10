@@ -21,6 +21,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -37,7 +38,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -70,7 +70,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -81,6 +80,7 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CommonParams;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -173,7 +173,7 @@ public class Utils {
 
   public static InputStream toJavabin(Object o) throws IOException {
     try (final JavaBinCodec jbc = new JavaBinCodec()) {
-      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+      BAOS baos = new BAOS();
       jbc.marshal(o, baos);
       return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
     }
@@ -216,7 +216,7 @@ public class Utils {
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
+    new JSONWriter(out, 2).write(o); // indentation by default
     return toUTF8(out);
   }
 
@@ -710,8 +710,7 @@ public class Utils {
           "nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
-    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2 ? "api" : path)));
+    return urlScheme + "://" + hostAndPort + "/" + (isV2 ? "api" : "solr");
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -742,7 +741,7 @@ public class Utils {
 
   public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize) {
     return is -> {
-      try (BinaryRequestWriter.BAOS bos = new BinaryRequestWriter.BAOS()) {
+      try (BAOS bos = new BAOS()) {
         long sz = 0;
         int next = is.read();
         while (next > -1) {
@@ -1009,5 +1008,45 @@ public class Utils {
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
+  }
+
+  public static class BAOS extends ByteArrayOutputStream {
+    public ByteBuffer getByteBuffer() {
+      return ByteBuffer.wrap(super.buf, 0, super.count);
+    }
+
+    /*
+     * A hack to get access to the protected internal buffer and avoid an additional copy
+     */
+    public byte[] getbuf() {
+      return super.buf;
+    }
+  }
+
+  public static ByteBuffer toByteArray(InputStream is) throws IOException {
+    return toByteArray(is, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Reads an input stream into a byte array
+   *
+   * @param is the input stream
+   * @return the byte array
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public static ByteBuffer toByteArray(InputStream is, long maxSize) throws IOException {
+    try (BAOS bos = new BAOS()) {
+      long sz = 0;
+      int next = is.read();
+      while (next > -1) {
+        if (++sz > maxSize) {
+          throw new BufferOverflowException();
+        }
+        bos.write(next);
+        next = is.read();
+      }
+      bos.flush();
+      return bos.getByteBuffer();
+    }
   }
 }
