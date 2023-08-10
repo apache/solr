@@ -729,7 +729,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     JettyConfig jettyconfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
@@ -775,7 +774,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     JettyConfig jettyconfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
@@ -814,7 +812,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     JettyConfig jettyconfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())

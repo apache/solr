@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -28,18 +27,13 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFI
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.endpoint.AddReplicaPropertyApi;
+import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
@@ -47,9 +41,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -58,39 +50,24 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>This API is analogous to the v1 /admin/collections?action=ADDREPLICAPROP command.
  */
-@Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
-public class AddReplicaPropertyAPI extends AdminAPIBase {
+public class AddReplicaProperty extends AdminAPIBase implements AddReplicaPropertyApi {
 
   @Inject
-  public AddReplicaPropertyAPI(
+  public AddReplicaProperty(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @PUT
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse addReplicaProperty(
-      @Parameter(
-              description = "The name of the collection the replica belongs to.",
-              required = true)
-          @PathParam("collName")
-          String collName,
-      @Parameter(description = "The name of the shard the replica belongs to.", required = true)
-          @PathParam("shardName")
-          String shardName,
-      @Parameter(description = "The replica, e.g., `core_node1`.", required = true)
-          @PathParam("replicaName")
-          String replicaName,
-      @Parameter(description = "The name of the property to add.", required = true)
-          @PathParam("propName")
-          String propertyName,
-      @RequestBody(
-              description = "The value of the replica property to create or update",
-              required = true)
-          AddReplicaPropertyRequestBody requestBody)
+      String collName,
+      String shardName,
+      String replicaName,
+      String propertyName,
+      AddReplicaPropertyRequestBody requestBody)
       throws Exception {
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
@@ -152,25 +129,5 @@ public class AddReplicaPropertyAPI extends AdminAPIBase {
     }
 
     return new ZkNodeProps(remoteMessage);
-  }
-
-  public static class AddReplicaPropertyRequestBody implements JacksonReflectMapWriter {
-
-    public AddReplicaPropertyRequestBody() {}
-
-    public AddReplicaPropertyRequestBody(String value) {
-      this.value = value;
-    }
-
-    @Schema(description = "The value to assign to the property.", required = true)
-    @JsonProperty("value")
-    public String value;
-
-    @Schema(
-        description =
-            "If `true`, then setting this property in one replica will remove the property from all other replicas in that shard. The default is `false`.\\nThere is one pre-defined property `preferredLeader` for which `shardUnique` is forced to `true` and an error returned if `shardUnique` is explicitly set to `false`.",
-        defaultValue = "false")
-    @JsonProperty("shardUnique")
-    public Boolean shardUnique;
   }
 }

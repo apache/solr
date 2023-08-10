@@ -19,7 +19,15 @@ package org.apache.solr.cli;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class SolrCliUptimeTest extends SolrTestCase {
+public class SolrCLITest extends SolrTestCase {
+  @Test
+  public void testResolveSolrUrl() {
+    assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983/solr"), "http://localhost:8983");
+    assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983/solr/"), "http://localhost:8983");
+    assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983/"), "http://localhost:8983");
+    assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983"), "http://localhost:8983");
+  }
+
   @Test
   public void testUptime() {
     assertEquals("?", SolrCLI.uptime(0));

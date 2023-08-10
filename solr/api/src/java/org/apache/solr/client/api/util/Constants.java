@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.cloud;
 
-import java.io.IOException;
+package org.apache.solr.client.api.util;
 
-/** */
-public interface DistributedQueueFactory {
-  DistributedQueue makeQueue(String path) throws IOException;
+public class Constants {
+  private Constants() {
+    /* Private ctor prevents instantiation */
+  }
 
-  void removeQueue(String path) throws IOException;
+  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }
