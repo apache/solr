@@ -1622,7 +1622,7 @@ if "!AUTH_PORT!"=="" (
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% -solrIncludeFile "%SOLR_INCLUDE%" -authConfDir "%SOLR_HOME%" ^
-    -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!/solr
+    -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!
 goto done
 
 
