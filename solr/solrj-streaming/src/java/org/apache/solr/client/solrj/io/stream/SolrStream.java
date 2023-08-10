@@ -304,7 +304,8 @@ public class SolrStream extends TupleStream {
     NamedList<Object> genericResponse = client.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
 
-    CloseableHttpResponse httpResponse = (CloseableHttpResponse) genericResponse.get("closeableResponse");
+    CloseableHttpResponse httpResponse =
+        (CloseableHttpResponse) genericResponse.get("closeableResponse");
     // still attempting to read http status from http response for backwards compatibility reasons
     // since 9.4 the updated format will have a dedicated status field
     final int statusCode;

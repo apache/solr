@@ -50,11 +50,11 @@ public class SolrClientCache implements Serializable, Closeable {
   // Set the floor for timeouts to 60 seconds.
   // Timeouts cans be increased by setting the system properties defined below.
   private static final int MIN_TIMEOUT = 60000;
-  private static final int minConnTimeout = Math.max(
-      Integer.getInteger(HttpClientUtil.PROP_CONNECTION_TIMEOUT, MIN_TIMEOUT),
-      MIN_TIMEOUT);
-  private static final int minSocketTimeout = Math.max(
-      Integer.getInteger(HttpClientUtil.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
+  private static final int minConnTimeout =
+      Math.max(
+          Integer.getInteger(HttpClientUtil.PROP_CONNECTION_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
+  private static final int minSocketTimeout =
+      Math.max(Integer.getInteger(HttpClientUtil.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
   private final HttpClient httpClient;
@@ -101,7 +101,8 @@ public class SolrClientCache implements Serializable, Closeable {
     return client;
   }
 
-  public static CloudHttp2SolrClient newCloudHttp2SolrClient(String zkHost, Http2SolrClient http2SolrClient) {
+  public static CloudHttp2SolrClient newCloudHttp2SolrClient(
+      String zkHost, Http2SolrClient http2SolrClient) {
     final List<String> hosts = List.of(zkHost);
     var builder = new CloudHttp2SolrClient.Builder(hosts, Optional.empty());
     // using internal builder to ensure the internal client gets closed
@@ -136,17 +137,19 @@ public class SolrClientCache implements Serializable, Closeable {
   @Deprecated
   private static void adjustTimeouts(SolrClientBuilder<?> builder, HttpClient httpClient) {
     builder.withHttpClient(httpClient);
-    int socketTimeout= Math.max(minSocketTimeout, builder.getSocketTimeoutMillis());
+    int socketTimeout = Math.max(minSocketTimeout, builder.getSocketTimeoutMillis());
     builder.withSocketTimeout(socketTimeout, TimeUnit.MILLISECONDS);
-    int connTimeout= Math.max(minConnTimeout, builder.getConnectionTimeoutMillis());
+    int connTimeout = Math.max(minConnTimeout, builder.getConnectionTimeoutMillis());
     builder.withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS);
   }
 
-  public static Http2SolrClient newHttp2SolrClient(String baseUrl, Http2SolrClient http2SolrClient) {
+  public static Http2SolrClient newHttp2SolrClient(
+      String baseUrl, Http2SolrClient http2SolrClient) {
     return newHttp2SolrClientBuilder(baseUrl, http2SolrClient).build();
   }
 
-  private static Http2SolrClient.Builder newHttp2SolrClientBuilder(String baseUrl, Http2SolrClient http2SolrClient) {
+  private static Http2SolrClient.Builder newHttp2SolrClientBuilder(
+      String baseUrl, Http2SolrClient http2SolrClient) {
     var builder = new Http2SolrClient.Builder(baseUrl);
     if (http2SolrClient != null) {
       builder = builder.withHttpClient(http2SolrClient);

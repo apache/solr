@@ -344,8 +344,9 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
     /**
      * Set the internal http client.
-     * <p> Note: closing the httpClient instance is at the responsibility of the caller.
-     * 
+     *
+     * <p>Note: closing the httpClient instance is at the responsibility of the caller.
+     *
      * @param httpClient http client
      * @return this
      */
