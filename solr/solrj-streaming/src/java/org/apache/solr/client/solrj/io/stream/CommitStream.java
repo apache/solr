@@ -55,6 +55,7 @@ public class CommitStream extends TupleStream implements Expressible {
   private TupleStream tupleSource;
 
   private transient SolrClientCache clientCache;
+  private transient boolean isCloseCache;
   private long docsSinceCommit;
 
   public CommitStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -150,7 +151,12 @@ public class CommitStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     tupleSource.open();
-    clientCache = new SolrClientCache();
+    if (clientCache == null) {
+      isCloseCache = true;
+      clientCache = new SolrClientCache();
+    } else {
+      isCloseCache = false;
+    }
     docsSinceCommit = 0;
   }
 
@@ -193,7 +199,9 @@ public class CommitStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    clientCache.close();
+    if (isCloseCache) {
+      clientCache.close();
+    }
     tupleSource.close();
   }
 

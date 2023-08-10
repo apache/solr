@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,7 +29,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -47,8 +47,6 @@ import org.apache.solr.common.util.NamedList;
 /**
  * Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
  *
- * <p>TODO: Move this to Http2SolrClient
- *
  * @since 5.1.0
  */
 public class SolrStream extends TupleStream {
@@ -66,7 +64,7 @@ public class SolrStream extends TupleStream {
   private transient SolrClientCache cache;
   private String slice;
   private long checkpoint = -1;
-  private CloseableHttpResponse closeableHttpResponse;
+  private Closeable closeableHttpResponse;
   private boolean distrib = true;
   private String user;
   private String password;
@@ -118,7 +116,7 @@ public class SolrStream extends TupleStream {
 
     // Reuse the same client per node vs. having one per replica
     if (cache == null) {
-      client = new HttpSolrClient.Builder(baseUrl).build();
+      client = SolrClientCache.newHttp2SolrClient(baseUrl, null);
     } else {
       client = cache.getHttpSolrClient(baseUrl);
     }
@@ -305,13 +303,22 @@ public class SolrStream extends TupleStream {
 
     NamedList<Object> genericResponse = client.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
-    CloseableHttpResponse httpResponse =
-        (CloseableHttpResponse) genericResponse.get("closeableResponse");
 
-    final int statusCode = httpResponse.getStatusLine().getStatusCode();
+    CloseableHttpResponse httpResponse = (CloseableHttpResponse) genericResponse.get("closeableResponse");
+    // still attempting to read http status from http response for backwards compatibility reasons
+    // since 9.4 the updated format will have a dedicated status field
+    final int statusCode;
+    if (httpResponse != null) {
+      statusCode = httpResponse.getStatusLine().getStatusCode();
+    } else {
+      statusCode = (int) genericResponse.get("responseStatus");
+    }
+
     if (statusCode != 200) {
       String errMsg = consumeStreamAsErrorMessage(stream);
-      httpResponse.close();
+      if (httpResponse != null) {
+        httpResponse.close();
+      }
       throw new IOException(
           "Query to '"
               + query.getPath()

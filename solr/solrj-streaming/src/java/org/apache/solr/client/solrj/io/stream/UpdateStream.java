@@ -21,9 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -324,10 +322,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     if (this.cache != null) {
       this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
     } else {
-      final List<String> hosts = new ArrayList<>();
-      hosts.add(zkHost);
-      this.cloudSolrClient = new CloudLegacySolrClient.Builder(hosts, Optional.empty()).build();
-      this.cloudSolrClient.connect();
+      cloudSolrClient = SolrClientCache.newCloudHttp2SolrClient(zkHost, null);
     }
   }
 

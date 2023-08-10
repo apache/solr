@@ -24,10 +24,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -660,13 +658,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     if (cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      final List<String> hosts = new ArrayList<>();
-      hosts.add(zkHost);
-      cloudSolrClient =
-          new CloudLegacySolrClient.Builder(hosts, Optional.empty())
-              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
-              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-              .build();
+      cloudSolrClient = SolrClientCache.newCloudHttp2SolrClient(zkHost, null);
     }
 
     // Parallelize the facet expression across multiple collections for an alias using plist if
