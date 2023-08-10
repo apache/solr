@@ -44,6 +44,7 @@ setup() {
   solr auth disable
   run curl 'http://localhost:8983/solr/test/select?q=*:*'
   assert_output --partial '"numFound":0'
+  solr stop -all
   
   
 }
