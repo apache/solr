@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +134,7 @@ public class AssertTool extends ToolBase {
   public int runTool(CommandLine cli) throws Exception {
     verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
 
-    int toolExitStatus = 0;
+    int toolExitStatus;
     try {
       toolExitStatus = runAssert(cli);
     } catch (Exception exc) {
@@ -242,8 +241,6 @@ public class AssertTool extends ToolBase {
       NamedList<Object> response = solrClient.request(new HealthCheckRequest());
       Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
       SolrCLI.checkCodeForAuthError(statusCode);
-    } catch (SolrException se) {
-      throw se;
     } catch (IOException | SolrServerException e) {
       log.debug("Opening connection to {} failed, Solr does not seem to be running", url, e);
       return 0;
@@ -383,7 +380,7 @@ public class AssertTool extends ToolBase {
     try (final SolrClient client = new Http2SolrClient.Builder(url).build()) {
       final SolrRequest<CollectionAdminResponse> request =
           new CollectionAdminRequest.ClusterStatus();
-      final CollectionAdminResponse response = request.process(client);
+      request.process(client);
       return true; // throws an exception otherwise
     } catch (Exception e) {
       if (SolrCLI.exceptionIsAuthRelated(e)) {

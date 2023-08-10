@@ -502,14 +502,7 @@ public class SimplePostTool {
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
       File srcFile = new File(args[j]);
-      boolean isValidPath = checkIsValidPath(srcFile);
-      if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
-        filesPosted += postDirectory(srcFile, out, type);
-      } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
-        filesPosted += postFiles(new File[] {srcFile}, out, type);
-      } else {
-        filesPosted += handleGlob(srcFile, out, type);
-      }
+      filesPosted = getFilesPosted(out, type, filesPosted, srcFile);
     }
     return filesPosted;
   }
@@ -527,14 +520,20 @@ public class SimplePostTool {
     reset();
     int filesPosted = 0;
     for (File srcFile : files) {
-      boolean isValidPath = checkIsValidPath(srcFile);
-      if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
-        filesPosted += postDirectory(srcFile, out, type);
-      } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
-        filesPosted += postFiles(new File[] {srcFile}, out, type);
-      } else {
-        filesPosted += handleGlob(srcFile, out, type);
-      }
+      filesPosted = getFilesPosted(out, type, filesPosted, srcFile);
+    }
+    return filesPosted;
+  }
+
+  private int getFilesPosted(
+      final OutputStream out, final String type, int filesPosted, final File srcFile) {
+    boolean isValidPath = checkIsValidPath(srcFile);
+    if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
+      filesPosted += postDirectory(srcFile, out, type);
+    } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
+      filesPosted += postFiles(new File[] {srcFile}, out, type);
+    } else {
+      filesPosted += handleGlob(srcFile, out, type);
     }
     return filesPosted;
   }
