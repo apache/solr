@@ -180,7 +180,8 @@ public class ZkCLI implements CLIO {
       // parse the command line arguments
       CommandLine line = parser.parse(options, args);
 
-      if ((line.hasOption(HELP) || !line.hasOption(ZKHOST) || !line.hasOption(CMD)) && !line.hasOption(TESTS)) {
+      if ((line.hasOption(HELP) || !line.hasOption(ZKHOST) || !line.hasOption(CMD))
+          && !line.hasOption(TESTS)) {
         // automatically generate the help statement
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(ZK_CLI_NAME, options);

@@ -83,7 +83,6 @@ teardown() {
   # remove 'solrhome='
   local path_value=${extracted_solrhome#*=}
   [[ $path_value == *"/server/scripts/cloud-scripts/../../solr" ]] || [[ $path_value == *"/server/solr" ]]
-
 }
 
 @test "zkcli.sh gets 'solrhome' from 'solrhome' command line option" {
