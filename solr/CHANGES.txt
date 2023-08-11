@@ -89,6 +89,8 @@ Improvements
   circumstances as they are generated and more likely to remain up-to-date with future API changes.
   (Jason Gerlowski, David Smiley, Houston Putman)
 
+* SOLR-14667: Make zkClientTimeout consistent and based on a system property. The defauls values are stored in a single place referenced everywhere and they are based on system properties (Alex Deparvu)
+
 Optimizations
 ---------------------
 
