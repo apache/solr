@@ -20,9 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -30,6 +28,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.AddressUtils;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
@@ -72,11 +71,15 @@ public class SolrZkServer {
     if (zkRun == null) return null;
 
     InetSocketAddress addr = zkProps.getClientPortAddress();
-    var host = addr.getAddress();
-    if (host.isAnyLocalAddress()) {
-      host = InetAddress.getLoopbackAddress();
+    String hostName;
+    // We cannot advertise 0.0.0.0, so choose the best host to advertise
+    // (the same that the Solr Node defaults to)
+    if (addr.getAddress().isAnyLocalAddress()) {
+      hostName = AddressUtils.getHostToAdvertise();
+    } else {
+      hostName = addr.getAddress().getHostAddress();
     }
-    return host.getHostAddress() + ":" + addr.getPort();
+    return hostName + ":" + addr.getPort();
   }
 
   public void parseConfig() {
@@ -105,8 +108,10 @@ public class SolrZkServer {
     try {
       props = SolrZkServerProps.getProperties(zooCfgPath);
       SolrZkServerProps.injectServers(props, zkRun, zkHost);
-      // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to "127.0.0.1".
-      props.setProperty("clientPortAddress", System.getProperty("solr.zk.embedded.host", "127.0.0.1"));
+      // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to
+      // "127.0.0.1".
+      props.setProperty(
+          "clientPortAddress", System.getProperty("solr.zk.embedded.host", "127.0.0.1"));
       if (props.getProperty("clientPort") == null) {
         props.setProperty("clientPort", Integer.toString(solrPort + 1000));
       }
@@ -152,13 +157,15 @@ public class SolrZkServer {
       if (log.isInfoEnabled()) {
         log.info(
             "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-            zkProps.getClientPortAddress().getPort(), zkProps.getClientPortAddress().getAddress().getHostAddress());
+            zkProps.getClientPortAddress().getPort(),
+            zkProps.getClientPortAddress().getAddress().getHostAddress());
       }
     } else {
       if (log.isInfoEnabled()) {
         log.info(
-                "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
-                zkProps.getClientPortAddress().getPort(), zkProps.getClientPortAddress().getAddress().getHostAddress());
+            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
+            zkProps.getClientPortAddress().getPort(),
+            zkProps.getClientPortAddress().getAddress().getHostAddress());
       }
     }
 
