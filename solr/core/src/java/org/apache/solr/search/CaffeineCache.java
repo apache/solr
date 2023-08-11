@@ -25,6 +25,7 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Collections;
@@ -97,6 +98,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   private int maxIdleTimeSec;
   private boolean cleanupThread;
   private boolean async;
+  private final ThreadLocal<boolean[]> detectRecursion =
+      new ThreadLocal<>() {
+        @Override
+        protected boolean[] initialValue() {
+          return new boolean[] {false};
+        }
+      };
 
   private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
@@ -242,6 +250,10 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     }
   }
 
+  private static final class RecursionException extends RuntimeException {}
+
+  private static final RecursionException RECURSION_EXCEPTION = new RecursionException();
+
   @Override
   public V computeIfAbsent(K key, IOFunction<? super K, ? extends V> mappingFunction)
       throws IOException {
@@ -249,12 +261,43 @@ public class CaffeineCache<K, V> extends SolrCacheBase
       return computeAsync(key, mappingFunction);
     }
 
+    try {
+      return cache.get(
+          key,
+          k -> {
+            V value;
+            try {
+              boolean[] recursion = detectRecursion.get();
+              if (recursion[0]) {
+                throw RECURSION_EXCEPTION;
+              }
+              try {
+                recursion[0] = true;
+                value = mappingFunction.apply(k);
+              } finally {
+                recursion[0] = false;
+              }
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+            if (value == null) {
+              return null;
+            }
+            recordRamBytes(key, null, value);
+            inserts.increment();
+            return value;
+          });
+    } catch (UncheckedIOException e) {
+      throw e.getCause();
+    } catch (RecursionException ignored) {
+      // recursive invocation detected; fallback to get-then-put
+    }
+
     /*
-    Synchronous caches must effectively use get-then-put under the hood in place of
-    `computeIfAbsent()`-type behavior. A number of Solr queries (and consequently,
-    `mappingFunction`s passed into this method) would modify the cache recursively.
-    This is supported in `async` mode, but when `async==false`, it may yield
-    "IllegalStateException: Recursive update" (see SOLR-16707).
+    Synchronous caches must sometimes use get-then-put under the hood in place of
+    `computeIfAbsent()`-type behavior in cases where the latter approach would risk
+    recursively modifying the cache, yielding "IllegalStateException: Recursive update"
+    (see SOLR-16707).
      */
     V cached = cache.getIfPresent(key);
     if (cached != null) {
