@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
@@ -38,12 +37,8 @@ import org.apache.solr.client.solrj.impl.SolrClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * The SolrClientCache caches SolrClients so they can be reused by different TupleStreams.
- *
- * <p>TODO: Cut this over to using Solr's new Http2 clients
- */
-public class SolrClientCache implements Serializable, Closeable {
+/** The SolrClientCache caches SolrClients so they can be reused by different TupleStreams. */
+public class SolrClientCache implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -57,22 +52,22 @@ public class SolrClientCache implements Serializable, Closeable {
       Math.max(Integer.getInteger(HttpClientUtil.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
-  private final HttpClient httpClient;
+  private final HttpClient apacheHttpClient;
   private final Http2SolrClient http2SolrClient;
 
   public SolrClientCache() {
-    this.httpClient = null;
+    this.apacheHttpClient = null;
     this.http2SolrClient = null;
   }
 
   @Deprecated(since = "9.0")
-  public SolrClientCache(HttpClient httpClient) {
-    this.httpClient = httpClient;
+  public SolrClientCache(HttpClient apacheHttpClient) {
+    this.apacheHttpClient = apacheHttpClient;
     this.http2SolrClient = null;
   }
 
   public SolrClientCache(Http2SolrClient http2SolrClient) {
-    this.httpClient = null;
+    this.apacheHttpClient = null;
     this.http2SolrClient = http2SolrClient;
   }
 
@@ -82,8 +77,8 @@ public class SolrClientCache implements Serializable, Closeable {
       return (CloudSolrClient) solrClients.get(zkHost);
     }
     final CloudSolrClient client;
-    if (httpClient != null) {
-      client = newCloudLegacySolrClient(zkHost, httpClient);
+    if (apacheHttpClient != null) {
+      client = newCloudLegacySolrClient(zkHost, apacheHttpClient);
     } else {
       client = newCloudHttp2SolrClient(zkHost, http2SolrClient);
     }
@@ -118,8 +113,8 @@ public class SolrClientCache implements Serializable, Closeable {
       return solrClients.get(baseUrl);
     }
     final SolrClient client;
-    if (httpClient != null) {
-      client = newHttpSolrClient(baseUrl, httpClient);
+    if (apacheHttpClient != null) {
+      client = newHttpSolrClient(baseUrl, apacheHttpClient);
     } else {
       client = newHttp2SolrClient(baseUrl, http2SolrClient);
     }

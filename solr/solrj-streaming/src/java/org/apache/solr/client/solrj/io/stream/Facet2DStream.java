@@ -357,10 +357,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (cache == null) {
-      if (cloudSolrClient != null) {
-        cloudSolrClient.close();
-      }
+    if (cache == null && cloudSolrClient != null) {
+      cloudSolrClient.close();
     }
   }
 
