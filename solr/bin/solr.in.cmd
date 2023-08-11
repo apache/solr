@@ -130,6 +130,8 @@ REM set this value as narrowly as required before going to production. In
 REM environments where security is not a concern, 0.0.0.0 can be used to allow
 REM Solr to accept connections on all network interfaces.
 REM set SOLR_JETTY_HOST=127.0.0.1
+REM Sets the network interface the Embedded ZK binds to.
+REM set SOLR_ZK_EMBEDDED_HOST=127.0.0.1
 
 REM Restrict access to solr by IP address.
 REM Specify a comma-separated list of addresses or networks, for example:

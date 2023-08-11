@@ -72,7 +72,11 @@ public class SolrZkServer {
     if (zkRun == null) return null;
 
     InetSocketAddress addr = zkProps.getClientPortAddress();
-    return addr.getHostString() + ":" + addr.getPort();
+    var host = addr.getAddress();
+    if (host.isAnyLocalAddress()) {
+      host = InetAddress.getLoopbackAddress();
+    }
+    return host.getHostAddress() + ":" + addr.getPort();
   }
 
   public void parseConfig() {
@@ -101,6 +105,8 @@ public class SolrZkServer {
     try {
       props = SolrZkServerProps.getProperties(zooCfgPath);
       SolrZkServerProps.injectServers(props, zkRun, zkHost);
+      // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to "127.0.0.1".
+      props.setProperty("clientPortAddress", System.getProperty("solr.zk.embedded.host", "127.0.0.1"));
       if (props.getProperty("clientPort") == null) {
         props.setProperty("clientPort", Integer.toString(solrPort + 1000));
       }
@@ -145,14 +151,14 @@ public class SolrZkServer {
     if (zkProps.getServers().size() > 1) {
       if (log.isInfoEnabled()) {
         log.info(
-            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}",
-            zkProps.getClientPortAddress().getPort());
+            "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
+            zkProps.getClientPortAddress().getPort(), zkProps.getClientPortAddress().getAddress().getHostAddress());
       }
     } else {
       if (log.isInfoEnabled()) {
         log.info(
-            "STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER at port {}",
-            zkProps.getClientPortAddress().getPort());
+                "STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port {}, listening on host {}",
+                zkProps.getClientPortAddress().getPort(), zkProps.getClientPortAddress().getAddress().getHostAddress());
       }
     }
 
@@ -266,20 +272,6 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
   public void setDataDir(File dataDir) {
     this.dataDir = dataDir;
-  }
-
-  public void setClientPort(int clientPort) {
-    if (clientPortAddress != null) {
-      try {
-        this.clientPortAddress =
-            new InetSocketAddress(
-                InetAddress.getByName(clientPortAddress.getHostName()), clientPort);
-      } catch (UnknownHostException e) {
-        throw new RuntimeException(e);
-      }
-    } else {
-      this.clientPortAddress = new InetSocketAddress(clientPort);
-    }
   }
 
   /**
