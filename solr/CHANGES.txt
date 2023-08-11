@@ -26,6 +26,8 @@ Improvements
 * SOLR-16490: The semi-internal `/admin/cores?action=restorecore` API now has a v2 equivalent, available at
   `POST /api/cores/coreName/restore {...}` (Sayanti Dey via Jason Gerlowski)
 
+* SOLR-14667: Make zkClientTimeout consistent and based on a system property. The defauls values are stored in a single place referenced everywhere and they are based on system properties (Alex Deparvu)
+
 Optimizations
 ---------------------
 
