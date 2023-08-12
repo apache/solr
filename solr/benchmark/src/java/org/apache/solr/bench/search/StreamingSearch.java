@@ -23,7 +23,6 @@ import static org.apache.solr.bench.generators.SourceDSL.strings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
@@ -77,11 +76,12 @@ public class StreamingSearch {
 
       miniClusterState.startMiniCluster(3);
       miniClusterState.createCollection(collection, 3, 1);
-      Docs docGen = docs()
-          .field("id", integers().incrementing())
-          .field("text2_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
-          .field("text3_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
-          .field("int1_i_dv", integers().all());
+      Docs docGen =
+          docs()
+              .field("id", integers().incrementing())
+              .field("text2_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
+              .field("text3_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
+              .field("int1_i_dv", integers().all());
       miniClusterState.index(collection, docGen, docs);
       miniClusterState.forceMerge(collection, 5);
 

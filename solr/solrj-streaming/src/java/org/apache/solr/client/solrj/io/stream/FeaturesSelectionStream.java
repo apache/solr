@@ -308,8 +308,15 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
     List<Future<NamedList<?>>> futures = new ArrayList<>();
     for (String baseUrl : baseUrls) {
-      FeaturesSelectionCall lc = new FeaturesSelectionCall(baseUrl, this.params, this.field, this.outcome,
-          this.positiveLabel, this.numTerms, this.clientCache);
+      FeaturesSelectionCall lc =
+          new FeaturesSelectionCall(
+              baseUrl,
+              this.params,
+              this.field,
+              this.outcome,
+              this.positiveLabel,
+              this.numTerms,
+              this.clientCache);
 
       Future<NamedList<?>> future = executorService.submit(lc);
       futures.add(future);
@@ -423,7 +430,12 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     private final SolrClientCache clientCache;
 
     public FeaturesSelectionCall(
-        String baseUrl, Map<String,String> paramsMap, String field, String outcome, int positiveLabel, int numTerms,
+        String baseUrl,
+        Map<String, String> paramsMap,
+        String field,
+        String outcome,
+        int positiveLabel,
+        int numTerms,
         SolrClientCache clientCache) {
       this.baseUrl = baseUrl;
       this.outcome = outcome;

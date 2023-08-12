@@ -24,7 +24,6 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;

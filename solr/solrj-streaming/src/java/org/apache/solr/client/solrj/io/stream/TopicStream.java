@@ -38,7 +38,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -540,45 +539,45 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   @Override
   protected void constructStreams() throws IOException {
-      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
-      Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+    Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
-      ModifiableSolrParams mParams = new ModifiableSolrParams(params);
-      mParams.set(DISTRIB, "false"); // We are the aggregator.
-      String fl = mParams.get("fl");
-      mParams.set(SORT, "_version_ asc");
-      if (!fl.contains(VERSION_FIELD)) {
-        fl += ",_version_";
+    ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+    mParams.set(DISTRIB, "false"); // We are the aggregator.
+    String fl = mParams.get("fl");
+    mParams.set(SORT, "_version_ asc");
+    if (!fl.contains(VERSION_FIELD)) {
+      fl += ",_version_";
+    }
+    mParams.set("fl", fl);
+
+    Random random = new Random();
+
+    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+
+    for (Slice slice : slices) {
+      ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);
+      long checkpoint = checkpoints.get(slice.getName());
+
+      Collection<Replica> replicas = slice.getReplicas();
+      List<Replica> shuffler = new ArrayList<>();
+      for (Replica replica : replicas) {
+        if (replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
+          shuffler.add(replica);
       }
-      mParams.set("fl", fl);
 
-      Random random = new Random();
-
-      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-
-      for (Slice slice : slices) {
-        ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);
-        long checkpoint = checkpoints.get(slice.getName());
-
-        Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList<>();
-        for (Replica replica : replicas) {
-          if (replica.getState() == Replica.State.ACTIVE
-              && liveNodes.contains(replica.getNodeName())) shuffler.add(replica);
-        }
-
-        Replica rep = shuffler.get(random.nextInt(shuffler.size()));
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
-        SolrStream solrStream = new SolrStream(url, localParams);
-        solrStream.setSlice(slice.getName());
-        solrStream.setCheckpoint(checkpoint);
-        solrStream.setTrace(true);
-        if (streamContext != null) {
-          solrStream.setStreamContext(streamContext);
-        }
-        solrStreams.add(solrStream);
+      Replica rep = shuffler.get(random.nextInt(shuffler.size()));
+      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
+      String url = zkProps.getCoreUrl();
+      SolrStream solrStream = new SolrStream(url, localParams);
+      solrStream.setSlice(slice.getName());
+      solrStream.setCheckpoint(checkpoint);
+      solrStream.setTrace(true);
+      if (streamContext != null) {
+        solrStream.setStreamContext(streamContext);
       }
+      solrStreams.add(solrStream);
+    }
   }
 
   @Override
