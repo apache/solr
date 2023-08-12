@@ -26,7 +26,6 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -65,8 +64,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private int dimensionY;
   private FieldComparator bucketSort;
 
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient SolrClientCache clientCache;
+  private transient boolean isCloseCache;
 
   public Facet2DStream(
       String zkHost,
@@ -309,7 +308,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    cache = context.getSolrClientCache();
+    clientCache = context.getSolrClientCache();
   }
 
   @Override
@@ -319,10 +318,11 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
-    if (cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    if (clientCache == null) {
+      isCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      cloudSolrClient = SolrClientCache.newCloudHttp2SolrClient(zkHost, null);
+      isCloseCache = false;
     }
     FieldComparator[] adjustedSorts = adjustSorts(x, y, bucketSort);
 
@@ -335,6 +335,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       NamedList<Object> response = cloudSolrClient.request(request, collection);
       getTuples(response, x, y, metric);
       this.out = tuples.iterator();
@@ -357,8 +358,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (cache == null && cloudSolrClient != null) {
-      cloudSolrClient.close();
+    if (isCloseCache) {
+      clientCache.close();
     }
   }
 

@@ -38,6 +38,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -77,6 +78,9 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   private Map<String, Long> checkpoints = new HashMap<>();
   private String checkpointCollection;
   private long initialCheckpoint = -1;
+
+  private transient SolrClientCache clientCache;
+  private transient boolean isCloseCache;
 
   public TopicStream(
       String zkHost,
@@ -309,6 +313,12 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   @Override
   public void open() throws IOException {
+    if (clientCache == null) {
+      isCloseCache = true;
+      clientCache = new SolrClientCache();
+    } else {
+      isCloseCache = false;
+    }
     this.tuples = new TreeSet<>();
     this.solrStreams = new ArrayList<>();
     this.eofTuples = Collections.synchronizedMap(new HashMap<>());
@@ -317,13 +327,6 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       // Each worker must maintain its own checkpoints
       this.id = this.id + "_" + streamContext.workerID;
     }
-
-    if (streamContext.getSolrClientCache() != null) {
-      cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
-    } else {
-      cloudSolrClient = SolrClientCache.newCloudHttp2SolrClient(zkHost, null);
-    }
-
     if (checkpoints.size() == 0) {
       getPersistedCheckpoints();
       if (checkpoints.size() == 0) {
@@ -380,8 +383,8 @@ public class TopicStream extends CloudSolrStream implements Expressible {
         }
       }
 
-      if (streamContext != null && streamContext.getSolrClientCache() == null) {
-        cloudSolrClient.close();
+      if (isCloseCache) {
+        clientCache.close();
       }
     }
   }
@@ -422,6 +425,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getCheckpoints() throws IOException {
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
     this.checkpoints = new HashMap<>();
     Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -479,9 +483,11 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   private void persistCheckpoints() throws IOException {
 
-    if (cloudSolrClient == null) {
+    if (clientCache == null) {
       return;
     }
+
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
     UpdateRequest request = new UpdateRequest();
     request.setParam("collection", checkpointCollection);
     SolrInputDocument doc = new SolrInputDocument();
@@ -500,6 +506,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getPersistedCheckpoints() throws IOException {
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
     Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, cloudSolrClient, false);
 
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -533,7 +540,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   @Override
   protected void constructStreams() throws IOException {
-    try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
@@ -572,8 +579,11 @@ public class TopicStream extends CloudSolrStream implements Expressible {
         }
         solrStreams.add(solrStream);
       }
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
+  }
+
+  @Override
+  public void setStreamContext(StreamContext context) {
+    super.setStreamContext(context);
+    this.clientCache = context.getSolrClientCache();
   }
 }

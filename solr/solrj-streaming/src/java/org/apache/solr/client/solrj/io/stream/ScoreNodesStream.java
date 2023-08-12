@@ -59,7 +59,6 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   protected String zkHost;
   private TupleStream stream;
-  private transient SolrClientCache clientCache;
   private Map<String, Tuple> nodes = new HashMap<>();
   private Iterator<Tuple> tuples;
   private String termFreq;
@@ -67,6 +66,9 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   private String bucket;
   private String facetCollection;
+
+  private transient SolrClientCache clientCache;
+  private transient boolean isCloseCache;
 
   public ScoreNodesStream(TupleStream tupleStream, String nodeFreqField) throws IOException {
     init(tupleStream, nodeFreqField);
@@ -176,6 +178,13 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
+    if (clientCache == null) {
+      isCloseCache = true;
+      clientCache = new SolrClientCache();
+    } else {
+      isCloseCache = false;
+    }
+
     stream.open();
     Tuple node = null;
     StringBuilder builder = new StringBuilder();
@@ -261,6 +270,9 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
+    if (isCloseCache) {
+      clientCache.close();
+    }
     stream.close();
   }
 

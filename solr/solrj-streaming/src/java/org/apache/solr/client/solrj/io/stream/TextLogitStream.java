@@ -35,9 +35,9 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -82,12 +82,11 @@ public class TextLogitStream extends TupleStream implements Expressible {
   protected List<Double> idfs;
   protected ClassificationEvaluation evaluation;
 
-  protected transient SolrClientCache cache;
-  protected transient boolean isCloseCache;
-  protected transient CloudSolrClient cloudSolrClient;
+  private transient SolrClientCache clientCache;
+  private transient boolean isCloseCache;
 
   protected transient StreamContext streamContext;
-  protected ExecutorService executorService;
+  protected transient ExecutorService executorService;
   protected TupleStream termsStream;
   private List<String> terms;
 
@@ -355,7 +354,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    this.cache = context.getSolrClientCache();
+    this.clientCache = context.getSolrClientCache();
     this.streamContext = context;
     this.termsStream.setStreamContext(context);
   }
@@ -363,14 +362,13 @@ public class TextLogitStream extends TupleStream implements Expressible {
   /** Opens the CloudSolrStream */
   @Override
   public void open() throws IOException {
-    if (cache == null) {
+    if (clientCache == null) {
       isCloseCache = true;
-      cache = new SolrClientCache();
+      clientCache = new SolrClientCache();
     } else {
       isCloseCache = false;
     }
 
-    this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
     this.executorService =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TextLogitSolrStream"));
   }
@@ -384,6 +382,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   protected List<String> getShardUrls() throws IOException {
     try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -426,7 +425,10 @@ public class TextLogitStream extends TupleStream implements Expressible {
               this.outcome,
               this.positiveLabel,
               this.learningRate,
-              this.iteration);
+              this.iteration,
+              this.threshold,
+              this.idfs,
+              this.clientCache);
 
       Future<Tuple> future = executorService.submit(lc);
       futures.add(future);
@@ -437,8 +439,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache && cache != null) {
-      cache.close();
+    if (isCloseCache) {
+      clientCache.close();
     }
 
     if (executorService != null) {
@@ -642,7 +644,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class LogitCall implements Callable<Tuple> {
+  protected static class LogitCall implements Callable<Tuple> {
 
     private String baseUrl;
     private String feature;
@@ -653,6 +655,9 @@ public class TextLogitStream extends TupleStream implements Expressible {
     private int positiveLabel;
     private double learningRate;
     private Map<String, String> paramsMap;
+    private double threshold;
+    private List<Double> idfs;
+    private SolrClientCache clientCache;
 
     public LogitCall(
         String baseUrl,
@@ -663,7 +668,10 @@ public class TextLogitStream extends TupleStream implements Expressible {
         String outcome,
         int positiveLabel,
         double learningRate,
-        int iteration) {
+        int iteration,
+        double threshold,
+        List<Double> idfs,
+        SolrClientCache clientCache) {
 
       this.baseUrl = baseUrl;
       this.feature = feature;
@@ -674,12 +682,15 @@ public class TextLogitStream extends TupleStream implements Expressible {
       this.positiveLabel = positiveLabel;
       this.learningRate = learningRate;
       this.paramsMap = paramsMap;
+      this.threshold = threshold;
+      this.idfs = idfs;
+      this.clientCache = clientCache;
     }
 
     @Override
     public Tuple call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq", "{!tlogit}");

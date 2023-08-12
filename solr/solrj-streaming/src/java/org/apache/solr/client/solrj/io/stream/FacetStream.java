@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -86,8 +85,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private boolean resortNeeded;
   private boolean serializeBucketSizeLimit;
 
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient SolrClientCache clientCache;
+  private transient boolean isCloseCache;
   protected transient TupleStream parallelizedStream;
   protected transient StreamContext context;
 
@@ -645,7 +644,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   @Override
   public void setStreamContext(StreamContext context) {
     this.context = context;
-    cache = context.getSolrClientCache();
+    this.clientCache = context.getSolrClientCache();
   }
 
   @Override
@@ -655,11 +654,13 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
   @Override
   public void open() throws IOException {
-    if (cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    if (clientCache == null) {
+      isCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      cloudSolrClient = SolrClientCache.newCloudHttp2SolrClient(zkHost, null);
+      isCloseCache = false;
     }
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
 
     // Parallelize the facet expression across multiple collections for an alias using plist if
     // possible
@@ -753,10 +754,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
   @Override
   public void close() throws IOException {
-    if (cache == null) {
-      if (cloudSolrClient != null) {
-        cloudSolrClient.close();
-      }
+    if (isCloseCache) {
+      clientCache.close();
     }
   }
 

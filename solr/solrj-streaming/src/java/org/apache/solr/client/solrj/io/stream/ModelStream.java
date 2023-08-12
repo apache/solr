@@ -25,8 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
 import org.apache.solr.client.solrj.io.ModelCache;
-import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -53,7 +53,6 @@ public class ModelStream extends TupleStream implements Expressible {
   protected String collection;
   protected String modelID;
   protected ModelCache modelCache;
-  protected SolrClientCache solrClientCache;
   protected Tuple model;
   protected long cacheMillis;
 
@@ -162,7 +161,6 @@ public class ModelStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    this.solrClientCache = context.getSolrClientCache();
     this.modelCache = context.getModelCache();
   }
 

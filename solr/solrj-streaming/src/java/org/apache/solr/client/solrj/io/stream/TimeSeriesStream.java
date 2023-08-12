@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -69,8 +69,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   private String zkHost;
   private SolrParams params;
   private String collection;
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  private transient SolrClientCache clientCache;
+  private transient boolean isCloseCache;
 
   public TimeSeriesStream(
       String zkHost,
@@ -336,7 +336,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    cache = context.getSolrClientCache();
+    clientCache = context.getSolrClientCache();
   }
 
   @Override
@@ -346,10 +346,11 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
-    if (cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    if (clientCache == null) {
+      isCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      cloudSolrClient = SolrClientCache.newCloudHttp2SolrClient(zkHost, null);
+      isCloseCache = false;
     }
 
     String json = getJsonFacetString(field, metrics, start, end, gap);
@@ -360,6 +361,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       NamedList<?> response = cloudSolrClient.request(request, collection);
       getTuples(response, field, metrics);
     } catch (Exception e) {
@@ -369,8 +371,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (cache == null) {
-      cloudSolrClient.close();
+    if (isCloseCache) {
+      clientCache.close();
     }
   }
 

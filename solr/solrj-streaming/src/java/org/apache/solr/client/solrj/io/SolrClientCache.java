@@ -96,7 +96,7 @@ public class SolrClientCache implements Closeable {
     return client;
   }
 
-  public static CloudHttp2SolrClient newCloudHttp2SolrClient(
+  private static CloudHttp2SolrClient newCloudHttp2SolrClient(
       String zkHost, Http2SolrClient http2SolrClient) {
     final List<String> hosts = List.of(zkHost);
     var builder = new CloudHttp2SolrClient.Builder(hosts, Optional.empty());
@@ -116,7 +116,7 @@ public class SolrClientCache implements Closeable {
     if (apacheHttpClient != null) {
       client = newHttpSolrClient(baseUrl, apacheHttpClient);
     } else {
-      client = newHttp2SolrClient(baseUrl, http2SolrClient);
+      client = newHttp2SolrClientBuilder(baseUrl, http2SolrClient).build();
     }
     solrClients.put(baseUrl, client);
     return client;
@@ -136,11 +136,6 @@ public class SolrClientCache implements Closeable {
     builder.withSocketTimeout(socketTimeout, TimeUnit.MILLISECONDS);
     int connTimeout = Math.max(minConnTimeout, builder.getConnectionTimeoutMillis());
     builder.withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS);
-  }
-
-  public static Http2SolrClient newHttp2SolrClient(
-      String baseUrl, Http2SolrClient http2SolrClient) {
-    return newHttp2SolrClientBuilder(baseUrl, http2SolrClient).build();
   }
 
   private static Http2SolrClient.Builder newHttp2SolrClientBuilder(

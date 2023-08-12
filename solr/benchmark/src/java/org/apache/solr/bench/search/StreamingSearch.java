@@ -23,7 +23,7 @@ import static org.apache.solr.bench.generators.SourceDSL.strings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.http.client.HttpClient;
+
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
@@ -77,12 +77,11 @@ public class StreamingSearch {
 
       miniClusterState.startMiniCluster(3);
       miniClusterState.createCollection(collection, 3, 1);
-      Docs docGen =
-          docs()
-              .field("id", integers().incrementing())
-              .field("text2_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
-              .field("text3_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
-              .field("int1_i_dv", integers().all());
+      Docs docGen = docs()
+          .field("id", integers().incrementing())
+          .field("text2_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
+          .field("text3_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
+          .field("int1_i_dv", integers().all());
       miniClusterState.index(collection, docGen, docs);
       miniClusterState.forceMerge(collection, 5);
 
@@ -100,10 +99,10 @@ public class StreamingSearch {
         throws SolrServerException, IOException {
       SolrClientCache solrClientCache;
       if (useHttp1) {
-        HttpClient httpClient = HttpClientUtil.createClient(null); // TODO tune params?
+        var httpClient = HttpClientUtil.createClient(null); // TODO tune params?
         solrClientCache = new SolrClientCache(httpClient);
       } else {
-        http2SolrClient = SolrClientCache.newHttp2SolrClient(null, null);
+        http2SolrClient = newHttp2SolrClient();
         solrClientCache = new SolrClientCache(http2SolrClient);
       }
 
@@ -145,5 +144,11 @@ public class StreamingSearch {
     } finally {
       tupleStream.close();
     }
+  }
+
+  public static Http2SolrClient newHttp2SolrClient() {
+    // TODO tune params?
+    var builder = new Http2SolrClient.Builder();
+    return builder.build();
   }
 }

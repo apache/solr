@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
@@ -60,8 +60,6 @@ public class SolrStream extends TupleStream {
   private boolean trace;
   private Map<String, String> fieldMappings;
   private transient TupleStreamParser tupleStreamParser;
-  private transient SolrClient client;
-  private transient SolrClientCache cache;
   private String slice;
   private long checkpoint = -1;
   private Closeable closeableHttpResponse;
@@ -69,6 +67,9 @@ public class SolrStream extends TupleStream {
   private String user;
   private String password;
   private String core;
+
+  private transient SolrClientCache clientCache;
+  private transient boolean isCloseCache;
 
   /**
    * @param baseUrl Base URL of the stream.
@@ -102,7 +103,7 @@ public class SolrStream extends TupleStream {
     this.distrib = !context.isLocal();
     this.numWorkers = context.numWorkers;
     this.workerID = context.workerID;
-    this.cache = context.getSolrClientCache();
+    this.clientCache = context.getSolrClientCache();
   }
 
   public void setCredentials(String user, String password) {
@@ -113,12 +114,11 @@ public class SolrStream extends TupleStream {
   /** Opens the stream to a single Solr instance. */
   @Override
   public void open() throws IOException {
-
-    // Reuse the same client per node vs. having one per replica
-    if (cache == null) {
-      client = SolrClientCache.newHttp2SolrClient(baseUrl, null);
+    if (clientCache == null) {
+      isCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      client = cache.getHttpSolrClient(baseUrl);
+      isCloseCache = false;
     }
 
     try {
@@ -191,8 +191,8 @@ public class SolrStream extends TupleStream {
     if (closeableHttpResponse != null) {
       closeableHttpResponse.close();
     }
-    if (cache == null && client != null) {
-      client.close();
+    if (isCloseCache) {
+      clientCache.close();
     }
   }
 
@@ -301,6 +301,7 @@ public class SolrStream extends TupleStream {
       query.setBasicAuthCredentials(user, password);
     }
 
+    var client = clientCache.getHttpSolrClient(baseUrl);
     NamedList<Object> genericResponse = client.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
 

@@ -21,8 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -50,7 +50,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   // field name in summary tuple for #docs updated in batch
   public static String BATCH_INDEXED_FIELD_NAME = "batchIndexed";
   private String collection;
-  private String zkHost;
+  protected String zkHost;
   private int updateBatchSize;
   /**
    * Indicates if the {@link CommonParams#VERSION_FIELD} should be removed from tuples when
@@ -62,10 +62,11 @@ public class UpdateStream extends TupleStream implements Expressible {
   private int batchNumber;
   private long totalDocsIndex;
   private PushBackStream tupleSource;
-  private transient SolrClientCache cache;
-  private transient CloudSolrClient cloudSolrClient;
   private List<SolrInputDocument> documentBatch = new ArrayList<>();
   private String coreName;
+
+  protected transient SolrClientCache clientCache;
+  private transient boolean isCloseCache;
 
   public UpdateStream(StreamExpression expression, StreamFactory factory) throws IOException {
     String collectionName = factory.getValueOperand(expression, 0);
@@ -120,7 +121,12 @@ public class UpdateStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
-    setCloudSolrClient();
+    if (clientCache == null) {
+      isCloseCache = true;
+      clientCache = new SolrClientCache();
+    } else {
+      isCloseCache = false;
+    }
     tupleSource.open();
   }
 
@@ -151,8 +157,8 @@ public class UpdateStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (cache == null && cloudSolrClient != null) {
-      cloudSolrClient.close();
+    if (isCloseCache) {
+      clientCache.close();
     }
     tupleSource.close();
   }
@@ -224,7 +230,7 @@ public class UpdateStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    this.cache = context.getSolrClientCache();
+    this.clientCache = context.getSolrClientCache();
     this.coreName = (String) context.get("core");
     this.tupleSource.setStreamContext(context);
   }
@@ -312,20 +318,6 @@ public class UpdateStream extends TupleStream implements Expressible {
     return true;
   }
 
-  /** Only viable after calling {@link #open} */
-  protected CloudSolrClient getCloudSolrClient() {
-    assert null != this.cloudSolrClient;
-    return this.cloudSolrClient;
-  }
-
-  private void setCloudSolrClient() {
-    if (this.cache != null) {
-      this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
-    } else {
-      cloudSolrClient = SolrClientCache.newCloudHttp2SolrClient(zkHost, null);
-    }
-  }
-
   private SolrInputDocument convertTupleToSolrDocument(Tuple tuple) {
     SolrInputDocument doc = new SolrInputDocument();
     for (String field : tuple.getFields().keySet()) {
@@ -360,6 +352,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     }
 
     try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       cloudSolrClient.add(collection, documentBatch);
     } catch (SolrServerException | IOException e) {
       // TODO: it would be nice if there was an option to "skipFailedBatches"
