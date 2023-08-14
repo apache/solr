@@ -38,6 +38,7 @@ public interface SolrCache<K, V> extends SolrInfoBean {
   String INITIAL_SIZE_PARAM = "initialSize";
   String CLEANUP_THREAD_PARAM = "cleanupThread";
   String ASYNC_PARAM = "async";
+  String AUTOWARM_THREADS_PARAM = "autowarmThreads";
 
   /**
    * The initialization routine. Instance specific arguments are passed in the <code>args</code>

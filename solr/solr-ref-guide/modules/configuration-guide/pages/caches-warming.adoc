@@ -85,6 +85,9 @@ Disabling the async option may use slightly less memory per cache entry at the e
 The async cache provides most significant improvement with many concurrent queries requesting the same result set that has not yet been cached, as an alternative to larger cache sizes or increased auto-warming counts.
 However, the async cache will not prevent data races for time-limited queries, since those are expected to provide partial results.
 
+The `autowarmThreads` attribute controls the number of threads used for warming. By default (or if using `autowarmThreads="0"` or `autowarmThreads="1"`) only a single thread is used for warming.
+If a negative value is specified (e.g. `autowarmThreads="-1")` then the number of threads will be set to the number of available processors (as returned by `Runtime.getRuntime().availableProcessors()`).
+
 All caches can be disabled using the parameter `enabled` with a value of `false`.
 Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section xref:query-guide:common-query-parameters.adoc#cache-local-parameter[cache Local Parameter].
 
@@ -134,6 +137,15 @@ The filter cache is a good candidate for enabling `async` computation.
              async="true"/>
 ----
 
+The filter cache might also be a good candidate for enabling multi-threaded warming via `autowarmThreads` if you have a larger cache with a large value for `autowarmCount`.
+
+[source,xml]
+----
+<filterCache class="solr.CaffeineCache"
+             size="8192"
+             autowarmCount="8192"
+             autowarmThreads="4"/>
+----
 
 === Query Result Cache
 
@@ -342,6 +354,34 @@ A key best practice is to modify these defaults before taking your application t
 
 There is no point in auto-warming your Searcher with the query string "static firstSearcher warming in solrconfig.xml" if that is not relevant to your search application.
 ====
+
+### Multi-threaded listener warming
+
+If you have a large list of queries you are running via the listeners you might want to enable multi-threading listener warming by specifying the `<int name="threads">` element:
+
+[source,xml]
+----
+<listener event="newSearcher" class="solr.QuerySenderListener">
+  <int name="threads">4</int>
+  <arr name="queries">
+  <!--
+    <lst><str name="q">solr</str><str name="sort">price asc</str></lst>
+    <lst><str name="q">rocks</str><str name="sort">weight asc</str></lst>
+   -->
+   <!-- lots of additional queries here... -->
+  </arr>
+</listener>
+
+<listener event="firstSearcher" class="solr.QuerySenderListener">
+  <int name="threads">4</int>
+  <arr name="queries">
+    <lst><str name="q">static firstSearcher warming in solrconfig.xml</str></lst>
+    <!-- lots of additional queries here... -->
+  </arr>
+</listener>
+----
+
+By default (or if using `<int name="threads">0</int>` or `<int name="threads">1</int>`) only a single thread is used. If a negative value is specified (e.g. `<int name="threads">-1</int>)` then the number of threads will be set to the number of available processors (as returned by `Runtime.getRuntime().availableProcessors()`).
 
 ### Managing warming queries with the Config API
 

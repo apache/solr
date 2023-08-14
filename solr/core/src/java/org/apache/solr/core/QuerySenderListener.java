@@ -21,7 +21,16 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.EventParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -44,65 +53,131 @@ public class QuerySenderListener extends AbstractSolrEventListener {
 
   @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
+    final long startTimeNanos = System.nanoTime();
+
     final SolrIndexSearcher searcher = newSearcher;
     log.debug("QuerySenderListener sending requests to {}", newSearcher);
     @SuppressWarnings("unchecked")
     List<NamedList<Object>> allLists =
         convertQueriesToList((ArrayList<Object>) getArgs().getAll("queries"));
     if (allLists == null) return;
-    for (NamedList<Object> nlst : allLists) {
+    final int threads = getThreadsParam();
+
+    if (0 == threads || 1 == threads || allLists.isEmpty()) { // Non-threaded code path
+      for (NamedList<Object> nlst : allLists) {
+        runQuery(newSearcher, currentSearcher, nlst);
+      }
+    } else { // Multi-threaded code path
+      final int nThreads = threads > 0 ? threads : Runtime.getRuntime().availableProcessors();
+
+      // Since we are using a SynchronousQueue with no capacity we need to make sure we fallback to
+      // a blocking put() when adding to the queue fails due to lack of capacity or no thread ready
+      // to execute the Runnable.
+      final RejectedExecutionHandler rejectedHandler =
+          new RejectedExecutionHandler() {
+            @Override
+            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+              if (executor.isShutdown()) return;
+              try {
+                executor.getQueue().put(r);
+              } catch (InterruptedException ex) {
+                throw new RejectedExecutionException(ex);
+              }
+            }
+          };
+
+      final ExecutorService executor =
+          new ExecutorUtil.MDCAwareThreadPoolExecutor(
+              nThreads,
+              nThreads,
+              0L,
+              TimeUnit.MILLISECONDS,
+              new SynchronousQueue<>(), // Avoid an unbounded queue to save memory in case the auto
+              // warm count is large
+              new NamedThreadFactory("Query Sender Listener"),
+              rejectedHandler);
+
       try {
-        // bind the request to a particular searcher (the newSearcher)
-        NamedList<Object> params = addEventParms(currentSearcher, nlst);
-        // for this, we default to distrib = false
-        if (params.get(DISTRIB) == null) {
-          params.add(DISTRIB, false);
+        for (NamedList<Object> nlst : allLists) {
+          executor.execute(() -> runQuery(newSearcher, currentSearcher, nlst));
         }
-        SolrQueryRequest req =
-            new LocalSolrQueryRequest(getCore(), params) {
-              @Override
-              public SolrIndexSearcher getSearcher() {
-                return searcher;
-              }
+      } finally {
+        executor.shutdown();
 
-              @Override
-              public void close() {}
-            };
-        SolrQueryResponse rsp = new SolrQueryResponse();
-        SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
         try {
-          getCore()
-              .execute(getCore().getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
-
-          // Retrieve the Document instances (not just the ids) to warm
-          // the OS disk cache, and any Solr document cache.  Only the top
-          // level values in the NamedList are checked for DocLists.
-          NamedList<?> values = rsp.getValues();
-          for (int i = 0; i < values.size(); i++) {
-            Object o = values.getVal(i);
-            if (o instanceof ResultContext) {
-              o = ((ResultContext) o).getDocList();
-            }
-            if (o instanceof DocList) {
-              DocList docs = (DocList) o;
-              for (DocIterator iter = docs.iterator(); iter.hasNext(); ) {
-                newSearcher.doc(iter.nextDoc());
-              }
-            }
-          }
-        } finally {
-          try {
-            req.close();
-          } finally {
-            SolrRequestInfo.clearRequestInfo();
-          }
+          executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException ex) {
+          // Ignore
         }
-      } catch (Exception e) {
-        // do nothing... we want to continue with the other requests.
-        // the failure should have already been logged.
       }
     }
-    log.info("QuerySenderListener done.");
+
+    log.info(
+        "QuerySenderListener done. Time: {} ms",
+        TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTimeNanos, TimeUnit.NANOSECONDS));
+  }
+
+  private int getThreadsParam() {
+    final Object threads = getArgs().get(EventParams.THREADS);
+
+    if (null == threads) return 0;
+    if (threads instanceof String) return Integer.parseInt((String) threads);
+    if (threads instanceof Number) return ((Number) threads).intValue();
+    return 0;
+  }
+
+  private void runQuery(
+      SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher, NamedList<Object> nlst) {
+    try {
+      // bind the request to a particular searcher (the newSearcher)
+      NamedList<Object> params = addEventParms(currentSearcher, nlst);
+      // for this, we default to distrib = false
+      if (params.get(DISTRIB) == null) {
+        params.add(DISTRIB, false);
+      }
+      SolrQueryRequest req =
+          new LocalSolrQueryRequest(getCore(), params) {
+            @Override
+            public SolrIndexSearcher getSearcher() {
+              return newSearcher;
+            }
+
+            @Override
+            public void close() {}
+          };
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      try {
+        getCore()
+            .execute(getCore().getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
+
+        // Retrieve the Document instances (not just the ids) to warm
+        // the OS disk cache, and any Solr document cache.  Only the top
+        // level values in the NamedList are checked for DocLists.
+        NamedList<?> values = rsp.getValues();
+        for (int i = 0; i < values.size(); i++) {
+          Object o = values.getVal(i);
+          if (o instanceof ResultContext) {
+            o = ((ResultContext) o).getDocList();
+          }
+          if (o instanceof DocList) {
+            DocList docs = (DocList) o;
+            for (DocIterator iter = docs.iterator(); iter.hasNext(); ) {
+              newSearcher.doc(iter.nextDoc());
+            }
+          }
+        }
+      } finally {
+        try {
+          req.close();
+        } finally {
+          SolrRequestInfo.clearRequestInfo();
+        }
+      }
+    } catch (Exception e) {
+      // do nothing... we want to continue with the other requests.
+      // the failure should have already been logged.
+    }
   }
 
   protected static List<NamedList<Object>> convertQueriesToList(ArrayList<Object> queries) {

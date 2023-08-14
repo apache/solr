@@ -38,10 +38,17 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.IOFunction;
@@ -97,6 +104,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   private int maxIdleTimeSec;
   private boolean cleanupThread;
   private boolean async;
+  private int autowarmThreads;
 
   private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
@@ -135,6 +143,9 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     } else {
       executor = Runnable::run;
     }
+
+    str = args.get(AUTOWARM_THREADS_PARAM);
+    autowarmThreads = str == null ? 0 : Integer.parseInt(str);
 
     description = generateDescription(maxSize, initialSize);
 
@@ -386,7 +397,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     }
 
     long warmingStartTime = System.nanoTime();
-    Map<K, V> hottest = Collections.emptyMap();
+    final Map<K, V> hottest;
     CaffeineCache<K, V> other = (CaffeineCache<K, V>) old;
 
     // warm entries
@@ -394,17 +405,89 @@ public class CaffeineCache<K, V> extends SolrCacheBase
       int size = autowarm.getWarmCount(other.cache.asMap().size());
       hottest =
           other.cache.policy().eviction().map(p -> p.hottest(size)).orElse(Collections.emptyMap());
+    } else {
+      hottest = Collections.emptyMap();
     }
 
-    for (Entry<K, V> entry : hottest.entrySet()) {
-      try {
-        boolean continueRegen =
-            regenerator.regenerateItem(searcher, this, old, entry.getKey(), entry.getValue());
-        if (!continueRegen) {
-          break;
+    if (0 == autowarmThreads || 1 == autowarmThreads || hottest.isEmpty()) {
+      // Non-threaded code path
+      for (Entry<K, V> entry : hottest.entrySet()) {
+        try {
+          boolean continueRegen =
+              regenerator.regenerateItem(searcher, this, old, entry.getKey(), entry.getValue());
+          if (!continueRegen) {
+            break;
+          }
+        } catch (Exception e) {
+          log.error("Error during auto-warming of key: {}", entry.getKey(), e);
         }
+      }
+    } else {
+      // Multi-threaded code path
+      final int nThreads =
+          autowarmThreads > 0 ? autowarmThreads : Runtime.getRuntime().availableProcessors();
+
+      // Since we are using a SynchronousQueue with no capacity we need to make sure we fallback to
+      // a blocking put() when adding to the queue fails due to lack of capacity or no thread ready
+      // to execute the Runnable.
+      final RejectedExecutionHandler rejectedHandler =
+          new RejectedExecutionHandler() {
+            @Override
+            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+              if (executor.isShutdown()) return;
+              try {
+                executor.getQueue().put(r);
+              } catch (InterruptedException ex) {
+                throw new RejectedExecutionException(ex);
+              }
+            }
+          };
+
+      final ExecutorService warmingExecutor =
+          new ExecutorUtil.MDCAwareThreadPoolExecutor(
+              nThreads,
+              nThreads,
+              0L,
+              TimeUnit.MILLISECONDS,
+              new SynchronousQueue<>(), // Avoid an unbounded queue to save memory
+              new NamedThreadFactory("Solr Cache Regen"),
+              rejectedHandler);
+
+      // This mimics the logic of the non-threaded code path to abort warming if any of the
+      // regenerateItem calls return false. However, as far as I can tell they all
+      // currently return true.
+      final AtomicBoolean continueRegen = new AtomicBoolean(true);
+
+      try {
+        hottest
+            .entrySet()
+            .forEach(
+                entry ->
+                    warmingExecutor.execute(
+                        () -> {
+                          try {
+                            if (continueRegen.get()) {
+                              if (log.isTraceEnabled()) {
+                                log.trace("Regenerating: {}", entry.getKey());
+                              }
+                              boolean res =
+                                  regenerator.regenerateItem(
+                                      searcher, this, old, entry.getKey(), entry.getValue());
+                              if (!res) continueRegen.set(false);
+                            }
+                          } catch (Exception e) {
+                            log.error("Error during auto-warming of key: {}", entry.getKey(), e);
+                          }
+                        }));
       } catch (Exception e) {
-        log.error("Error during auto-warming of key: {}", entry.getKey(), e);
+        log.error("Error during multi-threaded auto-warming.", e);
+      } finally {
+        warmingExecutor.shutdown();
+        try {
+          warmingExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException ex) {
+          // Ignore
+        }
       }
     }
 
