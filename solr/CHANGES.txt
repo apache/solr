@@ -91,6 +91,10 @@ Improvements
 
 * SOLR-14667: Make zkClientTimeout consistent and based on a system property. The defauls values are stored in a single place referenced everywhere and they are based on system properties (Alex Deparvu)
 
+* SOLR-16926: The embedded Zookeeper's bind host can now be overridden, but still defaults to "127.0.0.1".
+  This is useful when using the ZkCli on a remote Solr using the embedded ZK, or Solr running in a Docker container.
+  The SOLR_ZK_EMBEDDED_HOST envVar or -Dsolr.zk.embedded.host sysProp control this bind address. (Houston Putman)
+
 Optimizations
 ---------------------
 
