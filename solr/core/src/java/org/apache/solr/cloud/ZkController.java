@@ -31,16 +31,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -122,6 +118,7 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.AddressUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.CreateMode;
@@ -883,35 +880,8 @@ public class ZkController implements Closeable {
   // normalize host removing any url scheme.
   // input can be null, host, or url_prefix://host
   private String normalizeHostName(String host) {
-
     if (host == null || host.length() == 0) {
-      String hostaddress;
-      try {
-        hostaddress = InetAddress.getLocalHost().getHostAddress();
-      } catch (UnknownHostException e) {
-        hostaddress = "127.0.0.1"; // cannot resolve system hostname, fall through
-      }
-      // Re-get the IP again for "127.0.0.1", the other case we trust the hosts
-      // file is right.
-      if ("127.0.0.1".equals(hostaddress)) {
-        Enumeration<NetworkInterface> netInterfaces = null;
-        try {
-          netInterfaces = NetworkInterface.getNetworkInterfaces();
-          while (netInterfaces.hasMoreElements()) {
-            NetworkInterface ni = netInterfaces.nextElement();
-            Enumeration<InetAddress> ips = ni.getInetAddresses();
-            while (ips.hasMoreElements()) {
-              InetAddress ip = ips.nextElement();
-              if (ip.isSiteLocalAddress()) {
-                hostaddress = ip.getHostAddress();
-              }
-            }
-          }
-        } catch (Exception e) {
-          log.error("Error while looking for a better host name than 127.0.0.1", e);
-        }
-      }
-      host = hostaddress;
+      host = AddressUtils.getHostToAdvertise();
     } else {
       if (URLUtil.hasScheme(host)) {
         host = URLUtil.removeScheme(host);

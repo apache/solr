@@ -1970,6 +1970,10 @@ if [ -n "${SOLR_JETTY_HOST:-}" ]; then
   SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
 fi
 
+if [ -n "${SOLR_ZK_EMBEDDED_HOST:-}" ]; then
+  SOLR_OPTS+=("-Dsolr.zk.embedded.host=$SOLR_ZK_EMBEDDED_HOST")
+fi
+
 : "${STOP_PORT:=$((SOLR_PORT - 1000))}"
 
 if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] ; then
