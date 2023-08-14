@@ -22,7 +22,6 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
-
 import org.apache.solr.common.util.NamedList;
 
 public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {

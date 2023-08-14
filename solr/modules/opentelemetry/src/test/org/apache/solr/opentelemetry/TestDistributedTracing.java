@@ -22,13 +22,11 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -85,47 +83,51 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     // Indexing
-      cloudClient.add(COLLECTION, sdoc("id", "1"));
-      var finishedSpans = getAndClearSpans();
-      finishedSpans.removeIf(span -> span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
-          || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/update"));
-      assertEquals(2, finishedSpans.size());
-      assertOneSpanIsChildOfAnother(finishedSpans);
-      // core because cloudClient routes to core
-      assertEquals("post:/{core}/update", finishedSpans.get(0).getName());
-      assertCoreName(finishedSpans.get(0));
-  
+    cloudClient.add(COLLECTION, sdoc("id", "1"));
+    var finishedSpans = getAndClearSpans();
+    finishedSpans.removeIf(
+        span ->
+            span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
+                || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/update"));
+    assertEquals(2, finishedSpans.size());
+    assertOneSpanIsChildOfAnother(finishedSpans);
+    // core because cloudClient routes to core
+    assertEquals("post:/{core}/update", finishedSpans.get(0).getName());
+    assertCoreName(finishedSpans.get(0));
+
     cloudClient.add(COLLECTION, sdoc("id", "2"));
-      cloudClient.add(COLLECTION, sdoc("id", "3"));
-      cloudClient.add(COLLECTION, sdoc("id", "4"));
-      cloudClient.commit(COLLECTION);
-      getAndClearSpans();
-  
-      // Searching
-      cloudClient.query(COLLECTION, new SolrQuery("*:*"));
-      finishedSpans = getAndClearSpans();
-      finishedSpans.removeIf(span -> span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
-          || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/select"));
-      // one from client to server, 2 for execute query, 2 for fetching documents
-      assertEquals(5, finishedSpans.size());
-      assertEquals(1, finishedSpans.stream().filter(TestDistributedTracing::isRootSpan).count());
-      var parentTraceId =
-          finishedSpans.stream()
-              .filter(TestDistributedTracing::isRootSpan)
-              .collect(Collectors.toList())
-              .get(0)
-              .getSpanContext()
-              .getTraceId();
-      for (var span : finishedSpans) {
-        if (isRootSpan(span)) {
-          continue;
-        }
-        assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
-        assertEquals(span.getTraceId(), parentTraceId);
+    cloudClient.add(COLLECTION, sdoc("id", "3"));
+    cloudClient.add(COLLECTION, sdoc("id", "4"));
+    cloudClient.commit(COLLECTION);
+    getAndClearSpans();
+
+    // Searching
+    cloudClient.query(COLLECTION, new SolrQuery("*:*"));
+    finishedSpans = getAndClearSpans();
+    finishedSpans.removeIf(
+        span ->
+            span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
+                || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/select"));
+    // one from client to server, 2 for execute query, 2 for fetching documents
+    assertEquals(5, finishedSpans.size());
+    assertEquals(1, finishedSpans.stream().filter(TestDistributedTracing::isRootSpan).count());
+    var parentTraceId =
+        finishedSpans.stream()
+            .filter(TestDistributedTracing::isRootSpan)
+            .collect(Collectors.toList())
+            .get(0)
+            .getSpanContext()
+            .getTraceId();
+    for (var span : finishedSpans) {
+      if (isRootSpan(span)) {
+        continue;
       }
-      assertEquals("get:/{core}/select", finishedSpans.get(0).getName());
-      assertCoreName(finishedSpans.get(0));
+      assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
+      assertEquals(span.getTraceId(), parentTraceId);
     }
+    assertEquals("get:/{core}/select", finishedSpans.get(0).getName());
+    assertCoreName(finishedSpans.get(0));
+  }
 
   @Test
   public void testAdminApi() throws Exception {
@@ -141,41 +143,40 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals("list:/admin/collections", finishedSpans.get(0).getName());
   }
 
-    @Test
-    public void testV2Api() throws Exception {
-      getAndClearSpans(); // reset
-      CloudSolrClient cloudClient = cluster.getSolrClient();
+  @Test
+  public void testV2Api() throws Exception {
+    getAndClearSpans(); // reset
+    CloudSolrClient cloudClient = cluster.getSolrClient();
 
-      new V2Request.Builder("/collections/" + COLLECTION + "/reload")
-          .withMethod(SolrRequest.METHOD.POST)
-          .withPayload("{}")
-          .build()
-          .process(cloudClient);
-  var    finishedSpans = getAndClearSpans();
-      assertEquals("post:/collections/{collection}/reload", finishedSpans.get(0).getName());
-      assertCollectionName(finishedSpans.get(0));
+    new V2Request.Builder("/collections/" + COLLECTION + "/reload")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{}")
+        .build()
+        .process(cloudClient);
+    var finishedSpans = getAndClearSpans();
+    assertEquals("post:/collections/{collection}/reload", finishedSpans.get(0).getName());
+    assertCollectionName(finishedSpans.get(0));
 
-          new V2Request.Builder("/c/" + COLLECTION + "/update/json")
-          .withMethod(SolrRequest.METHOD.POST)
-          .withPayload("{\n" + " \"id\" : \"9\"\n" + "}")
-          .withParams(params("commit", "true"))
-          .build()
-          .process(cloudClient);
-      finishedSpans = getAndClearSpans();
-      assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).getName());
-      assertCollectionName(finishedSpans.get(0));
+    new V2Request.Builder("/c/" + COLLECTION + "/update/json")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{\n" + " \"id\" : \"9\"\n" + "}")
+        .withParams(params("commit", "true"))
+        .build()
+        .process(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).getName());
+    assertCollectionName(finishedSpans.get(0));
 
-          final V2Response v2Response =
-          new V2Request.Builder("/c/" + COLLECTION + "/select")
-              .withMethod(SolrRequest.METHOD.GET)
-              .withParams(params("q", "id:9"))
-              .build()
-              .process(cloudClient);
-      finishedSpans = getAndClearSpans();
-      assertEquals("get:/c/{collection}/select", finishedSpans.get(0).getName());
-      assertCollectionName(finishedSpans.get(0));
-      assertEquals(1, ((SolrDocumentList)
-   v2Response.getResponse().get("response")).getNumFound());
+    final V2Response v2Response =
+        new V2Request.Builder("/c/" + COLLECTION + "/select")
+            .withMethod(SolrRequest.METHOD.GET)
+            .withParams(params("q", "id:9"))
+            .build()
+            .process(cloudClient);
+    finishedSpans = getAndClearSpans();
+    assertEquals("get:/c/{collection}/select", finishedSpans.get(0).getName());
+    assertCollectionName(finishedSpans.get(0));
+    assertEquals(1, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
   }
 
   private static boolean isRootSpan(SpanData span) {

@@ -25,11 +25,8 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-
 import java.util.function.Consumer;
-
 import javax.servlet.http.HttpServletRequest;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -50,7 +47,8 @@ public class TraceUtils {
   public static final AttributeKey<String> TAG_HTTP_METHOD = AttributeKey.stringKey("http.method");
   public static final AttributeKey<String> TAG_HTTP_URL = AttributeKey.stringKey("http.url");
   public static final AttributeKey<String> TAG_HTTP_PARAMS = AttributeKey.stringKey("http.params");
-  public static final AttributeKey<String> TAG_RESPONSE_WRITER = AttributeKey.stringKey("responseWriter");
+  public static final AttributeKey<String> TAG_RESPONSE_WRITER =
+      AttributeKey.stringKey("responseWriter");
   public static final AttributeKey<String> TAG_CONTENT_TYPE = AttributeKey.stringKey("contentType");
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
