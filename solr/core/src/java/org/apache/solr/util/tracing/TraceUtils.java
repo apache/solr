@@ -62,7 +62,9 @@ public class TraceUtils {
   }
 
   public static void setCoreOrColName(SolrQueryRequest req, String coreOrColl) {
-    setCoreOrColName(req.getSpan(), coreOrColl);
+    if (req != null) {
+      setCoreOrColName(req.getSpan(), coreOrColl);
+    }
   }
 
   public static void setCoreOrColName(Span span, String coreOrColName) {
