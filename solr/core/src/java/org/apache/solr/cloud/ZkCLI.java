@@ -42,6 +42,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.solr.cli.CLIO;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -299,8 +300,9 @@ public class ZkCLI implements CLIO {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkServerAddress)
-              .withTimeout(30000, TimeUnit.MILLISECONDS)
-              .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+              .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(
+                  SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT, TimeUnit.MILLISECONDS)
               .withReconnectListener(() -> {})
               .withCompressor(compressor)
               .build()) {
