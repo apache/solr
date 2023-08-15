@@ -979,29 +979,12 @@ public class HttpSolrCall {
       }
 
       if (Method.HEAD != reqMethod) {
-        writeQueryResponseWithTracing(responseWriter, solrRsp, ct);
+        OutputStream out = response.getOutputStream();
+        QueryResponseWriterUtil.writeQueryResponse(out, responseWriter, solrReq, solrRsp, ct);
       }
       // else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {
       log.info("Unable to write response, client closed connection or we are shutting down", e);
-    }
-  }
-
-  private void writeQueryResponseWithTracing(
-      QueryResponseWriter responseWriter, SolrQueryResponse solrResponse, String contentType)
-      throws IOException {
-
-    Tracer tracer = TraceUtils.getTracer(req);
-    Span span = tracer.spanBuilder(TraceUtils.WRITE_QUERY_RESPONSE_SPAN_NAME).startSpan();
-    try (var scope = span.makeCurrent()) {
-      assert scope != null; // prevent javac warning about scope being unused
-      span.setAttribute(TraceUtils.TAG_RESPONSE_WRITER, responseWriter.getClass().getSimpleName());
-      span.setAttribute(TraceUtils.TAG_CONTENT_TYPE, contentType);
-      OutputStream out = response.getOutputStream();
-      QueryResponseWriterUtil.writeQueryResponse(
-          out, responseWriter, solrReq, solrResponse, contentType);
-    } finally {
-      span.end();
     }
   }
 

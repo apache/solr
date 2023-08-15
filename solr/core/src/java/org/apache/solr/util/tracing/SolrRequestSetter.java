@@ -20,6 +20,9 @@ package org.apache.solr.util.tracing;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import org.apache.solr.client.solrj.SolrRequest;
 
+/**
+ * {@code SolrRequest} aware {@code TextMapSetter} that allows header data to be added to a request
+ */
 public class SolrRequestSetter implements TextMapSetter<SolrRequest<?>> {
 
   @Override

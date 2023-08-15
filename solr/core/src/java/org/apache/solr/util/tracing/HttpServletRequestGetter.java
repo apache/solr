@@ -20,6 +20,9 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 import java.util.Iterator;
 import javax.servlet.http.HttpServletRequest;
 
+/**
+ * {@code HttpServletRequest} aware {@code TextMapGetter} that allows header data to be extracted from a request
+ */
 public class HttpServletRequestGetter implements TextMapGetter<HttpServletRequest> {
 
   @Override
