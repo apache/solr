@@ -43,7 +43,7 @@ public class TraceUtils {
   public static final AttributeKey<String> TAG_DB = AttributeKey.stringKey("db.instance");
   public static final AttributeKey<String> TAG_DB_TYPE = AttributeKey.stringKey("db.type");
   public static final AttributeKey<String> TAG_USER = AttributeKey.stringKey("db.user");
-  public static final AttributeKey<Long> TAG_HTTP_STATUS = AttributeKey.longKey("http.status");
+  public static final AttributeKey<Long> TAG_HTTP_STATUS = AttributeKey.longKey("http.status_code");
   public static final AttributeKey<String> TAG_HTTP_METHOD = AttributeKey.stringKey("http.method");
   public static final AttributeKey<String> TAG_HTTP_URL = AttributeKey.stringKey("http.url");
   public static final AttributeKey<String> TAG_HTTP_PARAMS = AttributeKey.stringKey("http.params");

@@ -44,6 +44,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -507,15 +508,12 @@ public class V2HttpCall extends HttpSolrCall {
     // if this api has commands ...
     final Map<String, JsonSchemaValidator> validators = getValidators(); // should be cached
     if (validators != null && validators.isEmpty() == false && solrReq != null) {
-      //      boolean validateInput = true; // because getCommands caches it; and we want it
-      // validated later
+      boolean validateInput = true; // because getCommands caches it; and we want it validated later
       // does this request have one command?
-      // this can clash with other calls to read commands via CommandOperation.readCommands
-      // see "org.apache.solr.security.jwt.JWTAuthPluginIntegrationTest.testMetrics"
-      //   List<CommandOperation> cmds = solrReq.getCommands(validateInput);
-      //      if (cmds.size() == 1) {
-      //        verb = cmds.get(0).name;
-      //      }
+      List<CommandOperation> cmds = solrReq.getCommands(validateInput);
+      if (cmds.size() == 1) {
+        verb = cmds.get(0).name;
+      }
     }
     if (verb == null) {
       verb = req.getMethod().toLowerCase(Locale.ROOT);
