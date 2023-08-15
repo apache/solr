@@ -117,7 +117,7 @@ public abstract class AdminAPIBase extends JerseyResource {
   public static void recordCollectionForLogAndTracing(
       String collection, SolrQueryRequest solrQueryRequest) {
     MDCLoggingContext.setCollection(collection);
-    TraceUtils.setCoreOrColName(solrQueryRequest, collection);
+    TraceUtils.setDbInstance(solrQueryRequest, collection);
   }
 
   public void disableResponseCaching() {

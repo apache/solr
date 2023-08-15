@@ -46,7 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Various Util methods for interaction on servlet level, i.e. HttpServletRequest */
-public final class ServletUtils {
+public abstract class ServletUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static String CLOSE_STREAM_MSG =

@@ -26,6 +26,12 @@ import org.apache.solr.common.util.NamedList;
 
 public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
 
+  static {
+    if (System.getProperty("host") == null) {
+      System.setProperty("host", "localhost");
+    }
+  }
+
   private static final InMemorySpanExporter exporter = InMemorySpanExporter.create();
   private static volatile boolean isRegistered = false;
   private static OpenTelemetrySdk otelSdk = null;

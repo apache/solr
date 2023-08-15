@@ -61,13 +61,13 @@ public class TraceUtils {
     return GlobalOpenTelemetry.getPropagators().getTextMapPropagator();
   }
 
-  public static void setCoreOrColName(SolrQueryRequest req, String coreOrColl) {
+  public static void setDbInstance(SolrQueryRequest req, String coreOrColl) {
     if (req != null) {
-      setCoreOrColName(req.getSpan(), coreOrColl);
+      setDbInstance(req.getSpan(), coreOrColl);
     }
   }
 
-  public static void setCoreOrColName(Span span, String coreOrColName) {
+  public static void setDbInstance(Span span, String coreOrColName) {
     if (coreOrColName != null) {
       span.setAttribute(TAG_DB, coreOrColName);
     }

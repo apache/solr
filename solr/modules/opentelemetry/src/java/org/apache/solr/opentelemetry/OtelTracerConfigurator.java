@@ -65,7 +65,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
     setDefaultIfNotConfigured("OTEL_PROPAGATORS", "tracecontext,baggage");
-    addOtelResourceAttributes(Map.of("host.name", System.getProperty("host", "localhost")));
+    addOtelResourceAttributes(Map.of("host.name", System.getProperty("host")));
 
     final String currentConfig = getCurrentOtelConfigAsString();
     log.info("OpenTelemetry tracer enabled with configuration: {}", currentConfig);

@@ -33,7 +33,6 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,7 +49,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -626,14 +624,14 @@ public class HttpSolrCall {
         "handleOrForwardRequest should not be invoked when serving v1 requests.");
   }
 
-  /** Get the Tracer for this request. Not null. */
-  public Tracer getTracer() {
-    return Objects.requireNonNull(TraceUtils.getTracer(req));
-  }
-
   /** Get the Span for this request. Not null. */
   public Span getSpan() {
-    return Objects.requireNonNull(TraceUtils.getSpan(req));
+    var s = TraceUtils.getSpan(req);
+    if (s != null) {
+      return s;
+    } else {
+      return Span.getInvalid();
+    }
   }
 
   // called after init().
@@ -643,7 +641,7 @@ public class HttpSolrCall {
     if (coreOrColName == null && getCore() != null) {
       coreOrColName = getCore().getName();
     }
-    TraceUtils.setCoreOrColName(span, coreOrColName);
+    TraceUtils.setDbInstance(span, coreOrColName);
 
     // Set operation name.
     String path = getPath();

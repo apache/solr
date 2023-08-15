@@ -498,7 +498,7 @@ public class V2HttpCall extends HttpSolrCall {
         coreOrColName = pathTemplateValues.get("core");
       }
     }
-    TraceUtils.setCoreOrColName(span, coreOrColName);
+    TraceUtils.setDbInstance(span, coreOrColName);
 
     // Get the templatize-ed path, ex: "/c/{collection}"
     final String path = computeEndpointPath();

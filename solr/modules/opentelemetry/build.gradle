@@ -27,8 +27,6 @@ dependencies {
   implementation 'org.slf4j:slf4j-api'
 
   implementation 'io.opentelemetry:opentelemetry-api'
-  implementation 'io.opentelemetry:opentelemetry-sdk'
-  implementation 'io.opentelemetry:opentelemetry-sdk-trace'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
   runtimeOnly 'io.opentelemetry:opentelemetry-exporter-otlp'
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
@@ -45,5 +43,7 @@ dependencies {
 
   testImplementation project(':solr:test-framework')
   testImplementation 'junit:junit'
+  testImplementation 'io.opentelemetry:opentelemetry-sdk'
+  testImplementation 'io.opentelemetry:opentelemetry-sdk-trace'
   testImplementation 'io.opentelemetry:opentelemetry-sdk-testing'
 }

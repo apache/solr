@@ -234,11 +234,12 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       request = wrappedRequest.get();
     }
 
+    var span = getSpan(request);
     if (getCores().getAuthenticationPlugin() != null) {
       if (log.isDebugEnabled()) {
         log.debug("User principal: {}", request.getUserPrincipal());
       }
-      TraceUtils.setUser(getSpan(request), String.valueOf(request.getUserPrincipal()));
+      TraceUtils.setUser(span, String.valueOf(request.getUserPrincipal()));
     }
 
     HttpSolrCall call = getHttpSolrCall(request, response, retry);
@@ -247,12 +248,15 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       Action result = call.call();
       switch (result) {
         case PASSTHROUGH:
+          span.addEvent("SolrDispatchFilter PASSTHROUGH");
           chain.doFilter(request, response);
           break;
         case RETRY:
+          span.addEvent("SolrDispatchFilter RETRY");
           doFilter(request, response, chain, true); // RECURSION
           break;
         case FORWARD:
+          span.addEvent("SolrDispatchFilter FORWARD");
           request.getRequestDispatcher(call.getPath()).forward(request, response);
           break;
         case ADMIN:

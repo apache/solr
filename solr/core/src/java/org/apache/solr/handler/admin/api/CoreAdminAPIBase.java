@@ -83,7 +83,7 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
           new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(taskId);
 
       MDCLoggingContext.setCoreName(coreName);
-      TraceUtils.setCoreOrColName(req, coreName);
+      TraceUtils.setDbInstance(req, coreName);
       if (taskId == null) {
         return supplier.get();
       } else {
