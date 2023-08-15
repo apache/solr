@@ -43,13 +43,23 @@ public class TraceUtils {
   public static final AttributeKey<String> TAG_DB = AttributeKey.stringKey("db.instance");
   public static final AttributeKey<String> TAG_DB_TYPE = AttributeKey.stringKey("db.type");
   public static final AttributeKey<String> TAG_USER = AttributeKey.stringKey("db.user");
-  public static final AttributeKey<Long> TAG_HTTP_STATUS = AttributeKey.longKey("http.status_code");
-  public static final AttributeKey<String> TAG_HTTP_METHOD = AttributeKey.stringKey("http.method");
+  public static final AttributeKey<Long> TAG_HTTP_STATUS =
+      AttributeKey.longKey("http.response.status_code");
+  public static final AttributeKey<String> TAG_HTTP_METHOD =
+      AttributeKey.stringKey("http.request.method");
   public static final AttributeKey<String> TAG_HTTP_URL = AttributeKey.stringKey("http.url");
   public static final AttributeKey<String> TAG_HTTP_PARAMS = AttributeKey.stringKey("http.params");
   public static final AttributeKey<String> TAG_RESPONSE_WRITER =
       AttributeKey.stringKey("responseWriter");
   public static final AttributeKey<String> TAG_CONTENT_TYPE = AttributeKey.stringKey("contentType");
+
+  @Deprecated
+  private static final AttributeKey<String> TAG_HTTP_METHOD_DEP =
+      AttributeKey.stringKey("http.method");
+
+  @Deprecated
+  private static final AttributeKey<Long> TAG_HTTP_STATUS_DEP =
+      AttributeKey.longKey("http.status_code");
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
 
@@ -79,6 +89,7 @@ public class TraceUtils {
 
   public static void setHttpStatus(Span span, int httpStatus) {
     span.setAttribute(TAG_HTTP_STATUS, httpStatus);
+    span.setAttribute(TAG_HTTP_STATUS_DEP, httpStatus);
   }
 
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
@@ -121,6 +132,7 @@ public class TraceUtils {
             .setParent(context)
             .setSpanKind(SpanKind.SERVER)
             .setAttribute(TAG_HTTP_METHOD, request.getMethod())
+            .setAttribute(TAG_HTTP_METHOD_DEP, request.getMethod())
             .setAttribute(TAG_HTTP_URL, request.getRequestURL().toString());
     if (request.getQueryString() != null) {
       spanBuilder.setAttribute(TAG_HTTP_PARAMS, request.getQueryString());
