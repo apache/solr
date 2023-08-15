@@ -1915,12 +1915,28 @@ function start_solr() {
         -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG \
 	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
-    # check if /proc/sys/kernel/random/entropy_avail exists then check output of cat /proc/sys/kernel/random/entropy_avail to see if less than 300
-    if [[ -f /proc/sys/kernel/random/entropy_avail ]] && (( $(cat /proc/sys/kernel/random/entropy_avail) < 300)); then
-	echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
-	echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
-	echo ""
+  entropy_threshold=300
+  # Determine if the operating system is Ubuntu
+  os_name=$(lsb_release -is)
+  if [[ "$os_name" == "Ubuntu" ]]; then
+    # Get the kernel version
+    kernel_version=$(uname -r | awk -F. '{print $1"."$2}')
+    # Set entropy threshold based on kernel version
+    if [[ $(echo "$kernel_version >= 5.15" | bc) -eq 1 ]]; then
+      # For kernels 5.15 and newer
+      entropy_threshold=64  # Adjusted for 256 pool size (approx 25% of 256)
+    else
+      # For older kernels
+      entropy_threshold=300  # Original threshold for 4096 pool size
     fi
+  fi
+
+        # Check entropy and display warning if below threshold
+    if [[ -f /proc/sys/kernel/random/entropy_avail ]] && (( $(cat /proc/sys/kernel/random/entropy_avail) < $entropy_threshold)); then
+      echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
+      echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
+    fi
+
     # no lsof on cygwin though
     if lsof -v 2>&1 | grep -q revision; then
       echo -n "Waiting up to $SOLR_START_WAIT seconds to see Solr running on port $SOLR_PORT"
