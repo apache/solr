@@ -987,6 +987,7 @@ public class Http2SolrClient extends SolrClient {
   private static class AsyncTracker {
     private static final int MAX_OUTSTANDING_REQUESTS =
         Integer.parseInt(System.getProperty("solr.http2.maxOutstandingRequests", "1000"));
+    private static final int MAX_REQUESTS_QUEUED_PER_DESTINATION = 3000;
 
     // wait for async requests
     private final Phaser phaser;
@@ -1016,9 +1017,7 @@ public class Http2SolrClient extends SolrClient {
     }
 
     int getMaxRequestsQueuedPerDestination() {
-      // comfortably above max outstanding requests
-      // constant above MAX_OUTSTANDING_REQUESTS, not linear function
-      return MAX_OUTSTANDING_REQUESTS + 2000;
+      return MAX_REQUESTS_QUEUED_PER_DESTINATION;
     }
 
     public void waitForComplete() {
