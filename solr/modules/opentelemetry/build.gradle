@@ -21,15 +21,15 @@ description = 'Open Telemetry (OTEL) tracer'
 
 dependencies {
   implementation project(':solr:core')
+  implementation project(':solr:solrj')
 
   implementation platform('io.opentelemetry:opentelemetry-bom')
   implementation 'org.slf4j:slf4j-api'
 
-  implementation 'io.opentelemetry:opentelemetry-api-events'
+  implementation 'io.opentelemetry:opentelemetry-api'
   implementation 'io.opentelemetry:opentelemetry-sdk'
   implementation 'io.opentelemetry:opentelemetry-sdk-trace'
   implementation 'io.opentelemetry:opentelemetry-sdk-extension-autoconfigure'
-  implementation 'io.opentelemetry:opentelemetry-semconv'
   runtimeOnly 'io.opentelemetry:opentelemetry-exporter-otlp'
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
@@ -44,9 +44,6 @@ dependencies {
   compileOnly 'org.apache.tomcat:annotations-api'
 
   testImplementation project(':solr:test-framework')
-  testImplementation project(':solr:solrj')
-  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
   testImplementation 'io.opentelemetry:opentelemetry-sdk-testing'
-
 }
