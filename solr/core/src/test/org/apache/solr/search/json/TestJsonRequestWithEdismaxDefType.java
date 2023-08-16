@@ -15,40 +15,51 @@
  * limitations under the License.
  */
 package org.apache.solr.search.json;
-
+import java.io.File;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.util.SolrClientTestRule;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import java.nio.file.Path;
 
 
 public class TestJsonRequestWithEdismaxDefType extends SolrTestCaseHS {
-
+  private static final String COLLECTION_NAME = "collection1";
+  private static final int NUM_TECHPRODUCTS_DOCS = 32;
+  private static final int NUM_IN_STOCK = 17;
+  private static final int NUM_ELECTRONICS = 12;
+  private static final int NUM_CURRENCY = 4;
+  private static final int NUM_MEMORY = 3;
+  private static final int NUM_CORSAIR = 3;
+  private static final int NUM_BELKIN = 2;
+  private static final int NUM_CANON = 2;
   @ClassRule
   public static final SolrClientTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
-
+  
   public void test() throws Exception {
+    solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
+    
 
-    final var configSet = LuceneTestCase.createTempDir();
-    copyMinConf(configSet.toFile());
-
-    solrClientTestRule.startSolr();
     solrClientTestRule
-        .newCollection()
-        .withConfigSet(configSet.toString())
+        .newCollection(COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .create();
 
-    final var client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(COLLECTION_NAME);
 
     client.request(new ConfigRequest("{"
-        + "  'add-requesthandler':{"
+        + "  'update-requesthandler':{"
         + "    'name':'/query',"
         + "    'class':'solr.SearchHandler',"
         + "    'defaults' : {'defType':'edismax'}"
@@ -75,8 +86,25 @@ public class TestJsonRequestWithEdismaxDefType extends SolrTestCaseHS {
   
   private static void doQuery(SolrClient client) throws Exception {
     final var jsonQuery =
-        "{\"query\":{\"bool\":{\"should\":[{\"lucene\":{\"query\":\"id:1\"}}, \"id:2\"]}}, \"params\":{\"debug\":\"true\"}}";
+        "{\"query\":{\"bool\":{\"should\":[{\"lucene\":{\"query\":\"id:1\"}}, \"id:2\"]}}}";
     SolrTestCaseHS.assertJQ(client, params("json", jsonQuery, "qt", "/query"), "response/numFound==2");
+  }
+
+  // write an elevation config file to boost some docs
+  private void writeElevationConfigFile(File file, String query, String... ids) throws Exception {
+    try (PrintWriter out =
+        new PrintWriter(Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8))) {
+      out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
+      out.println("<elevate>");
+      out.println("<query text=\"" + query + "\">");
+      for (String id : ids) {
+        out.println(" <doc id=\"" + id + "\"/>");
+      }
+      out.println("</query>");
+      out.println("</elevate>");
+      out.flush();
+    }
+
   }
 
 }
