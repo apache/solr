@@ -57,6 +57,8 @@ Bug Fixes
 
 * PR#1826: Allow looking up Solr Package repo when that URL references a raw repository.json hosted on Github when the file is JSON but the mimetype used is text/plain. (Eric Pugh)
 
+* SOLR-16859: Missing Proxy support for Http2SolrClient (Alex Deparvu)
+
 Dependency Upgrades
 ---------------------
 (No changes)

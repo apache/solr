@@ -76,7 +76,12 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.Origin.Address;
+import org.eclipse.jetty.client.Origin.Protocol;
 import org.eclipse.jetty.client.ProtocolHandlers;
+import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -281,6 +286,8 @@ public class Http2SolrClient extends SolrClient {
     if (builder.connectionTimeoutMillis != null)
       httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
 
+    setupProxy(builder, httpClient);
+
     try {
       httpClient.start();
     } catch (Exception e) {
@@ -289,6 +296,29 @@ public class Http2SolrClient extends SolrClient {
     }
 
     return httpClient;
+  }
+
+  private void setupProxy(Builder builder, HttpClient httpClient) {
+    if (builder.proxyHost == null) {
+      return;
+    }
+    Address address = new Address(builder.proxyHost, builder.proxyPort);
+
+    final ProxyConfiguration.Proxy proxy;
+    if (builder.proxyIsSocks4) {
+      proxy = new Socks4Proxy(address, builder.proxyIsSecure);
+    } else {
+      final Protocol protocol;
+      if (builder.useHttp1_1) {
+        protocol = HttpClientTransportOverHTTP.HTTP11;
+      } else {
+        // see HttpClientTransportOverHTTP2#newOrigin
+        String protocolName = builder.proxyIsSecure ? "h2" : "h2c";
+        protocol = new Protocol(List.of(protocolName), false);
+      }
+      proxy = new HttpProxy(address, builder.proxyIsSecure, protocol);
+    }
+    httpClient.getProxyConfiguration().addProxy(proxy);
   }
 
   @Override
@@ -1046,6 +1076,10 @@ public class Http2SolrClient extends SolrClient {
     protected ResponseParser responseParser;
     private Set<String> urlParamNames;
     private CookieStore cookieStore = getDefaultCookieStore();
+    private String proxyHost;
+    private int proxyPort;
+    private boolean proxyIsSocks4;
+    private boolean proxyIsSecure;
 
     public Builder() {}
 
@@ -1267,6 +1301,24 @@ public class Http2SolrClient extends SolrClient {
      */
     public Builder withCookieStore(CookieStore cookieStore) {
       this.cookieStore = cookieStore;
+      return this;
+    }
+
+    /**
+     * Setup a proxy
+     *
+     * @param host The proxy host
+     * @param port The proxy port
+     * @param isSocks4 If true creates an SOCKS 4 proxy, otherwise creates an HTTP proxy
+     * @param isSecure If true enables the secure flag on the proxy
+     * @return this Builder
+     */
+    public Builder withProxyConfiguration(
+        String host, int port, boolean isSocks4, boolean isSecure) {
+      this.proxyHost = host;
+      this.proxyPort = port;
+      this.proxyIsSocks4 = isSocks4;
+      this.proxyIsSecure = isSecure;
       return this;
     }
   }
