@@ -83,7 +83,7 @@ public class StreamingSearch {
               .field("text3_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
               .field("int1_i_dv", integers().all());
       miniClusterState.index(collection, docGen, docs);
-      miniClusterState.forceMerge(collection, 5);
+      miniClusterState.waitForMerges(collection);
 
       zkHost = miniClusterState.zkHost;
 
