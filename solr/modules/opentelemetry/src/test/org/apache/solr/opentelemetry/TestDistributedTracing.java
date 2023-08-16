@@ -55,14 +55,13 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
 
+    assertTrue(
+        "Expecting active CustomOtelTracerConfigurator",
+        CustomTestOtelTracerConfigurator.isRegistered());
     assertNotEquals(
         "Expecting active otel, not noop impl",
         TracerProvider.noop(),
         GlobalOpenTelemetry.get().getTracerProvider());
-
-    assertTrue(
-        "Expecting active CustomOtelTracerConfigurator",
-        CustomTestOtelTracerConfigurator.isRegistered());
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 2)
         .process(cluster.getSolrClient());

@@ -17,6 +17,8 @@ Improvements
 
 * SOLR-16800: Solr CLI commands that use -solrUrl now work with a bare url like http://localhost:8983, you no longer need to add the /solr at the end. (Eric Pugh)
 
+* SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
+
 Optimizations
 ---------------------
 (No changes)

@@ -22,9 +22,14 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
     if (System.getProperty("host") == null) {
@@ -32,7 +37,7 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
     }
   }
 
-  private static final InMemorySpanExporter exporter = InMemorySpanExporter.create();
+  private static InMemorySpanExporter exporter;
   private static volatile boolean isRegistered = false;
   private static OpenTelemetrySdk otelSdk = null;
 
@@ -54,24 +59,32 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
       return;
     }
     isRegistered = true;
-
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "none");
     prepareConfiguration();
+    bootOtel();
+  }
 
-    otelSdk =
-        AutoConfiguredOpenTelemetrySdk.builder()
-            .setResultAsGlobal()
-            .addTracerProviderCustomizer(
-                (builder, props) -> builder.addSpanProcessor(SimpleSpanProcessor.create(exporter)))
-            .build()
-            .getOpenTelemetrySdk();
+  private static void bootOtel() {
+    try {
+      exporter = InMemorySpanExporter.create();
+      otelSdk =
+          AutoConfiguredOpenTelemetrySdk.builder()
+              .setResultAsGlobal()
+              .addTracerProviderCustomizer(
+                  (builder, props) ->
+                      builder.addSpanProcessor(SimpleSpanProcessor.create(exporter)))
+              .build()
+              .getOpenTelemetrySdk();
+    } catch (RuntimeException e) {
+      log.error("Error on OTEL init " + e.getMessage(), e);
+    }
   }
 
   public static InMemorySpanExporter getInMemorySpanExporter() {
     return exporter;
   }
 
-  public static boolean isRegistered() {
+  public static synchronized boolean isRegistered() {
     return isRegistered;
   }
 
@@ -80,6 +93,10 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
       isRegistered = false;
       if (otelSdk != null) {
         otelSdk.close();
+      }
+      if (exporter != null) {
+        exporter.close();
+        exporter = null;
       }
       GlobalOpenTelemetry.resetForTest();
     }
