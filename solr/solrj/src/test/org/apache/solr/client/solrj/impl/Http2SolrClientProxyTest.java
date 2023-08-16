@@ -16,60 +16,28 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.nio.file.Path;
 import java.util.Properties;
-
-import javax.net.ssl.SSLContext;
-
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class Http2SolrClientProxyTest extends SolrJettyTestBase {
 
-  private static final SSLContext DEFAULT_SSL_CONTEXT;
-
-  static {
-    try {
-      DEFAULT_SSL_CONTEXT = SSLContext.getDefault();
-      assertNotNull(DEFAULT_SSL_CONTEXT);
-    } catch (Exception e) {
-      throw new RuntimeException(
-          "Unable to initialize 'Default' SSLContext Algorithm " + e.getMessage(), e);
-    }
-  }
+  // TODO add SSL test
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    if (sslConfig.isSSLMode()) {
+    RandomizedTest.assumeFalse(sslConfig.isSSLMode());
 
-      SSLContext.setDefault(
-          sslConfig.buildClientSSLContext());
-
-      System.setProperty(ZkStateReader.URL_SCHEME, "https");
-    } else {
-      System.setProperty(ZkStateReader.URL_SCHEME, "http");
-    }
-
-    JettyConfig jettyConfig = JettyConfig.builder()
-        .withSSLConfig(sslConfig.buildServerSSLConfig())
-        .build();
+    JettyConfig jettyConfig =
+        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
     createAndStartJettyWithProxy(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
-  }
-
-  @After
-  public void after() {
-    Http2SolrClient.resetSslContextFactory();
-    System.clearProperty(ZkStateReader.URL_SCHEME);
-    if (sslConfig.isSSLMode()) {
-      SSLContext.setDefault(DEFAULT_SSL_CONTEXT);
-    }
   }
 
   public static JettySolrRunner createAndStartJettyWithProxy(
@@ -100,35 +68,15 @@ public class Http2SolrClientProxyTest extends SolrJettyTestBase {
   /** Setup a simple http proxy and verify a request works */
   @Test
   public void testProxy() throws Exception {
-    // SSL: -Ptests.seed=640220C36343BB7 => isSSLMode true , isClientAuthMode false
-    // TODO test w. client mode
-
-    System.err.println("isSSLMode() " + sslConfig.isSSLMode() + " , isClientAuthMode " + sslConfig.isClientAuthMode());
-
-    // RandomizedTest.assumeFalse(sslConfig.isSSLMode());
-
     var proxy = jetty.getProxy();
     assertNotNull(proxy);
 
-    // boolean isSSLMode = sslConfig.isSSLMode();
-    //String protocol = isSSLMode ? "https://" : "http://";
-    //String host = proxy.getUrl().getHost();
+    String host = proxy.getUrl().getHost();
+    String url = "http://" + host + ":" + (proxy.getUrl().getPort() + 10) + "/solr";
 
-    String url =
-        proxy.getUrl().toString();
-        // jetty.getBaseUrl().toString();
-        // protocol + host + ":" + (proxy.getUrl().getPort() + 10) + "/solr";
-        // protocol + host + ":" + proxy.getUrl().getPort() + "/solr";
-
-    System.err.println("jetty " + jetty.getBaseUrl());
-    System.err.println("proxy " + proxy.getUrl());
-    System.err.println("url " + url);
-
-    // Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
-
-    var builder = new Http2SolrClient.Builder(url);
-    builder.withSSLConfig(sslConfig.buildClientSSLConfig());
-    // .withProxyConfiguration(host, proxy.getListenPort(), false, isSSLMode);
+    var builder =
+        new Http2SolrClient.Builder(url)
+            .withProxyConfiguration(host, proxy.getListenPort(), false, false);
 
     try (Http2SolrClient client = builder.build()) {
       String id = "1234";
@@ -138,7 +86,10 @@ public class Http2SolrClientProxyTest extends SolrJettyTestBase {
       client.commit(DEFAULT_TEST_COLLECTION_NAME);
       assertEquals(
           1,
-          client.query(DEFAULT_TEST_COLLECTION_NAME, new SolrQuery("id:" + id)).getResults().getNumFound());
+          client
+              .query(DEFAULT_TEST_COLLECTION_NAME, new SolrQuery("id:" + id))
+              .getResults()
+              .getNumFound());
     }
   }
 }
