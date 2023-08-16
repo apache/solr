@@ -48,16 +48,14 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    CustomTestOtelTracerConfigurator.resetForTest();
+    // force early init
+    CustomTestOtelTracerConfigurator.prepareForTest();
 
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
 
-    assertTrue(
-        "Expecting active CustomOtelTracerConfigurator",
-        CustomTestOtelTracerConfigurator.isRegistered());
     assertNotEquals(
         "Expecting active otel, not noop impl",
         TracerProvider.noop(),

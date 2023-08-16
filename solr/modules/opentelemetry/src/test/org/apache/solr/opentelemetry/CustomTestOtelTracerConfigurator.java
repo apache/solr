@@ -44,7 +44,8 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
   @Override
   public synchronized Tracer getTracer() {
     if (!isRegistered) {
-      initTracer();
+      throw new IllegalStateException(
+          "Tracer is not initialized. you need to call #prepareForTest for correct setup");
     }
     return super.getTracer();
   }
@@ -54,13 +55,15 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
     // prevent parent from init otel
   }
 
-  private synchronized void initTracer() {
-    if (isRegistered) {
-      return;
-    }
+  public static synchronized void prepareForTest() {
+    CustomTestOtelTracerConfigurator.resetForTest();
     isRegistered = true;
-    setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "none");
-    prepareConfiguration();
+    System.setProperty("otel.traces.exporter", "none");
+
+    // force early init
+    CustomTestOtelTracerConfigurator tracer = new CustomTestOtelTracerConfigurator();
+    tracer.prepareConfiguration();
+
     bootOtel();
   }
 
@@ -84,10 +87,6 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
     return exporter;
   }
 
-  public static synchronized boolean isRegistered() {
-    return isRegistered;
-  }
-
   public static synchronized void resetForTest() {
     if (isRegistered) {
       isRegistered = false;
@@ -98,6 +97,7 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
         exporter.close();
         exporter = null;
       }
+      System.clearProperty("otel.traces.exporter");
       GlobalOpenTelemetry.resetForTest();
     }
   }
