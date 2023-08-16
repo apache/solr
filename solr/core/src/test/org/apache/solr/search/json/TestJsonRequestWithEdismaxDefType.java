@@ -19,63 +19,64 @@ package org.apache.solr.search.json;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.cloud.ConfigRequest;
+import org.apache.solr.util.SolrClientTestRule;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-@LuceneTestCase.SuppressCodecs({
-  "Lucene3x",
-  "Lucene40",
-  "Lucene41",
-  "Lucene42",
-  "Lucene45",
-  "Appending"
-})
+
 public class TestJsonRequestWithEdismaxDefType extends SolrTestCaseHS {
 
-  private static SolrInstances servers; // for distributed testing
+  @ClassRule
+  public static final SolrClientTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
 
-  @SuppressWarnings("deprecation")
-  @BeforeClass
-  public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
-    System.setProperty("solr.enableStreamBody", "true");
-    JSONTestUtil.failRepeatedKeys = true;
-    initCore("solrconfig-tlog-edismax.xml", "schema_latest.xml");
-  }
+  public void test() throws Exception {
 
-  @SuppressWarnings("deprecation")
-  @AfterClass
-  public static void afterTests() throws Exception {
-    JSONTestUtil.failRepeatedKeys = false;
-    systemClearPropertySolrDisableUrlAllowList();
-  }
+    final var configSet = LuceneTestCase.createTempDir();
+    copyMinConf(configSet.toFile());
 
-  @Test
-  public void testLocalJsonRequest() throws Exception {
-    doJsonRequest(Client.localClient);
-  }
+    solrClientTestRule.startSolr();
+    solrClientTestRule
+        .newCollection()
+        .withConfigSet(configSet.toString())
+        .create();
 
-  public static void doJsonRequest(Client client) throws Exception {
+    final var client = solrClientTestRule.getSolrClient();
+
+    client.request(new ConfigRequest("{"
+        + "  'add-requesthandler':{"
+        + "    'name':'/query',"
+        + "    'class':'solr.SearchHandler',"
+        + "    'defaults' : {'defType':'edismax'}"
+        + "  }"
+        + "}"));
+
     addDocs(client);
 
-    client.testJQ(
-        params(
-            "json",
-            "{\"query\":{\"bool\":{\"should\":[{\"lucene\":{\"query\":\"id:1\"}}, \"id:2\"]}}, \"params\":{\"debug\":\"true\"}}"),
-        "response/numFound==2");
+    doQuery(client);
+  }
+  
+  private static void addDocs(SolrClient client) throws Exception {
+    //client.deleteByQuery("*:*");
+    client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY"));
+    client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"));
+    client.add(sdoc("id", "3"));
+    client.commit();
+    client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ"));
+    client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ"));
+    client.commit();
+    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY"));
+    client.commit();
+  }
+  
+  private static void doQuery(SolrClient client) throws Exception {
+    final var jsonQuery =
+        "{\"query\":{\"bool\":{\"should\":[{\"lucene\":{\"query\":\"id:1\"}}, \"id:2\"]}}, \"params\":{\"debug\":\"true\"}}";
+    SolrTestCaseHS.assertJQ(client, params("json", jsonQuery, "qt", "/query"), "response/numFound==2");
   }
 
-  private static void addDocs(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
-    client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY"), null);
-    client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"), null);
-    client.add(sdoc("id", "3"), null);
-    client.commit();
-    client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ"), null);
-    client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ"), null);
-    client.commit();
-    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY"), null);
-    client.commit();
-  }
 }
