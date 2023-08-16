@@ -76,7 +76,7 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
               .build()
               .getOpenTelemetrySdk();
     } catch (RuntimeException e) {
-      log.error("Error on OTEL init " + e.getMessage(), e);
+      log.error("Error on OTEL init ", e);
     }
   }
 
