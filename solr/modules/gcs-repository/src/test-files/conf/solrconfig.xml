@@ -37,8 +37,10 @@
   </updateHandler>
 
   <requestHandler name="/select" class="solr.SearchHandler">
+    <queryResponseWriter name="json" class="solr.JSONResponseWriter" />
     <lst name="defaults">
       <str name="echoParams">explicit</str>
+      <str name="wt">json</str>
       <str name="indent">true</str>
       <str name="df">text</str>
     </lst>
