@@ -124,7 +124,8 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* PR#1846: Update io.opentelemetry to 1.29.0 (Alex Deparvu)
 
 Other Changes
 ---------------------
