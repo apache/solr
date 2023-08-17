@@ -147,6 +147,9 @@ fi
 : "${SOLR_STOP_WAIT:=180}"
 : "${SOLR_START_WAIT:=$SOLR_STOP_WAIT}" # defaulting to $SOLR_STOP_WAIT for backwards compatibility reasons
 
+: "${SOLR_PORT:=8983}"
+export SOLR_PORT
+
 # test that Java exists, is executable and correct version
 JAVA_VER=$("$JAVA" -version 2>&1)
 # shellcheck disable=SC2181
@@ -278,6 +281,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
 else
   SOLR_JETTY_CONFIG+=("--module=http")
 fi
+export SOLR_URL_SCHEME
 
 # Requestlog options
 if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
@@ -330,6 +334,7 @@ AUTHC_OPTS="${AUTHC_OPTS:-}${SOLR_AUTHENTICATION_OPTS:+ $SOLR_AUTHENTICATION_OPT
 
 # Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
 SOLR_TOOL_HOST="${SOLR_HOST:-localhost}"
+export SOLR_TOOL_HOST
 
 function print_usage() {
   CMD="${1:-}"
@@ -1483,8 +1488,6 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
   fi
   exit
 fi
-
-: "${SOLR_PORT:=8983}"
 
 if [ -n "${SOLR_PORT_ADVERTISE:-}" ]; then
   SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
