@@ -124,6 +124,8 @@ Bug Fixes
 
 * SOLR-16859: Missing Proxy support for Http2SolrClient (Alex Deparvu)
 
+* SOLR-16934: Allow Solr to read client (javax.net.ssl.*) trustStores and keyStores via SecurityManager. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 

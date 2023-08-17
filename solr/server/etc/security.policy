@@ -191,6 +191,12 @@ grant {
   permission java.io.FilePermission "${solr.jetty.truststore}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.jetty.truststore}${/}-", "read,write,delete,readlink";
 
+  permission java.io.FilePermission "${javax.net.ssl.keyStore}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${javax.net.ssl.keyStore}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${javax.net.ssl.trustStore}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${javax.net.ssl.trustStore}${/}-", "read,write,delete,readlink";
+
   permission java.io.FilePermission "${solr.install.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.install.dir}${/}-", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.install.symDir}", "read,write,delete,readlink";
