@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.tracing;
+package org.apache.solr.opentelemetry;
 
-import io.opentracing.mock.MockSpan;
-import io.opentracing.mock.MockTracer;
-import io.opentracing.util.GlobalTracer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,56 +37,60 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.util.LogLevel;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LogLevel("org.apache.solr.core.TracerConfigurator=trace")
 public class TestDistributedTracing extends SolrCloudTestCase {
+
   private static final String COLLECTION = "collection1";
 
-  static MockTracer tracer;
-
   @BeforeClass
-  public static void beforeTest() throws Exception {
-    tracer = new MockTracer();
-    assertTrue(GlobalTracer.registerIfAbsent(tracer));
+  public static void setupCluster() throws Exception {
+    // force early init
+    CustomTestOtelTracerConfigurator.prepareForTest();
 
     configureCluster(4)
-        .addConfig(
-            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
+        .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
+
+    assertNotEquals(
+        "Expecting active otel, not noop impl",
+        TracerProvider.noop(),
+        GlobalOpenTelemetry.get().getTracerProvider());
+
     CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 2)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
   }
 
   @AfterClass
-  public static void afterTest() {
-    tracer = null;
+  public static void afterClass() {
+    CustomTestOtelTracerConfigurator.resetForTest();
   }
 
   @Test
   public void test() throws IOException, SolrServerException {
     // TODO it would be clearer if we could compare the complete Span tree between reality
-    //   and what we assert it looks like in a structured visual way.
+    // and what we assert it looks like in a structured visual way.
 
+    getAndClearSpans(); // reset
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    List<MockSpan> finishedSpans;
 
     // Indexing
     cloudClient.add(COLLECTION, sdoc("id", "1"));
-    finishedSpans = getAndClearSpans();
-    finishedSpans.removeIf(x -> !x.tags().get("http.url").toString().endsWith("/update"));
+    var finishedSpans = getAndClearSpans();
+    finishedSpans.removeIf(
+        span ->
+            span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
+                || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/update"));
     assertEquals(2, finishedSpans.size());
     assertOneSpanIsChildOfAnother(finishedSpans);
     // core because cloudClient routes to core
-    assertEquals("post:/{core}/update", finishedSpans.get(0).operationName());
-    assertDbInstanceCore(finishedSpans.get(0));
+    assertEquals("post:/{core}/update", finishedSpans.get(0).getName());
+    assertCoreName(finishedSpans.get(0));
 
     cloudClient.add(COLLECTION, sdoc("id", "2"));
     cloudClient.add(COLLECTION, sdoc("id", "3"));
@@ -94,54 +101,58 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     // Searching
     cloudClient.query(COLLECTION, new SolrQuery("*:*"));
     finishedSpans = getAndClearSpans();
-    finishedSpans.removeIf(x -> !x.tags().get("http.url").toString().endsWith("/select"));
+    finishedSpans.removeIf(
+        span ->
+            span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
+                || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/select"));
     // one from client to server, 2 for execute query, 2 for fetching documents
     assertEquals(5, finishedSpans.size());
-    assertEquals(1, finishedSpans.stream().filter(s -> s.parentId() == 0).count());
-    long parentId =
+    assertEquals(1, finishedSpans.stream().filter(TestDistributedTracing::isRootSpan).count());
+    var parentTraceId =
         finishedSpans.stream()
-            .filter(s -> s.parentId() == 0)
+            .filter(TestDistributedTracing::isRootSpan)
             .collect(Collectors.toList())
             .get(0)
-            .context()
-            .spanId();
-    for (MockSpan span : finishedSpans) {
-      if (span.parentId() != 0 && parentId != span.parentId()) {
-        fail("All spans must belong to single span, but:" + finishedSpans);
+            .getSpanContext()
+            .getTraceId();
+    for (var span : finishedSpans) {
+      if (isRootSpan(span)) {
+        continue;
       }
+      assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
+      assertEquals(span.getTraceId(), parentTraceId);
     }
-    assertEquals("get:/{core}/select", finishedSpans.get(0).operationName());
-    assertDbInstanceCore(finishedSpans.get(0));
+    assertEquals("get:/{core}/select", finishedSpans.get(0).getName());
+    assertCoreName(finishedSpans.get(0));
   }
 
   @Test
   public void testAdminApi() throws Exception {
+    getAndClearSpans(); // reset
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    List<MockSpan> finishedSpans;
 
-    // Admin API call
     cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics"));
-    finishedSpans = getAndClearSpans();
-    assertEquals("get:/admin/metrics", finishedSpans.get(0).operationName());
+    var finishedSpans = getAndClearSpans();
+    assertEquals("get:/admin/metrics", finishedSpans.get(0).getName());
 
     CollectionAdminRequest.listCollections(cloudClient);
     finishedSpans = getAndClearSpans();
-    assertEquals("list:/admin/collections", finishedSpans.get(0).operationName());
+    assertEquals("list:/admin/collections", finishedSpans.get(0).getName());
   }
 
   @Test
   public void testV2Api() throws Exception {
+    getAndClearSpans(); // reset
     CloudSolrClient cloudClient = cluster.getSolrClient();
-    List<MockSpan> finishedSpans;
 
     new V2Request.Builder("/collections/" + COLLECTION + "/reload")
         .withMethod(SolrRequest.METHOD.POST)
         .withPayload("{}")
         .build()
         .process(cloudClient);
-    finishedSpans = getAndClearSpans();
-    assertEquals("post:/collections/{collection}/reload", finishedSpans.get(0).operationName());
-    assertDbInstanceColl(finishedSpans.get(0));
+    var finishedSpans = getAndClearSpans();
+    assertEquals("post:/collections/{collection}/reload", finishedSpans.get(0).getName());
+    assertCollectionName(finishedSpans.get(0));
 
     new V2Request.Builder("/c/" + COLLECTION + "/update/json")
         .withMethod(SolrRequest.METHOD.POST)
@@ -150,8 +161,8 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .build()
         .process(cloudClient);
     finishedSpans = getAndClearSpans();
-    assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).operationName());
-    assertDbInstanceColl(finishedSpans.get(0));
+    assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).getName());
+    assertCollectionName(finishedSpans.get(0));
 
     final V2Response v2Response =
         new V2Request.Builder("/c/" + COLLECTION + "/select")
@@ -160,36 +171,40 @@ public class TestDistributedTracing extends SolrCloudTestCase {
             .build()
             .process(cloudClient);
     finishedSpans = getAndClearSpans();
-    assertEquals("get:/c/{collection}/select", finishedSpans.get(0).operationName());
-    assertDbInstanceColl(finishedSpans.get(0));
+    assertEquals("get:/c/{collection}/select", finishedSpans.get(0).getName());
+    assertCollectionName(finishedSpans.get(0));
     assertEquals(1, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
   }
 
-  private void assertDbInstanceColl(MockSpan mockSpan) {
-    MatcherAssert.assertThat(mockSpan.tags().get("db.instance"), Matchers.equalTo("collection1"));
+  private static boolean isRootSpan(SpanData span) {
+    return span.getParentSpanContext() == SpanContext.getInvalid();
   }
 
-  private void assertDbInstanceCore(MockSpan mockSpan) {
-    MatcherAssert.assertThat(
-        (String) mockSpan.tags().get("db.instance"), Matchers.startsWith("collection1_"));
+  private static void assertCollectionName(SpanData span) {
+    assertEquals(COLLECTION, span.getAttributes().get(TraceUtils.TAG_DB));
   }
 
-  private void assertOneSpanIsChildOfAnother(List<MockSpan> finishedSpans) {
-    MockSpan child = finishedSpans.get(0);
-    MockSpan parent = finishedSpans.get(1);
-    if (child.parentId() == 0) {
-      MockSpan temp = parent;
+  private static void assertCoreName(SpanData span) {
+    assertTrue(span.getAttributes().get(TraceUtils.TAG_DB).startsWith(COLLECTION + "_"));
+  }
+
+  private void assertOneSpanIsChildOfAnother(List<SpanData> finishedSpans) {
+    SpanData child = finishedSpans.get(0);
+    SpanData parent = finishedSpans.get(1);
+    if (isRootSpan(child)) {
+      var temp = parent;
       parent = child;
       child = temp;
     }
-
-    assertEquals(child.parentId(), parent.context().spanId());
+    assertEquals(child.getParentSpanContext().getTraceId(), parent.getTraceId());
+    assertEquals(child.getTraceId(), parent.getTraceId());
   }
 
-  private List<MockSpan> getAndClearSpans() {
-    List<MockSpan> result = tracer.finishedSpans(); // returns a mutable copy
+  private List<SpanData> getAndClearSpans() {
+    InMemorySpanExporter exporter = CustomTestOtelTracerConfigurator.getInMemorySpanExporter();
+    List<SpanData> result = new ArrayList<>(exporter.getFinishedSpanItems());
     Collections.reverse(result); // nicer to see spans chronologically
-    tracer.reset();
+    exporter.reset();
     return result;
   }
 }

@@ -14,26 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.util.tracing;
 
-package org.apache.solr.core;
+import io.opentelemetry.context.propagation.TextMapGetter;
+import java.util.Iterator;
+import javax.servlet.http.HttpServletRequest;
 
-import io.opentelemetry.api.trace.Tracer;
-import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.apache.solr.util.tracing.TraceUtils;
+/**
+ * {@code HttpServletRequest} aware {@code TextMapGetter} that allows header data to be extracted
+ * from a request
+ */
+public class HttpServletRequestGetter implements TextMapGetter<HttpServletRequest> {
 
-/** Produces a {@link Tracer} from configuration. */
-public abstract class TracerConfigurator implements NamedListInitializedPlugin {
-
-  public static Tracer loadTracer(SolrResourceLoader loader, PluginInfo info) {
-    if (info != null && info.isEnabled()) {
-      TracerConfigurator configurator =
-          loader.newInstance(info.className, TracerConfigurator.class);
-      configurator.init(info.initArgs);
-      return configurator.getTracer();
-    } else {
-      return TraceUtils.noop();
-    }
+  @Override
+  public Iterable<String> keys(HttpServletRequest carrier) {
+    return new Iterable<String>() {
+      @Override
+      public Iterator<String> iterator() {
+        return carrier.getHeaderNames().asIterator();
+      }
+    };
   }
 
-  protected abstract Tracer getTracer();
+  @Override
+  public String get(HttpServletRequest carrier, String key) {
+    if (carrier == null) {
+      return null;
+    }
+    return carrier.getHeader(key);
+  }
 }

@@ -17,27 +17,16 @@
 
 package org.apache.solr.util.tracing;
 
-import io.opentracing.propagation.TextMap;
-import java.util.Iterator;
-import java.util.Map;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import org.apache.solr.client.solrj.SolrRequest;
 
-/** An OpenTracing Carrier for injecting Span context through SolrRequest */
-public class SolrRequestCarrier implements TextMap {
-
-  private final SolrRequest<?> solrRequest;
-
-  public SolrRequestCarrier(SolrRequest<?> solrRequest) {
-    this.solrRequest = solrRequest;
-  }
+/**
+ * {@code SolrRequest} aware {@code TextMapSetter} that allows header data to be added to a request
+ */
+public class SolrRequestSetter implements TextMapSetter<SolrRequest<?>> {
 
   @Override
-  public Iterator<Map.Entry<String, String>> iterator() {
-    throw new UnsupportedOperationException("carrier is write-only");
-  }
-
-  @Override
-  public void put(String key, String value) {
-    solrRequest.addHeader(key, value);
+  public void set(SolrRequest<?> request, String key, String value) {
+    request.addHeader(key, value);
   }
 }
