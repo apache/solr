@@ -27,7 +27,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,13 +43,12 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrJSONWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.loader.CborLoader;
 import org.apache.solr.response.XMLResponseWriter;
@@ -99,6 +97,15 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       Object o = objectMapper.readValue(b, Object.class);
       List<Object> l = (List<Object>) Utils.getObjectByPath(o, false, "response/docs");
       assertEquals(1100, l.size());
+      client.deleteByQuery(testCollection, "*:*").getStatus();
+      index(
+          testCollection,
+          client,
+          createCborReq(getNestedDocs().getBytes(StandardCharsets.UTF_8)),
+          false);
+      SolrQuery q = new SolrQuery("*:*").setRows(100);
+      QueryResponse result = new QueryRequest(q).process(client, testCollection);
+      assertEquals(6, result.getResults().size());
     } finally {
       System.clearProperty("managed.schema.mutable");
       cluster.shutdown();
@@ -232,54 +239,42 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     return baos.toByteArray();
   }
 
-  public void testNestedDocs() throws IOException {
-    String json =
-        "[{ \"id\": \"P11!prod\",\n"
-            + "   \"name_s\": \"Swingline Stapler\",\n"
-            + "   \"type_s\": \"PRODUCT\",\n"
-            + "   \"description_t\": \"The Cadillac of office staplers ...\",\n"
-            + "   \"skus\": [\n"
-            + "       { \"id\": \"P11!S21\",\n"
-            + "         \"type_s\": \"SKU\",\n"
-            + "         \"color_s\": \"RED\",\n"
-            + "         \"price_i\": 42,\n"
-            + "         \"manuals\": [\n"
-            + "             { \"id\": \"P11!D41\",\n"
-            + "               \"type_s\": \"MANUAL\",\n"
-            + "               \"name_s\": \"Red Swingline Brochure\",\n"
-            + "               \"pages_i\":1,\n"
-            + "               \"content_t\": \"...\"\n"
-            + "             } ]\n"
-            + "       },\n"
-            + "       { \"id\": \"P11!S31\",\n"
-            + "         \"type_s\": \"SKU\",\n"
-            + "         \"color_s\": \"BLACK\",\n"
-            + "         \"price_i\": 3\n"
-            + "       },\n"
-            + "       { \"id\": \"P11!D51\",\n"
-            + "         \"type_s\": \"MANUAL\",\n"
-            + "         \"name_s\": \"Quick Reference Guide\",\n"
-            + "         \"pages_i\":1,\n"
-            + "         \"content_t\": \"How to use your stapler ...\"\n"
-            + "       },\n"
-            + "       { \"id\": \"P11!D61\",\n"
-            + "         \"type_s\": \"MANUAL\",\n"
-            + "         \"name_s\": \"Warranty Details\",\n"
-            + "         \"pages_i\":42,\n"
-            + "         \"content_t\": \"... lifetime guarantee ...\"\n"
-            + "       }\n"
-            + "    ]\n"
-            + "} ]";
-    byte[] bytes = serializeToCbor(json.getBytes(StandardCharsets.UTF_8));
-    SolrInputDocument[] d = new SolrInputDocument[1];
-    new CborLoader(null, doc -> d[0] = doc).stream(new ByteArrayInputStream(bytes));
-    StringWriter sw = new StringWriter();
-    try (SolrJSONWriter jsonWriter = new SolrJSONWriter(sw)) {
-      jsonWriter.writeObj(d[0]);
-    }
-    Object rootDoc = Utils.fromJSONString(sw.toString());
-    @SuppressWarnings("unchecked")
-    List<Object> l = (List<Object>) Utils.fromJSONString(json);
-    assertEquals(rootDoc, l.get(0));
+  private String getNestedDocs() throws IOException {
+    return "[{ \"id\": \"P11!prod\",\n"
+        + "   \"name_s\": \"Swingline Stapler\",\n"
+        + "   \"type_s\": \"PRODUCT\",\n"
+        + "   \"description_s\": \"The Cadillac of office staplers ...\",\n"
+        + "   \"skus\": [\n"
+        + "       { \"id\": \"P11!S21\",\n"
+        + "         \"type_s\": \"SKU\",\n"
+        + "         \"color_s\": \"RED\",\n"
+        + "         \"price_i\": 42,\n"
+        + "         \"manuals\": [\n"
+        + "             { \"id\": \"P11!D41\",\n"
+        + "               \"type_s\": \"MANUAL\",\n"
+        + "               \"name_s\": \"Red Swingline Brochure\",\n"
+        + "               \"pages_i\":1,\n"
+        + "               \"content_s\": \"...\"\n"
+        + "             } ]\n"
+        + "       },\n"
+        + "       { \"id\": \"P11!S31\",\n"
+        + "         \"type_s\": \"SKU\",\n"
+        + "         \"color_s\": \"BLACK\",\n"
+        + "         \"price_i\": 3\n"
+        + "       },\n"
+        + "       { \"id\": \"P11!D51\",\n"
+        + "         \"type_s\": \"MANUAL\",\n"
+        + "         \"name_s\": \"Quick Reference Guide\",\n"
+        + "         \"pages_i\":1,\n"
+        + "         \"content_s\": \"How to use your stapler ...\"\n"
+        + "       },\n"
+        + "       { \"id\": \"P11!D61\",\n"
+        + "         \"type_s\": \"MANUAL\",\n"
+        + "         \"name_s\": \"Warranty Details\",\n"
+        + "         \"pages_i\":42,\n"
+        + "         \"content_s\": \"... lifetime guarantee ...\"\n"
+        + "       }\n"
+        + "    ]\n"
+        + "} ]";
   }
 }
