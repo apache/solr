@@ -201,24 +201,20 @@ allprojects {
         // Enable security manager, if requested. We could move the selection of security manager and security policy
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
-          if (System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("mac") && rootProject.runtimeJavaVersion == JavaVersion.VERSION_20) {
-            logger.warn("SecurityManager was requested for tests, but cannot be used with JDK20 on Mac.  See SOLR-16733 for more details.")
-          } else {
-            def commonSolrDir = project(':solr').layout.projectDirectory
-            def javaSecurityPolicy = layout.projectDirectory.file("${resources}/policies/solr-tests.policy")
-            jvmArgumentProviders.add(
-                    new SecurityArgumentProvider(
-                            commonSolrDir: commonSolrDir,
-                            javaSecurityPolicy: javaSecurityPolicy
-                    )
-            )
-            systemProperty 'java.security.manager', "org.apache.lucene.tests.util.TestSecurityManager"
+          def commonSolrDir = project(':solr').layout.projectDirectory
+          def javaSecurityPolicy = layout.projectDirectory.file("${resources}/policies/solr-tests.policy")
+          jvmArgumentProviders.add(
+              new SecurityArgumentProvider(
+                  commonSolrDir: commonSolrDir,
+                  javaSecurityPolicy: javaSecurityPolicy
+              )
+          )
+          systemProperty 'java.security.manager', "org.apache.lucene.tests.util.TestSecurityManager"
 
-            def gradleUserHome = project.gradle.getGradleUserHomeDir()
-            systemProperty 'gradle.lib.dir', Paths.get(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')
-            systemProperty 'gradle.worker.jar', Paths.get("${gradleUserHome}/caches/${gradle.gradleVersion}/workerMain/gradle-worker.jar").toAbsolutePath().toString()
-            systemProperty 'gradle.user.home', gradleUserHome.toPath().toAbsolutePath().toString()
-          }
+          def gradleUserHome = project.gradle.getGradleUserHomeDir()
+          systemProperty 'gradle.lib.dir', Paths.get(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')
+          systemProperty 'gradle.worker.jar', Paths.get("${gradleUserHome}/caches/${gradle.gradleVersion}/workerMain/gradle-worker.jar").toAbsolutePath().toString()
+          systemProperty 'gradle.user.home', gradleUserHome.toPath().toAbsolutePath().toString()
         }
 
         doFirst {
