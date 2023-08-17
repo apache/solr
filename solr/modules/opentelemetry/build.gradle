@@ -22,7 +22,7 @@ description = 'Open Telemetry (OTEL) tracer'
 dependencies {
   implementation project(':solr:core')
 
-  implementation platform('io.opentelemetry:opentelemetry-bom-alpha')
+  implementation platform('io.opentelemetry:opentelemetry-bom')
 
   implementation 'io.opentracing:opentracing-api'
   implementation 'org.slf4j:slf4j-api'
