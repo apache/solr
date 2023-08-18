@@ -303,7 +303,7 @@ For example, to set the auto soft-commit frequency to 3 seconds, you can do:
 
 The `SOLR_OPTS` environment variable is also available to set additional System Properties for Solr.
 
-In order to set custom System Properties when running Solr tools, such as `bin/solr create`, `bin/solr auth` and `bin/solr package` (anything other than `start`, `stop` and `restart`),
+In order to set custom System Properties when running any Solr utility other than `start` (e.g. `stop`, `create`, `auth`, `status`, `api`),
 the `SOLR_TOOL_OPTS` environment variable should be used.
 
 ==== SolrCloud Mode
