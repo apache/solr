@@ -2312,7 +2312,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
   }
 
-  public boolean compareSolrDocument(Object expected, Object actual) {
+  public static boolean compareSolrDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrDocument) || !(actual instanceof SolrDocument)) {
       return false;
@@ -2364,7 +2364,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  public boolean compareSolrDocumentList(Object expected, Object actual) {
+  public static boolean compareSolrDocumentList(Object expected, Object actual) {
     if (!(expected instanceof SolrDocumentList) || !(actual instanceof SolrDocumentList)) {
       return false;
     }
@@ -2397,7 +2397,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return true;
   }
 
-  public boolean compareSolrInputDocument(Object expected, Object actual) {
+  public static boolean compareSolrInputDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrInputDocument) || !(actual instanceof SolrInputDocument)) {
       return false;
@@ -2473,7 +2473,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  public boolean assertSolrInputFieldEquals(Object expected, Object actual) {
+  public static boolean assertSolrInputFieldEquals(Object expected, Object actual) {
     if (!(expected instanceof SolrInputField) || !(actual instanceof SolrInputField)) {
       return false;
     }
