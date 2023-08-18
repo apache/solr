@@ -1,74 +1,74 @@
 {
-	"authentication": {
-		"blockUnknown": true,
-		"class": "solr.BasicAuthPlugin",
-		"credentials": {
-			"user": "5xqM3QvmfKJPaxCNRNgur/iPA+ENqGaMLou0vjRN+U0= PoIl/rZE4wq+xdDmW3q0y/PctJ28VKIW14RTSU9du84=",
-			"admin": "bGHR1+rT5TVYHVWyZv+bW6ttXnUQDUjD06Avie1SUWQ= Ut7wdJ0X2+IKgcp7y3DGbJBzxvPnA/YiLa5gmoVqYD0=",
-			"superadmin": "s7518QQL7UNiDNHRqo3PqvYbIts2fKkBDuBBv7Q9+D4= MraYq5n3JjOl8SXHTH4OFMRb/rqlmt0oKbquw/urdDk="
-		}
-	},
-	"authorization": {
-		"class": "solr.RuleBasedAuthorizationPlugin",
-		"permissions": [{
-				"name": "security-edit",
-				"role": "admin",
-				"index": 1
-			},
-			{
-				"name": "security-read",
-				"role": "admin",
-				"index": 2
-			},
-			{
-				"name": "config-edit",
-				"role": "admin",
-				"index": 3
-			},
-			{
-				"name": "config-read",
-				"role": "admin",
-				"index": 4
-			},
-			{
-				"name": "collection-admin-edit",
-				"role": "admin",
-				"index": 5
-			},
-			{
-				"name": "collection-admin-read",
-				"role": "admin",
-				"index": 6
-			},
-			{
-				"name": "core-admin-edit",
-				"role": "admin",
-				"index": 7
-			},
-			{
-				"name": "core-admin-read",
-				"role": "admin",
-				"index": 8
-			},
-			{
-				"name": "all",
-				"role": [
-					"admin",
-					"superadmin"
-				],
-				"index": 9
-			},
-			{
-				"name": "read",
-				"role": ["user"],
-				"index": 10
-			}
-		],
-		"user-role": {
-			"name": "admin",
-			"user": ["user"],
-			"superadmin": ["superadmin"],
-			"admin": ["admin"]
-		}
-	}
+  "authentication": {
+    "blockUnknown": true,
+    "class": "solr.BasicAuthPlugin",
+    "credentials": {
+      "user": "5xqM3QvmfKJPaxCNRNgur/iPA+ENqGaMLou0vjRN+U0= PoIl/rZE4wq+xdDmW3q0y/PctJ28VKIW14RTSU9du84=",
+      "admin": "bGHR1+rT5TVYHVWyZv+bW6ttXnUQDUjD06Avie1SUWQ= Ut7wdJ0X2+IKgcp7y3DGbJBzxvPnA/YiLa5gmoVqYD0=",
+      "superadmin": "s7518QQL7UNiDNHRqo3PqvYbIts2fKkBDuBBv7Q9+D4= MraYq5n3JjOl8SXHTH4OFMRb/rqlmt0oKbquw/urdDk="
+    }
+  },
+  "authorization": {
+    "class": "solr.RuleBasedAuthorizationPlugin",
+    "permissions": [{
+        "name": "security-edit",
+        "role": "admin",
+        "index": 1
+      },
+      {
+        "name": "security-read",
+        "role": "admin",
+        "index": 2
+      },
+      {
+        "name": "config-edit",
+        "role": "admin",
+        "index": 3
+      },
+      {
+        "name": "config-read",
+        "role": "admin",
+        "index": 4
+      },
+      {
+        "name": "collection-admin-edit",
+        "role": "admin",
+        "index": 5
+      },
+      {
+        "name": "collection-admin-read",
+        "role": "admin",
+        "index": 6
+      },
+      {
+        "name": "core-admin-edit",
+        "role": "admin",
+        "index": 7
+      },
+      {
+        "name": "core-admin-read",
+        "role": "admin",
+        "index": 8
+      },
+      {
+        "name": "all",
+        "role": [
+          "admin",
+          "superadmin"
+        ],
+        "index": 9
+      },
+      {
+        "name": "read",
+        "role": ["user"],
+        "index": 10
+      }
+    ],
+    "user-role": {
+      "name": "admin",
+      "user": ["user"],
+      "superadmin": ["superadmin"],
+      "admin": ["admin"]
+    }
+  }
 }
