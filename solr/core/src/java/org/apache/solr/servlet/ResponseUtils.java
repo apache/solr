@@ -22,13 +22,15 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.ErrorInfo;
 import org.slf4j.Logger;
 
 /** Response helper methods. */
 public class ResponseUtils {
   private ResponseUtils() {}
+  
+  // System property to use if the Solr core does not exist or solr.hideStackTrace is not configured. (i.e.: a lot of unit test).
+  private static final boolean SYSTEM_HIDE_STACK_TRACES = Boolean.parseBoolean(System.getProperty("solr.hideStackTrace"));
 
   /**
    * Adds the given Throwable's message to the given NamedList.
@@ -63,7 +65,8 @@ public class ResponseUtils {
    *
    * @see #getTypedErrorInfo(Throwable, Logger)
    */
-  public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log, SolrCore core) {
+  public static int getErrorInfo(
+      Throwable ex, NamedList<Object> info, Logger log, Boolean hideTrace) {
     int code = 500;
     if (ex instanceof SolrException) {
       SolrException solrExc = (SolrException) ex;
@@ -93,7 +96,7 @@ public class ResponseUtils {
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
       // hide all stack traces, as configured
-      if (!hideStackTrace(core)) {
+      if (!hideStackTrace(hideTrace)) {
         StringWriter sw = new StringWriter();
         ex.printStackTrace(new PrintWriter(sw));
         info.add("trace", sw.toString());
@@ -136,7 +139,7 @@ public class ResponseUtils {
    *
    * @see #getErrorInfo(Throwable, NamedList, Logger)
    */
-  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log, SolrCore core) {
+  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log, Boolean hideTrace) {
     final ErrorInfo errorInfo = new ErrorInfo();
     int code = 500;
     if (ex instanceof SolrException) {
@@ -161,7 +164,7 @@ public class ResponseUtils {
 
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
-      if (!hideStackTrace(core)) {
+      if (!hideStackTrace(hideTrace)) {
         StringWriter sw = new StringWriter();
         ex.printStackTrace(new PrintWriter(sw));
         errorInfo.trace = sw.toString();
@@ -178,10 +181,9 @@ public class ResponseUtils {
     errorInfo.code = code;
     return errorInfo;
   }
-
-  private static boolean hideStackTrace(SolrCore core) {
-    return core != null
-        ? core.getCoreContainer().hideStackTrace()
-        : Boolean.parseBoolean(System.getProperty("solr.hideStackTrace"));
+  
+  private static boolean hideStackTrace(final Boolean hideTrace) {
+    return hideTrace == null ? SYSTEM_HIDE_STACK_TRACES : hideTrace.booleanValue();
   }
+
 }

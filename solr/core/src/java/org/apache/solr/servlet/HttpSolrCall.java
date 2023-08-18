@@ -837,7 +837,9 @@ public class HttpSolrCall {
       try {
         if (exp != null) {
           SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-          int code = ResponseUtils.getErrorInfo(ex, info, log, localCore);
+          Boolean hideTraces =
+              localCore == null ? null : localCore.getCoreContainer().hideStackTrace();
+          int code = ResponseUtils.getErrorInfo(ex, info, log, hideTraces);
           sendError(code, info.toString());
         }
       } finally {
@@ -862,7 +864,12 @@ public class HttpSolrCall {
     // for example: sreq.getContext().put( "HttpServletRequest", req );
     // used for logging query stats in SolrCore.execute()
     solrReq.getContext().put("webapp", req.getContextPath());
+    try {
     solrReq.getCore().execute(handler, solrReq, rsp);
+    } catch (Exception e) {
+      log.error("Caught : " + e.getMessage());
+      throw e;
+    }
   }
 
   private void handleAdminRequest() throws IOException {
@@ -971,7 +978,8 @@ public class HttpSolrCall {
 
       if (solrRsp.getException() != null) {
         NamedList<Object> info = new SimpleOrderedMap<>();
-        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log, core);
+        Boolean hideTraces = core == null ? null : core.getCoreContainer().hideStackTrace();
+        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log, hideTraces);
         solrRsp.add("error", info);
         response.setStatus(code);
       }

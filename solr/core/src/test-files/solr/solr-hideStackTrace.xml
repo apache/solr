@@ -41,7 +41,6 @@
     <int name="transientCacheSize">4</int>
   </transientCoreCacheFactory>
 
-
   <solrcloud>
     <str name="host">127.0.0.1</str>
     <int name="hostPort">${hostPort:8983}</int>
@@ -52,9 +51,6 @@
     <int name="leaderConflictResolveWait">${leaderConflictResolveWait:45000}</int> 
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:5000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:30000}</int> <!-- We are running tests - the default should be low, not like production -->
-    <int name="autoReplicaFailoverWaitAfterExpiration">${autoReplicaFailoverWaitAfterExpiration:10000}</int>
-    <int name="autoReplicaFailoverWorkLoopDelay">${autoReplicaFailoverWorkLoopDelay:10000}</int>
-    <int name="autoReplicaFailoverBadNodeExpiration">${autoReplicaFailoverBadNodeExpiration:60000}</int>
   </solrcloud>
   
 </solr>

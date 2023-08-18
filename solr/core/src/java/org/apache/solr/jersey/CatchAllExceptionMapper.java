@@ -108,8 +108,12 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
         containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE) == null
             ? new SolrJerseyResponse()
             : (SolrJerseyResponse) containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE);
+    final Boolean hideTraces =
+        solrQueryRequest.getCore() == null
+            ? null
+            : solrQueryRequest.getCore().getCoreContainer().hideStackTrace();
 
-    response.error = ResponseUtils.getTypedErrorInfo(normalizedException, log);
+    response.error = ResponseUtils.getTypedErrorInfo(normalizedException, log, hideTraces);
     response.responseHeader.status = response.error.code;
     final String mediaType =
         V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, MediaType.APPLICATION_JSON);

@@ -601,9 +601,11 @@ public class SearchHandler extends RequestHandlerBase
           }
         }
         nl.add("error", cause.toString());
-        StringWriter trace = new StringWriter();
-        cause.printStackTrace(new PrintWriter(trace));
-        nl.add("trace", trace.toString());
+        if(!core.getCoreContainer().hideStackTrace()) {
+          StringWriter trace = new StringWriter();
+          cause.printStackTrace(new PrintWriter(trace));
+          nl.add("trace", trace.toString());
+        }
       } else if (rb.getResults() != null) {
         nl.add("numFound", rb.getResults().docList.matches());
         nl.add(
