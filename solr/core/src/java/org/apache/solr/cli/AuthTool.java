@@ -135,12 +135,6 @@ public class AuthTool extends ToolBase {
   public int runTool(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    System.out.println("Here is the cli");
-    System.out.println(Arrays.toString(cli.getArgs()));
-    for (Option o : cli.getOptions()) {
-      System.out.println("Option " + o.getOpt() + ": " + o.getValue());
-    }
-
     ensureArgumentIsValidBooleanIfPresent(cli, "blockUnknown");
     ensureArgumentIsValidBooleanIfPresent(cli, "updateIncludeFileOnly");
 
