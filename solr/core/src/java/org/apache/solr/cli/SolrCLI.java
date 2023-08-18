@@ -187,7 +187,7 @@ public class SolrCLI implements CLIO {
     return cli;
   }
 
-  public static String getDefaultSolrUrl () {
+  public static String getDefaultSolrUrl() {
     String scheme = System.getenv("SOLR_URL_SCHEME");
     if (scheme == null) {
       scheme = "http";
@@ -200,12 +200,7 @@ public class SolrCLI implements CLIO {
     if (port == null) {
       port = "8983";
     }
-    return String.format(Locale.ROOT,
-            "%s://%s:%s",
-            scheme.toLowerCase(Locale.ROOT),
-            host,
-            port
-            );
+    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
