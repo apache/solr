@@ -78,7 +78,7 @@ teardown() {
 
 @test "zkcli.sh gets 'solrhome' from 'solr.home' system property" {
   sleep 1
-  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -t
+  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v
   local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
   # remove 'solrhome='
   local path_value=${extracted_solrhome#*=}
@@ -87,7 +87,7 @@ teardown() {
 
 @test "zkcli.sh gets 'solrhome' from 'solrhome' command line option" {
   sleep 1
-  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -t -s /path/to/solr/home
+  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v -s /path/to/solr/home
   local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
   # remove 'solrhome='
   local path_value=${extracted_solrhome#*=}
