@@ -154,6 +154,8 @@
 # environments where security is not a concern, 0.0.0.0 can be used to allow
 # Solr to accept connections on all network interfaces.
 #SOLR_JETTY_HOST="127.0.0.1"
+# Sets the network interface the Embedded ZK binds to.
+#SOLR_ZK_EMBEDDED_HOST="127.0.0.1"
 
 # Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 # to enable https module with custom jetty configuration.

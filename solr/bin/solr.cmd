@@ -955,6 +955,10 @@ IF DEFINED SOLR_JETTY_HOST (
   set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
 )
 
+IF DEFINED SOLR_ZK_EMBEDDED_HOST (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.zk.embedded.host=%SOLR_ZK_EMBEDDED_HOST%"
+)
+
 IF "%SCRIPT_CMD%"=="start" (
   REM see if Solr is already running using netstat
   For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (

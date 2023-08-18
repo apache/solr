@@ -34,6 +34,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.lucene.util.Constants;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.security.Sha256AuthenticationProvider;
@@ -187,7 +188,8 @@ public class AuthTool extends ToolBase {
             try (SolrZkClient zkClient =
                 new SolrZkClient.Builder()
                     .withUrl(zkHost)
-                    .withTimeout(10000, TimeUnit.MILLISECONDS)
+                    .withTimeout(
+                        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
                     .build()) {
               checkSecurityJsonExists(zkClient);
             } catch (Exception ex) {
@@ -206,7 +208,8 @@ public class AuthTool extends ToolBase {
             try (SolrZkClient zkClient =
                 new SolrZkClient.Builder()
                     .withUrl(zkHost)
-                    .withTimeout(10000, TimeUnit.MILLISECONDS)
+                    .withTimeout(
+                        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
                     .build()) {
               zkClient.setData(
                   "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
@@ -321,7 +324,7 @@ public class AuthTool extends ToolBase {
           try (SolrZkClient zkClient =
               new SolrZkClient.Builder()
                   .withUrl(zkHost)
-                  .withTimeout(10000, TimeUnit.MILLISECONDS)
+                  .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
                   .build()) {
             checkSecurityJsonExists(zkClient);
           }
@@ -384,7 +387,7 @@ public class AuthTool extends ToolBase {
           try (SolrZkClient zkClient =
               new SolrZkClient.Builder()
                   .withUrl(zkHost)
-                  .withTimeout(10000, TimeUnit.MILLISECONDS)
+                  .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
                   .build()) {
             zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
           }
@@ -479,7 +482,7 @@ public class AuthTool extends ToolBase {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
-              .withTimeout(10000, TimeUnit.MILLISECONDS)
+              .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
               .build()) {
         zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
       }

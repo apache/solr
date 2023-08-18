@@ -17,6 +17,8 @@ Improvements
 
 * SOLR-16800: Solr CLI commands that use -solrUrl now work with a bare url like http://localhost:8983, you no longer need to add the /solr at the end. (Eric Pugh)
 
+* SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
+
 Optimizations
 ---------------------
 (No changes)
@@ -89,6 +91,12 @@ Improvements
   circumstances as they are generated and more likely to remain up-to-date with future API changes.
   (Jason Gerlowski, David Smiley, Houston Putman)
 
+* SOLR-14667: Make zkClientTimeout consistent and based on a system property. The defauls values are stored in a single place referenced everywhere and they are based on system properties (Alex Deparvu)
+
+* SOLR-16926: The embedded Zookeeper's bind host can now be overridden, but still defaults to "127.0.0.1".
+  This is useful when using the ZkCli on a remote Solr using the embedded ZK, or Solr running in a Docker container.
+  The SOLR_ZK_EMBEDDED_HOST envVar or -Dsolr.zk.embedded.host sysProp control this bind address. (Houston Putman)
+
 Optimizations
 ---------------------
 
@@ -112,9 +120,14 @@ Bug Fixes
 
 * SOLR-16360: Atomic update on boolean fields doesn't reflect when value starts with "1", "t" or "T" (Rahul Goswami, Justin Sweeney, David Smiley)
 
+* PR#1826: Allow looking up Solr Package repo when that URL references a raw repository.json hosted on Github when the file is JSON but the mimetype used is text/plain. (Eric Pugh)
+
+* SOLR-16859: Missing Proxy support for Http2SolrClient (Alex Deparvu)
+
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* PR#1846: Update io.opentelemetry to 1.29.0 (Alex Deparvu)
 
 Other Changes
 ---------------------

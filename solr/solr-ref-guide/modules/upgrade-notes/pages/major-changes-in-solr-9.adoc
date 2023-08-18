@@ -76,6 +76,10 @@ Upgrading existing clouds and use-cases that have custom configSets will not be 
 * The default `minimalFreeDiskGB` value has been lowered from `20GB` to `5GB` when using the xref:configuration-guide:replica-placement-plugins.adoc#affinityplacementfactory[AffinityPlacementPlugin].
 Therefore, when using the default settings, nodes that were previously excluded from Replica placements due to low available disk space may be selected after upgrading.
 
+=== Embedded Zookeeper
+* The Embedded Zookeeper can now be configured to listen to (or bind to) more hosts than just `localhost`,
+see the  xref:deployment-guide:securing-solr.adoc#network-configuration[Network Configuration documentation] for more information.
+
 
 == Solr 9.3
 === Binary Releases

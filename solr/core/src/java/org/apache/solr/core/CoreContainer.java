@@ -31,9 +31,7 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
-import io.opentracing.Tracer;
-import io.opentracing.noop.NoopTracer;
-import io.opentracing.noop.NoopTracerFactory;
+import io.opentelemetry.api.trace.Tracer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -268,7 +266,7 @@ public class CoreContainer {
 
   protected volatile SolrMetricsContext solrMetricsContext;
 
-  protected volatile Tracer tracer = NoopTracerFactory.create();
+  protected volatile Tracer tracer;
 
   protected MetricsHandler metricsHandler;
 
@@ -695,7 +693,7 @@ public class CoreContainer {
     return metricsHandler;
   }
 
-  /** Never null but may implement {@link NoopTracer}. */
+  /** Never null */
   public Tracer getTracer() {
     return tracer;
   }
@@ -1375,8 +1373,6 @@ public class CoreContainer {
       org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
-
-    tracer.close();
   }
 
   public void cancelCoreRecoveries() {
