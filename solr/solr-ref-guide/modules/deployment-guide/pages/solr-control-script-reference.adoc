@@ -858,9 +858,14 @@ The `bin/solr auth enable` command makes several changes to enable Basic Authent
 * Customizes the base `security.json` file for a specific user and uploads it to ZooKeeper.
 The base `security.json` file is :
 +
-[source,json]
+[source,json,indent=0]
 ----
-include::security.json[tag=snippetName]
+include::example$security.json[]
+----
++
+[source,java,indent=0]
+----
+include::example$UsingSolrJRefGuideExamplesTest.java[tag=solrj-cloudsolrclient-zookeepernoroot]
 ----
 +
 * Adds two lines to `bin/solr.in.sh` or `bin\solr.in.cmd` to set the authentication type, and the path to `basicAuth.conf`:

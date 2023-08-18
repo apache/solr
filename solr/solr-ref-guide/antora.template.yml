@@ -36,10 +36,9 @@ nav:
 ext:
   collector:
     #run:
-     # command: cp ../solr/core/src/resources/security.json ./modules/deployment-guide/examples/security.json
-    scan:
-      dir: ../solr/core/src/resources/
-      files: '**/security.json'
+    # command: cp /Users/epugh/Documents/projects/solr-epugh/solr/core/src/resources/security.json /Users/epugh/Documents/projects/solr-epugh/solr/solr-ref-guide/modules/deployment-guide/examples
+    #scan:  <-- not workign
+    #  dir: ../solr/core/src/resources/
       
 # The asciidoc attributes must be the last entry in this file
 asciidoc:
