@@ -215,7 +215,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     }
 
     for (CommandOperation cmd : cmds) {
-      TraceUtils.ifNotNoop(req.getSpan(), (span) -> span.addEvent("Command: " + cmd.name));
+      TraceUtils.ifNotNoop(
+          TraceUtils.getSpan(req), (span) -> span.addEvent("Command: " + cmd.name));
       commands.get(cmd.name).invoke(req, rsp, cmd);
     }
 

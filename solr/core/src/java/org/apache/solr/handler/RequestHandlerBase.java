@@ -21,6 +21,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.trace.Span;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +49,7 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -223,7 +225,7 @@ public abstract class RequestHandlerBase
       SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
       req.getContext().remove(USEPARAM);
       rsp.setHttpCaching(httpCaching);
-      handleRequestBody(req, rsp);
+      handleRequestBodyWithTracing(req, rsp);
       // count timeouts
       NamedList<?> header = rsp.getResponseHeader();
       if (header != null) {
@@ -240,6 +242,18 @@ public abstract class RequestHandlerBase
     } finally {
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
+    }
+  }
+
+  private void handleRequestBodyWithTracing(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws Exception {
+    String handlerName = this.getClass().getSimpleName();
+    Span span = TraceUtils.startRequestHandlerSpan(req, handlerName);
+    try (var scope = span.makeCurrent()) {
+      assert scope != null; // prevent javac warning about scope being unused
+      handleRequestBody(req, rsp);
+    } finally {
+      span.end();
     }
   }
 

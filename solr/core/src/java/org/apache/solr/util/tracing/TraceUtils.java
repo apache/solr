@@ -32,6 +32,7 @@ import java.util.function.Predicate;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.http.HttpRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.servlet.HttpSolrCall;
 import org.eclipse.jetty.client.api.Request;
 
 /** Utilities for distributed tracing. */
@@ -41,7 +42,6 @@ public class TraceUtils {
   private static final String REQ_ATTR_TRACING_TRACER = Tracer.class.getName();
 
   public static final String DEFAULT_SPAN_NAME = "http.request";
-  public static final String WRITE_QUERY_RESPONSE_SPAN_NAME = "writeQueryResponse";
 
   public static final AttributeKey<String> TAG_DB = AttributeKey.stringKey("db.instance");
   public static final AttributeKey<String> TAG_DB_TYPE = AttributeKey.stringKey("db.type");
@@ -52,8 +52,6 @@ public class TraceUtils {
       AttributeKey.stringKey("http.request.method");
   public static final AttributeKey<String> TAG_HTTP_URL = AttributeKey.stringKey("http.url");
   public static final AttributeKey<String> TAG_HTTP_PARAMS = AttributeKey.stringKey("http.params");
-  public static final AttributeKey<String> TAG_RESPONSE_WRITER =
-      AttributeKey.stringKey("responseWriter");
   public static final AttributeKey<String> TAG_CONTENT_TYPE = AttributeKey.stringKey("contentType");
   public static final AttributeKey<List<String>> TAG_OPS = AttributeKey.stringArrayKey("ops");
   public static final AttributeKey<String> TAG_CLASS = AttributeKey.stringKey("class");
@@ -86,7 +84,7 @@ public class TraceUtils {
 
   public static void setDbInstance(SolrQueryRequest req, String coreOrColl) {
     if (req != null) {
-      setDbInstance(req.getSpan(), coreOrColl);
+      setDbInstance(getSpan(req), coreOrColl);
     }
   }
 
@@ -129,8 +127,26 @@ public class TraceUtils {
     req.setAttribute(REQ_ATTR_TRACING_SPAN, span);
   }
 
+  /** Get the Span for this request. Never null. */
   public static Span getSpan(HttpServletRequest req) {
-    return (Span) req.getAttribute(REQ_ATTR_TRACING_SPAN);
+    var span = (Span) req.getAttribute(REQ_ATTR_TRACING_SPAN);
+    if (span != null) {
+      return span;
+    } else {
+      return Span.getInvalid();
+    }
+  }
+
+  /**
+   * Get the Span for this request. This is useful for adding tags or updating the operation name of
+   * the request span. Never null.
+   */
+  public static Span getSpan(SolrQueryRequest req) {
+    final HttpSolrCall call = req.getHttpSolrCall();
+    if (call != null) {
+      return getSpan(call.getReq());
+    }
+    return Span.getInvalid();
   }
 
   public static void setTracer(HttpServletRequest req, Tracer t) {
@@ -139,6 +155,15 @@ public class TraceUtils {
 
   public static Tracer getTracer(HttpServletRequest req) {
     return (Tracer) req.getAttribute(REQ_ATTR_TRACING_TRACER);
+  }
+
+  /** Get the Tracer for this request. Never null. */
+  public static Tracer getTracer(SolrQueryRequest req) {
+    final HttpSolrCall call = req.getHttpSolrCall();
+    if (call != null) {
+      return getTracer(call.getReq());
+    }
+    return getGlobalTracer();
   }
 
   public static Context extractContext(HttpServletRequest req) {
@@ -181,8 +206,9 @@ public class TraceUtils {
 
   public static void setOperations(SolrQueryRequest req, String clazz, List<String> ops) {
     if (!ops.isEmpty()) {
-      req.getSpan().setAttribute(TAG_OPS, ops);
-      req.getSpan().setAttribute(TAG_CLASS, clazz);
+      var span = getSpan(req);
+      span.setAttribute(TAG_OPS, ops);
+      span.setAttribute(TAG_CLASS, clazz);
     }
   }
 
@@ -192,6 +218,20 @@ public class TraceUtils {
     SpanKind kind = isAsync ? SpanKind.PRODUCER : SpanKind.CLIENT;
     SpanBuilder spanBuilder =
         tracer.spanBuilder(name).setSpanKind(kind).setAttribute(TAG_DB, collection);
+    return spanBuilder.startSpan();
+  }
+
+  public static Span startResponseWriterSpan(
+      HttpServletRequest request, String writerName, String contentType) {
+    Tracer tracer = TraceUtils.getTracer(request);
+    SpanBuilder spanBuilder =
+        tracer.spanBuilder(writerName).setAttribute(TraceUtils.TAG_CONTENT_TYPE, contentType);
+    return spanBuilder.startSpan();
+  }
+
+  public static Span startRequestHandlerSpan(SolrQueryRequest request, String handlerName) {
+    Tracer tracer = TraceUtils.getTracer(request);
+    SpanBuilder spanBuilder = tracer.spanBuilder(handlerName);
     return spanBuilder.startSpan();
   }
 }

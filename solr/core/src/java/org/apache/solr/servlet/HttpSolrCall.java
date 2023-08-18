@@ -507,7 +507,7 @@ public class HttpSolrCall {
     try {
       init();
 
-      TraceUtils.ifNotNoop(getSpan(), this::populateTracingSpan);
+      TraceUtils.ifNotNoop(TraceUtils.getSpan(req), this::populateTracingSpan);
 
       // Perform authorization here, if:
       //    (a) Authorization is enabled, and
@@ -623,16 +623,6 @@ public class HttpSolrCall {
   protected void handleAdminOrRemoteRequest() throws IOException {
     throw new IllegalStateException(
         "handleOrForwardRequest should not be invoked when serving v1 requests.");
-  }
-
-  /** Get the Span for this request. Not null. */
-  public Span getSpan() {
-    var s = TraceUtils.getSpan(req);
-    if (s != null) {
-      return s;
-    } else {
-      return Span.getInvalid();
-    }
   }
 
   // called after init().
@@ -993,12 +983,25 @@ public class HttpSolrCall {
       }
 
       if (Method.HEAD != reqMethod) {
-        OutputStream out = response.getOutputStream();
-        QueryResponseWriterUtil.writeQueryResponse(out, responseWriter, solrReq, solrRsp, ct);
+        writeResponseWithTracing(responseWriter, solrRsp, ct);
       }
       // else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {
       log.info("Unable to write response, client closed connection or we are shutting down", e);
+    }
+  }
+
+  private void writeResponseWithTracing(
+      QueryResponseWriter responseWriter, SolrQueryResponse solrResponse, String contentType)
+      throws IOException {
+    String writerName = responseWriter.getClass().getSimpleName();
+    Span span = TraceUtils.startResponseWriterSpan(req, writerName, contentType);
+    try (var scope = span.makeCurrent()) {
+      assert scope != null; // prevent javac warning about scope being unused
+      QueryResponseWriterUtil.writeQueryResponse(
+          response.getOutputStream(), responseWriter, solrReq, solrResponse, contentType);
+    } finally {
+      span.end();
     }
   }
 
