@@ -97,6 +97,8 @@ Improvements
   This is useful when using the ZkCli on a remote Solr using the embedded ZK, or Solr running in a Docker container.
   The SOLR_ZK_EMBEDDED_HOST envVar or -Dsolr.zk.embedded.host sysProp control this bind address. (Houston Putman)
 
+* SOLR-16941: The SolrCLI now uses a smarter default for the Solr URL if none is provided, using the same envVars used when running Solr. (Houston Putman)
+
 * SOLR-16940: Users can pass Java system properties to the SolrCLI via the SOLR_TOOL_OPTS environment variable. (Houston Putman)
 
 Optimizations
