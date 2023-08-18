@@ -177,7 +177,7 @@ import org.apache.solr.handler.admin.api.CreateReplicaAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAlias;
 import org.apache.solr.handler.admin.api.DeleteCollection;
-import org.apache.solr.handler.admin.api.DeleteCollectionBackupAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionBackup;
 import org.apache.solr.handler.admin.api.DeleteCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.DeleteNodeAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
@@ -1096,7 +1096,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEBACKUP_OP(
         DELETEBACKUP,
         (req, rsp, h) -> {
-          DeleteCollectionBackupAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          DeleteCollectionBackup.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     LISTBACKUP_OP(
@@ -1371,7 +1371,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateCollectionBackupAPI.class,
         CreateShardAPI.class,
         DeleteAlias.class,
-        DeleteCollectionBackupAPI.class,
+        DeleteCollectionBackup.class,
         DeleteCollection.class,
         DeleteReplicaAPI.class,
         DeleteReplicaPropertyAPI.class,
