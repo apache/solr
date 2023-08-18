@@ -39,6 +39,8 @@ Improvements
 
 * SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
 
+* SOLR-16941: The SolrCLI now uses a smarter default for the Solr URL if none is provided, using the same envVars used when running Solr. (Houston Putman)
+
 Optimizations
 ---------------------
 

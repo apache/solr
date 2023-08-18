@@ -84,7 +84,7 @@ public class PackageTool extends ToolBase {
         return;
       }
 
-      solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length - 1];
+      solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
       solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
       log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
       String zkHost = getZkHost(cli);
@@ -321,10 +321,10 @@ public class PackageTool extends ToolBase {
         Option.builder("solrUrl")
             .argName("URL")
             .hasArg()
-            .required(true)
+            .required(false)
             .desc(
                 "Address of the Solr Web application, defaults to: "
-                    + SolrCLI.DEFAULT_SOLR_URL
+                    + SolrCLI.getDefaultSolrUrl()
                     + '.')
             .build(),
         Option.builder("collections")

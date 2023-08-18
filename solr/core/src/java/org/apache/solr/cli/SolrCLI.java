@@ -73,7 +73,7 @@ public class SolrCLI implements CLIO {
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";
+
   public static final String ZK_HOST = "localhost:9983";
 
   public static final Option OPTION_ZKHOST =
@@ -91,7 +91,7 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
-                  + DEFAULT_SOLR_URL)
+                  + getDefaultSolrUrl())
           .build();
   public static final Option OPTION_VERBOSE =
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
@@ -187,6 +187,22 @@ public class SolrCLI implements CLIO {
     }
 
     return cli;
+  }
+
+  public static String getDefaultSolrUrl() {
+    String scheme = System.getenv("SOLR_URL_SCHEME");
+    if (scheme == null) {
+      scheme = "http";
+    }
+    String host = System.getenv("SOLR_TOOL_HOST");
+    if (host == null) {
+      host = "localhost";
+    }
+    String port = System.getenv("SOLR_PORT");
+    if (port == null) {
+      port = "8983";
+    }
+    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
@@ -521,21 +537,26 @@ public class SolrCLI implements CLIO {
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
-      if (zkHost == null)
-        throw new IllegalStateException(
-            "Must provide either the '-solrUrl' or '-zkHost' parameters!");
+      if (zkHost == null) {
+        solrUrl = SolrCLI.getDefaultSolrUrl();
+        CLIO.getOutStream()
+            .println(
+                "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                    + solrUrl
+                    + ".");
+      } else {
+        try (CloudSolrClient cloudSolrClient =
+            new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+                .build()) {
+          cloudSolrClient.connect();
+          Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+          if (liveNodes.isEmpty())
+            throw new IllegalStateException(
+                "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
 
-      try (CloudSolrClient cloudSolrClient =
-          new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-              .build()) {
-        cloudSolrClient.connect();
-        Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-        if (liveNodes.isEmpty())
-          throw new IllegalStateException(
-              "No live nodes found! Cannot determine 'solrUrl' from ZooKeeper: " + zkHost);
-
-        String firstLiveNode = liveNodes.iterator().next();
-        solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+          String firstLiveNode = liveNodes.iterator().next();
+          solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+        }
       }
     }
     return solrUrl;
@@ -551,11 +572,14 @@ public class SolrCLI implements CLIO {
 
     // find it using the localPort
     String solrUrl = cli.getOptionValue("solrUrl");
-    if (solrUrl == null)
-      throw new IllegalStateException(
-          "Must provide either the -zkHost or -solrUrl parameters to use the create_collection command!");
-
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
+    if (solrUrl == null) {
+      solrUrl = getDefaultSolrUrl();
+      CLIO.getOutStream()
+          .println(
+              "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                  + solrUrl
+                  + ".");
+    }
 
     try (var solrClient = getSolrClient(solrUrl)) {
       // hit Solr to get system info
