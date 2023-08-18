@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
+import static org.apache.zookeeper.WatchedEvent.NO_ZXID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -2129,7 +2130,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     assertTrue(TimeUnit.NANOSECONDS.toMillis(after - before) > 50);
     // Mostly to make sure the millis->nanos->millis is not broken
     assertTrue(TimeUnit.NANOSECONDS.toMillis(after - before) < 500);
-    latch1.process(new WatchedEvent(new WatcherEvent(1, 1, "/foo/bar")));
+    latch1.process(new WatchedEvent(new WatcherEvent(1, 1, "/foo/bar"), NO_ZXID));
     before = System.nanoTime();
     latch1.await(10000); // Expecting no wait
     after = System.nanoTime();
@@ -2145,14 +2146,16 @@ public class OverseerTest extends SolrTestCaseJ4 {
               // Process an event of a different type first, this shouldn't release the latch
               latch2.process(
                   new WatchedEvent(
-                      new WatcherEvent(Event.EventType.NodeDeleted.getIntValue(), 1, "/foo/bar")));
+                      new WatcherEvent(Event.EventType.NodeDeleted.getIntValue(), 1, "/foo/bar"),
+                      NO_ZXID));
 
               assertFalse("Latch shouldn't have been released", doneWaiting.get());
               // Now process the correct type of event
               expectedEventProcessed.set(true);
               latch2.process(
                   new WatchedEvent(
-                      new WatcherEvent(Event.EventType.NodeCreated.getIntValue(), 1, "/foo/bar")));
+                      new WatcherEvent(Event.EventType.NodeCreated.getIntValue(), 1, "/foo/bar"),
+                      NO_ZXID));
             });
     t.start();
     before = System.nanoTime();
