@@ -53,3 +53,4 @@ antora:
   extensions:
     - require: '@antora/lunr-extension'
       index_latest_only: true
+    - require: '@antora/collector-extension'

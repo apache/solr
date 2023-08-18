@@ -33,6 +33,14 @@ nav:
 - modules/upgrade-notes/upgrade-nav.adoc
 - modules/how-to-contribute/how-to-contribute-nav.adoc
 
+ext:
+  collector:
+    #run:
+     # command: cp ../solr/core/src/resources/security.json ./modules/deployment-guide/examples/security.json
+    scan:
+      dir: ../solr/core/src/resources/
+      files: '**/security.json'
+      
 # The asciidoc attributes must be the last entry in this file
 asciidoc:
   attributes:

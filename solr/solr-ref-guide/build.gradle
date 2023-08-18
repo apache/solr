@@ -59,9 +59,10 @@ dependencies {
 }
 
 ext {
-    antoraVersion = "3.0.1"
+    antoraVersion = "3.1.4"
     antoraLunrExtensionVersion = "1.0.0-alpha.8"
-    asciidoctorMathjaxVersion = "0.0.8"
+    asciidoctorMathjaxVersion = "0.0.9"
+    collectorExtensionVersion = "1.0.0-alpha.3"
     linkCheckerVersion = "1.4.2"
     gulpCliVersion = "2.3.0"
     // Most recent commit as of 2022-06-24, this repo does not have tags
@@ -246,6 +247,14 @@ task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
 }
 
+task downloadCollectorExtension(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "@antora/collector-extension@${project.ext.collectorExtensionVersion}"]
+
+    inputs.property("collector-extension version", project.ext.collectorExtensionVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/collector-extension")
+}
+
 task downloadAntora {
     group = 'Build Dependency Download'
     description "Download all Antora build dependencies for site generation."
@@ -254,6 +263,7 @@ task downloadAntora {
     dependsOn tasks.downloadAntoraSiteGenerator
     dependsOn tasks.downloadAntoraLunrExtension
     dependsOn tasks.downloadAsciidoctorMathjaxExtension
+    dependsOn tasks.downloadCollectorExtension
 }
 
 task downloadLinkValidator(type: NpmTask) {
