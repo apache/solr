@@ -17,21 +17,26 @@
 
 package org.apache.solr.client.api.model;
 
-public class Constants {
+import static org.apache.solr.client.api.model.Constants.COLLECTION;
 
-  private Constants() {
-    /* Private ctor prevents instantiation */
-  }
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.apache.solr.client.api.endpoint.DeleteCollectionSnapshotApi;
 
-  /** A parameter to specify the name of the backup repository to be used. */
-  public static final String BACKUP_REPOSITORY = "repository";
+/**
+ * The Response for {@link DeleteCollectionSnapshotApi#deleteSnapshot(String, String, boolean,
+ * String)}
+ */
+public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
+  @Schema(description = "The name of the collection.")
+  @JsonProperty(COLLECTION)
+  public String collection;
 
-  /** A parameter to specify the location where the backup should be stored. */
-  public static final String BACKUP_LOCATION = "location";
+  @Schema(description = "The name of the snapshot to be deleted.")
+  @JsonProperty("snapshot")
+  public String snapshotName;
 
-  /** Async or not? * */
-  public static final String ASYNC = "async";
-
-  /** The name of a collection referenced by an API call */
-  public static final String COLLECTION = "collection";
+  @Schema(description = "A flag that treats the collName parameter as a collection alias.")
+  @JsonProperty("followAliases")
+  public boolean followAliases;
 }

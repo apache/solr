@@ -178,7 +178,7 @@ import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAlias;
 import org.apache.solr.handler.admin.api.DeleteCollection;
 import org.apache.solr.handler.admin.api.DeleteCollectionBackup;
-import org.apache.solr.handler.admin.api.DeleteCollectionSnapshotAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionSnapshot;
 import org.apache.solr.handler.admin.api.DeleteNodeAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
@@ -1142,10 +1142,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
           final String asyncId = req.getParams().get(ASYNC);
 
-          final DeleteCollectionSnapshotAPI deleteCollectionSnapshotAPI =
-              new DeleteCollectionSnapshotAPI(h.coreContainer, req, rsp);
+          final DeleteCollectionSnapshot deleteCollectionSnapshotAPI =
+              new DeleteCollectionSnapshot(h.coreContainer, req, rsp);
 
-          final DeleteCollectionSnapshotAPI.DeleteSnapshotResponse deleteSnapshotResponse =
+          final var deleteSnapshotResponse =
               deleteCollectionSnapshotAPI.deleteSnapshot(
                   extCollectionName, commitName, followAliases, asyncId);
 
@@ -1393,7 +1393,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         AliasPropertyAPI.class,
         ListCollectionSnapshotsAPI.class,
         CreateCollectionSnapshotAPI.class,
-        DeleteCollectionSnapshotAPI.class);
+        DeleteCollectionSnapshot.class);
   }
 
   @Override
