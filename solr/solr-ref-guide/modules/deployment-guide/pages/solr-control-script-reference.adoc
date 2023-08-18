@@ -855,28 +855,14 @@ For more information on Basic Authentication support specifically, see the secti
 
 The `bin/solr auth enable` command makes several changes to enable Basic Authentication:
 
-* Creates a `security.json` file and uploads it to ZooKeeper.
-The `security.json` file will look similar to:
+* Customizes the base `security.json` file for a specific user and uploads it to ZooKeeper.
+The base `security.json` file is :
 +
-[source,json]
+[source,java,indent=0]
 ----
-{
-  "authentication":{
-   "blockUnknown": false,
-   "class":"solr.BasicAuthPlugin",
-   "credentials":{"user":"vgGVo69YJeUg/O6AcFiowWsdyOUdqfQvOLsrpIPMCzk= 7iTnaKOWe+Uj5ZfGoKKK2G6hrcF10h6xezMQK+LBvpI="}
-  },
-  "authorization":{
-   "class":"solr.RuleBasedAuthorizationPlugin",
-   "permissions":[
- {"name":"security-edit", "role":"admin"},
- {"name":"collection-admin-edit", "role":"admin"},
- {"name":"core-admin-edit", "role":"admin"}
-   ],
-   "user-role":{"user":"admin"}
-  }
-}
+include::/Users/epugh/Documents/projects/solr-epugh/solr/core/src/resources$security.json
 ----
++
 * Adds two lines to `bin/solr.in.sh` or `bin\solr.in.cmd` to set the authentication type, and the path to `basicAuth.conf`:
 +
 [source,subs="attributes"]
