@@ -68,7 +68,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
   private String facetCollection;
 
   private transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
 
   public ScoreNodesStream(TupleStream tupleStream, String nodeFreqField) throws IOException {
     init(tupleStream, nodeFreqField);
@@ -179,10 +179,10 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
     stream.open();
@@ -270,7 +270,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
     stream.close();

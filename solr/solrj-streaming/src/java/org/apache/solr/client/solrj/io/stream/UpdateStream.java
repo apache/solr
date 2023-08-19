@@ -65,7 +65,7 @@ public class UpdateStream extends TupleStream implements Expressible {
   private String coreName;
 
   protected transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
 
   public UpdateStream(StreamExpression expression, StreamFactory factory) throws IOException {
     String collectionName = factory.getValueOperand(expression, 0);
@@ -121,10 +121,10 @@ public class UpdateStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
     tupleSource.open();
   }
@@ -156,7 +156,7 @@ public class UpdateStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
     tupleSource.close();

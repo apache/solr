@@ -68,7 +68,7 @@ public class SolrStream extends TupleStream {
   private String core;
 
   private transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
 
   /**
    * @param baseUrl Base URL of the stream.
@@ -114,10 +114,10 @@ public class SolrStream extends TupleStream {
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
     try {
@@ -190,7 +190,7 @@ public class SolrStream extends TupleStream {
     if (closeableHttpResponse != null) {
       closeableHttpResponse.close();
     }
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
   }

@@ -79,7 +79,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   private long initialCheckpoint = -1;
 
   private transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
 
   public TopicStream(
       String zkHost,
@@ -313,10 +313,10 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
     this.tuples = new TreeSet<>();
     this.solrStreams = new ArrayList<>();
@@ -382,7 +382,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
         }
       }
 
-      if (isCloseCache) {
+      if (doCloseCache) {
         clientCache.close();
       }
     }

@@ -60,7 +60,7 @@ public class KnnStream extends TupleStream implements Expressible {
   private Map<String, String> props;
   private String collection;
   private transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
   private Iterator<SolrDocument> documentIterator;
   private String id;
 
@@ -204,10 +204,10 @@ public class KnnStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
     ModifiableSolrParams params = getParams(this.props);
@@ -242,7 +242,7 @@ public class KnnStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
   }

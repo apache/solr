@@ -69,7 +69,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   private SolrParams params;
   private String collection;
   private transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
 
   public TimeSeriesStream(
       String zkHost,
@@ -346,10 +346,10 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
     String json = getJsonFacetString(field, metrics, start, end, gap);
@@ -370,7 +370,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
   }

@@ -56,7 +56,7 @@ public class SearchStream extends TupleStream implements Expressible {
   protected StreamComparator comp;
 
   private transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
 
   public SearchStream() {}
 
@@ -194,10 +194,10 @@ public class SearchStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
     QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
@@ -213,7 +213,7 @@ public class SearchStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
   }

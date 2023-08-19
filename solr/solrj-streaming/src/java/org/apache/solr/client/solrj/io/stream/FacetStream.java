@@ -86,7 +86,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private boolean serializeBucketSizeLimit;
 
   protected transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
   protected transient TupleStream parallelizedStream;
   protected transient StreamContext context;
 
@@ -655,10 +655,10 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
     var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
 
@@ -754,7 +754,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
   }

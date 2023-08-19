@@ -82,7 +82,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
   protected ClassificationEvaluation evaluation;
 
   private transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
 
   protected transient StreamContext streamContext;
   protected transient ExecutorService executorService;
@@ -362,10 +362,10 @@ public class TextLogitStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
     this.executorService =
@@ -438,7 +438,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
 

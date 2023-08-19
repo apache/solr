@@ -65,7 +65,7 @@ public class RandomStream extends TupleStream implements Expressible {
   private boolean outputX;
 
   private transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
 
   public RandomStream() {
     // Used by the RandomFacade
@@ -209,10 +209,10 @@ public class RandomStream extends TupleStream implements Expressible {
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
     ModifiableSolrParams params = getParams(this.props);
@@ -238,7 +238,7 @@ public class RandomStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
   }

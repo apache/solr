@@ -76,7 +76,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   protected int numTerms;
 
   protected transient SolrClientCache clientCache;
-  private transient boolean isCloseCache;
+  private transient boolean doCloseCache;
   protected transient ExecutorService executorService;
 
   public FeaturesSelectionStream(
@@ -257,10 +257,10 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   @Override
   public void open() throws IOException {
     if (clientCache == null) {
-      isCloseCache = true;
+      doCloseCache = true;
       clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
     this.executorService =
@@ -327,7 +327,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
+    if (doCloseCache) {
       clientCache.close();
     }
 
