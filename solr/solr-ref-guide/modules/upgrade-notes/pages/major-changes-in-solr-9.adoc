@@ -72,6 +72,14 @@ Please refer to the xref:configuration-guide:commits-transaction-logs.html#hard-
 for more information on how this change will effect you.
 Upgrading existing clouds and use-cases that have custom configSets will not be affected by this change.
 
+=== Replica Placements
+* The default `minimalFreeDiskGB` value has been lowered from `20GB` to `5GB` when using the xref:configuration-guide:replica-placement-plugins.adoc#affinityplacementfactory[AffinityPlacementPlugin].
+Therefore, when using the default settings, nodes that were previously excluded from Replica placements due to low available disk space may be selected after upgrading.
+
+=== Embedded Zookeeper
+* The Embedded Zookeeper can now be configured to listen to (or bind to) more hosts than just `localhost`,
+see the  xref:deployment-guide:securing-solr.adoc#network-configuration[Network Configuration documentation] for more information.
+
 
 == Solr 9.3
 === Binary Releases
@@ -116,6 +124,13 @@ The custom version of Solr will include this Dockerfile when it is built.
  * When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper.
 Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files.
 As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[Unknown core deletion].
+
+=== use of timeAllowed
+* Query timeouts with `timeAllowed` are implemented differently.
+It should be faster albeit have less fidelity – will not timeout a query outside of core query processing (e.g. won't cancel spellcheck or faceting).
+Use `solr.useExitableDirectoryReader` to use the previous behavior.
+Please share your experience with Solr developers!
+The previous behavior should not be enabled if timeAllowed isn't used because unfortunately its performance tax is now imposed on all queries, even those without timeAllowed.
 
 === v2 API 
 * Solr's experimental "v2" API has seen a number of improvements in the 9.3 release.

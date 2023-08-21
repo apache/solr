@@ -866,7 +866,7 @@ groups:
       SOLR_DOWNLOAD_SERVER={{ release_candidate_location }}/solr && \
         docker build $SOLR_DOWNLOAD_SERVER/{{ release_version }}/docker/Dockerfile.official-full \
           --build-arg SOLR_DOWNLOAD_SERVER=$SOLR_DOWNLOAD_SERVER \
-          -t solr-rc:{{ release_version }}-{{ rc_number }}} && \
+          -t solr-rc:{{ release_version }}-{{ rc_number }} && \
         docker build $SOLR_DOWNLOAD_SERVER/{{ release_version }}/docker/Dockerfile.official-slim \
           --build-arg SOLR_DOWNLOAD_SERVER=$SOLR_DOWNLOAD_SERVER \
           -t solr-rc:{{ release_version }}-{{ rc_number }}-slim

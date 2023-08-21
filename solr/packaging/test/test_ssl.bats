@@ -54,8 +54,8 @@ teardown() {
   solr start -c
   solr assert --started https://localhost:8983/solr --timeout 5000
 
-  run curl --cacert "$ssl_dir/solr-ssl.pem" 'https://localhost:8983/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json'
-  assert_output --partial '"status":0'
+  run solr create -c test -s 2
+  assert_output --partial "Created collection 'test'"
 
   run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" 'https://localhost:8983/solr/test/select?q=*:*'
   assert_output --partial '"numFound":0'

@@ -1156,7 +1156,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (fromShard != null) {
         if (mySlice.getState() == Slice.State.ACTIVE) {
           throw new SolrException(
-              SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+              ErrorCode.INVALID_STATE,
               "Request says it is coming from parent shard leader but we are in active state");
         }
         // shard splitting case -- check ranges to see if we are a sub-shard
@@ -1178,7 +1178,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               req.getParamString());
           SolrException solrExc =
               new SolrException(
-                  SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+                  ErrorCode.INVALID_STATE,
                   "Request says it is coming from leader, but we are the leader");
           solrExc.setMetadata("cause", "LeaderChanged");
           throw solrExc;
@@ -1201,7 +1201,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if ((isLeader && !localIsLeader) || (isSubShardLeader && !localIsLeader)) {
       log.error("ClusterState says we are the leader, but locally we don't think so");
       throw new SolrException(
-          SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+          ErrorCode.INVALID_STATE,
           "ClusterState says we are the leader ("
               + zkController.getBaseUrl()
               + "/"
