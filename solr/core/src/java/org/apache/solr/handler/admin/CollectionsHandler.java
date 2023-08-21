@@ -179,7 +179,7 @@ import org.apache.solr.handler.admin.api.DeleteAlias;
 import org.apache.solr.handler.admin.api.DeleteCollection;
 import org.apache.solr.handler.admin.api.DeleteCollectionBackup;
 import org.apache.solr.handler.admin.api.DeleteCollectionSnapshot;
-import org.apache.solr.handler.admin.api.DeleteNodeAPI;
+import org.apache.solr.handler.admin.api.DeleteNode;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
 import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
@@ -1207,9 +1207,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETENODE_OP(
         DELETENODE,
         (req, rsp, h) -> {
-          final DeleteNodeAPI deleteNodeAPI = new DeleteNodeAPI(h.coreContainer, req, rsp);
+          final DeleteNode deleteNodeAPI = new DeleteNode(h.coreContainer, req, rsp);
           final SolrJerseyResponse deleteNodeResponse =
-              DeleteNodeAPI.invokeUsingV1Inputs(deleteNodeAPI, req.getParams());
+              DeleteNode.invokeUsingV1Inputs(deleteNodeAPI, req.getParams());
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteNodeResponse);
           return null;
         }),
@@ -1388,7 +1388,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         RestoreCollectionAPI.class,
         SyncShardAPI.class,
         CollectionPropertyAPI.class,
-        DeleteNodeAPI.class,
+        DeleteNode.class,
         ListAliasesAPI.class,
         AliasPropertyAPI.class,
         ListCollectionSnapshotsAPI.class,

@@ -75,7 +75,9 @@ public interface DeleteCollectionBackupApi {
       tags = {"collection-backups"})
   PurgeUnusedResponse garbageCollectUnusedBackupFiles(
       @PathParam("backupName") String backupName,
-      @RequestBody(description = "Request body parameters for the orphaned file cleanup", required = false)
+      @RequestBody(
+              description = "Request body parameters for the orphaned file cleanup",
+              required = false)
           PurgeUnusedFilesRequestBody requestBody)
       throws Exception;
 }

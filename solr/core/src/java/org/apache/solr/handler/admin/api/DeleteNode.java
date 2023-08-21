@@ -16,24 +16,17 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.endpoint.DeleteNodeApi;
+import org.apache.solr.client.api.model.DeleteNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -42,7 +35,6 @@ import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -53,29 +45,18 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * <p>This API is analogous to the V1 /admin/collections?action=DELETENODE
  */
-@Path("cluster/nodes/{nodeName}/clear/")
-public class DeleteNodeAPI extends AdminAPIBase {
+public class DeleteNode extends AdminAPIBase implements DeleteNodeApi {
 
   @Inject
-  public DeleteNodeAPI(
+  public DeleteNode(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse deleteNode(
-      @Parameter(
-              description =
-                  "The name of the node to be cleared.  Usually of the form 'host:1234_solr'.",
-              required = true)
-          @PathParam("nodeName")
-          String nodeName,
-      @RequestBody(description = "Contains user provided parameters", required = true)
-          DeleteNodeRequestBody requestBody)
+  public SolrJerseyResponse deleteNode(String nodeName, DeleteNodeRequestBody requestBody)
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
@@ -94,10 +75,11 @@ public class DeleteNodeAPI extends AdminAPIBase {
     return response;
   }
 
-  public static SolrJerseyResponse invokeUsingV1Inputs(DeleteNodeAPI apiInstance, SolrParams params)
+  public static SolrJerseyResponse invokeUsingV1Inputs(DeleteNode apiInstance, SolrParams params)
       throws Exception {
     final RequiredSolrParams requiredParams = params.required();
-    final DeleteNodeRequestBody requestBody = new DeleteNodeRequestBody(params.get(ASYNC));
+    final var requestBody = new DeleteNodeRequestBody();
+    requestBody.async = params.get(ASYNC);
     return apiInstance.deleteNode(requiredParams.get(NODE), requestBody);
   }
 
@@ -113,18 +95,5 @@ public class DeleteNodeAPI extends AdminAPIBase {
     remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETENODE.toLower());
 
     return new ZkNodeProps(remoteMessage);
-  }
-
-  public static class DeleteNodeRequestBody implements JacksonReflectMapWriter {
-
-    public DeleteNodeRequestBody() {}
-
-    public DeleteNodeRequestBody(String async) {
-      this.async = async;
-    }
-
-    @Schema(description = "Request ID to track this action which will be processed asynchronously.")
-    @JsonProperty("async")
-    public String async;
   }
 }
