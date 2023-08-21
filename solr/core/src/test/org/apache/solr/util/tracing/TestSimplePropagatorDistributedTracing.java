@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
@@ -87,7 +88,7 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
       }
 
       // verify all events have the same 'custom' traceid
-      String traceId = "tidTestSimplePropagatorDistributedTracing";
+      String traceId = "tidTestSimplePropagatorDistributedTracing0";
       var doc = sdoc("id", "4");
       UpdateRequest u = new UpdateRequest();
       u.add(doc);
@@ -105,10 +106,30 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
       assertSameTraceId(reqLog, null);
 
       // verify all query events have the same 'custom' traceid
-      String traceId = "tidTestSimplePropagatorDistributedTracing";
+      String traceId = "tidTestSimplePropagatorDistributedTracing1";
       var q = new QueryRequest(new SolrQuery("*:*"));
       q.addHeader(SimplePropagator.TRACE_ID, traceId);
       var r2 = q.process(cloudClient, COLLECTION);
+      assertEquals(0, r2.getStatus());
+      assertSameTraceId(reqLog, traceId);
+    }
+  }
+
+  @Test
+  public void testApacheClient() throws Exception {
+    // call api that uses apache client impl
+    try (LogListener reqLog = LogListener.info(SolrCore.class.getName() + ".Request")) {
+      // verify all events have the same auto-generated traceid
+      CollectionAdminRequest.ColStatus a1 = CollectionAdminRequest.collectionStatus(COLLECTION);
+      CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
+      assertEquals(0, r1.getStatus());
+      assertSameTraceId(reqLog, null);
+
+      // verify all events have the same 'custom' traceid
+      String traceId = "tidTestSimplePropagatorDistributedTracing2";
+      CollectionAdminRequest.ColStatus a2 = CollectionAdminRequest.collectionStatus(COLLECTION);
+      a2.addHeader(SimplePropagator.TRACE_ID, traceId);
+      var r2 = a2.process(cluster.getSolrClient(), COLLECTION);
       assertEquals(0, r2.getStatus());
       assertSameTraceId(reqLog, traceId);
     }
