@@ -25,7 +25,8 @@ import org.apache.solr.util.tracing.TraceUtils;
 /** Produces a {@link Tracer} from configuration. */
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
-  public static final boolean TRACE_ID_GEN_ENABLED = !Boolean.getBoolean("solr.disable.simplePropagatorOnly");
+  public static final boolean TRACE_ID_GEN_ENABLED =
+      !Boolean.getBoolean("solr.disable.simplePropagatorOnly");
 
   public static Tracer loadTracer(SolrResourceLoader loader, PluginInfo info) {
     if (info != null && info.isEnabled()) {
