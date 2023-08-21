@@ -68,13 +68,11 @@ solrAdminApp.controller('LoginController',
               sessionStorage.setItem("auth.state", "error");
             }
             else {
-              // for backward compatibility default flow to 'implicit'
-              var flow = $scope.authData ? $scope.authData['authorization_flow'] : "implicit";
+              var flow = $scope.authData ? $scope.authData['authorization_flow'] : undefined;
               console.log("Callback: authorization_flow : " +flow);
               var isCodePKCE = flow == 'code_pkce';
               if (isCodePKCE) {
                 // code flow with PKCE
-                console.debug("Callback. Using code flow with PKCE");
                 var code = hp['code'];
                 var tokenEndpoint = $scope.authData['tokenEndpoint'];
                 // concurrent Solr API calls will trigger 401 and erase session's "auth.realm" in app.js
@@ -112,7 +110,6 @@ solrAdminApp.controller('LoginController',
               }
               else {
                 // implicit flow
-                console.debug("Callback. Using implicit flow");
                 processTokensResponse(hp['access_token'], hp['id_token'], hp['token_type'], expectedState, hp);
               }
             }
