@@ -181,7 +181,7 @@ import org.apache.solr.handler.admin.api.DeleteCollectionBackup;
 import org.apache.solr.handler.admin.api.DeleteCollectionSnapshot;
 import org.apache.solr.handler.admin.api.DeleteNode;
 import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
 import org.apache.solr.handler.admin.api.InstallShardDataAPI;
@@ -1013,9 +1013,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEREPLICAPROP_OP(
         DELETEREPLICAPROP,
         (req, rsp, h) -> {
-          final var api = new DeleteReplicaPropertyAPI(h.coreContainer, req, rsp);
+          final var api = new DeleteReplicaProperty(h.coreContainer, req, rsp);
           final var deleteReplicaPropResponse =
-              DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, req.getParams());
+              DeleteReplicaProperty.invokeUsingV1Inputs(api, req.getParams());
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteReplicaPropResponse);
           return null;
         }),
@@ -1374,7 +1374,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteCollectionBackup.class,
         DeleteCollection.class,
         DeleteReplicaAPI.class,
-        DeleteReplicaPropertyAPI.class,
+        DeleteReplicaProperty.class,
         DeleteShardAPI.class,
         ForceLeaderAPI.class,
         InstallShardDataAPI.class,
