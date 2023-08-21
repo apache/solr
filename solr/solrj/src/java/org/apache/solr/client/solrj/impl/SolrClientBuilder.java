@@ -127,6 +127,10 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
     return getThis();
   }
 
+  public int getConnectionTimeoutMillis() {
+    return this.connectionTimeoutMillis;
+  }
+
   /**
    * Tells {@link Builder} that created clients should set the following read timeout on all
    * sockets.
@@ -154,5 +158,9 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
     this.socketTimeoutMillis = Math.toIntExact(TimeUnit.MILLISECONDS.convert(socketTimeout, unit));
     socketTimeoutMillisUpdate = true;
     return getThis();
+  }
+
+  public int getSocketTimeoutMillis() {
+    return this.socketTimeoutMillis;
   }
 }

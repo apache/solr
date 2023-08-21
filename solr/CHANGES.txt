@@ -37,6 +37,8 @@ Improvements
   circumstances as they are generated and more likely to remain up-to-date with future API changes.
   (Jason Gerlowski, David Smiley, Houston Putman)
 
+* SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
+
 Optimizations
 ---------------------
 

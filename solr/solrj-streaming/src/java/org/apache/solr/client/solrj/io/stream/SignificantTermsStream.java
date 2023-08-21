@@ -68,10 +68,10 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   protected float maxDocFreq;
   protected int minTermLength;
 
-  protected transient SolrClientCache cache;
-  protected transient boolean isCloseCache;
-  protected transient StreamContext streamContext;
-  protected ExecutorService executorService;
+  private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
+  private transient StreamContext streamContext;
+  private transient ExecutorService executorService;
 
   public SignificantTermsStream(
       String zkHost,
@@ -239,17 +239,17 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    this.cache = context.getSolrClientCache();
+    this.clientCache = context.getSolrClientCache();
     this.streamContext = context;
   }
 
   @Override
   public void open() throws IOException {
-    if (cache == null) {
-      isCloseCache = true;
-      cache = new SolrClientCache();
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
     this.executorService =
@@ -274,7 +274,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
               this.minDocFreq,
               this.maxDocFreq,
               this.minTermLength,
-              this.numTerms);
+              this.numTerms,
+              streamContext.isLocal(),
+              clientCache);
 
       Future<NamedList<?>> future = executorService.submit(lc);
       futures.add(future);
@@ -285,8 +287,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
-      cache.close();
+    if (doCloseCache) {
+      clientCache.close();
     }
 
     executorService.shutdown();
@@ -387,15 +389,17 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class SignificantTermsCall implements Callable<NamedList<?>> {
+  protected static class SignificantTermsCall implements Callable<NamedList<?>> {
 
-    private String baseUrl;
-    private String field;
-    private float minDocFreq;
-    private float maxDocFreq;
-    private int numTerms;
-    private int minTermLength;
-    private Map<String, String> paramsMap;
+    private final String baseUrl;
+    private final String field;
+    private final float minDocFreq;
+    private final float maxDocFreq;
+    private final int numTerms;
+    private final int minTermLength;
+    private final Map<String, String> paramsMap;
+    private final boolean isLocal;
+    private final SolrClientCache clientCache;
 
     public SignificantTermsCall(
         String baseUrl,
@@ -404,7 +408,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
         float minDocFreq,
         float maxDocFreq,
         int minTermLength,
-        int numTerms) {
+        int numTerms,
+        boolean isLocal,
+        SolrClientCache clientCache) {
 
       this.baseUrl = baseUrl;
       this.field = field;
@@ -413,12 +419,14 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       this.paramsMap = paramsMap;
       this.numTerms = numTerms;
       this.minTermLength = minTermLength;
+      this.isLocal = isLocal;
+      this.clientCache = clientCache;
     }
 
     @Override
     public NamedList<?> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq", "{!significantTerms}");
@@ -432,7 +440,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       params.add("minTermLength", Integer.toString(minTermLength));
       params.add("field", field);
       params.add("numTerms", String.valueOf(numTerms * 5));
-      if (streamContext.isLocal()) {
+      if (isLocal) {
         params.add("distrib", "false");
       }
 

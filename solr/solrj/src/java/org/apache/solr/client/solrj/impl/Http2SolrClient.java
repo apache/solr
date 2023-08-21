@@ -170,11 +170,7 @@ public class Http2SolrClient extends SolrClient {
       this.serverBaseUrl = null;
     }
 
-    if (builder.idleTimeoutMillis != null && builder.idleTimeoutMillis > 0) {
-      this.idleTimeoutMillis = builder.idleTimeoutMillis;
-    } else {
-      this.idleTimeoutMillis = HttpClientUtil.DEFAULT_SO_TIMEOUT;
-    }
+    this.idleTimeoutMillis = builder.idleTimeoutMillis;
 
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
@@ -283,8 +279,7 @@ public class Http2SolrClient extends SolrClient {
     this.authenticationStore = new AuthenticationStoreHolder();
     httpClient.setAuthenticationStore(this.authenticationStore);
 
-    if (builder.connectionTimeoutMillis != null)
-      httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
+    httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
 
     setupProxy(builder, httpClient);
 
@@ -859,6 +854,7 @@ public class Http2SolrClient extends SolrClient {
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", is);
+        rsp.add("responseStatus", httpStatus);
         // Only case where stream should not be closed
         shouldClose = false;
         return rsp;
@@ -1088,6 +1084,13 @@ public class Http2SolrClient extends SolrClient {
     }
 
     public Http2SolrClient build() {
+      if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
+        idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
+      }
+      if (connectionTimeoutMillis == null) {
+        connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+      }
+
       Http2SolrClient client = new Http2SolrClient(baseSolrUrl, this);
       try {
         httpClientBuilderSetup(client);
@@ -1250,6 +1253,10 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
+    public Long getIdleTimeoutMillis() {
+      return idleTimeoutMillis;
+    }
+
     public Builder useHttp1_1(boolean useHttp1_1) {
       this.useHttp1_1 = useHttp1_1;
       return this;
@@ -1267,6 +1274,10 @@ public class Http2SolrClient extends SolrClient {
     public Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
       this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
       return this;
+    }
+
+    public Long getConnectionTimeout() {
+      return connectionTimeoutMillis;
     }
 
     /**
