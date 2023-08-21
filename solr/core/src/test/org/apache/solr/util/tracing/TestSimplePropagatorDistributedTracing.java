@@ -33,7 +33,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.util.LogListener;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -44,13 +43,6 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    if (System.getProperty("host") == null) {
-      System.setProperty("host", "localhost");
-    }
-
-    // enable simple propagator
-    System.setProperty("solr.otel.simplePropagatorOnly", "true");
-
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
 
     // tracer should be disabled
@@ -62,11 +54,6 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solr.otel.simplePropagatorOnly");
   }
 
   @Test

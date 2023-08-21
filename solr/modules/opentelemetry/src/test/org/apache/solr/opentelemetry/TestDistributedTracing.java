@@ -54,6 +54,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     configureCluster(4)
         .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .withTraceIdGenerationDisabled()
         .configure();
 
     assertNotEquals(
