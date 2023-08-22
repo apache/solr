@@ -66,7 +66,7 @@ public class BackupAPI extends JerseyResource {
   @Operation(summary = "Backup command using ReplicationHandler")
   @PermissionName(CORE_EDIT_PERM)
   public BackupReplicationResponse createBackup(
-      @RequestBody BackupReplicationPayload backupReplicationPayload) throws Exception {
+      @RequestBody BackupReplicationRequestBody backupReplicationPayload) throws Exception {
     if (backupReplicationPayload == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Required request-body is missing");
@@ -77,7 +77,8 @@ public class BackupAPI extends JerseyResource {
   }
 
   private BackupReplicationResponse doBackup(
-      ReplicationHandler replicationHandler, BackupReplicationPayload backupReplicationPayload) {
+      ReplicationHandler replicationHandler,
+      BackupReplicationRequestBody backupReplicationPayload) {
     BackupReplicationResponse response = instantiateJerseyResponse(BackupReplicationResponse.class);
     int numberToKeep = backupReplicationPayload.numberToKeep;
     int numberBackupsToKeep = replicationHandlerConfig.getNumberBackupsToKeep();
@@ -108,11 +109,11 @@ public class BackupAPI extends JerseyResource {
   }
 
   /* POJO for v2 endpoints request body. */
-  public static class BackupReplicationPayload implements JacksonReflectMapWriter {
+  public static class BackupReplicationRequestBody implements JacksonReflectMapWriter {
 
-    public BackupReplicationPayload() {}
+    public BackupReplicationRequestBody() {}
 
-    public BackupReplicationPayload(
+    public BackupReplicationRequestBody(
         String location, String name, int numberToKeep, String repository, String commitName) {
       this.location = location;
       this.name = name;
@@ -144,7 +145,7 @@ public class BackupAPI extends JerseyResource {
     public String commitName;
   }
 
-  /** Response for {@link BackupAPI#createBackup(BackupReplicationPayload)}. */
+  /** Response for {@link BackupAPI#createBackup(BackupReplicationRequestBody)}. */
   public static class BackupReplicationResponse extends SolrJerseyResponse {
 
     @JsonProperty("result")

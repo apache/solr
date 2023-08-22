@@ -76,9 +76,9 @@ public class BackupAPITest extends JerseyTest {
 
   @Test
   public void testSuccessfulBackupCommand() throws Exception {
-    BackupAPI.BackupReplicationPayload payload =
-        new BackupAPI.BackupReplicationPayload("testl", "test", 0, null, null);
-    Entity<BackupAPI.BackupReplicationPayload> entity =
+    BackupAPI.BackupReplicationRequestBody payload =
+        new BackupAPI.BackupReplicationRequestBody("testl", "test", 0, null, null);
+    Entity<BackupAPI.BackupReplicationRequestBody> entity =
         Entity.entity(payload, MediaType.APPLICATION_JSON);
     System.err.println("entity " + entity.getEntity().jsonStr());
 
