@@ -36,7 +36,7 @@ import org.glassfish.jersey.test.JerseyTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit test of v2 endpoints for Replication Handler backup command */
+/** Unit tests for {@link BackupAPI}. */
 public class BackupAPITest extends JerseyTest {
 
   private SolrCore solrCore;
