@@ -917,6 +917,7 @@ public class RunExampleTool extends ToolBase {
 
   protected boolean isPortAvailable(int port) {
     try (Socket s = new Socket("localhost", port)) {
+      assert s != null; // To allow compilation..
       return false;
     } catch (IOException e) {
       return true;
