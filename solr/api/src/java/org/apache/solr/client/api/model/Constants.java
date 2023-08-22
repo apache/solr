@@ -34,4 +34,18 @@ public class Constants {
 
   /** The name of a collection referenced by an API call */
   public static final String COLLECTION = "collection";
+
+  public static final String COUNT_PROP = "count";
+
+  /** Option to follow aliases when deciding the target of a collection admin command. */
+  public static final String FOLLOW_ALIASES = "followAliases";
+
+  /** If you unload a core, delete the index too */
+  public static final String DELETE_INDEX = "deleteIndex";
+
+  public static final String DELETE_DATA_DIR = "deleteDataDir";
+
+  public static final String DELETE_INSTANCE_DIR = "deleteInstanceDir";
+
+  public static final String ONLY_IF_DOWN = "onlyIfDown";
 }

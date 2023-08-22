@@ -180,7 +180,7 @@ import org.apache.solr.handler.admin.api.DeleteCollection;
 import org.apache.solr.handler.admin.api.DeleteCollectionBackup;
 import org.apache.solr.handler.admin.api.DeleteCollectionSnapshot;
 import org.apache.solr.handler.admin.api.DeleteNode;
-import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
+import org.apache.solr.handler.admin.api.DeleteReplica;
 import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
@@ -734,7 +734,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEREPLICA_OP(
         DELETEREPLICA,
         (req, rsp, h) -> {
-          DeleteReplicaAPI.invokeWithV1Params(h.coreContainer, req, rsp);
+          DeleteReplica.invokeWithV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     MIGRATE_OP(
@@ -1373,7 +1373,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteAlias.class,
         DeleteCollectionBackup.class,
         DeleteCollection.class,
-        DeleteReplicaAPI.class,
+        DeleteReplica.class,
         DeleteReplicaProperty.class,
         DeleteShardAPI.class,
         ForceLeaderAPI.class,
