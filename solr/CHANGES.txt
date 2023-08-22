@@ -128,6 +128,8 @@ Bug Fixes
 
 * PR#1826: Allow looking up Solr Package repo when that URL references a raw repository.json hosted on Github when the file is JSON but the mimetype used is text/plain. (Eric Pugh)
 
+* SOLR-16944: V2 API /api/node/health should be governed by "health" permission, not "config-read" (janhoy)
+
 * SOLR-16859: Missing Proxy support for Http2SolrClient (Alex Deparvu)
 
 Dependency Upgrades
