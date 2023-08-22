@@ -61,29 +61,36 @@ public class ApiTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    String response = null;
     String getUrl = cli.getOptionValue("get");
     if (getUrl != null) {
-      getUrl = getUrl.replace("+", "%20");
-      URI uri = new URI(getUrl);
-      String solrUrl = getSolrUrlFromUri(uri);
-      String path = uri.getPath();
-      try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
-        NamedList<Object> response =
-            solrClient.request(
-                // For path parameter we need the path without the root so from the second / char
-                // (because root can be configured)
-                // E.g URL is http://localhost:8983/solr/admin/info/system path is
-                // /solr/admin/info/system and the path without root is /admin/info/system
-                new GenericSolrRequest(
-                    SolrRequest.METHOD.GET,
-                    path.substring(path.indexOf("/", path.indexOf("/") + 1)),
-                    getSolrParamsFromUri(uri)));
+      response = callGet(getUrl);
+    }
+    if (response != null) {
+      // pretty-print the response to stdout
+      echo(response);
+    }
+  }
 
-        // pretty-print the response to stdout
-        CharArr arr = new CharArr();
-        new JSONWriter(arr, 2).write(response.asMap());
-        echo(arr.toString());
-      }
+  protected String callGet(String url) throws Exception {
+    URI uri = new URI(url.replace("+", "%20"));
+    String solrUrl = getSolrUrlFromUri(uri);
+    String path = uri.getPath();
+    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
+      NamedList<Object> response =
+          solrClient.request(
+              // For path parameter we need the path without the root so from the second / char
+              // (because root can be configured)
+              // E.g URL is http://localhost:8983/solr/admin/info/system path is
+              // /solr/admin/info/system and the path without root is /admin/info/system
+              new GenericSolrRequest(
+                  SolrRequest.METHOD.GET,
+                  path.substring(path.indexOf("/", path.indexOf("/") + 1)),
+                  getSolrParamsFromUri(uri)));
+      // pretty-print the response to stdout
+      CharArr arr = new CharArr();
+      new JSONWriter(arr, 2).write(response.asMap());
+      return arr.toString();
     }
   }
 

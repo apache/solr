@@ -16,32 +16,4 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.common.util.NamedList;
-
-public class SimpleSolrResponse extends SolrResponse {
-
-  public long elapsedTime;
-
-  public NamedList<Object> nl;
-
-  @Override
-  public long getElapsedTime() {
-    return elapsedTime;
-  }
-
-  @Override
-  public NamedList<Object> getResponse() {
-    return nl;
-  }
-
-  @Override
-  public void setResponse(NamedList<Object> rsp) {
-    nl = rsp;
-  }
-
-  @Override
-  public void setElapsedTime(long elapsedTime) {
-    this.elapsedTime = elapsedTime;
-  }
-}
+public class SimpleSolrResponse extends SolrResponseBase {}

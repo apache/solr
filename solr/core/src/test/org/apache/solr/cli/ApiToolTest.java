@@ -16,14 +16,29 @@
  */
 package org.apache.solr.cli;
 
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import org.apache.solr.SolrTestCase;
+import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ApiToolTest extends SolrTestCase {
+public class ApiToolTest extends SolrCloudTestCase {
+  static String COLLECTION_NAME = "globalLoaderColl";
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(1)
+        .addConfig(
+            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .configure();
+  }
 
   @Test
   public void testParsingGetUrl() throws URISyntaxException {
@@ -41,5 +56,45 @@ public class ApiToolTest extends SolrTestCase {
       assertEquals(1, params.size());
       assertEquals("select id from COLL_NAME limit 10", params.get("stmt"));
     }
+  }
+
+  @Test
+  public void testQueryResponse() throws Exception {
+    int docCount = 1000;
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, "config", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
+
+    String tmpFileLoc =
+        new File(cluster.getBaseDir().toFile().getAbsolutePath() + File.separator).getPath();
+
+    UpdateRequest ur = new UpdateRequest();
+    ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+
+    for (int i = 0; i < docCount; i++) {
+      ur.add(
+          "id",
+          String.valueOf(i),
+          "desc_s",
+          TestUtil.randomSimpleString(random(), 10, 50),
+          "a_dt",
+          "2019-09-30T05:58:03Z");
+    }
+    cluster.getSolrClient().request(ur, COLLECTION_NAME);
+
+    ApiTool tool = new ApiTool();
+
+    String response =
+        tool.callGet(
+            cluster.getJettySolrRunner(0).getBaseUrl()
+                + "/"
+                + COLLECTION_NAME
+                + "/select?q=*:*&rows=1&fl=id");
+    assertNull("request response is null", response);
+    //    Object queryResponse = response.get("response");
+    //    assertNotNull("query response is null", queryResponse);
+    //    assertTrue("query response is not a namedList: " + queryResponse + ", type: " +
+    // queryResponse.getClass().getName(), queryResponse instanceof SolrDocumentList);
+    //    assertEquals(0, ((SolrDocumentList)queryResponse).getNumFound());
   }
 }
