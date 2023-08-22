@@ -130,6 +130,8 @@ Bug Fixes
 
 * SOLR-16859: Missing Proxy support for Http2SolrClient (Alex Deparvu)
 
+* SOLR-16929: SolrStream propagates undecoded error message (Alex Deparvu)
+
 Dependency Upgrades
 ---------------------
 
