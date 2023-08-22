@@ -134,6 +134,8 @@ Bug Fixes
 
 * SOLR-16929: SolrStream propagates undecoded error message (Alex Deparvu)
 
+* SOLR-16934: Allow Solr to read client (javax.net.ssl.*) trustStores and keyStores via SecurityManager. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 
