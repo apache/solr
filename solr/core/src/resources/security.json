@@ -1,74 +1,74 @@
 {
   "authentication": {
-    "blockUnknown": true,
+    "blockUnknown": false,
     "class": "solr.BasicAuthPlugin",
     "credentials": {
-      "user": "5xqM3QvmfKJPaxCNRNgur/iPA+ENqGaMLou0vjRN+U0= PoIl/rZE4wq+xdDmW3q0y/PctJ28VKIW14RTSU9du84=",
-      "admin": "bGHR1+rT5TVYHVWyZv+bW6ttXnUQDUjD06Avie1SUWQ= Ut7wdJ0X2+IKgcp7y3DGbJBzxvPnA/YiLa5gmoVqYD0=",
-      "superadmin": "s7518QQL7UNiDNHRqo3PqvYbIts2fKkBDuBBv7Q9+D4= MraYq5n3JjOl8SXHTH4OFMRb/rqlmt0oKbquw/urdDk="
+      "search": "9ch2qWOmNSeGpfcgLRXafhm5z3KeRti5qCNLn7SmK1I= aXNjZWd4YW9mMzZ0cjE1Nw==",
+      "index": "of9xlSadImtR0MH4obzJvKSZkuE5DIJh5NOui2hWDeA= dTRuYzU4Y3F4N2hxd2sxeA==",
+      "admin": "6clS8rTEj1x1LP/uRCxOZsLdps7Sovokru09WdJX+7A= NGMyZGFhN2lrNHFsdXZybA==",
+      "superadmin": "9wzPajmLBIIi8BmToy8lxveDxfL6Vl/BX/Ss3xrs3XQ= OWZna2hwendocXFnODU5ZQ=="
     }
   },
   "authorization": {
     "class": "solr.RuleBasedAuthorizationPlugin",
     "permissions": [{
         "name": "security-edit",
-        "role": "admin",
-        "index": 1
+        "role": "superadmin"
       },
       {
         "name": "security-read",
-        "role": "admin",
-        "index": 2
+        "role": "admin"
       },
       {
         "name": "config-edit",
-        "role": "admin",
-        "index": 3
+        "role": "admin"
       },
       {
         "name": "config-read",
-        "role": "admin",
-        "index": 4
+        "role": "admin"
       },
       {
         "name": "collection-admin-edit",
-        "role": "admin",
-        "index": 5
-      },
-      {
-        "name": "collection-admin-read",
-        "role": "admin",
-        "index": 6
+        "role": "admin"
       },
       {
         "name": "core-admin-edit",
-        "role": "admin",
-        "index": 7
+        "role": "admin"
       },
       {
         "name": "core-admin-read",
-        "role": "admin",
-        "index": 8
-      },
-      {
-        "name": "all",
-        "role": [
-          "admin",
-          "superadmin"
-        ],
-        "index": 9
+        "role": "admin"
       },
       {
         "name": "read",
-        "role": ["user"],
-        "index": 10
+        "role": "search"
+      },
+      {
+        "name": "collection-admin-read",
+        "role": "search"
+      },
+      {
+        "name": "update",
+        "role": "index"
+      },
+      {
+        "name": "health",
+        "role": null
+      },
+      {
+        "name": "metrics-read",
+        "role": null
+      },
+      {
+        "name": "all",
+        "role": "admin"
       }
     ],
     "user-role": {
-      "name": "admin",
-      "user": ["user"],
-      "superadmin": ["superadmin"],
-      "admin": ["admin"]
+      "search": ["search"],
+      "index": ["index", "search"],
+      "admin": ["admin", "index", "search"],
+      "superadmin": ["superadmin", "admin", "index", "search"]
     }
   }
 }
