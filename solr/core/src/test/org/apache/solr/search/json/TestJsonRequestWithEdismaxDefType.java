@@ -19,14 +19,15 @@ package org.apache.solr.search.json;
 import static org.apache.solr.SolrTestCaseJ4.params;
 import static org.apache.solr.SolrTestCaseJ4.sdoc;
 
+import java.nio.file.Path;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
-import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrClientTestRule;
 import org.junit.ClassRule;
 
@@ -38,17 +39,21 @@ public class TestJsonRequestWithEdismaxDefType extends SolrTestCase {
   public void test() throws Exception {
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
 
-    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
+    Path configSet = LuceneTestCase.createTempDir();
+    SolrTestCaseJ4.copyMinConf(configSet.toFile());
+    SolrTestCaseJ4.newRandomConfig();
+
+    solrClientTestRule.newCollection().withConfigSet(configSet.toString()).create();
 
     SolrClient client = solrClientTestRule.getSolrClient();
 
     client.request(
         new ConfigRequest(
             "{"
-                + "  'update-requesthandler':{"
+                + "  'create-requesthandler':{"
                 + "    'name':'/query',"
                 + "    'class':'solr.SearchHandler',"
-                + "    'defaults' : {'defType':'edismax'}"
+                + "    'defaults' : {'defType':'edismax'}" // the critical part
                 + "  }"
                 + "}"));
 
