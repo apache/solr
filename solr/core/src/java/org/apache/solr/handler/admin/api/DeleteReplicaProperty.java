@@ -36,8 +36,10 @@ import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.PermissionNameProvider;
 
 /**
  * V2 API implementation for removing a property from a collection replica
@@ -54,6 +56,8 @@ public class DeleteReplicaProperty extends AdminAPIBase implements DeleteReplica
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
+  @PermissionName(PermissionNameProvider.Name.COLL_EDIT_PERM)
   public SolrJerseyResponse deleteReplicaProperty(
       String collName, String shardName, String replicaName, String propertyName) throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);

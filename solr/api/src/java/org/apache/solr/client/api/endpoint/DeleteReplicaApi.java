@@ -41,10 +41,11 @@ import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
  *
  * <p>These APIs are analogous to the v1 /admin/collections?action=DELETEREPLICA command.
  */
+@Path("/collections/{collectionName}")
 public interface DeleteReplicaApi {
 
   @DELETE
-  @Path("/collections/{collectionName}/shards/{shardName}/replicas/{replicaName}")
+  @Path("/shards/{shardName}/replicas/{replicaName}")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Delete an single replica by name",
@@ -63,7 +64,7 @@ public interface DeleteReplicaApi {
       throws Exception;
 
   @DELETE
-  @Path("/collections/{collectionName}/shards/{shardName}/replicas")
+  @Path("/shards/{shardName}/replicas")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Delete one or more replicas from the specified collection and shard",
@@ -82,10 +83,10 @@ public interface DeleteReplicaApi {
       throws Exception;
 
   @PUT
-  @Path("/collections/{collectionName}/scale")
+  @Path("/scale")
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
-      summary = "Scale the replica count for a specified collection",
+      summary = "Scale the replica count for all shards in the specified collection",
       tags = {"replicas"})
   SubResponseAccumulatingJerseyResponse deleteReplicasByCountAllShards(
       @PathParam("collectionName") String collectionName, ScaleCollectionRequestBody requestBody)
