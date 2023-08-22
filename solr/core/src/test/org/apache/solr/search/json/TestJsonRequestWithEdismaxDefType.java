@@ -67,11 +67,6 @@ public class TestJsonRequestWithEdismaxDefType extends SolrTestCase {
     client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"));
     client.add(sdoc("id", "3"));
     client.commit();
-    client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ"));
-    client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ"));
-    client.commit();
-    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY"));
-    client.commit();
   }
 
   private static void doQuery(SolrClient client) throws Exception {

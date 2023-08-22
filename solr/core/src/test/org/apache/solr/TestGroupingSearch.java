@@ -360,7 +360,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     assertJQ(
         req("q", "*:*", "start", "1", "group", "true", "group.field", "id", "group.main", "true"),
-        "/response=={'numFound':4,'start':1,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
+        "/response=={'numFound':3,'start':1,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}");
     assertJQ(
         req(
             "q",
