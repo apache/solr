@@ -71,4 +71,4 @@ org.quicktheories:quicktheories=0.26
 org.semver4j:semver4j=4.3.0
 org.slf4j:*=2.0.7
 org.xerial.snappy:snappy-java=1.1.10.1
-software.amazon.awssdk:*=2.20.97
+software.amazon.awssdk:*=2.20.128
