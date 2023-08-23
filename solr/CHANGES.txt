@@ -136,6 +136,8 @@ Bug Fixes
 
 * SOLR-16934: Allow Solr to read client (javax.net.ssl.*) trustStores and keyStores via SecurityManager. (Houston Putman)
 
+* SOLR-16946: Updated Cluster Singleton plugins are stopped correctly when the Overseer is closed. (Paul McArthur)
+
 Dependency Upgrades
 ---------------------
 
