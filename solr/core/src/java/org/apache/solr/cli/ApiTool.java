@@ -23,10 +23,12 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 
 /**
  * Supports api command in the bin/solr script.
@@ -90,9 +92,12 @@ public class ApiTool extends ToolBase {
       // When trying to re-write into JSON, the JSONWriter doesn't have the right info to print it
       // correctly.
       // All we want to do is pass the JSON response to the user, so do that.
-      req.setResponseParser(new NoOpResponseParser("json"));
+      req.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> response = solrClient.request(req);
-      return (String) response.get("response");
+      // pretty-print the response to stdout
+      CharArr arr = new CharArr();
+      new JSONWriter(arr, 2).write(response.asMap());
+      return arr.toString();
     }
   }
 

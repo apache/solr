@@ -32,11 +32,14 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,7 +176,7 @@ public class DeleteTool extends ToolBase {
     NamedList<Object> response;
     try {
       var req = CollectionAdminRequest.deleteCollection(collectionName);
-      req.setResponseParser(new NoOpResponseParser("json"));
+      req.setResponseParser(new JsonMapResponseParser());
       response = cloudSolrClient.request(req);
     } catch (SolrServerException sse) {
       throw new Exception(
@@ -195,7 +198,10 @@ public class DeleteTool extends ToolBase {
     }
 
     if (response != null) {
-      echo((String) response.get("response"));
+      // pretty-print the response to stdout
+      CharArr arr = new CharArr();
+      new JSONWriter(arr, 2).write(response.asMap());
+      echo(arr.toString());
       echo("\n");
     }
 
