@@ -20,9 +20,6 @@ package org.apache.solr.util.stats;
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.context.propagation.TextMapSetter;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Locale;
@@ -39,7 +36,6 @@ import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.util.tracing.TraceUtils;
 
 /**
  * Sub-class of HttpRequestExecutor which tracks metrics interesting to solr Inspired and partially
@@ -142,7 +138,6 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
     if (solrMetricsContext != null) {
       timerContext = timer(request).time();
     }
-    injectContextIntoRequest(request);
     try {
       return super.execute(request, conn, context);
     } finally {
@@ -150,13 +145,6 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
         timerContext.stop();
       }
     }
-  }
-
-  private static final TextMapSetter<HttpRequest> TRACE_INJECTOR = (r, k, v) -> r.setHeader(k, v);
-
-  private static void injectContextIntoRequest(HttpRequest request) {
-    TextMapPropagator textMapPropagator = TraceUtils.getTextMapPropagator();
-    textMapPropagator.inject(Context.current(), request, TRACE_INJECTOR);
   }
 
   private Timer timer(HttpRequest request) {

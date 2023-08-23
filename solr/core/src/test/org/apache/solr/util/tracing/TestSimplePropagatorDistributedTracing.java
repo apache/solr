@@ -26,13 +26,13 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.util.LogListener;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,6 +43,13 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    if (System.getProperty("host") == null) {
+      System.setProperty("host", "localhost");
+    }
+
+    // enable simple propagator
+    System.setProperty("solr.otel.simplePropagatorOnly", "true");
+
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
 
     // tracer should be disabled
@@ -54,6 +61,11 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("solr.otel.simplePropagatorOnly");
   }
 
   @Test
@@ -97,26 +109,6 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
       var q = new QueryRequest(new SolrQuery("*:*"));
       q.addHeader(SimplePropagator.TRACE_ID, traceId);
       var r2 = q.process(cloudClient, COLLECTION);
-      assertEquals(0, r2.getStatus());
-      assertSameTraceId(reqLog, traceId);
-    }
-  }
-
-  @Test
-  public void testApacheClient() throws Exception {
-    // call api that uses apache client impl
-    try (LogListener reqLog = LogListener.info(SolrCore.class.getName() + ".Request")) {
-      // verify all events have the same auto-generated traceid
-      CollectionAdminRequest.ColStatus a1 = CollectionAdminRequest.collectionStatus(COLLECTION);
-      CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
-      assertEquals(0, r1.getStatus());
-      assertSameTraceId(reqLog, null);
-
-      // verify all events have the same 'custom' traceid
-      String traceId = "tidTestSimplePropagatorDistributedTracing2";
-      CollectionAdminRequest.ColStatus a2 = CollectionAdminRequest.collectionStatus(COLLECTION);
-      a2.addHeader(SimplePropagator.TRACE_ID, traceId);
-      var r2 = a2.process(cluster.getSolrClient(), COLLECTION);
       assertEquals(0, r2.getStatus());
       assertSameTraceId(reqLog, traceId);
     }
