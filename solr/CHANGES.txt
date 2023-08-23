@@ -128,7 +128,17 @@ Bug Fixes
 
 * PR#1826: Allow looking up Solr Package repo when that URL references a raw repository.json hosted on Github when the file is JSON but the mimetype used is text/plain. (Eric Pugh)
 
+* SOLR-16944: V2 API /api/node/health should be governed by "health" permission, not "config-read" (janhoy)
+
 * SOLR-16859: Missing Proxy support for Http2SolrClient (Alex Deparvu)
+
+* SOLR-16929: SolrStream propagates undecoded error message (Alex Deparvu)
+
+* SOLR-16934: Allow Solr to read client (javax.net.ssl.*) trustStores and keyStores via SecurityManager. (Houston Putman)
+
+* SOLR-16946: Updated Cluster Singleton plugins are stopped correctly when the Overseer is closed. (Paul McArthur)
+
+* SOLR-16933: Include the full query response when using the API tool, and fix serialization issues for SolrDocumentList. (Houston Putman) 
 
 Dependency Upgrades
 ---------------------
