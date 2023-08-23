@@ -33,7 +33,14 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Simple Http Header Propagator */
+/**
+ * Simple Http Header Propagator. When enabled, this will only propagate the trace id from the
+ * client to all internal requests. It is also in charge of generating a trace id if none exists.
+ *
+ * <p>Note: this is very similar in impl to
+ * io.opentelemetry.extension.incubator.propagation.PassThroughPropagator. we should consider
+ * replacing/upgrading once that becomes generally available
+ */
 public class SimplePropagator implements TextMapPropagator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
