@@ -864,12 +864,7 @@ public class HttpSolrCall {
     // for example: sreq.getContext().put( "HttpServletRequest", req );
     // used for logging query stats in SolrCore.execute()
     solrReq.getContext().put("webapp", req.getContextPath());
-    try {
     solrReq.getCore().execute(handler, solrReq, rsp);
-    } catch (Exception e) {
-      log.error("Caught : " + e.getMessage());
-      throw e;
-    }
   }
 
   private void handleAdminRequest() throws IOException {

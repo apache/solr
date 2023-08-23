@@ -601,7 +601,7 @@ public class SearchHandler extends RequestHandlerBase
           }
         }
         nl.add("error", cause.toString());
-        if(!core.getCoreContainer().hideStackTrace()) {
+        if (!core.getCoreContainer().hideStackTrace()) {
           StringWriter trace = new StringWriter();
           cause.printStackTrace(new PrintWriter(trace));
           nl.add("trace", trace.toString());

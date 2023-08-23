@@ -906,7 +906,7 @@ public class QueryComponent extends SearchComponent {
             t = ((SolrServerException) t).getCause();
           }
           nl.add("error", t.toString());
-          if(!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+          if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
             StringWriter trace = new StringWriter();
             t.printStackTrace(new PrintWriter(trace));
             nl.add("trace", trace.toString());
@@ -1299,7 +1299,7 @@ public class QueryComponent extends SearchComponent {
                 t = ((SolrServerException) t).getCause();
               }
               nl.add("error", t.toString());
-              if(!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+              if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
                 StringWriter trace = new StringWriter();
                 t.printStackTrace(new PrintWriter(trace));
                 nl.add("trace", trace.toString());

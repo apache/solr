@@ -20,13 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-
-import javax.ws.rs.core.Response;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
@@ -35,8 +32,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
-
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.config.RequestConfig.Builder;
@@ -48,13 +43,6 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.junit.AfterClass;
@@ -68,7 +56,6 @@ import org.w3c.dom.Document;
 /** SOLR-14886 : Suppress stack trace in Query response */
 @SuppressSSL
 public class HideStackTraceTest extends SolrJettyTestBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static Path solrHome;
 
@@ -102,41 +89,36 @@ public class HideStackTraceTest extends SolrJettyTestBase {
   @Test
   public void testHideStackTrace() throws Exception {
     final String url = jetty.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=xml";
-    log.info("Request URL: " + url);
     final HttpGet get = new HttpGet(url);
-    
-    try (final CloseableHttpClient client = buildHttpClient();
-        final CloseableHttpResponse response = client.execute(get)){
 
-      log.info("Received response: " + response);
+    try (final CloseableHttpClient client = buildHttpClient();
+        final CloseableHttpResponse response = client.execute(get)) {
+
       Assert.assertNotNull("Should have a response", response);
-     
+
       final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
       final DocumentBuilder builder = factory.newDocumentBuilder();
       Document doc;
-      try(final InputStream in = response.getEntity().getContent()){
+      try (final InputStream in = response.getEntity().getContent()) {
         doc = builder.parse(in);
       }
 
-      final StringWriter writer = new StringWriter();
-      final Transformer transformer = TransformerFactory.newInstance().newTransformer();
-      transformer.transform(new DOMSource(doc), new StreamResult(writer));
-      log.info("XML response: " + writer.toString());
-      
       final XPath xpath = XPathFactory.newInstance().newXPath();
       final String error = xpath.evaluate("/response/lst[name='error']", doc);
       Assert.assertNotNull("Should contain an error", error);
       final String message = xpath.evaluate("/response/lst/str[name='msg']", doc);
       Assert.assertNotNull("Should contain an error message", message);
       final String trace = xpath.evaluate("/response/lst/str[name='trace']", doc);
-      Assert.assertTrue("Should not contain the trace", trace.isEmpty());      
+      Assert.assertTrue("Should not contain the trace", trace.isEmpty());
     }
   }
 
   private CloseableHttpClient buildHttpClient() {
     final Builder requestConfigBuilder = RequestConfig.custom();
-    requestConfigBuilder.setConnectTimeout(15000).setSocketTimeout(30000)
-            .setCookieSpec(CookieSpecs.STANDARD);
+    requestConfigBuilder
+        .setConnectTimeout(15000)
+        .setSocketTimeout(30000)
+        .setCookieSpec(CookieSpecs.STANDARD);
     final RequestConfig requestConfig = requestConfigBuilder.build();
 
     final PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
@@ -166,5 +148,4 @@ public class HideStackTraceTest extends SolrJettyTestBase {
       return null;
     }
   }
-  
 }

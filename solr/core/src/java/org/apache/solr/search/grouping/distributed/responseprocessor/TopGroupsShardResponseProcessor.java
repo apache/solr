@@ -101,7 +101,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
             t = ((SolrServerException) t).getCause();
           }
           individualShardInfo.add("error", t.toString());
-          if(!rb.req.getCore().getCoreContainer().hideStackTrace()){
+          if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
             StringWriter trace = new StringWriter();
             t.printStackTrace(new PrintWriter(trace));
             individualShardInfo.add("trace", trace.toString());
