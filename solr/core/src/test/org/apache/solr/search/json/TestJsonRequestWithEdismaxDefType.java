@@ -16,12 +16,8 @@
  */
 package org.apache.solr.search.json;
 
-import static org.apache.solr.SolrTestCaseJ4.params;
-import static org.apache.solr.SolrTestCaseJ4.sdoc;
-
 import java.nio.file.Path;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -31,7 +27,7 @@ import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.SolrClientTestRule;
 import org.junit.ClassRule;
 
-public class TestJsonRequestWithEdismaxDefType extends SolrTestCase {
+public class TestJsonRequestWithEdismaxDefType extends SolrTestCaseJ4 {
 
   @ClassRule
   public static final SolrClientTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
@@ -41,7 +37,6 @@ public class TestJsonRequestWithEdismaxDefType extends SolrTestCase {
 
     Path configSet = LuceneTestCase.createTempDir();
     SolrTestCaseJ4.copyMinConf(configSet.toFile());
-    SolrTestCaseJ4.newRandomConfig();
 
     solrClientTestRule.newCollection().withConfigSet(configSet.toString()).create();
 
