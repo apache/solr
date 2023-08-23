@@ -143,8 +143,12 @@ public abstract class BaseSolrResource {
     Exception exception = getSolrResponse().getException();
     if (null != exception) {
       NamedList<Object> info = new SimpleOrderedMap<>();
-      Boolean hideTraces = solrCore == null ? null : solrCore.getCoreContainer().hideStackTrace();
-      this.statusCode = ResponseUtils.getErrorInfo(exception, info, log, hideTraces);
+      this.statusCode =
+          ResponseUtils.getErrorInfo(
+              exception,
+              info,
+              log,
+              solrCore != null && solrCore.getCoreContainer().hideStackTrace());
       getSolrResponse().add("error", info);
       String message = (String) info.get("msg");
       if (null != message && !message.trim().isEmpty()) {

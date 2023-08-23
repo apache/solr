@@ -18,18 +18,10 @@ package org.apache.solr.servlet;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
 import org.apache.http.client.config.CookieSpecs;
@@ -56,30 +48,18 @@ import org.w3c.dom.Document;
 /** SOLR-14886 : Suppress stack trace in Query response */
 @SuppressSSL
 public class HideStackTraceTest extends SolrJettyTestBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static Path solrHome;
 
   @BeforeClass
   public static void before() throws Exception {
-    solrHome = createTempDir();
-    setupJettyTestHome(solrHome.toFile(), "collection1");
-    // overwrite solr.xml to hide stack traces
-    Files.copy(
-        TEST_PATH().resolve("solr-hideStackTrace.xml"),
-        solrHome.resolve("solr.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-    Path top = Paths.get(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf");
-    Files.copy(
-        top.resolve("solrconfig-errorComponent.xml"),
-        Paths.get(solrHome.toString() + "/collection1/conf").resolve("solrconfig.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-    createAndStartJetty(solrHome.toAbsolutePath().toString());
+    initCore("solrconfig-errorComponent.xml", "schema.xml");
+    createAndStartJetty(SolrTestCaseJ4.TEST_PATH().toAbsolutePath().toString());
   }
 
   @AfterClass
   public static void after() throws Exception {
-    if (client != null) client.close();
-    client = null;
     afterSolrJettyTestBase();
     if (solrHome != null) {
       cleanUpJettyHome(solrHome.toFile());

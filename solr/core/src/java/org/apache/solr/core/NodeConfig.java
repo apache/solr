@@ -192,7 +192,7 @@ public class NodeConfig {
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
-    this.hideStackTraces = hideStackTraces;
+    this.hideStackTraces = Boolean.getBoolean("solr.hideStackTrace");
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
     this.hiddenSysProps = hiddenSysProps;

@@ -31,8 +31,7 @@ public class ResponseUtils {
 
   // System property to use if the Solr core does not exist or solr.hideStackTrace is not
   // configured. (i.e.: a lot of unit test).
-  private static final boolean SYSTEM_HIDE_STACK_TRACES =
-      Boolean.parseBoolean(System.getProperty("solr.hideStackTrace"));
+  private static final boolean SYSTEM_HIDE_STACK_TRACES = Boolean.getBoolean("solr.hideStackTrace");
 
   /**
    * Adds the given Throwable's message to the given NamedList.
@@ -48,7 +47,7 @@ public class ResponseUtils {
    * @see #getTypedErrorInfo(Throwable, Logger)
    */
   public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log) {
-    return getErrorInfo(ex, info, log, null);
+    return getErrorInfo(ex, info, log, false);
   }
 
   /**
@@ -68,7 +67,7 @@ public class ResponseUtils {
    * @see #getTypedErrorInfo(Throwable, Logger)
    */
   public static int getErrorInfo(
-      Throwable ex, NamedList<Object> info, Logger log, Boolean hideTrace) {
+      Throwable ex, NamedList<Object> info, Logger log, boolean hideTrace) {
     int code = 500;
     if (ex instanceof SolrException) {
       SolrException solrExc = (SolrException) ex;
@@ -126,7 +125,7 @@ public class ResponseUtils {
    * @see #getErrorInfo(Throwable, NamedList, Logger)
    */
   public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log) {
-    return getTypedErrorInfo(ex, log, null);
+    return getTypedErrorInfo(ex, log, false);
   }
 
   /**
@@ -141,7 +140,7 @@ public class ResponseUtils {
    *
    * @see #getErrorInfo(Throwable, NamedList, Logger)
    */
-  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log, Boolean hideTrace) {
+  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log, boolean hideTrace) {
     final ErrorInfo errorInfo = new ErrorInfo();
     int code = 500;
     if (ex instanceof SolrException) {
@@ -184,7 +183,7 @@ public class ResponseUtils {
     return errorInfo;
   }
 
-  private static boolean hideStackTrace(final Boolean hideTrace) {
-    return hideTrace == null ? SYSTEM_HIDE_STACK_TRACES : hideTrace.booleanValue();
+  private static boolean hideStackTrace(final boolean hideTrace) {
+    return hideTrace || SYSTEM_HIDE_STACK_TRACES;
   }
 }
