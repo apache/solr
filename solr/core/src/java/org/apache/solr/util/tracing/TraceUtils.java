@@ -27,8 +27,9 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.http.HttpRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.eclipse.jetty.client.api.Request;
 
 /** Utilities for distributed tracing. */
 public class TraceUtils {
@@ -120,9 +121,19 @@ public class TraceUtils {
     return textMapPropagator.extract(Context.current(), req, new HttpServletRequestGetter());
   }
 
-  public static void injectContextIntoRequest(SolrRequest<?> req) {
+  private static final TextMapSetter<Request> REQUEST_INJECTOR = (req, k, v) -> req
+      .headers(httpFields -> httpFields.put(k, v));
+
+  public static void injectTraceContext(Request req) {
     TextMapPropagator textMapPropagator = getTextMapPropagator();
-    textMapPropagator.inject(Context.current(), req, new SolrRequestSetter());
+    textMapPropagator.inject(Context.current(), req, REQUEST_INJECTOR);
+  }
+
+  private static final TextMapSetter<HttpRequest> HTTP_REQUEST_INJECTOR = (req, k, v) -> req.setHeader(k, v);
+
+  public static void injectTraceContext(HttpRequest req) {
+    TextMapPropagator textMapPropagator = getTextMapPropagator();
+    textMapPropagator.inject(Context.current(), req, HTTP_REQUEST_INJECTOR);
   }
 
   public static Span startHttpRequestSpan(HttpServletRequest request, Context context) {

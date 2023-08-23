@@ -21,7 +21,6 @@ import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Context;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
@@ -94,11 +93,8 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
       @Override
       public void onQueued(Request request) {
         // do tracing onQueued because it's called from Solr's thread
-        var textMapPropagator = TraceUtils.getTextMapPropagator();
-        var context = Context.current();
-        textMapPropagator.inject(
-            context, request, (r, k, v) -> request.headers(httpFields -> httpFields.add(k, v)));
-        span = Span.fromContext(context);
+        TraceUtils.injectTraceContext(request);
+        span = Span.current();
       }
 
       @Override
