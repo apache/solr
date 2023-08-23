@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import io.opentelemetry.context.Context;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -268,7 +267,6 @@ public class ExecutorUtil {
           providersCopy.get(i).store(reference);
         }
       }
-      var ctxAwareCommand = Context.current().wrap(command);
       super.execute(
           () -> {
             isServerPool.set(Boolean.TRUE);
@@ -288,7 +286,7 @@ public class ExecutorUtil {
               submitter.set(submitterStackTrace);
             }
             try {
-              ctxAwareCommand.run();
+              command.run();
             } catch (Throwable t) {
               if (t instanceof OutOfMemoryError) {
                 throw t;

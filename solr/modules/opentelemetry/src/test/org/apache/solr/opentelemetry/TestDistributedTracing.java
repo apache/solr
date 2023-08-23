@@ -18,7 +18,6 @@
 package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -194,7 +193,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   private static boolean isRootSpan(SpanData span) {
-    return span.getParentSpanContext() == SpanContext.getInvalid();
+    return !span.getParentSpanContext().isValid();
   }
 
   private static void assertCollectionName(SpanData span) {

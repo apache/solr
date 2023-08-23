@@ -23,6 +23,7 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import java.util.List;
 import java.util.function.Consumer;
@@ -71,6 +72,10 @@ public class TraceUtils {
 
   public static TextMapPropagator getTextMapPropagator() {
     return GlobalOpenTelemetry.getPropagators().getTextMapPropagator();
+  }
+
+  public static Tracer getGlobalTracer() {
+    return GlobalOpenTelemetry.getTracer("solr");
   }
 
   public static void setDbInstance(SolrQueryRequest req, String coreOrColl) {
@@ -158,6 +163,29 @@ public class TraceUtils {
     if (!ops.isEmpty()) {
       req.getSpan().setAttribute(TAG_OPS, ops);
       req.getSpan().setAttribute(TAG_CLASS, clazz);
+    }
+  }
+
+  public static ScopeSpanCloseable asScopeSpanCloseable(Scope scope, Span span) {
+    return new ScopeSpanCloseable(scope, span);
+  }
+
+  public static class ScopeSpanCloseable implements AutoCloseable {
+
+    private Scope scope;
+    private Span span;
+
+    private ScopeSpanCloseable(Scope scope, Span span) {
+      this.scope = scope;
+      this.span = span;
+    }
+
+    @Override
+    public void close() {
+      scope.close();
+      if (span != null) {
+        span.end();
+      }
     }
   }
 }
