@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -48,8 +49,6 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
 
 /** Supports create command in the bin/solr script. */
 public class CreateTool extends ToolBase {
@@ -287,19 +286,18 @@ public class CreateTool extends ToolBase {
 
     NamedList<Object> response;
     try {
-      response =
-          cloudSolrClient.request(
-              CollectionAdminRequest.createCollection(
-                  collectionName, confName, numShards, replicationFactor));
+      var req =
+          CollectionAdminRequest.createCollection(
+              collectionName, confName, numShards, replicationFactor);
+      req.setResponseParser(new NoOpResponseParser("json"));
+      response = cloudSolrClient.request(req);
     } catch (SolrServerException sse) {
       throw new Exception(
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
     if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
-      CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
-      echo(arr.toString());
+      echo((String) response.get("response"));
     } else {
       String endMessage =
           String.format(

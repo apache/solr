@@ -20,6 +20,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Locale;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -89,12 +90,16 @@ public class ApiToolTest extends SolrCloudTestCase {
             cluster.getJettySolrRunner(0).getBaseUrl()
                 + "/"
                 + COLLECTION_NAME
-                + "/select?q=*:*&rows=1&fl=id");
-    assertNull("request response is null", response);
-    //    Object queryResponse = response.get("response");
-    //    assertNotNull("query response is null", queryResponse);
-    //    assertTrue("query response is not a namedList: " + queryResponse + ", type: " +
-    // queryResponse.getClass().getName(), queryResponse instanceof SolrDocumentList);
-    //    assertEquals(0, ((SolrDocumentList)queryResponse).getNumFound());
+                + "/select?q=*:*&rows=1&fl=id&sort=id+asc");
+    // Fields that could be missed because of serialization
+    assertFindInJson(response, "\"numFound\":1000,");
+    // Correct formatting
+    assertFindInJson(response, "\"docs\":[{");
+  }
+
+  private void assertFindInJson(String json, String find) {
+    assertTrue(
+        String.format(Locale.ROOT, "Could not find string %s in response: \n%s", find, json),
+        json.contains(find));
   }
 }
