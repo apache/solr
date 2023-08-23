@@ -871,6 +871,9 @@ public class Http2SolrClient extends SolrClient {
       }
 
       Object error = rsp == null ? null : rsp.get("error");
+      if (rsp != null && error == null && processor instanceof NoOpResponseParser) {
+        error = rsp.get("response");
+      }
       if (error != null
           && (String.valueOf(getObjectByPath(error, true, errPath))
               .endsWith("ExceptionWithErrObject"))) {
@@ -907,9 +910,12 @@ public class Http2SolrClient extends SolrClient {
         if (reason == null) {
           StringBuilder msg = new StringBuilder();
           msg.append(response.getReason())
-              .append("\n\n")
+              .append("\n")
               .append("request: ")
               .append(response.getRequest().getMethod());
+          if (error != null) {
+            msg.append("\n\nError returned:\n").append(error);
+          }
           reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
         RemoteSolrException rss =

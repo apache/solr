@@ -78,6 +78,8 @@ Bug Fixes
 
 * SOLR-16946: Updated Cluster Singleton plugins are stopped correctly when the Overseer is closed. (Paul McArthur)
 
+* SOLR-16933: Include the full query response when using the API tool, and fix serialization issues for SolrDocumentList. (Houston Putman) 
+
 Dependency Upgrades
 ---------------------
 
