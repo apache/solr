@@ -55,6 +55,7 @@ public class DeleteNode extends AdminAPIBase implements DeleteNodeApi {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse deleteNode(String nodeName, DeleteNodeRequestBody requestBody)
       throws Exception {
