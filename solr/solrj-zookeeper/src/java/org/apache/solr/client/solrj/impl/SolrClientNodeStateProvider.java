@@ -194,7 +194,8 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       SimpleSolrResponse rsp = ctx.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
       metricsKeyVsTag.forEach(
           (key, tags) -> {
-            Object v = Utils.getObjectByPath(rsp.nl, true, Arrays.asList("metrics", key));
+            Object v =
+                Utils.getObjectByPath(rsp.getResponse(), true, Arrays.asList("metrics", key));
             for (Object tag : tags) {
               if (tag instanceof Function) {
                 @SuppressWarnings({"unchecked"})
@@ -296,7 +297,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
               .withResponseParser(new BinaryResponseParser())
               .build()) {
         NamedList<Object> rsp = client.request(request);
-        request.response.nl = rsp;
+        request.response.setResponse(rsp);
         return request.response;
       }
     }

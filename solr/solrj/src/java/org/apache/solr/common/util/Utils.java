@@ -479,15 +479,19 @@ public class Utils {
         Object o = getVal(obj, s, -1);
         if (o == null) return null;
         if (idx > -1) {
-          if (o instanceof MapWriter) {
+          if (o instanceof List) {
+            List<?> l = (List<?>) o;
+            o = idx < l.size() ? l.get(idx) : null;
+          } else if (o instanceof IteratorWriter) {
+            o = getValueAt((IteratorWriter) o, idx);
+          } else if (o instanceof MapWriter) {
             o = getVal(o, null, idx);
           } else if (o instanceof Map) {
             @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>) o;
             o = getVal(new MapWriterMap(map), null, idx);
           } else {
-            List<?> l = (List<?>) o;
-            o = idx < l.size() ? l.get(idx) : null;
+            return null;
           }
         }
         if (!isMapLike(o)) return null;
