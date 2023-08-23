@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import io.opentelemetry.context.Context;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;

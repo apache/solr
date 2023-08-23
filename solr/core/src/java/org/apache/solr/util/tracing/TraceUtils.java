@@ -121,15 +121,16 @@ public class TraceUtils {
     return textMapPropagator.extract(Context.current(), req, new HttpServletRequestGetter());
   }
 
-  private static final TextMapSetter<Request> REQUEST_INJECTOR = (req, k, v) -> req
-      .headers(httpFields -> httpFields.put(k, v));
+  private static final TextMapSetter<Request> REQUEST_INJECTOR =
+      (req, k, v) -> req.headers(httpFields -> httpFields.put(k, v));
 
   public static void injectTraceContext(Request req) {
     TextMapPropagator textMapPropagator = getTextMapPropagator();
     textMapPropagator.inject(Context.current(), req, REQUEST_INJECTOR);
   }
 
-  private static final TextMapSetter<HttpRequest> HTTP_REQUEST_INJECTOR = (req, k, v) -> req.setHeader(k, v);
+  private static final TextMapSetter<HttpRequest> HTTP_REQUEST_INJECTOR =
+      (req, k, v) -> req.setHeader(k, v);
 
   public static void injectTraceContext(HttpRequest req) {
     TextMapPropagator textMapPropagator = getTextMapPropagator();

@@ -171,8 +171,9 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   /**
-   * Best effort test of the apache http client tracing. the test assumes the request uses the http client but there is
-   * no way to enforce it, so when the api will be rewritten this test will become obsolete
+   * Best effort test of the apache http client tracing. the test assumes the request uses the http
+   * client but there is no way to enforce it, so when the api will be rewritten this test will
+   * become obsolete
    */
   @Test
   public void testApacheClient() throws Exception {
