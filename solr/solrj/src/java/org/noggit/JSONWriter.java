@@ -89,6 +89,8 @@ public class JSONWriter {
       write((Map<?, ?>) o);
     } else if (o instanceof Collection) {
       write((Collection<?>) o);
+    } else if (o instanceof Iterator) {
+      write((Iterator<?>) o);
     } else if (o instanceof Boolean) {
       write(((Boolean) o).booleanValue());
     } else if (o instanceof CharSequence) {
