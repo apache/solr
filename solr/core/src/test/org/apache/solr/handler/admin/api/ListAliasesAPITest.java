@@ -19,7 +19,7 @@ package org.apache.solr.handler.admin.api;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.opentracing.noop.NoopSpan;
+import io.opentelemetry.api.trace.Span;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
@@ -67,7 +67,7 @@ public class ListAliasesAPITest extends SolrTestCaseJ4 {
     when(mockCoreContainer.getZkController()).thenReturn(zkController);
 
     mockQueryRequest = mock(SolrQueryRequest.class);
-    when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
+    when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
     queryResponse = new SolrQueryResponse();
 
     getAliasesAPI = new ListAliasesAPI(mockCoreContainer, mockQueryRequest, queryResponse);
