@@ -91,11 +91,17 @@ Improvements
   circumstances as they are generated and more likely to remain up-to-date with future API changes.
   (Jason Gerlowski, David Smiley, Houston Putman)
 
-* SOLR-14667: Make zkClientTimeout consistent and based on a system property. The defauls values are stored in a single place referenced everywhere and they are based on system properties (Alex Deparvu)
+* SOLR-14667: Make zkClientTimeout consistent and based on a system property. The default values are stored in a single place referenced everywhere and they are based on system properties (Alex Deparvu)
 
 * SOLR-16926: The embedded Zookeeper's bind host can now be overridden, but still defaults to "127.0.0.1".
   This is useful when using the ZkCli on a remote Solr using the embedded ZK, or Solr running in a Docker container.
   The SOLR_ZK_EMBEDDED_HOST envVar or -Dsolr.zk.embedded.host sysProp control this bind address. (Houston Putman)
+
+* SOLR-16941: The SolrCLI now uses a smarter default for the Solr URL if none is provided, using the same envVars used when running Solr. (Houston Putman)
+
+* SOLR-16940: Users can pass Java system properties to the SolrCLI via the SOLR_TOOL_OPTS environment variable. (Houston Putman)
+
+* SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
 
 Optimizations
 ---------------------
@@ -122,7 +128,15 @@ Bug Fixes
 
 * PR#1826: Allow looking up Solr Package repo when that URL references a raw repository.json hosted on Github when the file is JSON but the mimetype used is text/plain. (Eric Pugh)
 
+* SOLR-16944: V2 API /api/node/health should be governed by "health" permission, not "config-read" (janhoy)
+
 * SOLR-16859: Missing Proxy support for Http2SolrClient (Alex Deparvu)
+
+* SOLR-16929: SolrStream propagates undecoded error message (Alex Deparvu)
+
+* SOLR-16934: Allow Solr to read client (javax.net.ssl.*) trustStores and keyStores via SecurityManager. (Houston Putman)
+
+* SOLR-16946: Updated Cluster Singleton plugins are stopped correctly when the Overseer is closed. (Paul McArthur)
 
 Dependency Upgrades
 ---------------------
