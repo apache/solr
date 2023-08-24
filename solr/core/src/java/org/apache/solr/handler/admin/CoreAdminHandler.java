@@ -130,13 +130,21 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    coreAdminAsyncTracker.parallelExecutor =
+    coreAdminAsyncTracker.standardExecutor =
         MetricUtils.instrumentedExecutorService(
-            coreAdminAsyncTracker.parallelExecutor,
+            coreAdminAsyncTracker.standardExecutor,
             this,
             solrMetricsContext.getMetricRegistry(),
             SolrMetricManager.mkName(
                 "parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
+
+    coreAdminAsyncTracker.expensiveExecutor =
+        MetricUtils.instrumentedExecutorService(
+            coreAdminAsyncTracker.expensiveExecutor,
+            this,
+            solrMetricsContext.getMetricRegistry(),
+            SolrMetricManager.mkName(
+                "parallelCoreExpensiveAdminExecutor", getCategory().name(), scope, "threadPool"));
   }
 
   @Override
@@ -334,7 +342,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
   /** Method to ensure shutting down of the ThreadPool Executor. */
   public void shutdown() {
-    if (coreAdminAsyncTracker.parallelExecutor != null) coreAdminAsyncTracker.shutdown();
+    coreAdminAsyncTracker.shutdown();
   }
 
   private static final Map<String, CoreAdminOp> opMap = new HashMap<>();
@@ -418,9 +426,17 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     public static final String FAILED = "failed";
     public final Map<String, Map<String, TaskObject>> requestStatusMap;
 
-    private ExecutorService parallelExecutor =
+    // Executor for all standard tasks (the ones that are not flagged as expensive)
+    // We always keep 50 live threads
+    private ExecutorService standardExecutor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             50, new SolrNamedThreadFactory("parallelCoreAdminAPIBaseExecutor"));
+
+    // Executor for expensive tasks
+    // We keep the number number of max threads very low to have throttling for expensive tasks
+    private ExecutorService expensiveExecutor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            5, new SolrNamedThreadFactory("parallelCoreAdminAPIExpensiveExecutor"));
 
     public CoreAdminAsyncTracker() {
       HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
@@ -431,7 +447,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
 
     public void shutdown() {
-      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(standardExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(expensiveExecutor);
     }
 
     public Map<String, TaskObject> getRequestStatusMap(String key) {
@@ -442,23 +459,29 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       ensureTaskIdNotInUse(taskObject.taskId);
       addTask(RUNNING, taskObject);
 
+      Runnable command =
+          () -> {
+            boolean exceptionCaught = false;
+            try {
+              final SolrQueryResponse response = taskObject.task.call();
+              taskObject.setRspObject(response);
+              taskObject.setOperationRspObject(response);
+            } catch (Exception e) {
+              exceptionCaught = true;
+              taskObject.setRspObjectFromException(e);
+            } finally {
+              finishTask(taskObject, !exceptionCaught);
+            }
+          };
+
       try {
         MDC.put("CoreAdminHandler.asyncId", taskObject.taskId);
         MDC.put("CoreAdminHandler.action", taskObject.action);
-        parallelExecutor.execute(
-            () -> {
-              boolean exceptionCaught = false;
-              try {
-                final SolrQueryResponse response = taskObject.task.call();
-                taskObject.setRspObject(response);
-                taskObject.setOperationRspObject(response);
-              } catch (Exception e) {
-                exceptionCaught = true;
-                taskObject.setRspObjectFromException(e);
-              } finally {
-                finishTask(taskObject, !exceptionCaught);
-              }
-            });
+        if (taskObject.expensive) {
+          expensiveExecutor.execute(command);
+        } else {
+          standardExecutor.execute(command);
+        }
       } finally {
         MDC.remove("CoreAdminHandler.asyncId");
         MDC.remove("CoreAdminHandler.action");
