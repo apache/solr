@@ -83,9 +83,9 @@
    -->
   <circuitBreaker class="solr.CircuitBreakerManager">
     <str name="memEnabled">true</str>
-    <str name="memThreshold">80</str>
+    <str name="memThreshold">75</str>
     <str name="cpuEnabled">true</str>
-    <str name="cpuThreshold">80</str>
+    <str name="cpuThreshold">75</str>
   </circuitBreaker>
 
   <initParams path="/select">
