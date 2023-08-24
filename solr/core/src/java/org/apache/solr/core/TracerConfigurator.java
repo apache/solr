@@ -19,10 +19,14 @@ package org.apache.solr.core;
 
 import io.opentelemetry.api.trace.Tracer;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
 
 /** Produces a {@link Tracer} from configuration. */
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
+
+  public static final boolean TRACE_ID_GEN_ENABLED =
+      !Boolean.getBoolean("solr.disable.alwaysOnTraceId");
 
   public static Tracer loadTracer(SolrResourceLoader loader, PluginInfo info) {
     if (info != null && info.isEnabled()) {
@@ -30,6 +34,9 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
           loader.newInstance(info.className, TracerConfigurator.class);
       configurator.init(info.initArgs);
       return configurator.getTracer();
+
+    } else if (TRACE_ID_GEN_ENABLED) {
+      return SimplePropagator.load();
     } else {
       return TraceUtils.noop();
     }
