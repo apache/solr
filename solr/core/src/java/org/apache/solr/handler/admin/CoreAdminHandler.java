@@ -219,13 +219,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       if (taskId == null) {
         callInfo.call();
       } else {
-        Callable<SolrQueryResponse> task = () -> {
-          callInfo.call();
-          return callInfo.rsp;
-        };
+        Callable<SolrQueryResponse> task =
+            () -> {
+              callInfo.call();
+              return callInfo.rsp;
+            };
 
-        final CoreAdminAsyncTracker.TaskObject taskObject =
-                new CoreAdminAsyncTracker.TaskObject(taskId, action, task);
+        var taskObject =
+            new CoreAdminAsyncTracker.TaskObject(taskId, action, op.isExpensive(), task);
 
         coreAdminAsyncTracker.submitAsyncTask(taskObject);
       }
@@ -394,6 +395,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   public interface CoreAdminOp {
+
+    default boolean isExpensive() {
+      return false;
+    }
+
     /**
      * @param it request/response object
      *     <p>If the request is invalid throw a SolrException with
@@ -502,15 +508,18 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
      * response (if available).
      */
     public static class TaskObject {
-      public final String taskId;
+      final String taskId;
       final String action;
+      final boolean expensive;
       final Callable<SolrQueryResponse> task;
       public String rspInfo;
       public Object operationRspInfo;
 
-      public TaskObject(String taskId, String action, Callable<SolrQueryResponse> task) {
+      public TaskObject(
+          String taskId, String action, boolean expensive, Callable<SolrQueryResponse> task) {
         this.taskId = taskId;
         this.action = action;
+        this.expensive = expensive;
         this.task = task;
       }
 

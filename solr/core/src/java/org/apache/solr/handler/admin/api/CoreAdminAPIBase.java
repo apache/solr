@@ -54,6 +54,14 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
   }
 
   /**
+   * Can be overridden by operations that are expensive, so we don't execute too many of them
+   * concurrently.
+   */
+  boolean isExpensive() {
+    return false;
+  }
+
+  /**
    * Wraps the subclasses logic with extra bookkeeping logic.
    *
    * <p>This method currently exists to enable async handling behavior for V2 Core APIs.
@@ -86,14 +94,16 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
       if (taskId == null) {
         return supplier.get();
       } else {
-        Callable<SolrQueryResponse> task = () -> {
-          T response = supplier.get();
-          V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
-          return rsp;
-        };
+        Callable<SolrQueryResponse> task =
+            () -> {
+              T response = supplier.get();
+              V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+              return rsp;
+            };
 
         final CoreAdminHandler.CoreAdminAsyncTracker.TaskObject taskObject =
-                new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(taskId, actionName, task);
+            new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(
+                taskId, actionName, isExpensive(), task);
         coreAdminAsyncTracker.submitAsyncTask(taskObject);
       }
     } catch (CoreAdminAPIBaseException e) {
