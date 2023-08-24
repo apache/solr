@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -24,19 +23,11 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.AsyncJerseyResponse;
+import org.apache.solr.client.api.endpoint.DeleteCollectionSnapshotApi;
+import org.apache.solr.client.api.model.DeleteCollectionSnapshotResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -47,37 +38,23 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/** V2 API for Deleting Collection Snapshots. */
-@Path("/collections/{collName}/snapshots")
-public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
+/** V2 API impl for Deleting Collection Snapshots. */
+public class DeleteCollectionSnapshot extends AdminAPIBase implements DeleteCollectionSnapshotApi {
 
   @Inject
-  public DeleteCollectionSnapshotAPI(
+  public DeleteCollectionSnapshot(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  /** This API is analogous to V1's (POST /solr/admin/collections?action=DELETESNAPSHOT) */
-  @DELETE
-  @Path("/{snapshotName}")
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_EDIT_PERM)
-  public DeleteSnapshotResponse deleteSnapshot(
-      @Parameter(description = "The name of the collection.", required = true)
-          @PathParam("collName")
-          String collName,
-      @Parameter(description = "The name of the snapshot to be deleted.", required = true)
-          @PathParam("snapshotName")
-          String snapshotName,
-      @Parameter(description = "A flag that treats the collName parameter as a collection alias.")
-          @DefaultValue("false")
-          @QueryParam("followAliases")
-          boolean followAliases,
-      @QueryParam("async") String asyncId)
+  public DeleteCollectionSnapshotResponse deleteSnapshot(
+      String collName, String snapshotName, boolean followAliases, String asyncId)
       throws Exception {
-    final DeleteSnapshotResponse response = instantiateJerseyResponse(DeleteSnapshotResponse.class);
+    final var response = instantiateJerseyResponse(DeleteCollectionSnapshotResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
@@ -103,24 +80,6 @@ public class DeleteCollectionSnapshotAPI extends AdminAPIBase {
     response.requestId = asyncId;
 
     return response;
-  }
-
-  /**
-   * The Response for {@link DeleteCollectionSnapshotAPI}'s {@link #deleteSnapshot(String, String,
-   * boolean, String)}
-   */
-  public static class DeleteSnapshotResponse extends AsyncJerseyResponse {
-    @Schema(description = "The name of the collection.")
-    @JsonProperty(COLLECTION_PROP)
-    String collection;
-
-    @Schema(description = "The name of the snapshot to be deleted.")
-    @JsonProperty("snapshot")
-    String snapshotName;
-
-    @Schema(description = "A flag that treats the collName parameter as a collection alias.")
-    @JsonProperty("followAliases")
-    boolean followAliases;
   }
 
   public static ZkNodeProps createRemoteMessage(

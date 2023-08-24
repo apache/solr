@@ -177,11 +177,11 @@ import org.apache.solr.handler.admin.api.CreateReplicaAPI;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAlias;
 import org.apache.solr.handler.admin.api.DeleteCollection;
-import org.apache.solr.handler.admin.api.DeleteCollectionBackupAPI;
-import org.apache.solr.handler.admin.api.DeleteCollectionSnapshotAPI;
-import org.apache.solr.handler.admin.api.DeleteNodeAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.DeleteCollectionBackup;
+import org.apache.solr.handler.admin.api.DeleteCollectionSnapshot;
+import org.apache.solr.handler.admin.api.DeleteNode;
+import org.apache.solr.handler.admin.api.DeleteReplica;
+import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
 import org.apache.solr.handler.admin.api.InstallShardDataAPI;
@@ -734,7 +734,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEREPLICA_OP(
         DELETEREPLICA,
         (req, rsp, h) -> {
-          DeleteReplicaAPI.invokeWithV1Params(h.coreContainer, req, rsp);
+          DeleteReplica.invokeWithV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     MIGRATE_OP(
@@ -1013,9 +1013,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEREPLICAPROP_OP(
         DELETEREPLICAPROP,
         (req, rsp, h) -> {
-          final var api = new DeleteReplicaPropertyAPI(h.coreContainer, req, rsp);
+          final var api = new DeleteReplicaProperty(h.coreContainer, req, rsp);
           final var deleteReplicaPropResponse =
-              DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, req.getParams());
+              DeleteReplicaProperty.invokeUsingV1Inputs(api, req.getParams());
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteReplicaPropResponse);
           return null;
         }),
@@ -1096,7 +1096,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEBACKUP_OP(
         DELETEBACKUP,
         (req, rsp, h) -> {
-          DeleteCollectionBackupAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          DeleteCollectionBackup.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     LISTBACKUP_OP(
@@ -1142,10 +1142,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
           final String asyncId = req.getParams().get(ASYNC);
 
-          final DeleteCollectionSnapshotAPI deleteCollectionSnapshotAPI =
-              new DeleteCollectionSnapshotAPI(h.coreContainer, req, rsp);
+          final DeleteCollectionSnapshot deleteCollectionSnapshotAPI =
+              new DeleteCollectionSnapshot(h.coreContainer, req, rsp);
 
-          final DeleteCollectionSnapshotAPI.DeleteSnapshotResponse deleteSnapshotResponse =
+          final var deleteSnapshotResponse =
               deleteCollectionSnapshotAPI.deleteSnapshot(
                   extCollectionName, commitName, followAliases, asyncId);
 
@@ -1207,9 +1207,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETENODE_OP(
         DELETENODE,
         (req, rsp, h) -> {
-          final DeleteNodeAPI deleteNodeAPI = new DeleteNodeAPI(h.coreContainer, req, rsp);
+          final DeleteNode deleteNodeAPI = new DeleteNode(h.coreContainer, req, rsp);
           final SolrJerseyResponse deleteNodeResponse =
-              DeleteNodeAPI.invokeUsingV1Inputs(deleteNodeAPI, req.getParams());
+              DeleteNode.invokeUsingV1Inputs(deleteNodeAPI, req.getParams());
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteNodeResponse);
           return null;
         }),
@@ -1371,10 +1371,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateCollectionBackupAPI.class,
         CreateShardAPI.class,
         DeleteAlias.class,
-        DeleteCollectionBackupAPI.class,
+        DeleteCollectionBackup.class,
         DeleteCollection.class,
-        DeleteReplicaAPI.class,
-        DeleteReplicaPropertyAPI.class,
+        DeleteReplica.class,
+        DeleteReplicaProperty.class,
         DeleteShardAPI.class,
         ForceLeaderAPI.class,
         InstallShardDataAPI.class,
@@ -1388,12 +1388,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         RestoreCollectionAPI.class,
         SyncShardAPI.class,
         CollectionPropertyAPI.class,
-        DeleteNodeAPI.class,
+        DeleteNode.class,
         ListAliasesAPI.class,
         AliasPropertyAPI.class,
         ListCollectionSnapshotsAPI.class,
         CreateCollectionSnapshotAPI.class,
-        DeleteCollectionSnapshotAPI.class);
+        DeleteCollectionSnapshot.class);
   }
 
   @Override

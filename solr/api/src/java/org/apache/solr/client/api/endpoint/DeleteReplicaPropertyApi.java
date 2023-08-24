@@ -21,23 +21,26 @@ import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import javax.ws.rs.PUT;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
+/**
+ * V2 API definition for removing a property from a collection replica
+ *
+ * <p>This API is analogous to the v1 /admin/collections?action=DELETEREPLICAPROP command.
+ */
 @Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
-public interface AddReplicaPropertyApi {
+public interface DeleteReplicaPropertyApi {
 
-  @PUT
+  @DELETE
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
-      summary = "Adds a property to the specified replica",
+      summary = "Delete an existing replica property",
       tags = {"replica-properties"})
-  public SolrJerseyResponse addReplicaProperty(
+  SolrJerseyResponse deleteReplicaProperty(
       @Parameter(
               description = "The name of the collection the replica belongs to.",
               required = true)
@@ -49,12 +52,8 @@ public interface AddReplicaPropertyApi {
       @Parameter(description = "The replica, e.g., `core_node1`.", required = true)
           @PathParam("replicaName")
           String replicaName,
-      @Parameter(description = "The name of the property to add.", required = true)
+      @Parameter(description = "The name of the property to delete.", required = true)
           @PathParam("propName")
-          String propertyName,
-      @RequestBody(
-              description = "The value of the replica property to create or update",
-              required = true)
-          AddReplicaPropertyRequestBody requestBody)
+          String propertyName)
       throws Exception;
 }

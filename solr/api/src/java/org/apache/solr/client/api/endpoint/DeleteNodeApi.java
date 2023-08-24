@@ -22,39 +22,29 @@ import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import javax.ws.rs.PUT;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.DeleteNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
-@Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
-public interface AddReplicaPropertyApi {
+@Path("cluster/nodes/{nodeName}/clear/")
+public interface DeleteNodeApi {
 
-  @PUT
+  @POST
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
-      summary = "Adds a property to the specified replica",
-      tags = {"replica-properties"})
-  public SolrJerseyResponse addReplicaProperty(
+      summary = "Delete all replicas off of the specified SolrCloud node",
+      tags = {"node"})
+  SolrJerseyResponse deleteNode(
       @Parameter(
-              description = "The name of the collection the replica belongs to.",
+              description =
+                  "The name of the node to be cleared.  Usually of the form 'host:1234_solr'.",
               required = true)
-          @PathParam("collName")
-          String collName,
-      @Parameter(description = "The name of the shard the replica belongs to.", required = true)
-          @PathParam("shardName")
-          String shardName,
-      @Parameter(description = "The replica, e.g., `core_node1`.", required = true)
-          @PathParam("replicaName")
-          String replicaName,
-      @Parameter(description = "The name of the property to add.", required = true)
-          @PathParam("propName")
-          String propertyName,
-      @RequestBody(
-              description = "The value of the replica property to create or update",
-              required = true)
-          AddReplicaPropertyRequestBody requestBody)
+          @PathParam("nodeName")
+          String nodeName,
+      @RequestBody(description = "Contains user provided parameters", required = true)
+          DeleteNodeRequestBody requestBody)
       throws Exception;
 }
