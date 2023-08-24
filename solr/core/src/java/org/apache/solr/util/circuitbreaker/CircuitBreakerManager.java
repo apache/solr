@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Single CB that registers both Mem and CPU CB. This is only for backward compatibility with the
+ * Single CircuitBreaker that registers both a Memory and a CPU CircuitBreaker. This is only for backward compatibility with the
  * 9.x versions prior to 9.4.
  *
  * @deprecated Use individual Circuit Breakers instead
