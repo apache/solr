@@ -192,7 +192,7 @@ public class NodeConfig {
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
-    this.hideStackTraces = Boolean.getBoolean("solr.hideStackTrace");
+    this.hideStackTraces = hideStackTraces;
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
     this.hiddenSysProps = hiddenSysProps;
@@ -623,7 +623,7 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
-    private boolean hideStackTrace = false;
+    private boolean hideStackTrace = Boolean.getBoolean("solr.hideStackTrace");
 
     private final Path solrHome;
     private final String nodeName;
