@@ -32,8 +32,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
-import io.opentracing.Span;
-import io.opentracing.tag.Tags;
+import io.opentelemetry.api.trace.Span;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,7 +49,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -626,10 +624,14 @@ public class HttpSolrCall {
         "handleOrForwardRequest should not be invoked when serving v1 requests.");
   }
 
-  /** Get the span for this request. Not null. */
-  protected Span getSpan() {
-    // Span was put into the request by SolrDispatchFilter
-    return (Span) Objects.requireNonNull(req.getAttribute(Span.class.getName()));
+  /** Get the Span for this request. Not null. */
+  public Span getSpan() {
+    var s = TraceUtils.getSpan(req);
+    if (s != null) {
+      return s;
+    } else {
+      return Span.getInvalid();
+    }
   }
 
   // called after init().
@@ -639,9 +641,7 @@ public class HttpSolrCall {
     if (coreOrColName == null && getCore() != null) {
       coreOrColName = getCore().getName();
     }
-    if (coreOrColName != null) {
-      span.setTag(Tags.DB_INSTANCE, coreOrColName);
-    }
+    TraceUtils.setDbInstance(span, coreOrColName);
 
     // Set operation name.
     String path = getPath();
@@ -655,7 +655,7 @@ public class HttpSolrCall {
     }
     String verb =
         getQueryParams().get(CoreAdminParams.ACTION, req.getMethod()).toLowerCase(Locale.ROOT);
-    span.setOperationName(verb + ":" + path);
+    span.updateName(verb + ":" + path);
   }
 
   public boolean shouldAudit() {

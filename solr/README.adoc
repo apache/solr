@@ -17,11 +17,14 @@
 
 == Solr Source Directories
 
+link:api/[]::
+Root package for interfaces and POJOs used to describe Solr's v2 APIs.
+
 link:benchmark/[]::
 Benchmarking module for Solr.
 
 link:bin/[]::
-Scripts to startup, manage and interact with Solr instances.
+Scripts to start up, manage and interact with Solr instances.
 
 link:core/[]::
 Base Solr code.
@@ -40,7 +43,7 @@ link:example/[]::
 Contains example documents and an alternative Solr home
 directory containing various examples.
 
-link:license/[]::
+link:licenses/[]::
 Licenses, notice files and signatures for Solr dependencies.
 
 link:modules/[]::
@@ -59,7 +62,13 @@ link:solr-ref-guide/[]::
 The Solr Reference Guide source files including Java examples.
 
 link:solrj/[]::
-Solr client code for Java applications.
+Solr client code for Java applications - common.
+
+link:solrj-streaming/[]::
+SolrJ additional API for Streaming Aggregation.
+
+link:solrj-zookeeper/[]::
+SolrJ additional API for pulling cluster state from Zookeeper.
 
 link:test-framework/[]::
 Solr test framework for internal tests and external tests integrating Solr.

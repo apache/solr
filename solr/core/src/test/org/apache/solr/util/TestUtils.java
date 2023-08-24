@@ -109,6 +109,13 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals("/h/s", arr.get(0));
   }
 
+  public void testToLower() {
+    assertEquals(List.of(), StrUtils.toLower(List.of()));
+    assertEquals(List.of(""), StrUtils.toLower(List.of("")));
+    assertEquals(List.of("foo"), StrUtils.toLower(List.of("foo")));
+    assertEquals(List.of("bar", "baz-123"), StrUtils.toLower(List.of("BAR", "Baz-123")));
+  }
+
   public void testNamedLists() {
     SimpleOrderedMap<Integer> map = new SimpleOrderedMap<>();
     map.add("test", 10);

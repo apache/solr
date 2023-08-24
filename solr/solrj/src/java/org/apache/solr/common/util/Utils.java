@@ -38,7 +38,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -480,15 +479,19 @@ public class Utils {
         Object o = getVal(obj, s, -1);
         if (o == null) return null;
         if (idx > -1) {
-          if (o instanceof MapWriter) {
+          if (o instanceof List) {
+            List<?> l = (List<?>) o;
+            o = idx < l.size() ? l.get(idx) : null;
+          } else if (o instanceof IteratorWriter) {
+            o = getValueAt((IteratorWriter) o, idx);
+          } else if (o instanceof MapWriter) {
             o = getVal(o, null, idx);
           } else if (o instanceof Map) {
             @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>) o;
             o = getVal(new MapWriterMap(map), null, idx);
           } else {
-            List<?> l = (List<?>) o;
-            o = idx < l.size() ? l.get(idx) : null;
+            return null;
           }
         }
         if (!isMapLike(o)) return null;
@@ -711,8 +714,7 @@ public class Utils {
           "nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
-    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2 ? "api" : path)));
+    return urlScheme + "://" + hostAndPort + "/" + (isV2 ? "api" : "solr");
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {

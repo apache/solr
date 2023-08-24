@@ -15,6 +15,10 @@ Improvements
 
 * SOLR-16850: Notify a user if they run healthcheck against standalone Solr that it is a SolrCloud only command. (Eric Pugh)
 
+* SOLR-16800: Solr CLI commands that use -solrUrl now work with a bare url like http://localhost:8983, you no longer need to add the /solr at the end. (Eric Pugh)
+
+* SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
+
 Optimizations
 ---------------------
 (No changes)
@@ -57,7 +61,9 @@ Other Changes
 
 * SOLR-16892: bin/solr create command supports both standalone and cloud modes, and deprecate create_core and create_collection commands.   (Eric Pugh)
 
-* SOLR-16822: Change meaning of -h from shorhand for -host to instead return help information for bin/solr start and restart commands. (Eric Pugh)
+* SOLR-16822: Change meaning of -h from shorthand for -host to instead return help information for bin/solr start and restart commands. (Eric Pugh)
+
+* SOLR-16911: Establish /solr as the only host context supported by Solr, removing legacy ability to change this.  Solr paths will only be either /solr or /api now.  (Eric Pugh)
 
 ==================  9.4.0 ==================
 New Features
@@ -76,11 +82,33 @@ Improvements
 * SOLR-16490: The semi-internal `/admin/cores?action=restorecore` API now has a v2 equivalent, available at
   `POST /api/cores/coreName/restore {...}` (Sayanti Dey via Jason Gerlowski)
 
+* SOLR-11685: When SolrCloud shard leaders change while indexing updates arrive, Solr could fail and return
+  a HTTP 503 status. Switched to 510 so that CloudSolrClient will auto-retry it and probably succeed.
+  (David Smiley, Alex Deparvu)
+
+* SOLR-16825: Solr now offers `SolrRequest` implementations for a subset of its v2 APIs.  These implementations
+  are experimental and should be used with caution, but may be preferable to their v1 counterparts in some
+  circumstances as they are generated and more likely to remain up-to-date with future API changes.
+  (Jason Gerlowski, David Smiley, Houston Putman)
+
+* SOLR-14667: Make zkClientTimeout consistent and based on a system property. The default values are stored in a single place referenced everywhere and they are based on system properties (Alex Deparvu)
+
+* SOLR-16926: The embedded Zookeeper's bind host can now be overridden, but still defaults to "127.0.0.1".
+  This is useful when using the ZkCli on a remote Solr using the embedded ZK, or Solr running in a Docker container.
+  The SOLR_ZK_EMBEDDED_HOST envVar or -Dsolr.zk.embedded.host sysProp control this bind address. (Houston Putman)
+
+* SOLR-16941: The SolrCLI now uses a smarter default for the Solr URL if none is provided, using the same envVars used when running Solr. (Houston Putman)
+
+* SOLR-16940: Users can pass Java system properties to the SolrCLI via the SOLR_TOOL_OPTS environment variable. (Houston Putman)
+
+* SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
 
 Optimizations
 ---------------------
 
 * SOLR-16845: BinaryResponseWriter should not attempt cast to Utf8CharSequence (Alex Deparvu via Houston Putman)
+
+* SOLR-16265: reduce memory usage of ContentWriter based requests in Http2SolrClient (Alex Deparvu, Kevin Risden, David Smiley)
 
 
 Bug Fixes
@@ -94,9 +122,28 @@ Bug Fixes
 
 * SOLR-16905: Allow access to specified "solr.allowPaths" in Security Manager (daylicron, Houston Putman)
 
+* SOLR-16922: Scripts wrongly prohibit embedded zookeeper when solr port is between 55535 and 64535 (Tiziano Degaetano, Colvin Cowie)
+
+* SOLR-16360: Atomic update on boolean fields doesn't reflect when value starts with "1", "t" or "T" (Rahul Goswami, Justin Sweeney, David Smiley)
+
+* PR#1826: Allow looking up Solr Package repo when that URL references a raw repository.json hosted on Github when the file is JSON but the mimetype used is text/plain. (Eric Pugh)
+
+* SOLR-16944: V2 API /api/node/health should be governed by "health" permission, not "config-read" (janhoy)
+
+* SOLR-16859: Missing Proxy support for Http2SolrClient (Alex Deparvu)
+
+* SOLR-16929: SolrStream propagates undecoded error message (Alex Deparvu)
+
+* SOLR-16934: Allow Solr to read client (javax.net.ssl.*) trustStores and keyStores via SecurityManager. (Houston Putman)
+
+* SOLR-16946: Updated Cluster Singleton plugins are stopped correctly when the Overseer is closed. (Paul McArthur)
+
+* SOLR-16933: Include the full query response when using the API tool, and fix serialization issues for SolrDocumentList. (Houston Putman) 
+
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* PR#1846: Update io.opentelemetry to 1.29.0 (Alex Deparvu)
 
 Other Changes
 ---------------------
