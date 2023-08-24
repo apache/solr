@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.replication;
+package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.handler.ReplicationHandler.ERR_STATUS;
@@ -45,14 +45,14 @@ import org.slf4j.LoggerFactory;
 
 /** V2 endpoint for Backup API used for User-Managed clusters and Single-Node Installation. */
 @Path("/cores/{coreName}/replication/backups")
-public class BackupAPI extends JerseyResource {
+public class SnapshotBackupAPI extends JerseyResource {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCore solrCore;
   private final ReplicationHandlerConfig replicationHandlerConfig;
 
   @Inject
-  public BackupAPI(SolrCore solrCore, ReplicationHandlerConfig replicationHandlerConfig) {
+  public SnapshotBackupAPI(SolrCore solrCore, ReplicationHandlerConfig replicationHandlerConfig) {
     this.solrCore = solrCore;
     this.replicationHandlerConfig = replicationHandlerConfig;
   }
@@ -145,7 +145,7 @@ public class BackupAPI extends JerseyResource {
     public String commitName;
   }
 
-  /** Response for {@link BackupAPI#createBackup(BackupReplicationRequestBody)}. */
+  /** Response for {@link SnapshotBackupAPI#createBackup(BackupReplicationRequestBody)}. */
   public static class BackupReplicationResponse extends SolrJerseyResponse {
 
     @JsonProperty("result")

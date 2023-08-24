@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.replication;
+package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.junit.Assert.assertEquals;
@@ -23,8 +23,8 @@ import static org.mockito.Mockito.when;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
 import org.apache.solr.jersey.InjectionFactories;
@@ -36,8 +36,8 @@ import org.glassfish.jersey.test.JerseyTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit tests for {@link BackupAPI}. */
-public class BackupAPITest extends JerseyTest {
+/** Unit tests for {@link SnapshotBackupAPI}. */
+public class SnapshotBackupAPITest extends JerseyTest {
 
   private SolrCore solrCore;
   private ReplicationHandlerConfig replicationHandlerConfig;
@@ -51,7 +51,7 @@ public class BackupAPITest extends JerseyTest {
   protected Application configure() {
     resetMocks();
     final ResourceConfig config = new ResourceConfig();
-    config.register(BackupAPI.class);
+    config.register(SnapshotBackupAPI.class);
     config.register(SolrJacksonMapper.class);
     config.register(
         new AbstractBinder() {
@@ -76,12 +76,6 @@ public class BackupAPITest extends JerseyTest {
 
   @Test
   public void testSuccessfulBackupCommand() throws Exception {
-    BackupAPI.BackupReplicationRequestBody payload =
-        new BackupAPI.BackupReplicationRequestBody("testl", "test", 0, null, null);
-    Entity<BackupAPI.BackupReplicationRequestBody> entity =
-        Entity.entity(payload, MediaType.APPLICATION_JSON);
-    System.err.println("entity " + entity.getEntity().jsonStr());
-
     // triggering validation failure  on purpose for now to show that request made it to the correct
     // method
     final Response response =

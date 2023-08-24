@@ -93,8 +93,8 @@ import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
 import org.apache.solr.handler.admin.api.CoreReplicationAPI;
+import org.apache.solr.handler.admin.api.SnapshotBackupAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.handler.replication.BackupAPI;
 import org.apache.solr.jersey.APIConfigProvider;
 import org.apache.solr.jersey.APIConfigProvider.APIConfig;
 import org.apache.solr.metrics.MetricsMap;
@@ -1401,7 +1401,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(CoreReplicationAPI.class, BackupAPI.class);
+    return List.of(CoreReplicationAPI.class, SnapshotBackupAPI.class);
   }
 
   @Override
