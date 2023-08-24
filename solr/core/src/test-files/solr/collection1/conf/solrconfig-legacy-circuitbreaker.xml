@@ -78,11 +78,14 @@
 
   </query>
 
-  <circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
+  <!-- Legacy config used in 9.x.
+   TODO: Remove this file in 10.0
+   -->
+  <circuitBreaker class="solr.CircuitBreakerManager">
     <str name="memEnabled">true</str>
-    <str name="memThreshold">75</str>
+    <str name="memThreshold">80</str>
     <str name="cpuEnabled">true</str>
-    <str name="cpuThreshold">75</str>
+    <str name="cpuThreshold">80</str>
   </circuitBreaker>
 
   <initParams path="/select">

@@ -19,15 +19,20 @@ package org.apache.solr.util;
 
 import org.junit.BeforeClass;
 
-/** Tests the pluggable circuit breaker implementation. The actual tests are in base class. */
-public class TestCircuitBreaker extends BaseTestCircuitBreaker {
+/**
+ * Tests the original circuit breaker configuration format, which was not configurable.
+ *
+ * @deprecated Remove in 10.0
+ */
+@Deprecated(since = "9.4")
+public class TestLegacyCircuitBreaker extends BaseTestCircuitBreaker {
   @BeforeClass
   public static void setUpClass() throws Exception {
     System.setProperty("filterCache.enabled", "false");
     System.setProperty("queryResultCache.enabled", "false");
     System.setProperty("documentCache.enabled", "true");
 
-    initCore("solrconfig-pluggable-circuitbreaker.xml", "schema.xml");
+    initCore("solrconfig-legacy-circuitbreaker.xml", "schema.xml");
     BaseTestCircuitBreaker.indexDocs();
   }
 }
