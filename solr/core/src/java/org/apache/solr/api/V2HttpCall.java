@@ -23,8 +23,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEQ
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
-import io.opentracing.Span;
-import io.opentracing.tag.Tags;
+import io.opentelemetry.api.trace.Span;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -65,6 +64,7 @@ import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.servlet.cache.Method;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
@@ -499,9 +499,7 @@ public class V2HttpCall extends HttpSolrCall {
         coreOrColName = pathTemplateValues.get("core");
       }
     }
-    if (coreOrColName != null) {
-      span.setTag(Tags.DB_INSTANCE, coreOrColName);
-    }
+    TraceUtils.setDbInstance(span, coreOrColName);
 
     // Get the templatize-ed path, ex: "/c/{collection}"
     final String path = computeEndpointPath();
@@ -521,7 +519,7 @@ public class V2HttpCall extends HttpSolrCall {
       verb = req.getMethod().toLowerCase(Locale.ROOT);
     }
 
-    span.setOperationName(verb + ":" + path);
+    span.updateName(verb + ":" + path);
   }
 
   /** Example: /c/collection1/ and template map collection->collection1 produces /c/{collection}. */

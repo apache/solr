@@ -41,7 +41,7 @@ public abstract class Api implements SpecProvider {
     if (commandSchema == null) {
       synchronized (this) {
         if (commandSchema == null) {
-          ValidatingJsonMap commands = getSpec().getMap("commands", null);
+          ValidatingJsonMap commands = spec != null ? getSpec().getMap("commands", null) : null;
           commandSchema =
               commands != null ? Map.copyOf(ApiBag.getParsedSchema(commands)) : Map.of();
         }

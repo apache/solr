@@ -16,10 +16,9 @@
  */
 package org.apache.solr.opentelemetry;
 
-import io.opentelemetry.opentracingshim.OpenTracingShim;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
-import io.opentracing.Tracer;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,26 +26,45 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.TracerConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * OpenTracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP
- * format. This impl re-uses the existing OpenTracing instrumentation through a shim, and takes care
- * of properly closing the backing Tracer when Solr shuts down.
+ * Tracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP format.
  */
 public class OtelTracerConfigurator extends TracerConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  // Copy of environment. Can be overridden by tests
-  Map<String, String> currentEnv = System.getenv();
+
+  private final Map<String, String> currentEnv;
+
+  public OtelTracerConfigurator() {
+    this(System.getenv());
+  }
+
+  OtelTracerConfigurator(Map<String, String> currentEnv) {
+    this.currentEnv = currentEnv;
+  }
 
   @Override
   public Tracer getTracer() {
+    // TODO remove reliance on global
+    return GlobalOpenTelemetry.getTracer("solr");
+  }
+
+  @Override
+  public void init(NamedList<?> args) {
+    prepareConfiguration();
+    AutoConfiguredOpenTelemetrySdk.initialize();
+  }
+
+  void prepareConfiguration() {
     setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
+    setDefaultIfNotConfigured("OTEL_PROPAGATORS", "tracecontext,baggage");
     addOtelResourceAttributes(Map.of("host.name", System.getProperty("host")));
 
     final String currentConfig = getCurrentOtelConfigAsString();
@@ -62,10 +80,6 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     }
     System.setProperty("otel.metrics.exporter", "none");
     System.setProperty("otel.logs.exporter", "none");
-
-    OpenTelemetrySdk otelSdk = AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk();
-    Tracer shim = OpenTracingShim.createTracerShim(otelSdk);
-    return new ClosableTracerShim(shim, otelSdk.getSdkTracerProvider());
   }
 
   /**

@@ -20,15 +20,12 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.hamcrest.core.StringContains.containsString;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import io.opentracing.noop.NoopTracerFactory;
-import io.opentracing.util.GlobalTracer;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -44,7 +41,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -53,8 +49,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -140,6 +134,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
@@ -317,36 +312,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.setProperty(URL_SCHEME, HTTPS);
     }
 
-    resetGlobalTracer();
     ExecutorUtil.resetThreadLocalProviders();
-  }
-
-  /**
-   * GlobalTracer is initialized by org.apache.solr.core.TracerConfigurator by
-   * org.apache.solr.core.CoreContainer. Tests may need to reset it in the beginning of a test if it
-   * might have differing configuration from other tests in the same suite. It's also important to
-   * call {@link ExecutorUtil#resetThreadLocalProviders()}.
-   */
-  @SuppressForbidden(reason = "Hack to reset internal state of GlobalTracer")
-  public static void resetGlobalTracer() {
-    AccessController.doPrivileged(
-        (PrivilegedAction<Void>)
-            () -> {
-              try {
-                final Class<GlobalTracer> globalTracerClass = GlobalTracer.class;
-                final Field isRegistered = globalTracerClass.getDeclaredField("isRegistered");
-                isRegistered.setAccessible(true);
-                isRegistered.setBoolean(null, false);
-                final Field tracer = globalTracerClass.getDeclaredField("tracer");
-                tracer.setAccessible(true);
-                tracer.set(null, NoopTracerFactory.create());
-              } catch (NoSuchFieldException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-              }
-              return null;
-            });
-
-    assert GlobalTracer.isRegistered() == false;
   }
 
   @AfterClass

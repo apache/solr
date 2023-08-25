@@ -39,7 +39,7 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 [width="100%",options="header",]
 |===
 |Path prefix |Some Supported Operations
-|`/api/collections` or equivalently: `/api/c` |Create, alias, backup, and restore a collection.
+|`/api/collections` |Create, alias, backup, and restore a collection.
 |`/api/c/_collection-name_/update` |Update requests.
 |`/api/c/_collection-name_/config` |Configuration requests.
 |`/api/c/_collection-name_/schema` |Schema requests.

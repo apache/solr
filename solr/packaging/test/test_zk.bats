@@ -75,3 +75,21 @@ teardown() {
   assert_output --partial '"configSets":["_default","techproducts2"]'
 
 }
+
+@test "zkcli.sh gets 'solrhome' from 'solr.home' system property" {
+  sleep 1
+  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v
+  local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
+  # remove 'solrhome='
+  local path_value=${extracted_solrhome#*=}
+  [[ $path_value == *"/server/scripts/cloud-scripts/../../solr" ]] || [[ $path_value == *"/server/solr" ]]
+}
+
+@test "zkcli.sh gets 'solrhome' from 'solrhome' command line option" {
+  sleep 1
+  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v -s /path/to/solr/home
+  local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
+  # remove 'solrhome='
+  local path_value=${extracted_solrhome#*=}
+  [[ $path_value == "/path/to/solr/home" ]]
+}
