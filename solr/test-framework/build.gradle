@@ -58,6 +58,7 @@ dependencies {
   permitUnusedDeclared 'commons-cli:commons-cli'
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
+  implementation 'org.glassfish.hk2:hk2-api'
 
   implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   implementation 'org.eclipse.jetty:jetty-server'

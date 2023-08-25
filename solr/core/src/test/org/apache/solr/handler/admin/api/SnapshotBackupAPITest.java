@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
-
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
 import org.apache.solr.jersey.InjectionFactories;
