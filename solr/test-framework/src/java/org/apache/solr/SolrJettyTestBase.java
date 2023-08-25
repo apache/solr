@@ -44,9 +44,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
       throws Exception {
     // creates the data dir
 
-    if (context == null) {
-      context = "/solr";
-    }
+    assert context == null || context.equals("/solr"); // deprecated
 
     JettyConfig jettyConfig =
         JettyConfig.builder()

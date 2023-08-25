@@ -62,6 +62,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
    * otherwise an embedded implementation will be created. Subclasses should override for other
    * options.
    */
+  @Override
   public SolrClient createNewSolrClient() {
     return getHttpSolrClient(getCoreUrl());
   }
