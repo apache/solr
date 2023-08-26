@@ -41,6 +41,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   private JettySolrRunner jetty;
 
   private final ConcurrentHashMap<String, SolrClient> clients = new ConcurrentHashMap<>();
+  private boolean enableProxy;
 
   @Override
   protected void after() {
@@ -58,6 +59,7 @@ public class SolrJettyTestRule extends SolrClientTestRule {
         throw new RuntimeException(e);
       }
       jetty = null;
+      enableProxy = false;
     }
   }
 
@@ -77,10 +79,16 @@ public class SolrJettyTestRule extends SolrClientTestRule {
             .build());
   }
 
+  /** Enables proxy feature to disable connections. Must be called prior to starting. */
+  public void enableProxy() {
+    assert jetty == null;
+    this.enableProxy = true;
+  }
+
   public void startSolr(Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) {
     if (jetty != null) throw new IllegalStateException("Jetty is already running");
 
-    jetty = new JettySolrRunner(solrHome.toString(), nodeProperties, jettyConfig);
+    jetty = new JettySolrRunner(solrHome.toString(), nodeProperties, jettyConfig, enableProxy);
     try {
       jetty.start();
     } catch (RuntimeException e) {
