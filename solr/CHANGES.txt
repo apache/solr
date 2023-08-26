@@ -163,6 +163,8 @@ Other Changes
 
 * SOLR-16915: Lower the AffinityPlacementPlugin's default minimalFreeDiskGB to 5 GB (Houston Putman)
 
+* SOLR-16623: new SolrJettyTestRule for tests needing HTTP or Jetty. (David Smiley, Joshua Ouma)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes

@@ -79,7 +79,12 @@ public class SolrJettyTestRule extends SolrClientTestRule {
             .build());
   }
 
-  /** Enables proxy feature to disable connections. Must be called prior to starting. */
+  /**
+   * Enables proxy feature to allow for failure injection testing at the inter-node communication
+   * level. Must be called prior to starting.
+   *
+   * @see JettySolrRunner#getProxy()
+   */
   public void enableProxy() {
     assert jetty == null;
     this.enableProxy = true;
