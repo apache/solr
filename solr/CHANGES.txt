@@ -103,6 +103,8 @@ Other Changes
 
 * SOLR-6994: Implement Windows version of bin/post via implementing bin/solr post command that works on Windows and Unix.  Deprecate bin/post.  (Eric Pugh, Will White)
 
+* SOLR-16623: new SolrJettyTestRule for tests needing HTTP or Jetty. (David Smiley, Joshua Ouma)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
