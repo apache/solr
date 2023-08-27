@@ -53,16 +53,14 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
-            .useHttp1_1(true)
-            .build()) {
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").useHttp1_1(true).build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
     } finally {
-      afterSolrJettyTestBase();
+      solrClientTestRule.reset();
     }
   }
 
@@ -76,16 +74,14 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
-            .useHttp1_1(true)
-            .build()) {
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").useHttp1_1(true).build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
     } finally {
-      afterSolrJettyTestBase();
+      solrClientTestRule.reset();
     }
   }
 
@@ -102,7 +98,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
 
     System.clearProperty("solr.http1");
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo").build()) {
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
@@ -113,7 +109,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
         // expected
       }
     } finally {
-      afterSolrJettyTestBase();
+      solrClientTestRule.reset();
     }
   }
 }
