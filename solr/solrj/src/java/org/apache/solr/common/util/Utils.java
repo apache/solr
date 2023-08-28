@@ -828,30 +828,6 @@ public class Utils {
 
   public static final String CATCH_ALL_PROPERTIES_METHOD_NAME = "unknownProperties";
 
-  /**
-   * Convert an input object to a map, writing only those fields that match a provided {@link
-   * Predicate}
-   *
-   * @param o the object to be converted
-   * @param fieldFilterer a predicate used to identify which fields of the object to write
-   * @param catchAllAnnotation the annotation used to identify a method that can return a Map of
-   *     "catch-all" properties. Method is expected to be named "unknownProperties"
-   * @param fieldNamer a callback that allows changing field names
-   */
-  public static boolean hasReflectionData(
-      Object o,
-      Predicate<Field> fieldFilterer,
-      Class<? extends Annotation> catchAllAnnotation,
-      Function<Field, String> fieldNamer) {
-    List<FieldWriter> fieldWriters = null;
-    try {
-      fieldWriters = getReflectData(o.getClass(), fieldFilterer, catchAllAnnotation, fieldNamer);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
-    }
-    return fieldWriters.size() > 0;
-  }
-
   public static Object getReflectWritable(Object o) throws IOException {
     List<FieldWriter> fieldWriters = null;
     try {
@@ -871,13 +847,13 @@ public class Utils {
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
-    if (fieldWriters.size() > 0) {
+    if (!fieldWriters.isEmpty()) {
       return new DelegateReflectWriter(o, fieldWriters);
     } else {
       // Do not serialize an empty class, use a string representation instead.
       // This is because the class is likely not using the serialization annotations
       // and still expects to provide some information.
-      return o.getClass().getName() + ':' + o.toString();
+      return o.getClass().getName() + ':' + o;
     }
   }
 
@@ -1092,7 +1068,7 @@ public class Utils {
     }
   }
 
-  static interface FieldWriter {
+  interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
   }
 
