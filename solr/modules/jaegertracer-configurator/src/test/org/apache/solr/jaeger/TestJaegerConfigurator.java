@@ -49,6 +49,7 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
         new MiniSolrCloudCluster.Builder(2, createTempDir())
             .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
             .withSolrXml(getFile("solr/solr.xml").toPath())
+            .withTraceIdGenerationDisabled()
             .build();
     try {
       TimeOut timeOut = new TimeOut(2, TimeUnit.MINUTES, TimeSource.NANO_TIME);

@@ -22,6 +22,7 @@ import io.opentracing.tag.Tags;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.tracing.SimplePropagator.SimplePropagatorSpan;
 
 /** Utilities for distributed tracing. */
 public class TraceUtils {
@@ -33,7 +34,7 @@ public class TraceUtils {
   }
 
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
-    if (span != null && !(span instanceof NoopSpan)) {
+    if (span != null && !(span instanceof NoopSpan) && !(span instanceof SimplePropagatorSpan)) {
       consumer.accept(span);
     }
   }

@@ -25,12 +25,16 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.solr.util.tracing.SimplePropagator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Produces an OpenTracing {@link Tracer} from configuration. */
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final boolean TRACE_ID_GEN_ENABLED =
+      Boolean.parseBoolean(System.getProperty("solr.alwaysOnTraceId", "true"));
 
   public abstract Tracer getTracer();
 
@@ -48,6 +52,8 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
             configurator.init(info.initArgs);
             return configurator.getTracer();
           });
+    } else if (TRACE_ID_GEN_ENABLED) {
+      SimplePropagator.load();
     }
     if (GlobalTracer.isRegistered()) {
       // ideally we would furthermore check that it's not a no-op impl either but

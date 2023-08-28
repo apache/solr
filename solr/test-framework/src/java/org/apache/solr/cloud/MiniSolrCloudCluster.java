@@ -78,9 +78,11 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.TracerConfigurator;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -1106,6 +1108,7 @@ public class MiniSolrCloudCluster {
     private boolean useDistributedCollectionConfigSetExecution;
     private boolean useDistributedClusterStateUpdate;
     private boolean formatZkServer = true;
+    private boolean disableTraceIdGeneration = false;
 
     /**
      * Create a builder
@@ -1299,6 +1302,11 @@ public class MiniSolrCloudCluster {
           "solr.distributedClusterStateUpdates",
           Boolean.toString(useDistributedClusterStateUpdate));
 
+      // eager init to prevent OTEL init races caused by test setup
+      if (!disableTraceIdGeneration && TracerConfigurator.TRACE_ID_GEN_ENABLED) {
+        SimplePropagator.load();
+      }
+
       JettyConfig jettyConfig = jettyConfigBuilder.build();
       MiniSolrCloudCluster cluster =
           new MiniSolrCloudCluster(
@@ -1339,6 +1347,11 @@ public class MiniSolrCloudCluster {
         defaults.put(CollectionAdminParams.CLUSTER, cluster);
       }
       cluster.put(key, value);
+      return this;
+    }
+
+    public Builder withTraceIdGenerationDisabled() {
+      this.disableTraceIdGeneration = true;
       return this;
     }
   }
