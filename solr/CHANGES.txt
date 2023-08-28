@@ -70,7 +70,7 @@ Other Changes
 ==================  9.4.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-16654: Add support for node-level caches (Michael Gibney)
 
 Improvements
 ---------------------
