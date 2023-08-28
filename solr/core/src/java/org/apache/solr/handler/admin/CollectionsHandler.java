@@ -186,7 +186,7 @@ import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
 import org.apache.solr.handler.admin.api.InstallShardDataAPI;
 import org.apache.solr.handler.admin.api.ListAliases;
-import org.apache.solr.handler.admin.api.ListCollectionBackupsAPI;
+import org.apache.solr.handler.admin.api.ListCollectionBackups;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
 import org.apache.solr.handler.admin.api.ListCollectionsAPI;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
@@ -1103,7 +1103,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         LISTBACKUP,
         (req, rsp, h) -> {
           req.getParams().required().check(NAME);
-          ListCollectionBackupsAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          ListCollectionBackups.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     CREATESNAPSHOT_OP(
@@ -1379,7 +1379,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ForceLeaderAPI.class,
         InstallShardDataAPI.class,
         ListCollectionsAPI.class,
-        ListCollectionBackupsAPI.class,
+        ListCollectionBackups.class,
         ReloadCollectionAPI.class,
         RenameCollectionAPI.class,
         ReplaceNodeAPI.class,
