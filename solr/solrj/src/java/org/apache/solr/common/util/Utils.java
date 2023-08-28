@@ -20,6 +20,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -831,6 +832,59 @@ public class Utils {
    * Convert an input object to a map, writing only those fields that match a provided {@link
    * Predicate}
    *
+   * @param o the object to be converted
+   * @param fieldFilterer a predicate used to identify which fields of the object to write
+   * @param catchAllAnnotation the annotation used to identify a method that can return a Map of
+   *     "catch-all" properties. Method is expected to be named "unknownProperties"
+   * @param fieldNamer a callback that allows changing field names
+   */
+  public static boolean hasReflectionData(
+      Object o,
+      Predicate<Field> fieldFilterer,
+      Class<? extends Annotation> catchAllAnnotation,
+      Function<Field, String> fieldNamer) {
+    List<FieldWriter> fieldWriters = null;
+    try {
+      fieldWriters = getReflectData(o.getClass(), fieldFilterer, catchAllAnnotation, fieldNamer);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+    return fieldWriters.size() > 0;
+  }
+
+  public static Object getReflectWritable(Object o) throws IOException {
+    List<FieldWriter> fieldWriters = null;
+    try {
+      fieldWriters =
+          Utils.getReflectData(
+              o.getClass(),
+              // TODO Should we be lenient here and accept both the Jackson and our homegrown
+              // annotation?
+              field ->
+                  field.getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class) != null,
+              JsonAnyGetter.class,
+              field -> {
+                final com.fasterxml.jackson.annotation.JsonProperty prop =
+                    field.getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class);
+                return prop.value().isEmpty() ? field.getName() : prop.value();
+              });
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+    if (fieldWriters.size() > 0) {
+      return new DelegateReflectWriter(o, fieldWriters);
+    } else {
+      // Do not serialize an empty class, use a string representation instead.
+      // This is because the class is likely not using the serialization annotations
+      // and still expects to provide some information.
+      return o.getClass().getName() + ':' + o.toString();
+    }
+  }
+
+  /**
+   * Convert an input object to a map, writing only those fields that match a provided {@link
+   * Predicate}
+   *
    * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map
    *     insertion/writing
    * @param o the object to be converted
@@ -851,14 +905,7 @@ public class Utils {
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
-    for (FieldWriter fieldWriter : fieldWriters) {
-      try {
-        fieldWriter.write(ew, o);
-      } catch (Throwable e) {
-        throw new RuntimeException(e);
-        // should not happen
-      }
-    }
+    reflectWrite(ew, o, fieldWriters);
   }
 
   private static List<FieldWriter> getReflectData(
@@ -885,6 +932,26 @@ public class Utils {
     final List<FieldWriter> mutableFieldWriters = new ArrayList<>(cachedReflectData);
     addCatchAllFieldWriter(mutableFieldWriters, catchAllAnnotation, lookup, c);
     return Collections.unmodifiableList(mutableFieldWriters);
+  }
+
+  /**
+   * Convert an input object to a map, using the provided {@link FieldWriter}s.
+   *
+   * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map
+   *     insertion/writing
+   * @param o the object to be converted
+   * @param fieldWriters a list of fields to write and how to write them
+   */
+  private static void reflectWrite(
+      MapWriter.EntryWriter ew, Object o, List<FieldWriter> fieldWriters) {
+    for (FieldWriter fieldWriter : fieldWriters) {
+      try {
+        fieldWriter.write(ew, o);
+      } catch (Throwable e) {
+        throw new RuntimeException(e);
+        // should not happen
+      }
+    }
   }
 
   private static List<FieldWriter> addTraditionalFieldWriters(
@@ -1010,7 +1077,22 @@ public class Utils {
   private static final Map<Class<?>, List<FieldWriter>> storedReflectData =
       new ConcurrentHashMap<>();
 
-  interface FieldWriter {
+  public static class DelegateReflectWriter implements MapWriter {
+    private final Object object;
+    private final List<Utils.FieldWriter> fieldWriters;
+
+    DelegateReflectWriter(Object object, List<Utils.FieldWriter> fieldWriters) {
+      this.object = object;
+      this.fieldWriters = fieldWriters;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      Utils.reflectWrite(ew, object, fieldWriters);
+    }
+  }
+
+  static interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
   }
 
