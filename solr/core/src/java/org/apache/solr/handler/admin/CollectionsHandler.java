@@ -185,7 +185,7 @@ import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeaderAPI;
 import org.apache.solr.handler.admin.api.InstallShardDataAPI;
-import org.apache.solr.handler.admin.api.ListAliasesAPI;
+import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackupsAPI;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
 import org.apache.solr.handler.admin.api.ListCollectionsAPI;
@@ -655,7 +655,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LISTALIASES_OP(
         LISTALIASES,
         (req, rsp, h) -> {
-          final ListAliasesAPI getAliasesAPI = new ListAliasesAPI(h.coreContainer, req, rsp);
+          final ListAliases getAliasesAPI = new ListAliases(h.coreContainer, req, rsp);
           final SolrJerseyResponse getAliasesResponse = getAliasesAPI.getAliases();
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
           return null;
@@ -1389,7 +1389,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         SyncShardAPI.class,
         CollectionPropertyAPI.class,
         DeleteNode.class,
-        ListAliasesAPI.class,
+        ListAliases.class,
         AliasPropertyAPI.class,
         ListCollectionSnapshotsAPI.class,
         CreateCollectionSnapshotAPI.class,
