@@ -124,6 +124,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -164,7 +165,7 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
-import org.apache.solr.handler.admin.api.AliasPropertyAPI;
+import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicasAPI;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
 import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
@@ -640,11 +641,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           String name = req.getParams().required().get(NAME);
           Map<String, Object> properties = collectToMap(req.getParams(), "property");
-          AliasPropertyAPI.UpdateAliasPropertiesRequestBody requestBody =
-              new AliasPropertyAPI.UpdateAliasPropertiesRequestBody();
+          final var requestBody = new UpdateAliasPropertiesRequestBody();
           requestBody.properties = properties;
           requestBody.async = req.getParams().get(ASYNC);
-          final AliasPropertyAPI aliasPropertyAPI = new AliasPropertyAPI(h.coreContainer, req, rsp);
+          final AliasProperty aliasPropertyAPI = new AliasProperty(h.coreContainer, req, rsp);
           final SolrJerseyResponse getAliasesResponse =
               aliasPropertyAPI.updateAliasProperties(name, requestBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
@@ -1389,7 +1389,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CollectionPropertyAPI.class,
         DeleteNode.class,
         ListAliases.class,
-        AliasPropertyAPI.class,
+        AliasProperty.class,
         ListCollectionSnapshotsAPI.class,
         CreateCollectionSnapshotAPI.class,
         DeleteCollectionSnapshot.class);
