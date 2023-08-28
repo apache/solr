@@ -188,7 +188,7 @@ import org.apache.solr.handler.admin.api.InstallShardDataAPI;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
-import org.apache.solr.handler.admin.api.ListCollectionsAPI;
+import org.apache.solr.handler.admin.api.ListCollections;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
 import org.apache.solr.handler.admin.api.MigrateReplicasAPI;
 import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
@@ -965,8 +965,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LIST_OP(
         LIST,
         (req, rsp, h) -> {
-          final ListCollectionsAPI listCollectionsAPI =
-              new ListCollectionsAPI(h.coreContainer, req, rsp);
+          final ListCollections listCollectionsAPI = new ListCollections(h.coreContainer, req, rsp);
           final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
@@ -1378,7 +1377,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteShardAPI.class,
         ForceLeaderAPI.class,
         InstallShardDataAPI.class,
-        ListCollectionsAPI.class,
+        ListCollections.class,
         ListCollectionBackups.class,
         ReloadCollectionAPI.class,
         RenameCollectionAPI.class,
