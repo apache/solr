@@ -20,11 +20,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.stats.MetricUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -97,9 +99,32 @@ public class TestThinCache extends SolrTestCaseJ4 {
       assertU(adoc("id", Integer.toString(i)));
     }
     assertU(commit());
-    Map<String, Object> metricsSnapshot =
-        h.getCore().getCoreMetricManager().getSolrMetricsContext().getMetricsSnapshot();
-    System.err.println(metricsSnapshot);
+    assertQ(req("q", "*:*", "fq", "id:0"));
+    assertQ(req("q", "*:*", "fq", "id:0"));
+    assertQ(req("q", "*:*", "fq", "id:1"));
+    Map<String, Object> nodeMetricsSnapshot =
+        MetricUtils.convertMetrics(
+            h.getCoreContainer().getMetricManager().registry("solr.node"),
+            List.of(
+                "CACHE.nodeLevelCache/myNodeLevelCacheThin",
+                "CACHE.nodeLevelCache/myNodeLevelCache"));
+    Map<String, Object> coreMetricsSnapshot =
+        MetricUtils.convertMetrics(
+            h.getCore().getCoreMetricManager().getRegistry(),
+            List.of("CACHE.searcher.filterCache"));
+
+    // check that metrics are accessible, and the core cache writes through to the node-level cache
+    Map<String, Number> assertions = Map.of("lookups", 3L, "hits", 1L, "inserts", 2L, "size", 2);
+    for (Map.Entry<String, Number> e : assertions.entrySet()) {
+      String key = e.getKey();
+      Number val = e.getValue();
+      assertEquals(
+          val, nodeMetricsSnapshot.get("CACHE.nodeLevelCache/myNodeLevelCacheThin.".concat(key)));
+      assertEquals(val, coreMetricsSnapshot.get("CACHE.searcher.filterCache.".concat(key)));
+    }
+
+    // for the other node-level cache, simply check that metrics are accessible
+    assertEquals(0, nodeMetricsSnapshot.get("CACHE.nodeLevelCache/myNodeLevelCache.size"));
   }
 
   @BeforeClass
