@@ -849,7 +849,7 @@ The `bin/solr` script allows enabling or disabling Authentication, allowing you 
 
 Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.  
 
-For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/resources/security.json[user roles and permission mappings], and maps the created user to the superadmin role.
+For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/resources/security.json[user roles and permission mappings], and maps the created user to the `superadmin` role.
 For Kerberos it only enables the security.json, it doesn't set up any users or role mappings.  
 
 

@@ -19,6 +19,7 @@ package org.apache.solr.cli;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Console;
 import java.io.File;
@@ -368,7 +369,12 @@ public class AuthTool extends ToolBase {
         ((ObjectNode) credentialsNode)
             .put(username, Sha256AuthenticationProvider.getSaltedHashedValue(password));
         JsonNode userRoleNode = securityJson1.get("authorization").get("user-role");
-        ((ObjectNode) userRoleNode).put(username, "admin");
+        String[] predefinedRoles = {"superadmin", "admin","search","index"};
+        ArrayNode rolesNode = mapper.createArrayNode();
+        for (String role : predefinedRoles) {
+          rolesNode.add(role);
+        }
+        ((ObjectNode) userRoleNode).set(username, rolesNode);
         String securityJson = securityJson1.toPrettyString();
 
         if (!updateIncludeFileOnly) {
