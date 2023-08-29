@@ -828,7 +828,16 @@ public class Utils {
 
   public static final String CATCH_ALL_PROPERTIES_METHOD_NAME = "unknownProperties";
 
-  public static Object getReflectWritable(Object o) throws IOException {
+  /**
+   * Return a writable object that will be serialized using the reflection-friendly properties
+   * of the class, notably the fields that have the {@link JsonProperty} annotation.
+   * <p>
+   * If the class has no reflection-friendly fields, then it will be serialized as a string,
+   * using the class's name and {@code toString()} method.
+   * @param o the object to get a serializable version of
+   * @return a serializable version of the object
+   */
+  public static Object getReflectWriter(Object o) {
     List<FieldWriter> fieldWriters = null;
     try {
       fieldWriters =

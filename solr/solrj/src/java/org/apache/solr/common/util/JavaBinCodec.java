@@ -273,7 +273,7 @@ public class JavaBinCodec implements PushWriter {
     // representation.
     // note: if the user of this codec doesn't want this (e.g. UpdateLog) it can supply an
     // ObjectResolver that does something else like throw an exception.
-    writeVal(Utils.getReflectWritable(val));
+    writeVal(Utils.getReflectWriter(val));
   }
 
   protected static final Object END_OBJ = new Object();
@@ -394,7 +394,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     }
     if (val instanceof ReflectWritable) {
-      writeVal(Utils.getReflectWritable(val));
+      writeVal(Utils.getReflectWriter(val));
       return true;
     }
     if (val instanceof Map) {

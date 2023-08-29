@@ -87,7 +87,7 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof MapWriter) {
       writeMap(name, (MapWriter) val);
     } else if (val instanceof ReflectWritable) {
-      writeVal(name, Utils.getReflectWritable(val));
+      writeVal(name, Utils.getReflectWriter(val));
     } else if (val instanceof MapSerializable) {
       // todo find a better way to reuse the map more efficiently
       writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
@@ -111,7 +111,7 @@ public interface TextWriter extends PushWriter {
     } else {
       // Fallback to do *something*, either use a reflection writer or write as a string
       // representation.
-      writeVal(name, Utils.getReflectWritable(val));
+      writeVal(name, Utils.getReflectWriter(val));
     }
   }
 
