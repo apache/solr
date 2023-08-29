@@ -103,6 +103,8 @@ Improvements
 
 * SOLR-16940: Users can pass Java system properties to the SolrCLI via the SOLR_TOOL_OPTS environment variable. (Houston Putman)
 
+* SOLR-15474: Make Circuit breakers individually pluggable (Atri Sharma, Christine Poerschke, janhoy)
+
 * SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
 
 Optimizations
@@ -288,7 +290,7 @@ Improvements
 
 * SOLR-16687: Add support of SolrClassLoader to SolrZkClient (Lamine Idjeraoui via Jason Gerlowski & Houston Putman)
 
-* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
+* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning
   only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
 
 * SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster
