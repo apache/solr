@@ -95,7 +95,7 @@ teardown() {
 
   # When the Jenkins box "curl" supports --fail-with-body, add "--fail-with-body" and change "run" to "run !", to expect a failure
   run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" 'https://localhost:8983/solr/test/select?q=*:*'
-  assert_output --partial '401 require authentication'
+  assert_output --partial 'Error 401 Authentication'
 }
 
 @test "start solr with client truststore and security manager" {
