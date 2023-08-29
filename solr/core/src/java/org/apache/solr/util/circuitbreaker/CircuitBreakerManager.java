@@ -51,7 +51,10 @@ public class CircuitBreakerManager extends CircuitBreaker {
   public String getDebugInfo() {
     StringBuilder sb = new StringBuilder();
     if (memEnabled) {
-      sb.append(memCB.getDebugInfo()).append("\n");
+      sb.append(memCB.getDebugInfo());
+    }
+    if (memEnabled && cpuEnabled) {
+      sb.append("\n");
     }
     if (cpuEnabled) {
       sb.append(cpuCB.getDebugInfo());

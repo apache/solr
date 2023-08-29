@@ -99,9 +99,4 @@ public class CircuitBreakerRegistry {
   public boolean isEnabled() {
     return !circuitBreakerList.isEmpty();
   }
-
-  @VisibleForTesting
-  public List<CircuitBreaker> getRegisteredCircuitBreakers() {
-    return circuitBreakerList;
-  }
 }

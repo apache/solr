@@ -239,10 +239,7 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   private void removeAllExistingCircuitBreakers() {
-    List<CircuitBreaker> registeredCircuitBreakers =
-        h.getCore().getCircuitBreakerRegistry().getRegisteredCircuitBreakers();
-
-    registeredCircuitBreakers.clear();
+    h.getCore().getCircuitBreakerRegistry().deregisterAll();
   }
 
   private static class MockCircuitBreaker extends MemoryCircuitBreaker {

@@ -79,7 +79,7 @@
   </query>
 
   <circuitBreaker class="solr.MemoryCircuitBreaker">
-    <int  name="threshold">75</int>
+    <double  name="threshold">75</double>
   </circuitBreaker>
 
   <circuitBreaker class="solr.CPUCircuitBreaker">
