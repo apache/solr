@@ -43,6 +43,8 @@ Improvements
 
 * SOLR-16940: Users can pass Java system properties to the SolrCLI via the SOLR_TOOL_OPTS environment variable. (Houston Putman)
 
+* SOLR-15474: Make Circuit breakers individually pluggable (Atri Sharma, Christine Poerschke, janhoy)
+
 Optimizations
 ---------------------
 
