@@ -28,7 +28,7 @@ import org.apache.solr.cloud.ZkController.ContextKey;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -61,8 +61,6 @@ public class LeaderElector {
 
   protected SolrZkClient zkClient;
 
-  private ZkCmdExecutor zkCmdExecutor;
-
   private volatile ElectionContext context;
 
   private ElectionWatcher watcher;
@@ -72,13 +70,11 @@ public class LeaderElector {
 
   public LeaderElector(SolrZkClient zkClient) {
     this.zkClient = zkClient;
-    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
   }
 
   public LeaderElector(
       SolrZkClient zkClient, ContextKey key, Map<ContextKey, ElectionContext> electionContexts) {
     this.zkClient = zkClient;
-    zkCmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     this.electionContexts = electionContexts;
     this.contextKey = key;
   }
@@ -366,10 +362,11 @@ public class LeaderElector {
   public void setup(final ElectionContext context) throws InterruptedException, KeeperException {
     String electZKPath = context.electionPath + LeaderElector.ELECTION_NODE;
     if (context instanceof OverseerElectionContext) {
-      zkCmdExecutor.ensureExists(electZKPath, zkClient);
+      ZkMaintenanceUtils.ensureExists(electZKPath, zkClient);
     } else {
       // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
-      zkCmdExecutor.ensureExists(electZKPath, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+      ZkMaintenanceUtils.ensureExists(
+          electZKPath, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
     }
 
     this.context = context;

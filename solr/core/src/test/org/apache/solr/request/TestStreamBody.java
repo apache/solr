@@ -56,20 +56,14 @@ public class TestStreamBody extends RestTestBase {
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness.setServerProvider(
-          () -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+          () -> getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
     }
   }
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
-    if (client != null) {
-      client.close();
-      client = null;
-    }
+    solrClientTestRule.reset();
+
     if (restTestHarness != null) {
       restTestHarness.close();
       restTestHarness = null;

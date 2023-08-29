@@ -133,17 +133,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness.setServerProvider(
-          () -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+          () -> getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
     }
   }
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
-    client = null;
+    solrClientTestRule.reset();
+
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -973,7 +970,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         TIMEOUT_S);
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
     restTestHarness.setServerProvider(
-        () -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+        () -> getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
 
     Map<?, ?> rsp =
         TestSolrConfigHandler.testForResponseElement(

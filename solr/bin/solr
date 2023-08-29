@@ -147,6 +147,11 @@ fi
 : "${SOLR_STOP_WAIT:=180}"
 : "${SOLR_START_WAIT:=$SOLR_STOP_WAIT}" # defaulting to $SOLR_STOP_WAIT for backwards compatibility reasons
 
+# Store whether a solr port was explicitly provided, for the "solr stop" command.
+PROVIDED_SOLR_PORT="${SOLR_PORT:-}"
+: "${SOLR_PORT:=8983}"
+export SOLR_PORT
+
 # test that Java exists, is executable and correct version
 JAVA_VER=$("$JAVA" -version 2>&1)
 # shellcheck disable=SC2181
@@ -278,6 +283,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
 else
   SOLR_JETTY_CONFIG+=("--module=http")
 fi
+export SOLR_URL_SCHEME
 
 # Requestlog options
 if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
@@ -330,6 +336,7 @@ AUTHC_OPTS="${AUTHC_OPTS:-}${SOLR_AUTHENTICATION_OPTS:+ $SOLR_AUTHENTICATION_OPT
 
 # Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
 SOLR_TOOL_HOST="${SOLR_HOST:-localhost}"
+export SOLR_TOOL_HOST
 
 function print_usage() {
   CMD="${1:-}"
@@ -547,7 +554,7 @@ function print_usage() {
     echo ""
   elif [ "$CMD" == "package" ]; then
     echo ""
-    run_tool package -solrUrl "http://fake.to.allow.help.to.run" "help"
+    run_tool package "help"
   fi
 } # end print_usage
 
@@ -621,7 +628,7 @@ function jetty_port() {
 function run_tool() {
 
   # shellcheck disable=SC2086
-  "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} -Dsolr.install.dir="$SOLR_TIP" \
+  "$JAVA" ${SOLR_TOOL_OPTS:-} $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
     org.apache.solr.cli.SolrCLI "$@"
@@ -735,7 +742,7 @@ function stop_solr() {
   if [ -n "$SOLR_PID"  ]; then
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
     # shellcheck disable=SC2086
-    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
+    "$JAVA" ${SOLR_TOOL_OPTS:-} $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
       (loops=0
       while true
       do
@@ -1436,8 +1443,8 @@ fi
 
 : "${STOP_KEY:=solrrocks}"
 
-# stop all if no port specified
-if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
+# stop all if no port specified or "all" is used
+if [[ "$SCRIPT_CMD" == "stop" ]]; then
   if $stop_all; then
     none_stopped=true
     find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | while read PIDF
@@ -1455,8 +1462,9 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
     # if $none_stopped; then
     #   echo -e "\nNo Solr nodes found to stop.\n"
     # fi
-  else
-    # not stopping all and don't have a port, but if we can find the pid file for the default port 8983, then use that
+    exit
+  elif [[ -z "${PROVIDED_SOLR_PORT:-}" ]]; then
+    # not stopping all and don't have a port, but if we can find a single pid file for Solr, then use that
     none_stopped=true
     numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
     if [ "$numSolrs" -eq 1 ]; then
@@ -1480,11 +1488,9 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
       fi
       exit 1
     fi
+    exit
   fi
-  exit
 fi
-
-: "${SOLR_PORT:=8983}"
 
 if [ -n "${SOLR_PORT_ADVERTISE:-}" ]; then
   SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
@@ -1492,6 +1498,10 @@ fi
 
 if [ -n "${SOLR_JETTY_HOST:-}" ]; then
   SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
+fi
+
+if [ -n "${SOLR_ZK_EMBEDDED_HOST:-}" ]; then
+  SOLR_OPTS+=("-Dsolr.zk.embedded.host=$SOLR_ZK_EMBEDDED_HOST")
 fi
 
 : "${STOP_PORT:=$((SOLR_PORT - 1000))}"
