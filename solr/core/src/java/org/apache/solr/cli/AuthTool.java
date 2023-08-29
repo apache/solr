@@ -369,7 +369,7 @@ public class AuthTool extends ToolBase {
         ((ObjectNode) credentialsNode)
             .put(username, Sha256AuthenticationProvider.getSaltedHashedValue(password));
         JsonNode userRoleNode = securityJson1.get("authorization").get("user-role");
-        String[] predefinedRoles = {"superadmin", "admin","search","index"};
+        String[] predefinedRoles = {"superadmin", "admin", "search", "index"};
         ArrayNode rolesNode = mapper.createArrayNode();
         for (String role : predefinedRoles) {
           rolesNode.add(role);
