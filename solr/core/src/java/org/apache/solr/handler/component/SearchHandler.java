@@ -67,7 +67,7 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -354,23 +354,23 @@ public class SearchHandler extends RequestHandlerBase
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    final CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-    if (circuitBreakerManager.isEnabled()) {
+    final CircuitBreakerRegistry circuitBreakerRegistry = req.getCore().getCircuitBreakerRegistry();
+    if (circuitBreakerRegistry.isEnabled()) {
       List<CircuitBreaker> trippedCircuitBreakers;
 
       if (timer != null) {
         RTimerTree subt = timer.sub("circuitbreaker");
         rb.setTimer(subt);
 
-        trippedCircuitBreakers = circuitBreakerManager.checkTripped();
+        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped();
 
         rb.getTimer().stop();
       } else {
-        trippedCircuitBreakers = circuitBreakerManager.checkTripped();
+        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped();
       }
 
       if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerManager.toErrorMessage(trippedCircuitBreakers);
+        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
         rsp.add(STATUS, FAILURE);
         rsp.setException(
             new SolrException(

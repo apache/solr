@@ -15,32 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.solr.common;
+package org.apache.solr.client.api.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import static org.apache.solr.client.api.model.Constants.ASYNC;
+import static org.apache.solr.client.api.model.Constants.BACKUP_LOCATION;
+import static org.apache.solr.client.api.model.Constants.BACKUP_REPOSITORY;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.io.IOException;
-import org.apache.solr.common.util.Utils;
+import io.swagger.v3.oas.annotations.media.Schema;
+import org.apache.solr.client.api.endpoint.DeleteCollectionBackupApi;
 
-public class DelegateMapWriter implements MapWriter {
+/**
+ * Request body for the {@link DeleteCollectionBackupApi#garbageCollectUnusedBackupFiles(String,
+ * PurgeUnusedFilesRequestBody)} API.
+ */
+public class PurgeUnusedFilesRequestBody {
+  @JsonProperty(BACKUP_LOCATION)
+  public String location;
 
-  private final Object delegate;
+  @Schema(name = "repositoryName")
+  @JsonProperty(BACKUP_REPOSITORY)
+  public String repositoryName;
 
-  public DelegateMapWriter(Object delegate) {
-    this.delegate = delegate;
-  }
-
-  @Override
-  public void writeMap(EntryWriter ew) throws IOException {
-    Utils.reflectWrite(
-        ew,
-        delegate,
-        // TODO Should we be lenient here and accept both the Jackson and our homegrown annotation?
-        field -> field.getAnnotation(JsonProperty.class) != null,
-        JsonAnyGetter.class,
-        field -> {
-          final JsonProperty prop = field.getAnnotation(JsonProperty.class);
-          return prop.value().isEmpty() ? field.getName() : prop.value();
-        });
-  }
+  @JsonProperty(ASYNC)
+  public String async;
 }

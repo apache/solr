@@ -131,10 +131,7 @@ public class SchemaTest extends RestTestBase {
 
   @After
   public void cleanup() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     if (restTestHarness != null) {
       restTestHarness.close();
     }

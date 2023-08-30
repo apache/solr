@@ -34,8 +34,7 @@ public class DeleteCollectionSnapshotAPITest extends SolrTestCaseJ4 {
   @Test
   public void testConstructsValidOverseerMessage() {
     final ZkNodeProps messageOne =
-        DeleteCollectionSnapshotAPI.createRemoteMessage(
-            "myCollName", false, "mySnapshotName", null);
+        DeleteCollectionSnapshot.createRemoteMessage("myCollName", false, "mySnapshotName", null);
     final Map<String, Object> rawMessageOne = messageOne.getProperties();
     assertEquals(4, rawMessageOne.size());
     MatcherAssert.assertThat(
@@ -48,7 +47,7 @@ public class DeleteCollectionSnapshotAPITest extends SolrTestCaseJ4 {
     assertEquals(false, rawMessageOne.get(FOLLOW_ALIASES));
 
     final ZkNodeProps messageTwo =
-        DeleteCollectionSnapshotAPI.createRemoteMessage(
+        DeleteCollectionSnapshot.createRemoteMessage(
             "myCollName", true, "mySnapshotName", "myAsyncId");
     final Map<String, Object> rawMessageTwo = messageTwo.getProperties();
     assertEquals(5, rawMessageTwo.size());
