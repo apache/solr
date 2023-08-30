@@ -301,7 +301,7 @@ public class HttpShardHandler extends ShardHandler {
               .collection(cloudDescriptor.getCollectionName())
               .onlyNrt(onlyNrt)
               .build();
-      rb.slices = replicaSource.getSliceNames().toArray(new String[replicaSource.getSliceCount()]);
+      rb.slices = replicaSource.getSliceNames().toArray(new String[0]);
 
       if (canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
         rb.isDistrib = false;

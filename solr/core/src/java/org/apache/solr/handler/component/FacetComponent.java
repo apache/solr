@@ -94,7 +94,7 @@ public class FacetComponent extends SearchComponent {
         }
         HashSet<String> deDupe =
             new LinkedHashSet<>(Arrays.asList(origParams.getParams(paramName)));
-        params.add(paramName, deDupe.toArray(new String[deDupe.size()]));
+        params.add(paramName, deDupe.toArray(new String[0]));
       }
       rb.req.setParams(params);
 
@@ -1510,14 +1510,14 @@ public class FacetComponent extends SearchComponent {
     }
 
     public ShardFacetCount[] getLexSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(arr, (o1, o2) -> o1.indexed.compareTo(o2.indexed));
       countSorted = arr;
       return arr;
     }
 
     public ShardFacetCount[] getCountSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(
           arr,
           (o1, o2) -> {
