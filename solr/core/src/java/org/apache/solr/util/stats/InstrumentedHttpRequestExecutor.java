@@ -20,9 +20,7 @@ package org.apache.solr.util.stats;
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
-import io.opentelemetry.api.trace.Span;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
 import java.util.Locale;
 import java.util.Map;
@@ -39,8 +37,6 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Sub-class of HttpRequestExecutor which tracks metrics interesting to solr Inspired and partially
@@ -136,8 +132,6 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
     return solrMetricsContext;
   }
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @Override
   public HttpResponse execute(HttpRequest request, HttpClientConnection conn, HttpContext context)
       throws IOException, HttpException {
@@ -145,12 +139,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
     if (solrMetricsContext != null) {
       timerContext = timer(request).time();
     }
-
-    if (log.isTraceEnabled()) {
-      log.trace("OTEL span {}", Span.current().getSpanContext().getTraceId());
-    }
     TraceUtils.injectTraceContext(request);
-
     try {
       return super.execute(request, conn, context);
     } finally {

@@ -17,9 +17,6 @@
 
 package org.apache.solr.core;
 
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanBuilder;
-import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
@@ -28,17 +25,15 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.solr.util.tracing.TraceUtils.ScopeSpanCloseable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.solr.util.tracing.TraceUtils.ScopeSpanCloseable;
 
 /** Produces a {@link Tracer} from configuration. */
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
@@ -136,37 +131,13 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
     @Override
     public void set(AtomicReference<Object> ctx) {
       var traceContext = (Context) ctx.get();
-
-      final Scope scope;
-      final Span span;
-
-      var candidateSpan = Span.fromContext(traceContext);
-      if (!candidateSpan.getSpanContext().isValid()) {
-        span = newSpan();
-        scope = traceContext.with(span).makeCurrent();
-        if (log.isTraceEnabled()) {
-          log.trace("OTEL gen new traceId {}", span.getSpanContext().getTraceId());
-        }
-      } else {
-        if (log.isTraceEnabled()) {
-          log.trace("OTEL propagating traceId {}", candidateSpan.getSpanContext().getTraceId());
-        }
-        span = null;
-        scope = traceContext.makeCurrent();
-      }
-
-      ctx.set(TraceUtils.asScopeSpanCloseable(scope, span));
-    }
-
-    private static Span newSpan() {
-      Tracer tracer = TraceUtils.getGlobalTracer();
-      SpanBuilder spanBuilder = tracer.spanBuilder("internalSpan").setSpanKind(SpanKind.SERVER);
-      return spanBuilder.startSpan();
+      var scope = traceContext.makeCurrent();
+      ctx.set(scope);
     }
 
     @Override
     public void clean(AtomicReference<Object> ctx) {
-      var scope = (ScopeSpanCloseable) ctx.get();
+      var scope = (Scope) ctx.get();
       scope.close();
     }
   }

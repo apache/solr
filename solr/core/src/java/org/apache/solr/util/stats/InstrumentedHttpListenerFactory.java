@@ -21,7 +21,6 @@ import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
 import io.opentelemetry.api.trace.Span;
-import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
@@ -31,8 +30,6 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A HttpListenerFactory tracking metrics and distributed tracing. The Metrics are inspired and
@@ -87,8 +84,6 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
     return request.getMethod().toLowerCase(Locale.ROOT) + ".requests";
   }
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   @Override
   public RequestResponseListener get() {
     return new RequestResponseListener() {
@@ -99,9 +94,6 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
       public void onQueued(Request request) {
         // do tracing onQueued because it's called from Solr's thread
         span = Span.current();
-        if (log.isTraceEnabled()) {
-          log.trace("OTEL span {}", span.getSpanContext().getTraceId());
-        }
         TraceUtils.injectTraceContext(request);
       }
 
