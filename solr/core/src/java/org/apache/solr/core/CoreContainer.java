@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -96,6 +97,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
@@ -138,6 +140,8 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
@@ -273,6 +277,8 @@ public class CoreContainer {
   protected MetricsHandler metricsHandler;
 
   private volatile SolrClientCache solrClientCache;
+
+  private volatile Map<String, SolrCache<?, ?>> caches;
 
   private final ObjectCache objectCache = new ObjectCache();
 
@@ -712,6 +718,10 @@ public class CoreContainer {
     return packageStoreAPI;
   }
 
+  public SolrCache<?, ?> getCache(String name) {
+    return caches.get(name);
+  }
+
   public SolrClientCache getSolrClientCache() {
     return solrClientCache;
   }
@@ -797,6 +807,20 @@ public class CoreContainer {
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
 
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
+
+    Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
+    if (cachesConfig.isEmpty()) {
+      this.caches = Collections.emptyMap();
+    } else {
+      Map<String, SolrCache<?, ?>> m = CollectionUtil.newHashMap(cachesConfig.size());
+      for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
+        SolrCache<?, ?> c = e.getValue().newInstance();
+        String cacheName = e.getKey();
+        c.initializeMetrics(solrMetricsContext, "nodeLevelCache/" + cacheName);
+        m.put(cacheName, c);
+      }
+      this.caches = Collections.unmodifiableMap(m);
+    }
 
     StartupLoggingUtils.checkRequestLogging();
 
@@ -1264,6 +1288,17 @@ public class CoreContainer {
       }
       // Now clear all the cores that are being operated upon.
       solrCores.close();
+
+      final Map<String, SolrCache<?, ?>> closeCaches = caches;
+      if (closeCaches != null) {
+        for (Map.Entry<String, SolrCache<?, ?>> e : caches.entrySet()) {
+          try {
+            e.getValue().close();
+          } catch (Exception ex) {
+            log.warn("error closing node-level cache: {}", e.getKey(), ex);
+          }
+        }
+      }
 
       objectCache.clear();
 

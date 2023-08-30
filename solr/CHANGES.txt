@@ -8,7 +8,7 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.4.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-16654: Add support for node-level caches (Michael Gibney)
 
 Improvements
 ---------------------
