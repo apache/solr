@@ -346,7 +346,8 @@ public class SolrConfig implements MapSerializable {
       for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
       Map<String, CacheConfig> userCacheConfigs =
-          CacheConfig.getMultipleConfigs(this, "query/cache", get("query").getAll("cache"));
+          CacheConfig.getMultipleConfigs(
+              getResourceLoader(), this, "query/cache", get("query").getAll("cache"));
       List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
       if (!caches.isEmpty()) {
         for (PluginInfo c : caches) {
