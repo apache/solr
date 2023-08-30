@@ -635,7 +635,7 @@ The `<caches>` element in `solr.xml` supports defining and configuring named nod
 
 These caches are analogous to xref:caches-warming.adoc#user-defined-caches[user-defined caches in `solrconfig.xml`], except that each named cache exists as a long-lived singleton at the node level. These node-level caches are accessible from application code via `CoreContainer.getCache(String cacheName)`.
 
-Note that because node-level caches exist above the context of an individual core, config parameters that hook into the lifecycle of a core/searcher (such as `autowarmCount` and `regenerator` are irrelevant/ignored for node-level caches).
+Note that because node-level caches exist above the context of an individual core, config parameters that hook into the lifecycle of a core/searcher (such as `autowarmCount` and `regenerator`) are irrelevant/ignored for node-level caches.
 
 [source,xml]
 ----
