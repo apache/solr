@@ -22,6 +22,7 @@ import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.Tracer.SpanBuilder;
+import io.opentracing.noop.NoopSpan;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
 import io.opentracing.tag.Tag;
@@ -52,6 +53,10 @@ public class SimplePropagator {
           log.info("Always-on trace id generation enabled.");
           return new SimplePropagatorTracer();
         });
+  }
+
+  private static String newTraceId() {
+    return TRACE_HOST_NAME + "-" + traceCounter.incrementAndGet();
   }
 
   /**
@@ -89,7 +94,8 @@ public class SimplePropagator {
     @Override
     public <C> void inject(SpanContext spanContext, Format<C> format, C carrier) {
       if (!format.equals(Format.Builtin.HTTP_HEADERS)) {
-        throw new IllegalArgumentException("unsupported format " + format);
+        // unsupported via the Solr injectors
+        return;
       }
       String traceId = spanContext.toTraceId();
       if (traceId != null && !traceId.isEmpty()) {
@@ -101,8 +107,10 @@ public class SimplePropagator {
     @Override
     public <C> SpanContext extract(Format<C> format, C carrier) {
       if (!format.equals(Format.Builtin.HTTP_HEADERS)) {
-        throw new IllegalArgumentException("unsupported format " + format);
+        // unsupported via the Solr injectors
+        return NoopSpan.INSTANCE.context();
       }
+
       String traceId = null;
       TextMap tm = (TextMap) carrier;
       Iterator<Entry<String, String>> it = tm.iterator();
@@ -117,7 +125,7 @@ public class SimplePropagator {
       if (traceId == null) {
         traceId = newTraceId();
       }
-      return new SimplePropagatorSpanContext(traceId);
+      return new SimplePropagatorSpan(traceId);
     }
 
     @Override
@@ -139,11 +147,15 @@ public class SimplePropagator {
     @Override
     public Span start() {
       if (parent != null) {
-        return new SimplePropagatorSpan(parent);
+        if (parent instanceof SimplePropagatorSpan) {
+          return (SimplePropagatorSpan) parent;
+        } else {
+          return NoopSpan.INSTANCE;
+        }
       } else if (scopeManager.activeSpan() != null) {
-        return new SimplePropagatorSpan(scopeManager.activeSpan().context());
+        return scopeManager.activeSpan();
       } else {
-        return new SimplePropagatorSpan(new SimplePropagatorSpanContext(""));
+        return new SimplePropagatorSpan(newTraceId());
       }
     }
 
@@ -194,11 +206,11 @@ public class SimplePropagator {
     }
   }
 
-  private static final class SimplePropagatorSpanContext implements SpanContext {
+  private static final class SimplePropagatorSpan implements Span, SpanContext, NoopSpan {
 
     private final String traceId;
 
-    public SimplePropagatorSpanContext(String traceId) {
+    private SimplePropagatorSpan(String traceId) {
       this.traceId = traceId;
     }
 
@@ -218,22 +230,8 @@ public class SimplePropagator {
     }
 
     @Override
-    public String toString() {
-      return "SimplePropagatorSpanContext [traceId=" + traceId + "]";
-    }
-  }
-
-  static final class SimplePropagatorSpan implements Span {
-
-    private final SpanContext ctx;
-
-    private SimplePropagatorSpan(SpanContext ctx) {
-      this.ctx = ctx;
-    }
-
-    @Override
     public SpanContext context() {
-      return ctx;
+      return this;
     }
 
     @Override
@@ -296,9 +294,5 @@ public class SimplePropagator {
     public <T> Span setTag(Tag<T> arg0, T arg1) {
       return this;
     }
-  }
-
-  private static String newTraceId() {
-    return TRACE_HOST_NAME + "-" + traceCounter.incrementAndGet();
   }
 }
