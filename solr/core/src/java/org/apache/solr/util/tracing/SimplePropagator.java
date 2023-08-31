@@ -152,8 +152,10 @@ public class SimplePropagator {
         } else {
           return NoopSpan.INSTANCE;
         }
-      } else if (scopeManager.activeSpan() != null) {
-        return scopeManager.activeSpan();
+      }
+      var activeSpan = scopeManager.activeSpan();
+      if (activeSpan != null) {
+        return activeSpan;
       } else {
         return new SimplePropagatorSpan(newTraceId());
       }
