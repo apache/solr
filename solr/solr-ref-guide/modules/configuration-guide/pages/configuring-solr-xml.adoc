@@ -57,7 +57,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
     <bool name="distributedCollectionConfigSetExecution">${distributedCollectionConfigSetExecution:false}</bool>
     <int name="minStateByteLenForCompression">${minStateByteLenForCompression:-1}</int>
-    <str name="compressor">${compressor:org.apache.solr.common.util.ZLibCompressor}</str>
+    <str name="stateCompressor">${stateCompressor:org.apache.solr.common.util.ZLibCompressor}</str>
 
   </solrcloud>
 
