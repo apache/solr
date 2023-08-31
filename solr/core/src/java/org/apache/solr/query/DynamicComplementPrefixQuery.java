@@ -205,7 +205,8 @@ public class DynamicComplementPrefixQuery extends MultiTermQuery {
       } else {
         candidate = tenum.next();
       }
-      if (limitLength != candidate.length
+      if (limitLength < 0
+          || limitLength != candidate.length
           || determinant
               != Byte.toUnsignedInt(candidate.bytes[candidate.offset + determinantIdx])) {
         return candidate;
