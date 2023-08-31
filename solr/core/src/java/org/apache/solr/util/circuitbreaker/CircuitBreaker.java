@@ -17,32 +17,32 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+
 /**
- * Default class to define circuit breakers for Solr.
+ * Default base class to define circuit breaker plugins for Solr. <b>Still experimental, may
+ * change</b>
  *
- * <p>There are two (typical) ways to use circuit breakers: 1. Have them checked at admission
- * control by default (use CircuitBreakerManager for the same). 2. Use the circuit breaker in a
- * specific code path(s).
+ * <p>There are two (typical) ways to use circuit breakers:
  *
- * <p>TODO: This class should be grown as the scope of circuit breakers grow.
+ * <ol>
+ *   <li>Have them checked at admission control by default (use CircuitBreakerRegistry for the
+ *       same).
+ *   <li>Use the circuit breaker in a specific code path(s).
+ * </ol>
  *
- * <p>The class and its derivatives raise a standard exception when a circuit breaker is triggered.
- * We should make it into a dedicated exception (https://issues.apache.org/jira/browse/SOLR-14755)
+ * @lucene.experimental
  */
-public abstract class CircuitBreaker {
-  public static final String NAME = "circuitbreaker";
+public abstract class CircuitBreaker implements NamedListInitializedPlugin {
 
-  protected final CircuitBreakerConfig config;
-
-  public CircuitBreaker(CircuitBreakerConfig config) {
-    this.config = config;
+  @Override
+  public void init(NamedList<?> args) {
+    SolrPluginUtils.invokeSetters(this, args);
   }
 
-  // Global config for all circuit breakers. For specific circuit breaker configs, define
-  // your own config.
-  protected boolean isEnabled() {
-    return config.isEnabled();
-  }
+  public CircuitBreaker() {}
 
   /** Check if circuit breaker is tripped. */
   public abstract boolean isTripped();
@@ -52,45 +52,4 @@ public abstract class CircuitBreaker {
 
   /** Get error message when the circuit breaker triggers */
   public abstract String getErrorMessage();
-
-  public static class CircuitBreakerConfig {
-    private final boolean enabled;
-    private final boolean memCBEnabled;
-    private final int memCBThreshold;
-    private final boolean cpuCBEnabled;
-    private final int cpuCBThreshold;
-
-    public CircuitBreakerConfig(
-        final boolean enabled,
-        final boolean memCBEnabled,
-        final int memCBThreshold,
-        final boolean cpuCBEnabled,
-        final int cpuCBThreshold) {
-      this.enabled = enabled;
-      this.memCBEnabled = memCBEnabled;
-      this.memCBThreshold = memCBThreshold;
-      this.cpuCBEnabled = cpuCBEnabled;
-      this.cpuCBThreshold = cpuCBThreshold;
-    }
-
-    public boolean isEnabled() {
-      return enabled;
-    }
-
-    public boolean getMemCBEnabled() {
-      return memCBEnabled;
-    }
-
-    public int getMemCBThreshold() {
-      return memCBThreshold;
-    }
-
-    public boolean getCpuCBEnabled() {
-      return cpuCBEnabled;
-    }
-
-    public int getCpuCBThreshold() {
-      return cpuCBThreshold;
-    }
-  }
 }

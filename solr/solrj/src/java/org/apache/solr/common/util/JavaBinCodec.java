@@ -44,7 +44,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.ConditionalKeyMapWriter;
-import org.apache.solr.common.DelegateMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
@@ -270,10 +269,11 @@ public class JavaBinCodec implements PushWriter {
         if (writeKnownType(tmpVal)) return;
       }
     }
-    // Fallback to do *something*.
+    // Fallback to do *something*, either use a reflection writer or write as a string
+    // representation.
     // note: if the user of this codec doesn't want this (e.g. UpdateLog) it can supply an
     // ObjectResolver that does something else like throw an exception.
-    writeVal(val.getClass().getName() + ':' + val.toString());
+    writeVal(Utils.getReflectWriter(val));
   }
 
   protected static final Object END_OBJ = new Object();
@@ -394,7 +394,7 @@ public class JavaBinCodec implements PushWriter {
       return true;
     }
     if (val instanceof ReflectWritable) {
-      writeMap(new DelegateMapWriter(val));
+      writeVal(Utils.getReflectWriter(val));
       return true;
     }
     if (val instanceof Map) {

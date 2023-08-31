@@ -90,7 +90,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -346,7 +346,8 @@ public class SolrConfig implements MapSerializable {
       for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
       Map<String, CacheConfig> userCacheConfigs =
-          CacheConfig.getMultipleConfigs(this, "query/cache", get("query").getAll("cache"));
+          CacheConfig.getMultipleConfigs(
+              getResourceLoader(), this, "query/cache", get("query").getAll("cache"));
       List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
       if (!caches.isEmpty()) {
         for (PluginInfo c : caches) {
@@ -503,7 +504,7 @@ public class SolrConfig implements MapSerializable {
           new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS),
           new SolrPluginInfo(RestManager.class, "restManager"),
           new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS),
-          new SolrPluginInfo(CircuitBreakerManager.class, "circuitBreaker"));
+          new SolrPluginInfo(CircuitBreaker.class, "circuitBreaker", REQUIRE_CLASS, MULTI_OK));
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {

@@ -379,6 +379,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     }
   }
 
+  protected void adjustMetrics(long hitsAdjust, long insertsAdjust, long lookupsAdjust) {
+    hits.add(-hitsAdjust);
+    inserts.add(-insertsAdjust);
+    lookups.add(-lookupsAdjust);
+  }
+
   @Override
   public void warm(SolrIndexSearcher searcher, SolrCache<K, V> old) {
     if (regenerator == null) {

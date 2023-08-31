@@ -89,7 +89,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
       // make sure it's set
       System.setProperty("basicauth", "foo:bar");
     }
-    SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
+    SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
     Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
     Metric metric = metrics.get("system.properties");
     assertNotNull(metrics.toString(), metric);
@@ -125,7 +125,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
   @Test
   public void testSetupJvmMetrics() {
-    SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
+    SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
     Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
     assertTrue(metrics.size() > 0);
     assertTrue(
