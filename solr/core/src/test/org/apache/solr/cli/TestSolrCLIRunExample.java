@@ -316,7 +316,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @Test
-  //@LuceneTestCase.Nightly
+  // @LuceneTestCase.Nightly
   public void testTechproductsExample() throws Exception {
     testExample("techproducts");
   }
@@ -353,11 +353,16 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       String[] toolArgs =
           new String[] {
-            "-e", exampleName,
-            "-serverDir", solrServerDir.getAbsolutePath(),
-            "-exampleDir", solrExampleDir.getAbsolutePath(),
-            "-p", String.valueOf(bindPort),
-                  "-t","dude"
+            "-e",
+            exampleName,
+            "-serverDir",
+            solrServerDir.getAbsolutePath(),
+            "-exampleDir",
+            solrExampleDir.getAbsolutePath(),
+            "-p",
+            String.valueOf(bindPort),
+            "-t",
+            "dude"
           };
 
       // capture tool output to stdout

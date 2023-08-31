@@ -119,12 +119,12 @@ public class RunExampleTool extends ToolBase {
             .longOpt("serverDir")
             .build(),
         Option.builder("t")
-                .argName("DIR")
-                .hasArg()
-                .required(false)
-                .desc("Path to the Solr data home directory.")
-                .longOpt("dataHomeDir")
-                .build(),
+            .argName("DIR")
+            .hasArg()
+            .required(false)
+            .desc("Path to the Solr data home directory.")
+            .longOpt("dataHomeDir")
+            .build(),
         Option.builder("force")
             .argName("FORCE")
             .desc("Force option in case Solr is run as root.")
@@ -630,17 +630,14 @@ public class RunExampleTool extends ToolBase {
             memArg,
             forceArg,
             verboseArg,
-                dataDirArg,
-                dataDirValue,
+            dataDirArg,
+            dataDirValue,
             extraArgs,
             addlOptsArg);
     startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
 
     echo("\nStarting up Solr on port " + port + " using command:");
     echo(startCmd + "\n");
-
-    System.out.println("\nStarting up Solr on port " + port + " using command:");
-    System.out.println(startCmd + "\n");
 
     String solrUrl =
         String.format(
