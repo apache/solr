@@ -45,6 +45,10 @@ Improvements
 
 * SOLR-15474: Make Circuit breakers individually pluggable (Atri Sharma, Christine Poerschke, janhoy)
 
+* SOLR-16879: Limit the number of concurrent expensive core admin operations by running them in a
+  dedicated thread pool. Backup, Restore and Split are expensive operations.
+  (Pierre Salagnac, David Smiley)
+
 Optimizations
 ---------------------
 
