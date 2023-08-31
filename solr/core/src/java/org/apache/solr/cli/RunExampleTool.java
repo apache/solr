@@ -118,6 +118,13 @@ public class RunExampleTool extends ToolBase {
             .desc("Path to the Solr server directory.")
             .longOpt("serverDir")
             .build(),
+        Option.builder("t")
+                .argName("DIR")
+                .hasArg()
+                .required(false)
+                .desc("Path to the Solr data home directory.")
+                .longOpt("dataHomeDir")
+                .build(),
         Option.builder("force")
             .argName("FORCE")
             .desc("Force option in case Solr is run as root.")
@@ -591,6 +598,9 @@ public class RunExampleTool extends ToolBase {
     String forceArg = cli.hasOption("force") ? " -force" : "";
     String verboseArg = verbose ? "-V" : "";
 
+    String dataDirArg = cli.hasOption("dataHomeDir") ? "-t" : "";
+    String dataDirValue = cli.hasOption("dataHomeDir") ? cli.getOptionValue("dataHomeDir") : "";
+
     String addlOpts = cli.getOptionValue('a');
     String addlOptsArg = (addlOpts != null) ? " -a \"" + addlOpts + "\"" : "";
 
@@ -610,7 +620,7 @@ public class RunExampleTool extends ToolBase {
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,
@@ -620,12 +630,17 @@ public class RunExampleTool extends ToolBase {
             memArg,
             forceArg,
             verboseArg,
+                dataDirArg,
+                dataDirValue,
             extraArgs,
             addlOptsArg);
     startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
 
     echo("\nStarting up Solr on port " + port + " using command:");
     echo(startCmd + "\n");
+
+    System.out.println("\nStarting up Solr on port " + port + " using command:");
+    System.out.println(startCmd + "\n");
 
     String solrUrl =
         String.format(
