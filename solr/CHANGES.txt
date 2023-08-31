@@ -107,6 +107,10 @@ Improvements
 
 * SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
 
+* SOLR-16879: Limit the number of concurrent expensive core admin operations by running them in a
+  dedicated thread pool. Backup, Restore and Split are expensive operations.
+  (Pierre Salagnac, David Smiley)
+
 Optimizations
 ---------------------
 

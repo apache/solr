@@ -309,6 +309,12 @@ public enum CoreAdminOperation implements CoreAdminOp {
     return log;
   }
 
+  @Override
+  public boolean isExpensive() {
+    // delegates this to the actual implementation
+    return fun.isExpensive();
+  }
+
   /**
    * Returns the core status for a particular core.
    *
