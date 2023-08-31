@@ -93,10 +93,10 @@ teardown() {
   run curl 'http://localhost:7574/solr/techproducts/select?q=*:*'
   assert_output --partial '"numFound":0'  
   
-  run curl -X POST -H 'Content-type:application/json' -d '{"add-requesthandler": {"name": "/replication","class": "solr.ReplicationHandler","follower": { "leaderUrl": "http://localhost:8983/solr/techproducts_shard1_replica_n1" ,"pollInterval": "00:00:20" }}}' http://localhost:7574/api/collections/techproducts/config
+  run curl -X POST -H 'Content-type:application/json' -d '{"add-requesthandler": {"name": "/replication","class": "solr.ReplicationHandler","follower": { "leaderUrl": "http://localhost:8983/solr/techproducts_shard1_replica_n1" ,"pollInterval": "00:00:05" }}}' http://localhost:7574/api/collections/techproducts/config
   assert_output --partial '"status":0' 
   
-  sleep 30
+  sleep 10
   
   
   run curl 'http://localhost:8983/solr/techproducts_shard1_replica_n1/replication?command=details'
@@ -113,7 +113,7 @@ teardown() {
   run solr post -url http://localhost:8983/solr/techproducts/update -mode args -out -commit "{'add': {doc:{'id': 'newproduct'}}}"
   assert_output --partial '"status":0'
   
-  sleep 25
+  sleep 10
   
   run curl 'http://localhost:7574/solr/techproducts/select?q=*:*&rows=0'
   assert_output --partial '"numFound":33' 
