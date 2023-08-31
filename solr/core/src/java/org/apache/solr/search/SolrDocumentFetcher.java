@@ -59,6 +59,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentBase;
@@ -567,10 +568,58 @@ public class SolrDocumentFetcher {
     final int subIndex = ReaderUtil.subIndex(docid, leafContexts);
     final int localId = docid - leafContexts.get(subIndex).docBase;
     final LeafReader leafReader = leafContexts.get(subIndex).reader();
+    final Set<String> declaredDynamicEventsFields =
+        getDeclaredDynamicEventsFields(localId, leafReader);
     for (String fieldName : fields) {
+      if (declaredDynamicEventsFields != null
+          && fieldName.startsWith("evt_")
+          && !declaredDynamicEventsFields.contains(fieldName)) {
+        continue;
+      }
       Object fieldValue = decodeDVField(localId, leafReader, fieldName);
       if (fieldValue != null) {
         doc.setField(fieldName, fieldValue);
+      }
+    }
+  }
+
+  /**
+   * This is a bit of a hack, to support FullStory-specific dynamicFields of type `evt_*`. As these
+   * fields are user-defined, there may be arbitrarily many of them. Because docValues fields are
+   * column-oriented, Solr must do "pull the column for X field and see if it has a value for this
+   * doc", which can be quite expensive if there is a profusion of matching fields in the index
+   * (even if none of the requested docs contain any of the specified fields).
+   *
+   * <p>Here we pull the specific dynamic field names contained in this doc from a field that is
+   * populated in an UpdateRequestProcessor.
+   */
+  private static Set<String> getDeclaredDynamicEventsFields(int localId, LeafReader leafReader)
+      throws IOException {
+    final SortedSetDocValues dynamicEventsFields =
+        leafReader.getSortedSetDocValues("DynamicEventsFields");
+    final Set<String> hasDynamicEventsFields;
+    if (dynamicEventsFields == null || !dynamicEventsFields.advanceExact(localId)) {
+      return null; // legacy doc, no filtering
+    } else {
+      final int ct = dynamicEventsFields.docValueCount();
+      final BytesRef firstHasFieldName =
+          dynamicEventsFields.lookupOrd(dynamicEventsFields.nextOrd());
+      if (ct == 1) {
+        if (firstHasFieldName.length == 0) {
+          return Collections.emptySet();
+        } else {
+          return Collections.singleton(firstHasFieldName.utf8ToString());
+        }
+      } else {
+        hasDynamicEventsFields = CollectionUtil.newHashSet(ct);
+        assert firstHasFieldName.length != 0;
+        hasDynamicEventsFields.add(firstHasFieldName.utf8ToString());
+        int i = ct - 1;
+        do {
+          hasDynamicEventsFields.add(
+              dynamicEventsFields.lookupOrd(dynamicEventsFields.nextOrd()).utf8ToString());
+        } while (--i > 0);
+        return hasDynamicEventsFields;
       }
     }
   }
