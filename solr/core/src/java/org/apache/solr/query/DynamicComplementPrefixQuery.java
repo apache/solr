@@ -148,25 +148,52 @@ public class DynamicComplementPrefixQuery extends MultiTermQuery {
   @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
     TermsEnum te = terms.iterator();
-    BytesRef limit;
+    int limitLength;
+    int determinantIdx;
+    int determinant;
     if (te.seekCeil(DynamicComplementPrefixQuery.this.limit) == TermsEnum.SeekStatus.END) {
-      limit = null;
+      limitLength = -1;
+      determinantIdx = -1;
+      determinant = -1;
     } else {
-      limit = BytesRef.deepCopyOf(te.term());
+      BytesRef limit = te.term();
+      limitLength = limit.length;
+      determinantIdx = getThresholdDeterminantIdx(DynamicComplementPrefixQuery.this.prefix, limit);
+      determinant = Byte.toUnsignedInt(limit.bytes[limit.offset + determinantIdx]);
     }
     if (te.seekCeil(DynamicComplementPrefixQuery.this.prefix) == TermsEnum.SeekStatus.END) {
       return TermsEnum.EMPTY;
     }
-    return new DirectPrefixTermsEnum(te, limit);
+    return new DirectPrefixTermsEnum(te, limitLength, determinantIdx, determinant);
+  }
+
+  /**
+   * Find an index that differs between the prefix and limit. The particular index is arbitrary, but
+   * there is guaranteed to be at least one determinant index. Once we have this index, it will
+   * suffice to check this index only (regardless of how long the prefix or limit threshold term
+   * is).
+   */
+  private static int getThresholdDeterminantIdx(BytesRef prefix, BytesRef limit) {
+    for (int i = Math.min(prefix.length, limit.length) - 1; i >= 0; i--) {
+      if (prefix.bytes[i] != limit.bytes[limit.offset + i]) {
+        return i;
+      }
+    }
+    throw new IllegalStateException("`limit` must not start with `prefix`");
   }
 
   private static final class DirectPrefixTermsEnum extends FilteredTermsEnum {
     private boolean unpositioned = true;
-    private final BytesRef limit;
+    private final int limitLength;
+    private final int determinantIdx;
+    private final int determinant;
 
-    public DirectPrefixTermsEnum(TermsEnum tenum, BytesRef limit) {
+    public DirectPrefixTermsEnum(
+        TermsEnum tenum, int limitLength, int determinantIdx, int determinant) {
       super(tenum);
-      this.limit = limit;
+      this.limitLength = limitLength;
+      this.determinantIdx = determinantIdx;
+      this.determinant = determinant;
     }
 
     @Override
@@ -178,7 +205,10 @@ public class DynamicComplementPrefixQuery extends MultiTermQuery {
       } else {
         candidate = tenum.next();
       }
-      if (limit == null || noMatchThreshold(limit, candidate)) {
+      if (limitLength < 0
+          || limitLength != candidate.length
+          || determinant
+              != Byte.toUnsignedInt(candidate.bytes[candidate.offset + determinantIdx])) {
         return candidate;
       } else {
         return null;
