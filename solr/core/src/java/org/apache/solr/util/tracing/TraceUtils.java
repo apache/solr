@@ -165,9 +165,10 @@ public class TraceUtils {
     }
   }
 
-  public static Span newInterNodeCommunicationSpan(String name) {
+  public static Span newInterNodeCommunicationSpan(String name, String collection) {
     Tracer tracer = TraceUtils.getGlobalTracer();
-    SpanBuilder spanBuilder = tracer.spanBuilder(name).setSpanKind(SpanKind.SERVER);
+    SpanBuilder spanBuilder =
+        tracer.spanBuilder(name).setSpanKind(SpanKind.PRODUCER).setAttribute(TAG_DB, collection);
     return spanBuilder.startSpan();
   }
 }

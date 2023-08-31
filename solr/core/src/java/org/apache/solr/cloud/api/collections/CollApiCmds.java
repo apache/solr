@@ -75,6 +75,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -213,7 +214,12 @@ public class CollApiCmds {
         localSpan = null;
         localContext = ctx;
       } else {
-        localSpan = TraceUtils.newInterNodeCommunicationSpan(command.getClass().getSimpleName());
+        String collection =
+            Optional.ofNullable(message.getStr(COLLECTION_PROP, message.getStr(NAME)))
+                .orElse("unknown");
+        localSpan =
+            TraceUtils.newInterNodeCommunicationSpan(
+                command.getClass().getSimpleName(), collection);
         localContext = ctx.with(localSpan);
       }
 
