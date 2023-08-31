@@ -25,11 +25,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 
-import io.swagger.v3.oas.annotations.Parameter;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import org.apache.solr.client.api.endpoint.DeleteReplicaPropertyApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -38,41 +36,30 @@ import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.PermissionNameProvider;
 
 /**
- * V2 API for removing a property from a collection replica
+ * V2 API implementation for removing a property from a collection replica
  *
- * <p>This API is analogous to the v1 /admin/collections?action=DELETEREPLICAPROP command.
+ * @see DeleteReplicaPropertyApi
  */
-@Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
-public class DeleteReplicaPropertyAPI extends AdminAPIBase {
+public class DeleteReplicaProperty extends AdminAPIBase implements DeleteReplicaPropertyApi {
 
   @Inject
-  public DeleteReplicaPropertyAPI(
+  public DeleteReplicaProperty(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
+  @PermissionName(PermissionNameProvider.Name.COLL_EDIT_PERM)
   public SolrJerseyResponse deleteReplicaProperty(
-      @Parameter(
-              description = "The name of the collection the replica belongs to.",
-              required = true)
-          @PathParam("collName")
-          String collName,
-      @Parameter(description = "The name of the shard the replica belongs to.", required = true)
-          @PathParam("shardName")
-          String shardName,
-      @Parameter(description = "The replica, e.g., `core_node1`.", required = true)
-          @PathParam("replicaName")
-          String replicaName,
-      @Parameter(description = "The name of the property to delete.", required = true)
-          @PathParam("propName")
-          String propertyName)
-      throws Exception {
+      String collName, String shardName, String replicaName, String propertyName) throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
@@ -94,7 +81,7 @@ public class DeleteReplicaPropertyAPI extends AdminAPIBase {
   }
 
   public static SolrJerseyResponse invokeUsingV1Inputs(
-      DeleteReplicaPropertyAPI apiInstance, SolrParams solrParams) throws Exception {
+      DeleteReplicaProperty apiInstance, SolrParams solrParams) throws Exception {
     final RequiredSolrParams requiredParams = solrParams.required();
     final String propNameToDelete = requiredParams.get(PROPERTY_PROP);
     final String trimmedPropNameToDelete =

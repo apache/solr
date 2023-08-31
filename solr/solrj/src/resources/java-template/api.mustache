@@ -53,16 +53,18 @@ public class {{classname}} {
         }
 
         public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
-            {{#requiredParams}}
-            {{#isBodyParam}}
+            {{#bodyParam}}
             private final {{{dataType}}} requestBody;
-            {{/isBodyParam}}
+            {{/bodyParam}}
+            {{#requiredParams}}
             {{^isBodyParam}}
             private final {{{dataType}}} {{paramName}};
             {{/isBodyParam}}
             {{/requiredParams}}
             {{#optionalParams}}
+            {{^isBodyParam}}
             private {{{dataType}}} {{paramName}};
+            {{/isBodyParam}}
             {{/optionalParams}}
 
             /**
@@ -82,14 +84,15 @@ public class {{classname}} {
                 {{^isBodyParam}}
                     this.{{paramName}} = {{paramName}};
                 {{/isBodyParam}}
-                {{#isBodyParam}}
+                {{/requiredParams}}
+                {{#bodyParam}}
                     this.requestBody = new {{baseName}}();
                     addHeader("Content-type", "application/json");
-                {{/isBodyParam}}
-                {{/requiredParams}}
+                {{/bodyParam}}
             }
 
             {{#optionalParams}}
+            {{^isBodyParam}}
             {{#description}}
             /**
              * @param {{paramName}} {{description}}
@@ -99,6 +102,7 @@ public class {{classname}} {
                 this.{{paramName}} = {{paramName}};
             }
 
+            {{/isBodyParam}}
             {{/optionalParams}}
 
             {{#bodyParam}}

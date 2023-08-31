@@ -19,6 +19,8 @@ Improvements
 
 * SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
 
+* SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
+
 Optimizations
 ---------------------
 (No changes)
@@ -68,7 +70,7 @@ Other Changes
 ==================  9.4.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-16654: Add support for node-level caches (Michael Gibney)
 
 Improvements
 ---------------------
@@ -100,6 +102,8 @@ Improvements
 * SOLR-16941: The SolrCLI now uses a smarter default for the Solr URL if none is provided, using the same envVars used when running Solr. (Houston Putman)
 
 * SOLR-16940: Users can pass Java system properties to the SolrCLI via the SOLR_TOOL_OPTS environment variable. (Houston Putman)
+
+* SOLR-15474: Make Circuit breakers individually pluggable (Atri Sharma, Christine Poerschke, janhoy)
 
 * SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
 
@@ -138,7 +142,10 @@ Bug Fixes
 
 * SOLR-16946: Updated Cluster Singleton plugins are stopped correctly when the Overseer is closed. (Paul McArthur)
 
-* SOLR-16933: Include the full query response when using the API tool, and fix serialization issues for SolrDocumentList. (Houston Putman) 
+* SOLR-16933: Include the full query response when using the API tool, and fix serialization issues for SolrDocumentList. (Houston Putman)
+
+* SOLR-16916: Use of the JSON Query DSL should ignore the defType parameter
+  (Christina Chortaria, Max Kadel, Ryan Laddusaw, Jane Sandberg, David Smiley)
 
 Dependency Upgrades
 ---------------------
@@ -157,6 +164,8 @@ Other Changes
 * SOLR-16803: Remove dependencies on methods defined in the SimplePostTool from Solr core and solrj modules.
 
 * SOLR-16915: Lower the AffinityPlacementPlugin's default minimalFreeDiskGB to 5 GB (Houston Putman)
+
+* SOLR-16623: new SolrJettyTestRule for tests needing HTTP or Jetty. (David Smiley, Joshua Ouma)
 
 ==================  9.3.0 ==================
 
@@ -281,7 +290,7 @@ Improvements
 
 * SOLR-16687: Add support of SolrClassLoader to SolrZkClient (Lamine Idjeraoui via Jason Gerlowski & Houston Putman)
 
-* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
+* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning
   only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
 
 * SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster

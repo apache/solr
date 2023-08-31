@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Tracks the current JVM heap usage and triggers if it exceeds the defined percentage of the
  * maximum heap size allocated to the JVM. This circuit breaker is a part of the default
- * CircuitBreakerManager so is checked for every request -- hence it is realtime. Once the memory
+ * CircuitBreakerRegistry so is checked for every request -- hence it is realtime. Once the memory
  * usage goes below the threshold, it will start allowing queries again.
  *
  * <p>The memory threshold is defined as a percentage of the maximum memory allocated -- see
@@ -36,26 +36,24 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
 
-  private boolean enabled;
-  private final long heapMemoryThreshold;
+  private long heapMemoryThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking
   // getDebugInfo()
   private static final ThreadLocal<Long> seenMemory = ThreadLocal.withInitial(() -> 0L);
   private static final ThreadLocal<Long> allowedMemory = ThreadLocal.withInitial(() -> 0L);
 
-  public MemoryCircuitBreaker(CircuitBreakerConfig config) {
-    super(config);
+  public MemoryCircuitBreaker() {
+    super();
+  }
 
-    this.enabled = config.getMemCBEnabled();
-
+  public void setThreshold(double thresholdValueInPercentage) {
     long currentMaxHeap = MEMORY_MX_BEAN.getHeapMemoryUsage().getMax();
 
     if (currentMaxHeap <= 0) {
       throw new IllegalArgumentException("Invalid JVM state for the max heap usage");
     }
 
-    int thresholdValueInPercentage = config.getMemCBThreshold();
     double thresholdInFraction = thresholdValueInPercentage / (double) 100;
     heapMemoryThreshold = (long) (currentMaxHeap * thresholdInFraction);
 
@@ -69,13 +67,6 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
   // overhead of calculating the condition parameters but can result in false positives.
   @Override
   public boolean isTripped() {
-    if (!isEnabled()) {
-      return false;
-    }
-
-    if (!enabled) {
-      return false;
-    }
 
     long localAllowedMemory = getCurrentMemoryThreshold();
     long localSeenMemory = calculateLiveMemoryUsage();
