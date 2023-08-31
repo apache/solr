@@ -114,7 +114,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
     // sometimes overseer messages have the collection name in 'name' field, not 'collection'
     MDCLoggingContext.setCollection(
-        message.getStr(COLLECTION_PROP) != null ? message.getStr(COLLECTION_PROP) : message.getStr(NAME));
+        message.getStr(COLLECTION_PROP) != null
+            ? message.getStr(COLLECTION_PROP)
+            : message.getStr(NAME));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
     log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
