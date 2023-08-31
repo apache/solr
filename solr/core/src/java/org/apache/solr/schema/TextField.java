@@ -26,6 +26,8 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
@@ -34,7 +36,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.parser.SolrQueryParserBase;
+import org.apache.solr.query.DynamicComplementPrefixQuery;
 import org.apache.solr.query.SolrRangeQuery;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -173,6 +177,26 @@ public class TextField extends FieldType {
   @Override
   protected boolean supportsAnalyzers() {
     return true;
+  }
+
+  @Override
+  public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
+    if ("".equals(termStr)) {
+      return getExistenceQuery(parser, sf);
+    }
+    Term term = new Term(sf.getName(), termStr);
+    MultiTermQuery query;
+    SolrParams lParams = parser == null ? null : parser.getLocalParams();
+    if (lParams == null || !lParams.getBool("forceAutomaton", false)) {
+      // `noInvert` and `multiValued` must always be `true`, according the semantics of how
+      // `DynamicComplementPrefixQuery` interprets this params to determine its use of docValues.
+      // `forceCacheFieldExists` is only relevant when `noInvert==false`.
+      query = new DynamicComplementPrefixQuery(term, true, true, false);
+    } else {
+      query = new PrefixQuery(term);
+    }
+    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    return query;
   }
 
   @Override
