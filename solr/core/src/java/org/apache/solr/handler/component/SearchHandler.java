@@ -39,6 +39,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.StreamSupport;
 import org.apache.lucene.index.ExitableDirectoryReader;
+import org.apache.lucene.queryparser.surround.query.TooManyBasicQueries;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
@@ -489,6 +491,10 @@ public class SearchHandler extends RequestHandlerBase
             .getResponseHeader()
             .asShallowMap()
             .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      } catch (IndexSearcher.TooManyClauses | TooManyBasicQueries ex) {
+        // An IOException on a non-distributed request is typically an issue parsing the query at
+        // the lucene level
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ex);
       } finally {
         SolrQueryTimeoutImpl.reset();
       }
