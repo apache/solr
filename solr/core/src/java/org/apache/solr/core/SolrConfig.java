@@ -420,8 +420,7 @@ public class SolrConfig implements MapSerializable {
           pe);
     }
 
-    // The use of == is intentional here because the latest matchVersion will be equal() to
-    // Version.LATEST, but will not be == to Version.LATEST
+    // The use of == is intentional here because the latest 'V.V.V' version will be equal() to Version.LATEST, but will not be == to Version.LATEST unless 'LATEST' was supplied.
     if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
       log.warn(
           "You should not use LATEST as luceneMatchVersion property: "
