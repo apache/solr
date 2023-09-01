@@ -17,12 +17,11 @@
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
-import org.apache.solr.client.api.model.ReloadCollectionRequestBody;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
-
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import org.apache.solr.client.api.model.ReloadCollectionRequestBody;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 /** V2 API definition for reloading collections. */
 @Path("/collections/{collectionName}/reload")

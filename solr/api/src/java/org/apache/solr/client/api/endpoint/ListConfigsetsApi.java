@@ -17,10 +17,9 @@
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
-import org.apache.solr.client.api.model.ListConfigsetsResponse;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import org.apache.solr.client.api.model.ListConfigsetsResponse;
 
 /** V2 API definition for listing configsets. */
 @Path("/cluster/configs")

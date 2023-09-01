@@ -18,12 +18,11 @@ package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import org.apache.solr.client.api.model.GetAliasByNameResponse;
-import org.apache.solr.client.api.model.ListAliasesResponse;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import org.apache.solr.client.api.model.GetAliasByNameResponse;
+import org.apache.solr.client.api.model.ListAliasesResponse;
 
 /** V2 API definition for listing and inspecting collection aliases */
 @Path("/aliases")

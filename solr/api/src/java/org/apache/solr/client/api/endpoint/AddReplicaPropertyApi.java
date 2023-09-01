@@ -20,12 +20,11 @@ package org.apache.solr.client.api.endpoint;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
-import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
-
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 @Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
 public interface AddReplicaPropertyApi {

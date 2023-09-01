@@ -19,12 +19,11 @@ package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
-
 import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 @Path("/collections/{collectionName}")
 public interface DeleteCollectionApi {

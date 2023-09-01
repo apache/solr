@@ -19,11 +19,10 @@ package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
-
 import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /**
  * V2 API definition for removing a property from a collection replica
