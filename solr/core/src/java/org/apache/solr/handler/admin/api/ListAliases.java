@@ -16,22 +16,15 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.endpoint.ListAliasesApi;
+import org.apache.solr.client.api.model.GetAliasByNameResponse;
+import org.apache.solr.client.api.model.ListAliasesResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -39,12 +32,11 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/** V2 APIs for managing and inspecting collection aliases */
-@Path("/aliases")
-public class ListAliasesAPI extends AdminAPIBase {
+/** V2 API implementation for listing and inspecting collection aliases */
+public class ListAliases extends AdminAPIBase implements ListAliasesApi {
 
   @Inject
-  public ListAliasesAPI(
+  public ListAliases(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
@@ -57,12 +49,8 @@ public class ListAliasesAPI extends AdminAPIBase {
    * <p>This API <code>GET /api/aliases</code> is analogous to the v1 <code>GET /api/cluster/aliases
    * </code> API.
    */
-  @GET
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_READ_PERM)
-  @Operation(
-      summary = "List the existing collection aliases.",
-      tags = {"aliases"})
   public ListAliasesResponse getAliases() throws Exception {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
@@ -86,17 +74,9 @@ public class ListAliasesAPI extends AdminAPIBase {
     return response;
   }
 
-  @GET
-  @Path("/{aliasName}")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_READ_PERM)
-  @Operation(
-      summary = "Get details for a specific collection alias.",
-      tags = {"aliases"})
-  public GetAliasByNameResponse getAliasByName(
-      @Parameter(description = "Alias name.", required = true) @PathParam("aliasName")
-          String aliasName)
-      throws Exception {
+  public GetAliasByNameResponse getAliasByName(String aliasName) throws Exception {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     final GetAliasByNameResponse response = instantiateJerseyResponse(GetAliasByNameResponse.class);
@@ -118,26 +98,5 @@ public class ListAliasesAPI extends AdminAPIBase {
     zkStateReader.getAliasesManager().update();
 
     return zkStateReader.getAliases();
-  }
-
-  /** Response for {@link ListAliasesAPI#getAliases()}. */
-  public static class ListAliasesResponse extends SolrJerseyResponse {
-    @JsonProperty("aliases")
-    public Map<String, String> aliases;
-
-    @JsonProperty("properties")
-    public Map<String, Map<String, String>> properties;
-  }
-
-  /** Response for {@link ListAliasesAPI#getAliasByName(String)}. */
-  public static class GetAliasByNameResponse extends SolrJerseyResponse {
-    @JsonProperty("name")
-    public String alias;
-
-    @JsonProperty("collections")
-    public List<String> collections;
-
-    @JsonProperty("properties")
-    public Map<String, String> properties;
   }
 }
