@@ -151,8 +151,6 @@ Bug Fixes
 * SOLR-16916: Use of the JSON Query DSL should ignore the defType parameter
   (Christina Chortaria, Max Kadel, Ryan Laddusaw, Jane Sandberg, David Smiley)
 
-* SOLR-16958: Fix spurious warning about LATEST luceneMatchVersion (Colvin Cowie)
-
 Dependency Upgrades
 ---------------------
 
