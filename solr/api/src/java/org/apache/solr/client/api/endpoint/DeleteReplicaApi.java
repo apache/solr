@@ -17,6 +17,16 @@
 
 package org.apache.solr.client.api.endpoint;
 
+import io.swagger.v3.oas.annotations.Operation;
+import org.apache.solr.client.api.model.ScaleCollectionRequestBody;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+
+import javax.ws.rs.DELETE;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+
 import static org.apache.solr.client.api.model.Constants.ASYNC;
 import static org.apache.solr.client.api.model.Constants.COUNT_PROP;
 import static org.apache.solr.client.api.model.Constants.DELETE_DATA_DIR;
@@ -24,17 +34,6 @@ import static org.apache.solr.client.api.model.Constants.DELETE_INDEX;
 import static org.apache.solr.client.api.model.Constants.DELETE_INSTANCE_DIR;
 import static org.apache.solr.client.api.model.Constants.FOLLOW_ALIASES;
 import static org.apache.solr.client.api.model.Constants.ONLY_IF_DOWN;
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
-import io.swagger.v3.oas.annotations.Operation;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.ScaleCollectionRequestBody;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 /**
  * V2 API definition for deleting one or more existing replicas from one or more shards.
@@ -46,7 +45,6 @@ public interface DeleteReplicaApi {
 
   @DELETE
   @Path("/shards/{shardName}/replicas/{replicaName}")
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Delete an single replica by name",
       tags = {"replicas"})
@@ -65,7 +63,6 @@ public interface DeleteReplicaApi {
 
   @DELETE
   @Path("/shards/{shardName}/replicas")
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Delete one or more replicas from the specified collection and shard",
       tags = {"replicas"})
@@ -84,7 +81,6 @@ public interface DeleteReplicaApi {
 
   @PUT
   @Path("/scale")
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Scale the replica count for all shards in the specified collection",
       tags = {"replicas"})

@@ -16,18 +16,15 @@
  */
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
 import io.swagger.v3.oas.annotations.Operation;
+import org.apache.solr.client.api.model.ListCollectionsResponse;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import org.apache.solr.client.api.model.ListCollectionsResponse;
 
 @Path("/collections")
 public interface ListCollectionsApi {
   @GET
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "List all collections in this Solr cluster",
       tags = {"collections"})

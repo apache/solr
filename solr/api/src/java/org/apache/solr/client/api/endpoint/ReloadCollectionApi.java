@@ -16,22 +16,18 @@
  */
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
 import io.swagger.v3.oas.annotations.Operation;
+import org.apache.solr.client.api.model.ReloadCollectionRequestBody;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import org.apache.solr.client.api.model.ReloadCollectionRequestBody;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 /** V2 API definition for reloading collections. */
 @Path("/collections/{collectionName}/reload")
 public interface ReloadCollectionApi {
   @POST
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Reload all cores in the specified collection.",
       tags = {"collections"})

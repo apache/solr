@@ -17,23 +17,20 @@
 
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.apache.solr.client.api.model.DeleteNodeRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import org.apache.solr.client.api.model.DeleteNodeRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 @Path("cluster/nodes/{nodeName}/clear/")
 public interface DeleteNodeApi {
 
   @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Delete all replicas off of the specified SolrCloud node",
       tags = {"node"})

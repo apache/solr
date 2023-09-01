@@ -16,25 +16,23 @@
  */
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.model.Constants.BACKUP_LOCATION;
-import static org.apache.solr.client.api.model.Constants.BACKUP_REPOSITORY;
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
 import io.swagger.v3.oas.annotations.Operation;
-import java.io.IOException;
+import org.apache.solr.client.api.model.ListCollectionBackupsResponse;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.ListCollectionBackupsResponse;
+import java.io.IOException;
+
+import static org.apache.solr.client.api.model.Constants.BACKUP_LOCATION;
+import static org.apache.solr.client.api.model.Constants.BACKUP_REPOSITORY;
 
 /** V2 API definitions for collection-backup "listing". */
 @Path("/backups/{backupName}/versions")
 public interface ListCollectionBackupsApi {
 
   @GET
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "List existing incremental backups at the specified location.",
       tags = {"collection-backups"})

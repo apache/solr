@@ -17,29 +17,27 @@
 
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.model.Constants.ASYNC;
-import static org.apache.solr.client.api.model.Constants.BACKUP_LOCATION;
-import static org.apache.solr.client.api.model.Constants.BACKUP_REPOSITORY;
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.apache.solr.client.api.model.BackupDeletionResponseBody;
+import org.apache.solr.client.api.model.PurgeUnusedFilesRequestBody;
+import org.apache.solr.client.api.model.PurgeUnusedResponse;
+
 import javax.ws.rs.DELETE;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.BackupDeletionResponseBody;
-import org.apache.solr.client.api.model.PurgeUnusedFilesRequestBody;
-import org.apache.solr.client.api.model.PurgeUnusedResponse;
+
+import static org.apache.solr.client.api.model.Constants.ASYNC;
+import static org.apache.solr.client.api.model.Constants.BACKUP_LOCATION;
+import static org.apache.solr.client.api.model.Constants.BACKUP_REPOSITORY;
 
 @Path("/backups/{backupName}")
 public interface DeleteCollectionBackupApi {
 
   @Path("/versions/{backupId}")
   @DELETE
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Delete incremental backup point by ID",
       tags = {"collection-backups"})
@@ -54,7 +52,6 @@ public interface DeleteCollectionBackupApi {
 
   @Path("/versions")
   @DELETE
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Delete all incremental backup points older than the most recent N",
       tags = {"collection-backups"})
@@ -69,7 +66,6 @@ public interface DeleteCollectionBackupApi {
 
   @Path("/purgeUnused")
   @PUT
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Garbage collect orphaned incremental backup files",
       tags = {"collection-backups"})

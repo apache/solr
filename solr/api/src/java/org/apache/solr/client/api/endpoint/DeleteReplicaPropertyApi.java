@@ -17,15 +17,13 @@
 
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+
 import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 
 /**
  * V2 API definition for removing a property from a collection replica
@@ -36,7 +34,6 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
 public interface DeleteReplicaPropertyApi {
 
   @DELETE
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Delete an existing replica property",
       tags = {"replica-properties"})

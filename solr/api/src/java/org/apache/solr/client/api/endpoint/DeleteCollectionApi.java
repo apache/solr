@@ -17,22 +17,19 @@
 
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+
 import javax.ws.rs.DELETE;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 @Path("/collections/{collectionName}")
 public interface DeleteCollectionApi {
 
   @DELETE
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Deletes a collection from SolrCloud",
       tags = {"collections"})
