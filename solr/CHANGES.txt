@@ -111,6 +111,8 @@ Improvements
   dedicated thread pool. Backup, Restore and Split are expensive operations.
   (Pierre Salagnac, David Smiley)
 
+* SOLR-15440: The Learning To Rank FieldValueFeature now uses DocValues when docValues=true and stored=true are combined. (Christine Poerschke)
+
 Optimizations
 ---------------------
 

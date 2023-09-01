@@ -47,8 +47,17 @@ public class TestFieldValueFeature extends TestRerankBase {
     "dvDoublePopularity",
     "dvStringPopularity",
     "isTrendy",
-    "dvIsTrendy"
+    "dvIsTrendy",
+    "storedDvIsTrendy"
   };
+
+  protected String getFieldValueFeatureClassName() {
+    return FieldValueFeature.class.getName();
+  }
+
+  protected String getObservingFieldValueFeatureClassName() {
+    return ObservingFieldValueFeature.class.getName();
+  }
 
   @Before
   public void before() throws Exception {
@@ -178,7 +187,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     assertU(commit());
 
     for (String field : FIELDS) {
-      loadFeature(field, FieldValueFeature.class.getName(), "{\"field\":\"" + field + "\"}");
+      loadFeature(field, getFieldValueFeatureClassName(), "{\"field\":\"" + field + "\"}");
     }
     loadModel(
         "model",
@@ -186,7 +195,7 @@ public class TestFieldValueFeature extends TestRerankBase {
         FIELDS,
         "{\"weights\":{\"popularity\":1.0,\"dvIntPopularity\":1.0,\"dvLongPopularity\":1.0,"
             + "\"dvFloatPopularity\":1.0,\"dvDoublePopularity\":1.0,"
-            + "\"dvStringPopularity\":1.0,\"isTrendy\":1.0,\"dvIsTrendy\":1.0}}");
+            + "\"dvStringPopularity\":1.0,\"isTrendy\":1.0,\"dvIsTrendy\":1.0,\"storedDvIsTrendy\":1.0}}");
   }
 
   @After
@@ -253,7 +262,7 @@ public class TestFieldValueFeature extends TestRerankBase {
         "/query" + query.toQueryString(),
         "/response/docs/[0]/=={'[fv]':'popularity=0.0,dvIntPopularity=0.0,dvLongPopularity=0.0,"
             + "dvFloatPopularity=0.0,dvDoublePopularity=0.0,"
-            + "dvStringPopularity=0.0,isTrendy=0.0,dvIsTrendy=0.0'}");
+            + "dvStringPopularity=0.0,isTrendy=0.0,dvIsTrendy=0.0,storedDvIsTrendy=0.0'}");
   }
 
   @Test
@@ -263,7 +272,7 @@ public class TestFieldValueFeature extends TestRerankBase {
 
       loadFeature(
           field + "42",
-          FieldValueFeature.class.getName(),
+          getFieldValueFeatureClassName(),
           fstore,
           "{\"field\":\"" + field + "\",\"defaultValue\":\"42.0\"}");
 
@@ -310,8 +319,7 @@ public class TestFieldValueFeature extends TestRerankBase {
       assertU(adoc("id", "21"));
       assertU(commit());
 
-      loadFeature(
-          field, FieldValueFeature.class.getName(), fstore, "{\"field\":\"" + field + "\"}");
+      loadFeature(field, getFieldValueFeatureClassName(), fstore, "{\"field\":\"" + field + "\"}");
       loadModel(
           field + "-model",
           LinearModel.class.getName(),
@@ -339,7 +347,7 @@ public class TestFieldValueFeature extends TestRerankBase {
     final String fstore = "testThatFieldValueFeatureScorerIsUsedAndDefaultIsReturned";
     loadFeature(
         "not-existing-field",
-        ObservingFieldValueFeature.class.getName(),
+        getObservingFieldValueFeatureClassName(),
         fstore,
         "{\"field\":\"cowabunga\"}");
 
@@ -375,10 +383,7 @@ public class TestFieldValueFeature extends TestRerankBase {
       final String fstore = "testThatDefaultFieldValueScorerIsUsedAndDefaultIsReturned" + field;
 
       loadFeature(
-          field,
-          ObservingFieldValueFeature.class.getName(),
-          fstore,
-          "{\"field\":\"" + field + "\"}");
+          field, getObservingFieldValueFeatureClassName(), fstore, "{\"field\":\"" + field + "\"}");
 
       loadModel(
           field + "-model",
@@ -415,11 +420,16 @@ public class TestFieldValueFeature extends TestRerankBase {
     implTestBooleanValue("dvIsTrendy");
   }
 
+  @Test
+  public void testBooleanValue_stored_docValues() throws Exception {
+    implTestBooleanValue("storedDvIsTrendy");
+  }
+
   private void implTestBooleanValue(String isTrendyFieldName) throws Exception {
     final String fstore = "test_boolean_store";
     loadFeature(
         "trendy",
-        FieldValueFeature.class.getName(),
+        getFieldValueFeatureClassName(),
         fstore,
         "{\"field\":\"" + isTrendyFieldName + "\"}");
 
@@ -473,7 +483,7 @@ public class TestFieldValueFeature extends TestRerankBase {
 
     loadFeature(
         "dvStringPopularities",
-        FieldValueFeature.class.getName(),
+        getFieldValueFeatureClassName(),
         fstore,
         "{\"field\":\"dvStringPopularities\"}");
 
@@ -493,6 +503,10 @@ public class TestFieldValueFeature extends TestRerankBase {
         "/error/msg/=='java.lang.IllegalArgumentException: Doc values type SORTED_SET of field dvStringPopularities is not supported'");
   }
 
+  protected String storedDvIsTrendy_FieldValueFeatureScorer_className() {
+    return SortedDocValuesFieldValueFeatureScorer.class.getName();
+  }
+
   @Test
   public void testThatCorrectFieldValueFeatureIsUsedForDocValueTypes() throws Exception {
     final String[][] fieldsWithDifferentTypes = {
@@ -502,6 +516,8 @@ public class TestFieldValueFeature extends TestRerankBase {
       new String[] {
         "dvStringPopularity", "T", SortedDocValuesFieldValueFeatureScorer.class.getName()
       },
+      new String[] {"dvIsTrendy", "1", SortedDocValuesFieldValueFeatureScorer.class.getName()},
+      new String[] {"storedDvIsTrendy", "1", storedDvIsTrendy_FieldValueFeatureScorer_className()},
       new String[] {"noDvFloatField", "1", FieldValueFeatureScorer.class.getName()},
       new String[] {"noDvStrNumField", "T", FieldValueFeatureScorer.class.getName()}
     };
@@ -515,10 +531,7 @@ public class TestFieldValueFeature extends TestRerankBase {
       assertU(commit());
 
       loadFeature(
-          field,
-          ObservingFieldValueFeature.class.getName(),
-          fstore,
-          "{\"field\":\"" + field + "\"}");
+          field, getObservingFieldValueFeatureClassName(), fstore, "{\"field\":\"" + field + "\"}");
       loadModel(
           field + "-model",
           LinearModel.class.getName(),
@@ -595,8 +608,7 @@ public class TestFieldValueFeature extends TestRerankBase {
       };
 
       final String fstore = "testThatStringValuesAreCorrectlyParsed" + field;
-      loadFeature(
-          field, FieldValueFeature.class.getName(), fstore, "{\"field\":\"" + field + "\"}");
+      loadFeature(field, getFieldValueFeatureClassName(), fstore, "{\"field\":\"" + field + "\"}");
       loadModel(
           field + "-model",
           LinearModel.class.getName(),
@@ -642,8 +654,7 @@ public class TestFieldValueFeature extends TestRerankBase {
       };
 
       final String fstore = "testThatDateValuesAreCorrectlyParsed" + field;
-      loadFeature(
-          field, FieldValueFeature.class.getName(), fstore, "{\"field\":\"" + field + "\"}");
+      loadFeature(field, getFieldValueFeatureClassName(), fstore, "{\"field\":\"" + field + "\"}");
       loadModel(
           field + "-model",
           LinearModel.class.getName(),
@@ -668,11 +679,17 @@ public class TestFieldValueFeature extends TestRerankBase {
    * This class is used to track which specific FieldValueFeature is used so that we can test,
    * whether the fallback mechanism works correctly.
    */
-  public static final class ObservingFieldValueFeature extends FieldValueFeature {
+  public static class ObservingFieldValueFeature extends FieldValueFeature {
     static String usedScorerClass;
 
     public ObservingFieldValueFeature(String name, Map<String, Object> params) {
       super(name, params);
+    }
+
+    @Deprecated
+    protected ObservingFieldValueFeature(
+        String name, Map<String, Object> params, boolean useDocValuesForStored) {
+      super(name, params, useDocValuesForStored);
     }
 
     @Override

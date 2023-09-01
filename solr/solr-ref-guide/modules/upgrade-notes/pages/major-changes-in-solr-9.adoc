@@ -80,6 +80,8 @@ Therefore, when using the default settings, nodes that were previously excluded 
 * The Embedded Zookeeper can now be configured to listen to (or bind to) more hosts than just `localhost`,
 see the  xref:deployment-guide:securing-solr.adoc#network-configuration[Network Configuration documentation] for more information.
 
+=== Learning To Rank
+* The FieldValueFeature class now always uses DocValues when docValues=true is set. A LegacyFieldValueFeature class provides the prior behaviour of not using DocValues when the docValues=true and stored=true field attributes are both set.
 
 == Solr 9.3
 === Binary Releases
