@@ -329,6 +329,44 @@ public class SearchHandler extends RequestHandlerBase
     return new ResponseBuilder(req, rsp, components);
   }
 
+  /**
+   * Check if circuit breakers are tripped. Override this method in sub classes that do not want to
+   * check circuit breakers.
+   *
+   * @return true if circuit breakers are tripped, false otherwise.
+   */
+  protected boolean checkCircuitBreakers(
+      SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb) {
+    final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
+
+    final CircuitBreakerRegistry circuitBreakerRegistry = req.getCore().getCircuitBreakerRegistry();
+    if (circuitBreakerRegistry.isEnabled()) {
+      List<CircuitBreaker> trippedCircuitBreakers;
+
+      if (timer != null) {
+        RTimerTree subt = timer.sub("circuitbreaker");
+        rb.setTimer(subt);
+
+        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped();
+
+        rb.getTimer().stop();
+      } else {
+        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped();
+      }
+
+      if (trippedCircuitBreakers != null) {
+        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
+        rsp.add(STATUS, FAILURE);
+        rsp.setException(
+            new SolrException(
+                SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+                "Circuit Breakers tripped " + errorMessage));
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
@@ -354,30 +392,8 @@ public class SearchHandler extends RequestHandlerBase
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    final CircuitBreakerRegistry circuitBreakerRegistry = req.getCore().getCircuitBreakerRegistry();
-    if (circuitBreakerRegistry.isEnabled()) {
-      List<CircuitBreaker> trippedCircuitBreakers;
-
-      if (timer != null) {
-        RTimerTree subt = timer.sub("circuitbreaker");
-        rb.setTimer(subt);
-
-        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped();
-
-        rb.getTimer().stop();
-      } else {
-        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped();
-      }
-
-      if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(
-            new SolrException(
-                SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-                "Circuit Breakers tripped " + errorMessage));
-        return;
-      }
+    if (checkCircuitBreakers(req, rsp, rb)) {
+      return; // Circuit breaker tripped, return immediately
     }
 
     // creates a ShardHandler object only if it's needed
