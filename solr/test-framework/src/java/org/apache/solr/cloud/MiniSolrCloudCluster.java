@@ -104,6 +104,7 @@ public class MiniSolrCloudCluster {
       "<solr>\n"
           + "\n"
           + "  <str name=\"shareSchema\">${shareSchema:false}</str>\n"
+          + "  <int name=\"maxBooleanClauses\">${solr.max.booleanClauses:1024}</int>\n"
           + "  <str name=\"allowPaths\">${solr.allowPaths:}</str>\n"
           + "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n"
           + "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n"
