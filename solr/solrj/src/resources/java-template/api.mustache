@@ -98,7 +98,7 @@ public class {{classname}} {
              * @param {{paramName}} {{description}}
              */
             {{/description}}
-            public void {{schema.setter}}({{dataType}} {{paramName}}) {
+            public void {{schema.setter}}({{{dataType}}} {{paramName}}) {
                 this.{{paramName}} = {{paramName}};
             }
 
@@ -113,7 +113,7 @@ public class {{classname}} {
              * @param {{baseName}} {{description}}
              */
              {{/description}}
-             public void {{setter}}({{dataType}} {{baseName}}) {
+             public void {{setter}}({{{dataType}}} {{baseName}}) {
                this.requestBody.{{baseName}} = {{baseName}};
             }
             {{/vars}}

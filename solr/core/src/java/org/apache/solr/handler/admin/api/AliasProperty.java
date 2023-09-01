@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -24,22 +23,15 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import org.apache.solr.client.api.endpoint.AliasPropertyApis;
+import org.apache.solr.client.api.model.GetAliasPropertyResponse;
+import org.apache.solr.client.api.model.GetAllAliasPropertiesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
+import org.apache.solr.client.api.model.UpdateAliasPropertyRequestBody;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -48,32 +40,24 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /** V2 APIs for managing and inspecting properties for collection aliases */
-@Path("/aliases/{aliasName}/properties")
-public class AliasPropertyAPI extends AdminAPIBase {
+public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
 
   @Inject
-  public AliasPropertyAPI(
+  public AliasProperty(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @GET
+  @Override
   @PermissionName(COLL_READ_PERM)
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
-  @Operation(
-      summary = "Get properties for a collection alias.",
-      tags = {"aliases"})
-  public GetAllAliasPropertiesResponse getAllAliasProperties(
-      @Parameter(description = "Alias Name") @PathParam("aliasName") String aliasName)
-      throws Exception {
+  public GetAllAliasPropertiesResponse getAllAliasProperties(String aliasName) throws Exception {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     final GetAllAliasPropertiesResponse response =
@@ -88,16 +72,9 @@ public class AliasPropertyAPI extends AdminAPIBase {
     return response;
   }
 
-  @GET
-  @Path("/{propName}")
+  @Override
   @PermissionName(COLL_READ_PERM)
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
-  @Operation(
-      summary = "Get a specific property for a collection alias.",
-      tags = {"aliases"})
-  public GetAliasPropertyResponse getAliasProperty(
-      @Parameter(description = "Alias Name") @PathParam("aliasName") String aliasName,
-      @Parameter(description = "Property Name") @PathParam("propName") String propName)
+  public GetAliasPropertyResponse getAliasProperty(String aliasName, String propName)
       throws Exception {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
@@ -124,17 +101,10 @@ public class AliasPropertyAPI extends AdminAPIBase {
     return zkStateReader.getAliases();
   }
 
-  @PUT
+  @Override
   @PermissionName(COLL_EDIT_PERM)
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
-  @Operation(
-      summary = "Update properties for a collection alias.",
-      tags = {"aliases"})
   public SolrJerseyResponse updateAliasProperties(
-      @Parameter(description = "Alias Name") @PathParam("aliasName") String aliasName,
-      @RequestBody(description = "Properties that need to be updated", required = true)
-          UpdateAliasPropertiesRequestBody requestBody)
-      throws Exception {
+      String aliasName, UpdateAliasPropertiesRequestBody requestBody) throws Exception {
 
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
@@ -147,18 +117,10 @@ public class AliasPropertyAPI extends AdminAPIBase {
     return response;
   }
 
-  @PUT
-  @Path("/{propName}")
+  @Override
   @PermissionName(COLL_EDIT_PERM)
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
-  @Operation(
-      summary = "Update a specific property for a collection alias.",
-      tags = {"aliases"})
   public SolrJerseyResponse createOrUpdateAliasProperty(
-      @Parameter(description = "Alias Name") @PathParam("aliasName") String aliasName,
-      @Parameter(description = "Property Name") @PathParam("propName") String propName,
-      @RequestBody(description = "Property value that needs to be updated", required = true)
-          UpdateAliasPropertyRequestBody requestBody)
+      String aliasName, String propName, UpdateAliasPropertyRequestBody requestBody)
       throws Exception {
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
@@ -171,16 +133,9 @@ public class AliasPropertyAPI extends AdminAPIBase {
     return response;
   }
 
-  @DELETE
-  @Path("/{propName}")
+  @Override
   @PermissionName(COLL_EDIT_PERM)
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
-  @Operation(
-      summary = "Delete a specific property for a collection alias.",
-      tags = {"aliases"})
-  public SolrJerseyResponse deleteAliasProperty(
-      @Parameter(description = "Alias Name") @PathParam("aliasName") String aliasName,
-      @Parameter(description = "Property Name") @PathParam("propName") String propName)
+  public SolrJerseyResponse deleteAliasProperty(String aliasName, String propName)
       throws Exception {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
@@ -232,33 +187,5 @@ public class AliasPropertyAPI extends AdminAPIBase {
       remoteMessage.put(ASYNC, async);
     }
     return new ZkNodeProps(remoteMessage);
-  }
-
-  public static class UpdateAliasPropertiesRequestBody implements JacksonReflectMapWriter {
-
-    @Schema(description = "Properties and values to be updated on alias.")
-    @JsonProperty(value = "properties", required = true)
-    public Map<String, Object> properties;
-
-    @Schema(description = "Request ID to track this action which will be processed asynchronously.")
-    @JsonProperty("async")
-    public String async;
-  }
-
-  public static class UpdateAliasPropertyRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty(required = true)
-    public Object value;
-  }
-
-  public static class GetAllAliasPropertiesResponse extends SolrJerseyResponse {
-    @JsonProperty("properties")
-    @Schema(description = "Properties and values associated with alias.")
-    public Map<String, String> properties;
-  }
-
-  public static class GetAliasPropertyResponse extends SolrJerseyResponse {
-    @JsonProperty("value")
-    @Schema(description = "Property value.")
-    public String value;
   }
 }
