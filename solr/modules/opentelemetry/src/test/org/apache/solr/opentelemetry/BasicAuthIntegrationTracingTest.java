@@ -18,10 +18,12 @@ package org.apache.solr.opentelemetry;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static org.apache.solr.opentelemetry.TestDistributedTracing.getAndClearSpans;
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -31,6 +33,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -91,6 +94,8 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
   /** See SOLR-16955 */
   @Test
   public void testSetupBasicAuth() throws Exception {
+    getAndClearSpans(); // reset
+
     CloudSolrClient cloudClient = cluster.getSolrClient();
     V2Request req =
         new V2Request.Builder("/cluster/security/authentication")
@@ -99,5 +104,12 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
             .build();
     req.setBasicAuthCredentials(USER, PASS);
     assertEquals(0, req.process(cloudClient, COLLECTION).getStatus());
+
+    var finishedSpans = getAndClearSpans();
+    assertEquals(1, finishedSpans.size());
+    var span = finishedSpans.get(0);
+    assertEquals("post:/cluster/security/authentication", span.getName());
+    assertEquals("solr", span.getAttributes().get(TraceUtils.TAG_USER));
+    assertEquals(List.of("set-user"), span.getAttributes().get(TraceUtils.TAG_OPS));
   }
 }

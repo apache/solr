@@ -25,6 +25,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import java.util.List;
 import java.util.function.Consumer;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -52,6 +53,7 @@ public class TraceUtils {
   public static final AttributeKey<String> TAG_RESPONSE_WRITER =
       AttributeKey.stringKey("responseWriter");
   public static final AttributeKey<String> TAG_CONTENT_TYPE = AttributeKey.stringKey("contentType");
+  public static final AttributeKey<List<String>> TAG_OPS = AttributeKey.stringArrayKey("ops");
 
   @Deprecated
   private static final AttributeKey<String> TAG_HTTP_METHOD_DEP =
@@ -139,5 +141,11 @@ public class TraceUtils {
     }
     spanBuilder.setAttribute(TAG_DB_TYPE, TAG_DB_TYPE_SOLR);
     return spanBuilder.startSpan();
+  }
+
+  public static void setOperations(SolrQueryRequest req, List<String> ops) {
+    if (!ops.isEmpty()) {
+      req.getSpan().setAttribute(TAG_OPS, ops);
+    }
   }
 }
