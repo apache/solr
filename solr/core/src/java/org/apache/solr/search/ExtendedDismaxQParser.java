@@ -19,9 +19,11 @@ package org.apache.solr.search;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -732,6 +734,8 @@ public class ExtendedDismaxQParser extends QParser {
     char ch = 0;
     int start;
     boolean disallowUserField;
+    Deque<String> groupedFields = new LinkedList<>(); // field:(token1 token2)
+
     while (pos < end) {
       clause = new Clause();
       disallowUserField = true;
@@ -751,10 +755,17 @@ public class ExtendedDismaxQParser extends QParser {
       }
 
       clause.field = getFieldName(s, pos, end);
+
+      boolean implicitField = false;
+      if (clause.field == null && !groupedFields.isEmpty()) {
+        clause.field = groupedFields.peek();
+        implicitField = true;
+      }
+
       if (clause.field != null && !config.userFields.isAllowed(clause.field)) {
         clause.field = null;
       }
-      if (clause.field != null) {
+      if (!implicitField && clause.field != null) {
         disallowUserField = false;
         int colon = s.indexOf(':', pos);
         clause.rawField = s.substring(pos, colon);
@@ -762,7 +773,13 @@ public class ExtendedDismaxQParser extends QParser {
         pos++; // skip the ':'
       }
 
-      if (pos >= end) break;
+      if (pos >= end) {
+        break;
+      } else if (s.charAt(pos) == '(') {
+        // For a sequence of terms grouped with a field "field:(term1 term2)", keep
+        // track of the field name so we can apply it to all the terms
+        groupedFields.push(implicitField ? null : clause.field);
+      }
 
       char inString = 0;
 
@@ -856,6 +873,11 @@ public class ExtendedDismaxQParser extends QParser {
           } else {
             // uh.. this shouldn't happen.
             clause = null;
+          }
+        } else if (!groupedFields.isEmpty()) {
+          char lastChar = clause.hasWhitespace ? s.charAt(pos - 1) : ch;
+          if (lastChar == ')') {
+            groupedFields.pop();
           }
         }
       }
