@@ -124,6 +124,7 @@ public class NodeConfig {
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
+      String coresLocatorClass,
       Path solrDataHome,
       Integer booleanQueryMaxClauseCount,
       Path configSetBaseDirectory,
@@ -155,12 +156,12 @@ public class NodeConfig {
       Set<Path> allowPaths,
       List<String> allowUrls,
       String configSetServiceClass,
-      String coresLocatorClass,
       String modules,
       Set<String> hiddenSysProps) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
+    this.coresLocatorClass = coresLocatorClass;
     this.solrDataHome = solrDataHome;
     this.booleanQueryMaxClauseCount = booleanQueryMaxClauseCount;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -192,7 +193,6 @@ public class NodeConfig {
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
     this.configSetServiceClass = configSetServiceClass;
-    this.coresLocatorClass = coresLocatorClass;
     this.modules = modules;
     this.hiddenSysProps = hiddenSysProps;
     this.hiddenSysPropPattern =
@@ -261,10 +261,6 @@ public class NodeConfig {
     return this.configSetServiceClass;
   }
 
-  public String getCoresLocatorClass() {
-    return this.coresLocatorClass;
-  }
-
   public String getNodeName() {
     return nodeName;
   }
@@ -272,6 +268,10 @@ public class NodeConfig {
   /** Absolute. */
   public Path getCoreRootDirectory() {
     return coreRootDirectory;
+  }
+
+  public String getCoresLocatorClass() {
+    return this.coresLocatorClass;
   }
 
   /** Absolute. */
@@ -591,6 +591,7 @@ public class NodeConfig {
     // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
+    private String coresLocatorClass;
     private Path solrDataHome;
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
@@ -600,7 +601,6 @@ public class NodeConfig {
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String configSetServiceClass;
-    private String coresLocatorClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
@@ -667,6 +667,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
       this.coreRootDirectory = solrHome.resolve(coreRootDirectory).normalize();
+      return this;
+    }
+
+    public NodeConfigBuilder setCoresLocatorClass(String coresLocatorClass) {
+      this.coresLocatorClass = coresLocatorClass;
       return this;
     }
 
@@ -754,8 +759,8 @@ public class NodeConfig {
       this.replayUpdatesThreads = replayUpdatesThreads;
       return this;
     }
-
     // Remove in Solr 10.0
+
     @Deprecated
     public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
       this.transientCacheSize = transientCacheSize;
@@ -822,11 +827,6 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setCoresLocatorClass(String coresLocatorClass) {
-      this.coresLocatorClass = coresLocatorClass;
-      return this;
-    }
-
     /**
      * Set list of modules to add to class path
      *
@@ -885,6 +885,7 @@ public class NodeConfig {
       return new NodeConfig(
           nodeName,
           coreRootDirectory,
+          coresLocatorClass,
           solrDataHome,
           booleanQueryMaxClauseCount,
           configSetBaseDirectory,
@@ -916,7 +917,6 @@ public class NodeConfig {
           allowPaths,
           allowUrls,
           configSetServiceClass,
-          coresLocatorClass,
           modules,
           resolveHiddenSysPropsFromSysPropOrEnvOrDefault(hiddenSysProps));
     }

@@ -16,12 +16,15 @@
  */
 package org.apache.solr.core;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.solr.util.NoCoresLocator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.*;
 
 /** Unit tests for {@link CoresLocator}. */
 public class CoresLocatorTest {
@@ -61,6 +64,8 @@ public class CoresLocatorTest {
     NodeConfig nodeConfig = SolrXmlConfig.fromString(temporaryFolder.newFolder().toPath(), solrXml);
     Throwable t = assertThrows(RuntimeException.class, () -> CoresLocator.instantiate(nodeConfig));
 
-    assertEquals("create CoresLocator instance failed, coresLocatorClass=foo.BarCoresLocator", t.getMessage());
+    assertEquals(
+        "create CoresLocator instance failed, coresLocatorClass=foo.BarCoresLocator",
+        t.getMessage());
   }
 }

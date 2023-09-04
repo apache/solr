@@ -92,7 +92,7 @@ public interface CoresLocator {
             "create CoresLocator instance failed, coresLocatorClass=" + coresLocatorClass, e);
       }
     } else {
-      return new CorePropertiesLocator(nodeConfig.getCoreRootDirectory());
+      return new CorePropertiesLocator(nodeConfig);
     }
   }
 }

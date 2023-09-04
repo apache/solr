@@ -1948,9 +1948,9 @@ public class CoreContainer {
       return null;
     }
 
-    CorePropertiesLocator cpl = new CorePropertiesLocator(null);
     CoreDescriptor ret =
-        cpl.buildCoreDescriptor(oldDesc.getInstanceDir().resolve(PROPERTIES_FILENAME), this);
+        CorePropertiesLocator.buildCoreDescriptor(
+            oldDesc.getInstanceDir().resolve(PROPERTIES_FILENAME), this);
 
     // Ok, this little jewel is all because we still create core descriptors on the fly from lists
     // of properties in tests particularly. Theoretically, there should be _no_ way to create a

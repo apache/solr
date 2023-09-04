@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -51,6 +52,11 @@ public class CorePropertiesLocator implements CoresLocator {
 
   private final Path rootDirectory;
 
+  public CorePropertiesLocator(NodeConfig nodeConfig) {
+    this(nodeConfig.getCoreRootDirectory());
+  }
+
+  @VisibleForTesting
   public CorePropertiesLocator(Path coreDiscoveryRoot) {
     this.rootDirectory = coreDiscoveryRoot;
     log.debug("Config-defined core root directory: {}", this.rootDirectory);
@@ -193,7 +199,7 @@ public class CorePropertiesLocator implements CoresLocator {
     return cds;
   }
 
-  protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
+  protected static CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
     if (Files.notExists(propertiesFile)) {
       // This can happen in tests, see CoreContainer#reloadCoreDescriptor
       log.info("Could not load core descriptor from {} because it does not exist", propertiesFile);
