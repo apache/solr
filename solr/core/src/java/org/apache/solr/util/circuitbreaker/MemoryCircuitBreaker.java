@@ -38,8 +38,6 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   private long heapMemoryThreshold;
 
-  // Assumption -- the value of these parameters will be set correctly before invoking
-  // getDebugInfo()
   private static final ThreadLocal<Long> seenMemory = ThreadLocal.withInitial(() -> 0L);
   private static final ThreadLocal<Long> allowedMemory = ThreadLocal.withInitial(() -> 0L);
 
@@ -76,15 +74,6 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     seenMemory.set(localSeenMemory);
 
     return (localSeenMemory >= localAllowedMemory);
-  }
-
-  @Override
-  public String getDebugInfo() {
-    if (seenMemory.get() == 0L || allowedMemory.get() == 0L) {
-      log.warn("MemoryCircuitBreaker's monitored values (seenMemory, allowedMemory) not set");
-    }
-
-    return "seenMemory=" + seenMemory.get() + " allowedMemory=" + allowedMemory.get();
   }
 
   @Override

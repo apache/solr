@@ -40,8 +40,6 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   private double cpuUsageThreshold;
 
-  // Assumption -- the value of these parameters will be set correctly before invoking
-  // getDebugInfo()
   private static final ThreadLocal<Double> seenCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
   private static final ThreadLocal<Double> allowedCPUUsage = ThreadLocal.withInitial(() -> 0.0);
@@ -75,16 +73,6 @@ public class CPUCircuitBreaker extends CircuitBreaker {
     seenCPUUsage.set(localSeenCPUUsage);
 
     return (localSeenCPUUsage >= localAllowedCPUUsage);
-  }
-
-  @Override
-  public String getDebugInfo() {
-
-    if (seenCPUUsage.get() == 0.0 || allowedCPUUsage.get() == 0.0) {
-      log.warn("CPUCircuitBreaker's monitored values (seenCPUUSage, allowedCPUUsage) not set");
-    }
-
-    return "seenCPUUSage=" + seenCPUUsage.get() + " allowedCPUUsage=" + allowedCPUUsage.get();
   }
 
   @Override

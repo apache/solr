@@ -47,9 +47,6 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
   /** Check if circuit breaker is tripped. */
   public abstract boolean isTripped();
 
-  /** Get debug useful info. */
-  public abstract String getDebugInfo();
-
   /** Get error message when the circuit breaker triggers */
   public abstract String getErrorMessage();
 }
