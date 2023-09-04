@@ -199,7 +199,12 @@ public class CorePropertiesLocator implements CoresLocator {
     return cds;
   }
 
-  protected static CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
+  @Override
+  public CoreDescriptor reload(CoreDescriptor cd, CoreContainer cc) {
+    return buildCoreDescriptor(cd.getInstanceDir().resolve(PROPERTIES_FILENAME), cc);
+  }
+
+  protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
     if (Files.notExists(propertiesFile)) {
       // This can happen in tests, see CoreContainer#reloadCoreDescriptor
       log.info("Could not load core descriptor from {} because it does not exist", propertiesFile);

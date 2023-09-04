@@ -799,6 +799,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     public List<CoreDescriptor> discover(CoreContainer cc) {
       return cores;
     }
+
+    @Override
+    public CoreDescriptor reload(CoreDescriptor cd, CoreContainer cc) {
+      return cd;
+    }
   }
 
   @Test

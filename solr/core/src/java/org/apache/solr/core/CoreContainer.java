@@ -26,7 +26,6 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
-import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
@@ -1948,9 +1947,7 @@ public class CoreContainer {
       return null;
     }
 
-    CoreDescriptor ret =
-        CorePropertiesLocator.buildCoreDescriptor(
-            oldDesc.getInstanceDir().resolve(PROPERTIES_FILENAME), this);
+    CoreDescriptor ret = getCoresLocator().reload(oldDesc, this);
 
     // Ok, this little jewel is all because we still create core descriptors on the fly from lists
     // of properties in tests particularly. Theoretically, there should be _no_ way to create a
