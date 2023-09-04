@@ -377,21 +377,24 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(NodeConfig config) {
-    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
+    this(config, CoresLocator.instantiate(config));
   }
 
   public CoreContainer(NodeConfig config, boolean asyncSolrCoreLoad) {
-    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
+    this(config, CoresLocator.instantiate(config), asyncSolrCoreLoad);
   }
 
   /**
-   * Create a new CoreContainer using the given configuration and locator. The container's cores are
-   * not loaded.
+   * Create a new CoreContainer using the given configuration and locator.
+   *
+   * <p>The container's cores are not loaded. This constructor should be used only in tests, as it
+   * overrides {@link CoresLocator}'s instantiation process.
    *
    * @param config a ConfigSolr representation of this container's configuration
    * @param locator a CoresLocator
    * @see #load()
    */
+  @VisibleForTesting
   public CoreContainer(NodeConfig config, CoresLocator locator) {
     this(config, locator, false);
   }

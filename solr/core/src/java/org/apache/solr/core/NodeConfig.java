@@ -79,6 +79,7 @@ public class NodeConfig {
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
 
   private final String configSetServiceClass;
+  private final String coresLocatorClass;
 
   private final String coreAdminHandlerClass;
 
@@ -154,6 +155,7 @@ public class NodeConfig {
       Set<Path> allowPaths,
       List<String> allowUrls,
       String configSetServiceClass,
+      String coresLocatorClass,
       String modules,
       Set<String> hiddenSysProps) {
     // all Path params here are absolute and normalized.
@@ -190,6 +192,7 @@ public class NodeConfig {
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
     this.configSetServiceClass = configSetServiceClass;
+    this.coresLocatorClass = coresLocatorClass;
     this.modules = modules;
     this.hiddenSysProps = hiddenSysProps;
     this.hiddenSysPropPattern =
@@ -256,6 +259,10 @@ public class NodeConfig {
 
   public String getConfigSetServiceClass() {
     return this.configSetServiceClass;
+  }
+
+  public String getCoresLocatorClass() {
+    return this.coresLocatorClass;
   }
 
   public String getNodeName() {
@@ -593,6 +600,7 @@ public class NodeConfig {
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
     private String configSetServiceClass;
+    private String coresLocatorClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
@@ -814,6 +822,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setCoresLocatorClass(String coresLocatorClass) {
+      this.coresLocatorClass = coresLocatorClass;
+      return this;
+    }
+
     /**
      * Set list of modules to add to class path
      *
@@ -903,6 +916,7 @@ public class NodeConfig {
           allowPaths,
           allowUrls,
           configSetServiceClass,
+          coresLocatorClass,
           modules,
           resolveHiddenSysPropsFromSysPropOrEnvOrDefault(hiddenSysProps));
     }
