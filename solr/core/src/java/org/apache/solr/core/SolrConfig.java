@@ -346,7 +346,8 @@ public class SolrConfig implements MapSerializable {
       for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
       Map<String, CacheConfig> userCacheConfigs =
-          CacheConfig.getMultipleConfigs(this, "query/cache", get("query").getAll("cache"));
+          CacheConfig.getMultipleConfigs(
+              getResourceLoader(), this, "query/cache", get("query").getAll("cache"));
       List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
       if (!caches.isEmpty()) {
         for (PluginInfo c : caches) {
@@ -408,6 +409,7 @@ public class SolrConfig implements MapSerializable {
 
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
 
+  @SuppressWarnings("ReferenceEquality") // Use of == is intentional here
   public static final Version parseLuceneVersionString(final String matchVersion) {
     final Version version;
     try {
@@ -419,7 +421,9 @@ public class SolrConfig implements MapSerializable {
           pe);
     }
 
-    if (Objects.equals(version, Version.LATEST) && !versionWarningAlreadyLogged.getAndSet(true)) {
+    // The use of == is intentional here because the latest 'V.V.V' version will be equal() to
+    // Version.LATEST, but will not be == to Version.LATEST unless 'LATEST' was supplied.
+    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
       log.warn(
           "You should not use LATEST as luceneMatchVersion property: "
               + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "

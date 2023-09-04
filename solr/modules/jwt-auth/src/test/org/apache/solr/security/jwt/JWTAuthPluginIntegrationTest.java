@@ -162,6 +162,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals(
         "{\n"
+            + "  \"tokenEndpoint\":\"http://acmepaymentscorp/oauth/oauth20/token\",\n"
+            + "  \"authorization_flow\":\"code_pkce\",\n"
             + "  \"scope\":\"solr:admin\",\n"
             + "  \"redirect_uris\":[],\n"
             + "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"
@@ -184,6 +186,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals(
         "{\n"
+            + "  \"tokenEndpoint\":\"http://acmepaymentscorp/oauth/oauth20/token\",\n"
+            + "  \"authorization_flow\":\"code_pkce\",\n"
             + "  \"scope\":\"solr:admin\",\n"
             + "  \"redirect_uris\":[],\n"
             + "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"

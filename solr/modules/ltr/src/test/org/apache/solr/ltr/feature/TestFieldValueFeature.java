@@ -407,8 +407,21 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   @Test
   public void testBooleanValue() throws Exception {
+    implTestBooleanValue("isTrendy");
+  }
+
+  @Test
+  public void testBooleanValue_docValues() throws Exception {
+    implTestBooleanValue("dvIsTrendy");
+  }
+
+  private void implTestBooleanValue(String isTrendyFieldName) throws Exception {
     final String fstore = "test_boolean_store";
-    loadFeature("trendy", FieldValueFeature.class.getName(), fstore, "{\"field\":\"isTrendy\"}");
+    loadFeature(
+        "trendy",
+        FieldValueFeature.class.getName(),
+        fstore,
+        "{\"field\":\"" + isTrendyFieldName + "\"}");
 
     loadModel(
         "trendy-model",

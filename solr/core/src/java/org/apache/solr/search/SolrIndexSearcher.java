@@ -2374,6 +2374,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return a.intersects(getDocSet(deState));
   }
 
+  /**
+   * Called on the initial searcher for each core, immediately before <code>firstSearcherListeners
+   * </code> are called for the searcher. This provides the opportunity to perform initialization on
+   * the first registered searcher before the searcher begins to see any <code>firstSearcher</code>
+   * -triggered events.
+   */
+  public void bootstrapFirstSearcher() {
+    for (SolrCache<?, ?> solrCache : cacheList) {
+      solrCache.initialSearcher(this);
+    }
+  }
+
   /** Warm this searcher based on an old one (primarily for auto-cache warming). */
   @SuppressWarnings({"unchecked"})
   public void warm(SolrIndexSearcher old) {
