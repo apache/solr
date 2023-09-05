@@ -97,6 +97,7 @@ public class SolrResourceLoader
     "request.",
     "update.processor.",
     "util.",
+    "util.circuitbreaker.",
     "spelling.",
     "handler.component.",
     "spelling.suggest.",

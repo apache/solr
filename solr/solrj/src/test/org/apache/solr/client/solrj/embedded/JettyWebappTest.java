@@ -27,7 +27,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
@@ -49,7 +48,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.solr.home", SolrJettyTestBase.legacyExampleCollection1SolrHome());
+    System.setProperty("solr.solr.home", legacyExampleCollection1SolrHome());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.tests.doContainerStreamCloseAssert", "false");
 

@@ -24,6 +24,12 @@ import org.apache.solr.handler.admin.api.RestoreCoreAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 
 class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
+
+  @Override
+  public boolean isExpensive() {
+    return true;
+  }
+
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     final SolrParams params = it.req.getParams();

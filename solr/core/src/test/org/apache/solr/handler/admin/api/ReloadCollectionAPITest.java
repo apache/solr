@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.ReloadCollectionRequestBody;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
@@ -34,7 +35,7 @@ public class ReloadCollectionAPITest extends SolrTestCaseJ4 {
             SolrException.class,
             () -> {
               final var api = new ReloadCollectionAPI(null, null, null);
-              api.reloadCollection(null, new ReloadCollectionAPI.ReloadCollectionRequestBody());
+              api.reloadCollection(null, new ReloadCollectionRequestBody());
             });
 
     assertEquals(400, thrown.code());
@@ -44,8 +45,8 @@ public class ReloadCollectionAPITest extends SolrTestCaseJ4 {
   // TODO message creation
   @Test
   public void testCreateRemoteMessageAllProperties() {
-    final var requestBody = new ReloadCollectionAPI.ReloadCollectionRequestBody();
-    requestBody.asyncId = "someAsyncId";
+    final var requestBody = new ReloadCollectionRequestBody();
+    requestBody.async = "someAsyncId";
     final var remoteMessage =
         ReloadCollectionAPI.createRemoteMessage("someCollName", requestBody).getProperties();
 

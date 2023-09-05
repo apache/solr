@@ -36,7 +36,7 @@ public interface AddReplicaPropertyApi {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Adds a property to the specified replica",
-      tags = {"replicas"})
+      tags = {"replica-properties"})
   public SolrJerseyResponse addReplicaProperty(
       @Parameter(
               description = "The name of the collection the replica belongs to.",

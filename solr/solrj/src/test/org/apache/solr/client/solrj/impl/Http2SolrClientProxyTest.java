@@ -17,17 +17,20 @@
 package org.apache.solr.client.solrj.impl;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
-import java.nio.file.Path;
 import java.util.Properties;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
-import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public class Http2SolrClientProxyTest extends SolrJettyTestBase {
+public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   // TODO add SSL test
 
@@ -35,40 +38,22 @@ public class Http2SolrClientProxyTest extends SolrJettyTestBase {
   public static void beforeTest() throws Exception {
     RandomizedTest.assumeFalse(sslConfig.isSSLMode());
 
-    JettyConfig jettyConfig =
-        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
-    createAndStartJettyWithProxy(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
-  }
-
-  public static JettySolrRunner createAndStartJettyWithProxy(
-      String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
-
-    initCore(null, null, solrHome);
-
-    Path coresDir = createTempDir().resolve("cores");
-
-    Properties props = new Properties();
-    props.setProperty("name", DEFAULT_TEST_CORENAME);
-    props.setProperty("configSet", "collection1");
-    props.setProperty("config", "${solrconfig:solrconfig.xml}");
-    props.setProperty("schema", "${schema:schema.xml}");
-
-    writeCoreProperties(coresDir.resolve("core"), props, "RestTestBase");
-
-    Properties nodeProps = new Properties(nodeProperties);
-    nodeProps.setProperty("coreRootDirectory", coresDir.toString());
-    nodeProps.setProperty("configSetBaseDir", solrHome);
-
-    jetty = new JettySolrRunner(solrHome, nodeProps, jettyConfig, true);
-    jetty.start();
-    port = jetty.getLocalPort();
-    return jetty;
+    solrClientTestRule.enableProxy();
+    solrClientTestRule.startSolr(
+        createTempDir(),
+        new Properties(),
+        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build());
+    // Actually only need extremely minimal configSet but just use the default
+    solrClientTestRule
+        .newCollection()
+        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET) // TODO should be default for empty home
+        .create();
   }
 
   /** Setup a simple http proxy and verify a request works */
   @Test
   public void testProxy() throws Exception {
-    var proxy = jetty.getProxy();
+    var proxy = solrClientTestRule.getJetty().getProxy();
     assertNotNull(proxy);
 
     String host = proxy.getUrl().getHost();

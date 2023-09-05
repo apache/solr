@@ -52,7 +52,7 @@ public class SolrExampleCborTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpSolrClient.Builder(getServerUrl())
+    return new HttpSolrClient.Builder(getCoreUrl())
         .allowMultiPartPost(random().nextBoolean())
         .withRequestWriter(cborRequestWriter())
         .withResponseParser(cborResponseparser())

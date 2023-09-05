@@ -139,7 +139,7 @@ public class NodeValueFetcher {
 
     try {
       SimpleSolrResponse rsp = ctx.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
-      NamedList<?> metrics = (NamedList<?>) rsp.nl.get("metrics");
+      NamedList<?> metrics = (NamedList<?>) rsp.getResponse().get("metrics");
       if (metrics != null) {
         for (Tags t : Tags.values()) {
           ctx.tags.put(t.tagName, t.extractResult(metrics));
