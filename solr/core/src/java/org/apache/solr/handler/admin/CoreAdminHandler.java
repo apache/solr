@@ -95,6 +95,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
   protected final CoreAdminAsyncTracker coreAdminAsyncTracker;
+  protected final Map<String, CoreAdminOp> opMap;
 
   public static String RESPONSE_STATUS = "STATUS";
 
@@ -107,6 +108,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     // should happen in the constructor...
     this.coreContainer = null;
     this.coreAdminAsyncTracker = new CoreAdminAsyncTracker();
+    this.opMap = initializeOpMap();
   }
 
   /**
@@ -117,6 +119,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     this.coreAdminAsyncTracker = new CoreAdminAsyncTracker();
+    this.opMap = initializeOpMap();
   }
 
   @Override
@@ -275,6 +278,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
           Map.entry(ZkStateReader.NUM_SHARDS_PROP, CloudDescriptor.NUM_SHARDS),
           Map.entry(CoreAdminParams.REPLICA_TYPE, CloudDescriptor.REPLICA_TYPE));
 
+  private static Map<String, CoreAdminOp> initializeOpMap() {
+    Map<String, CoreAdminOp> opMap = new HashMap<>();
+    for (CoreAdminOperation op : CoreAdminOperation.values()) {
+      opMap.put(op.action.toString().toLowerCase(Locale.ROOT), op);
+    }
+    return opMap;
+  }
+
   protected static Map<String, String> buildCoreParams(SolrParams params) {
 
     Map<String, String> coreParams = new HashMap<>();
@@ -318,7 +329,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
     return msp;
   }
-
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
@@ -344,8 +354,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public void shutdown() {
     coreAdminAsyncTracker.shutdown();
   }
-
-  private static final Map<String, CoreAdminOp> opMap = new HashMap<>();
 
   public static class CallInfo {
     public final CoreAdminHandler handler;
@@ -395,11 +403,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
         CoreSnapshotAPI.class, InstallCoreDataAPI.class, BackupCoreAPI.class, RestoreCoreAPI.class);
-  }
-
-  static {
-    for (CoreAdminOperation op : CoreAdminOperation.values())
-      opMap.put(op.action.toString().toLowerCase(Locale.ROOT), op);
   }
 
   public interface CoreAdminOp {
