@@ -24,6 +24,8 @@ import static org.mockito.Mockito.when;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
 import org.apache.solr.jersey.InjectionFactories;
@@ -52,6 +54,7 @@ public class SnapshotBackupAPITest extends JerseyTest {
     final ResourceConfig config = new ResourceConfig();
     config.register(SnapshotBackupAPI.class);
     config.register(SolrJacksonMapper.class);
+    config.register(SolrExceptionTestMapper.class);
     config.register(
         new AbstractBinder() {
           @Override
@@ -75,21 +78,29 @@ public class SnapshotBackupAPITest extends JerseyTest {
 
   @Test
   public void testSuccessfulBackupCommand() throws Exception {
-    // triggering validation failure  on purpose for now to show that request made it to the correct
-    // method
+    // triggering validation failure on purpose to show that request made it to the correct method
     final Response response =
         target("/cores/demo/replication/backups")
             .request()
             .post(Entity.json("{\"name\": \"test\", \"numberToKeep\": 9}"));
-    // TODO why is this  `status=500, reason=Request failed.`
-    // it should be `400 error: Cannot use numberToKeep if maxNumberOfBackups was specified in the
-    // configuration.`
-    assertEquals(500, response.getStatus());
+    var status = response.getStatusInfo();
+    assertEquals(400, status.getStatusCode());
+    // see ReplicationHandler#doSnapShoot
+    String expectedErr =
+        "Cannot use numberToKeep if maxNumberOfBackups was specified in the configuration.";
+    assertEquals(expectedErr, status.getReasonPhrase());
   }
 
   private void resetMocks() {
     solrCore = mock(SolrCore.class);
     replicationHandlerConfig = mock(ReplicationHandlerConfig.class);
     when(replicationHandlerConfig.getNumberBackupsToKeep()).thenReturn(5);
+  }
+
+  public static class SolrExceptionTestMapper implements ExceptionMapper<SolrException> {
+    @Override
+    public Response toResponse(SolrException e) {
+      return Response.status(e.code(), e.getMessage()).build();
+    }
   }
 }
