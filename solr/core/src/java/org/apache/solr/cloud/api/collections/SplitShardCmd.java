@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -63,6 +62,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -228,44 +228,24 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     List<String> subShardNames = new ArrayList<>();
 
     // reproduce the currently existing number of replicas per type
-    AtomicInteger numNrt = new AtomicInteger();
-    AtomicInteger numTlog = new AtomicInteger();
-    AtomicInteger numPull = new AtomicInteger();
-    parentSlice
-        .getReplicas()
-        .forEach(
-            r -> {
-              switch (r.getType()) {
-                case NRT:
-                  numNrt.incrementAndGet();
-                  break;
-                case TLOG:
-                  numTlog.incrementAndGet();
-                  break;
-                case PULL:
-                  numPull.incrementAndGet();
-              }
-            });
-    int repFactor = numNrt.get() + numTlog.get() + numPull.get();
+    ReplicaCount numReplicas = ReplicaCount.empty();
+    parentSlice.getReplicas().forEach(r -> numReplicas.increment(r.getType()));
+    int repFactor = numReplicas.total();
 
     boolean success = false;
     try {
       // type of the first subreplica will be the same as leader
-      boolean firstNrtReplica = parentShardLeader.getType() == Replica.Type.NRT;
+      Replica.Type leaderReplicaType = parentShardLeader.getType();
       // verify that we indeed have the right number of correct replica types
-      if ((firstNrtReplica && numNrt.get() < 1) || (!firstNrtReplica && numTlog.get() < 1)) {
+      if (numReplicas.get(leaderReplicaType) < 1) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "aborting split - inconsistent replica types in collection "
                 + collectionName
-                + ": nrt="
-                + numNrt.get()
-                + ", tlog="
-                + numTlog.get()
-                + ", pull="
-                + numPull.get()
+                + ": "
+                + numReplicas.toDebugString()
                 + ", shard leader type is "
-                + parentShardLeader.getType());
+                + leaderReplicaType);
       }
 
       // check for the lock
@@ -340,7 +320,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               subRanges,
               subSlices,
               subShardNames,
-              firstNrtReplica);
+              leaderReplicaType);
       t.stop();
 
       // 3. if this shard has attempted a split before and failed, there will be lingering INACTIVE
@@ -431,9 +411,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
         propMap.put(COLLECTION_PROP, collectionName);
         propMap.put(SHARD_ID_PROP, subSlice);
-        propMap.put(
-            REPLICA_TYPE,
-            firstNrtReplica ? Replica.Type.NRT.toString() : Replica.Type.TLOG.toString());
+        propMap.put(REPLICA_TYPE, leaderReplicaType.toString());
         propMap.put("node", nodeName);
         propMap.put(CoreAdminParams.NAME, subShardName);
         propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
@@ -565,20 +543,14 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
       // we have already created one subReplica for each subShard on the parent node.
       // identify locations for the remaining replicas
-      if (firstNrtReplica) {
-        numNrt.decrementAndGet();
-      } else {
-        numTlog.decrementAndGet();
-      }
+      numReplicas.decrement(leaderReplicaType);
 
       t = timings.sub("identifyNodesForReplicas");
       Assign.AssignRequest assignRequest =
           new Assign.AssignRequestBuilder()
               .forCollection(collectionName)
               .forShard(subSlices)
-              .assignNrtReplicas(numNrt.get())
-              .assignTlogReplicas(numTlog.get())
-              .assignPullReplicas(numPull.get())
+              .assignReplicas(numReplicas)
               .onNodes(
                   Assign.getLiveOrLiveAndCreateNodeSetList(
                       clusterState.getLiveNodes(),
@@ -1089,7 +1061,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       List<DocRouter.Range> subRanges,
       List<String> subSlices,
       List<String> subShardNames,
-      boolean firstReplicaNrt) {
+      Replica.Type replicaType) {
     String splitKey = message.getStr("split.key");
     String rangesStr = message.getStr(CoreAdminParams.RANGES);
     String fuzzStr = message.getStr(CommonAdminParams.SPLIT_FUZZ, "0");
@@ -1211,10 +1183,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       subSlices.add(subSlice);
       String subShardName =
           Assign.buildSolrCoreName(
-              cloudManager.getDistribStateManager(),
-              collection,
-              subSlice,
-              firstReplicaNrt ? Replica.Type.NRT : Replica.Type.TLOG);
+              cloudManager.getDistribStateManager(), collection, subSlice, replicaType);
       subShardNames.add(subShardName);
     }
     return rangesStr;

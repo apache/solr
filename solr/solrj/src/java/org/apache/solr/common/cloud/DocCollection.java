@@ -58,9 +58,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final String znode;
 
   private final Integer replicationFactor;
-  private final Integer numNrtReplicas;
-  private final Integer numTlogReplicas;
-  private final Integer numPullReplicas;
+  private final ReplicaCount numReplicas;
   private final Boolean readOnly;
   private final Boolean perReplicaState;
   private final Map<String, Replica> replicaMap = new HashMap<>();
@@ -114,9 +112,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.nodeNameLeaderReplicas = new HashMap<>();
     this.nodeNameReplicas = new HashMap<>();
     this.replicationFactor = (Integer) verifyProp(props, CollectionStateProps.REPLICATION_FACTOR);
-    this.numNrtReplicas = (Integer) verifyProp(props, CollectionStateProps.NRT_REPLICAS, 0);
-    this.numTlogReplicas = (Integer) verifyProp(props, CollectionStateProps.TLOG_REPLICAS, 0);
-    this.numPullReplicas = (Integer) verifyProp(props, CollectionStateProps.PULL_REPLICAS, 0);
+    this.numReplicas =
+        new ReplicaCount(
+            (Integer) verifyProp(props, CollectionStateProps.NRT_REPLICAS, 0),
+            (Integer) verifyProp(props, CollectionStateProps.TLOG_REPLICAS, 0),
+            (Integer) verifyProp(props, CollectionStateProps.PULL_REPLICAS, 0));
     this.perReplicaState =
         (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     if (this.perReplicaState) {
@@ -511,7 +511,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *     this collection was created with
    */
   public Integer getNumNrtReplicas() {
-    return numNrtReplicas;
+    return getNumReplicas(Replica.Type.NRT);
   }
 
   /**
@@ -519,7 +519,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *     this collection was created with
    */
   public Integer getNumTlogReplicas() {
-    return numTlogReplicas;
+    return getNumReplicas(Replica.Type.TLOG);
   }
 
   /**
@@ -527,7 +527,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *     this collection was created with
    */
   public Integer getNumPullReplicas() {
-    return numPullReplicas;
+    return getNumReplicas(Replica.Type.PULL);
+  }
+
+  /**
+   * @return the number of replicas of a given type this collection was created with
+   */
+  public Integer getNumReplicas(Replica.Type type) {
+    return numReplicas.get(type);
   }
 
   public boolean isPerReplicaState() {
@@ -538,12 +545,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return perReplicaStatesRef != null ? perReplicaStatesRef.get() : null;
   }
 
+  @Deprecated
   public int getExpectedReplicaCount(Replica.Type type, int def) {
-    Integer result = null;
-    if (type == Replica.Type.NRT) result = numNrtReplicas;
-    if (type == Replica.Type.PULL) result = numPullReplicas;
-    if (type == Replica.Type.TLOG) result = numTlogReplicas;
-    return result == null ? def : result;
+    // def is kept for backwards compatibility.
+    return numReplicas.get(type);
+  }
+
+  public int getExpectedReplicaCount(Replica.Type type) {
+    return numReplicas.get(type);
   }
 
   /** JSON properties related to a collection's state. */
