@@ -97,10 +97,14 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
     getAndClearSpans(); // reset
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
+    Map<String, Object> ops =
+        Map.of(
+            "set-user", Map.of("harry", "HarryIsCool"),
+            "set-property", Map.of("blockUnknown", true));
     V2Request req =
         new V2Request.Builder("/cluster/security/authentication")
             .withMethod(SolrRequest.METHOD.POST)
-            .withPayload("{\"set-user\": {\"harry\":\"HarryIsCool\"}}")
+            .withPayload(Utils.toJSONString(ops))
             .build();
     req.setBasicAuthCredentials(USER, PASS);
     assertEquals(0, req.process(cloudClient, COLLECTION).getStatus());
@@ -110,6 +114,8 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
     var span = finishedSpans.get(0);
     assertEquals("post:/cluster/security/authentication", span.getName());
     assertEquals("solr", span.getAttributes().get(TraceUtils.TAG_USER));
-    assertEquals(List.of("set-user"), span.getAttributes().get(TraceUtils.TAG_OPS));
+    assertEquals(
+        BasicAuthPlugin.class.getSimpleName(), span.getAttributes().get(TraceUtils.TAG_CLASS));
+    assertEquals(List.copyOf(ops.keySet()), span.getAttributes().get(TraceUtils.TAG_OPS));
   }
 }

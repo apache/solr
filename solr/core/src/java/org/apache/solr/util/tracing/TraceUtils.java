@@ -54,6 +54,7 @@ public class TraceUtils {
       AttributeKey.stringKey("responseWriter");
   public static final AttributeKey<String> TAG_CONTENT_TYPE = AttributeKey.stringKey("contentType");
   public static final AttributeKey<List<String>> TAG_OPS = AttributeKey.stringArrayKey("ops");
+  public static final AttributeKey<String> TAG_CLASS = AttributeKey.stringKey("class");
 
   @Deprecated
   private static final AttributeKey<String> TAG_HTTP_METHOD_DEP =
@@ -143,9 +144,10 @@ public class TraceUtils {
     return spanBuilder.startSpan();
   }
 
-  public static void setOperations(SolrQueryRequest req, List<String> ops) {
+  public static void setOperations(SolrQueryRequest req, String clazz, List<String> ops) {
     if (!ops.isEmpty()) {
       req.getSpan().setAttribute(TAG_OPS, ops);
+      req.getSpan().setAttribute(TAG_CLASS, clazz);
     }
   }
 }

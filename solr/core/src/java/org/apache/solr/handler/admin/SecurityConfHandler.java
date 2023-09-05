@@ -149,7 +149,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
 
         if (persistConf(securityConfig)) {
           securityConfEdited();
-          updateTraceOps(req, commandsCopy);
+          updateTraceOps(req, configEditablePlugin.getClass().getSimpleName(), commandsCopy);
           return;
         }
       }
@@ -159,9 +159,9 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
         SERVER_ERROR, "Failed to persist security config after 3 attempts. Giving up");
   }
 
-  private void updateTraceOps(SolrQueryRequest req, List<CommandOperation> commands) {
+  private void updateTraceOps(SolrQueryRequest req, String clazz, List<CommandOperation> commands) {
     TraceUtils.setOperations(
-        req, commands.stream().map(c -> c.name).collect(Collectors.toUnmodifiableList()));
+        req, clazz, commands.stream().map(c -> c.name).collect(Collectors.toUnmodifiableList()));
   }
 
   /** Hook where you can do stuff after a config has been edited. Defaults to NOP */
