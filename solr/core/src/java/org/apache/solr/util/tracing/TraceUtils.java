@@ -168,7 +168,7 @@ public class TraceUtils {
   public static Span newInterNodeCommunicationSpan(String name, String collection) {
     Tracer tracer = TraceUtils.getGlobalTracer();
     SpanBuilder spanBuilder =
-        tracer.spanBuilder(name).setSpanKind(SpanKind.PRODUCER).setAttribute(TAG_DB, collection);
+        tracer.spanBuilder(name).setSpanKind(SpanKind.CONSUMER).setAttribute(TAG_DB, collection);
     return spanBuilder.startSpan();
   }
 }
