@@ -132,7 +132,7 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
     final var requestBodyStr = PostRequestLoggingFilter.buildRequestBodyString(mockContext);
 
     assertEquals(
-        "{  \"name\":\"someReplicaName\",  \"type\":\"NRT\",  \"async\":\"someAsyncId\"}",
+        "{\"name\":\"someReplicaName\",\"type\":\"NRT\",\"async\":\"someAsyncId\"}",
         requestBodyStr);
   }
 }
