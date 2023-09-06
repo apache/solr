@@ -80,6 +80,18 @@
 
   <circuitBreaker class="solr.MemoryCircuitBreaker">
     <double  name="threshold">75</double>
+    <arr name="requestTypes">
+      <str>update</str>
+    </arr>
+  </circuitBreaker>
+
+  <circuitBreaker class="solr.MemoryCircuitBreaker">
+    <double  name="threshold">80</double>
+<!-- Default is query
+    <arr name="requestTypes">
+      <str>query</str>
+    </arr>
+-->
   </circuitBreaker>
 
   <circuitBreaker class="solr.CPUCircuitBreaker">
