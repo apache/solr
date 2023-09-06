@@ -151,6 +151,8 @@ Bug Fixes
 * SOLR-16916: Use of the JSON Query DSL should ignore the defType parameter
   (Christina Chortaria, Max Kadel, Ryan Laddusaw, Jane Sandberg, David Smiley)
 
+* SOLR-16955: Tracing v2 apis breaks SecurityConfHandler (Alex Deparvu, David Smiley)
+
 Dependency Upgrades
 ---------------------
 
