@@ -368,12 +368,56 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         numVersionBuckets);
   }
 
-  /* Note, when this is called, uhandler is not completely constructed.
-   * This must be called when a new log is created, or
-   * for an existing log whenever the core or update handler changes.
+  /**
+   * This must be called when a new log is created, or for an existing log whenever the core or
+   * update handler changes. It is called from the ctor of the specified {@link UpdateHandler}, so
+   * the specified uhandler will not yet be completely constructed.
+   *
+   * <p>This method must be called <i>after</i> {@link #init(PluginInfo)} is called.
+   *
+   * <p>NOTE: this is currently called in both {@link UpdateHandler#UpdateHandler(SolrCore,
+   * UpdateLog)} ctor (super) <i>and</i> in {@link
+   * DirectUpdateHandler2#DirectUpdateHandler2(SolrCore, UpdateHandler)}, so this method (and any
+   * overriding implementations) should be idempotent.
+   *
+   * <p>TODO: above note is currently just an observation; not sure whether currently idempotent.
    */
   public void init(UpdateHandler uhandler, SolrCore core) {
-    dataDir = core.getUlogDir();
+    // ulogDir from CoreDescriptor (`core.properties`) overrides
+    String ulogDir = core.getCoreDescriptor().getUlogDir();
+    if (ulogDir != null) {
+      dataDir = ulogDir;
+    }
+
+    if (dataDir == null || dataDir.isEmpty()) {
+      // NOTE: this method is called from within `UpdateHandler` ctor, and this method is called
+      // _after_ `init(PluginInfo)`; so if ulogDir is specified in `<updateLog>` element of
+      // `solrconfig.xml`, `dataDir` will _not_ be null here.
+      dataDir = core.getDataDir();
+    }
+
+    Path instancePath = core.getInstancePath();
+
+    Path dataDirPath = Path.of(dataDir);
+    if (!dataDirPath.isAbsolute()) {
+      Path absolute = instancePath.resolve(dataDir);
+      if (!absolute.normalize().startsWith(instancePath.normalize())) {
+        // relative path spec should not be able to escape core-scoped instanceDir
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR, "Illegal relative ulog dir spec: " + dataDir);
+      }
+      dataDirPath = absolute;
+      dataDir = dataDirPath.toString();
+    }
+
+    // intentionally use assert side-effect assignment here. `Path.startsWith()` fails if the
+    // argument is a different path, which is the case for `SolrCore.getInstancePath()`,
+    // strictly in tests (lucene test-framework `FilterPath`).
+    assert (instancePath = Path.of(instancePath.toUri())).getClass()
+        == (dataDirPath = Path.of(dataDirPath.toUri())).getClass();
+
+    boolean unscopedDataDir =
+        !dataDirPath.startsWith(instancePath) && !dataDirPath.startsWith(core.getDataDir());
 
     this.uhandler = uhandler;
 
@@ -393,7 +437,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       return;
     }
     lastDataDir = dataDir;
-    tlogDir = Path.of(dataDir, TLOG_NAME);
+
+    // if the ulog dataDir is unscoped (neither under core instanceDir, nor core dataDir),
+    // then we must scope it to the core; otherwise, scope to purpose (TLOG_NAME).
+    tlogDir = Path.of(dataDir, unscopedDataDir ? core.getName() : TLOG_NAME);
+
     try {
       Files.createDirectories(tlogDir);
     } catch (IOException e) {
