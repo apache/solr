@@ -72,6 +72,8 @@ New Features
 ---------------------
 * SOLR-16654: Add support for node-level caches (Michael Gibney)
 
+* SOLR-16954: Make Circuit Breakers available for Update Requests (janhoy, Christine Poerschke, Pierre Salagnac)
+
 Improvements
 ---------------------
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
