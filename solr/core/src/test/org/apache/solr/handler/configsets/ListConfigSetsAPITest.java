@@ -91,7 +91,7 @@ public class ListConfigSetsAPITest extends JerseyTest {
     when(mockCoreContainer.getConfigSetService()).thenReturn(configSetService);
     when(configSetService.listConfigs()).thenReturn(List.of("cs1", "cs2"));
 
-    final Response response = target("/cluster/configs").request().get();
+    final Response response = target("/cluster/configs").request("application/json").get();
     final String jsonBody = response.readEntity(String.class);
 
     assertEquals(200, response.getStatus());
@@ -108,7 +108,8 @@ public class ListConfigSetsAPITest extends JerseyTest {
     when(mockCoreContainer.getConfigSetService()).thenReturn(configSetService);
     when(configSetService.listConfigs()).thenReturn(List.of("cs1", "cs2"));
 
-    final var response = target("/cluster/configs").request().get(ListConfigsetsResponse.class);
+    final var response =
+        target("/cluster/configs").request("application/json").get(ListConfigsetsResponse.class);
 
     assertNotNull(response.configSets);
     assertNull(response.error);
@@ -132,7 +133,8 @@ public class ListConfigSetsAPITest extends JerseyTest {
     when(mockCoreContainer.getConfigSetService()).thenReturn(configSetService);
     when(configSetService.listConfigs()).thenReturn(List.of("cs1", "cs2"));
 
-    final var response = target("/cluster/configs").request().get(ListConfigsetsResponse.class);
+    final var response =
+        target("/cluster/configs").request("application/json").get(ListConfigsetsResponse.class);
     final NamedList<Object> squashedResponse = new NamedList<>();
     V2ApiUtils.squashIntoNamedList(squashedResponse, response);
     final ConfigSetAdminResponse.List solrjResponse = new ConfigSetAdminResponse.List();
