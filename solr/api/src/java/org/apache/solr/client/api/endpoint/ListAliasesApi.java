@@ -16,15 +16,11 @@
  */
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import org.apache.solr.client.api.model.GetAliasByNameResponse;
 import org.apache.solr.client.api.model.ListAliasesResponse;
 
@@ -33,7 +29,6 @@ import org.apache.solr.client.api.model.ListAliasesResponse;
 public interface ListAliasesApi {
 
   @GET
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "List the existing collection aliases.",
       tags = {"aliases"})
@@ -41,7 +36,6 @@ public interface ListAliasesApi {
 
   @GET
   @Path("/{aliasName}")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Get details for a specific collection alias.",
       tags = {"aliases"})
