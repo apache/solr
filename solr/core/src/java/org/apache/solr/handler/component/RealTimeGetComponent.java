@@ -1052,6 +1052,9 @@ public class RealTimeGetComponent extends SearchComponent {
         Slice slice =
             coll.getRouter()
                 .getTargetSlice(params.get(ShardParams._ROUTE_, id), null, null, params, coll);
+        if (slice == null) {
+          continue;
+        }
 
         List<String> idsForShard = sliceToId.get(slice.getName());
         if (idsForShard == null) {
