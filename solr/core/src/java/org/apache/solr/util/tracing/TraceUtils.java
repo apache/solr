@@ -19,6 +19,7 @@ package org.apache.solr.util.tracing;
 import io.opentracing.Span;
 import io.opentracing.noop.NoopSpan;
 import io.opentracing.tag.Tags;
+import java.util.List;
 import java.util.function.Consumer;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -34,6 +35,13 @@ public class TraceUtils {
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
     if (span != null && !(span instanceof NoopSpan)) {
       consumer.accept(span);
+    }
+  }
+
+  public static void setOperations(SolrQueryRequest req, String clazz, List<String> ops) {
+    if (!ops.isEmpty()) {
+      req.getSpan().setTag("ops", String.join(",", ops));
+      req.getSpan().setTag("class", clazz);
     }
   }
 }

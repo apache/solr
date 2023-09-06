@@ -95,6 +95,8 @@ Bug Fixes
 
 * SOLR-16958: Fix spurious warning about LATEST luceneMatchVersion (Colvin Cowie)
 
+* SOLR-16955: Tracing v2 apis breaks SecurityConfHandler (Alex Deparvu, David Smiley)
+
 Dependency Upgrades
 ---------------------
 
