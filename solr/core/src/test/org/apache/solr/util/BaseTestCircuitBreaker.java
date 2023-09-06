@@ -32,6 +32,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
@@ -79,21 +80,42 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
         });
   }
 
-  public void testCBFakeMemoryPressure() {
+  public void testCBFakeMemoryPressure() throws Exception {
     removeAllExistingCircuitBreakers();
 
-    CircuitBreaker circuitBreaker = new FakeMemoryPressureCircuitBreaker();
-    MemoryCircuitBreaker memoryCircuitBreaker = (MemoryCircuitBreaker) circuitBreaker;
+    // Update and query will not trip
+    h.update(
+        "<add><doc><field name=\"id\">1</field><field name=\"name\">john smith</field></doc></add>");
+    h.query(req("name:\"john smith\""));
 
-    memoryCircuitBreaker.setThreshold(75);
+    MemoryCircuitBreaker searchBreaker = new FakeMemoryPressureCircuitBreaker();
+    searchBreaker.setThreshold(80);
+    // Default request type is "query"
+    // searchBreaker.setRequestTypes(List.of("query"));
+    h.getCore().getCircuitBreakerRegistry().register(searchBreaker);
 
-    h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
+    // Query will trip, but not update due to defaults
+    expectThrows(SolrException.class, () -> h.query(req("name:\"john smith\"")));
+    h.update(
+        "<add><doc><field name=\"id\">2</field><field name=\"name\">john smith</field></doc></add>");
 
+    MemoryCircuitBreaker updateBreaker = new FakeMemoryPressureCircuitBreaker();
+    updateBreaker.setThreshold(75);
+    updateBreaker.setRequestTypes(List.of("update"));
+    h.getCore().getCircuitBreakerRegistry().register(updateBreaker);
+
+    // Now also update will trip
     expectThrows(
         SolrException.class,
-        () -> {
-          h.query(req("name:\"john smith\""));
-        });
+        () ->
+            h.update(
+                "<add><doc><field name=\"id\">1</field><field name=\"name\">john smith</field></doc></add>"));
+  }
+
+  public void testBadRequestType() {
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> new MemoryCircuitBreaker().setRequestTypes(List.of("badRequestType")));
   }
 
   public void testBuildingMemoryPressure() {
@@ -236,6 +258,15 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
         "//lst[@name='prepare']/double[@name='time']",
         "count(//lst[@name='process']/*)>0",
         "//lst[@name='process']/double[@name='time']");
+  }
+
+  public void testErrorCode() {
+    assertEquals(
+        SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+        CircuitBreaker.getErrorCode(List.of(new CircuitBreakerManager())));
+    assertEquals(
+        SolrException.ErrorCode.TOO_MANY_REQUESTS,
+        CircuitBreaker.getErrorCode(List.of(new MemoryCircuitBreaker())));
   }
 
   private void removeAllExistingCircuitBreakers() {
