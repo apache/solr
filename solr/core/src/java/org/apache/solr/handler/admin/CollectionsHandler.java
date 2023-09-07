@@ -200,7 +200,7 @@ import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
 import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
-import org.apache.solr.handler.admin.api.SyncShardAPI;
+import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -607,7 +607,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     SYNCSHARD_OP(
         SYNCSHARD,
         (req, rsp, h) -> {
-          SyncShardAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          SyncShard.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
 
@@ -1385,7 +1385,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         MigrateReplicasAPI.class,
         BalanceReplicasAPI.class,
         RestoreCollectionAPI.class,
-        SyncShardAPI.class,
+        SyncShard.class,
         CollectionPropertyAPI.class,
         DeleteNode.class,
         ListAliases.class,
