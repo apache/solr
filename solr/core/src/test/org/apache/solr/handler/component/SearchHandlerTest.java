@@ -360,6 +360,19 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       assertTrue(
           e.getMessage()
               .contains("Query contains too many nested clauses; maxClauseCount is set to 1"));
+
+      solrQuery = new SolrQuery("{!surround maxBasicQueries=1000 df=title}10W(tes*,test*)");
+      solrQuery.add(ShardParams.SHARDS_TOLERANT, "true");
+      final QueryRequest req4 = new QueryRequest(solrQuery);
+      req4.setMethod(SolrRequest.METHOD.POST);
+      e =
+          assertThrows(
+              BaseHttpSolrClient.RemoteSolrException.class,
+              () -> req4.process(cloudSolrClient, collectionName));
+      assertEquals(400, e.code());
+      assertTrue(
+          e.getMessage()
+              .contains("Query contains too many nested clauses; maxClauseCount is set to 1"));
     } finally {
       if (initialMaxBooleanClauses != null) {
         System.setProperty("solr.max.booleanClauses", initialMaxBooleanClauses);
