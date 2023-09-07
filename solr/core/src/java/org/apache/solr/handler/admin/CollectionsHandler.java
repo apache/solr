@@ -184,7 +184,7 @@ import org.apache.solr.handler.admin.api.DeleteNode;
 import org.apache.solr.handler.admin.api.DeleteReplica;
 import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
-import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardDataAPI;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
@@ -722,7 +722,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     FORCELEADER_OP(
         FORCELEADER,
         (req, rsp, h) -> {
-          ForceLeaderAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          ForceLeader.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     CREATESHARD_OP(
@@ -1375,7 +1375,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteReplica.class,
         DeleteReplicaProperty.class,
         DeleteShardAPI.class,
-        ForceLeaderAPI.class,
+        ForceLeader.class,
         InstallShardDataAPI.class,
         ListCollections.class,
         ListCollectionBackups.class,
