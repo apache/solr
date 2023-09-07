@@ -24,6 +24,7 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import java.util.List;
 import java.util.function.Consumer;
 import javax.servlet.http.HttpServletRequest;
@@ -166,7 +167,7 @@ public class TraceUtils {
   }
 
   public static Span newInterNodeCommunicationSpan(String name, String collection) {
-    Tracer tracer = TraceUtils.getGlobalTracer();
+    Tracer tracer = getGlobalTracer();
     SpanBuilder spanBuilder =
         tracer.spanBuilder(name).setSpanKind(SpanKind.CONSUMER).setAttribute(TAG_DB, collection);
     return spanBuilder.startSpan();
