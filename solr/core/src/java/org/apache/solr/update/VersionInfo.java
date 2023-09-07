@@ -297,7 +297,9 @@ public class VersionInfo {
     assert !versionField.getType().isPointField();
 
     final String versionFieldName = versionField.getName();
-    final LeafReader leafReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
+    final LeafReader leafReader =
+        SlowCompositeReaderWrapper.wrap(
+            searcher.getIndexReader(), SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
     final Terms versionTerms = leafReader.terms(versionFieldName);
     final Long max = (versionTerms != null) ? LegacyNumericUtils.getMaxLong(versionTerms) : null;
     if (null != max) {

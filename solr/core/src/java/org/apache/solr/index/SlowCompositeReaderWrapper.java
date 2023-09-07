@@ -18,9 +18,6 @@ package org.apache.solr.index;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.CompositeReader;
@@ -54,6 +51,11 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.solr.search.CaffeineCache;
+import org.apache.solr.search.OrdMapRegenerator;
+import org.apache.solr.search.OrdMapRegenerator.OrdinalMapValue;
+import org.apache.solr.search.SolrCache;
+import org.apache.solr.util.IOFunction;
 
 /**
  * This class forces a composite reader (eg a {@link MultiReader} or {@link DirectoryReader}) to
@@ -76,24 +78,34 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   // also have a cached FieldInfos instance so this is consistent. SOLR-12878
   private final FieldInfos fieldInfos;
 
-  // TODO: this could really be a weak map somewhere else on the coreCacheKey,
-  // but do we really need to optimize slow-wrapper any more?
-  final Map<String, OrdinalMap> cachedOrdMaps = new ConcurrentHashMap<>();
+  public static final SolrCache<String, OrdinalMapValue> NO_CACHED_ORDMAPS =
+      new CaffeineCache<>() {
+        @Override
+        public OrdinalMapValue computeIfAbsent(
+            String key, IOFunction<? super String, ? extends OrdinalMapValue> mappingFunction)
+            throws IOException {
+          return mappingFunction.apply(key);
+        }
+      };
+
+  final SolrCache<String, OrdinalMapValue> cachedOrdMaps;
 
   /**
    * This method is sugar for getting an {@link LeafReader} from an {@link IndexReader} of any kind.
    * If the reader is already atomic, it is returned unchanged, otherwise wrapped by this class.
    */
-  public static LeafReader wrap(IndexReader reader) throws IOException {
+  public static LeafReader wrap(IndexReader reader, SolrCache<String, OrdinalMapValue> ordMapCache)
+      throws IOException {
     if (reader instanceof CompositeReader) {
-      return new SlowCompositeReaderWrapper((CompositeReader) reader);
+      return new SlowCompositeReaderWrapper((CompositeReader) reader, ordMapCache);
     } else {
       assert reader instanceof LeafReader;
       return (LeafReader) reader;
     }
   }
 
-  SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
+  SlowCompositeReaderWrapper(
+      CompositeReader reader, SolrCache<String, OrdinalMapValue> cachedOrdMaps) throws IOException {
     in = reader;
     in.registerParentReader(this);
     if (reader.leaves().isEmpty()) {
@@ -114,6 +126,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       metaData = new LeafMetaData(createdVersionMajor, minVersion, null);
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
+    this.cachedOrdMaps = cachedOrdMaps;
   }
 
   @Override
@@ -203,28 +216,19 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       return null;
     }
 
-    // at this point in time we are able to formulate the producer
-    OrdinalMap map = null;
     CacheHelper cacheHelper = getReaderCacheHelper();
-
-    Function<? super String, ? extends OrdinalMap> producer =
-        (notUsed) -> {
-          try {
-            OrdinalMap mapping =
-                OrdinalMap.build(
-                    cacheHelper == null ? null : cacheHelper.getKey(), values, PackedInts.DEFAULT);
-            return mapping;
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        };
 
     // either we use a cached result that gets produced eventually during caching,
     // or we produce directly without caching
+    OrdinalMap map;
     if (cacheHelper != null) {
-      map = cachedOrdMaps.computeIfAbsent(field + cacheHelper.getKey(), producer);
+      IOFunction<? super String, ? extends OrdinalMapValue> producer =
+          (notUsed) ->
+              OrdMapRegenerator.wrapValue(
+                  OrdinalMap.build(cacheHelper.getKey(), values, PackedInts.DEFAULT));
+      map = cachedOrdMaps.computeIfAbsent(field, producer).get();
     } else {
-      map = producer.apply("notUsed");
+      map = OrdinalMap.build(null, values, PackedInts.DEFAULT);
     }
 
     return new MultiSortedDocValues(values, starts, map, totalCost);
@@ -275,28 +279,19 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       return null;
     }
 
-    // at this point in time we are able to formulate the producer
-    OrdinalMap map = null;
     CacheHelper cacheHelper = getReaderCacheHelper();
-
-    Function<? super String, ? extends OrdinalMap> producer =
-        (notUsed) -> {
-          try {
-            OrdinalMap mapping =
-                OrdinalMap.build(
-                    cacheHelper == null ? null : cacheHelper.getKey(), values, PackedInts.DEFAULT);
-            return mapping;
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        };
 
     // either we use a cached result that gets produced eventually during caching,
     // or we produce directly without caching
+    OrdinalMap map;
     if (cacheHelper != null) {
-      map = cachedOrdMaps.computeIfAbsent(field + cacheHelper.getKey(), producer);
+      IOFunction<? super String, ? extends OrdinalMapValue> producer =
+          (notUsed) ->
+              OrdMapRegenerator.wrapValue(
+                  OrdinalMap.build(cacheHelper.getKey(), values, PackedInts.DEFAULT));
+      map = cachedOrdMaps.computeIfAbsent(field, producer).get();
     } else {
-      map = producer.apply("notUsed");
+      map = OrdinalMap.build(null, values, PackedInts.DEFAULT);
     }
 
     return new MultiDocValues.MultiSortedSetDocValues(values, starts, map, totalCost);

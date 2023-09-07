@@ -135,6 +135,34 @@ The filter cache is a good candidate for enabling `async` computation.
 ----
 
 
+=== OrdMap Cache
+
+This is a low-level cache that holds mappings between global ordinals and per-segment ordinals for string docValues.
+It is an essential component of functionality like faceting and join queries, and an implicit default instance of this cache will be configured if no explicit configuration is provided.
+
+The `ordMapCache` usually contains relatively few values -- at most one value is created per field per searcher, and values are created on-demand in response to an operation that requires global<=>segment ordinal mappings for a given field.
+
+The behavior of the implicit default cache is equivalent to legacy behavior, which opaquely cached these values in an unbounded map, newly created for each searcher, in response to queries. In fact, indirect warming of the cached ordinal maps is often one of the most important functions of `filterCache` warming queries.
+
+Manually configuring the `ordMapCache` provides finer grained control, including the ability to:
+1. place constraints on resource usage (max size or bytes)
+2. directly autowarm the `ordMapCache`
+
+`ordMapCache` is configured similarly to other caches, but with the additional config parameter `regenKeepAlive`. During autowarming, cache entry metadata is used to avoid auto-warming `ordMapCache` entries that have not been accessed within a specified amount of time. This is important for `ordMapCache`, because due to its often-unlimited enforced size, and its often-quite-small size in practice, entries will not be replaced in the same way that they would be for other caches that have higher turnover. `regenKeepAlive` solves this by allowing entries to "age out" if they are unused.
+`regenKeepAlive` may be specified in milliseconds, seconds, minutes, hours, or days (e.g., `60000`, `60s`, `1m`, `1h`, `1d`). `regenKeepAlive` may also be specified as a percentage of the effective autoCommit interval.
+
+As a low-level cache, `ordMapCache` is warmed before other caches.
+
+[source,xml]
+----
+<ordMapCache class="solr.CaffeineCache"
+             size="100"
+             initialSize="10"
+             autowarmCount="100%"
+             regenKeepAlive="110%"/>
+----
+
+
 === Query Result Cache
 
 The `queryResultCache` holds the results of previous searches: ordered lists of document IDs (DocList) based on a query, a sort, and the range of documents requested.

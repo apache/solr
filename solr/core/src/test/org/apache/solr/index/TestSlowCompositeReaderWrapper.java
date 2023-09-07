@@ -34,6 +34,9 @@ import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.search.OrdMapRegenerator;
+import org.apache.solr.search.OrdMapRegenerator.OrdinalMapValue;
+import org.apache.solr.search.SolrCache;
 
 public class TestSlowCompositeReaderWrapper extends SolrTestCase {
 
@@ -50,7 +53,8 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
     w.close();
 
     final IndexReader reader = DirectoryReader.open(w.w.getDirectory());
-    final LeafReader leafReader = SlowCompositeReaderWrapper.wrap(reader);
+    final LeafReader leafReader =
+        SlowCompositeReaderWrapper.wrap(reader, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
 
     final int numListeners = TestUtil.nextInt(random(), 1, 10);
     final List<IndexReader.ClosedListener> listeners = new ArrayList<>();
@@ -114,8 +118,11 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
     w.addDocument(doc);
     IndexReader reader = w.getReader();
     assertTrue(reader.leaves().size() > 1);
+    @SuppressWarnings("unchecked")
+    SolrCache<String, OrdinalMapValue> ordMapCache =
+        OrdMapRegenerator.getDefaultCacheConfig(null).newInstance();
     SlowCompositeReaderWrapper slowWrapper =
-        (SlowCompositeReaderWrapper) SlowCompositeReaderWrapper.wrap(reader);
+        (SlowCompositeReaderWrapper) SlowCompositeReaderWrapper.wrap(reader, ordMapCache);
     assertEquals(0, slowWrapper.cachedOrdMaps.size());
     assertEquals(MultiSortedDocValues.class, slowWrapper.getSortedDocValues("sorted").getClass());
     assertEquals(1, slowWrapper.cachedOrdMaps.size());

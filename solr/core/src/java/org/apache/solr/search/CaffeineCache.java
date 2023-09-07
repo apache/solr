@@ -114,7 +114,10 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     String str = args.get(SIZE_PARAM);
     maxSize = (str == null) ? 1024 : Integer.parseInt(str);
     str = args.get(INITIAL_SIZE_PARAM);
-    initialSize = Math.min((str == null) ? 1024 : Integer.parseInt(str), maxSize);
+    initialSize = str == null ? 1024 : Integer.parseInt(str);
+    if (maxSize != -1 && maxSize < initialSize) {
+      initialSize = maxSize;
+    }
     str = args.get(MAX_IDLE_TIME_PARAM);
     if (str == null) {
       maxIdleTimeSec = -1;
@@ -165,7 +168,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
       builder.maximumWeight(maxRamBytes);
       builder.weigher(
           (k, v) -> (int) (RamUsageEstimator.sizeOfObject(k) + RamUsageEstimator.sizeOfObject(v)));
-    } else {
+    } else if (maxSize != -1) {
       builder.maximumSize(maxSize);
     }
     Cache<K, V> newCache;

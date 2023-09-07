@@ -91,14 +91,14 @@ public class ReverseOrdFieldSource extends ValueSource {
         for (LeafReaderContext raw : leaves) {
           hidingLeaves[upto++] = NumericHidingLeafReader.wrap(raw.reader(), field);
         }
-        r = SlowCompositeReaderWrapper.wrap(new MultiReader(hidingLeaves));
+        r = SlowCompositeReaderWrapper.wrap(new MultiReader(hidingLeaves), is.getOrdMapCache());
       } else {
         // reuse ordinalmap
         r = ((SolrIndexSearcher) o).getSlowAtomicReader();
       }
     } else {
       IndexReader topReader = ReaderUtil.getTopLevelContext(readerContext).reader();
-      r = SlowCompositeReaderWrapper.wrap(topReader);
+      r = SlowCompositeReaderWrapper.wrap(topReader, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
     }
     // if it's e.g. tokenized/multivalued, emulate old behavior of single-valued fc
     final SortedDocValues sindex =
