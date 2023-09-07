@@ -55,6 +55,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     configureCluster(4)
         .addConfig(
             "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withTraceIdGenerationDisabled()
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 2)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)

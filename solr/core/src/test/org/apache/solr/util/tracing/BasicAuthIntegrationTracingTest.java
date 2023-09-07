@@ -77,6 +77,7 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
         .addConfig(
             "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSecurityJson(SECURITY_JSON)
+        .withTraceIdGenerationDisabled()
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "config", 2, 2)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
