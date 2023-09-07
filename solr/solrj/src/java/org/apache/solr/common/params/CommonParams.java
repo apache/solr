@@ -280,6 +280,8 @@ public interface CommonParams {
    */
   String DISABLE_REQUEST_ID = "disableRequestId";
 
+  boolean DISABLE_REQUEST_ID_DEFAULT = Boolean.getBoolean("solr.disableRequestId");
+
   /** Request Purpose parameter added to each internal shard request when using debug=track */
   String REQUEST_PURPOSE = "requestPurpose";
 

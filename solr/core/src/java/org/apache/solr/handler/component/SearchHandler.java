@@ -52,6 +52,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
@@ -626,7 +627,9 @@ public class SearchHandler extends RequestHandlerBase
 
   private void tagRequestWithRequestId(ResponseBuilder rb) {
     final boolean ridTaggingDisabled =
-        rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, false);
+        rb.req
+            .getParams()
+            .getBool(CommonParams.DISABLE_REQUEST_ID, CommonParams.DISABLE_REQUEST_ID_DEFAULT);
     if (!ridTaggingDisabled) {
       String rid = getOrGenerateRequestId(rb.req);
 
@@ -665,7 +668,14 @@ public class SearchHandler extends RequestHandlerBase
    */
   public static String getOrGenerateRequestId(SolrQueryRequest req) {
     String rid = req.getParams().get(CommonParams.REQUEST_ID);
-    return StrUtils.isNotBlank(rid) ? rid : generateRid(req);
+    if (StrUtils.isNotBlank(rid)) {
+      return rid;
+    }
+    String traceId = MDCLoggingContext.getTraceId();
+    if (StrUtils.isNotBlank(traceId)) {
+      return traceId;
+    }
+    return generateRid(req);
   }
 
   private static String generateRid(SolrQueryRequest req) {
