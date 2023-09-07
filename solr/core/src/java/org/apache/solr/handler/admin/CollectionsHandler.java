@@ -166,7 +166,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
-import org.apache.solr.handler.admin.api.BalanceReplicasAPI;
+import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
 import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
@@ -1383,7 +1383,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         RenameCollection.class,
         ReplaceNodeAPI.class,
         MigrateReplicasAPI.class,
-        BalanceReplicasAPI.class,
+        BalanceReplicas.class,
         RestoreCollectionAPI.class,
         SyncShard.class,
         CollectionPropertyAPI.class,
