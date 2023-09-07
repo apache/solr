@@ -306,6 +306,8 @@ public class SolrConfig implements MapSerializable {
       //    filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
       //    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
 
+      updateHandlerInfo = loadUpdatehandlerInfo(); // must do this before configuring ordMapCache
+
       useFilterForSortedQuery = get("query").get("useFilterForSortedQuery").boolVal(false);
       queryResultWindowSize = Math.max(1, get("query").get("queryResultWindowSize").intVal(1));
       queryResultMaxDocsCached =
@@ -363,8 +365,6 @@ public class SolrConfig implements MapSerializable {
         }
       }
       this.userCacheConfigs = Collections.unmodifiableMap(userCacheConfigs);
-
-      updateHandlerInfo = loadUpdatehandlerInfo();
 
       final var requestParsersNode = get("requestDispatcher").get("requestParsers");
 
