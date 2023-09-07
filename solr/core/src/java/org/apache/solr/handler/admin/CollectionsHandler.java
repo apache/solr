@@ -196,7 +196,7 @@ import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
 import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
-import org.apache.solr.handler.admin.api.RenameCollectionAPI;
+import org.apache.solr.handler.admin.api.RenameCollection;
 import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
 import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
@@ -1380,7 +1380,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListCollections.class,
         ListCollectionBackups.class,
         ReloadCollectionAPI.class,
-        RenameCollectionAPI.class,
+        RenameCollection.class,
         ReplaceNodeAPI.class,
         MigrateReplicasAPI.class,
         BalanceReplicasAPI.class,
