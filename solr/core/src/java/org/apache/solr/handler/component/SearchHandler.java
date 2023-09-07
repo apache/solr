@@ -92,6 +92,9 @@ public class SearchHandler extends RequestHandlerBase
 
   protected static final String SHARD_HANDLER_SUFFIX = "[shard]";
 
+  private static final Set<SolrException.ErrorCode> NONTOLERANT_ERROR_CODES =
+      Set.of(SolrException.ErrorCode.BAD_REQUEST);
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** A counter to ensure that no RID is equal, even if they fall in the same millisecond */
@@ -572,7 +575,9 @@ public class SearchHandler extends RequestHandlerBase
             if (srsp.getException() != null) {
               log.warn("Shard request failed : {}", srsp);
               // If things are not tolerant, abort everything and rethrow
-              if (!tolerant) {
+              if (!tolerant
+                  || NONTOLERANT_ERROR_CODES.contains(
+                      SolrException.ErrorCode.getErrorCode(srsp.getRspCode()))) {
                 shardHandler1.cancelAll();
                 if (srsp.getException() instanceof SolrException) {
                   throw (SolrException) srsp.getException();

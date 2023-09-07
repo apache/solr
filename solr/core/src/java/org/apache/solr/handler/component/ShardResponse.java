@@ -81,6 +81,10 @@ public final class ShardResponse {
     this.rspCode = rspCode;
   }
 
+  public int getRspCode() {
+    return rspCode;
+  }
+
   void setNodeName(String nodeName) {
     this.nodeName = nodeName;
   }
