@@ -81,7 +81,7 @@ public class OrdMapRegenerator implements CacheRegenerator {
     // for back-compat, default to an effectively unlimited-sized cache with no regeneration
     Map<String, String> args = new HashMap<>();
     args.put(NAME, "ordMapCache");
-    args.put("size", "-1"); // unlimited
+    args.put("size", Integer.toString(Integer.MAX_VALUE)); // effectively unlimited
     args.put("initialSize", "10");
     CacheConfig c = new CacheConfig(CaffeineCache.class, args, null);
     configureRegenerator(solrConfig, c);
