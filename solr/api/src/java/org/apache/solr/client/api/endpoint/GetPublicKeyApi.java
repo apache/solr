@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,21 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.endpoint;
 
-package org.apache.solr.security;
+import io.swagger.v3.oas.annotations.Operation;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import org.apache.solr.client.api.model.PublicKeyResponse;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Test;
+/** V2 API definition to fetch the public key of the receiving node. */
+@Path("/node/key")
+public interface GetPublicKeyApi {
 
-/** Unit test for {@link PublicKeyAPI} */
-public class PublicKeyAPITest extends SolrTestCaseJ4 {
-
-  @Test
-  public void testRetrievesPublicKey() {
-    final SolrNodeKeyPair nodeKeyPair = new SolrNodeKeyPair(null);
-
-    final PublicKeyAPI.PublicKeyResponse response = new PublicKeyAPI(nodeKeyPair).getPublicKey();
-
-    assertEquals(nodeKeyPair.getKeyPair().getPublicKeyStr(), response.key);
-  }
+  @GET
+  @Operation(
+      summary = "Retrieve the public key of the receiving Solr node.",
+      tags = {"node"})
+  PublicKeyResponse getPublicKey();
 }
