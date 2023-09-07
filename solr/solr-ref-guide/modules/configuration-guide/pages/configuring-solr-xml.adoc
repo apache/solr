@@ -192,7 +192,7 @@ The root of the core discovery tree, defaults to `$SOLR_HOME`.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `org.apache.solr.core.CoresPropertiesLocator`
+|Optional |Default: `org.apache.solr.core.CorePropertiesLocator`
 |===
 +
 This attribute does not need to be set.

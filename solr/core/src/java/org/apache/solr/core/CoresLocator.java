@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.lang.reflect.Constructor;
 import java.util.List;
 
 /** Manage the discovery and persistence of core definitions across Solr restarts */
@@ -90,18 +89,13 @@ public interface CoresLocator {
    */
   static CoresLocator instantiate(NodeConfig nodeConfig) {
     final String coresLocatorClass = nodeConfig.getCoresLocatorClass();
-    if (coresLocatorClass != null) {
-      try {
-        Class<? extends CoresLocator> clazz =
-            nodeConfig.getSolrResourceLoader().findClass(coresLocatorClass, CoresLocator.class);
-        Constructor<? extends CoresLocator> constructor = clazz.getConstructor(NodeConfig.class);
-        return constructor.newInstance(nodeConfig);
-      } catch (Exception e) {
-        throw new RuntimeException(
-            "create CoresLocator instance failed, coresLocatorClass=" + coresLocatorClass, e);
-      }
-    } else {
-      return new CorePropertiesLocator(nodeConfig);
-    }
+    return nodeConfig
+        .getSolrResourceLoader()
+        .newInstance(
+            coresLocatorClass,
+            CoresLocator.class,
+            null,
+            new Class<?>[] {NodeConfig.class},
+            new Object[] {nodeConfig});
   }
 }

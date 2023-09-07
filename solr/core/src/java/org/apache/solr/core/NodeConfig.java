@@ -56,6 +56,7 @@ public class NodeConfig {
   private final String nodeName;
 
   private final Path coreRootDirectory;
+  private final String coresLocatorClass;
 
   private final Path solrDataHome;
 
@@ -79,7 +80,6 @@ public class NodeConfig {
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
 
   private final String configSetServiceClass;
-  private final String coresLocatorClass;
 
   private final String coreAdminHandlerClass;
 
@@ -591,7 +591,7 @@ public class NodeConfig {
     // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
-    private String coresLocatorClass;
+    private String coresLocatorClass = DEFAULT_CORESLOCATORCLASS;
     private Path solrDataHome;
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
@@ -631,6 +631,8 @@ public class NodeConfig {
     // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
+    private static final String DEFAULT_CORESLOCATORCLASS =
+        "org.apache.solr.core.CorePropertiesLocator";
     private static final String DEFAULT_ADMINHANDLERCLASS =
         "org.apache.solr.handler.admin.CoreAdminHandler";
     private static final String DEFAULT_INFOHANDLERCLASS =
