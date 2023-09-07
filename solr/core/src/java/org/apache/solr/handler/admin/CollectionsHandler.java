@@ -123,6 +123,7 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -197,7 +198,7 @@ import org.apache.solr.handler.admin.api.MoveReplicaAPI;
 import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
 import org.apache.solr.handler.admin.api.RenameCollection;
-import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
+import org.apache.solr.handler.admin.api.ReplaceNode;
 import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
 import org.apache.solr.handler.admin.api.SyncShard;
@@ -1175,12 +1176,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           final SolrParams params = req.getParams();
           final RequiredSolrParams requiredParams = req.getParams().required();
-          final ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
-              new ReplaceNodeAPI.ReplaceNodeRequestBody();
+          final var requestBody = new ReplaceNodeRequestBody();
           requestBody.targetNodeName = params.get(TARGET_NODE);
           requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
           requestBody.async = params.get(ASYNC);
-          final ReplaceNodeAPI replaceNodeAPI = new ReplaceNodeAPI(h.coreContainer, req, rsp);
+          final ReplaceNode replaceNodeAPI = new ReplaceNode(h.coreContainer, req, rsp);
           final SolrJerseyResponse replaceNodeResponse =
               replaceNodeAPI.replaceNode(requiredParams.get(SOURCE_NODE), requestBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, replaceNodeResponse);
@@ -1381,7 +1381,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListCollectionBackups.class,
         ReloadCollectionAPI.class,
         RenameCollection.class,
-        ReplaceNodeAPI.class,
+        ReplaceNode.class,
         MigrateReplicasAPI.class,
         BalanceReplicas.class,
         RestoreCollectionAPI.class,
