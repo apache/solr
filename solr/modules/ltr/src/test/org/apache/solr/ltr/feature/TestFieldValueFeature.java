@@ -526,32 +526,43 @@ public class TestFieldValueFeature extends TestRerankBase {
       final String field = fieldAndScorerClass[0];
       final String fieldValue = fieldAndScorerClass[1];
       final String fstore = "testThatCorrectFieldValueFeatureIsUsedForDocValueTypes" + field;
+      final String modelName = field + "-model";
 
       assertU(adoc("id", "21", field, fieldValue));
       assertU(commit());
 
-      loadFeature(
-          field, getObservingFieldValueFeatureClassName(), fstore, "{\"field\":\"" + field + "\"}");
-      loadModel(
-          field + "-model",
-          LinearModel.class.getName(),
-          new String[] {field},
-          fstore,
-          "{\"weights\":{\"" + field + "\":1.0}}");
+      loadFeatureAndModel(getObservingFieldValueFeatureClassName(), field, fstore, modelName);
 
-      final SolrQuery query = new SolrQuery("id:21");
-      query.add("rq", "{!ltr model=" + field + "-model reRankDocs=4}");
-      query.add("fl", "[fv]");
+      query(field, modelName);
 
-      ObservingFieldValueFeature.usedScorerClass = null; // to clear away any previous test's use
-      assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
-      assertJQ(
-          "/query" + query.toQueryString(),
-          "/response/docs/[0]/=={'[fv]':'"
-              + FeatureLoggerTestUtils.toFeatureVector(field, "1.0")
-              + "'}");
       assertEquals(fieldAndScorerClass[2], ObservingFieldValueFeature.usedScorerClass);
     }
+  }
+
+  void loadFeatureAndModel(String featureClassName, String field, String fstore, String modelName) throws Exception {
+    loadFeature(
+        field, featureClassName, fstore, "{\"field\":\"" + field + "\"}");
+
+    loadModel(
+        modelName,
+        LinearModel.class.getName(),
+        new String[]{field},
+        fstore,
+        "{\"weights\":{\"" + field + "\":1.0}}");
+  }
+
+  void query(String field, String modelName) throws Exception {
+    final SolrQuery query = new SolrQuery("id:21");
+    query.add("rq", "{!ltr model=" + modelName + " reRankDocs=4}");
+    query.add("fl", "[fv]");
+
+    ObservingFieldValueFeature.usedScorerClass = null; // to clear away any previous test's use
+    assertJQ("/query" + query.toQueryString(), "/response/numFound/==1");
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/docs/[0]/=={'[fv]':'"
+            + FeatureLoggerTestUtils.toFeatureVector(field, "1.0")
+            + "'}");
   }
 
   @Test

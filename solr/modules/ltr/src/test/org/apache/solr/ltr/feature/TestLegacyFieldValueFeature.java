@@ -47,11 +47,39 @@ public class TestLegacyFieldValueFeature extends TestFieldValueFeature {
   }
 
   @Test
-  public void test_storedDvIsTrendy_FieldValueFeatureScorer_className_differs() throws Exception {
-    final String className = super.storedDvIsTrendy_FieldValueFeatureScorer_className();
-    final String legacyClassName = storedDvIsTrendy_FieldValueFeatureScorer_className();
+  public void test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature() throws Exception {
+    // the field storedDvIsTrendy has stored=true and docValues=true
+    final String field = "storedDvIsTrendy";
+    final String fieldValue = "1";
+    String fstore = "test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature" + field;
+
+    assertU(adoc("id", "21", field, fieldValue));
+    assertU(commit());
     // demonstrate that & how the FieldValueFeature & LegacyFieldValueFeature implementations differ
-    assertNotEquals(className, legacyClassName);
-    assertEquals(className.replace("SortedDocValues", ""), legacyClassName);
+
+    // the LegacyFieldValueFeature does not use docValues
+    loadAndQuery(getObservingFieldValueFeatureClassName(), field, fstore);
+
+    String legacyScorerClass = ObservingFieldValueFeature.usedScorerClass;
+    assertEquals(
+        FieldValueFeature.FieldValueFeatureWeight.FieldValueFeatureScorer.class.getName(),
+        legacyScorerClass);
+
+    // the FieldValueFeature does use docValues
+    loadAndQuery(super.getObservingFieldValueFeatureClassName(), field, fstore);
+
+    String scorerClass = ObservingFieldValueFeature.usedScorerClass;
+    assertEquals(
+        FieldValueFeature.FieldValueFeatureWeight.SortedDocValuesFieldValueFeatureScorer.class.getName(),
+        scorerClass);
+  }
+
+  void loadAndQuery(String featureClassName, String field, String fstore) throws Exception {
+    final String modelName = field + "-model-" + featureClassName;
+    final String featureStoreName = fstore + featureClassName;
+
+    loadFeatureAndModel(featureClassName, field, featureStoreName, modelName);
+
+    query(field, modelName);
   }
 }
