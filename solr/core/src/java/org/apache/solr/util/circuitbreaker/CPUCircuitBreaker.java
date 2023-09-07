@@ -89,7 +89,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getErrorMessage() {
-    return "CPU Circuit Breaker triggered as seen CPU usage is above allowed threshold."
+    return "CPU Circuit Breaker triggered as seen CPU usage is above allowed threshold. "
         + "Seen CPU usage "
         + seenCPUUsage.get()
         + " and allocated threshold "
