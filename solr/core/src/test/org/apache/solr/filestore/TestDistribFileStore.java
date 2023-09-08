@@ -62,8 +62,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LogLevel(
-    "org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
-public class TestDistribPackageStore extends SolrCloudTestCase {
+    "org.apache.solr.filestore.FileStoreAPI=DEBUG;org.apache.solr.filestore.DistribFileStore=DEBUG")
+public class TestDistribFileStore extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
@@ -86,7 +86,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     try {
 
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
-      uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+      uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
 
       try {
         postFile(
@@ -175,7 +175,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
       }
       // Delete Jars
-      DistribPackageStore.deleteZKFileEntry(
+      DistribFileStore.deleteZKFileEntry(
           cluster.getZkClient(), "/package/mypkg/v1.0/runtimelibs.jar");
       JettySolrRunner j = cluster.getRandomJetty(random());
       String path = j.getBaseURLV2() + "/cluster/files" + "/package/mypkg/v1.0/runtimelibs.jar";
@@ -360,7 +360,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
    */
   public static byte[] readFile(String fname) throws IOException {
     try (InputStream is =
-        TestDistribPackageStore.class.getClassLoader().getResourceAsStream(fname)) {
+        TestDistribFileStore.class.getClassLoader().getResourceAsStream(fname)) {
       return is.readAllBytes();
     }
   }
