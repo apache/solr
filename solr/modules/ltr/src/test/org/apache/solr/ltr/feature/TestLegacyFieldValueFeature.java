@@ -50,36 +50,22 @@ public class TestLegacyFieldValueFeature extends TestFieldValueFeature {
   public void test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature() throws Exception {
     // the field storedDvIsTrendy has stored=true and docValues=true
     final String field = "storedDvIsTrendy";
-    final String fieldValue = "1";
-    String fstore = "test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature" + field;
 
-    assertU(adoc("id", "21", field, fieldValue));
-    assertU(commit());
     // demonstrate that & how the FieldValueFeature & LegacyFieldValueFeature implementations differ
 
     // the LegacyFieldValueFeature does not use docValues
-    loadAndQuery(getObservingFieldValueFeatureClassName(), field, fstore);
-
-    String legacyScorerClass = ObservingFieldValueFeature.usedScorerClass;
-    assertEquals(
-        FieldValueFeature.FieldValueFeatureWeight.FieldValueFeatureScorer.class.getName(),
-        legacyScorerClass);
+    loadAndQuery(getObservingFieldValueFeatureClassName(), field, FieldValueFeature.FieldValueFeatureWeight.FieldValueFeatureScorer.class.getName());
 
     // the FieldValueFeature does use docValues
-    loadAndQuery(super.getObservingFieldValueFeatureClassName(), field, fstore);
-
-    String scorerClass = ObservingFieldValueFeature.usedScorerClass;
-    assertEquals(
-        FieldValueFeature.FieldValueFeatureWeight.SortedDocValuesFieldValueFeatureScorer.class.getName(),
-        scorerClass);
+    loadAndQuery(super.getObservingFieldValueFeatureClassName(), field, FieldValueFeature.FieldValueFeatureWeight.SortedDocValuesFieldValueFeatureScorer.class.getName());
   }
 
-  void loadAndQuery(String featureClassName, String field, String fstore) throws Exception {
+  private void loadAndQuery(String featureClassName, String field, String expectedUsedScorerClass) throws Exception {
     final String modelName = field + "-model-" + featureClassName;
-    final String featureStoreName = fstore + featureClassName;
+    final String featureStoreName = "test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature_" + field + "_" + featureClassName;
 
     loadFeatureAndModel(featureClassName, field, featureStoreName, modelName);
 
-    query(field, modelName);
+    addAndQueryId21(field, modelName, expectedUsedScorerClass, "1");
   }
 }

@@ -528,18 +528,13 @@ public class TestFieldValueFeature extends TestRerankBase {
       final String fstore = "testThatCorrectFieldValueFeatureIsUsedForDocValueTypes" + field;
       final String modelName = field + "-model";
 
-      assertU(adoc("id", "21", field, fieldValue));
-      assertU(commit());
-
       loadFeatureAndModel(getObservingFieldValueFeatureClassName(), field, fstore, modelName);
 
-      query(field, modelName);
-
-      assertEquals(fieldAndScorerClass[2], ObservingFieldValueFeature.usedScorerClass);
+      addAndQueryId21(field, modelName, fieldAndScorerClass[2], fieldValue);
     }
   }
 
-  void loadFeatureAndModel(String featureClassName, String field, String fstore, String modelName) throws Exception {
+  protected void loadFeatureAndModel(String featureClassName, String field, String fstore, String modelName) throws Exception {
     loadFeature(
         field, featureClassName, fstore, "{\"field\":\"" + field + "\"}");
 
@@ -551,7 +546,11 @@ public class TestFieldValueFeature extends TestRerankBase {
         "{\"weights\":{\"" + field + "\":1.0}}");
   }
 
-  void query(String field, String modelName) throws Exception {
+  protected void addAndQueryId21(String field, String modelName, String expectedUsedScorerClass, String fieldValue) throws Exception {
+
+    assertU(adoc("id", "21", field, fieldValue));
+    assertU(commit());
+
     final SolrQuery query = new SolrQuery("id:21");
     query.add("rq", "{!ltr model=" + modelName + " reRankDocs=4}");
     query.add("fl", "[fv]");
@@ -563,6 +562,8 @@ public class TestFieldValueFeature extends TestRerankBase {
         "/response/docs/[0]/=={'[fv]':'"
             + FeatureLoggerTestUtils.toFeatureVector(field, "1.0")
             + "'}");
+
+    assertEquals(expectedUsedScorerClass, ObservingFieldValueFeature.usedScorerClass);
   }
 
   @Test
