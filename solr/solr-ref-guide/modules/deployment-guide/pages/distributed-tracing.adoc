@@ -27,14 +27,12 @@ image::distributed-tracing/query-request-tracing.png[]
 
 == Always-on Trace Id generation
 
-Starting from 9.4 Solr ships with an always-on trace id generator. This will inject trace id headers for every Solr request, propagating the client supplied value or generating a new id as needed and replaces the existing `rid` mechanism.
+Solr includes an always-on trace id generator. This will inject trace id headers for every Solr request, propagating the client supplied value or generating a new id as needed and replaces the existing `rid` mechanism.
 
 The header name it uses for propagation is `X-Trace-Id`, this can be changed by updating the system property `solr.traceIdHeader`.
 
 This plugin will not be enabled if another Tracing mechanism is setup via Solr config.
 This plugin can be disabled by setting the `solr.alwaysOnTraceId` system property to `false`.
-
-Note: Solr 9.4 ships with an `OpenTracing` based lightweight `Tracer` implementation and Solr 10 has an updated `OpenTelemetry` based `TextMapPropagator` implementation.
 
 == Modules and Configuration
 

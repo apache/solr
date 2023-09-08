@@ -279,22 +279,10 @@ public interface CommonParams {
    * <p>Defaults to 'false' if not specified.
    *
    * @see #REQUEST_ID
-   * @see #DISABLE_REQUEST_ID_DEFAULT
    * @deprecated this was replaced by the auto-generated trace ids
    */
   @Deprecated(since = "9.4")
   String DISABLE_REQUEST_ID = "disableRequestId";
-
-  /**
-   * An opt-out flag to prevent the addition of {@link #REQUEST_ID} tracing on distributed queries
-   *
-   * <p>Defaults to 'false' if not specified.
-   *
-   * @see #DISABLE_REQUEST_ID
-   * @deprecated this was replaced by the auto-generated trace ids
-   */
-  @Deprecated(since = "9.4")
-  boolean DISABLE_REQUEST_ID_DEFAULT = Boolean.getBoolean("solr.disableRequestId");
 
   /** Request Purpose parameter added to each internal shard request when using debug=track */
   String REQUEST_PURPOSE = "requestPurpose";

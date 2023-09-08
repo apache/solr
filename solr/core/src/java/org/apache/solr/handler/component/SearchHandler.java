@@ -87,8 +87,25 @@ public class SearchHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** A counter to ensure that no RID is equal, even if they fall in the same millisecond */
+  /**
+   * A counter to ensure that no RID is equal, even if they fall in the same millisecond
+   *
+   * @deprecated this was replaced by the auto-generated trace ids
+   */
+  @Deprecated(since = "9.4")
   private static final AtomicLong ridCounter = new AtomicLong();
+
+  /**
+   * An opt-out flag to prevent the addition of {@link CommonParams#REQUEST_ID} tracing on
+   * distributed queries
+   *
+   * <p>Defaults to 'false' if not specified.
+   *
+   * @see CommonParams#DISABLE_REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
+   */
+  @Deprecated(since = "9.4")
+  boolean DISABLE_REQUEST_ID_DEFAULT = Boolean.getBoolean("solr.disableRequestId");
 
   private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
   private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
@@ -627,9 +644,7 @@ public class SearchHandler extends RequestHandlerBase
 
   private void tagRequestWithRequestId(ResponseBuilder rb) {
     final boolean ridTaggingDisabled =
-        rb.req
-            .getParams()
-            .getBool(CommonParams.DISABLE_REQUEST_ID, CommonParams.DISABLE_REQUEST_ID_DEFAULT);
+        rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, DISABLE_REQUEST_ID_DEFAULT);
     if (!ridTaggingDisabled) {
       String rid = getOrGenerateRequestId(rb.req);
 
