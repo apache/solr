@@ -44,6 +44,8 @@ Deprecation Removals
 
 * SOLR-16893: Remove bin/solr create_core and create_collection commands in favour of bin/solr create command.  (Eric Pugh)
 
+* SOLR-16961: The legacy CircuitBreakerManager has been removed. Please use the pluggable Circuit Breaker implementations instead. (janhoy)
+
 Dependency Upgrades
 ---------------------
 (No changes)
