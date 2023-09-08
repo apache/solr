@@ -16,7 +16,6 @@
  */
 package org.apache.solr.opentelemetry;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import java.lang.invoke.MethodHandles;
@@ -28,6 +27,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.TracerConfigurator;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,17 +49,17 @@ public class OtelTracerConfigurator extends TracerConfigurator {
 
   @Override
   public Tracer getTracer() {
-    // TODO remove reliance on global
-    return GlobalOpenTelemetry.getTracer("solr");
+    return TraceUtils.getGlobalTracer();
   }
 
   @Override
   public void init(NamedList<?> args) {
-    prepareConfiguration();
+    prepareConfiguration(args);
     AutoConfiguredOpenTelemetrySdk.initialize();
   }
 
-  void prepareConfiguration() {
+  void prepareConfiguration(NamedList<?> args) {
+    injectPluginSettingsIfNotConfigured(args);
     setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
@@ -80,6 +80,20 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     }
     System.setProperty("otel.metrics.exporter", "none");
     System.setProperty("otel.logs.exporter", "none");
+  }
+
+  /**
+   * Will inject plugin configuration values into system properties if not already setup (existing
+   * system properties take precedence)
+   */
+  private void injectPluginSettingsIfNotConfigured(NamedList<?> args) {
+    args.forEach(
+        (k, v) -> {
+          var asSysName = envNameToSyspropName(k);
+          if (asSysName.startsWith("otel.")) {
+            setDefaultIfNotConfigured(asSysName, v.toString());
+          }
+        });
   }
 
   /**
