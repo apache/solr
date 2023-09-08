@@ -70,8 +70,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public class FieldValueFeature extends Feature {
 
-  @Deprecated(since = "9.4")
-  private final boolean useDocValuesForStored;
+  protected boolean useDocValuesForStored = true;
 
   private String field;
   private Set<String> fieldAsSet;
@@ -101,14 +100,6 @@ public class FieldValueFeature extends Feature {
 
   public FieldValueFeature(String name, Map<String, Object> params) {
     super(name, params);
-    this.useDocValuesForStored = true;
-  }
-
-  @Deprecated
-  protected FieldValueFeature(
-      String name, Map<String, Object> params, boolean useDocValuesForStored) {
-    super(name, params);
-    this.useDocValuesForStored = useDocValuesForStored;
   }
 
   @Override

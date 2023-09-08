@@ -37,7 +37,8 @@ public class TestLegacyFieldValueFeature extends TestFieldValueFeature {
       extends TestFieldValueFeature.ObservingFieldValueFeature {
 
     public LegacyObservingFieldValueFeature(String name, Map<String, Object> params) {
-      super(name, params, false);
+      super(name, params);
+      this.useDocValuesForStored = false;
     }
   }
 

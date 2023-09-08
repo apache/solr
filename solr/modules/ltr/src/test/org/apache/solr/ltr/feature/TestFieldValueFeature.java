@@ -700,12 +700,6 @@ public class TestFieldValueFeature extends TestRerankBase {
       super(name, params);
     }
 
-    @Deprecated
-    protected ObservingFieldValueFeature(
-        String name, Map<String, Object> params, boolean useDocValuesForStored) {
-      super(name, params, useDocValuesForStored);
-    }
-
     @Override
     public Feature.FeatureWeight createWeight(
         IndexSearcher searcher,

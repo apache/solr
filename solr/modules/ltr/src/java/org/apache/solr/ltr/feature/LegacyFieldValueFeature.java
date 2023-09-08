@@ -52,6 +52,7 @@ import java.util.Map;
 public class LegacyFieldValueFeature extends FieldValueFeature {
 
   public LegacyFieldValueFeature(String name, Map<String, Object> params) {
-    super(name, params, false);
+    super(name, params);
+    this.useDocValuesForStored = false;
   }
 }
