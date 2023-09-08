@@ -16,8 +16,6 @@
  */
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.BINARY_CONTENT_TYPE_V2;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -26,8 +24,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import org.apache.solr.client.api.model.GetAliasPropertyResponse;
 import org.apache.solr.client.api.model.GetAllAliasPropertiesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -39,7 +35,6 @@ import org.apache.solr.client.api.model.UpdateAliasPropertyRequestBody;
 public interface AliasPropertyApis {
 
   @GET
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Get properties for a collection alias.",
       tags = {"alias-properties"})
@@ -49,7 +44,6 @@ public interface AliasPropertyApis {
 
   @GET
   @Path("/{propName}")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Get a specific property for a collection alias.",
       tags = {"alias-properties"})
@@ -59,7 +53,6 @@ public interface AliasPropertyApis {
       throws Exception;
 
   @PUT
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Update properties for a collection alias.",
       tags = {"alias-properties"})
@@ -71,7 +64,6 @@ public interface AliasPropertyApis {
 
   @PUT
   @Path("/{propName}")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Update a specific property for a collection alias.",
       tags = {"alias-properties"})
@@ -84,7 +76,6 @@ public interface AliasPropertyApis {
 
   @DELETE
   @Path("/{propName}")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @Operation(
       summary = "Delete a specific property for a collection alias.",
       tags = {"alias-properties"})
