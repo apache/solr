@@ -32,13 +32,13 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** TODO: Keeping this base class around until 10.0 release to ease backport of tests */
 public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -258,15 +258,6 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
         "//lst[@name='prepare']/double[@name='time']",
         "count(//lst[@name='process']/*)>0",
         "//lst[@name='process']/double[@name='time']");
-  }
-
-  public void testErrorCode() {
-    assertEquals(
-        SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-        CircuitBreaker.getErrorCode(List.of(new CircuitBreakerManager())));
-    assertEquals(
-        SolrException.ErrorCode.TOO_MANY_REQUESTS,
-        CircuitBreaker.getErrorCode(List.of(new MemoryCircuitBreaker())));
   }
 
   private void removeAllExistingCircuitBreakers() {

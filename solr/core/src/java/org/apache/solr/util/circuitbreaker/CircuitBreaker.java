@@ -46,6 +46,7 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
   private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
   private final List<SolrRequestType> SUPPORTED_TYPES =
       List.of(SolrRequestType.QUERY, SolrRequestType.UPDATE);
+  private static SolrException.ErrorCode errorCode = SolrException.ErrorCode.TOO_MANY_REQUESTS;
 
   @Override
   public void init(NamedList<?> args) {
@@ -62,6 +63,10 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
 
   /** Get error message when the circuit breaker triggers */
   public abstract String getErrorMessage();
+
+  public static SolrException.ErrorCode getErrorCode() {
+    return errorCode;
+  }
 
   /**
    * Set the request types for which this circuit breaker should be checked. If not called, the
@@ -87,23 +92,18 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
             .collect(Collectors.toSet());
   }
 
-  public Set<SolrRequestType> getRequestTypes() {
-    return requestTypes;
+  /**
+   * Provide a generic way for any Circuit Breaker to set a different error code than the default
+   * 429. The integer number must be a valid SolrException.ErrorCode. Note that this is a shared
+   * static variable.
+   *
+   * @param errorCode integer value of http error code to use
+   */
+  public void setErrorCode(int errorCode) {
+    CircuitBreaker.errorCode = SolrException.ErrorCode.getErrorCode(errorCode);
   }
 
-  /**
-   * Return the proper error code to use in exception. For legacy use of {@link CircuitBreaker} we
-   * return 503 for backward compatibility, else return 429.
-   *
-   * @deprecated Remove in 10.0
-   */
-  @Deprecated(since = "9.4")
-  public static SolrException.ErrorCode getErrorCode(List<CircuitBreaker> trippedCircuitBreakers) {
-    if (trippedCircuitBreakers != null
-        && trippedCircuitBreakers.stream().anyMatch(cb -> cb instanceof CircuitBreakerManager)) {
-      return SolrException.ErrorCode.SERVICE_UNAVAILABLE;
-    } else {
-      return SolrException.ErrorCode.TOO_MANY_REQUESTS;
-    }
+  public Set<SolrRequestType> getRequestTypes() {
+    return requestTypes;
   }
 }
