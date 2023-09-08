@@ -534,19 +534,21 @@ public class TestFieldValueFeature extends TestRerankBase {
     }
   }
 
-  protected void loadFeatureAndModel(String featureClassName, String field, String fstore, String modelName) throws Exception {
-    loadFeature(
-        field, featureClassName, fstore, "{\"field\":\"" + field + "\"}");
+  protected void loadFeatureAndModel(
+      String featureClassName, String field, String fstore, String modelName) throws Exception {
+    loadFeature(field, featureClassName, fstore, "{\"field\":\"" + field + "\"}");
 
     loadModel(
         modelName,
         LinearModel.class.getName(),
-        new String[]{field},
+        new String[] {field},
         fstore,
         "{\"weights\":{\"" + field + "\":1.0}}");
   }
 
-  protected void addAndQueryId21(String field, String modelName, String expectedUsedScorerClass, String fieldValue) throws Exception {
+  protected void addAndQueryId21(
+      String field, String modelName, String expectedUsedScorerClass, String fieldValue)
+      throws Exception {
 
     assertU(adoc("id", "21", field, fieldValue));
     assertU(commit());

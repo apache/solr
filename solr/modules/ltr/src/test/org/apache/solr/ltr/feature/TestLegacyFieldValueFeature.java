@@ -47,22 +47,35 @@ public class TestLegacyFieldValueFeature extends TestFieldValueFeature {
   }
 
   @Test
-  public void test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature() throws Exception {
+  public void test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature()
+      throws Exception {
     // the field storedDvIsTrendy has stored=true and docValues=true
     final String field = "storedDvIsTrendy";
 
     // demonstrate that & how the FieldValueFeature & LegacyFieldValueFeature implementations differ
 
     // the LegacyFieldValueFeature does not use docValues
-    loadAndQuery(getObservingFieldValueFeatureClassName(), field, FieldValueFeature.FieldValueFeatureWeight.FieldValueFeatureScorer.class.getName());
+    loadAndQuery(
+        getObservingFieldValueFeatureClassName(),
+        field,
+        FieldValueFeature.FieldValueFeatureWeight.FieldValueFeatureScorer.class.getName());
 
     // the FieldValueFeature does use docValues
-    loadAndQuery(super.getObservingFieldValueFeatureClassName(), field, FieldValueFeature.FieldValueFeatureWeight.SortedDocValuesFieldValueFeatureScorer.class.getName());
+    loadAndQuery(
+        super.getObservingFieldValueFeatureClassName(),
+        field,
+        FieldValueFeature.FieldValueFeatureWeight.SortedDocValuesFieldValueFeatureScorer.class
+            .getName());
   }
 
-  private void loadAndQuery(String featureClassName, String field, String expectedUsedScorerClass) throws Exception {
+  private void loadAndQuery(String featureClassName, String field, String expectedUsedScorerClass)
+      throws Exception {
     final String modelName = field + "-model-" + featureClassName;
-    final String featureStoreName = "test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature_" + field + "_" + featureClassName;
+    final String featureStoreName =
+        "test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature_"
+            + field
+            + "_"
+            + featureClassName;
 
     loadFeatureAndModel(featureClassName, field, featureStoreName, modelName);
 
