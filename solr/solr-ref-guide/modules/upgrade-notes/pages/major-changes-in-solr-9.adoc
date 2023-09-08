@@ -80,6 +80,11 @@ Therefore, when using the default settings, nodes that were previously excluded 
 * The Embedded Zookeeper can now be configured to listen to (or bind to) more hosts than just `localhost`,
 see the  xref:deployment-guide:securing-solr.adoc#network-configuration[Network Configuration documentation] for more information.
 
+=== Security
+* The `solr.jetty.ssl.sniHostCheck` option now defaults to the value of `SOLR_SSL_CHECK_PEER_NAME`, if it is provided.
+This will enable client and server hostName check settings to be governed by the same environment variable.
+If users want separate client/server settings, they can manually override the `solr.jetty.ssl.sniHostCheck` option in `SOLR_OPTS`.
+
 === Learning To Rank
 * The FieldValueFeature class now always uses DocValues when docValues=true is set. A LegacyFieldValueFeature class provides the prior behaviour of not using DocValues when the docValues=true and stored=true field attributes are both set.
 
