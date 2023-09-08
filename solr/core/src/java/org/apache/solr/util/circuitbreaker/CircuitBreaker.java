@@ -69,6 +69,17 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
   }
 
   /**
+   * Provide a generic way for any Circuit Breaker to set a different error code than the default
+   * 429. The integer number must be a valid SolrException.ErrorCode. Note that this is a shared
+   * static variable.
+   *
+   * @param errorCode integer value of http error code to use
+   */
+  public void setErrorCode(int errorCode) {
+    CircuitBreaker.errorCode = SolrException.ErrorCode.getErrorCode(errorCode);
+  }
+
+  /**
    * Set the request types for which this circuit breaker should be checked. If not called, the
    * circuit breaker will be checked for the {@link SolrRequestType#QUERY} request type only.
    *
@@ -90,17 +101,6 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
                   }
                 })
             .collect(Collectors.toSet());
-  }
-
-  /**
-   * Provide a generic way for any Circuit Breaker to set a different error code than the default
-   * 429. The integer number must be a valid SolrException.ErrorCode. Note that this is a shared
-   * static variable.
-   *
-   * @param errorCode integer value of http error code to use
-   */
-  public void setErrorCode(int errorCode) {
-    CircuitBreaker.errorCode = SolrException.ErrorCode.getErrorCode(errorCode);
   }
 
   public Set<SolrRequestType> getRequestTypes() {
