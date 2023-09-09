@@ -530,7 +530,9 @@ public class TestFieldValueFeature extends TestRerankBase {
 
       loadFeatureAndModel(getObservingFieldValueFeatureClassName(), field, fstore, modelName);
 
-      addAndQueryId21(field, modelName, fieldAndScorerClass[2], fieldValue);
+      addAndQueryId21(field, modelName, fieldValue);
+
+      assertEquals(fieldAndScorerClass[2], ObservingFieldValueFeature.usedScorerClass);
     }
   }
 
@@ -547,7 +549,7 @@ public class TestFieldValueFeature extends TestRerankBase {
   }
 
   protected void addAndQueryId21(
-      String field, String modelName, String expectedUsedScorerClass, String fieldValue)
+      String field, String modelName, String fieldValue)
       throws Exception {
 
     assertU(adoc("id", "21", field, fieldValue));
@@ -564,8 +566,6 @@ public class TestFieldValueFeature extends TestRerankBase {
         "/response/docs/[0]/=={'[fv]':'"
             + FeatureLoggerTestUtils.toFeatureVector(field, "1.0")
             + "'}");
-
-    assertEquals(expectedUsedScorerClass, ObservingFieldValueFeature.usedScorerClass);
   }
 
   @Test
