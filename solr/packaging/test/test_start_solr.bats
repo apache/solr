@@ -36,3 +36,16 @@ teardown() {
   run bash -c 'solr stop -all 2>&1'
   refute_output --partial 'forcefully killing'
 }
+
+@test "stop command for single port" {
+
+  solr start
+  solr start -p 7574
+  solr assert --started http://localhost:8983/solr --timeout 5000
+  solr assert --started http://localhost:7574/solr --timeout 5000
+  
+  run solr stop -p 7574
+  solr assert --not-started http://localhost:7574/solr --timeout 5000
+  solr assert --started http://localhost:8983/solr --timeout 5000
+
+}
