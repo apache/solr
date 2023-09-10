@@ -359,8 +359,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
    * @throws IOException if there is an I/O error reading the contents
    */
   public static byte[] readFile(String fname) throws IOException {
-    try (InputStream is =
-        TestDistribFileStore.class.getClassLoader().getResourceAsStream(fname)) {
+    try (InputStream is = TestDistribFileStore.class.getClassLoader().getResourceAsStream(fname)) {
       return is.readAllBytes();
     }
   }
