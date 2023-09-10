@@ -2901,7 +2901,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       }
 
       /* slowQueryThresholdMillis defaults to -1 in SolrConfig -- not enabled.*/
-      if (log.isWarnEnabled() && slowQueryThresholdMillis >= 0) {
+      if (slowLog.isWarnEnabled() && slowQueryThresholdMillis >= 0) {
         final long qtime = (long) (req.getRequestTimer().getTime());
         if (qtime >= slowQueryThresholdMillis) {
           slowLog.warn("slow: {}", rsp.getToLogAsString());
