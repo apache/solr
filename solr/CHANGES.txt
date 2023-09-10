@@ -164,7 +164,7 @@ Bug Fixes
 
 * SOLR-16955: Tracing v2 apis breaks SecurityConfHandler (Alex Deparvu, David Smiley)
 
-* SOLR-16044: SlowRequest logging disabled if SolrCore logger set to ERROR (janhoy, hossman)
+* SOLR-16044: SlowRequest logging is no longer disabled if SolrCore logger set to ERROR (janhoy, hossman)
 
 Dependency Upgrades
 ---------------------
