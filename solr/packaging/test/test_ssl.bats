@@ -48,11 +48,7 @@ teardown() {
   export SOLR_SSL_TRUST_STORE_PASSWORD=secret
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=false
-<<<<<<< HEAD
-  export SOLR_SSL_CHECK_PEER_NAME=true
-=======
   export SOLR_SSL_CHECK_PEER_NAME=false
->>>>>>> ac8eb3fc221 (Full integration tests)
   export SOLR_HOST=localhost
 
   solr start -c
@@ -63,8 +59,6 @@ teardown() {
 
   run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -H "Host: test.solr.apache.org" 'https://127.0.0.1:8983/solr/test/select?q=*:*'
   assert_output --partial '"numFound":0'
-<<<<<<< HEAD
-=======
 
   export SOLR_SSL_CHECK_PEER_NAME=true
 
@@ -104,7 +98,6 @@ teardown() {
 
   run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -k 'https://localhost:8983/solr/test/select?q=*:*'
   assert_output --partial '"numFound":0'
->>>>>>> ac8eb3fc221 (Full integration tests)
 }
 
 @test "start solr with ssl and auth" {
@@ -201,8 +194,6 @@ teardown() {
   run solr api -get 'https://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS'
   assert_output --partial '"urlScheme":"https"'
 }
-<<<<<<< HEAD
-=======
 
 @test "start solr with mTLS needed" {
   # Make a test tmp dir, as the security policy includes TMP, so that might already contain the BATS_TEST_TMPDIR
@@ -467,4 +458,3 @@ teardown() {
   run solr api -get 'https://localhost:8983/solr/test/select?q=*:*&rows=0'
   assert_output --partial '"numFound":0'
 }
->>>>>>> ac8eb3fc221 (Full integration tests)
