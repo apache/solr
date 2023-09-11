@@ -48,6 +48,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -109,6 +111,9 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
 
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
@@ -1384,12 +1389,6 @@ public class Http2SolrClient extends SolrClient {
     }
     if (null != System.getProperty("javax.net.ssl.trustStoreType")) {
       sslContextFactory.setTrustStoreType(System.getProperty("javax.net.ssl.trustStoreType"));
-    }
-
-    if (Boolean.parseBoolean(System.getProperty("solr.jetty.ssl.verifyClientHostName", "true"))) {
-      sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
-    } else {
-      sslContextFactory.setEndpointIdentificationAlgorithm(null);
     }
 
     return sslContextFactory;
