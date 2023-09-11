@@ -74,7 +74,7 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
     // to the Overseer. Although we could create the Map without it, there are a fair amount of
     // rules we don't want to reproduce.
     final var createReqBody =
-        CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(createReqParams, true);
+        CreateCollectionAPI.createRequestBodyFromV1Params(createReqParams, true);
     CreateCollectionAPI.populateDefaultsIfNecessary(ccc.getCoreContainer(), createReqBody);
     final ZkNodeProps createMessage = CreateCollectionAPI.createRemoteMessage(createReqBody);
 

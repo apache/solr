@@ -37,6 +37,8 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CreateCollectionRequestBody;
+import org.apache.solr.client.api.model.CreateCollectionRouterProperties;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
@@ -61,7 +63,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfReplicationFactorAndNrtReplicasConflict() {
     // Valid request body...
-    final var requestBody = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var requestBody = new CreateCollectionRequestBody();
     requestBody.name = "someName";
     requestBody.config = "someConfig";
     // ...except for a replicationFactor and nrtReplicas conflicting
@@ -72,7 +74,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              requestBody.validate();
+              CreateCollectionAPI.validateRequestBody(requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -83,7 +85,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfCollectionNameInvalid() {
-    final var requestBody = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var requestBody = new CreateCollectionRequestBody();
     requestBody.name = "$invalid@collection+name";
     requestBody.config = "someConfig";
 
@@ -91,7 +93,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              requestBody.validate();
+              CreateCollectionAPI.validateRequestBody(requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -103,7 +105,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfShardNamesInvalid() {
     // Valid request body...
-    final var requestBody = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var requestBody = new CreateCollectionRequestBody();
     requestBody.name = "someName";
     requestBody.config = "someConfig";
     // ...except for a bad shard name
@@ -113,7 +115,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              requestBody.validate();
+              CreateCollectionAPI.validateRequestBody(requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -124,7 +126,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateRemoteMessageAllProperties() {
-    final var requestBody = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var requestBody = new CreateCollectionRequestBody();
     requestBody.name = "someName";
     requestBody.replicationFactor = 123;
     requestBody.config = "someConfig";
@@ -137,7 +139,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.alias = "someAliasName";
     requestBody.properties = Map.of("propName", "propValue");
     requestBody.async = "someAsyncId";
-    requestBody.router = new CreateCollectionAPI.RouterProperties();
+    requestBody.router = new CreateCollectionRouterProperties();
     requestBody.router.name = "someRouterName";
     requestBody.router.field = "someField";
     requestBody.nodeSet = List.of("node1", "node2");
@@ -168,7 +170,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoReplicaCreationMessage() {
-    final var requestBody = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var requestBody = new CreateCollectionRequestBody();
     requestBody.name = "someName";
     requestBody.createReplicas = false;
 
@@ -197,7 +199,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     solrParams.set("property.somePropName", "somePropValue");
 
     final var v2RequestBody =
-        CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(solrParams, true);
+        CreateCollectionAPI.createRequestBodyFromV1Params(solrParams, true);
 
     assertEquals("someName", v2RequestBody.name);
     assertEquals(Integer.valueOf(123), v2RequestBody.numShards);
@@ -224,7 +226,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     solrParams.set(CREATE_NODE_SET, "EMPTY");
 
     final var v2RequestBody =
-        CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(solrParams, true);
+        CreateCollectionAPI.createRequestBodyFromV1Params(solrParams, true);
 
     assertEquals("someName", v2RequestBody.name);
     assertEquals(Boolean.FALSE, v2RequestBody.createReplicas);

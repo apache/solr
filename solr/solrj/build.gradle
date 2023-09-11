@@ -124,7 +124,7 @@ openApiGenerate {
   inputSpec = project(":solr:api").openApiSpecFile
 
   // Add 'debugModels: ""' or 'debugOperations: ""' to get the JSON input to mustache templating for those components
-  globalProperties.set([apis: "", models: "false"])
+  globalProperties.set([apis: "", models: "false", debugOperations: ""])
   templateDir = project.javaTemplateDir
   apiPackage = "org.apache.solr.client.solrj.request"
   outputDir = project.generatedCodeDir
