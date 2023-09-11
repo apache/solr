@@ -66,7 +66,7 @@ public class NoOpResponseParser extends ResponseParser {
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
       StringWriter writer = new StringWriter();
-      new InputStreamReader(body, encoding).transferTo(writer);
+      new InputStreamReader(body, encoding == null ? "UTF-8" : encoding).transferTo(writer);
       String output = writer.toString();
       NamedList<Object> list = new NamedList<>();
       list.add("response", output);

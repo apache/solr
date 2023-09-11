@@ -27,7 +27,6 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -128,9 +127,6 @@ public class SolrConfig implements MapSerializable {
   private int multipartUploadLimitKB;
 
   private int formUploadLimitKB;
-
-  private boolean enableRemoteStreams;
-  private boolean enableStreamBody;
 
   private boolean handleSelect;
 
@@ -361,27 +357,25 @@ public class SolrConfig implements MapSerializable {
 
       updateHandlerInfo = loadUpdatehandlerInfo();
 
+      final var requestParsersNode = get("requestDispatcher").get("requestParsers");
+
       multipartUploadLimitKB =
-          get("requestDispatcher")
-              .get("requestParsers")
-              .intAttr("multipartUploadLimitInKB", Integer.MAX_VALUE);
+          requestParsersNode.intAttr("multipartUploadLimitInKB", Integer.MAX_VALUE);
       if (multipartUploadLimitKB == -1) multipartUploadLimitKB = Integer.MAX_VALUE;
 
-      formUploadLimitKB =
-          get("requestDispatcher")
-              .get("requestParsers")
-              .intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
+      formUploadLimitKB = requestParsersNode.intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
       if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
 
-      enableRemoteStreams =
-          get("requestDispatcher").get("requestParsers").boolAttr("enableRemoteStreaming", false);
+      if (requestParsersNode.attr("enableRemoteStreaming") != null) {
+        log.warn("Ignored deprecated enableRemoteStreaming in config; use sys-prop");
+      }
 
-      enableStreamBody =
-          get("requestDispatcher").get("requestParsers").boolAttr("enableStreamBody", false);
+      if (requestParsersNode.attr("enableStreamBody") != null) {
+        log.warn("Ignored deprecated enableStreamBody in config; use sys-prop");
+      }
 
       handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
-      addHttpRequestToContext =
-          get("requestDispatcher").get("requestParsers").boolAttr("addHttpRequestToContext", false);
+      addHttpRequestToContext = requestParsersNode.boolAttr("addHttpRequestToContext", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -437,100 +431,79 @@ public class SolrConfig implements MapSerializable {
   }
 
   public static final List<SolrPluginInfo> plugins =
-      ImmutableList.<SolrPluginInfo>builder()
-          .add(
-              new SolrPluginInfo(
-                  SolrRequestHandler.class,
-                  SolrRequestHandler.TYPE,
-                  REQUIRE_NAME,
-                  REQUIRE_CLASS,
-                  MULTI_OK,
-                  LAZY))
-          .add(
-              new SolrPluginInfo(
-                  QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  Expressible.class, "expressible", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  QueryResponseWriter.class,
-                  "queryResponseWriter",
-                  REQUIRE_NAME,
-                  REQUIRE_CLASS,
-                  MULTI_OK,
-                  LAZY))
-          .add(
-              new SolrPluginInfo(
-                  ValueSourceParser.class,
-                  "valueSourceParser",
-                  REQUIRE_NAME,
-                  REQUIRE_CLASS,
-                  MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  TransformerFactory.class, "transformer", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  UpdateRequestProcessorFactory.class,
-                  "updateProcessor",
-                  REQUIRE_NAME,
-                  REQUIRE_CLASS,
-                  MULTI_OK))
-          .add(new SolrPluginInfo(SolrCache.class, "cache", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
+      List.of(
+          new SolrPluginInfo(
+              SolrRequestHandler.class,
+              SolrRequestHandler.TYPE,
+              REQUIRE_NAME,
+              REQUIRE_CLASS,
+              MULTI_OK,
+              LAZY),
+          new SolrPluginInfo(
+              QParserPlugin.class, "queryParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              Expressible.class, "expressible", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              QueryResponseWriter.class,
+              "queryResponseWriter",
+              REQUIRE_NAME,
+              REQUIRE_CLASS,
+              MULTI_OK,
+              LAZY),
+          new SolrPluginInfo(
+              ValueSourceParser.class, "valueSourceParser", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              TransformerFactory.class, "transformer", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
+          new SolrPluginInfo(
+              UpdateRequestProcessorFactory.class,
+              "updateProcessor",
+              REQUIRE_NAME,
+              REQUIRE_CLASS,
+              MULTI_OK),
+          new SolrPluginInfo(SolrCache.class, "cache", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK),
           // TODO: WTF is up with queryConverter???
           // it apparently *only* works as a singleton? - SOLR-4304
           // and even then -- only if there is a single SpellCheckComponent
           // because of queryConverter.setIndexAnalyzer
-          .add(
-              new SolrPluginInfo(
-                  QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS))
+          new SolrPluginInfo(QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS),
           // this is hackish, since it picks up all SolrEventListeners,
           // regardless of when/how/why they are used (or even if they are
           // declared outside of the appropriate context) but there's no nice
           // way around that in the PluginInfo framework
-          .add(
-              new SolrPluginInfo(
-                  InitParams.class, InitParams.TYPE, MULTI_OK, REQUIRE_NAME_IN_OVERLAY))
-          .add(
-              new SolrPluginInfo(
-                  it -> {
-                    List<ConfigNode> result = new ArrayList<>();
-                    result.addAll(it.get("query").getAll("listener"));
-                    result.addAll(it.get("updateHandler").getAll("listener"));
-                    return result;
-                  },
-                  SolrEventListener.class,
-                  "//listener",
-                  REQUIRE_CLASS,
-                  MULTI_OK,
-                  REQUIRE_NAME_IN_OVERLAY))
-          .add(new SolrPluginInfo(DirectoryFactory.class, "directoryFactory", REQUIRE_CLASS))
-          .add(new SolrPluginInfo(RecoveryStrategy.Builder.class, "recoveryStrategy"))
-          .add(
-              new SolrPluginInfo(
-                  it -> it.get("indexConfig").getAll("deletionPolicy"),
-                  IndexDeletionPolicy.class,
-                  "indexConfig/deletionPolicy",
-                  REQUIRE_CLASS))
-          .add(new SolrPluginInfo(CodecFactory.class, "codecFactory", REQUIRE_CLASS))
-          .add(new SolrPluginInfo(IndexReaderFactory.class, "indexReaderFactory", REQUIRE_CLASS))
-          .add(
-              new SolrPluginInfo(
-                  UpdateRequestProcessorChain.class, "updateRequestProcessorChain", MULTI_OK))
-          .add(
-              new SolrPluginInfo(
-                  it -> it.get("updateHandler").getAll("updateLog"),
-                  UpdateLog.class,
-                  "updateHandler/updateLog"))
-          .add(new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS))
-          .add(new SolrPluginInfo(RestManager.class, "restManager"))
-          .add(new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS))
-          .add(new SolrPluginInfo(CircuitBreakerManager.class, "circuitBreaker"))
-          .build();
+          new SolrPluginInfo(InitParams.class, InitParams.TYPE, MULTI_OK, REQUIRE_NAME_IN_OVERLAY),
+          new SolrPluginInfo(
+              it -> {
+                List<ConfigNode> result = new ArrayList<>();
+                result.addAll(it.get("query").getAll("listener"));
+                result.addAll(it.get("updateHandler").getAll("listener"));
+                return result;
+              },
+              SolrEventListener.class,
+              "//listener",
+              REQUIRE_CLASS,
+              MULTI_OK,
+              REQUIRE_NAME_IN_OVERLAY),
+          new SolrPluginInfo(DirectoryFactory.class, "directoryFactory", REQUIRE_CLASS),
+          new SolrPluginInfo(RecoveryStrategy.Builder.class, "recoveryStrategy"),
+          new SolrPluginInfo(
+              it -> it.get("indexConfig").getAll("deletionPolicy"),
+              IndexDeletionPolicy.class,
+              "indexConfig/deletionPolicy",
+              REQUIRE_CLASS),
+          new SolrPluginInfo(CodecFactory.class, "codecFactory", REQUIRE_CLASS),
+          new SolrPluginInfo(IndexReaderFactory.class, "indexReaderFactory", REQUIRE_CLASS),
+          new SolrPluginInfo(
+              UpdateRequestProcessorChain.class, "updateRequestProcessorChain", MULTI_OK),
+          new SolrPluginInfo(
+              it -> it.get("updateHandler").getAll("updateLog"),
+              UpdateLog.class,
+              "updateHandler/updateLog"),
+          new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS),
+          new SolrPluginInfo(RestManager.class, "restManager"),
+          new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS),
+          new SolrPluginInfo(CircuitBreakerManager.class, "circuitBreaker"));
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {
@@ -563,7 +536,7 @@ public class SolrConfig implements MapSerializable {
     }
 
     public String getCleanTag() {
-      return tag.replaceAll("/", "");
+      return tag.replace("/", "");
     }
 
     public String getTagCleanLower() {
@@ -613,17 +586,7 @@ public class SolrConfig implements MapSerializable {
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
-    ConfigNode updateHandler = get("updateHandler");
-    ConfigNode autoCommit = updateHandler.get("autoCommit");
-    return new UpdateHandlerInfo(
-        updateHandler.attr("class"),
-        autoCommit.get("maxDocs").intVal(-1),
-        autoCommit.get("maxTime").intVal(-1),
-        convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt()),
-        autoCommit.get("openSearcher").boolVal(true),
-        updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1),
-        updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1),
-        updateHandler.get("commitWithin").get("softCommit").boolVal(true));
+    return new UpdateHandlerInfo(get("updateHandler"));
   }
 
   /**
@@ -795,7 +758,7 @@ public class SolrConfig implements MapSerializable {
         try {
           final Matcher ttlMatcher = MAX_AGE.matcher(cacheControlHeader);
           final String ttlStr = ttlMatcher.find() ? ttlMatcher.group(1) : null;
-          tmp = (null != ttlStr && !"".equals(ttlStr)) ? Long.valueOf(ttlStr) : null;
+          tmp = (null != ttlStr && !ttlStr.isEmpty()) ? Long.valueOf(ttlStr) : null;
         } catch (Exception e) {
           log.warn(
               "Ignoring exception while attempting to extract max-age from cacheControl config: {}",
@@ -842,6 +805,7 @@ public class SolrConfig implements MapSerializable {
     public final long autoCommitMaxSizeBytes;
     public final boolean openSearcher; // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
+    public final boolean aggregateNodeLevelMetricsEnabled;
 
     /**
      * @param autoCommmitMaxDocs set -1 as default
@@ -867,6 +831,23 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
+      this.aggregateNodeLevelMetricsEnabled = false;
+    }
+
+    public UpdateHandlerInfo(ConfigNode updateHandler) {
+      ConfigNode autoCommit = updateHandler.get("autoCommit");
+      this.className = updateHandler.attr("class");
+      this.autoCommmitMaxDocs = autoCommit.get("maxDocs").intVal(-1);
+      this.autoCommmitMaxTime = autoCommit.get("maxTime").intVal(-1);
+      this.autoCommitMaxSizeBytes =
+          convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt());
+      this.openSearcher = autoCommit.get("openSearcher").boolVal(true);
+      this.autoSoftCommmitMaxDocs = updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1);
+      this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
+      this.commitWithinSoftCommit =
+          updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.aggregateNodeLevelMetricsEnabled =
+          updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
 
     @Override
@@ -1018,14 +999,6 @@ public class SolrConfig implements MapSerializable {
 
   public boolean isAddHttpRequestToContext() {
     return addHttpRequestToContext;
-  }
-
-  public boolean isEnableRemoteStreams() {
-    return enableRemoteStreams;
-  }
-
-  public boolean isEnableStreamBody() {
-    return enableStreamBody;
   }
 
   @Override

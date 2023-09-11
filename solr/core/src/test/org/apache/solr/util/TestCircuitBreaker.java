@@ -27,7 +27,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.PluginInfo;
@@ -214,28 +213,6 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
       assertEquals("Number of failed queries is not correct", 5, failureCount.get());
     }
-  }
-
-  public void testResponseWithCBTiming() {
-    assertQ(
-        req("q", "*:*", CommonParams.DEBUG_QUERY, "true"),
-        "//str[@name='rawquerystring']='*:*'",
-        "//str[@name='querystring']='*:*'",
-        "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
-        "//str[@name='parsedquery_toString']='*:*'",
-        "count(//lst[@name='explain']/*)=3",
-        "//lst[@name='explain']/str[@name='1']",
-        "//lst[@name='explain']/str[@name='2']",
-        "//lst[@name='explain']/str[@name='3']",
-        "//str[@name='QParser']",
-        "count(//lst[@name='timing']/*)=4",
-        "//lst[@name='timing']/double[@name='time']",
-        "count(//lst[@name='circuitbreaker']/*)>0",
-        "//lst[@name='circuitbreaker']/double[@name='time']",
-        "count(//lst[@name='prepare']/*)>0",
-        "//lst[@name='prepare']/double[@name='time']",
-        "count(//lst[@name='process']/*)>0",
-        "//lst[@name='process']/double[@name='time']");
   }
 
   private void removeAllExistingCircuitBreakers() {

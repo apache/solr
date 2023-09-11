@@ -16,84 +16,110 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.TARGET;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.Locale;
-import org.apache.commons.collections4.IterableUtils;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.client.solrj.request.beans.RenameCollectionPayload;
-import org.apache.solr.common.params.CollectionAdminParams;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.HashMap;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.SolrJacksonAnnotationInspector;
 
 /**
  * V2 API for "renaming" an existing collection
  *
  * <p>This API is analogous to the v1 /admin/collections?action=RENAME command.
  */
-public class RenameCollectionAPI {
+@Path("/collections/{collectionName}/rename")
+public class RenameCollectionAPI extends AdminAPIBase {
 
-  private final CollectionsHandler collectionsHandler;
-  private static final ObjectMapper REQUEST_BODY_PARSER =
-      SolrJacksonAnnotationInspector.createObjectMapper()
-          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-          .disable(MapperFeature.AUTO_DETECT_FIELDS);
-
-  public RenameCollectionAPI(CollectionsHandler collectionsHandler) {
-    this.collectionsHandler = collectionsHandler;
+  @Inject
+  public RenameCollectionAPI(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
+    super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @EndPoint(
-      path = {"/collections/{collection}/rename"},
-      method = POST,
-      permission = COLL_EDIT_PERM)
-  public void renameCollection(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    final RenameCollectionPayload v2Body = parseRenameParamsFromRequestBody(req);
-
-    req =
-        wrapParams(
-            req,
-            ACTION,
-            CollectionParams.CollectionAction.RENAME.name().toLowerCase(Locale.ROOT),
-            NAME,
-            req.getPathTemplateValues().get(CollectionAdminParams.COLLECTION),
-            TARGET,
-            v2Body.to,
-            ASYNC,
-            v2Body.async,
-            FOLLOW_ALIASES,
-            v2Body.followAliases);
-    collectionsHandler.handleRequestBody(req, rsp);
-  }
-
-  // TODO This is a bit hacky, but it's not worth investing in the request-body parsing code much
-  // here, as it's
-  //  something that's already somewhat built-in when this eventually moves to JAX-RS
-  private RenameCollectionPayload parseRenameParamsFromRequestBody(
-      SolrQueryRequest solrQueryRequest) throws IOException {
-    if (IterableUtils.isEmpty(solrQueryRequest.getContentStreams())) {
-      // An empty request-body is invalid (the 'to' field is required at a minimum), but we'll lean
-      // on the input-validation in CollectionsHandler to
-      // catch this, rather than duplicating the check for that here
-      return new RenameCollectionPayload();
+  @POST
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(COLL_EDIT_PERM)
+  public SubResponseAccumulatingJerseyResponse renameCollection(
+      @PathParam("collectionName") String collectionName, RenameCollectionRequestBody requestBody)
+      throws Exception {
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    if (requestBody == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
     }
+    ensureRequiredParameterProvided(COLLECTION_PROP, collectionName);
+    ensureRequiredParameterProvided("to", requestBody.to);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    final ContentStream cs = solrQueryRequest.getContentStreams().iterator().next();
-    return REQUEST_BODY_PARSER.readValue(cs.getStream(), RenameCollectionPayload.class);
+    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, requestBody);
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.RENAME,
+        remoteMessage,
+        requestBody != null ? requestBody.asyncId : null);
+    return response;
+  }
+
+  public static ZkNodeProps createRemoteMessage(
+      String collectionName, RenameCollectionRequestBody requestBody) {
+    final Map<String, Object> remoteMessage = new HashMap<>();
+    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.RENAME.toLower());
+    remoteMessage.put(NAME, collectionName);
+    remoteMessage.put(TARGET, requestBody.to);
+    insertIfNotNull(remoteMessage, FOLLOW_ALIASES, requestBody.followAliases);
+    insertIfNotNull(remoteMessage, ASYNC, requestBody.asyncId);
+
+    return new ZkNodeProps(remoteMessage);
+  }
+
+  public static void invokeFromV1Params(
+      CoreContainer coreContainer, SolrQueryRequest request, SolrQueryResponse response)
+      throws Exception {
+    final var api = new RenameCollectionAPI(coreContainer, request, response);
+    final var params = request.getParams();
+    params.required().check(COLLECTION_PROP, TARGET);
+    final var requestBody = new RenameCollectionRequestBody();
+    requestBody.to = params.get(TARGET);
+    // Optional parameters
+    requestBody.asyncId = params.get(ASYNC);
+    requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
+
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+        response, api.renameCollection(params.get(COLLECTION_PROP), requestBody));
+  }
+
+  public static class RenameCollectionRequestBody implements JacksonReflectMapWriter {
+    @JsonProperty(required = true)
+    public String to;
+
+    @JsonProperty(ASYNC)
+    public String asyncId;
+
+    @JsonProperty public Boolean followAliases;
   }
 }

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -357,7 +358,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             "vector", new float[] {1.1f, 2.1f, 3.1f, 4.1f}, VectorSimilarityFunction.COSINE);
 
     MatcherAssert.assertThat(
-        ((KnnVectorField) out.getField("vector")).vectorValue(),
+        ((KnnFloatVectorField) out.getField("vector")).vectorValue(),
         is(expectedIndexableField.vectorValue()));
 
     List<IndexableField> storedFields =
@@ -388,7 +389,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             "vector2", new float[] {1.1f, 2.1f, 3.1f, 4.1f}, VectorSimilarityFunction.DOT_PRODUCT);
 
     MatcherAssert.assertThat(
-        ((KnnVectorField) out.getField("vector2")).vectorValue(),
+        ((KnnFloatVectorField) out.getField("vector2")).vectorValue(),
         is(expectedDestination.vectorValue()));
 
     List<IndexableField> storedFields =
@@ -442,7 +443,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]"));
+            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]'"));
     MatcherAssert.assertThat(
         thrown.getCause().getCause().getMessage(),
         is(

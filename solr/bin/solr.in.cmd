@@ -78,6 +78,12 @@ REM set SOLR_HOST=192.168.1.1
 REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 REM set SOLR_WAIT_FOR_ZK=30
 
+REM By default Solr will log a warning for cores that are not registered in Zookeeper at startup
+REM but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
+REM wrong Zookeeper instance or chroot), however you need to manually delete the cores if
+REM they are no longer required. Set to "true" to have Solr automatically delete unknown cores.
+REM set SOLR_DELETE_UNKNOWN_CORES=false
+
 REM By default the start script uses UTC; override the timezone if needed
 REM set SOLR_TIMEZONE=UTC
 
@@ -238,7 +244,7 @@ REM This parameter lets you specify file system path(s) to explicitly allow. The
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path
 
 REM Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
-REM To restore the old behaviour, set the variable below to true
+REM To restore the old behavior, set the variable below to true
 REM set SOLR_SOLRXML_REQUIRED=false
 
 REM Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0

@@ -46,7 +46,6 @@ import no.nav.security.mock.oauth2.OAuth2Config;
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper;
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback;
 import okhttp3.mockwebserver.MockWebServer;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -459,7 +458,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
-    String response = IOUtils.toString(r.getEntity().getContent(), StandardCharsets.UTF_8);
+    String response = new String(r.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
     assertEquals(
         "Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
@@ -489,7 +488,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
             .replace(".localdomain", ""); // Use only 'localhost' to match our SSL cert
     String pemCert =
         CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
-            .replaceAll("\n", "\\\\n"); // Use literal \n to play well with JSON
+            .replace("\\n", "\\\\n"); // Use literal \n to play well with JSON
     return "{\n"
         + "  \"authentication\" : {\n"
         + "    \"class\": \"solr.JWTAuthPlugin\",\n"

@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * The base class for custom transient core maintenance. Any custom plugin that want's to take
+ * The base class for custom transient core maintenance. Any custom plugin that wants to take
  * control of transient caches (i.e. any core defined with transient=true) should override this
  * class.
  *

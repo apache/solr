@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.nio.CharBuffer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -27,6 +30,7 @@ import org.apache.solr.common.SolrException;
 
 /** */
 public class StrUtils {
+  @SuppressWarnings("MutablePublicArray")
   public static final char[] HEX_DIGITS = {
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
   };
@@ -357,5 +361,29 @@ public class StrUtils {
   /** Format using {@link MessageFormat} but with the ROOT locale */
   public static String formatString(String pattern, Object... args) {
     return new MessageFormat(pattern, Locale.ROOT).format(args);
+  }
+
+  public static boolean isNullOrEmpty(String string) {
+    return string == null || string.isEmpty();
+  }
+
+  public static boolean isNotNullOrEmpty(String string) {
+    return !isNullOrEmpty(string);
+  }
+
+  public static boolean isBlank(String string) {
+    return string == null || string.isBlank();
+  }
+
+  public static boolean isNotBlank(String string) {
+    return !isBlank(string);
+  }
+
+  public static String stringFromReader(Reader inReader) throws IOException {
+    try (Reader reader = inReader) {
+      StringWriter stringWriter = new StringWriter();
+      reader.transferTo(stringWriter);
+      return stringWriter.toString();
+    }
   }
 }

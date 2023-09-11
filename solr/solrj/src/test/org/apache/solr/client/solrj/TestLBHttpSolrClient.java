@@ -20,17 +20,18 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
@@ -99,7 +100,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       docs.add(doc);
     }
     SolrResponseBase resp;
-    try (SolrClient client = getHttpSolrClient(solrInstance.getUrl(), httpClient)) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(solrInstance.getUrl()).withHttpClient(httpClient).build()) {
       resp = client.add(docs);
       assertEquals(0, resp.getStatus());
       resp = client.commit();
@@ -212,8 +214,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
         new LBHttpSolrClient.Builder()
             .withHttpClient(httpClient)
             .withBaseSolrUrls(solrUrls)
-            .withConnectionTimeout(500)
-            .withSocketTimeout(500)
+            .withConnectionTimeout(500, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(500, TimeUnit.MILLISECONDS)
             .setAliveCheckInterval(500)
             .build()) {
 
@@ -300,12 +302,13 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       dataDir.mkdirs();
       confDir.mkdirs();
 
-      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
+      Files.copy(
+          SolrTestCaseJ4.getFile(getSolrXmlFile()).toPath(), homeDir.toPath().resolve("solr.xml"));
 
-      File f = new File(confDir, "solrconfig.xml");
-      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
-      f = new File(confDir, "schema.xml");
-      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSchemaFile()), f);
+      Path f = confDir.toPath().resolve("solrconfig.xml");
+      Files.copy(SolrTestCaseJ4.getFile(getSolrConfigFile()).toPath(), f);
+      f = confDir.toPath().resolve("schema.xml");
+      Files.copy(SolrTestCaseJ4.getFile(getSchemaFile()).toPath(), f);
       Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
     }
 

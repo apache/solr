@@ -28,7 +28,7 @@ This is the official documentation for **Apache Solr ${project.version}**.
 * [Reference Guide](${project.solrRefguideUrl}/): The main documentation for Solr
 * [Changes](changes/Changes.html): List of changes in this release
 * [System Requirements](SYSTEM_REQUIREMENTS.html): Minimum and supported Java versions
-* [Solr Tutorial](${project.solrRefguideUrl}/solr-tutorial.html):
+* [Solr Tutorial](${project.solrRefguideUrl}/getting-started/solr-tutorial.html):
   This document covers the basics of running Solr using an example schema, and some sample data
 * [Lucene Documentation](${project.luceneDocUrl}/index.html)
   

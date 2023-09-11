@@ -38,7 +38,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -323,8 +322,7 @@ public class GCSBackupRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) {
     if (files.isEmpty()) {
       return;
     }
@@ -333,14 +331,7 @@ public class GCSBackupRepository implements BackupRepository {
         files.stream()
             .map(file -> BlobId.of(bucketName, prefix + file))
             .collect(Collectors.toList());
-    List<Boolean> result = storage.delete(blobDeletes);
-    if (!ignoreNoSuchFileException) {
-      int failedDelete = result.indexOf(Boolean.FALSE);
-      if (failedDelete != -1) {
-        throw new NoSuchFileException(
-            "File " + blobDeletes.get(failedDelete).getName() + " was not found");
-      }
-    }
+    storage.delete(blobDeletes);
   }
 
   @Override

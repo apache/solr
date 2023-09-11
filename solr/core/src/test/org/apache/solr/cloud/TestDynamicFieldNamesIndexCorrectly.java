@@ -115,8 +115,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
     final QueryResponse response;
     SolrDocumentList list = null;
     final QueryRequest req = new QueryRequest(solrQuery);
-    cloudClient.setDefaultCollection(collection);
-    response = req.process(cloudClient);
+    response = req.process(cloudClient, collection);
     list = response.getResults();
     return list;
   }

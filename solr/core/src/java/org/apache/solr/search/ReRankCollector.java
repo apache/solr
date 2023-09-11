@@ -51,6 +51,23 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
   private final Rescorer reRankQueryRescorer;
   private final Sort sort;
   private final Query query;
+  private ReRankScaler reRankScaler;
+  private ReRankOperator reRankOperator;
+
+  public ReRankCollector(
+      int reRankDocs,
+      int length,
+      Rescorer reRankQueryRescorer,
+      QueryCommand cmd,
+      IndexSearcher searcher,
+      Set<BytesRef> boostedPriority,
+      ReRankScaler reRankScaler,
+      ReRankOperator reRankOperator)
+      throws IOException {
+    this(reRankDocs, length, reRankQueryRescorer, cmd, searcher, boostedPriority);
+    this.reRankScaler = reRankScaler;
+    this.reRankOperator = reRankOperator;
+  }
 
   public ReRankCollector(
       int reRankDocs,
@@ -111,13 +128,22 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
+      ScoreDoc[] mainScoreDocsClone =
+          (reRankScaler != null && reRankScaler.scaleScores())
+              ? deepCloneAndZeroOut(mainScoreDocs)
+              : null;
       ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
       mainDocs.scoreDocs = reRankScoreDocs;
 
+      // If we're scaling scores use the replace rescorer because we just want the re-rank score.
       TopDocs rescoredDocs =
-          reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+          reRankScaler != null && reRankScaler.scaleScores()
+              ? reRankScaler
+                  .getReplaceRescorer()
+                  .rescore(searcher, mainDocs, mainDocs.scoreDocs.length)
+              : reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
 
       // Lower howMany to return if we've collected fewer documents.
       howMany = Math.min(howMany, mainScoreDocs.length);
@@ -140,6 +166,11 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       if (howMany == rescoredDocs.scoreDocs.length) {
+        if (reRankScaler != null && reRankScaler.scaleScores()) {
+          rescoredDocs.scoreDocs =
+              reRankScaler.scaleScores(
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, reRankScoreDocs.length);
+        }
         return rescoredDocs; // Just return the rescoredDocs
       } else if (howMany > rescoredDocs.scoreDocs.length) {
         // We need to return more then we've reRanked, so create the combined page.
@@ -153,9 +184,20 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
             0,
             rescoredDocs.scoreDocs.length); // overlay the re-ranked docs.
         rescoredDocs.scoreDocs = scoreDocs;
+        if (reRankScaler != null && reRankScaler.scaleScores()) {
+          rescoredDocs.scoreDocs =
+              reRankScaler.scaleScores(
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, reRankScoreDocs.length);
+        }
         return rescoredDocs;
       } else {
         // We've rescored more then we need to return.
+
+        if (reRankScaler != null && reRankScaler.scaleScores()) {
+          rescoredDocs.scoreDocs =
+              reRankScaler.scaleScores(
+                  mainScoreDocsClone, rescoredDocs.scoreDocs, rescoredDocs.scoreDocs.length);
+        }
         ScoreDoc[] scoreDocs = new ScoreDoc[howMany];
         System.arraycopy(rescoredDocs.scoreDocs, 0, scoreDocs, 0, howMany);
         rescoredDocs.scoreDocs = scoreDocs;
@@ -164,6 +206,18 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
+  }
+
+  private ScoreDoc[] deepCloneAndZeroOut(ScoreDoc[] scoreDocs) {
+    ScoreDoc[] scoreDocs1 = new ScoreDoc[scoreDocs.length];
+    for (int i = 0; i < scoreDocs.length; i++) {
+      ScoreDoc scoreDoc = scoreDocs[i];
+      if (scoreDoc != null) {
+        scoreDocs1[i] = new ScoreDoc(scoreDoc.doc, scoreDoc.score);
+        scoreDoc.score = 0f;
+      }
+    }
+    return scoreDocs1;
   }
 
   public static class BoostedComp implements Comparator<ScoreDoc> {
