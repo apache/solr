@@ -48,8 +48,7 @@ teardown() {
   export SOLR_SSL_TRUST_STORE_PASSWORD=secret
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=false
-  export SOLR_SSL_CHECK_PEER_NAME=true
-  export SOLR_OPTS="-Dsolr.jetty.ssl.sniHostCheck=false"
+  export SOLR_SSL_CHECK_PEER_NAME=false
   export SOLR_HOST=localhost
 
   solr start -c
@@ -58,11 +57,13 @@ teardown() {
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
 
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" 'https://localhost:8983/solr/test/select?q=*:*'
+  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -H "Host: test.solr.apache.org" 'https://127.0.0.1:8983/solr/test/select?q=*:*'
   assert_output --partial '"numFound":0'
 
+  export SOLR_SSL_CHECK_PEER_NAME=true
+
   # This should fail the peername check
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -H "Host: test.solr.org" 'https://localhost:8983/solr/test/select?q=*:*'
+  run ! solr api -get 'https://localhost:8983/solr/test/select?q=*:*'
   assert_output --partial 'Server refused connection'
 }
 
