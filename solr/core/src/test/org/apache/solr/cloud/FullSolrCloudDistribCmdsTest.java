@@ -290,21 +290,21 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             TimeUnit.SECONDS,
             (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
 
-      // Add six documents w/diff routes (all sent to shard1 leader's core)
-      cloudClient.add(testCollectionName, sdoc("id", "1", "routefield_s", "europe"));
-      cloudClient.add(testCollectionName, sdoc("id", "3", "routefield_s", "europe"));
-      cloudClient.add(testCollectionName, sdoc("id", "5", "routefield_s", "africa"));
-      cloudClient.add(testCollectionName, sdoc("id", "7", "routefield_s", "africa"));
-      cloudClient.commit(testCollectionName);
+    // Add six documents w/diff routes (all sent to shard1 leader's core)
+    cloudClient.add(testCollectionName, sdoc("id", "1", "routefield_s", "europe"));
+    cloudClient.add(testCollectionName, sdoc("id", "3", "routefield_s", "europe"));
+    cloudClient.add(testCollectionName, sdoc("id", "5", "routefield_s", "africa"));
+    cloudClient.add(testCollectionName, sdoc("id", "7", "routefield_s", "africa"));
+    cloudClient.commit(testCollectionName);
 
-      var docsNoRoute = cloudClient.getById(testCollectionName, List.of("3"));
-      assertEquals(0, docsNoRoute.getNumFound());
+    var docsNoRoute = cloudClient.getById(testCollectionName, List.of("3"));
+    assertEquals(0, docsNoRoute.getNumFound());
 
-      var params = new ModifiableSolrParams();
-      params.set("_route_", "europe");
-      var docsWRoute = cloudClient.getById(testCollectionName, List.of("3"), params);
-      assertEquals(1, docsWRoute.getNumFound());
-    }
+    var params = new ModifiableSolrParams();
+    params.set("_route_", "europe");
+    var docsWRoute = cloudClient.getById(testCollectionName, List.of("3"), params);
+    assertEquals(1, docsWRoute.getNumFound());
+  }
 
   public void testDeleteByIdCompositeRouterWithRouterField() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
