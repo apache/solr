@@ -986,22 +986,24 @@ IF NOT "%SOLR_HOST%"=="" (
   set SOLR_HOST_ARG=
 )
 
+set SCRIPT_SOLR_OPTS=
+
 REM Solr modules option
 IF DEFINED SOLR_MODULES (
-  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.modules=%SOLR_MODULES%"
+  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.modules=%SOLR_MODULES%"
 )
 
 REM Default placement plugin
 IF DEFINED SOLR_PLACEMENTPLUGIN_DEFAULT (
-  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.placementplugin.default=%SOLR_PLACEMENTPLUGIN_DEFAULT%"
+  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.placementplugin.default=%SOLR_PLACEMENTPLUGIN_DEFAULT%"
 )
 
 REM Remote streaming and stream body
 IF "%SOLR_ENABLE_REMOTE_STREAMING%"=="true" (
-  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.enableRemoteStreaming=true"
+  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.enableRemoteStreaming=true"
 )
 IF "%SOLR_ENABLE_STREAM_BODY%"=="true" (
-  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.enableStreamBody=true"
+  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.enableStreamBody=true"
 )
 
 IF "%SOLR_SERVER_DIR%"=="" set "SOLR_SERVER_DIR=%DEFAULT_SERVER_DIR%"
@@ -1104,7 +1106,7 @@ IF "%SCRIPT_CMD%"=="stop" (
           set found_it=1
           @echo Stopping Solr process %%N running on port %SOLR_PORT%
           IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
-          "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
+          "%JAVA%" %SOLR_SSL_OPTS% %SOLR_TOOL_OPTS% -Djetty.home="%SOLR_SERVER_DIR%" -jar "%SOLR_SERVER_DIR%\start.jar" %SOLR_JETTY_CONFIG% STOP.PORT=!STOP_PORT! STOP.KEY=%STOP_KEY% --stop
           del "%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
           REM wait for the process to terminate
           CALL :wait_for_process_exit %%N !SOLR_STOP_WAIT!
@@ -1129,15 +1131,15 @@ IF "%SOLR_PORT%"=="" set SOLR_PORT=8983
 IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
 
 IF DEFINED SOLR_PORT_ADVERTISE (
-  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.port.advertise=%SOLR_PORT_ADVERTISE%"
+  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.port.advertise=%SOLR_PORT_ADVERTISE%"
 )
 
 IF DEFINED SOLR_JETTY_HOST (
-  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
+  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
 )
 
 IF DEFINED SOLR_ZK_EMBEDDED_HOST (
-  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.zk.embedded.host=%SOLR_ZK_EMBEDDED_HOST%"
+  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.zk.embedded.host=%SOLR_ZK_EMBEDDED_HOST%"
 )
 
 IF "%SCRIPT_CMD%"=="start" (
@@ -1278,7 +1280,7 @@ IF "%SOLR_ADMIN_UI_DISABLED%"=="true" (
 IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
 IF "%SOLR_JAVA_MEM%"=="" set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 IF "%SOLR_JAVA_STACK_SIZE%"=="" set SOLR_JAVA_STACK_SIZE=-Xss256k
-set SOLR_OPTS=%SOLR_JAVA_STACK_SIZE% %SOLR_OPTS%
+set SCRIPT_SOLR_OPTS=%SOLR_JAVA_STACK_SIZE% %SCRIPT_SOLR_OPTS%
 IF "%SOLR_TIMEZONE%"=="" set SOLR_TIMEZONE=UTC
 
 IF "%GC_TUNE%"=="" (
@@ -1293,14 +1295,14 @@ IF "%GC_TUNE%"=="" (
 
 REM Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
 if !JAVA_MAJOR_VERSION! GEQ 17  (
-  set SOLR_OPTS=%SOLR_OPTS% -XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put
+  set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put
   echo Java %JAVA_MAJOR_VERSION% detected. Enabled workaround for SOLR-16463
 )
 
 REM Vector optimizations are only supported for Java 20 and 21 for now.
 REM This will need to change as Lucene is upgraded and newer Java versions are released
 if !JAVA_MAJOR_VERSION! GEQ 20 if !JAVA_MAJOR_VERSION! LEQ 21 (
-  set SOLR_OPTS=%SOLR_OPTS% --add-modules jdk.incubator.vector
+  set SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% --add-modules jdk.incubator.vector
   echo Java %JAVA_MAJOR_VERSION% detected. Incubating Panama Vector APIs have been enabled
 )
 
@@ -1330,44 +1332,48 @@ if !JAVA_MAJOR_VERSION! GEQ 9 if NOT "%JAVA_VENDOR%" == "OpenJ9" (
 
 IF "%verbose%"=="1" (
   @echo Starting Solr using the following settings:
-  CALL :safe_echo "    JAVA            = %JAVA%"
-  CALL :safe_echo "    SOLR_SERVER_DIR = %SOLR_SERVER_DIR%"
-  CALL :safe_echo "    SOLR_HOME       = %SOLR_HOME%"
-  @echo     SOLR_HOST       = %SOLR_HOST%
-  @echo     SOLR_PORT       = %SOLR_PORT%
-  @echo     STOP_PORT       = %STOP_PORT%
-  @echo     SOLR_JAVA_MEM   = %SOLR_JAVA_MEM%
-  @echo     GC_TUNE         = !GC_TUNE!
-  @echo     GC_LOG_OPTS     = %GC_LOG_OPTS%
-  @echo     SOLR_TIMEZONE   = %SOLR_TIMEZONE%
+  CALL :safe_echo "    JAVA              = %JAVA%"
+  CALL :safe_echo "    SOLR_SERVER_DIR   = %SOLR_SERVER_DIR%"
+  CALL :safe_echo "    SOLR_HOME         = %SOLR_HOME%"
+  @echo     SOLR_HOST         = %SOLR_HOST%
+  @echo     SOLR_PORT         = %SOLR_PORT%
+  @echo     STOP_PORT         = %STOP_PORT%
+  @echo     SOLR_JAVA_MEM     = %SOLR_JAVA_MEM%
+  @echo     GC_TUNE           = !GC_TUNE!
+  @echo     GC_LOG_OPTS       = %GC_LOG_OPTS%
+  @echo     SOLR_TIMEZONE     = %SOLR_TIMEZONE%
 
   IF "%SOLR_MODE%"=="solrcloud" (
-    @echo     CLOUD_MODE_OPTS = %CLOUD_MODE_OPTS%
+    @echo     CLOUD_MODE_OPTS   = %CLOUD_MODE_OPTS%
   )
 
   IF NOT "%SOLR_OPTS%"=="" (
-    @echo     SOLR_OPTS       = %SOLR_OPTS%
+    @echo     SOLR_OPTS (USER)   = %SOLR_OPTS%
+  )
+
+  IF NOT "%SCRIPT_SOLR_OPTS%"=="" (
+    @echo     SOLR_OPTS (SCRIPT) = %SCRIPT_SOLR_OPTS%
   )
 
   IF NOT "%SOLR_ADDL_ARGS%"=="" (
-    CALL :safe_echo "     SOLR_ADDL_ARGS  = %SOLR_ADDL_ARGS%"
+    CALL :safe_echo "     SOLR_ADDL_ARGS    = %SOLR_ADDL_ARGS%"
   )
 
   IF NOT "%SOLR_JETTY_ADDL_CONFIG%"=="" (
-    CALL :safe_echo "     SOLR_JETTY_ADDL_CONFIG  = %SOLR_JETTY_ADDL_CONFIG%"
+    CALL :safe_echo "     SOLR_JETTY_ADDL_CONFIG    = %SOLR_JETTY_ADDL_CONFIG%"
   )
 
   IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
-    @echo     RMI_PORT        = !RMI_PORT!
-    @echo     REMOTE_JMX_OPTS = %REMOTE_JMX_OPTS%
+    @echo     RMI_PORT          = !RMI_PORT!
+    @echo     REMOTE_JMX_OPTS   = %REMOTE_JMX_OPTS%
   )
 
   IF NOT "%SOLR_LOG_LEVEL%"=="" (
-    @echo     SOLR_LOG_LEVEL  = !SOLR_LOG_LEVEL!
+    @echo     SOLR_LOG_LEVEL    = !SOLR_LOG_LEVEL!
   )
 
   IF NOT "%SOLR_DATA_HOME%"=="" (
-    @echo     SOLR_DATA_HOME  = !SOLR_DATA_HOME!
+    @echo     SOLR_DATA_HOME    = !SOLR_DATA_HOME!
   )
 
   @echo.
@@ -1388,7 +1394,7 @@ IF NOT "!IP_ACL_OPTS!"=="" set "START_OPTS=%START_OPTS% !IP_ACL_OPTS!"
 IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"
 IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
-IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
+IF NOT "%SCRIPT_SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SCRIPT_SOLR_OPTS%"
 IF NOT "%SOLR_OPTS_INTERNAL%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS_INTERNAL%"
 IF NOT "!SECURITY_MANAGER_OPTS!"=="" set "START_OPTS=%START_OPTS% !SECURITY_MANAGER_OPTS!"
 IF "%SOLR_SSL_ENABLED%"=="true" (
@@ -1403,6 +1409,9 @@ set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED% -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
 IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
 IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
+
+REM This should be the last thing added to START_OPTS, so that users can override as much as possible
+IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
 
 cd /d "%SOLR_SERVER_DIR%"
 
@@ -1453,7 +1462,7 @@ IF "%FG%"=="1" (
     set SOLR_START_WAIT=30
   )
   REM now wait to see Solr come online ...
-  "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%"^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI status -maxWaitSecs !SOLR_START_WAIT! -solr !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:%SOLR_PORT%/solr
@@ -1468,7 +1477,7 @@ goto done
 :run_example
 REM Run the requested example
 
-"%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -Dsolr.install.symDir="%SOLR_TIP%" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
@@ -1491,7 +1500,7 @@ for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port
           @echo.
           set has_info=1
           echo Found Solr process %%k running on port !SOME_SOLR_PORT!
-          "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+          "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
             -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
             -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
             org.apache.solr.cli.SolrCLI status -solr !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!SOME_SOLR_PORT!/solr
@@ -1547,7 +1556,7 @@ echo ZK_HOST: !ZK_HOST!
 goto done
 
 :run_solrcli
-"%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI %*
@@ -1913,7 +1922,7 @@ IF "!ZK_OP!"=="upconfig" (
     set ERROR_MSG="The -d option must be set for upconfig."
     goto zk_short_usage
   )
-  "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !ZK_HOST! %ZK_VERBOSE%^
@@ -1927,7 +1936,7 @@ IF "!ZK_OP!"=="upconfig" (
     set ERROR_MSG="The -d option must be set for downconfig."
     goto zk_short_usage
   )
-  "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !ZK_HOST! %ZK_VERBOSE%
@@ -1946,7 +1955,7 @@ IF "!ZK_OP!"=="upconfig" (
       goto zk_short_usage
   )
   )
-  "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -src !ZK_SRC! -dst !ZK_DST! -recurse !ZK_RECURSE! %ZK_VERBOSE%
@@ -1959,7 +1968,7 @@ IF "!ZK_OP!"=="upconfig" (
     set ERROR_MSG="<dest> must be specified for 'mv' command"
     goto zk_short_usage
   )
-  "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -src !ZK_SRC! -dst !ZK_DST! %ZK_VERBOSE%
@@ -1968,7 +1977,7 @@ IF "!ZK_OP!"=="upconfig" (
     set ERROR_MSG="Zookeeper path to remove must be specified when using the 'rm' command"
     goto zk_short_usage
   )
-  "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC! -recurse !ZK_RECURSE! %ZK_VERBOSE%
@@ -1977,7 +1986,7 @@ IF "!ZK_OP!"=="upconfig" (
     set ERROR_MSG="Zookeeper path to remove must be specified when using the 'ls' command"
     goto zk_short_usage
   )
-  "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC! -recurse !ZK_RECURSE! %ZK_VERBOSE%
@@ -1986,7 +1995,7 @@ IF "!ZK_OP!"=="upconfig" (
     set ERROR_MSG="Zookeeper path to create must be specified when using the 'mkroot' command"
     goto zk_short_usage
   )
-  "%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%SOLR_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI !ZK_OP! -zkHost !ZK_HOST! -path !ZK_SRC! %ZK_VERBOSE%
@@ -2047,7 +2056,7 @@ if "!AUTH_PORT!"=="" (
     )
   )
 )
-"%JAVA%" %SOLR_TOOL_OPTS% %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% -solrIncludeFile "%SOLR_INCLUDE%" -authConfDir "%SOLR_HOME%" ^
