@@ -34,6 +34,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.TestThinCache;
 import org.apache.solr.search.ThinCache;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.hamcrest.MatcherAssert;
@@ -155,11 +156,9 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertFalse("schema cache", cfg.hasSchemaCache());
   }
 
-  public void testNodeLevelCache() throws IOException {
-    Path testSrcRoot = TEST_PATH();
-    Files.copy(testSrcRoot.resolve("solr-nodelevelcaches.xml"), solrHome.resolve("solr.xml"));
-
-    NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
+  public void testNodeLevelCache() {
+    NodeConfig cfg =
+        SolrXmlConfig.fromString(createTempDir(), TestThinCache.SOLR_NODE_LEVEL_CACHE_XML);
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     SolrCache<?, ?> nodeLevelCache = cachesConfig.get("myNodeLevelCache").newInstance();
     assertTrue(nodeLevelCache instanceof CaffeineCache);
