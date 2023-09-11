@@ -530,9 +530,9 @@ public class TestFieldValueFeature extends TestRerankBase {
 
       loadFeatureAndModel(getObservingFieldValueFeatureClassName(), field, fstore, modelName);
 
-      addAndQueryId21(field, modelName, fieldValue);
+      final String usedScorerClass = addAndQueryId21(field, modelName, fieldValue);
 
-      assertEquals(fieldAndScorerClass[2], ObservingFieldValueFeature.usedScorerClass);
+      assertEquals(fieldAndScorerClass[2], usedScorerClass);
     }
   }
 
@@ -548,8 +548,10 @@ public class TestFieldValueFeature extends TestRerankBase {
         "{\"weights\":{\"" + field + "\":1.0}}");
   }
 
-  protected void addAndQueryId21(
-      String field, String modelName, String fieldValue)
+  /**
+   * @return used scorer class
+   */
+  protected String addAndQueryId21(String field, String modelName, String fieldValue)
       throws Exception {
 
     assertU(adoc("id", "21", field, fieldValue));
@@ -566,6 +568,7 @@ public class TestFieldValueFeature extends TestRerankBase {
         "/response/docs/[0]/=={'[fv]':'"
             + FeatureLoggerTestUtils.toFeatureVector(field, "1.0")
             + "'}");
+    return ObservingFieldValueFeature.usedScorerClass;
   }
 
   @Test

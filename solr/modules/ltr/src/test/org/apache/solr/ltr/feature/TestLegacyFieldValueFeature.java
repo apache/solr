@@ -56,26 +56,20 @@ public class TestLegacyFieldValueFeature extends TestFieldValueFeature {
     // demonstrate that & how the FieldValueFeature & LegacyFieldValueFeature implementations differ
 
     // the LegacyFieldValueFeature does not use docValues
-    loadAndQuery(
-        getObservingFieldValueFeatureClassName(),
-        field);
-
+    String usedScorerClass = loadAndQuery(getObservingFieldValueFeatureClassName(), field);
     assertEquals(
         FieldValueFeature.FieldValueFeatureWeight.FieldValueFeatureScorer.class.getName(),
-        ObservingFieldValueFeature.usedScorerClass);
+        usedScorerClass);
 
     // the FieldValueFeature does use docValues
-    loadAndQuery(
-        super.getObservingFieldValueFeatureClassName(),
-        field);
-
+    usedScorerClass = loadAndQuery(super.getObservingFieldValueFeatureClassName(), field);
     assertEquals(
-        FieldValueFeature.FieldValueFeatureWeight.SortedDocValuesFieldValueFeatureScorer.class.getName(),
-        ObservingFieldValueFeature.usedScorerClass);
+        FieldValueFeature.FieldValueFeatureWeight.SortedDocValuesFieldValueFeatureScorer.class
+            .getName(),
+        usedScorerClass);
   }
 
-  private void loadAndQuery(String featureClassName, String field)
-      throws Exception {
+  private String loadAndQuery(String featureClassName, String field) throws Exception {
     final String modelName = field + "-model-" + featureClassName;
     final String featureStoreName =
         "test_LegacyFieldValueFeature_behavesDifferentlyThan_FieldValueFeature_"
@@ -85,6 +79,6 @@ public class TestLegacyFieldValueFeature extends TestFieldValueFeature {
 
     loadFeatureAndModel(featureClassName, field, featureStoreName, modelName);
 
-    addAndQueryId21(field, modelName, "1");
+    return addAndQueryId21(field, modelName, "1");
   }
 }
