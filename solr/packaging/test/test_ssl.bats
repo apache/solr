@@ -49,6 +49,9 @@ teardown() {
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=false
   export SOLR_SSL_CHECK_PEER_NAME=false
+  export SOLR_SSL_CHECK_PEER_NAME=false
+  # Remove later when SOLR-16963 is resolved
+  export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
   export SOLR_HOST=localhost
 
   solr start -c
