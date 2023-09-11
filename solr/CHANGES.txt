@@ -166,6 +166,9 @@ Bug Fixes
 
 * SOLR-16044: SlowRequest logging is no longer disabled if SolrCore logger set to ERROR (janhoy, hossman)
 
+* SOLR-16963: The "solr.jetty.ssl.verifyClientHostName" sysProp and "SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" envVar have been fixed,
+  and the setting once again tells the server to check the originating client hostname against the client certificate when doing mTLS. (Houston Putman, Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 
