@@ -21,11 +21,16 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import javax.inject.Inject;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
 import org.apache.solr.jersey.InjectionFactories;
@@ -52,7 +57,7 @@ public class SnapshotBackupAPITest extends JerseyTest {
   protected Application configure() {
     resetMocks();
     final ResourceConfig config = new ResourceConfig();
-    config.register(SnapshotBackupAPI.class);
+    config.register(TestSnapshotBackupAPI.class);
     config.register(SolrJacksonMapper.class);
     config.register(SolrExceptionTestMapper.class);
     config.register(
@@ -77,18 +82,28 @@ public class SnapshotBackupAPITest extends JerseyTest {
   }
 
   @Test
+  public void testMissingBody() throws Exception {
+    final Response response = target("/cores/demo/replication/backups").request().post(null);
+    var status = response.getStatusInfo();
+    assertEquals(400, status.getStatusCode());
+    assertEquals("Required request-body is missing", status.getReasonPhrase());
+  }
+
+  @Test
   public void testSuccessfulBackupCommand() throws Exception {
-    // triggering validation failure on purpose to show that request made it to the correct method
+    int numberToKeep = 7;
+    int numberBackupsToKeep = 11;
+
+    when(replicationHandlerConfig.getNumberBackupsToKeep()).thenReturn(numberBackupsToKeep);
     final Response response =
         target("/cores/demo/replication/backups")
             .request()
-            .post(Entity.json("{\"name\": \"test\", \"numberToKeep\": 9}"));
-    var status = response.getStatusInfo();
-    assertEquals(400, status.getStatusCode());
-    // see ReplicationHandler#doSnapShoot
-    String expectedErr =
-        "Cannot use numberToKeep if maxNumberOfBackups was specified in the configuration.";
-    assertEquals(expectedErr, status.getReasonPhrase());
+            .post(Entity.json("{\"name\": \"test\", \"numberToKeep\": " + numberToKeep + "}"));
+    System.err.println("RESP " + response);
+
+    assertEquals(numberToKeep, TestSnapshotBackupAPI.numberToKeep.get());
+    assertEquals(numberBackupsToKeep, TestSnapshotBackupAPI.numberBackupsToKeep.get());
+    assertEquals(200, response.getStatus());
   }
 
   private void resetMocks() {
@@ -101,6 +116,33 @@ public class SnapshotBackupAPITest extends JerseyTest {
     @Override
     public Response toResponse(SolrException e) {
       return Response.status(e.code(), e.getMessage()).build();
+    }
+  }
+
+  private static class TestSnapshotBackupAPI extends SnapshotBackupAPI {
+
+    private static final AtomicInteger numberToKeep = new AtomicInteger();
+    private static final AtomicInteger numberBackupsToKeep = new AtomicInteger();
+
+    @Inject
+    public TestSnapshotBackupAPI(
+        SolrCore solrCore, ReplicationHandlerConfig replicationHandlerConfig) {
+      super(solrCore, replicationHandlerConfig);
+    }
+
+    @Override
+    protected void doSnapShoot(
+        int numberToKeep,
+        int numberBackupsToKeep,
+        String location,
+        String repoName,
+        String commitName,
+        String name,
+        SolrCore solrCore,
+        Consumer<NamedList<?>> resultConsumer)
+        throws IOException {
+      TestSnapshotBackupAPI.numberToKeep.set(numberToKeep);
+      TestSnapshotBackupAPI.numberBackupsToKeep.set(numberBackupsToKeep);
     }
   }
 }

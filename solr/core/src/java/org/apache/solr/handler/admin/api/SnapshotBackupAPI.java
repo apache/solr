@@ -23,6 +23,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PER
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.function.Consumer;
 import javax.inject.Inject;
@@ -67,10 +68,7 @@ public class SnapshotBackupAPI extends JerseyResource {
   @PermissionName(CORE_EDIT_PERM)
   public BackupReplicationResponse createBackup(
       @RequestBody BackupReplicationRequestBody backupReplicationPayload) throws Exception {
-    if (backupReplicationPayload == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Required request-body is missing");
-    }
+    ensureRequiredRequestBodyProvided(backupReplicationPayload);
     ReplicationHandler replicationHandler =
         (ReplicationHandler) solrCore.getRequestHandler(ReplicationHandler.PATH);
     return doBackup(replicationHandler, backupReplicationPayload);
@@ -88,7 +86,7 @@ public class SnapshotBackupAPI extends JerseyResource {
     String name = backupReplicationPayload.name;
     Consumer<NamedList<?>> resultConsumer = result -> response.result = result;
     try {
-      ReplicationHandler.doSnapShoot(
+      doSnapShoot(
           numberToKeep,
           numberBackupsToKeep,
           location,
@@ -106,6 +104,28 @@ public class SnapshotBackupAPI extends JerseyResource {
           response, "Error encountered while creating a snapshot: " + e.getMessage(), e);
     }
     return response;
+  }
+
+  /** Separate method helps with testing */
+  protected void doSnapShoot(
+      int numberToKeep,
+      int numberBackupsToKeep,
+      String location,
+      String repoName,
+      String commitName,
+      String name,
+      SolrCore solrCore,
+      Consumer<NamedList<?>> resultConsumer)
+      throws IOException {
+    ReplicationHandler.doSnapShoot(
+        numberToKeep,
+        numberBackupsToKeep,
+        location,
+        repoName,
+        commitName,
+        name,
+        solrCore,
+        resultConsumer);
   }
 
   /* POJO for v2 endpoints request body. */
