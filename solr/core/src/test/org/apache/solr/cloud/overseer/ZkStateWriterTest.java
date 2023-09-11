@@ -34,8 +34,8 @@ import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
-import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -594,15 +594,14 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         check.set(false);
         DocCollection prsCollection1 =
-            new DocCollection(
+            DocCollection.create(
                 "c1",
                 Collections.emptyMap(),
                 Collections.singletonMap(
                     DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
                 DocRouter.DEFAULT,
                 -1,
-                new DocCollection.PrsSupplier(
-                    new PerReplicaStates(null, 0, Collections.emptyList())));
+                () -> new PerReplicaStates(null, 0, Collections.emptyList()));
         // 1 PRS command
         clusterState =
             writer.enqueueUpdate(
@@ -613,15 +612,14 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         check.set(false);
         DocCollection prsCollection2 =
-            new DocCollection(
+            DocCollection.create(
                 "c2",
                 Collections.emptyMap(),
                 Collections.singletonMap(
                     DocCollection.CollectionStateProps.PER_REPLICA_STATE, true),
                 DocRouter.DEFAULT,
                 -1,
-                new DocCollection.PrsSupplier(
-                    new PerReplicaStates(null, 0, Collections.emptyList())));
+                () -> new PerReplicaStates(null, 0, Collections.emptyList()));
         // 2 commands one is PRS
         clusterState =
             writer.enqueueUpdate(
