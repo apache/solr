@@ -48,10 +48,7 @@ teardown() {
   export SOLR_SSL_TRUST_STORE_PASSWORD=secret
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=false
-  export SOLR_SSL_CHECK_PEER_NAME=false
-  export SOLR_SSL_CHECK_PEER_NAME=false
-  # Remove later when SOLR-16963 is resolved
-  export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
+  export SOLR_SSL_CHECK_PEER_NAME=true
   export SOLR_HOST=localhost
 
   solr start -c
@@ -60,14 +57,8 @@ teardown() {
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
 
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -H "Host: test.solr.apache.org" 'https://127.0.0.1:8983/solr/test/select?q=*:*'
+  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" 'https://127.0.0.1:8983/solr/test/select?q=*:*'
   assert_output --partial '"numFound":0'
-
-  export SOLR_SSL_CHECK_PEER_NAME=true
-
-  # This should fail the peername check
-  run ! solr api -get 'https://localhost:8983/solr/test/select?q=*:*'
-  assert_output --partial 'Server refused connection'
 }
 
 @test "use different hostname when not checking peer-name" {
@@ -78,7 +69,7 @@ teardown() {
     cd "$ssl_dir"
     rm -f solr-ssl.keystore.p12 solr-ssl.pem
     # Using a CN that is not localhost, as we will not be checking peer-name
-    keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext "SAN=DNS:${HOSTNAME},IP:127.0.0.1" -dname "CN=solr.apache.org, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
+    keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext "SAN=DNS:test.solr.apache.org,IP:127.0.0.1" -dname "CN=test.solr.apache.org, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
     openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem -passin pass:secret -passout pass:secret
   )
 
@@ -91,6 +82,8 @@ teardown() {
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=false
   export SOLR_SSL_CHECK_PEER_NAME=false
+  # Remove later when SOLR-16963 is resolved
+  export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
   export SOLR_HOST=localhost
 
   solr start -c
@@ -101,6 +94,14 @@ teardown() {
 
   run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -k 'https://localhost:8983/solr/test/select?q=*:*'
   assert_output --partial '"numFound":0'
+
+  export SOLR_SSL_CHECK_PEER_NAME=true
+  # Remove later when SOLR-16963 is resolved
+  export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
+
+  # This should fail the peername check
+  run ! solr api -get 'https://localhost:8983/solr/test/select?q=*:*'
+  assert_output --partial 'Server refused connection'
 }
 
 @test "start solr with ssl and auth" {
