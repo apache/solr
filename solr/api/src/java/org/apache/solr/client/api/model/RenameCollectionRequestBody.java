@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,21 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.security;
+import static org.apache.solr.client.api.model.Constants.ASYNC;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Test;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-/** Unit test for {@link PublicKeyAPI} */
-public class PublicKeyAPITest extends SolrTestCaseJ4 {
+public class RenameCollectionRequestBody {
+  @JsonProperty(required = true)
+  public String to;
 
-  @Test
-  public void testRetrievesPublicKey() {
-    final SolrNodeKeyPair nodeKeyPair = new SolrNodeKeyPair(null);
+  @JsonProperty(ASYNC)
+  public String async;
 
-    final PublicKeyAPI.PublicKeyResponse response = new PublicKeyAPI(nodeKeyPair).getPublicKey();
-
-    assertEquals(nodeKeyPair.getKeyPair().getPublicKeyStr(), response.key);
-  }
+  @JsonProperty public Boolean followAliases;
 }
