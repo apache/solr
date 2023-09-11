@@ -290,7 +290,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             TimeUnit.SECONDS,
             (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
 
-    // Add six documents w/diff routes (all sent to shard1 leader's core)
+    // Add a few documents with diff routes
     cloudClient.add(testCollectionName, sdoc("id", "1", "routefield_s", "europe"));
     cloudClient.add(testCollectionName, sdoc("id", "3", "routefield_s", "europe"));
     cloudClient.add(testCollectionName, sdoc("id", "5", "routefield_s", "africa"));
