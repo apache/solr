@@ -240,7 +240,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
   private PollListener pollListener;
 
-  private ReplicationHandlerConfig replicationHandlerConfig = new ReplicationHandlerConfig();
+  private final ReplicationHandlerConfig replicationHandlerConfig = new ReplicationHandlerConfig();
 
   public interface PollListener {
     void onComplete(SolrCore solrCore, IndexFetchResult fetchResult) throws IOException;
