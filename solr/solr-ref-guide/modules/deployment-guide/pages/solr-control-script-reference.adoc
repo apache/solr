@@ -142,7 +142,7 @@ You cannot use this option when running examples with the `-e` option.
 +
 *Example*: `bin/solr start -f`
 
-`-host <hostname>` or `-h <hostname>`::
+`-host <hostname>`::
 +
 [%autowidth,frame=none]
 |===
@@ -152,7 +152,7 @@ You cannot use this option when running examples with the `-e` option.
 Specify the hostname for this Solr instance.
 If this is not specified, `localhost` is assumed.
 +
-*Example*: `bin/solr start -h search.mysolr.com`
+*Example*: `bin/solr start -host search.mysolr.com`
 
 `-m <memory>`::
 +
@@ -300,6 +300,11 @@ The `bin/solr` script will pass any additional parameters that begin with `-D` t
 For example, to set the auto soft-commit frequency to 3 seconds, you can do:
 
 `bin/solr start -Dsolr.autoSoftCommit.maxTime=3000`
+
+The `SOLR_OPTS` environment variable is also available to set additional System Properties for Solr.
+
+In order to set custom System Properties when running any Solr utility other than `start` (e.g. `stop`, `create`, `auth`, `status`, `api`),
+the `SOLR_TOOL_OPTS` environment variable should be used.
 
 ==== SolrCloud Mode
 
@@ -553,7 +558,7 @@ Name of the collection to run a healthcheck against.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: `http://localhost:8983`
 |===
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
@@ -631,7 +636,6 @@ The `bin/solr` script can also help you create new collections or cores, or dele
 === Create a Core or Collection
 
 The `create` command creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).
-In other words, this action detects which mode Solr is running in, and then takes the appropriate action (either `create_core` or `create_collection`).
 
 `bin/solr create [options]`
 
@@ -711,178 +715,29 @@ It is possible to override this warning with the -force parameter.
 +
 *Example*: `bin/solr create -c foo -force`
 
-=== Create a Collection
-
-The `create_collection` command creates a collection, and is only available when running in SolrCloud mode.
-
-`bin/solr create_collection [options]`
-
-`bin/solr create_collection -help`
-
-==== Create Collection Parameters
-
-`-c <name>`::
+`-z <zkHost>` or `-zkHost <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:9983`
 |===
 +
-Name of the collection to create.
-+
-*Example*: `bin/solr create_collection -c mycollection`
+The ZooKeeper connection string, usable in SolrCloud mode.
+Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-`-d <confdir>`::
+`-solrUrl <url>`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `_default`
+|Optional |Default: `http://localhost:8983`
 |===
 +
-Configuration directory to copy when creating the new collection.
-+
-See the section <<Configuration Directories and SolrCloud>> below for more details about this option when running in SolrCloud mode. including some built in example configurations.
-+
-`_default` is also known as xref:indexing-guide:schemaless-mode.adoc[].
-+
-*Example*: `bin/solr create_collection -d _default`
-+
-Alternatively, you can pass the path to your own configuration directory instead of using one of the built-in configurations.
-+
-*Example*: `bin/solr create_collection -c mycoll -d /tmp/myconfig`
-+
-By default the script will upload the specified confdir directory into Zookeeper using the same name as the collection (-c) option.
-Alternatively, if you want to reuse an existing directory or create a confdir in Zookeeper that can be shared by multiple collections, use the -n option
-+
-
-`-n <configName>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: _see description_
-|===
-+
-Name the configuration directory in Zookeeper.
-By default, the configuration will be uploaded to Zookeeper using the collection name (-c), but if you want to use an existing directory or override the name of the configuration in Zookeeper, then use the -c option.
-UMMMM...   I COPIED THE ABOVE LINE FROM bin/solr create_collection -h output, but I don't get it.  And bin/solr create_collection -n basic -c mycoll works, it create a copy of _default as "basic" configset... UMMM?
-+
-*Example*: `bin/solr create_collection -n basic -c mycoll`
-
-`-p <port>` or `-port <port>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: _see description_
-|===
-+
-Port of a local Solr instance where you want to create the new collection.
-If not specified, the script will search the local system for a running Solr instance and will use the port of the first server it finds.
-+
-This option is useful if you are running multiple Solr instances on the same host, thus requiring you to be specific about which instance to create the core in.
-+
-*Example*: `bin/solr create -p 8983`
-
-`-s <shards>` or `-shards <shards>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `1`
-|===
-+
-Number of shards to split a collection into.
-+
-*Example*: `bin/solr create_collection -s 2`
-
-`-rf <replicas>` or `-replicationFactor <replicas>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `1`
-|===
-+
-Number of copies of each document in the collection.
-The default is `1` (no replication).
-+
-*Example*: `bin/solr create_collection -rf 2`
-
-`-force`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-If attempting to run create as "root" user, the script will exit with a warning that running Solr or actions against Solr as "root" can cause problems.
-It is possible to override this warning with the -force parameter.
-+
-*Example*: `bin/solr create_collection -c foo -force`
-
-=== Create a Core
-
-The `create_core` command creates a core and is only available when running in user-managed (single-node) mode.
-
-`bin/solr create_core [options]`
-
-`bin/solr create_core -help`
-
-==== Create Core Parameters
-
-`-c <name>`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-Name of the core to create.
-+
-*Example*: `bin/solr create -c mycore`
-
-`-d <confdir>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `_default`
-|===
-+
-The configuration directory to use when creating a new core.
-+
-*Example*: `bin/solr create -d _default`
-+
-Alternatively, you can pass the path to your own configuration directory instead of using one of the built-in configurations.
-+
-*Example*: `bin/solr create_collection -c mycore -d /tmp/myconfig`
-
-`-p <port>` or `-port <port>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: _see description_
-|===
-+
-The port of a local Solr instance to create the new core.
-By default the script tries to detect the port by looking for running Solr instances.
-+
-This option is useful if you are running multiple Solr instances on the same host, thus requiring you to be specific about which instance to create the core in.
-+
-*Example*: `bin/solr create -p 8983`
-
-`-force`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-If attempting to run create as "root" user, the script will exit with a warning that running Solr or actions against Solr as "root" can cause problems.
-It is possible to override this warning with the -force parameter.
-+
-*Example*: `bin/solr create -c foo -force`
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 ==== Configuration Directories and SolrCloud
 
 Before creating a collection in SolrCloud, the configuration directory used by the collection must be uploaded to ZooKeeper.
-The `create` and `create_collection` commands supports several use cases for how collections and configuration directories work.
+The `create` command supports several use cases for how collections and configuration directories work.
 The main decision you need to make is whether a configuration directory in ZooKeeper should be shared across multiple collections.
 
 Let's work through a few examples to illustrate how configuration directories work in SolrCloud.
@@ -968,6 +823,25 @@ If the configuration directory is being used by another collection, then it will
 |===
 +
 Skip safety checks when deleting the configuration directory used by a collection.
+
+`-z <zkHost>` or `-zkHost <zkHost>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `localhost:9983`
+|===
++
+The ZooKeeper connection string, usable in SolrCloud mode.
+Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
+
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 == Authentication
 
@@ -1217,7 +1091,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `http://localhost:8983/solr`
+|Optional |Default: `http://localhost:8983`
 |===
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
@@ -1788,7 +1662,7 @@ Create a new collection to import the exported documents into:
 
 [,console]
 ----
-$ bin/solr create_collection -c test_collection -n techproducts
+$ bin/solr create -c test_collection -n techproducts
 ----
 
 Now import the data with either of these methods:

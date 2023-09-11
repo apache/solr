@@ -19,24 +19,24 @@ package org.apache.solr.handler.admin.api;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.opentracing.noop.NoopSpan;
+import io.opentelemetry.api.trace.Span;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.GetAliasByNameResponse;
+import org.apache.solr.client.api.model.ListAliasesResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReader.AliasesManager;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.api.ListAliasesAPI.GetAliasByNameResponse;
-import org.apache.solr.handler.admin.api.ListAliasesAPI.ListAliasesResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Unit tests for {@link ListAliasesAPI} */
+/** Unit tests for {@link ListAliases} */
 public class ListAliasesAPITest extends SolrTestCaseJ4 {
 
   private CoreContainer mockCoreContainer;
@@ -44,7 +44,7 @@ public class ListAliasesAPITest extends SolrTestCaseJ4 {
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
 
-  private ListAliasesAPI getAliasesAPI;
+  private ListAliases getAliasesAPI;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -67,10 +67,10 @@ public class ListAliasesAPITest extends SolrTestCaseJ4 {
     when(mockCoreContainer.getZkController()).thenReturn(zkController);
 
     mockQueryRequest = mock(SolrQueryRequest.class);
-    when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
+    when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
     queryResponse = new SolrQueryResponse();
 
-    getAliasesAPI = new ListAliasesAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+    getAliasesAPI = new ListAliases(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test

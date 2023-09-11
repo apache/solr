@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -48,9 +48,8 @@ public class DistributedMap {
   public DistributedMap(SolrZkClient zookeeper, String dir) {
     this.dir = dir;
 
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout());
     try {
-      cmdExecutor.ensureExists(dir, zookeeper);
+      ZkMaintenanceUtils.ensureExists(dir, zookeeper);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {

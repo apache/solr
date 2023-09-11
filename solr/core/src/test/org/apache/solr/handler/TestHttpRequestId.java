@@ -105,7 +105,7 @@ public class TestHttpRequestId extends SolrJettyTestBase {
               new SolrNamedThreadFactory("httpShardExecutor"),
               false);
       try (Http2SolrClient client =
-          new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + collection)
+          new Http2SolrClient.Builder(getBaseUrl() + collection)
               .withExecutor(commExecutor)
               .build()) {
         MDC.put(key, value);

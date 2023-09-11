@@ -25,18 +25,17 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-/** Unit tests for {@link DeleteAliasAPI}. */
+/** Unit tests for {@link DeleteAlias}. */
 public class DeleteAliasAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testConstructsValidRemoteMessage() {
-    Map<String, Object> props =
-        DeleteAliasAPI.createRemoteMessage("aliasName", null).getProperties();
+    Map<String, Object> props = DeleteAlias.createRemoteMessage("aliasName", null).getProperties();
     assertEquals(2, props.size());
     assertEquals("deletealias", props.get(QUEUE_OPERATION));
     assertEquals("aliasName", props.get(NAME));
 
-    props = DeleteAliasAPI.createRemoteMessage("aliasName", "asyncId").getProperties();
+    props = DeleteAlias.createRemoteMessage("aliasName", "asyncId").getProperties();
     assertEquals(3, props.size());
     assertEquals("deletealias", props.get(QUEUE_OPERATION));
     assertEquals("aliasName", props.get(NAME));

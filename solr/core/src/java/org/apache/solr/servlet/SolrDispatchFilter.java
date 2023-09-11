@@ -16,16 +16,13 @@
  */
 package org.apache.solr.servlet;
 
-import static org.apache.solr.security.AuditEvent.EventType;
 import static org.apache.solr.servlet.ServletUtils.closeShield;
 import static org.apache.solr.servlet.ServletUtils.configExcludes;
 import static org.apache.solr.servlet.ServletUtils.excludedPath;
+import static org.apache.solr.util.tracing.TraceUtils.getSpan;
+import static org.apache.solr.util.tracing.TraceUtils.setTracer;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.tag.Tags;
-import io.opentracing.util.GlobalTracer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -54,10 +51,12 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.logging.MDCSnapshot;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
+import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.CoreContainerProvider.ServiceHolder;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,8 +72,6 @@ import org.slf4j.LoggerFactory;
 // things like CoreContainer can be requested. (or better yet injected)
 public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String ATTR_TRACING_SPAN = Span.class.getName();
-  public static final String ATTR_TRACING_TRACER = Tracer.class.getName();
 
   // TODO: see if we can get rid of the holder here (Servlet spec actually guarantees
   // ContextListeners run before filter init, but JettySolrRunner that we use for tests is
@@ -206,8 +203,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     if (excludedPath(excludePatterns, request, response, chain)) {
       return;
     }
-    Tracer t = getCores() == null ? GlobalTracer.get() : getCores().getTracer();
-    request.setAttribute(ATTR_TRACING_TRACER, t);
+    setTracer(request, getCores().getTracer());
     RateLimitManager rateLimitManager = coreService.getService().getRateLimitManager();
     try {
       ServletUtils.rateLimitRequest(
@@ -228,10 +224,6 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     }
   }
 
-  private static Span getSpan(HttpServletRequest req) {
-    return (Span) req.getAttribute(ATTR_TRACING_SPAN);
-  }
-
   private void dispatch(
       FilterChain chain, HttpServletRequest request, HttpServletResponse response, boolean retry)
       throws IOException, ServletException, SolrAuthenticationException {
@@ -242,11 +234,18 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       request = wrappedRequest.get();
     }
 
+    var span = getSpan(request);
     if (getCores().getAuthenticationPlugin() != null) {
       if (log.isDebugEnabled()) {
         log.debug("User principal: {}", request.getUserPrincipal());
       }
-      getSpan(request).setTag(Tags.DB_USER, String.valueOf(request.getUserPrincipal()));
+      final String principalName;
+      if (request.getUserPrincipal() != null) {
+        principalName = request.getUserPrincipal().getName();
+      } else {
+        principalName = null;
+      }
+      TraceUtils.setUser(span, String.valueOf(principalName));
     }
 
     HttpSolrCall call = getHttpSolrCall(request, response, retry);
@@ -255,15 +254,15 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       Action result = call.call();
       switch (result) {
         case PASSTHROUGH:
-          getSpan(request).log("SolrDispatchFilter PASSTHROUGH");
+          span.addEvent("SolrDispatchFilter PASSTHROUGH");
           chain.doFilter(request, response);
           break;
         case RETRY:
-          getSpan(request).log("SolrDispatchFilter RETRY");
+          span.addEvent("SolrDispatchFilter RETRY");
           doFilter(request, response, chain, true); // RECURSION
           break;
         case FORWARD:
-          getSpan(request).log("SolrDispatchFilter FORWARD");
+          span.addEvent("SolrDispatchFilter FORWARD");
           request.getRequestDispatcher(call.getPath()).forward(request, response);
           break;
         case ADMIN:

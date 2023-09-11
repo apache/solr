@@ -21,9 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.api.V2ApiUtils;
 import org.junit.Test;
 
 /**
@@ -63,28 +62,5 @@ public class JacksonReflectMapWriterTest extends SolrTestCaseJ4 {
 
     assertEquals(123, response.responseHeader.status);
     assertEquals("someVal", response.responseHeader.unknownProperties().get("someUnexpectedField"));
-  }
-
-  @Test
-  public void testMapConversionHandlesUnknownProperties() {
-    final SolrJerseyResponse response = new SolrJerseyResponse();
-    response.responseHeader.status = 123;
-    response.responseHeader.setUnknownProperty("someField", "someVal");
-    response.responseHeader.setUnknownProperty("someNonStringField", 456);
-    final NamedList<Object> destination = new NamedList<>();
-
-    V2ApiUtils.squashIntoNamedList(destination, response);
-    assertEquals(
-        response.responseHeader,
-        destination.get(
-            "responseHeader")); // ResponseHeader copied as-is to NL since its a serializable type
-    final String jsonOutput = Utils.toJSONString(destination);
-
-    assertTrue(
-        "Expected JSON " + jsonOutput + " to contain different value",
-        jsonOutput.contains("\"someField\":\"someVal\""));
-    assertTrue(
-        "Expected JSON " + jsonOutput + " to contain different value",
-        jsonOutput.contains("\"someNonStringField\":456"));
   }
 }

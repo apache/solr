@@ -1,0 +1,157 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package {{package}};
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.client.solrj.JacksonParsingResponse;
+import org.apache.solr.client.solrj.JacksonContentWriter;
+import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.ResponseParser;
+{{#operations}}
+{{#operation}}
+{{#imports}}
+import {{modelPackage}}.{{.}};
+{{/imports}}
+{{/operation}}
+
+// WARNING: This class is generated from a Mustache template; any intended
+// changes should be made to the underlying template and not this file directly.
+
+public class {{classname}} {
+
+    {{#operation}}
+        public static class {{operationIdCamelCase}}Response extends JacksonParsingResponse<{{returnType}}> {
+          public {{operationIdCamelCase}}Response() {
+            super({{returnType}}.class);
+          }
+        }
+
+        public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
+            {{#bodyParam}}
+            private final {{{dataType}}} requestBody;
+            {{/bodyParam}}
+            {{#requiredParams}}
+            {{^isBodyParam}}
+            private final {{{dataType}}} {{paramName}};
+            {{/isBodyParam}}
+            {{/requiredParams}}
+            {{#optionalParams}}
+            {{^isBodyParam}}
+            private {{{dataType}}} {{paramName}};
+            {{/isBodyParam}}
+            {{/optionalParams}}
+
+            /**
+             * Create a {{operationIdCamelCase}} request object.
+             *
+             {{#requiredParams}}{{^isBodyParam}}* @param {{paramName}} Path param - {{description}}{{/isBodyParam}}
+             {{/requiredParams}}
+             */
+            public {{operationIdCamelCase}}({{#requiredParams}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{/requiredParams}}) {
+                super(
+                  SolrRequest.METHOD.valueOf("{{httpMethod}}"),
+                  "{{{path}}}"{{#pathParams}}
+                    .replace("{" + "{{baseName}}" + "}", {{paramName}}){{/pathParams}}
+                );
+
+                {{#requiredParams}}
+                {{^isBodyParam}}
+                    this.{{paramName}} = {{paramName}};
+                {{/isBodyParam}}
+                {{/requiredParams}}
+                {{#bodyParam}}
+                    this.requestBody = new {{baseName}}();
+                    addHeader("Content-type", "application/json");
+                {{/bodyParam}}
+            }
+
+            {{#optionalParams}}
+            {{^isBodyParam}}
+            {{#description}}
+            /**
+             * @param {{paramName}} {{description}}
+             */
+            {{/description}}
+            public void {{schema.setter}}({{{dataType}}} {{paramName}}) {
+                this.{{paramName}} = {{paramName}};
+            }
+
+            {{/isBodyParam}}
+            {{/optionalParams}}
+
+            {{#bodyParam}}
+            {{#vars}}
+            // TODO find a way to add required parameters in the request body to the class constructor
+            {{#description}}
+            /**
+             * @param {{baseName}} {{description}}
+             */
+             {{/description}}
+             public void {{setter}}({{{dataType}}} {{baseName}}) {
+               this.requestBody.{{baseName}} = {{baseName}};
+            }
+            {{/vars}}
+
+            @Override
+            public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+                return new JacksonContentWriter(expectedType, requestBody);
+            }
+            {{/bodyParam}}
+
+            // TODO Hardcode this for now, but in reality we'll want to parse this out of the Operation data somehow
+            @Override
+            public String getRequestType() {
+              return SolrRequestType.ADMIN.toString();
+            }
+
+            @Override
+            public SolrParams getParams() {
+              final ModifiableSolrParams params = new ModifiableSolrParams();
+              {{#queryParams}}
+              if ({{paramName}} != null) {
+                  params.add("{{baseName}}", {{paramName}}{{^isString}}.toString(){{/isString}});
+              }
+              {{/queryParams}}
+              return params;
+            }
+
+            @Override
+            protected {{operationIdCamelCase}}Response createResponse(SolrClient client) {
+              return new {{operationIdCamelCase}}Response();
+            }
+
+            @Override
+            public ResponseParser getResponseParser() {
+              return new InputStreamResponseParser("json");
+            }
+        }
+    {{/operation}}
+}
+{{/operations}}

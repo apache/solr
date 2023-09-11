@@ -25,7 +25,7 @@ docker run --name "$container_name" -d "$tag"
 wait_for_container_and_solr "$container_name"
 
 echo "Creating core"
-docker exec --user=solr "$container_name" bin/solr create_core -c gettingstarted
+docker exec --user=solr "$container_name" bin/solr create -c gettingstarted
 echo "Loading data"
 docker exec --user=solr "$container_name" bin/post -c gettingstarted example/exampledocs/manufacturers.xml
 sleep 1

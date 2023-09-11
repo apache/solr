@@ -31,6 +31,11 @@ import org.apache.commons.exec.OS;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.CaffeineCache;
+import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.TestThinCache;
+import org.apache.solr.search.ThinCache;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
@@ -97,7 +102,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("max update conn", 3, ucfg.getMaxUpdateConnections());
     assertEquals("max update conn/host", 37, ucfg.getMaxUpdateConnectionsPerHost());
     assertEquals("host", "testHost", ccfg.getHost());
-    assertEquals("zk host context", "testHostContext", ccfg.getSolrHostContext());
     assertEquals("solr host port", 44, ccfg.getSolrHostPort());
     assertEquals("leader vote wait", 55, ccfg.getLeaderVoteWait());
     assertEquals("logging class", "testLoggingClass", cfg.getLogWatcherConfig().getLoggingClass());
@@ -152,6 +156,16 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertFalse("schema cache", cfg.hasSchemaCache());
   }
 
+  public void testNodeLevelCache() {
+    NodeConfig cfg =
+        SolrXmlConfig.fromString(createTempDir(), TestThinCache.SOLR_NODE_LEVEL_CACHE_XML);
+    Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
+    SolrCache<?, ?> nodeLevelCache = cachesConfig.get("myNodeLevelCache").newInstance();
+    assertTrue(nodeLevelCache instanceof CaffeineCache);
+    SolrCache<?, ?> nodeLevelCacheThin = cachesConfig.get("myNodeLevelCacheThin").newInstance();
+    assertTrue(nodeLevelCacheThin instanceof ThinCache.NodeLevelCache);
+  }
+
   public void testExplicitNullGivesDefaults() {
     System.setProperty("jetty.port", "8000");
     String solrXml =
@@ -160,7 +174,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
             + "<solrcloud>"
             + "<str name=\"host\">host</str>"
             + "<int name=\"hostPort\">0</int>"
-            + "<str name=\"hostContext\">solr</str>"
             + "<null name=\"leaderVoteWait\"/>"
             + "</solrcloud></solr>";
 
@@ -317,7 +330,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testFailAtConfigParseTimeWhenUnrecognizedSolrCloudOptionWasFound() {
     String solrXml =
-        "<solr><solrcloud><str name=\"host\">host</str><int name=\"hostPort\">8983</int><str name=\"hostContext\"></str><bool name=\"unknown-option\">true</bool></solrcloud></solr>";
+        "<solr><solrcloud><str name=\"host\">host</str><int name=\"hostPort\">8983</int><bool name=\"unknown-option\">true</bool></solrcloud></solr>";
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
@@ -448,12 +461,10 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("solrcloud section missing required entry 'host'", thrown.getMessage());
   }
 
-  public void testCloudConfigRequiresHostContext() {
+  public void testCloudConfigContinuesToWorkIfHostContextDefined() {
     String solrXml =
-        "<solr><solrcloud><str name=\"host\">host</str><int name=\"hostPort\">8983</int></solrcloud></solr>";
-    SolrException thrown =
-        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
-    assertEquals("solrcloud section missing required entry 'hostContext'", thrown.getMessage());
+        "<solr><solrcloud><str name=\"host\">host</str><str name=\"hostContext\">legacyHostContent</str><int name=\"hostPort\">8983</int></solrcloud></solr>";
+    SolrXmlConfig.fromString(solrHome, solrXml);
   }
 
   public void testMultiBackupSectionError() {

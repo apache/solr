@@ -46,6 +46,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
+import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMConfigNode;
@@ -177,6 +178,7 @@ public class SolrXmlConfig {
     // Remove this line in 10.0
     configBuilder.setHiddenSysProps(getHiddenSysProps(root.get("metrics")));
     configBuilder.setMetricsConfig(getMetricsConfig(root.get("metrics")));
+    configBuilder.setCachesConfig(getCachesConfig(loader, root.get("caches")));
     configBuilder.setFromZookeeper(fromZookeeper);
     configBuilder.setDefaultZkHost(defaultZkHost);
     configBuilder.setCoreAdminHandlerActions(coreAdminHandlerActions);
@@ -411,13 +413,6 @@ public class SolrXmlConfig {
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
   }
 
-  private static Set<String> separateStringsToSet(String commaSeparatedString) {
-    if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
-      return Collections.emptySet();
-    }
-    return Set.of(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
-  }
-
   private static Set<Path> separatePaths(String commaSeparatedString) {
     if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
       return Collections.emptySet();
@@ -516,10 +511,15 @@ public class SolrXmlConfig {
       hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
     }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
-    String hostContext = required("solrcloud", "hostContext", removeValue(nl, "hostContext"));
 
-    CloudConfig.CloudConfigBuilder builder =
-        new CloudConfig.CloudConfigBuilder(hostName, hostPort, hostContext);
+    // We no longer require or support the hostContext property, but legacy users may have it, so
+    // remove it from the list.
+    String hostContext = removeValue(nl, "hostContext");
+    if (hostContext != null) {
+      log.warn("solr.xml hostContext -- hostContext is deprecated and ignored.");
+    }
+
+    CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort);
     // set the defaultZkHost until/unless it's overridden in the "cloud section" (below)...
     builder.setZkHost(defaultZkHost);
 
@@ -688,6 +688,20 @@ public class SolrXmlConfig {
 
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
     return builder.setMetricReporterPlugins(reporterPlugins).build();
+  }
+
+  private static Map<String, CacheConfig> getCachesConfig(
+      SolrResourceLoader loader, ConfigNode caches) {
+    Map<String, CacheConfig> ret =
+        CacheConfig.getMultipleConfigs(loader, null, null, caches.getAll("cache"));
+    for (CacheConfig c : ret.values()) {
+      if (c.getRegenerator() != null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "node-level caches should not be configured with a regenerator!");
+      }
+    }
+    return Collections.unmodifiableMap(ret);
   }
 
   private static Object decodeNullValue(Object o) {

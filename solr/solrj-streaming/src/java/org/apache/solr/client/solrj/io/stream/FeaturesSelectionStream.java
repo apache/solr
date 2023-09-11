@@ -37,7 +37,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -76,12 +75,9 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
   protected int positiveLabel;
   protected int numTerms;
 
-  protected transient SolrClientCache cache;
-  protected transient boolean isCloseCache;
-  protected transient CloudSolrClient cloudSolrClient;
-
-  protected transient StreamContext streamContext;
-  protected ExecutorService executorService;
+  protected transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
+  protected transient ExecutorService executorService;
 
   public FeaturesSelectionStream(
       String zkHost,
@@ -254,21 +250,19 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   @Override
   public void setStreamContext(StreamContext context) {
-    this.cache = context.getSolrClientCache();
-    this.streamContext = context;
+    this.clientCache = context.getSolrClientCache();
   }
 
   /** Opens the CloudSolrStream */
   @Override
   public void open() throws IOException {
-    if (cache == null) {
-      isCloseCache = true;
-      cache = new SolrClientCache();
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
 
-    this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
     this.executorService =
         ExecutorUtil.newMDCAwareCachedThreadPool(
             new SolrNamedThreadFactory("FeaturesSelectionStream"));
@@ -281,6 +275,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   private List<String> getShardUrls() throws IOException {
     try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
       Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
@@ -314,7 +309,14 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     List<Future<NamedList<?>>> futures = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       FeaturesSelectionCall lc =
-          new FeaturesSelectionCall(baseUrl, this.params, this.field, this.outcome);
+          new FeaturesSelectionCall(
+              baseUrl,
+              this.params,
+              this.field,
+              this.outcome,
+              this.positiveLabel,
+              this.numTerms,
+              this.clientCache);
 
       Future<NamedList<?>> future = executorService.submit(lc);
       futures.add(future);
@@ -325,8 +327,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache && cache != null) {
-      cache.close();
+    if (doCloseCache) {
+      clientCache.close();
     }
 
     if (executorService != null) {
@@ -417,26 +419,37 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     return result;
   }
 
-  protected class FeaturesSelectionCall implements Callable<NamedList<?>> {
+  protected static class FeaturesSelectionCall implements Callable<NamedList<?>> {
 
-    private String baseUrl;
-    private String outcome;
-    private String field;
-    private Map<String, String> paramsMap;
+    private final String baseUrl;
+    private final String outcome;
+    private final String field;
+    private final Map<String, String> paramsMap;
+    private final int positiveLabel;
+    private final int numTerms;
+    private final SolrClientCache clientCache;
 
     public FeaturesSelectionCall(
-        String baseUrl, Map<String, String> paramsMap, String field, String outcome) {
-
+        String baseUrl,
+        Map<String, String> paramsMap,
+        String field,
+        String outcome,
+        int positiveLabel,
+        int numTerms,
+        SolrClientCache clientCache) {
       this.baseUrl = baseUrl;
       this.outcome = outcome;
       this.field = field;
       this.paramsMap = paramsMap;
+      this.positiveLabel = positiveLabel;
+      this.numTerms = numTerms;
+      this.clientCache = clientCache;
     }
 
     @Override
     public NamedList<?> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq", "{!igain}");

@@ -27,7 +27,6 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -75,7 +74,7 @@ public class SolrCLI implements CLIO {
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String DEFAULT_SOLR_URL = "http://localhost:8983/solr";
+
   public static final String ZK_HOST = "localhost:9983";
 
   public static final Option OPTION_ZKHOST =
@@ -86,7 +85,8 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
-                  + ZK_HOST)
+                  + ZK_HOST
+                  + '.')
           .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
@@ -96,12 +96,13 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
-                  + DEFAULT_SOLR_URL)
+                  + getDefaultSolrUrl()
+                  + '.')
           .build();
   public static final Option OPTION_VERBOSE =
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
 
-  // should this be boolean or just a otption?
+  // should this be boolean or just an option?
   public static final Option OPTION_RECURSE =
       Option.builder("r")
           .longOpt("recurse")
@@ -185,6 +186,22 @@ public class SolrCLI implements CLIO {
     return cli;
   }
 
+  public static String getDefaultSolrUrl() {
+    String scheme = System.getenv("SOLR_URL_SCHEME");
+    if (scheme == null) {
+      scheme = "http";
+    }
+    String host = System.getenv("SOLR_TOOL_HOST");
+    if (host == null) {
+      host = "localhost";
+    }
+    String port = System.getenv("SOLR_PORT");
+    if (port == null) {
+      port = "8983";
+    }
+    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
+  }
+
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
     String sysProp = "javax.net.ssl." + key;
     String keyStore = System.getProperty(sysProp);
@@ -219,8 +236,6 @@ public class SolrCLI implements CLIO {
     if ("healthcheck".equals(toolType)) return new HealthcheckTool();
     else if ("status".equals(toolType)) return new StatusTool();
     else if ("api".equals(toolType)) return new ApiTool();
-    else if ("create_collection".equals(toolType)) return new CreateCollectionTool();
-    else if ("create_core".equals(toolType)) return new CreateCoreTool();
     else if ("create".equals(toolType)) return new CreateTool();
     else if ("delete".equals(toolType)) return new DeleteTool();
     else if ("config".equals(toolType)) return new ConfigTool();
@@ -362,11 +377,7 @@ public class SolrCLI implements CLIO {
    */
   public static boolean checkCommunicationError(Exception exc) {
     Throwable rootCause = SolrException.getRootCause(exc);
-    boolean wasCommError =
-        (rootCause instanceof ConnectException
-            || rootCause instanceof SolrServerException
-            || rootCause instanceof SocketException);
-    return wasCommError;
+    return (rootCause instanceof SolrServerException || rootCause instanceof SocketException);
   }
 
   public static void checkCodeForAuthError(int code) {
@@ -384,6 +395,13 @@ public class SolrCLI implements CLIO {
   }
 
   public static SolrClient getSolrClient(String solrUrl) {
+    // today we require all urls to end in /solr, however in the future we will need to support the
+    // /api url end point instead.
+    // The /solr/ check is because sometimes a full url is passed in, like
+    // http://localhost:8983/solr/films_shard1_replica_n1/.
+    if (!solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
+      solrUrl = solrUrl + "/solr";
+    }
     return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
   }
 
@@ -428,7 +446,7 @@ public class SolrCLI implements CLIO {
 
     print("Usage: solr COMMAND OPTIONS");
     print(
-        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package, post");
+        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, zk, auth, assert, config, export, api, package, post");
     print("");
     print("  Standalone server example (start Solr running in the background on port 8984):");
     print("");
@@ -446,20 +464,46 @@ public class SolrCLI implements CLIO {
     print("Pass -help or -h after any COMMAND to see command-specific usage information,");
     print("such as:    ./solr start -help or ./solr stop -h");
   }
+
   /**
-   * Get the base URL of a live Solr instance from either the solrUrl command-line option from
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and warns those users. In the future we'll have url's with /api as well.
+   *
+   * @param solrUrl The user supplied url to Solr.
+   * @return the solrUrl in the format that Solr expects to see internally.
+   */
+  public static String normalizeSolrUrl(String solrUrl) {
+    if (solrUrl != null) {
+      if (solrUrl.indexOf("/solr") > -1) { //
+        String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+        CLIO.out(
+            "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
+                + solrUrl
+                + "] to ["
+                + newSolrUrl
+                + "].");
+        solrUrl = newSolrUrl;
+      }
+      if (solrUrl.endsWith("/")) {
+        solrUrl = solrUrl.substring(0, solrUrl.length() - 1);
+      }
+    }
+    return solrUrl;
+  }
+  /**
+   * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
    * ZooKeeper.
    */
-  public static String resolveSolrUrl(CommandLine cli) throws Exception {
+  public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
       if (zkHost == null) {
-        solrUrl = DEFAULT_SOLR_URL;
+        solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.getOutStream()
             .println(
                 "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
-                    + DEFAULT_SOLR_URL
+                    + solrUrl
                     + ".");
       } else {
 
@@ -477,6 +521,7 @@ public class SolrCLI implements CLIO {
         }
       }
     }
+    solrUrl = normalizeSolrUrl(solrUrl);
     return solrUrl;
   }
 
@@ -490,16 +535,16 @@ public class SolrCLI implements CLIO {
       return zkHost;
     }
 
-    // find it using the localPort
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
-      solrUrl = DEFAULT_SOLR_URL;
+      solrUrl = getDefaultSolrUrl();
       CLIO.getOutStream()
           .println(
               "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
-                  + DEFAULT_SOLR_URL
+                  + solrUrl
                   + ".");
     }
+    solrUrl = normalizeSolrUrl(solrUrl);
 
     try (var solrClient = getSolrClient(solrUrl)) {
       // hit Solr to get system info
@@ -550,8 +595,8 @@ public class SolrCLI implements CLIO {
         }
         NamedList<Object> existsCheckResult =
             CoreAdminRequest.getStatus(coreName, solrClient).getResponse();
-        NamedList<Object> status = (NamedList) existsCheckResult.get("status");
-        NamedList<Object> coreStatus = (NamedList) status.get(coreName);
+        NamedList<Object> status = (NamedList<Object>) existsCheckResult.get("status");
+        NamedList<Object> coreStatus = (NamedList<Object>) status.get(coreName);
         Map<String, Object> failureStatus =
             (Map<String, Object>) existsCheckResult.get("initFailures");
         String errorMsg = (String) failureStatus.get(coreName);
@@ -569,11 +614,5 @@ public class SolrCLI implements CLIO {
     NamedList<Object> systemInfo =
         solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
     return "solrcloud".equals(systemInfo.get("mode"));
-  }
-
-  public static class AssertionFailureException extends Exception {
-    public AssertionFailureException(String message) {
-      super(message);
-    }
   }
 }

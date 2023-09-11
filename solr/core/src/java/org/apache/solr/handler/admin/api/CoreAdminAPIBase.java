@@ -16,13 +16,14 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -53,6 +54,14 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
   }
 
   /**
+   * Can be overridden by operations that are expensive, so we don't execute too many of them
+   * concurrently.
+   */
+  boolean isExpensive() {
+    return false;
+  }
+
+  /**
    * Wraps the subclasses logic with extra bookkeeping logic.
    *
    * <p>This method currently exists to enable async handling behavior for V2 Core APIs.
@@ -79,22 +88,23 @@ public abstract class CoreAdminAPIBase extends JerseyResource {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "Core container instance missing");
       }
-      final CoreAdminHandler.CoreAdminAsyncTracker.TaskObject taskObject =
-          new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(taskId);
 
       MDCLoggingContext.setCoreName(coreName);
       TraceUtils.setDbInstance(req, coreName);
       if (taskId == null) {
         return supplier.get();
       } else {
-        coreAdminAsyncTracker.submitAsyncTask(
-            taskObject,
-            actionName,
+        Callable<SolrQueryResponse> task =
             () -> {
               T response = supplier.get();
               V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
               return rsp;
-            });
+            };
+
+        final CoreAdminHandler.CoreAdminAsyncTracker.TaskObject taskObject =
+            new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(
+                taskId, actionName, isExpensive(), task);
+        coreAdminAsyncTracker.submitAsyncTask(taskObject);
       }
     } catch (CoreAdminAPIBaseException e) {
       throw e.trueException;

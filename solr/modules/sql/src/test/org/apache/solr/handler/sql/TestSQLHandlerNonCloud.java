@@ -49,7 +49,7 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
   public void testSQLHandler() throws Exception {
     String sql = "select id, field_i, str_s from " + DEFAULT_TEST_COLLECTION_NAME + " limit 10";
     SolrParams sParams = params(CommonParams.QT, "/sql", "stmt", sql);
-    String url = jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
+    String url = getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
 
     SolrStream solrStream = new SolrStream(url, sParams);
     IOException ex = expectThrows(IOException.class, () -> getTuples(solrStream));
