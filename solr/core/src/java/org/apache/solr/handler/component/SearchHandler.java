@@ -105,7 +105,8 @@ public class SearchHandler extends RequestHandlerBase
    * @deprecated this was replaced by the auto-generated trace ids
    */
   @Deprecated(since = "9.4")
-  boolean DISABLE_REQUEST_ID_DEFAULT = Boolean.getBoolean("solr.disableRequestId");
+  private static final boolean DISABLE_REQUEST_ID_DEFAULT =
+      Boolean.getBoolean("solr.disableRequestId");
 
   private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
   private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();

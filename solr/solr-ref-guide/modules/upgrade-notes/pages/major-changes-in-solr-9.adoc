@@ -85,6 +85,11 @@ see the  xref:deployment-guide:securing-solr.adoc#network-configuration[Network 
 This will enable client and server hostName check settings to be governed by the same environment variable.
 If users want separate client/server settings, they can manually override the `solr.jetty.ssl.sniHostCheck` option in `SOLR_OPTS`.
 
+=== Deprecations
+* `rid` support has been deprecated in favor of the always-on trace generation.
+To disable the `rid` generation completely set the system property `solr.disableRequestId` to `true`. 
+To disable the always-on trace generation set the system property `solr.alwaysOnTraceId` to `false`.
+
 == Solr 9.3
 === Binary Releases
 * Solr now comes with two xref:deployment-guide:installing-solr.adoc#available-solr-packages[binary releases] and xref:deployment-guide:solr-in-docker.adoc#available-images[docker images], **full** and **slim**.
