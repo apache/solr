@@ -376,7 +376,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *
    * @return The loaded {@link ElevationProvider}; not null.
    */
-  protected ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException {
+  protected ElevationProvider loadElevationProvider(SolrCore core)
+      throws IOException, SAXException {
     Document xmlDocument;
     try {
       xmlDocument = SafeXMLParsing.parseConfigXML(log, core.getResourceLoader(), configFileName);
