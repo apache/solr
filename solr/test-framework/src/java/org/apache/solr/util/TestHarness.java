@@ -25,7 +25,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
@@ -92,6 +91,11 @@ public class TestHarness extends BaseTestHarness {
    */
   public static SolrConfig createConfig(Path solrHome, String confFile) {
     return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
+  }
+
+  public TestHarness(CoreContainer coreContainer) {
+    this.container = coreContainer;
+    this.coreName = SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
   }
 
   /**
@@ -187,9 +191,6 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public static NodeConfig buildTestNodeConfig(Path solrHome) {
-    if ("true".equals(System.getProperty("solr.tests.loadSolrXml"))) {
-      return SolrXmlConfig.fromSolrHome(solrHome, new Properties());
-    }
     CloudConfig cloudConfig =
         (null == System.getProperty("zkHost"))
             ? null
