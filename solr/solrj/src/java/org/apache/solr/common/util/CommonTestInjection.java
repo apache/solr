@@ -126,7 +126,9 @@ public class CommonTestInjection {
   public static boolean injectBreakpoint(String key, Object... args) {
     Breakpoint breakpoint = breakpoints.get(key);
     if (breakpoint != null) {
+      log.info("Breakpoint with key {} is triggered", key);
       breakpoint.executeAndResume(args);
+      log.info("Breakpoint with key {} was executed and normal code execution resumes", key);
     }
     return true;
   }
