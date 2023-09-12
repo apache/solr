@@ -310,7 +310,8 @@ public class TestUninvertingReader extends SolrTestCase {
     }
 
     // check the composite of all leaves: exact expectation of set size
-    final LeafReader composite = SlowCompositeReaderWrapper.wrap(ir);
+    final LeafReader composite =
+        SlowCompositeReaderWrapper.wrap(ir, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
     TestUtil.checkReader(composite);
 
     for (String f : MULTI_VALUES) {
@@ -339,7 +340,8 @@ public class TestUninvertingReader extends SolrTestCase {
     final DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), UNINVERT_MAP);
     TestUtil.checkReader(ir);
 
-    final LeafReader composite = SlowCompositeReaderWrapper.wrap(ir);
+    final LeafReader composite =
+        SlowCompositeReaderWrapper.wrap(ir, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS);
     TestUtil.checkReader(composite);
 
     for (String f : UNINVERT_MAP.keySet()) {

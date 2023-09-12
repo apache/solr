@@ -165,7 +165,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
       builder.maximumWeight(maxRamBytes);
       builder.weigher(
           (k, v) -> (int) (RamUsageEstimator.sizeOfObject(k) + RamUsageEstimator.sizeOfObject(v)));
-    } else {
+    } else if (maxSize < Integer.MAX_VALUE) {
       builder.maximumSize(maxSize);
     }
     Cache<K, V> newCache;

@@ -202,7 +202,8 @@ public class UnInvertedField extends DocTermOrds {
       // TODO: it's wasteful to create one of these each time
       // but DocTermOrds will throw an exception if it thinks the field has doc values (which is
       // faked by UnInvertingReader)
-      LeafReader r = SlowCompositeReaderWrapper.wrap(searcher.getRawReader());
+      LeafReader r =
+          SlowCompositeReaderWrapper.wrap(searcher.getRawReader(), searcher.getOrdMapCache());
       uninvert(r, r.getLiveDocs(), prefix == null ? null : new BytesRef(prefix));
     } catch (IllegalStateException ise) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ise);
