@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
@@ -27,11 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import org.apache.solr.client.api.endpoint.ForceLeaderApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
@@ -49,29 +44,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * V2 API for triggering a leader election on a particular collection and shard.
+ * V2 API implementation for triggering a leader election on a particular collection and shard.
  *
  * <p>This API (POST /v2/collections/collectionName/shards/shardName/force-leader) is analogous to
  * the v1 /admin/collections?action=FORCELEADER command.
  */
-@Path("/collections/{collectionName}/shards/{shardName}/force-leader")
-public class ForceLeaderAPI extends AdminAPIBase {
+public class ForceLeader extends AdminAPIBase implements ForceLeaderApi {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Inject
-  public ForceLeaderAPI(
+  public ForceLeader(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @POST
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse forceLeader(
-      @PathParam("collectionName") String collectionName,
-      @PathParam("shardName") String shardName) {
+  public SolrJerseyResponse forceShardLeader(String collectionName, String shardName) {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     ensureRequiredParameterProvided(COLLECTION_PROP, collectionName);
     ensureRequiredParameterProvided(SHARD_ID_PROP, shardName);
@@ -84,12 +75,12 @@ public class ForceLeaderAPI extends AdminAPIBase {
 
   public static void invokeFromV1Params(
       CoreContainer coreContainer, SolrQueryRequest request, SolrQueryResponse response) {
-    final var api = new ForceLeaderAPI(coreContainer, request, response);
+    final var api = new ForceLeader(coreContainer, request, response);
     final var params = request.getParams();
     params.required().check(COLLECTION_PROP, SHARD_ID_PROP);
 
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-        response, api.forceLeader(params.get(COLLECTION_PROP), params.get(SHARD_ID_PROP)));
+        response, api.forceShardLeader(params.get(COLLECTION_PROP), params.get(SHARD_ID_PROP)));
   }
 
   private void doForceLeaderElection(String extCollectionName, String shardName) {
