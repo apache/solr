@@ -89,7 +89,7 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
 
   @Override
   public String getErrorMessage() {
-    return "Memory Circuit Breaker triggered as JVM heap usage values are greater than allocated threshold."
+    return "Memory Circuit Breaker triggered as JVM heap usage values are greater than allocated threshold. "
         + "Seen JVM heap memory usage "
         + seenMemory.get()
         + " and allocated threshold "

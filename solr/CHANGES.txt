@@ -19,8 +19,6 @@ Improvements
 
 * SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
 
-* SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
-
 Optimizations
 ---------------------
 (No changes)
@@ -72,6 +70,12 @@ New Features
 ---------------------
 * SOLR-16654: Add support for node-level caches (Michael Gibney)
 
+* SOLR-16954: Make Circuit Breakers available for Update Requests (janhoy, Christine Poerschke, Pierre Salagnac)
+
+* SOLR-15771: bin/auth creates reasonable roles and permissions for security: 'search', 'index', 'admin', and 'superadmin' and assigns user superadmin role. (Eric Pugh, janhoy)
+
+* SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
+
 Improvements
 ---------------------
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
@@ -112,6 +116,14 @@ Improvements
 * SOLR-16879: Limit the number of concurrent expensive core admin operations by running them in a
   dedicated thread pool. Backup, Restore and Split are expensive operations.
   (Pierre Salagnac, David Smiley)
+
+* SOLR-16964: The solr.jetty.ssl.sniHostCheck option now defaults to the value of SOLR_SSL_CHECK_PEER_NAME, if it is provided.
+  This will enable client and server hostName check settings to be governed by the same environment variable.
+  If users want separate client/server settings, they can manually override the solr.jetty.ssl.sniHostCheck option in SOLR_OPTS. (Houston Putman)
+
+* SOLR-16970: SOLR_OPTS is now able to override options set by the Solr control scripts, "bin/solr" and "bin/solr.cmd". (Houston Putman)
+
+* SOLR-14886: Suppress stack traces in query response (Isabelle Giguere via Alex Deparvu)
 
 Optimizations
 ---------------------
@@ -154,6 +166,15 @@ Bug Fixes
   (Christina Chortaria, Max Kadel, Ryan Laddusaw, Jane Sandberg, David Smiley)
 
 * SOLR-16958: Fix spurious warning about LATEST luceneMatchVersion (Colvin Cowie)
+
+* SOLR-16955: Tracing v2 apis breaks SecurityConfHandler (Alex Deparvu, David Smiley)
+
+* SOLR-16044: SlowRequest logging is no longer disabled if SolrCore logger set to ERROR (janhoy, hossman)
+
+* SOLR-16415: asyncId must not have '/'; enforce this.  Enhance ZK cleanup to process directories
+  instead of fail.  (David Smiley, Paul McArthur)
+
+* SOLR-16899: CoreAdminOp are statically registered in CoreAdminHandler, preventing more than one Solr instance in the same JVM (Vincent Primault via Alex Deparvu)
 
 Dependency Upgrades
 ---------------------

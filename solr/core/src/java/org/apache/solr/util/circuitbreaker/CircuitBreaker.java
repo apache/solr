@@ -17,6 +17,12 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -36,6 +42,10 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * @lucene.experimental
  */
 public abstract class CircuitBreaker implements NamedListInitializedPlugin {
+  // Only query requests are checked by default
+  private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
+  private final List<SolrRequestType> SUPPORTED_TYPES =
+      List.of(SolrRequestType.QUERY, SolrRequestType.UPDATE);
 
   @Override
   public void init(NamedList<?> args) {
@@ -52,4 +62,48 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
 
   /** Get error message when the circuit breaker triggers */
   public abstract String getErrorMessage();
+
+  /**
+   * Set the request types for which this circuit breaker should be checked. If not called, the
+   * circuit breaker will be checked for the {@link SolrRequestType#QUERY} request type only.
+   *
+   * @param requestTypes list of strings representing request types
+   * @throws IllegalArgumentException if the request type is not valid
+   */
+  public void setRequestTypes(List<String> requestTypes) {
+    this.requestTypes =
+        requestTypes.stream()
+            .map(t -> SolrRequestType.valueOf(t.toUpperCase(Locale.ROOT)))
+            .peek(
+                t -> {
+                  if (!SUPPORTED_TYPES.contains(t)) {
+                    throw new IllegalArgumentException(
+                        String.format(
+                            Locale.ROOT,
+                            "Request type %s is not supported for circuit breakers",
+                            t.name()));
+                  }
+                })
+            .collect(Collectors.toSet());
+  }
+
+  public Set<SolrRequestType> getRequestTypes() {
+    return requestTypes;
+  }
+
+  /**
+   * Return the proper error code to use in exception. For legacy use of {@link CircuitBreaker} we
+   * return 503 for backward compatibility, else return 429.
+   *
+   * @deprecated Remove in 10.0
+   */
+  @Deprecated(since = "9.4")
+  public static SolrException.ErrorCode getErrorCode(List<CircuitBreaker> trippedCircuitBreakers) {
+    if (trippedCircuitBreakers != null
+        && trippedCircuitBreakers.stream().anyMatch(cb -> cb instanceof CircuitBreakerManager)) {
+      return SolrException.ErrorCode.SERVICE_UNAVAILABLE;
+    } else {
+      return SolrException.ErrorCode.TOO_MANY_REQUESTS;
+    }
+  }
 }
