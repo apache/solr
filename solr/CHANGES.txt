@@ -19,8 +19,6 @@ Improvements
 
 * SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
 
-* SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
-
 Optimizations
 ---------------------
 (No changes)
@@ -75,6 +73,8 @@ New Features
 * SOLR-16954: Make Circuit Breakers available for Update Requests (janhoy, Christine Poerschke, Pierre Salagnac)
 
 * SOLR-15771: bin/auth creates reasonable roles and permissions for security: 'search', 'index', 'admin', and 'superadmin' and assigns user superadmin role. (Eric Pugh, janhoy)
+
+* SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
 
 Improvements
 ---------------------
