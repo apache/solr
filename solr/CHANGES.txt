@@ -119,6 +119,8 @@ Improvements
   This will enable client and server hostName check settings to be governed by the same environment variable.
   If users want separate client/server settings, they can manually override the solr.jetty.ssl.sniHostCheck option in SOLR_OPTS. (Houston Putman)
 
+* SOLR-16970: SOLR_OPTS is now able to override options set by the Solr control scripts, "bin/solr" and "bin/solr.cmd". (Houston Putman)
+
 
 Optimizations
 ---------------------
@@ -165,6 +167,9 @@ Bug Fixes
 * SOLR-16955: Tracing v2 apis breaks SecurityConfHandler (Alex Deparvu, David Smiley)
 
 * SOLR-16044: SlowRequest logging is no longer disabled if SolrCore logger set to ERROR (janhoy, hossman)
+
+* SOLR-16415: asyncId must not have '/'; enforce this.  Enhance ZK cleanup to process directories
+  instead of fail.  (David Smiley, Paul McArthur)
 
 * SOLR-16963: The "solr.jetty.ssl.verifyClientHostName" sysProp and "SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" envVar have been fixed,
   and the setting once again tells the server to check the originating client hostname against the client certificate when doing mTLS. (Houston Putman, Tomás Fernández Löbbe)
