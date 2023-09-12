@@ -17,10 +17,15 @@
 
 package org.apache.solr.cli;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.Console;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +42,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.security.Sha256AuthenticationProvider;
 import org.apache.zookeeper.KeeperException;
 
@@ -362,37 +368,26 @@ public class AuthTool extends ToolBase {
 
         boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue("blockUnknown", "true"));
 
-        String securityJson =
-            "{"
-                + "\n  \"authentication\":{"
-                + "\n   \"blockUnknown\": "
-                + blockUnknown
-                + ","
-                + "\n   \"class\":\"solr.BasicAuthPlugin\","
-                + "\n   \"credentials\":{\""
-                + username
-                + "\":\""
-                + Sha256AuthenticationProvider.getSaltedHashedValue(password)
-                + "\"}"
-                + "\n  },"
-                + "\n  \"authorization\":{"
-                + "\n   \"class\":\"solr.RuleBasedAuthorizationPlugin\","
-                + "\n   \"permissions\":["
-                + "\n {\"name\":\"security-edit\", \"role\":\"admin\"},"
-                + "\n {\"name\":\"security-read\", \"role\":\"admin\"},"
-                + "\n {\"name\":\"config-edit\", \"role\":\"admin\"},"
-                + "\n {\"name\":\"config-read\", \"role\":\"admin\"},"
-                + "\n {\"name\":\"collection-admin-edit\", \"role\":\"admin\"},"
-                + "\n {\"name\":\"collection-admin-read\", \"role\":\"admin\"},"
-                + "\n {\"name\":\"core-admin-edit\", \"role\":\"admin\"},"
-                + "\n {\"name\":\"core-admin-read\", \"role\":\"admin\"},"
-                + "\n {\"name\":\"all\", \"role\":\"admin\"}"
-                + "\n   ],"
-                + "\n   \"user-role\":{\""
-                + username
-                + "\":\"admin\"}"
-                + "\n  }"
-                + "\n}";
+        String resourceName = "security.json";
+        final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);
+        if (null == resource) {
+          throw new IllegalArgumentException("invalid resource name: " + resourceName);
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode securityJson1 = mapper.readTree(resource.openStream());
+        ((ObjectNode) securityJson1).put("blockUnknown", blockUnknown);
+        JsonNode credentialsNode = securityJson1.get("authentication").get("credentials");
+        ((ObjectNode) credentialsNode)
+            .put(username, Sha256AuthenticationProvider.getSaltedHashedValue(password));
+        JsonNode userRoleNode = securityJson1.get("authorization").get("user-role");
+        String[] predefinedRoles = {"superadmin", "admin", "search", "index"};
+        ArrayNode rolesNode = mapper.createArrayNode();
+        for (String role : predefinedRoles) {
+          rolesNode.add(role);
+        }
+        ((ObjectNode) userRoleNode).set(username, rolesNode);
+        String securityJson = securityJson1.toPrettyString();
 
         if (!updateIncludeFileOnly) {
           echoIfVerbose("Uploading following security.json: " + securityJson, cli);

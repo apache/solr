@@ -995,11 +995,13 @@ This option is useful if you are running multiple Solr instances on the same hos
 
 == Authentication
 
-The `bin/solr` script allows enabling or disabling Basic Authentication, allowing you to configure authentication from the command line.
+The `bin/solr` script allows enabling or disabling Authentication, allowing you to configure authentication from the command line.
 
-Currently, this script only enables Basic Authentication, and is only available when using SolrCloud mode.
+Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.  
 
-Must be run on the machine hosting Solr.
+For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/resources/security.json[user roles and permission mappings], and maps the created user to the `superadmin` role.
+For Kerberos it only enables the security.json, it doesn't set up any users or role mappings.  
+
 
 === Enabling Basic Authentication
 
@@ -1010,28 +1012,8 @@ For more information on Basic Authentication support specifically, see the secti
 
 The `bin/solr auth enable` command makes several changes to enable Basic Authentication:
 
-* Creates a `security.json` file and uploads it to ZooKeeper.
-The `security.json` file will look similar to:
+* Take the base https://github.com/apache/solr/blob/main/solr/core/resources/security.json[security.json] file, evolves it using `auth` command parameters, and uploads the new file to ZooKeeper.
 +
-[source,json]
-----
-{
-  "authentication":{
-   "blockUnknown": false,
-   "class":"solr.BasicAuthPlugin",
-   "credentials":{"user":"vgGVo69YJeUg/O6AcFiowWsdyOUdqfQvOLsrpIPMCzk= 7iTnaKOWe+Uj5ZfGoKKK2G6hrcF10h6xezMQK+LBvpI="}
-  },
-  "authorization":{
-   "class":"solr.RuleBasedAuthorizationPlugin",
-   "permissions":[
- {"name":"security-edit", "role":"admin"},
- {"name":"collection-admin-edit", "role":"admin"},
- {"name":"core-admin-edit", "role":"admin"}
-   ],
-   "user-role":{"user":"admin"}
-  }
-}
-----
 * Adds two lines to `bin/solr.in.sh` or `bin\solr.in.cmd` to set the authentication type, and the path to `basicAuth.conf`:
 +
 [source,subs="attributes"]
@@ -1099,13 +1081,14 @@ When `false`, unauthenticated users will still be able to access Solr, but only 
 +
 Specify the full path to the include file in the environment.
 If not specified this script looks for an include file named solr.in.sh to set environment variables. Specifically, the following locations are searched in this order:
-    <script location>/.
-    $HOME/.solr.in.sh
-    /usr/share/solr
-    /usr/local/share/solr
-    /etc/default
-    /var/solr
-    /opt/solr
++
+* `<script location>/.`
+* `$HOME/.solr.in.sh`
+* `/usr/share/solr`
+* `/usr/local/share/solr`
+* `/etc/default`
+* `/var/solr`
+* `/opt/solr`
 
 `-updateIncludeFileOnly <true|false>`::
 +
