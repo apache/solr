@@ -220,8 +220,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     MatcherAssert.assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
+    CConfig c6Cfg = new CConfig();
+    c6Cfg.strVal = "added";
     plugin.name = "clusterSingleton";
     plugin.klass = C6.class.getName();
+    plugin.config = c6Cfg;
     addPlugin.process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
@@ -232,6 +235,16 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     assertTrue("ccProvided", C6.ccProvided);
     assertTrue("startCalled", C6.startCalled);
     assertFalse("stopCalled", C6.stopCalled);
+
+    // update the clusterSingleton config
+    c6Cfg.strVal = "updated";
+    postPlugin(singletonMap("update", plugin)).process(cluster.getSolrClient());
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
+
+    assertTrue("stopCalled", C6.stopCalled);
+
+    // Clear stopCalled, it will be verified again when the Overseer Jetty is killed
+    C6.stopCalled = false;
 
     assertEquals(CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC()));
     assertEquals(CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC1()));
@@ -394,7 +407,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     @JsonProperty public Boolean boolVal;
   }
 
-  public static class C6 implements ClusterSingleton {
+  public static class C6 implements ClusterSingleton, ConfigurablePlugin<CConfig> {
     static boolean startCalled = false;
     static boolean stopCalled = false;
     static boolean ccProvided = false;
@@ -430,6 +443,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       stopCalled = true;
       state = State.STOPPED;
     }
+
+    @Override
+    public void configure(CConfig cfg) {}
   }
 
   public static class C5 implements ResourceLoaderAware {

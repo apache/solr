@@ -31,6 +31,11 @@ import org.apache.commons.exec.OS;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.CaffeineCache;
+import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.TestThinCache;
+import org.apache.solr.search.ThinCache;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.hamcrest.MatcherAssert;
 import org.junit.Before;
@@ -149,6 +154,16 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     MatcherAssert.assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
     assertEquals("solr host port", 8888, cfg.getCloudConfig().getSolrHostPort());
     assertFalse("schema cache", cfg.hasSchemaCache());
+  }
+
+  public void testNodeLevelCache() {
+    NodeConfig cfg =
+        SolrXmlConfig.fromString(createTempDir(), TestThinCache.SOLR_NODE_LEVEL_CACHE_XML);
+    Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
+    SolrCache<?, ?> nodeLevelCache = cachesConfig.get("myNodeLevelCache").newInstance();
+    assertTrue(nodeLevelCache instanceof CaffeineCache);
+    SolrCache<?, ?> nodeLevelCacheThin = cachesConfig.get("myNodeLevelCacheThin").newInstance();
+    assertTrue(nodeLevelCacheThin instanceof ThinCache.NodeLevelCache);
   }
 
   public void testExplicitNullGivesDefaults() {

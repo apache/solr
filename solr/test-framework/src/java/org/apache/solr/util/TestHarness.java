@@ -93,6 +93,11 @@ public class TestHarness extends BaseTestHarness {
     return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
   }
 
+  public TestHarness(CoreContainer coreContainer) {
+    this.container = coreContainer;
+    this.coreName = SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
+  }
+
   /**
    * @param coreName to initialize
    * @param dataDirectory path for index data, will not be cleaned up
