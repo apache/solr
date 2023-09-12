@@ -256,6 +256,7 @@ task integrationTests(type: BatsTask) {
   environment SOLR_TIP: distDir.toString()
   environment SOLR_HOME: solrHome
   environment SOLR_LOGS_DIR: "$solrHome/logs"
+  environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir
   environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 }

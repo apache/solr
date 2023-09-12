@@ -16,6 +16,11 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.common.params.CommonParams.FAILURE;
+import static org.apache.solr.common.params.CommonParams.STATUS;
+
+import java.util.List;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -26,6 +31,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 
 /**
  * Shares common code between various handlers that manipulate {@link
@@ -49,6 +56,10 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    if (checkCircuitBreakers(req, rsp)) {
+      return; // Circuit breaker tripped, return immediately
+    }
+
     /*
        We track update requests so that we can preserve consistency by waiting for them to complete
        on a node shutdown and then immediately trigger a leader election without waiting for the core to close.
@@ -99,6 +110,30 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
     } finally {
       solrCoreState.deregisterInFlightUpdate();
     }
+  }
+
+  /**
+   * Check if {@link SolrRequestType#UPDATE} circuit breakers are tripped. Override this method in
+   * sub classes that do not want to check circuit breakers.
+   *
+   * @return true if circuit breakers are tripped, false otherwise.
+   */
+  protected boolean checkCircuitBreakers(SolrQueryRequest req, SolrQueryResponse rsp) {
+    CircuitBreakerRegistry circuitBreakerRegistry = req.getCore().getCircuitBreakerRegistry();
+    if (circuitBreakerRegistry.isEnabled(SolrRequestType.UPDATE)) {
+      List<CircuitBreaker> trippedCircuitBreakers =
+          circuitBreakerRegistry.checkTripped(SolrRequestType.UPDATE);
+      if (trippedCircuitBreakers != null) {
+        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
+        rsp.add(STATUS, FAILURE);
+        rsp.setException(
+            new SolrException(
+                CircuitBreaker.getErrorCode(trippedCircuitBreakers),
+                "Circuit Breakers tripped " + errorMessage));
+        return true;
+      }
+    }
+    return false;
   }
 
   protected abstract ContentStreamLoader newLoader(
