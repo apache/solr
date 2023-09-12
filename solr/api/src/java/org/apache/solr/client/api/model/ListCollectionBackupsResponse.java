@@ -14,33 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.common;
-
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.io.IOException;
-import org.apache.solr.common.util.Utils;
+import java.util.List;
 
-public class DelegateMapWriter implements MapWriter {
-
-  private final Object delegate;
-
-  public DelegateMapWriter(Object delegate) {
-    this.delegate = delegate;
-  }
-
-  @Override
-  public void writeMap(EntryWriter ew) throws IOException {
-    Utils.reflectWrite(
-        ew,
-        delegate,
-        // TODO Should we be lenient here and accept both the Jackson and our homegrown annotation?
-        field -> field.getAnnotation(JsonProperty.class) != null,
-        JsonAnyGetter.class,
-        field -> {
-          final JsonProperty prop = field.getAnnotation(JsonProperty.class);
-          return prop.value().isEmpty() ? field.getName() : prop.value();
-        });
-  }
+public class ListCollectionBackupsResponse extends SolrJerseyResponse {
+  @JsonProperty public String collection;
+  @JsonProperty public List<CollectionBackupDetails> backups;
 }

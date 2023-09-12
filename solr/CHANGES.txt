@@ -70,7 +70,7 @@ Other Changes
 ==================  9.4.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-16654: Add support for node-level caches (Michael Gibney)
 
 Improvements
 ---------------------
@@ -103,7 +103,15 @@ Improvements
 
 * SOLR-16940: Users can pass Java system properties to the SolrCLI via the SOLR_TOOL_OPTS environment variable. (Houston Putman)
 
+* SOLR-15474: Make Circuit breakers individually pluggable (Atri Sharma, Christine Poerschke, janhoy)
+
 * SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
+
+* SOLR-16896, SOLR-16897: Add support of OAuth 2.0/OIDC 'code with PKCE' flow (Lamine Idjeraoui, janhoy, Kevin Risden)
+
+* SOLR-16879: Limit the number of concurrent expensive core admin operations by running them in a
+  dedicated thread pool. Backup, Restore and Split are expensive operations.
+  (Pierre Salagnac, David Smiley)
 
 Optimizations
 ---------------------
@@ -144,6 +152,8 @@ Bug Fixes
 
 * SOLR-16916: Use of the JSON Query DSL should ignore the defType parameter
   (Christina Chortaria, Max Kadel, Ryan Laddusaw, Jane Sandberg, David Smiley)
+
+* SOLR-16958: Fix spurious warning about LATEST luceneMatchVersion (Colvin Cowie)
 
 Dependency Upgrades
 ---------------------
@@ -288,7 +298,7 @@ Improvements
 
 * SOLR-16687: Add support of SolrClassLoader to SolrZkClient (Lamine Idjeraoui via Jason Gerlowski & Houston Putman)
 
-* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning 
+* SOLR-9378: Internal shard requests no longer include the wasteful shard.url param.  [shard] transformer now defaults to returning
   only the shard id (based on luceneMatchVersion), but can be configured to return the legacy list of replicas. (hossman)
 
 * SOLR-16816: Update node metrics while making affinityPlacement selections. Therefore selections can be made given the expected cluster

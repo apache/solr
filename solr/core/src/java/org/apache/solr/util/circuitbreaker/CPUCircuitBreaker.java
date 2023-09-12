@@ -38,8 +38,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   private static final OperatingSystemMXBean operatingSystemMXBean =
       ManagementFactory.getOperatingSystemMXBean();
 
-  private final boolean enabled;
-  private final double cpuUsageThreshold;
+  private double cpuUsageThreshold;
 
   // Assumption -- the value of these parameters will be set correctly before invoking
   // getDebugInfo()
@@ -47,22 +46,16 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   private static final ThreadLocal<Double> allowedCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
-  public CPUCircuitBreaker(CircuitBreakerConfig config) {
-    super(config);
+  public CPUCircuitBreaker() {
+    super();
+  }
 
-    this.enabled = config.getCpuCBEnabled();
-    this.cpuUsageThreshold = config.getCpuCBThreshold();
+  public void setThreshold(double threshold) {
+    this.cpuUsageThreshold = threshold;
   }
 
   @Override
   public boolean isTripped() {
-    if (!isEnabled()) {
-      return false;
-    }
-
-    if (!enabled) {
-      return false;
-    }
 
     double localAllowedCPUUsage = getCpuUsageThreshold();
     double localSeenCPUUsage = calculateLiveCPUUsage();

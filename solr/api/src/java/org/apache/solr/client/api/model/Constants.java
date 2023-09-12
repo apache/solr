@@ -48,4 +48,7 @@ public class Constants {
   public static final String DELETE_INSTANCE_DIR = "deleteInstanceDir";
 
   public static final String ONLY_IF_DOWN = "onlyIfDown";
+
+  /** The name of the config set to be used for a collection */
+  public static final String COLL_CONF = "collection.configName";
 }

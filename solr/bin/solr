@@ -1301,6 +1301,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_PORT="$2"
+            PROVIDED_SOLR_PORT="${SOLR_PORT}"
             PASS_TO_RUN_EXAMPLE+=("-p" "$SOLR_PORT")
             shift 2
         ;;
