@@ -528,34 +528,35 @@ public class Http2SolrClient extends SolrClient {
       InputStreamResponseListener listener = new InputStreamResponseListener();
       req = makeRequestAndSend(solrRequest, url, listener, false);
       Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
+      url = req.getURI().toString();
       InputStream is = listener.getInputStream();
       assert ObjectReleaseTracker.track(is);
-      return processErrorsAndResponse(solrRequest, response, is, req.getURI().toString());
+      return processErrorsAndResponse(solrRequest, response, is, url);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       abortCause = e;
       throw new RuntimeException(e);
     } catch (TimeoutException e) {
       throw new SolrServerException(
-          "Timeout occurred while waiting response from server at: " + req.getURI(), e);
+          "Timeout occurred while waiting response from server at: " + url, e);
     } catch (ExecutionException e) {
       Throwable cause = e.getCause();
       abortCause = cause;
       if (cause instanceof ConnectException) {
-        throw new SolrServerException("Server refused connection at: " + req.getURI(), cause);
+        throw new SolrServerException("Server refused connection at: " + url, cause);
       }
       if (cause instanceof SolrServerException) {
         throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
         throw new SolrServerException(
-            "IOException occurred when talking to server at: " + req.getURI(), cause);
+            "IOException occurred when talking to server at: " + url, cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
     } finally {
-      if (abortCause != null) {
+      if (abortCause != null && req != null) {
         req.abort(abortCause);
       }
     }
@@ -870,6 +871,9 @@ public class Http2SolrClient extends SolrClient {
       }
 
       Object error = rsp == null ? null : rsp.get("error");
+      if (rsp != null && error == null && processor instanceof NoOpResponseParser) {
+        error = rsp.get("response");
+      }
       if (error != null
           && (String.valueOf(getObjectByPath(error, true, errPath))
               .endsWith("ExceptionWithErrObject"))) {
@@ -906,9 +910,12 @@ public class Http2SolrClient extends SolrClient {
         if (reason == null) {
           StringBuilder msg = new StringBuilder();
           msg.append(response.getReason())
-              .append("\n\n")
+              .append("\n")
               .append("request: ")
               .append(response.getRequest().getMethod());
+          if (error != null) {
+            msg.append("\n\nError returned:\n").append(error);
+          }
           reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
         RemoteSolrException rss =

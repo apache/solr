@@ -239,7 +239,13 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       if (log.isDebugEnabled()) {
         log.debug("User principal: {}", request.getUserPrincipal());
       }
-      TraceUtils.setUser(span, String.valueOf(request.getUserPrincipal()));
+      final String principalName;
+      if (request.getUserPrincipal() != null) {
+        principalName = request.getUserPrincipal().getName();
+      } else {
+        principalName = null;
+      }
+      TraceUtils.setUser(span, String.valueOf(principalName));
     }
 
     HttpSolrCall call = getHttpSolrCall(request, response, retry);

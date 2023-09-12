@@ -315,7 +315,8 @@ public class SolrStream extends TupleStream {
       statusCode = (int) genericResponse.get("responseStatus");
     }
 
-    if (statusCode != 200) {
+    if (statusCode == 401
+        || statusCode == 403) { // auth response comes as html, so propagate as string
       String errMsg = consumeStreamAsErrorMessage(stream);
       if (httpResponse != null) {
         httpResponse.close();

@@ -43,6 +43,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import org.apache.solr.client.api.model.BackupDeletionData;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -219,12 +220,5 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     public Double uploadedIndexSizeMB;
 
     @JsonProperty public List<String> shardBackupIds;
-  }
-
-  public static class BackupDeletionData implements JacksonReflectMapWriter {
-    @JsonProperty public String startTime;
-    @JsonProperty public Integer backupId;
-    @JsonProperty public Long size;
-    @JsonProperty public Integer numFiles;
   }
 }

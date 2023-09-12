@@ -21,7 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-/** Unit tests for {@link SyncShardAPI} */
+/** Unit tests for {@link SyncShard} */
 public class SyncShardAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
@@ -29,7 +29,7 @@ public class SyncShardAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new SyncShardAPI(null, null, null);
+              final var api = new SyncShard(null, null, null);
               api.syncShard(null, "someShard");
             });
 
@@ -43,7 +43,7 @@ public class SyncShardAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new SyncShardAPI(null, null, null);
+              final var api = new SyncShard(null, null, null);
               api.syncShard("someCollection", null);
             });
 
