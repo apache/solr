@@ -123,6 +123,7 @@ Improvements
 
 * SOLR-16970: SOLR_OPTS is now able to override options set by the Solr control scripts, "bin/solr" and "bin/solr.cmd". (Houston Putman)
 
+* SOLR-14886: Suppress stack traces in query response (Isabelle Giguere via Alex Deparvu)
 
 Optimizations
 ---------------------

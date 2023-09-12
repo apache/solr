@@ -301,8 +301,6 @@ public class CoreContainer {
 
   private final AllowListUrlChecker allowListUrlChecker;
 
-  private final boolean hideStackTrace;
-
   // Bits for the state variable.
   public static final long LOAD_COMPLETE = 0x1L;
   public static final long CORE_DISCOVERY_COMPLETE = 0x2L;
@@ -419,8 +417,6 @@ public class CoreContainer {
                 cfg.getReplayUpdatesThreads(),
                 new SolrNamedThreadFactory("replayUpdatesExecutor")));
     this.appHandlersByConfigSetId = new JerseyAppHandlerCache();
-
-    this.hideStackTrace = config.hideStackTraces();
 
     SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
     allowPathBuilder.addPath(cfg.getSolrHome());
@@ -662,7 +658,6 @@ public class CoreContainer {
     distributedCollectionCommandRunner = Optional.empty();
     allowPaths = null;
     allowListUrlChecker = null;
-    hideStackTrace = false;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -2449,7 +2444,7 @@ public class CoreContainer {
   }
 
   public boolean hideStackTrace() {
-    return this.hideStackTrace;
+    return cfg.hideStackTraces();
   }
 
   /**
