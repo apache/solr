@@ -32,6 +32,7 @@ import javax.ws.rs.Produces;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -76,7 +77,7 @@ public class ReloadCoreAPI extends CoreAdminAPIBase {
         });
   }
 
-  public static class ReloadCoreRequestBody extends SolrJerseyResponse {
+  public static class ReloadCoreRequestBody implements JacksonReflectMapWriter {
     @Schema(description = "Request ID to track this action which will be processed asynchronously.")
     @JsonProperty("async")
     public String async;
