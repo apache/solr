@@ -36,7 +36,39 @@ teardown() {
   (
     cd "$ssl_dir"
     rm -f solr-ssl.keystore.p12 solr-ssl.pem
-    keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext SAN=DNS:test.solr.apache.org,IP:127.0.0.1 -dname "CN=test.solr.apache.org, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
+    keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
+    openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem -passin pass:secret -passout pass:secret
+  )
+
+  # Set ENV_VARs so that Solr uses this keystore
+  export SOLR_SSL_ENABLED=true
+  export SOLR_SSL_KEY_STORE=$ssl_dir/solr-ssl.keystore.p12
+  export SOLR_SSL_KEY_STORE_PASSWORD=secret
+  export SOLR_SSL_TRUST_STORE=$ssl_dir/solr-ssl.keystore.p12
+  export SOLR_SSL_TRUST_STORE_PASSWORD=secret
+  export SOLR_SSL_NEED_CLIENT_AUTH=false
+  export SOLR_SSL_WANT_CLIENT_AUTH=false
+  export SOLR_HOST=localhost
+
+  solr start -c
+  solr assert --started https://localhost:8983/solr --timeout 5000
+
+  run solr create -c test -s 2
+  assert_output --partial "Created collection 'test'"
+
+  run solr api -get 'https://localhost:8983/solr/test/select?q=*:*'
+  assert_output --partial '"numFound":0'
+}
+
+@test "use different hostname when not checking peer-name" {
+  # Create a keystore
+  export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
+  mkdir -p "$ssl_dir"
+  (
+    cd "$ssl_dir"
+    rm -f solr-ssl.keystore.p12 solr-ssl.pem
+    # Using a CN that is not localhost, as we will not be checking peer-name
+    keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext "SAN=DNS:test.solr.apache.org,IP:127.0.0.1" -dname "CN=test.solr.apache.org, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
     openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem -passin pass:secret -passout pass:secret
   )
 
@@ -57,90 +89,15 @@ teardown() {
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
 
-<<<<<<< HEAD
+  # Just test that curl can connect via insecure or via a custom host header
+  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -k 'https://localhost:8983/solr/test/select?q=*:*'
+  assert_output --partial '"numFound":0'
+
   run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -H "Host: test.solr.apache.org" 'https://127.0.0.1:8983/solr/test/select?q=*:*'
   assert_output --partial '"numFound":0'
 
+  # This is a client setting, so we don't need to restart Solr to make sure that it fails
   export SOLR_SSL_CHECK_PEER_NAME=true
-
-  # This should fail the peername check
-  run ! solr api -get 'https://localhost:8983/solr/test/select?q=*:*'
-  assert_output --partial 'Server refused connection'
-}
-
-@test "use different hostname when not checking peer-name" {
-  # Create a keystore
-  export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
-  mkdir -p "$ssl_dir"
-  (
-    cd "$ssl_dir"
-    rm -f solr-ssl.keystore.p12 solr-ssl.pem
-    # Using a CN that is not localhost, as we will not be checking peer-name
-    keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext "SAN=DNS:test.solr.apache.org,IP:127.0.0.1" -dname "CN=test.solr.apache.org, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
-    openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem -passin pass:secret -passout pass:secret
-  )
-
-  # Set ENV_VARs so that Solr uses this keystore
-  export SOLR_SSL_ENABLED=true
-  export SOLR_SSL_KEY_STORE=$ssl_dir/solr-ssl.keystore.p12
-  export SOLR_SSL_KEY_STORE_PASSWORD=secret
-  export SOLR_SSL_TRUST_STORE=$ssl_dir/solr-ssl.keystore.p12
-  export SOLR_SSL_TRUST_STORE_PASSWORD=secret
-  export SOLR_SSL_NEED_CLIENT_AUTH=false
-  export SOLR_SSL_WANT_CLIENT_AUTH=false
-  export SOLR_SSL_CHECK_PEER_NAME=false
-  export SOLR_HOST=localhost
-
-  solr start -c
-  solr assert --started https://localhost:8983/solr --timeout 5000
-
-  run solr create -c test -s 2
-  assert_output --partial "Created collection 'test'"
-
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -k 'https://localhost:8983/solr/test/select?q=*:*'
-=======
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" 'https://127.0.0.1:8983/solr/test/select?q=*:*'
->>>>>>> apache/main
-  assert_output --partial '"numFound":0'
-}
-
-@test "use different hostname when not checking peer-name" {
-  # Create a keystore
-  export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
-  mkdir -p "$ssl_dir"
-  (
-    cd "$ssl_dir"
-    rm -f solr-ssl.keystore.p12 solr-ssl.pem
-    # Using a CN that is not localhost, as we will not be checking peer-name
-    keytool -genkeypair -alias solr-ssl -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore solr-ssl.keystore.p12 -storetype PKCS12 -ext "SAN=DNS:test.solr.apache.org,IP:127.0.0.1" -dname "CN=test.solr.apache.org, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
-    openssl pkcs12 -in solr-ssl.keystore.p12 -out solr-ssl.pem -passin pass:secret -passout pass:secret
-  )
-
-  # Set ENV_VARs so that Solr uses this keystore
-  export SOLR_SSL_ENABLED=true
-  export SOLR_SSL_KEY_STORE=$ssl_dir/solr-ssl.keystore.p12
-  export SOLR_SSL_KEY_STORE_PASSWORD=secret
-  export SOLR_SSL_TRUST_STORE=$ssl_dir/solr-ssl.keystore.p12
-  export SOLR_SSL_TRUST_STORE_PASSWORD=secret
-  export SOLR_SSL_NEED_CLIENT_AUTH=false
-  export SOLR_SSL_WANT_CLIENT_AUTH=false
-  export SOLR_SSL_CHECK_PEER_NAME=false
-  # Remove later when SOLR-16963 is resolved
-  export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
-  export SOLR_HOST=localhost
-
-  solr start -c
-  solr assert --started https://localhost:8983/solr --timeout 5000
-
-  run solr create -c test -s 2
-  assert_output --partial "Created collection 'test'"
-
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -k 'https://localhost:8983/solr/test/select?q=*:*'
-  assert_output --partial '"numFound":0'
-
-  export SOLR_SSL_CHECK_PEER_NAME=true
-  # Remove later when SOLR-16963 is resolved
-  export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
 
   # This should fail the peername check
   run ! solr api -get 'https://localhost:8983/solr/test/select?q=*:*'
@@ -336,7 +293,7 @@ teardown() {
   export SOLR_SSL_NEED_CLIENT_AUTH=true
   export SOLR_SSL_WANT_CLIENT_AUTH=false
   export SOLR_SSL_CHECK_PEER_NAME=true
-  # Cannot set this to true, because the client certificate does not have the right hostname ("localhost")
+  # Cannot set this to true, because the client certificate does not have the right hostname ("localhost") or IP
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
   export SOLR_HOST=localhost
 
@@ -372,7 +329,8 @@ teardown() {
     )
   )
 
-  # Turn on client hostname verification, and test that it fails because the client cert does not use "localhost"
+  # Turn on client hostname verification, and start a new Solr node since the property is a server setting.
+  # Test that it fails because the client cert does not use "localhost"
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
   solr start -c -z localhost:9983 -p 8985
 
@@ -504,4 +462,11 @@ teardown() {
   # mTLS requires a keyStore, so just using the truststore would fail if mTLS was "NEED"ed, however it is only "WANT"ed, so its ok
   run solr api -get 'https://localhost:8983/solr/test/select?q=*:*&rows=0'
   assert_output --partial '"numFound":0'
+
+  export SOLR_SSL_CLIENT_TRUST_STORE=
+  export SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+
+  # TLS cannot work if a truststore and keystore are not provided (either Server or Client)
+  run solr api -get 'https://localhost:8983/solr/test/select?q=*:*&rows=0'
+  assert_output --partial 'Server refused connection'
 }
