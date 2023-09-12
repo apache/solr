@@ -74,6 +74,8 @@ New Features
 
 * SOLR-16954: Make Circuit Breakers available for Update Requests (janhoy, Christine Poerschke, Pierre Salagnac)
 
+* SOLR-15771: bin/auth creates reasonable roles and permissions for security: 'search', 'index', 'admin', and 'superadmin' and assigns user superadmin role. (Eric Pugh, janhoy)
+
 Improvements
 ---------------------
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
