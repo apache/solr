@@ -41,9 +41,9 @@ public class SimplePropagator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String TRACE_HOST_NAME =
-      System.getProperty("trace_host_name", System.getProperty("host"));
+      System.getProperty("solr.traceHostName", System.getProperty("host"));
 
-  static final String TRACE_ID = System.getProperty("TRACE_ID", "X-Trace-Id");
+  static final String TRACE_ID = System.getProperty("solr.traceIdHeader", "X-Trace-Id");
 
   private static final AtomicLong traceCounter = new AtomicLong(0);
 
