@@ -19,7 +19,11 @@ package org.apache.solr.util.circuitbreaker;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 
 /**
  * Keeps track of all registered circuit breaker instances for various request types. Responsible
@@ -30,27 +34,37 @@ import java.util.List;
  */
 public class CircuitBreakerRegistry {
 
-  private final List<CircuitBreaker> circuitBreakerList = new ArrayList<>();
+  private final Map<SolrRequestType, List<CircuitBreaker>> circuitBreakerMap = new HashMap<>();
 
   public CircuitBreakerRegistry() {}
 
   public void register(CircuitBreaker circuitBreaker) {
-    circuitBreakerList.add(circuitBreaker);
+    circuitBreaker
+        .getRequestTypes()
+        .forEach(
+            r -> {
+              List<CircuitBreaker> list =
+                  circuitBreakerMap.computeIfAbsent(r, k -> new ArrayList<>());
+              list.add(circuitBreaker);
+            });
   }
 
   @VisibleForTesting
   public void deregisterAll() {
-    circuitBreakerList.clear();
+    circuitBreakerMap.clear();
   }
+
   /**
    * Check and return circuit breakers that have triggered
    *
+   * @param requestType {@link SolrRequestType} to check for.
    * @return CircuitBreakers which have triggered, null otherwise.
    */
-  public List<CircuitBreaker> checkTripped() {
+  public List<CircuitBreaker> checkTripped(SolrRequestType requestType) {
     List<CircuitBreaker> triggeredCircuitBreakers = null;
 
-    for (CircuitBreaker circuitBreaker : circuitBreakerList) {
+    for (CircuitBreaker circuitBreaker :
+        circuitBreakerMap.getOrDefault(requestType, Collections.emptyList())) {
       if (circuitBreaker.isTripped()) {
         if (triggeredCircuitBreakers == null) {
           triggeredCircuitBreakers = new ArrayList<>();
@@ -61,22 +75,6 @@ public class CircuitBreakerRegistry {
     }
 
     return triggeredCircuitBreakers;
-  }
-
-  /**
-   * Returns true if *any* circuit breaker has triggered, false if none have triggered.
-   *
-   * <p>NOTE: This method short circuits the checking of circuit breakers -- the method will return
-   * as soon as it finds a circuit breaker that has triggered.
-   */
-  public boolean checkAnyTripped() {
-    for (CircuitBreaker circuitBreaker : circuitBreakerList) {
-      if (circuitBreaker.isTripped()) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   /**
@@ -96,7 +94,7 @@ public class CircuitBreakerRegistry {
     return sb.toString();
   }
 
-  public boolean isEnabled() {
-    return !circuitBreakerList.isEmpty();
+  public boolean isEnabled(SolrRequestType requestType) {
+    return circuitBreakerMap.containsKey(requestType);
   }
 }
