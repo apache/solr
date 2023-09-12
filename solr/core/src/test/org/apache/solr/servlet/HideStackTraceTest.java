@@ -38,7 +38,7 @@ import org.junit.Test;
 @SuppressSSL
 public class HideStackTraceTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrRule = new SolrJettyTestRule();
+  @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void setupSolrHome() throws Exception {
