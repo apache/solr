@@ -299,7 +299,6 @@ public class MiniSolrCloudCluster {
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      // NOCOMMIT: Create chroot here, not sure why it is now necessary?
       zkClient.makePath("/solr", false, true);
       if (!zkClient.exists("/solr/clusterprops.json", true)) {
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
