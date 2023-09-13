@@ -26,6 +26,7 @@ import java.security.InvalidKeyException;
 import java.security.Principal;
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -92,7 +94,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final PublicKeyHandler publicKeyHandler;
   private final CoreContainer cores;
-  private static final int MAX_VALIDITY = Integer.getInteger("pkiauth.ttl", 5000);
+  private static final int MAX_VALIDITY = Integer.getInteger("pkiauth.ttl", 10000);
   private final String myNodeName;
   private final HttpHeaderClientInterceptor interceptor = new HttpHeaderClientInterceptor();
   private boolean interceptorRegistered = false;
@@ -403,12 +405,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
             final Optional<String> preFetchedUser = getUserFromJettyRequest(request);
             if ("v1".equals(System.getProperty(SEND_VERSION))) {
               preFetchedUser
-                  .map(PKIAuthenticationPlugin.this::generateToken)
-                  .ifPresent(token -> request.header(HEADER, token));
+                  .map(PKIAuthenticationPlugin.this::getToken)
+                  .ifPresent(token -> request.headers(mutable -> mutable.add(HEADER, token)));
             } else {
               preFetchedUser
-                  .map(PKIAuthenticationPlugin.this::generateTokenV2)
-                  .ifPresent(token -> request.header(HEADER_V2, token));
+                  .map(PKIAuthenticationPlugin.this::getTokenV2)
+                  .ifPresent(token -> request.headers(mutable -> mutable.add(HEADER_V2, token)));
             }
           }
 
@@ -485,34 +487,75 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
   }
 
+  private static class CachedToken {
+    Instant generatedAt;
+    String token;
+
+    private CachedToken(Instant generatedAt, String token) {
+      this.generatedAt = generatedAt;
+      this.token = token;
+    }
+  }
+
+  private volatile ConcurrentHashMap<String, AtomicReference<CachedToken>> cachedV1Tokens =
+      new ConcurrentHashMap<>();
+  private volatile ConcurrentHashMap<String, AtomicReference<CachedToken>> cachedV2Tokens =
+      new ConcurrentHashMap<>();
+
+  private static final Duration cacheExpiryTime = Duration.ofSeconds(1);
+
+  private String getToken(String usr) {
+    AtomicReference<CachedToken> tokenRef =
+        cachedV1Tokens.computeIfAbsent(usr, u -> new AtomicReference<>(generateToken(u)));
+    if (tokenRef.get().generatedAt.isBefore(Instant.now().minus(cacheExpiryTime))) {
+      synchronized (tokenRef) {
+        if (tokenRef.get().generatedAt.isBefore(Instant.now().minus(cacheExpiryTime))) {
+          tokenRef.set(generateToken(usr));
+        }
+      }
+    }
+    return tokenRef.get().token;
+  }
+
+  private synchronized String getTokenV2(String usr) {
+    AtomicReference<CachedToken> tokenRef =
+        cachedV2Tokens.computeIfAbsent(usr, u -> new AtomicReference<>(generateTokenV2(u)));
+    if (tokenRef.get().generatedAt.isBefore(Instant.now().minus(cacheExpiryTime))) {
+      synchronized (tokenRef) {
+        if (tokenRef.get().generatedAt.isBefore(Instant.now().minus(cacheExpiryTime))) {
+          tokenRef.set(generateTokenV2(usr));
+        }
+      }
+    }
+    return tokenRef.get().token;
+  }
+
   @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
-  private String generateToken(String usr) {
+  private CachedToken generateToken(String usr) {
     assert usr != null;
     String s = usr + " " + System.currentTimeMillis();
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = publicKeyHandler.getKeyPair().encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     log.trace("generateToken: usr={} token={}", usr, base64Cipher);
-    return myNodeName + " " + base64Cipher;
+    return new CachedToken(Instant.now(), myNodeName + " " + base64Cipher);
   }
 
-  private String generateTokenV2(String user) {
+  private CachedToken generateTokenV2(String user) {
     assert user != null;
     String s = myNodeName + " " + user + " " + Instant.now().toEpochMilli();
 
     byte[] payload = s.getBytes(UTF_8);
     byte[] signature = publicKeyHandler.getKeyPair().signSha256(payload);
     String base64Signature = Base64.getEncoder().encodeToString(signature);
-    return s + " " + base64Signature;
+    return new CachedToken(Instant.now(), s + " " + base64Signature);
   }
 
   void setHeader(HttpRequest httpRequest) {
     if ("v1".equals(System.getProperty(SEND_VERSION))) {
-      getUser().map(this::generateToken).ifPresent(token -> httpRequest.setHeader(HEADER, token));
+      getUser().map(this::getToken).ifPresent(token -> httpRequest.setHeader(HEADER, token));
     } else {
-      getUser()
-          .map(this::generateTokenV2)
-          .ifPresent(token -> httpRequest.setHeader(HEADER_V2, token));
+      getUser().map(this::getTokenV2).ifPresent(token -> httpRequest.setHeader(HEADER_V2, token));
     }
   }
 

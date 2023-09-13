@@ -135,6 +135,7 @@ Optimizations
 
 * SOLR-16265: reduce memory usage of ContentWriter based requests in Http2SolrClient (Alex Deparvu, Kevin Risden, David Smiley)
 
+* SOLR-16951: Cache client PKIAuth headers, regenerating every second. This speeds up request sending for the Http2SolrClient. (Tomás Fernández Löbbe, Houston Putman)
 
 Bug Fixes
 ---------------------
