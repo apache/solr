@@ -299,8 +299,8 @@ public class MiniSolrCloudCluster {
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      zkClient.makePath("/solr", false, true);
-      if (!zkClient.exists("/solr/clusterprops.json", true)) {
+      if (!zkClient.exists("/solr", true)) {
+        zkClient.makePath("/solr", false, true);
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
           zkClient.makePath(
               "/solr" + ZkStateReader.CLUSTER_PROPS,
@@ -502,9 +502,10 @@ public class MiniSolrCloudCluster {
     nodeProps.setProperty("zkHost", zkServer.getZkAddress());
 
     Path runnerPath = createInstancePath(name);
-    if (solrXml != null) {
-      Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
+    if (solrXml == null) {
+      solrXml = DEFAULT_CLOUD_SOLR_XML;
     }
+    Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
     JettyConfig newConfig = JettyConfig.builder(config).build();
     JettySolrRunner jetty =
         !trackJettyMetrics

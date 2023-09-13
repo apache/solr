@@ -209,10 +209,11 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
               nodeProps.setProperty("test-from-sysprop", "yup");
 
               Path runnerPath = createTempDir(name);
-              if (solrXml != null) {
-                Files.write(
-                    runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
+              if (solrXml == null) {
+                solrXml = DEFAULT_CLOUD_SOLR_XML;
               }
+              Files.write(
+                  runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
               JettyConfig newConfig = JettyConfig.builder(config).build();
               JettySolrRunner jetty =
                   new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
