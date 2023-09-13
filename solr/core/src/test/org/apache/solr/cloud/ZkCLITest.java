@@ -211,13 +211,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           zkServer.getZkAddress(),
           "-cmd",
           "putfile",
-          "/solr.xml",
+          "/foo.xml",
           SOLR_HOME + File.separator + "solr-stress-new.xml"
         };
     ZkCLI.main(args);
 
     String fromZk =
-        new String(zkClient.getData("/solr.xml", null, null, true), StandardCharsets.UTF_8);
+        new String(zkClient.getData("/foo.xml", null, null, true), StandardCharsets.UTF_8);
     Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
     String fromLoc = Files.readString(locFile);
     assertEquals("Should get back what we put in ZK", fromZk, fromLoc);
@@ -255,7 +255,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           zkServer.getZkAddress(),
           "-cmd",
           "putfile",
-          "/solr.xml",
+          "/foo.xml",
           SOLR_HOME + File.separator + "not-there.xml"
         };
     NoSuchFileException e = expectThrows(NoSuchFileException.class, () -> ZkCLI.main(args));
