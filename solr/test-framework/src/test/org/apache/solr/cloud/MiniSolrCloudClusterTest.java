@@ -212,8 +212,7 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
               if (solrXml == null) {
                 solrXml = DEFAULT_CLOUD_SOLR_XML;
               }
-              Files.write(
-                  runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
+              Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
               JettyConfig newConfig = JettyConfig.builder(config).build();
               JettySolrRunner jetty =
                   new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
