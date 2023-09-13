@@ -22,18 +22,19 @@ resource configuration.
 
 == When To Use Circuit Breakers
 Circuit breakers should be used when the user wishes to trade request throughput for a higher Solr stability.
-If circuit breakers are enabled, requests may be rejected under the condition of high node duress with an appropriate HTTP error code (typically 503).
+If circuit breakers are enabled, requests may be rejected under the condition of high node duress with HTTP error code 429 'Too Many Requests'.
 
 It is up to the client to handle this error and potentially build a retrial logic as this should ideally be a transient situation.
 
 == Circuit Breaker Configurations
 All circuit breaker configurations are listed as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown below.
+A circuit breaker can register itself to trip for query requests and/or update requests. By default only search requests are affected. A user may register multiple circuit breakers of the same type with different thresholds for each request type.
 
 == Currently Supported Circuit Breakers
 
 === JVM Heap Usage
 
-This circuit breaker tracks JVM heap memory usage and rejects incoming search requests with a 503 error code if the heap usage exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx).
+This circuit breaker tracks JVM heap memory usage and rejects incoming requests with a 429 error code if the heap usage exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx).
 The main configuration for this circuit breaker is controlling the threshold percentage at which the breaker will trip.
 
 To enable and configure the JVM heap usage based circuit breaker, add the following:
@@ -72,8 +73,32 @@ To enable and configure the CPU utilization based circuit breaker:
 
 The `threshold` is defined in units of CPU utilization.
 
+== Advanced example
+
+In this example we will prevent update requests above 80% CPU load, and prevent query requests above 95% CPU load. Supported request types are `query` and `update`.
+This would prevent expensive bulk updates from impacting search. Note also the support for short-form class name.
+
+[source,xml]
+----
+<config>
+  <circuitBreaker class="solr.CPUCircuitBreaker">
+   <double  name="threshold">80</double>
+   <arr name="requestTypes">
+     <str>update</str>
+   </arr>
+  </circuitBreaker>
+
+  <circuitBreaker class="solr.CPUCircuitBreaker">
+   <double  name="threshold">95</double>
+   <arr name="requestTypes">
+     <str>query</str>
+   </arr>
+  </circuitBreaker>
+</config>
+----
+
 == Performance Considerations
 
-It is worth noting that while JVM or CPU circuit breakers do not add any noticeable overhead per query, having too many circuit breakers checked for a single request can cause a performance overhead.
+It is worth noting that while JVM or CPU circuit breakers do not add any noticeable overhead per request, having too many circuit breakers checked for a single request can cause a performance overhead.
 
 In addition, it is a good practice to exponentially back off while retrying requests on a busy node.

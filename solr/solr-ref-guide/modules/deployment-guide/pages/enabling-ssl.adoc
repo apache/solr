@@ -90,7 +90,8 @@ SOLR_SSL_NEED_CLIENT_AUTH=false
 # Enable clients to authenticate (but not require)
 SOLR_SSL_WANT_CLIENT_AUTH=false
 # SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-# this to false can be useful to disable these checks when re-using a certificate on many hosts
+# this to false can be useful to disable these checks when re-using a certificate on many hosts.
+# This will also be used for the default value of whether SNI Host checking should be enabled.
 SOLR_SSL_CHECK_PEER_NAME=true
 ----
 ====
@@ -114,7 +115,8 @@ set SOLR_SSL_NEED_CLIENT_AUTH=false
 REM Enable clients to authenticate (but not require)
 set SOLR_SSL_WANT_CLIENT_AUTH=false
 REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-REM this to false can be useful to disable these checks when re-using a certificate on many hosts
+REM this to false can be useful to disable these checks when re-using a certificate on many hosts.
+REM This will also be used for the default value of whether SNI Host checking should be enabled.
 set SOLR_SSL_CHECK_PEER_NAME=true
 ----
 ====
@@ -123,7 +125,7 @@ set SOLR_SSL_CHECK_PEER_NAME=true
 .Client Authentication Settings
 WARNING: Enable either `SOLR_SSL_NEED_CLIENT_AUTH` or `SOLR_SSL_WANT_CLIENT_AUTH` but not both at the same time.
 They are mutually exclusive and Jetty will select one of them which may not be what you expect.
-`SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` should be set to false if you want to disable hostname verification.
+`SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` should be set to false if you want to disable hostname verification for client certificates.
 
 When you start Solr, the `bin/solr` script includes these settings and will pass them as system properties to the JVM.
 
