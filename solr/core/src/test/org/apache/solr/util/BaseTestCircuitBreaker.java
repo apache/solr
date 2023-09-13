@@ -43,6 +43,7 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static void indexDocs() {
+    removeAllExistingCircuitBreakers();
     for (int i = 0; i < 20; i++) {
       assertU(adoc("name", "john smith", "id", "1"));
       assertU(adoc("name", "johathon smith", "id", "2"));
@@ -269,7 +270,7 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
         CircuitBreaker.getErrorCode(List.of(new MemoryCircuitBreaker())));
   }
 
-  private void removeAllExistingCircuitBreakers() {
+  private static void removeAllExistingCircuitBreakers() {
     h.getCore().getCircuitBreakerRegistry().deregisterAll();
   }
 
