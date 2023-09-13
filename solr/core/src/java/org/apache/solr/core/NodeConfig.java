@@ -212,6 +212,7 @@ public class NodeConfig {
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
     final SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     initModules(loader, null);
+    nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
     return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
   }
 
