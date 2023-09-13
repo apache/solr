@@ -1051,7 +1051,7 @@ public class RealTimeGetComponent extends SearchComponent {
       for (String id : reqIds.allIds) {
         Slice slice =
             coll.getRouter()
-                .getTargetSlice(params.get(ShardParams._ROUTE_, id), null, null, params, coll);
+                .getTargetSlice(id, null, params.get(ShardParams._ROUTE_), params, coll);
         if (slice == null) {
           continue;
         }
