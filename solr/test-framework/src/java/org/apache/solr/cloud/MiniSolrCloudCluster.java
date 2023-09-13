@@ -262,7 +262,7 @@ public class MiniSolrCloudCluster {
   MiniSolrCloudCluster(
       int numServers,
       Path baseDir,
-      String solrXml, // TODO: ??????
+      String solrXml,
       JettyConfig jettyConfig,
       ZkTestServer zkTestServer,
       Optional<String> securityJson,
@@ -299,9 +299,9 @@ public class MiniSolrCloudCluster {
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
+      // NOCOMMIT: Create chroot here, not sure why it is now necessary?
+      zkClient.makePath("/solr", false, true);
       if (!zkClient.exists("/solr/clusterprops.json", true)) {
-        // NOCOMMIT: Remove
-        log.warn("Tests will not upload solr.xml to Zookeeper");
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
           zkClient.makePath(
               "/solr" + ZkStateReader.CLUSTER_PROPS,
@@ -317,7 +317,12 @@ public class MiniSolrCloudCluster {
 
     List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
     for (int i = 0; i < numServers; ++i) {
-      startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig));
+      // NOCOMMIT: Workaround to uploading solr.xml to ZK: Copy the file to each jetty
+      String nodeName = newNodeName();
+      Path instancePath = createInstancePath(nodeName);
+      // Write contents of solrXml variable to file "solr.xml" inside instancePath
+      Files.write(instancePath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
+      startups.add(() -> startJettySolrRunner(nodeName, jettyConfig));
     }
 
     final ExecutorService executorLauncher =
@@ -412,7 +417,9 @@ public class MiniSolrCloudCluster {
 
   private Path createInstancePath(String name) throws IOException {
     Path instancePath = baseDir.resolve(name);
-    Files.createDirectory(instancePath);
+    if (!Files.exists(instancePath)) {
+      Files.createDirectory(instancePath);
+    }
     return instancePath;
   }
 
