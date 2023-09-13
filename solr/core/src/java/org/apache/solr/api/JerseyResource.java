@@ -103,4 +103,11 @@ public class JerseyResource {
           SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: " + parameterName);
     }
   }
+
+  protected void ensureRequiredRequestBodyProvided(Object requestBody) {
+    if (requestBody == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Required request-body is missing");
+    }
+  }
 }

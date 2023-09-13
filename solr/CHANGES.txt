@@ -65,6 +65,9 @@ Improvements
 
 * SOLR-14886: Suppress stack traces in query response (Isabelle Giguere via Alex Deparvu)
 
+* SOLR-16461: `/solr/coreName/replication?command=backup` now has a v2 equivalent, available at
+  `/api/cores/coreName/replication/backups` (Sanjay Dutt, Jason Gerlowski, Alex Deparvu)
+
 Optimizations
 ---------------------
 
