@@ -262,7 +262,7 @@ public class MiniSolrCloudCluster {
   MiniSolrCloudCluster(
       int numServers,
       Path baseDir,
-      String solrXml,
+      String solrXml, // TODO: ??????
       JettyConfig jettyConfig,
       ZkTestServer zkTestServer,
       Optional<String> securityJson,
@@ -299,8 +299,9 @@ public class MiniSolrCloudCluster {
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      if (!zkClient.exists("/solr/solr.xml", true)) {
-        zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
+      if (!zkClient.exists("/solr/clusterprops.json", true)) {
+        // NOCOMMIT: Remove
+        log.warn("Tests will not upload solr.xml to Zookeeper");
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
           zkClient.makePath(
               "/solr" + ZkStateReader.CLUSTER_PROPS,
