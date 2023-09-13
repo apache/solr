@@ -42,6 +42,8 @@ Deprecation Removals
 
 * SOLR-16893: Remove bin/solr create_core and create_collection commands in favour of bin/solr create command.  (Eric Pugh)
 
+* SOLR-15959: Remove deprecated feature to load solr.xml from ZK (janhoy)
+
 Dependency Upgrades
 ---------------------
 (No changes)
