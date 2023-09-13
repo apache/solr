@@ -122,6 +122,8 @@ Bug Fixes
 * SOLR-16963: The "solr.jetty.ssl.verifyClientHostName" sysProp and "SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" envVar have been fixed,
   and the setting once again tells the server to check the originating client hostname against the client certificate when doing mTLS. (Houston Putman, Tomás Fernández Löbbe)
 
+* SOLR-16973: fix REMOTE_JMX_OPTS to delayed expansion (Tiziano Degaetano via Colvin Cowie)
+
 Dependency Upgrades
 ---------------------
 
