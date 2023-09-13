@@ -265,7 +265,14 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
     return Path.of(path).isAbsolute();
   }
 
+  public interface SizeAware {
+    long size() throws IOException;
+  }
+
   public static long sizeOfDirectory(Directory directory) throws IOException {
+    if (directory instanceof SizeAware) {
+      return ((SizeAware) directory).size();
+    }
     final String[] files = directory.listAll();
     long size = 0;
 
