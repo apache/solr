@@ -328,8 +328,9 @@ solrAdminServices.factory('System',
       }
 
       function sha256(str) {
-        const encoder = new TextEncoder();
-        return window.crypto.subtle.digest("SHA-256", encoder.encode(str));
+        const shaObj = new jsSHA("SHA-256", "TEXT", { encoding: "UTF8" });
+        shaObj.update(str);
+        return shaObj.getHash("UINT8ARRAY");
       }
 
       function base64urlencode(a) {
