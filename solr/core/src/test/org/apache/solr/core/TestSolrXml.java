@@ -135,6 +135,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
                     : Set.of("/tmp", "/home/john").stream()
                         .map(s -> Path.of(s))
                         .collect(Collectors.toSet())));
+    assertTrue("hideStackTrace", cfg.hideStackTraces());
     System.clearProperty("solr.allowPaths");
   }
 

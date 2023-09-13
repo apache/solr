@@ -19,8 +19,6 @@ Improvements
 
 * SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
 
-* SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
-
 Optimizations
 ---------------------
 (No changes)
@@ -74,6 +72,10 @@ New Features
 
 * SOLR-16954: Make Circuit Breakers available for Update Requests (janhoy, Christine Poerschke, Pierre Salagnac)
 
+* SOLR-15771: bin/auth creates reasonable roles and permissions for security: 'search', 'index', 'admin', and 'superadmin' and assigns user superadmin role. (Eric Pugh, janhoy)
+
+* SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
+
 Improvements
 ---------------------
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
@@ -121,6 +123,10 @@ Improvements
 
 * SOLR-16970: SOLR_OPTS is now able to override options set by the Solr control scripts, "bin/solr" and "bin/solr.cmd". (Houston Putman)
 
+* SOLR-14886: Suppress stack traces in query response (Isabelle Giguere via Alex Deparvu)
+
+* SOLR-16461: `/solr/coreName/replication?command=backup` now has a v2 equivalent, available at
+  `/api/cores/coreName/replication/backups` (Sanjay Dutt, Jason Gerlowski, Alex Deparvu)
 
 Optimizations
 ---------------------
@@ -170,6 +176,8 @@ Bug Fixes
 
 * SOLR-16415: asyncId must not have '/'; enforce this.  Enhance ZK cleanup to process directories
   instead of fail.  (David Smiley, Paul McArthur)
+
+* SOLR-16899: CoreAdminOp are statically registered in CoreAdminHandler, preventing more than one Solr instance in the same JVM (Vincent Primault via Alex Deparvu)
 
 * SOLR-16963: The "solr.jetty.ssl.verifyClientHostName" sysProp and "SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" envVar have been fixed,
   and the setting once again tells the server to check the originating client hostname against the client certificate when doing mTLS. (Houston Putman, Tomás Fernández Löbbe)

@@ -906,9 +906,11 @@ public class QueryComponent extends SearchComponent {
             t = ((SolrServerException) t).getCause();
           }
           nl.add("error", t.toString());
-          StringWriter trace = new StringWriter();
-          t.printStackTrace(new PrintWriter(trace));
-          nl.add("trace", trace.toString());
+          if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+            StringWriter trace = new StringWriter();
+            t.printStackTrace(new PrintWriter(trace));
+            nl.add("trace", trace.toString());
+          }
           if (srsp.getShardAddress() != null) {
             nl.add("shardAddress", srsp.getShardAddress());
           }
@@ -1297,9 +1299,11 @@ public class QueryComponent extends SearchComponent {
                 t = ((SolrServerException) t).getCause();
               }
               nl.add("error", t.toString());
-              StringWriter trace = new StringWriter();
-              t.printStackTrace(new PrintWriter(trace));
-              nl.add("trace", trace.toString());
+              if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+                StringWriter trace = new StringWriter();
+                t.printStackTrace(new PrintWriter(trace));
+                nl.add("trace", trace.toString());
+              }
             }
           }
 
