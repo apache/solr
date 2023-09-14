@@ -44,7 +44,6 @@ import org.apache.commons.exec.Executor;
 import org.apache.commons.exec.OS;
 import org.apache.commons.exec.environment.EnvironmentUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -256,7 +255,7 @@ public class RunExampleTool extends ToolBase {
     String zkHost = cli.getOptionValue('z');
     int port =
         Integer.parseInt(
-            cli.getOptionValue('p', SystemUtils.getEnvironmentVariable("SOLR_PORT", "8983")));
+            cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
     Map<String, Object> nodeStatus =
         startSolr(new File(exDir, "solr"), isCloudMode, cli, port, zkHost, 30);
 
@@ -441,7 +440,7 @@ public class RunExampleTool extends ToolBase {
     int numNodes = 2;
     int defaultPort =
         Integer.parseInt(
-            cli.getOptionValue('p', SystemUtils.getEnvironmentVariable("SOLR_PORT", "8983")));
+            cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
     int[] cloudPorts = new int[] {defaultPort, defaultPort + 1, defaultPort + 2, defaultPort + 3};
     File cloudDir = new File(exampleDir, "cloud");
     if (!cloudDir.isDirectory()) cloudDir.mkdir();
