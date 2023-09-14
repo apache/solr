@@ -64,7 +64,7 @@ public class SimplePropagator implements TextMapPropagator {
       GlobalOpenTelemetry.set(otel);
       loaded = true;
     }
-    return GlobalOpenTelemetry.getTracer("solr");
+    return TraceUtils.getGlobalTracer();
   }
 
   public static TextMapPropagator getInstance() {

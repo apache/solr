@@ -1288,6 +1288,13 @@ public class MiniSolrCloudCluster {
       return this;
     }
 
+    /**
+     * Disables the default/built-in simple trace ID generation/propagation.
+     *
+     * <p>Tracers are registered as global singletons and if for example a test needs to use a
+     * MockTracer or a "real" Tracer, it needs to call this method so that the test setup doesn't
+     * accidentally reset the Tracer it wants to use.
+     */
     public Builder withTraceIdGenerationDisabled() {
       this.disableTraceIdGeneration = true;
       return this;
