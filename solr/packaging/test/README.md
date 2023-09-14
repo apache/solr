@@ -31,7 +31,7 @@ Individual test files can be selected by specifying the `--tests [test_file.bats
  The `--tests` option may be repeated to select multiple test files to run.
  Wildcarding or specifying individual test methods is currently not supported.
 
-Tests do not currently randomize ports or directories, so they cannot be run
+Most tests use a random port, but the examples use hardcoded ports. For this reason, tests cannot be run
  in parallel. They may also fail if you already have an external cluster up.
 
 ## Writing Tests
