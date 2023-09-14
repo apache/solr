@@ -47,7 +47,7 @@ teardown() {
       "class": "solr.extraction.ExtractingRequestHandler",
       "defaults":{ "lowernames": "true", "captureAttr":"true"}
     }
-  }' 'http://localhost:${SOLR_PORT}/solr/gettingstarted/config'
+  }' "http://localhost:${SOLR_PORT}/solr/gettingstarted/config"
 
   curl "http://localhost:${SOLR_PORT}/solr/gettingstarted/update/extract?literal.id=doc1&commit=true" -F "myfile=@${SOLR_TIP}/example/exampledocs/solr-word.pdf"
   
@@ -70,7 +70,7 @@ teardown() {
       "class": "solr.extraction.ExtractingRequestHandler",
       "defaults":{ "lowernames": "true", "captureAttr":"true"}
     }
-  }' 'http://localhost:${SOLR_PORT}/solr/content_extraction/config'
+  }' "http://localhost:${SOLR_PORT}/solr/content_extraction/config"
   
   # We filter to pdf to invoke the Extract handler.
   run solr post -filetypes pdf -commit -url http://localhost:${SOLR_PORT}/solr/content_extraction/update ${SOLR_TIP}/example/exampledocs
@@ -97,7 +97,7 @@ teardown() {
       "class": "solr.extraction.ExtractingRequestHandler",
       "defaults":{ "lowernames": "true", "captureAttr":"true"}
     }
-  }' 'http://localhost:${SOLR_PORT}/solr/website_extraction/config'
+  }' "http://localhost:${SOLR_PORT}/solr/website_extraction/config"
   
   # Change to -recursive 1 to crawl multiple pages, but may be too slow.
   run solr post -mode web -commit -url http://localhost:${SOLR_PORT}/solr/website_extraction/update -recursive 0 -delay 1 https://solr.apache.org/
