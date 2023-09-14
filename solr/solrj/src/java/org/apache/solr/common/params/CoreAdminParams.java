@@ -29,6 +29,13 @@ public abstract class CoreAdminParams {
   /** Should the STATUS request include index info * */
   public static final String INDEX_INFO = "indexInfo";
 
+  /**
+   * For STATUS indexInfo requests that track Directory size on-heap, this arg causes the on-heap
+   * size to be reconciled with the filesystem, re-initializing the on-heap tracking if the
+   * difference in bytes is more than the specified amount.
+   */
+  public static final String RECONCILE_THRESHOLD = "reconcileThreshold";
+
   /** If you rename something, what is the new name * */
   public static final String NAME = "name";
 

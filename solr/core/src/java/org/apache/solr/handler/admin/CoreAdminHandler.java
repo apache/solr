@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STAT
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
+import java.io.Closeable;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -114,6 +115,27 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   public CoreAdminHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     this.coreAdminAsyncTracker = new CoreAdminAsyncTracker();
+  }
+
+  private static final ThreadLocal<Integer> RECONCILE_THRESHOLD = new ThreadLocal<>();
+
+  private static final Closeable CLEAR_RECONCILE_THRESHOLD = RECONCILE_THRESHOLD::remove;
+
+  public static Closeable setReconcileThreshold(String spec) {
+    if (spec != null && !spec.isEmpty()) {
+      int size = Integer.parseInt(spec);
+      if (size >= 0) {
+        RECONCILE_THRESHOLD.set(size);
+      } else if (size == -1) {
+        // support special value `-1` to effectively just print log messages
+        RECONCILE_THRESHOLD.set(Integer.MAX_VALUE);
+      }
+    }
+    return CLEAR_RECONCILE_THRESHOLD;
+  }
+
+  public static Integer getReconcileThreshold() {
+    return RECONCILE_THRESHOLD.get();
   }
 
   @Override
