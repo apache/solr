@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import io.opentelemetry.api.trace.Tracer;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
+import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -74,22 +75,41 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
   }
 
   /**
-   * best effort way to determine if we should attempt to init OTEL from system properties.
+   * Best effort way to determine if we should attempt to init OTEL from system properties.
    *
    * @return true if OTEL should be init
    */
   static boolean shouldAutoConfigOTEL() {
-    boolean isSdkDisabled = Boolean.parseBoolean(getConfig("OTEL_SDK_DISABLED"));
+    var env = System.getenv();
+    boolean isSdkDisabled = Boolean.parseBoolean(getConfig("OTEL_SDK_DISABLED", env));
     if (isSdkDisabled) {
       return false;
     }
-    return getConfig("OTEL_SERVICE_NAME") != null;
+    return getConfig("OTEL_SERVICE_NAME", env) != null;
   }
 
-  private static String getConfig(String envName) {
-    String envValue = System.getenv().get(envName);
-    String sysName = envName.toLowerCase(Locale.ROOT).replace("_", ".");
+  /**
+   * Returns system property if found, else returns environment variable, or null if none found.
+   *
+   * @param envName the environment variable to look for
+   * @param env current env
+   * @return the resolved value
+   */
+  protected static String getConfig(String envName, Map<String, String> env) {
+    String sysName = envNameToSyspropName(envName);
     String sysValue = System.getProperty(sysName);
+    String envValue = env.get(envName);
     return sysValue != null ? sysValue : envValue;
+  }
+
+  /**
+   * In OTEL Java SDK there is a convention that the java property name for OTEL_FOO_BAR is
+   * otel.foo.bar
+   *
+   * @param envName the environmnet name to convert
+   * @return the corresponding sysprop name
+   */
+  protected static String envNameToSyspropName(String envName) {
+    return envName.toLowerCase(Locale.ROOT).replace("_", ".");
   }
 }

@@ -152,24 +152,11 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   /**
    * Returns system property if found, else returns environment variable, or null if none found.
    *
-   * @param envName the environment to look for
+   * @param envName the environment variable to look for
    * @return the resolved value
    */
   String getEnvOrSysprop(String envName) {
-    String envValue = currentEnv.get(envName);
-    String propValue = System.getProperty(envNameToSyspropName(envName));
-    return propValue != null ? propValue : envValue;
-  }
-
-  /**
-   * In OTEL Java SDK there is a convention that the java property name for OTEL_FOO_BAR is
-   * otel.foo.bar
-   *
-   * @param envName the environmnet name to convert
-   * @return the corresponding sysprop name
-   */
-  static String envNameToSyspropName(String envName) {
-    return envName.toLowerCase(Locale.ROOT).replace("_", ".");
+    return getConfig(envName, currentEnv);
   }
 
   /**

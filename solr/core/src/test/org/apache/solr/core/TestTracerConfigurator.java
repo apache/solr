@@ -40,4 +40,14 @@ public class TestTracerConfigurator extends SolrTestCaseJ4 {
       System.clearProperty("otel.service.name");
     }
   }
+
+  @Test
+  public void otelDisabledByProperty() {
+    System.setProperty("OTEL_SDK_DISABLED", "true");
+    try {
+      assertFalse(TracerConfigurator.shouldAutoConfigOTEL());
+    } finally {
+      System.clearProperty("OTEL_SDK_DISABLED");
+    }
+  }
 }
