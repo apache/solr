@@ -147,8 +147,6 @@ fi
 : "${SOLR_STOP_WAIT:=180}"
 : "${SOLR_START_WAIT:=$SOLR_STOP_WAIT}" # defaulting to $SOLR_STOP_WAIT for backwards compatibility reasons
 
-# Store whether a solr port was explicitly provided, for the "solr stop" command.
-PROVIDED_SOLR_PORT="${SOLR_PORT:-}"
 : "${SOLR_PORT:=8983}"
 export SOLR_PORT
 
@@ -412,7 +410,7 @@ function print_usage() {
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
-    echo "Usage: solr stop [-k key] [-p port] [-V]"
+    echo "Usage: solr stop [-k key] [-p port] [-all] [-V]"
     echo ""
     echo "  -k <key>      Stop key; default is solrrocks"
     echo ""
