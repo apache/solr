@@ -238,7 +238,15 @@ task integrationTests(type: BatsTask) {
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
   def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
-  def solrPort = new Random().nextInt(10000, 50000)
+  var solrPort = Integer.parseInt((String) project.findProperty('bats.port') ?: System.getProperty("bats.port", "-1"))
+  while (solrPort > 64000 || solrPort < 0) { // We need room for +1000 for ZK
+    try (ServerSocket s = new ServerSocket(0)) {
+      solrPort = s.getLocalPort()
+    } catch (Exception e) {
+      println("WARN: Could not assign random port for Bats tests. Using default port 8983.")
+      solrPort = 8983
+    }
+  }
 
   inputs.dir(distDir)
   outputs.dir(integrationTestOutput)
@@ -288,6 +296,7 @@ class BatsTask extends Exec {
     // Note: tests to run must be listed after all other arguments
     // Additional debugging output: -x, --verbose-run
     setArgs(['-T', '--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+
 
     super.exec()
   }

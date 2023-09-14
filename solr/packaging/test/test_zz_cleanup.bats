@@ -25,12 +25,13 @@ teardown_file() {
   common_setup
 }
 
-@test "Cleaning up..." {
-  echo "Making sure all solr instances are stopped"
-  run solr stop -p ${SOLR3_PORT}
-  run solr stop -p ${SOLR2_PORT}
-  run solr stop -p ${SOLR_PORT}
+setup() {
+  common_setup
+}
+
+@test "Cleanup" {
+  sleep 1
   run solr stop -all
-  run solr status
+  run solr status -maxWaitSecs 10
   assert_output --partial "No Solr nodes are running"
 }

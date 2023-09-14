@@ -32,7 +32,8 @@ Individual test files can be selected by specifying the `--tests [test_file.bats
  Wildcarding or specifying individual test methods is currently not supported.
 
 Tests run Solr on a randomly assigned port number, so these tests should be able to run even if you have Solr
-running on the host already.
+running on the host already. To force tests to start Solr on a specific port, set the `bats.port` gradle
+property or system property, e.g. `./gradlew integrationTests -Pbats.port=8983`.
 
 ## Writing Tests
 
