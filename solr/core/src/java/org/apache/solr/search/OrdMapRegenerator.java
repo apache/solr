@@ -35,6 +35,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.util.IOFunction;
@@ -57,7 +59,9 @@ public class OrdMapRegenerator implements CacheRegenerator {
     this.regenKeepAliveNanos = regenKeepAliveNanos;
   }
 
-  public static class OrdinalMapValue implements Supplier<OrdinalMap> {
+  public static class OrdinalMapValue implements Supplier<OrdinalMap>, Accountable {
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(OrdinalMapValue.class);
     private final OrdinalMap ordinalMap;
     private long accessTimestampNanos;
 
@@ -70,6 +74,11 @@ public class OrdMapRegenerator implements CacheRegenerator {
     public OrdinalMap get() {
       accessTimestampNanos = System.nanoTime();
       return ordinalMap;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return BASE_RAM_BYTES_USED + ordinalMap.ramBytesUsed();
     }
   }
 

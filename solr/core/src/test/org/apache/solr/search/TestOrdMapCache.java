@@ -23,6 +23,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.SolrClientTestRule;
@@ -35,7 +36,17 @@ public class TestOrdMapCache extends SolrTestCaseJ4 {
       new EmbeddedSolrServerTestRule() {
         @Override
         protected void before() throws Throwable {
+          // must set NoMergePolicyFactory, because OrdinalMap building depends on the predictable
+          // existence of multiple segments; if the merge policy happens to combine into a single
+          // segment, no OrdinalMap will be built, throwing off our tests
+          systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
           startSolr(LuceneTestCase.createTempDir());
+        }
+
+        @Override
+        protected void after() {
+          systemClearPropertySolrTestsMergePolicyFactory();
+          super.after();
         }
       };
 
