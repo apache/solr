@@ -22,7 +22,6 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import java.util.List;
@@ -36,7 +35,6 @@ public class TraceUtils {
 
   private static final String REQ_ATTR_TRACING_SPAN = Span.class.getName();
   private static final String REQ_ATTR_TRACING_TRACER = Tracer.class.getName();
-  private static final Tracer NOOP_TRACER = TracerProvider.noop().get(null);
 
   public static final String DEFAULT_SPAN_NAME = "http.request";
   public static final String WRITE_QUERY_RESPONSE_SPAN_NAME = "writeQueryResponse";
@@ -66,8 +64,8 @@ public class TraceUtils {
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
 
-  public static Tracer noop() {
-    return NOOP_TRACER;
+  public static Tracer getGlobalTracer() {
+    return GlobalOpenTelemetry.getTracer("solr");
   }
 
   public static TextMapPropagator getTextMapPropagator() {

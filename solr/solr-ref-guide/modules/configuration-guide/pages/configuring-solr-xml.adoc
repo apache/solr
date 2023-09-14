@@ -39,6 +39,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
   <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.allowUrls:}</str>
+  <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
 
   <solrcloud>
 
@@ -253,6 +254,15 @@ In SolrCloud mode, the allow-list is automatically configured to include all liv
 +
 The allow-list can also be configured with the `solr.allowUrls` system property in `solr.in.sh` / `solr.in.cmd`.
 If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
+
+`hideStackTrace`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+When this attribute is set to `true`, Solr will not return any stack traces in the HTTP response in case of errors.  By default (`false`), stack traces are hidden only for predictable Solr exceptions, but are returned in the response for unexpected exceptions (i.e.: HTTP 500)
 
 `shareSchema`::
 +

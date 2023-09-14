@@ -268,7 +268,9 @@ public interface CommonParams {
    * Request ID parameter added to all distributed queries (that do not opt out)
    *
    * @see #DISABLE_REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
    */
+  @Deprecated(since = "9.4")
   String REQUEST_ID = "rid";
 
   /**
@@ -277,7 +279,9 @@ public interface CommonParams {
    * <p>Defaults to 'false' if not specified.
    *
    * @see #REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
    */
+  @Deprecated(since = "9.4")
   String DISABLE_REQUEST_ID = "disableRequestId";
 
   /** Request Purpose parameter added to each internal shard request when using debug=track */
