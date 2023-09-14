@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,6 +45,10 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     System.setProperty("otelnothere", "bar");
     System.setProperty("otel.k1", "prop-k1");
     System.setProperty("otel.k3", "prop-k3");
+    NamedList<String> conf = new NamedList<>();
+    conf.add("OTEL_K1", "conf-k1");
+    conf.add("otel.k7", "conf-k7");
+    instance.init(conf);
 
     // to be safe because this test tests tracing.
     resetGlobalTracer();
@@ -66,14 +71,15 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
         Map.of(
             "OTEL_K1", "prop-k1",
             "OTEL_K2", "env-k2",
-            "OTEL_K3", "prop-k3");
+            "OTEL_K3", "prop-k3",
+            "OTEL_K7", "conf-k7");
     assertEquals(expected, instance.getCurrentOtelConfig());
   }
 
   @Test
   public void testGetCurrentOtelConfigAsString() {
     assertEquals(
-        "OTEL_K1=prop-k1; OTEL_K2=env-k2; OTEL_K3=prop-k3",
+        "OTEL_K1=prop-k1; OTEL_K2=env-k2; OTEL_K3=prop-k3; OTEL_K7=conf-k7",
         instance.getCurrentOtelConfigAsString());
   }
 

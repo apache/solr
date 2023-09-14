@@ -22,8 +22,12 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
 import java.lang.invoke.MethodHandles;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.slf4j.Logger;
@@ -35,6 +39,10 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   public static final boolean TRACE_ID_GEN_ENABLED =
       Boolean.parseBoolean(System.getProperty("solr.alwaysOnTraceId", "true"));
+
+  private static final String DEFAULT_CLASS_NAME =
+      System.getProperty(
+          "solr.otelDefaultConfigurator", "org.apache.solr.opentelemetry.OtelTracerConfigurator");
 
   public abstract Tracer getTracer();
 
@@ -52,6 +60,8 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
             configurator.init(info.initArgs);
             return configurator.getTracer();
           });
+    } else if (shouldAutoConfigOTEL()) {
+      GlobalTracer.registerIfAbsent(() -> autoConfigOTEL(loader));
     } else if (TRACE_ID_GEN_ENABLED) {
       SimplePropagator.load();
     }
@@ -101,5 +111,59 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
         scope.close();
       }
     }
+  }
+
+  private static Tracer autoConfigOTEL(SolrResourceLoader loader) {
+    try {
+      TracerConfigurator configurator =
+          loader.newInstance(DEFAULT_CLASS_NAME, TracerConfigurator.class);
+      configurator.init(new NamedList<>());
+      return configurator.getTracer();
+    } catch (SolrException e) {
+      log.error(
+          "Unable to auto-config OpenTelemetry with class {}. Make sure you have enabled the 'opentelemetry' module",
+          DEFAULT_CLASS_NAME,
+          e);
+    }
+    return GlobalTracer.get();
+  }
+
+  /**
+   * Best effort way to determine if we should attempt to init OTEL from system properties.
+   *
+   * @return true if OTEL should be init
+   */
+  static boolean shouldAutoConfigOTEL() {
+    var env = System.getenv();
+    boolean isSdkDisabled = Boolean.parseBoolean(getConfig("OTEL_SDK_DISABLED", env));
+    if (isSdkDisabled) {
+      return false;
+    }
+    return getConfig("OTEL_SERVICE_NAME", env) != null;
+  }
+
+  /**
+   * Returns system property if found, else returns environment variable, or null if none found.
+   *
+   * @param envName the environment variable to look for
+   * @param env current env
+   * @return the resolved value
+   */
+  protected static String getConfig(String envName, Map<String, String> env) {
+    String sysName = envNameToSyspropName(envName);
+    String sysValue = System.getProperty(sysName);
+    String envValue = env.get(envName);
+    return sysValue != null ? sysValue : envValue;
+  }
+
+  /**
+   * In OTEL Java SDK there is a convention that the java property name for OTEL_FOO_BAR is
+   * otel.foo.bar
+   *
+   * @param envName the environmnet name to convert
+   * @return the corresponding sysprop name
+   */
+  protected static String envNameToSyspropName(String envName) {
+    return envName.toLowerCase(Locale.ROOT).replace("_", ".");
   }
 }

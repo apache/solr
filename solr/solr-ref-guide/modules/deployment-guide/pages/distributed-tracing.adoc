@@ -64,6 +64,8 @@ This module brings support for the industry standard https://opentelemetry.io[Op
 <tracerConfig name="tracerConfig" class="org.apache.solr.opentelemetry.OtelTracerConfigurator"/>
 ----
 
+As an alternative to changing the `solr.xml` file, the `OTEL` tracer will be enabled if the system property `otel.service.name` or environment variable `OTEL_SERVICE_NAME` is present. The `opentelemetry` module still needs to be enabled for the tracer to work.
+
 Enable the module with either system property `-Dsolr.modules=opentelemetry` or environment variable `SOLR_MODULES=opentelemetry`.
 
 === Configuration
