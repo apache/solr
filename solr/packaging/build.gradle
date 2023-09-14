@@ -251,7 +251,7 @@ task integrationTests(type: BatsTask) {
 
     // TODO - if quiet then don't tee
     standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
-    println("Runnin BATS tests with Solr base port ${solrPort}")
+    println("Running BATS tests with Solr base port ${solrPort}")
   }
 
   environment SOLR_TIP: distDir.toString()
