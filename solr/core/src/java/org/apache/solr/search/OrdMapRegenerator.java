@@ -60,7 +60,8 @@ public class OrdMapRegenerator implements CacheRegenerator {
   }
 
   public static class OrdinalMapValue implements Supplier<OrdinalMap>, Accountable {
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(OrdinalMapValue.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(OrdinalMapValue.class);
     private final OrdinalMap ordinalMap;
     private long accessTimestampNanos;
 
