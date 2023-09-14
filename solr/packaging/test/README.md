@@ -31,8 +31,8 @@ Individual test files can be selected by specifying the `--tests [test_file.bats
  The `--tests` option may be repeated to select multiple test files to run.
  Wildcarding or specifying individual test methods is currently not supported.
 
-Most tests use a random port, but the examples use hardcoded ports. For this reason, tests cannot be run
- in parallel. They may also fail if you already have an external cluster up.
+Tests run Solr on a randomly assigned port number, so these tests should be able to run even if you have Solr
+running on the host already.
 
 ## Writing Tests
 
