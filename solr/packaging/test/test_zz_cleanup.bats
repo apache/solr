@@ -30,8 +30,6 @@ teardown_file() {
   run solr stop -p ${SOLR3_PORT}
   run solr stop -p ${SOLR2_PORT}
   run solr stop -p ${SOLR_PORT}
-  run solr stop -p ${SOLR_PORT_8983}
-  run solr stop -p ${SOLR_PORT_7574}
   run solr stop -all
   run solr status
   assert_output --partial "No Solr nodes are running"

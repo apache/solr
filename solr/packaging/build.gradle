@@ -260,8 +260,6 @@ task integrationTests(type: BatsTask) {
   environment SOLR_PORT: solrPort
   environment SOLR2_PORT: solrPort + 1
   environment SOLR3_PORT: solrPort + 2
-  environment SOLR_PORT_8983: 8983
-  environment SOLR_PORT_7574: 7574
   environment ZK_PORT: solrPort + 1000
   environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment TEST_OUTPUT_DIR: integrationTestOutput
