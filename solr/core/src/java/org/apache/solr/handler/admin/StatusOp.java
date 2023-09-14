@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.Closeable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,11 +30,13 @@ import org.apache.solr.core.CoreContainer;
 
 class StatusOp implements CoreAdminHandler.CoreAdminOp {
   @Override
+  @SuppressWarnings("try")
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
 
     String cname = params.get(CoreAdminParams.CORE);
     String indexInfo = params.get(CoreAdminParams.INDEX_INFO);
+    String reconcile = params.get(CoreAdminParams.RECONCILE_THRESHOLD);
     boolean isIndexInfoNeeded = Boolean.parseBoolean(null == indexInfo ? "true" : indexInfo);
     NamedList<Object> status = new SimpleOrderedMap<>();
     Map<String, Exception> failures = new HashMap<>();
@@ -41,24 +44,26 @@ class StatusOp implements CoreAdminHandler.CoreAdminOp {
         it.handler.coreContainer.getCoreInitFailures().entrySet()) {
       failures.put(failure.getKey(), failure.getValue().exception);
     }
-    if (cname == null) {
-      List<String> nameList = it.handler.coreContainer.getAllCoreNames();
-      nameList.sort(null);
-      for (String name : nameList) {
+    try (Closeable c = CoreAdminHandler.setReconcileThreshold(reconcile)) {
+      if (cname == null) {
+        List<String> nameList = it.handler.coreContainer.getAllCoreNames();
+        nameList.sort(null);
+        for (String name : nameList) {
+          status.add(
+              name,
+              CoreAdminOperation.getCoreStatus(it.handler.coreContainer, name, isIndexInfoNeeded));
+        }
+        it.rsp.add("initFailures", failures);
+      } else {
+        failures =
+            failures.containsKey(cname)
+                ? Collections.singletonMap(cname, failures.get(cname))
+                : Collections.<String, Exception>emptyMap();
+        it.rsp.add("initFailures", failures);
         status.add(
-            name,
-            CoreAdminOperation.getCoreStatus(it.handler.coreContainer, name, isIndexInfoNeeded));
+            cname,
+            CoreAdminOperation.getCoreStatus(it.handler.coreContainer, cname, isIndexInfoNeeded));
       }
-      it.rsp.add("initFailures", failures);
-    } else {
-      failures =
-          failures.containsKey(cname)
-              ? Collections.singletonMap(cname, failures.get(cname))
-              : Collections.<String, Exception>emptyMap();
-      it.rsp.add("initFailures", failures);
-      status.add(
-          cname,
-          CoreAdminOperation.getCoreStatus(it.handler.coreContainer, cname, isIndexInfoNeeded));
     }
     it.rsp.add("status", status);
   }
