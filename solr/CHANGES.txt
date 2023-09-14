@@ -130,6 +130,8 @@ Improvements
 
 * SOLR-16938: Auto configure tracer without a <tracerConfig> tag in solr.xml (Alex Deparvu)
 
+* SOLR-16950: SimpleTracer propagation for manual transaction ids
+
 Optimizations
 ---------------------
 
