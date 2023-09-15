@@ -238,6 +238,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
       boolean opennedRealtimeSearcher = false;
       BytesRefBuilder idBytes = new BytesRefBuilder();
+      Map<String, SolrDocumentFetcher.DVIterEntry> reuseDvIters = new HashMap<>();
       for (String idStr : reqIds.allIds) {
         fieldType.readableToIndexed(idStr, idBytes);
         // if _route_ is passed, id is a child doc.  TODO remove in SOLR-15064
@@ -348,7 +349,8 @@ public class RealTimeGetComponent extends SearchComponent {
             searcherInfo.getSearcher().doc(docid, rsp.getReturnFields().getLuceneFieldNames());
         SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
         SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
-        docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(true));
+        docFetcher.decorateDocValueFields(
+            doc, docid, docFetcher.getNonStoredDVs(true), reuseDvIters);
         if (null != transformer) {
           if (null == resultContext) {
             // either first pass, or we've re-opened searcher - either way now we setContext
@@ -575,7 +577,7 @@ public class RealTimeGetComponent extends SearchComponent {
       if (!doc.containsKey(VERSION_FIELD)) {
         searcher
             .getDocFetcher()
-            .decorateDocValueFields(doc, docid, Collections.singleton(VERSION_FIELD));
+            .decorateDocValueFields(doc, docid, Collections.singleton(VERSION_FIELD), null);
       }
 
       long docVersion = (long) doc.getFirstValue(VERSION_FIELD);

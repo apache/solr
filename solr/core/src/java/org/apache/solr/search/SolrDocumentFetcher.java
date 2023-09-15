@@ -26,8 +26,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -58,6 +60,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.misc.document.LazyDocument;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.NumericUtils;
@@ -84,6 +87,8 @@ public class SolrDocumentFetcher {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrIndexSearcher searcher;
+
+  private final int nLeaves;
 
   private final boolean enableLazyFieldLoading;
 
@@ -120,6 +125,7 @@ public class SolrDocumentFetcher {
   @SuppressWarnings({"unchecked"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
+    this.nLeaves = searcher.getTopReaderContext().leaves().size();
     this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
     if (cachingEnabled) {
       documentCache =
@@ -562,26 +568,32 @@ public class SolrDocumentFetcher {
    * @param fields The fields with docValues to populate the document with. DocValues fields which
    *     do not exist or not decodable will be ignored.
    */
-  public void decorateDocValueFields(SolrDocumentBase<?, ?> doc, int docid, Set<String> fields)
+  public void decorateDocValueFields(
+      SolrDocumentBase<?, ?> doc,
+      int docid,
+      Set<String> fields,
+      Map<String, DVIterEntry> reuseDvIters)
       throws IOException {
     final List<LeafReaderContext> leafContexts = searcher.getLeafContexts();
     final int subIndex = ReaderUtil.subIndex(docid, leafContexts);
     final int localId = docid - leafContexts.get(subIndex).docBase;
     final LeafReader leafReader = leafContexts.get(subIndex).reader();
     final Set<String> declaredDynamicEventsFields =
-        getDeclaredDynamicEventsFields(localId, leafReader);
+        getDeclaredDynamicEventsFields(localId, leafReader, subIndex, reuseDvIters);
     for (String fieldName : fields) {
       if (declaredDynamicEventsFields != null
           && fieldName.startsWith("evt_")
           && !declaredDynamicEventsFields.contains(fieldName)) {
         continue;
       }
-      Object fieldValue = decodeDVField(localId, leafReader, fieldName);
+      Object fieldValue = decodeDVField(localId, leafReader, fieldName, subIndex, reuseDvIters);
       if (fieldValue != null) {
         doc.setField(fieldName, fieldValue);
       }
     }
   }
+
+  private static final String DYNAMIC_EVENTS_FIELDS_FNAME = "DynamicEventsFields";
 
   /**
    * This is a bit of a hack, to support FullStory-specific dynamicFields of type `evt_*`. As these
@@ -593,12 +605,22 @@ public class SolrDocumentFetcher {
    * <p>Here we pull the specific dynamic field names contained in this doc from a field that is
    * populated in an UpdateRequestProcessor.
    */
-  private static Set<String> getDeclaredDynamicEventsFields(int localId, LeafReader leafReader)
+  private Set<String> getDeclaredDynamicEventsFields(
+      int localId, LeafReader leafReader, int subIndex, Map<String, DVIterEntry> reuseDvIters)
       throws IOException {
+    DVIterEntry e;
+    if (reuseDvIters == null) {
+      e = newEntry(DYNAMIC_EVENTS_FIELDS_FNAME);
+    } else {
+      e = reuseDvIters.computeIfAbsent(DYNAMIC_EVENTS_FIELDS_FNAME, this::newEntry);
+    }
+    if (e == null) {
+      return null;
+    }
     final SortedSetDocValues dynamicEventsFields =
-        leafReader.getSortedSetDocValues("DynamicEventsFields");
+        e.getSortedSetDocValues(localId, leafReader, subIndex);
     final Set<String> hasDynamicEventsFields;
-    if (dynamicEventsFields == null || !dynamicEventsFields.advanceExact(localId)) {
+    if (dynamicEventsFields == null) {
       return null; // legacy doc, no filtering
     } else {
       final int ct = dynamicEventsFields.docValueCount();
@@ -624,64 +646,398 @@ public class SolrDocumentFetcher {
     }
   }
 
-  /**
-   * Decode value from DV field for a document
-   *
-   * @return null if DV field is not exist or can not decodable
-   */
-  private Object decodeDVField(int localId, LeafReader leafReader, String fieldName)
-      throws IOException {
+  private DVIterEntry newEntry(String fieldName) {
     final SchemaField schemaField = searcher.getSchema().getFieldOrNull(fieldName);
     FieldInfo fi = searcher.getFieldInfos().fieldInfo(fieldName);
     if (schemaField == null || !schemaField.hasDocValues() || fi == null) {
       return null; // Searcher doesn't have info about this field, hence ignore it.
     }
-
     final DocValuesType dvType = fi.getDocValuesType();
     switch (dvType) {
       case NUMERIC:
-        final NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
+      case BINARY:
+      case SORTED:
+      case SORTED_NUMERIC:
+      case SORTED_SET:
+        return new DVIterEntry(fieldName, schemaField, dvType, nLeaves);
+      default:
+        return null;
+    }
+  }
+
+  public static class DVIterEntry {
+    public final String field;
+    public final SchemaField schemaField;
+    public final DocValuesType type;
+    private final int[] minLocalIds;
+    private final int[] ceilingIds;
+    private final int[] noMatchSince;
+    private final boolean[] consumed;
+    private final NumericDocValues[] ndvs;
+    private final BinaryDocValues[] bdvs;
+    private final SortedDocValues[] sdvs;
+    private final SortedNumericDocValues[] sndvs;
+    private final SortedSetDocValues[] ssdvs;
+
+    private DVIterEntry(String field, SchemaField schemaField, DocValuesType type, int nLeaves) {
+      this.field = field;
+      this.schemaField = schemaField;
+      this.type = type;
+      this.minLocalIds = new int[nLeaves];
+      Arrays.fill(minLocalIds, -1);
+      this.ceilingIds = new int[nLeaves];
+      Arrays.fill(ceilingIds, DocIdSetIterator.NO_MORE_DOCS);
+      this.noMatchSince = new int[nLeaves];
+      Arrays.fill(noMatchSince, DocIdSetIterator.NO_MORE_DOCS);
+      switch (type) {
+        case NUMERIC:
+          this.ndvs = new NumericDocValues[nLeaves];
+          this.bdvs = null;
+          this.sdvs = null;
+          this.sndvs = null;
+          this.ssdvs = null;
+          this.consumed = null;
+          break;
+        case BINARY:
+          this.ndvs = null;
+          this.bdvs = new BinaryDocValues[nLeaves];
+          this.sdvs = null;
+          this.sndvs = null;
+          this.ssdvs = null;
+          this.consumed = null;
+          break;
+        case SORTED:
+          this.ndvs = null;
+          this.bdvs = null;
+          this.sdvs = new SortedDocValues[nLeaves];
+          this.sndvs = null;
+          this.ssdvs = null;
+          this.consumed = null;
+          break;
+        case SORTED_NUMERIC:
+          this.ndvs = null;
+          this.bdvs = null;
+          this.sdvs = null;
+          this.sndvs = new SortedNumericDocValues[nLeaves];
+          this.ssdvs = null;
+          this.consumed = new boolean[nLeaves];
+          break;
+        case SORTED_SET:
+          this.ndvs = null;
+          this.bdvs = null;
+          this.sdvs = null;
+          this.sndvs = null;
+          this.ssdvs = new SortedSetDocValues[nLeaves];
+          this.consumed = new boolean[nLeaves];
+          break;
+        default:
+          throw new IllegalArgumentException();
+      }
+    }
+
+    public NumericDocValues getNumericDocValues(int localId, LeafReader leafReader, int leafOrd)
+        throws IOException {
+      int min = minLocalIds[leafOrd];
+      NumericDocValues dv;
+      if (min == -1) {
+        dv = leafReader.getNumericDocValues(field);
+        if (dv == null) {
+          minLocalIds[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+          return null;
+        }
+        min = dv.nextDoc();
+        minLocalIds[leafOrd] = min;
+        ndvs[leafOrd] = dv;
+        if (localId < min) {
+          return null;
+        } else if (localId == min) {
+          return dv;
+        }
+      } else if (localId < min || localId >= ceilingIds[leafOrd]) {
+        return null;
+      } else {
+        dv = ndvs[leafOrd];
+        int currentDoc = dv.docID();
+        if (localId == currentDoc) {
+          return dv;
+        } else if (localId < currentDoc) {
+          if (localId >= noMatchSince[leafOrd]) {
+            return null;
+          }
+          dv = leafReader.getNumericDocValues(field);
+          ndvs[leafOrd] = dv;
+        }
+      }
+      int found = dv.advance(localId);
+      if (found == localId) {
+        noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+        return dv;
+      } else {
+        if (found == DocIdSetIterator.NO_MORE_DOCS) {
+          ceilingIds[leafOrd] = Math.min(localId, ceilingIds[leafOrd]);
+        }
+        noMatchSince[leafOrd] = localId;
+        return null;
+      }
+    }
+
+    public BinaryDocValues getBinaryDocValues(int localId, LeafReader leafReader, int leafOrd)
+        throws IOException {
+      int min = minLocalIds[leafOrd];
+      BinaryDocValues dv;
+      if (min == -1) {
+        dv = leafReader.getBinaryDocValues(field);
+        if (dv == null) {
+          minLocalIds[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+          return null;
+        }
+        min = dv.nextDoc();
+        minLocalIds[leafOrd] = min;
+        bdvs[leafOrd] = dv;
+        if (localId < min) {
+          return null;
+        } else if (localId == min) {
+          return dv;
+        }
+      } else if (localId < min || localId >= ceilingIds[leafOrd]) {
+        return null;
+      } else {
+        dv = bdvs[leafOrd];
+        int currentDoc = dv.docID();
+        if (localId == currentDoc) {
+          return dv;
+        } else if (localId < currentDoc) {
+          if (localId >= noMatchSince[leafOrd]) {
+            return null;
+          }
+          dv = leafReader.getBinaryDocValues(field);
+          bdvs[leafOrd] = dv;
+        }
+      }
+      int found = dv.advance(localId);
+      if (found == localId) {
+        noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+        return dv;
+      } else {
+        if (found == DocIdSetIterator.NO_MORE_DOCS) {
+          ceilingIds[leafOrd] = Math.min(localId, ceilingIds[leafOrd]);
+        }
+        noMatchSince[leafOrd] = localId;
+        return null;
+      }
+    }
+
+    public SortedDocValues getSortedDocValues(int localId, LeafReader leafReader, int leafOrd)
+        throws IOException {
+      int min = minLocalIds[leafOrd];
+      SortedDocValues dv;
+      if (min == -1) {
+        dv = leafReader.getSortedDocValues(field);
+        if (dv == null || dv.getValueCount() < 1) {
+          minLocalIds[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+          return null;
+        }
+        min = dv.nextDoc();
+        minLocalIds[leafOrd] = min;
+        sdvs[leafOrd] = dv;
+        if (localId < min) {
+          return null;
+        } else if (localId == min) {
+          return dv;
+        }
+      } else if (localId < min || localId >= ceilingIds[leafOrd]) {
+        return null;
+      } else {
+        dv = sdvs[leafOrd];
+        int currentDoc = dv.docID();
+        if (localId == currentDoc) {
+          return dv;
+        } else if (localId < currentDoc) {
+          if (localId >= noMatchSince[leafOrd]) {
+            return null;
+          }
+          dv = leafReader.getSortedDocValues(field);
+          sdvs[leafOrd] = dv;
+        }
+      }
+      int found = dv.advance(localId);
+      if (found == localId) {
+        noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+        return dv;
+      } else {
+        if (found == DocIdSetIterator.NO_MORE_DOCS) {
+          ceilingIds[leafOrd] = Math.min(localId, ceilingIds[leafOrd]);
+        }
+        noMatchSince[leafOrd] = localId;
+        return null;
+      }
+    }
+
+    public SortedNumericDocValues getSortedNumericDocValues(
+        int localId, LeafReader leafReader, int leafOrd) throws IOException {
+      int min = minLocalIds[leafOrd];
+      SortedNumericDocValues dv;
+      if (min == -1) {
+        dv = leafReader.getSortedNumericDocValues(field);
+        if (dv == null) {
+          minLocalIds[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+          return null;
+        }
+        min = dv.nextDoc();
+        minLocalIds[leafOrd] = min;
+        sndvs[leafOrd] = dv;
+        if (localId < min) {
+          consumed[leafOrd] = false;
+          return null;
+        } else if (localId == min) {
+          consumed[leafOrd] = true;
+          return dv;
+        }
+      } else if (localId < min || localId >= ceilingIds[leafOrd]) {
+        return null;
+      } else {
+        dv = sndvs[leafOrd];
+        int currentDoc = dv.docID();
+        if (localId == currentDoc && !consumed[leafOrd]) {
+          return dv;
+        } else if (localId <= currentDoc) {
+          if (localId >= noMatchSince[leafOrd]) {
+            return null;
+          }
+          dv = leafReader.getSortedNumericDocValues(field);
+          sndvs[leafOrd] = dv;
+        }
+      }
+      int found = dv.advance(localId);
+      if (found == localId) {
+        consumed[leafOrd] = true;
+        noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+        return dv;
+      } else {
+        if (found == DocIdSetIterator.NO_MORE_DOCS) {
+          ceilingIds[leafOrd] = Math.min(localId, ceilingIds[leafOrd]);
+        }
+        consumed[leafOrd] = false;
+        noMatchSince[leafOrd] = localId;
+        return null;
+      }
+    }
+
+    public SortedSetDocValues getSortedSetDocValues(int localId, LeafReader leafReader, int leafOrd)
+        throws IOException {
+      int min = minLocalIds[leafOrd];
+      SortedSetDocValues dv;
+      if (min == -1) {
+        dv = leafReader.getSortedSetDocValues(field);
+        if (dv == null || dv.getValueCount() < 1) {
+          minLocalIds[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+          return null;
+        }
+        min = dv.nextDoc();
+        minLocalIds[leafOrd] = min;
+        ssdvs[leafOrd] = dv;
+        if (localId < min) {
+          consumed[leafOrd] = false;
+          return null;
+        } else if (localId == min) {
+          consumed[leafOrd] = true;
+          return dv;
+        }
+      } else if (localId < min || localId >= ceilingIds[leafOrd]) {
+        return null;
+      } else {
+        dv = ssdvs[leafOrd];
+        int currentDoc = dv.docID();
+        if (localId == currentDoc && !consumed[leafOrd]) {
+          return dv;
+        } else if (localId <= currentDoc) {
+          if (localId >= noMatchSince[leafOrd]) {
+            return null;
+          }
+          dv = leafReader.getSortedSetDocValues(field);
+          ssdvs[leafOrd] = dv;
+        }
+      }
+      int found = dv.advance(localId);
+      if (found == localId) {
+        consumed[leafOrd] = true;
+        noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+        return dv;
+      } else {
+        if (found == DocIdSetIterator.NO_MORE_DOCS) {
+          ceilingIds[leafOrd] = Math.min(localId, ceilingIds[leafOrd]);
+        }
+        consumed[leafOrd] = false;
+        noMatchSince[leafOrd] = localId;
+        return null;
+      }
+    }
+  }
+
+  /**
+   * Decode value from DV field for a document
+   *
+   * @return null if DV field is not exist or can not decodable
+   */
+  private Object decodeDVField(
+      int localId,
+      LeafReader leafReader,
+      String fieldName,
+      int readerOrd,
+      Map<String, DVIterEntry> reuseDvIters)
+      throws IOException {
+    DVIterEntry e;
+    if (reuseDvIters == null) {
+      e = newEntry(fieldName);
+    } else {
+      e = reuseDvIters.computeIfAbsent(fieldName, this::newEntry);
+    }
+    if (e == null) {
+      return null;
+    }
+    final DocValuesType dvType = e.type;
+    switch (dvType) {
+      case NUMERIC:
+        final NumericDocValues ndv = e.getNumericDocValues(localId, leafReader, readerOrd);
         if (ndv == null) {
           return null;
         }
-        if (!ndv.advanceExact(localId)) {
-          return null;
-        }
-        Long val = ndv.longValue();
-        return decodeNumberFromDV(schemaField, val, false);
+        long val = ndv.longValue();
+        return decodeNumberFromDV(e.schemaField, val, false);
       case BINARY:
-        BinaryDocValues bdv = leafReader.getBinaryDocValues(fieldName);
-        if (bdv != null && bdv.advanceExact(localId)) {
+        BinaryDocValues bdv = e.getBinaryDocValues(localId, leafReader, readerOrd);
+        if (bdv != null) {
           return BytesRef.deepCopyOf(bdv.binaryValue());
         }
         return null;
       case SORTED:
-        SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
-        if (sdv != null && sdv.advanceExact(localId)) {
+        SortedDocValues sdv = e.getSortedDocValues(localId, leafReader, readerOrd);
+        if (sdv != null) {
           final BytesRef bRef = sdv.lookupOrd(sdv.ordValue());
           // Special handling for Boolean fields since they're stored as 'T' and 'F'.
-          if (schemaField.getType() instanceof BoolField) {
-            return schemaField.getType().toObject(schemaField, bRef);
+          if (e.schemaField.getType() instanceof BoolField) {
+            return e.schemaField.getType().toObject(e.schemaField, bRef);
           } else {
             return bRef.utf8ToString();
           }
         }
         return null;
       case SORTED_NUMERIC:
-        final SortedNumericDocValues numericDv = leafReader.getSortedNumericDocValues(fieldName);
-        if (numericDv != null && numericDv.advance(localId) == localId) {
+        final SortedNumericDocValues numericDv =
+            e.getSortedNumericDocValues(localId, leafReader, readerOrd);
+        if (numericDv != null) {
           final int docValueCount = numericDv.docValueCount();
           final List<Object> outValues = new ArrayList<>(docValueCount);
           for (int i = 0; i < docValueCount; i++) {
             long number = numericDv.nextValue();
-            Object value = decodeNumberFromDV(schemaField, number, true);
+            Object value = decodeNumberFromDV(e.schemaField, number, true);
             // return immediately if the number is not decodable, hence won't return an empty list.
             if (value == null) {
               return null;
             }
             // normally never true but LatLonPointSpatialField uses SORTED_NUMERIC even when single
             // valued
-            else if (schemaField.multiValued() == false) {
+            else if (e.schemaField.multiValued() == false) {
               return value;
             } else {
               outValues.add(value);
@@ -692,21 +1048,21 @@ public class SolrDocumentFetcher {
         }
         return null;
       case SORTED_SET:
-        final SortedSetDocValues values = leafReader.getSortedSetDocValues(fieldName);
-        if (values != null && values.getValueCount() > 0 && values.advance(localId) == localId) {
+        final SortedSetDocValues values = e.getSortedSetDocValues(localId, leafReader, readerOrd);
+        if (values != null) {
           final List<Object> outValues = new ArrayList<>();
           for (long ord = values.nextOrd();
               ord != SortedSetDocValues.NO_MORE_ORDS;
               ord = values.nextOrd()) {
             BytesRef value = values.lookupOrd(ord);
-            outValues.add(schemaField.getType().toObject(schemaField, value));
+            outValues.add(e.schemaField.getType().toObject(e.schemaField, value));
           }
           assert outValues.size() > 0;
           return outValues;
         }
         return null;
       default:
-        return null;
+        throw new IllegalStateException();
     }
   }
 
@@ -800,6 +1156,8 @@ public class SolrDocumentFetcher {
 
     private final SolrReturnFields solrReturnFields;
 
+    private final Map<String, DVIterEntry> reuseDvIters;
+
     RetrieveFieldsOptimizer(SolrReturnFields solrReturnFields) {
       this.storedFields = calcStoredFieldsForReturn(solrReturnFields);
       this.dvFields = calcDocValueFieldsForReturn(solrReturnFields);
@@ -809,6 +1167,7 @@ public class SolrDocumentFetcher {
         dvFields.addAll(storedFields);
         storedFields.clear();
       }
+      reuseDvIters = dvFields.isEmpty() ? null : new HashMap<>();
     }
 
     /**
@@ -930,7 +1289,7 @@ public class SolrDocumentFetcher {
 
         // decorate the document with non-stored docValues fields
         if (returnDVFields()) {
-          decorateDocValueFields(sdoc, luceneDocId, getDvFields());
+          decorateDocValueFields(sdoc, luceneDocId, getDvFields(), reuseDvIters);
         }
       } catch (IOException e) {
         throw new SolrException(
