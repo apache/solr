@@ -1,36 +1,21 @@
 package org.apache.solr.search;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-
-import org.apache.solr.cluster.Cluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.RTimerTree;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.*;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.Principal;
-import java.util.*;
-
-import org.apache.solr.SolrTestCaseJ4;
-
 
 @SolrTestCaseJ4.SuppressSSL
 public class DistributedReRankExplainTest extends SolrCloudTestCase {
@@ -64,7 +49,7 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
   public void testReRankExplain() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     UpdateRequest updateRequest = new UpdateRequest();
-    for(int i=0; i<100; i++) {
+    for (int i = 0; i < 100; i++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(CommonParams.ID, Integer.toString(i));
       doc.addField("test_s", "hello");
@@ -81,8 +66,9 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
     Map<String, Object> debug = queryResponse.getDebugMap();
     assertNotNull(debug);
     String explain = debug.get("explain").toString();
-    assertTrue(explain.contains("5.0101576 = combined scaled first and unscaled second pass score "));
-    
+    assertTrue(
+        explain.contains("5.0101576 = combined scaled first and unscaled second pass score "));
+
     solrParams = new ModifiableSolrParams();
     reRank = "{!rerank reRankDocs=10 reRankScale=0-10 reRankQuery='test_s:hello'}";
     solrParams.add("q", "test_s:hello").add("debug", "true").add(CommonParams.RQ, reRank);
@@ -91,7 +77,7 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
     debug = queryResponse.getDebugMap();
     assertNotNull(debug);
     explain = debug.get("explain").toString();
-    assertTrue(explain.contains("10.005078 = combined unscaled first and scaled second pass score "));
+    assertTrue(
+        explain.contains("10.005078 = combined unscaled first and scaled second pass score "));
   }
-
 }
