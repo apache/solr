@@ -67,6 +67,7 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
       return autoConfigOTEL(loader);
     }
     if (TRACE_ID_GEN_ENABLED) {
+      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
       return SimplePropagator.load();
     }
     return TraceUtils.getGlobalTracer();
