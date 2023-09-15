@@ -19,6 +19,7 @@ package org.apache.solr.util;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +42,8 @@ import org.slf4j.LoggerFactory;
 
 public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final CircuitBreaker dummyMemBreaker = new MemoryCircuitBreaker();
+  private static final CircuitBreaker dummyCBManager = new CircuitBreakerManager();
 
   protected static void indexDocs() {
     removeAllExistingCircuitBreakers();
@@ -60,11 +63,13 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
+    dummyMemBreaker.close();
+    dummyCBManager.close();
   }
 
   @After
   public void after() {
-    h.getCore().getCircuitBreakerRegistry().deregisterAll();
+    removeAllExistingCircuitBreakers();
   }
 
   public void testCBAlwaysTrips() {
@@ -114,9 +119,10 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testBadRequestType() {
+
     expectThrows(
         IllegalArgumentException.class,
-        () -> new MemoryCircuitBreaker().setRequestTypes(List.of("badRequestType")));
+        () -> dummyMemBreaker.setRequestTypes(List.of("badRequestType")));
   }
 
   public void testBuildingMemoryPressure() {
@@ -261,17 +267,21 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
         "//lst[@name='process']/double[@name='time']");
   }
 
-  public void testErrorCode() {
+  public void testErrorCode() throws Exception {
     assertEquals(
         SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-        CircuitBreaker.getErrorCode(List.of(new CircuitBreakerManager())));
+        CircuitBreaker.getErrorCode(List.of(dummyCBManager)));
     assertEquals(
         SolrException.ErrorCode.TOO_MANY_REQUESTS,
-        CircuitBreaker.getErrorCode(List.of(new MemoryCircuitBreaker())));
+        CircuitBreaker.getErrorCode(List.of(dummyMemBreaker)));
   }
 
   private static void removeAllExistingCircuitBreakers() {
-    h.getCore().getCircuitBreakerRegistry().deregisterAll();
+    try {
+      h.getCore().getCircuitBreakerRegistry().deregisterAll();
+    } catch (IOException e) {
+      fail("Failed to unload circuit breakers");
+    }
   }
 
   private static class MockCircuitBreaker extends MemoryCircuitBreaker {
@@ -289,10 +299,12 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   private static class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
+    public FakeMemoryPressureCircuitBreaker() {
+      super(1, 1);
+    }
 
     @Override
-    protected long calculateLiveMemoryUsage() {
-      // Return a number large enough to trigger a pushback from the circuit breaker
+    protected long getAvgMemoryUsage() {
       return Long.MAX_VALUE;
     }
   }
@@ -301,11 +313,12 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
     private AtomicInteger count;
 
     public BuildingUpMemoryPressureCircuitBreaker() {
+      super(1, 1);
       this.count = new AtomicInteger(0);
     }
 
     @Override
-    protected long calculateLiveMemoryUsage() {
+    protected long getAvgMemoryUsage() {
       int localCount = count.getAndIncrement();
 
       if (localCount >= 4) {

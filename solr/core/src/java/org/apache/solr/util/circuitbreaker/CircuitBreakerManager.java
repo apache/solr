@@ -17,6 +17,7 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -73,6 +74,19 @@ public class CircuitBreakerManager extends CircuitBreaker {
     if (cpuEnabled) {
       cpuCB = new CPUCircuitBreaker();
       cpuCB.setThreshold(cpuThreshold);
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    try {
+      if (memEnabled) {
+        memCB.close();
+      }
+    } finally {
+      if (cpuEnabled) {
+        cpuCB.close();
+      }
     }
   }
 
