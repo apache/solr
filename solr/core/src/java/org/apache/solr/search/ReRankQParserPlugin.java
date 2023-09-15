@@ -94,7 +94,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
         String[] debugParams = params.getParams(CommonParams.DEBUG);
         if (debugParams != null) {
           for (String debugParam : debugParams) {
-            if (CommonParams.RESULTS.equals(String.valueOf(debugParam))) {
+            if ("true".equals(debugParam)) {
               debugQuery = true;
               break;
             }
