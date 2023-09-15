@@ -343,4 +343,16 @@ public abstract class RequestHandlerBase
     return Collections.singleton(
         new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
   }
+
+  /**
+   * Checks whether the given request is an internal request to a shard. We rely on the fact that an
+   * internal search request to a shard contains the param "isShard", and an internal update request
+   * to a shard contains the param "distrib.from".
+   *
+   * @return true if request is internal
+   */
+  public static boolean isInternalShardRequest(SolrQueryRequest req) {
+    return req.getParams().get("distrib.from") != null
+        || "true".equals(req.getParams().get("isShard"));
+  }
 }
