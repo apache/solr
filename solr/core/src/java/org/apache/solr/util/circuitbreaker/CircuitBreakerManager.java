@@ -48,21 +48,6 @@ public class CircuitBreakerManager extends CircuitBreaker {
   }
 
   @Override
-  public String getDebugInfo() {
-    StringBuilder sb = new StringBuilder();
-    if (memEnabled) {
-      sb.append(memCB.getDebugInfo());
-    }
-    if (memEnabled && cpuEnabled) {
-      sb.append("\n");
-    }
-    if (cpuEnabled) {
-      sb.append(cpuCB.getDebugInfo());
-    }
-    return sb.toString();
-  }
-
-  @Override
   public String getErrorMessage() {
     StringBuilder sb = new StringBuilder();
     if (memEnabled) {
