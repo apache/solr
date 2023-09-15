@@ -18,10 +18,18 @@
 package org.apache.solr.core;
 
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.common.util.ExecutorUtil;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;

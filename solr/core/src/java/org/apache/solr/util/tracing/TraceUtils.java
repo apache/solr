@@ -74,10 +74,6 @@ public class TraceUtils {
     return GlobalOpenTelemetry.getPropagators().getTextMapPropagator();
   }
 
-  public static Tracer getGlobalTracer() {
-    return GlobalOpenTelemetry.getTracer("solr");
-  }
-
   public static void setDbInstance(SolrQueryRequest req, String coreOrColl) {
     if (req != null) {
       setDbInstance(req.getSpan(), coreOrColl);
