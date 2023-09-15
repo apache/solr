@@ -303,11 +303,11 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testFailAtConfigParseTimeWhenBoolTypeIsExpectedAndValueIsInvalidString() {
     String solrXml =
-        "<solr><solrcloud><bool name=\"genericCoreNodeNames\">NOT_A_BOOLEAN</bool></solrcloud></solr>";
+        "<solr><solrcloud><bool name=\"genericCoreNodeNames\">FOO</bool></solrcloud></solr>";
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
-    assertEquals("invalid boolean value: NOT_A_BOOLEAN", thrown.getMessage());
+    assertEquals("invalid boolean value: FOO", thrown.getMessage());
   }
 
   public void testFailAtConfigParseTimeWhenIntTypeIsExpectedAndBoolTypeIsGiven() {

@@ -267,10 +267,11 @@ public class StrUtils {
    */
   public static boolean parseBool(String s) {
     if (s != null) {
-      if (s.startsWith("true") || s.startsWith("on") || s.startsWith("yes")) {
+      String lowerS = s.toLowerCase(Locale.ROOT);
+      if (lowerS.startsWith("true") || lowerS.startsWith("on") || lowerS.startsWith("yes")) {
         return true;
       }
-      if (s.startsWith("false") || s.startsWith("off") || s.equals("no")) {
+      if (lowerS.startsWith("false") || lowerS.startsWith("off") || lowerS.equals("no")) {
         return false;
       }
     }
@@ -285,10 +286,11 @@ public class StrUtils {
    */
   public static boolean parseBool(String s, boolean def) {
     if (s != null) {
-      if (s.startsWith("true") || s.startsWith("on") || s.startsWith("yes")) {
+      String lowerS = s.toLowerCase(Locale.ROOT);
+      if (lowerS.startsWith("true") || lowerS.startsWith("on") || lowerS.startsWith("yes")) {
         return true;
       }
-      if (s.startsWith("false") || s.startsWith("off") || s.equals("no")) {
+      if (lowerS.startsWith("false") || lowerS.startsWith("off") || lowerS.equals("no")) {
         return false;
       }
     }
