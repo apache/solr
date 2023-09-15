@@ -72,6 +72,8 @@ Improvements
 
 * SOLR-16950: SimpleTracer propagation for manual transaction ids
 
+* SOLR-15440: The Learning To Rank FieldValueFeature now uses DocValues when docValues=true and stored=true are combined. (Christine Poerschke, Tom Gilke)
+
 Optimizations
 ---------------------
 
