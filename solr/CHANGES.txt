@@ -190,6 +190,8 @@ Bug Fixes
 
 * SOLR-16973: fix REMOTE_JMX_OPTS to delayed expansion (Tiziano Degaetano via Colvin Cowie)
 
+* SOLR-16971: RealTimeGet with Composite router throws NPE (Alex Deparvu)
+
 Dependency Upgrades
 ---------------------
 
