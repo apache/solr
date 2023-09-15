@@ -843,21 +843,22 @@ public class QueryComponent extends SearchComponent {
   private boolean singlePassExplain(SolrParams params) {
 
     /*
-    * Currently there is only on explain that requires a single pass
-    * and that is the reRank when scaling is used.
-    */
+     * Currently there is only one explain that requires a single pass
+     * and that is the reRank when scaling is used.
+     */
 
     String rankQuery = params.get(CommonParams.RQ);
-    if(rankQuery != null) {
-      if(rankQuery.contains(ReRankQParserPlugin.RERANK_MAIN_SCALE) || rankQuery.contains(ReRankQParserPlugin.RERANK_SCALE)) {
+    if (rankQuery != null) {
+      if (rankQuery.contains(ReRankQParserPlugin.RERANK_MAIN_SCALE)
+          || rankQuery.contains(ReRankQParserPlugin.RERANK_SCALE)) {
         boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
-        if(debugQuery) {
+        if (debugQuery) {
           return true;
         } else {
           String[] debugParams = params.getParams(CommonParams.DEBUG);
-          if(debugParams != null) {
-            for(String debugParam : debugParams) {
-              if(debugParam.equals("true")) {
+          if (debugParams != null) {
+            for (String debugParam : debugParams) {
+              if (debugParam.equals("true")) {
                 return true;
               }
             }

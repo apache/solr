@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
@@ -90,11 +89,10 @@ public class ReRankQParserPlugin extends QParserPlugin {
       String mainScale = localParams.get(RERANK_MAIN_SCALE);
       String reRankScale = localParams.get(RERANK_SCALE);
       boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
-      log.info("HELLO:"+params.toString());
 
-      if(!debugQuery) {
+      if (!debugQuery) {
         String[] debugParams = params.getParams(CommonParams.DEBUG);
-        if(debugParams != null) {
+        if (debugParams != null) {
           for (String debugParam : debugParams) {
             if (CommonParams.RESULTS.equals(String.valueOf(debugParam))) {
               debugQuery = true;
