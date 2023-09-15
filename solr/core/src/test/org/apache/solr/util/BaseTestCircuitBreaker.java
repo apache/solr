@@ -286,11 +286,6 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
     public boolean isTripped() {
       return this.tripped;
     }
-
-    @Override
-    public String getDebugInfo() {
-      return "MockCircuitBreaker";
-    }
   }
 
   private static class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
