@@ -75,25 +75,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
-import org.apache.solr.search.CursorMark;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.search.DocSlice;
-import org.apache.solr.search.Grouping;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.QueryCommand;
-import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.QueryResult;
-import org.apache.solr.search.QueryUtils;
-import org.apache.solr.search.RankQuery;
-import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrReturnFields;
-import org.apache.solr.search.SortSpec;
-import org.apache.solr.search.SortSpecParsing;
-import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.*;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
@@ -757,6 +739,7 @@ public class QueryComponent extends SearchComponent {
     boolean distribSinglePass = rb.req.getParams().getBool(ShardParams.DISTRIB_SINGLE_PASS, false);
 
     if (distribSinglePass
+        || singlePassExplain(rb.req.getParams())
         || (fields != null
             && fields.wantsField(keyFieldName)
             && fields.getRequestedFieldNames() != null
@@ -836,6 +819,35 @@ public class QueryComponent extends SearchComponent {
     if (additionalAdded) sreq.params.add(CommonParams.FL, additionalFL.toString());
 
     rb.addRequest(this, sreq);
+  }
+
+  private boolean singlePassExplain(SolrParams params) {
+
+    /*
+    * Currently there is only on explain that requires a single pass
+    * and that is the reRank when scaling is used.
+    */
+
+    String rankQuery = params.get(CommonParams.RQ);
+    if(rankQuery != null) {
+      if(rankQuery.contains(ReRankQParserPlugin.RERANK_MAIN_SCALE) || rankQuery.contains(ReRankQParserPlugin.RERANK_SCALE)) {
+        boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
+        if(debugQuery) {
+          return true;
+        } else {
+          String[] debugParams = params.getParams(CommonParams.DEBUG);
+          if(debugParams != null) {
+            for(String debugParam : debugParams) {
+              if(debugParam.equals("true")) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   protected boolean addFL(StringBuilder fl, String field, boolean additionalAdded) {
