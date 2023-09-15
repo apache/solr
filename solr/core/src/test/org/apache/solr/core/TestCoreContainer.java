@@ -47,7 +47,6 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ModuleUtils;
-import org.apache.solr.util.NoCoresLocator;
 import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -787,14 +786,26 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     String solrXml =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
             + "<solr>\n"
-            + "<str name=\"coresLocator\">org.apache.solr.util.NoCoresLocator</str>\n"
+            + "<str name=\"coresLocator\">org.apache.solr.core.TestCoreContainer$CustomCoresLocator</str>\n"
             + "</solr>";
     CoreContainer cc = init(solrXml);
     try {
-      assertTrue(cc.getCoresLocator() instanceof NoCoresLocator);
-      assertSame(cc.getNodeConfig(), ((NoCoresLocator) cc.getCoresLocator()).getNodeConfig());
+      assertTrue(cc.getCoresLocator() instanceof CustomCoresLocator);
+      assertSame(cc.getNodeConfig(), ((CustomCoresLocator) cc.getCoresLocator()).getNodeConfig());
     } finally {
       cc.shutdown();
+    }
+  }
+
+  public static class CustomCoresLocator extends MockCoresLocator {
+    private final NodeConfig nodeConfig;
+
+    public CustomCoresLocator(NodeConfig nodeConfig) {
+      this.nodeConfig = nodeConfig;
+    }
+
+    public NodeConfig getNodeConfig() {
+      return nodeConfig;
     }
   }
 
