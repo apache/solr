@@ -199,7 +199,8 @@ public class CollApiCmds {
   public static class TraceAwareCommand implements CollectionApiCommand {
 
     private final CollectionApiCommand command;
-    private final Context ctx = Context.current();
+    private final Context ctx =
+        TraceUtils.extractContext(null); // allows trace id to be generated if missing
 
     public TraceAwareCommand(CollectionApiCommand command) {
       this.command = command;
