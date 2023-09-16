@@ -58,6 +58,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -72,6 +73,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.admin.api.UnloadCoreAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -118,14 +120,18 @@ public enum CoreAdminOperation implements CoreAdminOp {
       it -> {
         SolrParams params = it.req.getParams();
         String cname = params.required().get(CoreAdminParams.CORE);
-
-        boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
-        boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
-        boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
-        CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
-        it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
-
-        assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
+        UnloadCoreAPI.UnloadCoreRequestBody unloadCoreRequestBody =
+            new UnloadCoreAPI.UnloadCoreRequestBody();
+        unloadCoreRequestBody.deleteIndex = params.getBool(CoreAdminParams.DELETE_INDEX, false);
+        unloadCoreRequestBody.deleteDataDir =
+            params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
+        unloadCoreRequestBody.deleteInstanceDir =
+            params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
+        UnloadCoreAPI unloadCoreAPI =
+            new UnloadCoreAPI(
+                it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
+        SolrJerseyResponse response = unloadCoreAPI.unloadCore(cname, unloadCoreRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
   RELOAD_OP(
       RELOAD,
