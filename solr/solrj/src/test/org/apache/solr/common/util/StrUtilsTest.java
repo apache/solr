@@ -16,12 +16,11 @@
  */
 package org.apache.solr.common.util;
 
-import java.util.List;
+import static java.util.Arrays.asList;
 
+import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
-
-import static java.util.Arrays.asList;
 
 public class StrUtilsTest extends SolrTestCase {
 
