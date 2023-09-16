@@ -1115,7 +1115,7 @@ public class RealTimeGetComponent extends SearchComponent {
     // the mappings.
 
     for (int i = 0; i < rb.slices.length; i++) {
-      log.info("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
+      log.trace("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
       if (lookup.equals(rb.slices[i]) || slice.equals(rb.slices[i])) {
         return new String[] {rb.shards[i]};
       }
