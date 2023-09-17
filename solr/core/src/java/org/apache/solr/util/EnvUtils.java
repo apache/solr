@@ -17,13 +17,18 @@
 
 package org.apache.solr.util;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 
 /**
  * This class is a unified provider of environment variables and system properties. It exposes a
@@ -33,62 +38,20 @@ import org.apache.solr.common.util.StrUtils;
 public class EnvUtils {
   private static final SortedMap<String, String> ENV = new TreeMap<>(System.getenv());
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
-  private static final List<String> DO_NOT_MAP =
-      List.of(
-          "SOLR_SERVER_DIR",
-          "SOLR_SSL_KEY_STORE_PASSWORD",
-          "SOLR_SSL_TRUST_STORE_PASSWORD",
-          "SOLR_SSL_CLIENT_KEY_STORE_PASSWORD",
-          "SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD",
-          "SOLR_STOP_WAIT",
-          "SOLR_START_WAIT",
-          "SOLR_HEAP",
-          "SOLR_JAVA_MEM",
-          "GC_LOG_OPTS",
-          "SOLR_JAVA_STACK_SIZE",
-          "SOLR_OPTS",
-          "SOLR_ADDL_ARGS",
-          "SOLR_JETTY_CONFIG",
-          "SOLR_REQUESTLOG_ENABLED",
-          "SOLR_AUTHENTICATION_CLIENT_BUILDER",
-          "SOLR_SSL_OPTS",
-          "SOLR_OPTS_INTERNAL",
-          "SOLR_HEAP_DUMP",
-          "SOLR_HEAP_DUMP_DIR",
-          "SOLR_INCLUDE",
-          "SOLR_LOG_LEVEL_OPT");
 
   static {
-    CUSTOM_MAPPINGS.putAll(
-        Map.of(
-            "SOLR_SSL_KEY_STORE_TYPE", "solr.jetty.keystore.type",
-            "SOLR_SSL_TRUST_STORE", "solr.jetty.truststore",
-            "SOLR_SSL_TRUST_STORE_TYPE", "solr.jetty.truststore.type",
-            "SOLR_SSL_NEED_CLIENT_AUTH", "solr.jetty.ssl.needClientAuth",
-            "SOLR_SSL_WANT_CLIENT_AUTH", "solr.jetty.ssl.wantClientAuth",
-            "SOLR_SSL_CLIENT_KEY_STORE", "javax.net.ssl.keyStore",
-            "SOLR_SSL_CLIENT_KEY_STORE_TYPE", "javax.net.ssl.keyStoreType",
-            "SOLR_SSL_CLIENT_TRUST_STORE", "javax.net.ssl.trustStore",
-            "SOLR_SSL_CLIENT_TRUST_STORE_TYPE", "javax.net.ssl.trustStoreType"));
-    CUSTOM_MAPPINGS.putAll(
-        Map.of(
-            "SOLR_HOME", "solr.solr.home",
-            "SOLR_PORT", "jetty.port",
-            "SOLR_HOST", "host",
-            "SOLR_LOGS_DIR", "solr.log.dir",
-            "SOLR_TIMEZONE", "user.timezone",
-            "SOLR_TIP", "solr.install.dir",
-            "SOLR_TIP_SYM", "solr.install.symDir",
-            "DEFAULT_CONFDIR", "solr.default.confdir",
-            "SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH", "hadoop.security.credential.provider.path",
-            "SOLR_SSL_KEY_STORE", "solr.jetty.keystore"));
-    CUSTOM_MAPPINGS.putAll(
-        Map.of(
-            "SOLR_WAIT_FOR_ZK", "waitForZk",
-            "SOLR_DELETE_UNKNOWN_CORES", "solr.deleteUnknownCore",
-            "SOLR_ENABLE_REMOTE_STREAMING", "solr.enableRemoteStreaming",
-            "SOLR_ENABLE_STREAM_BODY", "solr.enableStreamBody"));
-    init(false);
+    try {
+      Properties props = new Properties();
+      props.load(
+          EnvUtils.class.getClassLoader().getResourceAsStream("EnvToSyspropMappings.properties"));
+      for (String key : props.stringPropertyNames()) {
+        CUSTOM_MAPPINGS.put(key, props.getProperty(key));
+      }
+      init(false);
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE, "Failed loading env.var->properties mapping", e);
+    }
   }
 
   /**
@@ -139,8 +102,15 @@ public class EnvUtils {
   }
 
   /** Get comma separated strings from env as List */
-  public static List<String> getEnvCommaSepAsList(String key) {
-    return StrUtils.splitSmart(ENV.get(key), ',', true);
+  public static List<String> getEnvAsList(String key) {
+    return StrUtils.splitSmart(ENV.get(key), ',', true).stream()
+        .map(String::trim)
+        .collect(Collectors.toList());
+  }
+
+  /** Get comma separated strings from env as List */
+  public static List<String> getEnvAsList(String key, List<String> defaultValue) {
+    return ENV.get(key) != null ? getEnvAsList(key) : defaultValue;
   }
 
   /** Set an environment variable */
@@ -206,8 +176,8 @@ public class EnvUtils {
    *
    * @return list of strings, or null if not found
    */
-  public static List<String> getPropCommaSepAsList(String key) {
-    return getProp(key) != null ? StrUtils.splitSmart(getProp(key), ",", true) : null;
+  public static List<String> getPropAsList(String key) {
+    return getProp(key) != null ? stringValueToList(getProp(key)) : null;
   }
 
   /**
@@ -215,8 +185,8 @@ public class EnvUtils {
    *
    * @return list of strings, or provided default if not found
    */
-  public static List<String> getPropCommaSepAsList(String key, List<String> defaultValue) {
-    return getProp(key) != null ? StrUtils.splitSmart(getProp(key), ",", true) : defaultValue;
+  public static List<String> getPropAsList(String key, List<String> defaultValue) {
+    return getProp(key) != null ? getPropAsList(key) : defaultValue;
   }
 
   /** Set a system property. Shim to {@link System#setProperty(String, String)} */
@@ -230,19 +200,32 @@ public class EnvUtils {
    * @param overwrite if true, overwrite existing system properties with environment variables
    */
   public static void init(boolean overwrite) {
-    // convert all environment variables with SOLR_ prefix to system properties
+    // Convert eligible environment variables with SOLR_ prefix to system properties
     for (String key :
-        ENV.keySet().stream().filter(k -> !DO_NOT_MAP.contains(k)).toArray(String[]::new)) {
-      String sysPropKey =
-          CUSTOM_MAPPINGS.containsKey(key) ? CUSTOM_MAPPINGS.get(key) : envNameToSyspropName(key);
+        ENV.keySet().stream().filter(k -> k.startsWith("SOLR_")).toArray(String[]::new)) {
+      String sysPropKey = envNameToSyspropName(key);
       // Existing system properties take precedence
-      if (overwrite || getProp(sysPropKey) == null) {
+      if (!sysPropKey.isBlank() && (overwrite || getProp(sysPropKey) == null)) {
         setProp(sysPropKey, ENV.get(key));
       }
     }
   }
 
   protected static String envNameToSyspropName(String envName) {
-    return envName.toLowerCase(Locale.ROOT).replace("_", ".");
+    return CUSTOM_MAPPINGS.containsKey(envName)
+        ? CUSTOM_MAPPINGS.get(envName)
+        : envName.toLowerCase(Locale.ROOT).replace("_", ".");
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<String> stringValueToList(String string) {
+    if (string.startsWith("[") && string.endsWith("]")) {
+      // Convert a JSON string to a List<String> using Noggit parser
+      return (List<String>) Utils.fromJSONString(string);
+    } else {
+      return StrUtils.splitSmart(string, ",", true).stream()
+          .map(String::trim)
+          .collect(Collectors.toList());
+    }
   }
 }

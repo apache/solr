@@ -35,7 +35,8 @@ public class EnvUtilsTest extends SolrTestCase {
             "SOLR_LOG_LEVEL", "INFO",
             "SOLR_BOOLEAN", "true",
             "SOLR_LONG", "1234567890",
-            "SOLR_COMMASEP", "one,two, three"));
+            "SOLR_COMMASEP", "one,two, three",
+            "SOLR_JSON_LIST", "[\"one\", \"two\", \"three\"]"));
     EnvUtils.init(true);
   }
 
@@ -54,7 +55,8 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals(987L, EnvUtils.getEnvAsLong("SOLR_LONG_NONEXIST", 987L));
 
     assertEquals("one,two, three", EnvUtils.getEnv("SOLR_COMMASEP"));
-    assertEquals(List.of("one", "two", "three"), EnvUtils.getEnvCommaSepAsList("SOLR_COMMASEP"));
+    assertEquals(List.of("one", "two", "three"), EnvUtils.getEnvAsList("SOLR_COMMASEP"));
+    assertEquals(List.of("one", "two", "three"), EnvUtils.getEnvAsList("SOLR_JSON_LIST"));
   }
 
   @Test
@@ -72,7 +74,8 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals(987L, EnvUtils.getPropAsLong("solr.long.nonexist", 987L));
 
     assertEquals("one,two, three", EnvUtils.getProp("solr.commasep"));
-    assertEquals(List.of("one", "two", "three"), EnvUtils.getPropCommaSepAsList("solr.commasep"));
+    assertEquals(List.of("one", "two", "three"), EnvUtils.getPropAsList("solr.commasep"));
+    assertEquals(List.of("one", "two", "three"), EnvUtils.getPropAsList("solr.json.list"));
   }
 
   @Test
@@ -92,11 +95,11 @@ public class EnvUtilsTest extends SolrTestCase {
 
   @Test
   public void testOverwrite() {
-    EnvUtils.setProp("solr.log.level", "WARN");
-    EnvUtils.setEnvs(Map.of("SOLR_LOG_LEVEL", "DEBUG"));
+    EnvUtils.setProp("solr.overwrite", "original");
+    EnvUtils.setEnv("SOLR_OVERWRITE", "overwritten");
     EnvUtils.init(false);
-    assertEquals("WARN", EnvUtils.getEnv("SOLR_LOG_LEVEL"));
+    assertEquals("original", EnvUtils.getProp("solr.overwrite"));
     EnvUtils.init(true);
-    assertEquals("DEBUG", EnvUtils.getEnv("SOLR_LOG_LEVEL"));
+    assertEquals("overwritten", EnvUtils.getProp("solr.overwrite"));
   }
 }
