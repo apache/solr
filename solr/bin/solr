@@ -114,8 +114,8 @@ fi
 
 # Export all SOLR variables so they are visible to Solr sub-process
 for var in $(compgen -e); do
-  if [[ "$var" == SOLR_* ]]; then
-    export "$var"
+  if [[ "$var" =~ ^SOLR_ ]]; then
+    export "${var?}"
   fi
 done
 
