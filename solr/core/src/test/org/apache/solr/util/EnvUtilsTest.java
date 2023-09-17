@@ -57,6 +57,7 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals("one,two, three", EnvUtils.getEnv("SOLR_COMMASEP"));
     assertEquals(List.of("one", "two", "three"), EnvUtils.getEnvAsList("SOLR_COMMASEP"));
     assertEquals(List.of("one", "two", "three"), EnvUtils.getEnvAsList("SOLR_JSON_LIST"));
+    assertEquals(List.of("fallback"), EnvUtils.getEnvAsList("SOLR_MISSING", List.of("fallback")));
   }
 
   @Test
@@ -76,6 +77,7 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals("one,two, three", EnvUtils.getProp("solr.commasep"));
     assertEquals(List.of("one", "two", "three"), EnvUtils.getPropAsList("solr.commasep"));
     assertEquals(List.of("one", "two", "three"), EnvUtils.getPropAsList("solr.json.list"));
+    assertEquals(List.of("fallback"), EnvUtils.getPropAsList("SOLR_MISSING", List.of("fallback")));
   }
 
   @Test

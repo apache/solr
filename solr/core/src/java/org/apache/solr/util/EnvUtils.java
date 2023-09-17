@@ -109,9 +109,7 @@ public class EnvUtils {
 
   /** Get comma separated strings from env as List */
   public static List<String> getEnvAsList(String key) {
-    return StrUtils.splitSmart(ENV.get(key), ',', true).stream()
-        .map(String::trim)
-        .collect(Collectors.toList());
+    return getEnv(key) != null ? stringValueToList(getEnv(key)) : null;
   }
 
   /** Get comma separated strings from env as List */
