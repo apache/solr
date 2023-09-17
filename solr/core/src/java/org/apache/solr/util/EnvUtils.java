@@ -36,8 +36,8 @@ import org.apache.solr.common.util.Utils;
 
 /**
  * This class is a unified provider of environment variables and system properties. It exposes a
- * mutable copy of system environment variables with SOLR_ prefix. It also converts such variables
- * to system properties and provide various convenience accessors for them.
+ * mutable copy of environment variables with. It also converts 'SOLR_FOO' variables
+ * to system properties 'solr.foo' and provide various convenience accessors for them.
  */
 public class EnvUtils {
   private static final SortedMap<String, String> ENV = new TreeMap<>(System.getenv());
@@ -141,7 +141,7 @@ public class EnvUtils {
 
   /** Get a property as string */
   public static String getProp(String key) {
-    return System.getProperties().getProperty(key);
+    return getProp(key, null);
   }
 
   /** Get a property as string */
@@ -151,12 +151,12 @@ public class EnvUtils {
 
   /** Get property as integer */
   public static long getPropAsLong(String key) {
-    return Long.parseLong(System.getProperties().getProperty(key));
+    return Long.parseLong(getProp(key));
   }
 
   /** Get property as long, or default value */
   public static long getPropAsLong(String key, long defaultValue) {
-    String value = System.getProperties().getProperty(key);
+    String value = getProp(key);
     if (value == null) {
       return defaultValue;
     }
@@ -165,12 +165,12 @@ public class EnvUtils {
 
   /** Get property as boolean */
   public static boolean getPropAsBool(String key) {
-    return Boolean.parseBoolean(System.getProperties().getProperty(key));
+    return Boolean.parseBoolean(getProp(key));
   }
 
   /** Get property as boolean, or default value */
   public static boolean getPropAsBool(String key, boolean defaultValue) {
-    String value = System.getProperties().getProperty(key);
+    String value = getProp(key);
     if (value == null) {
       return defaultValue;
     }
