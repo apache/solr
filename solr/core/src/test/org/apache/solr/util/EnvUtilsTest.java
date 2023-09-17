@@ -36,14 +36,14 @@ public class EnvUtilsTest extends SolrTestCase {
             "SOLR_BOOLEAN", "true",
             "SOLR_LONG", "1234567890",
             "SOLR_COMMASEP", "one,two, three"));
-    EnvUtils.init();
+    EnvUtils.init(true);
   }
 
   @Test
   public void testGetEnv() {
     assertEquals("INFO", EnvUtils.getEnv("SOLR_LOG_LEVEL"));
 
-    assertEquals(null, EnvUtils.getEnv("SOLR_NONEXIST"));
+    assertNull(EnvUtils.getEnv("SOLR_NONEXIST"));
     assertEquals("myString", EnvUtils.getEnv("SOLR_NONEXIST", "myString"));
 
     assertTrue(EnvUtils.getEnvAsBool("SOLR_BOOLEAN"));
@@ -61,7 +61,7 @@ public class EnvUtilsTest extends SolrTestCase {
   public void testGetProp() {
     assertEquals("INFO", EnvUtils.getProp("solr.log.level"));
 
-    assertEquals(null, EnvUtils.getProp("solr.nonexist"));
+    assertNull(EnvUtils.getProp("solr.nonexist"));
     assertEquals("myString", EnvUtils.getProp("solr.nonexist", "myString"));
 
     assertTrue(EnvUtils.getPropAsBool("solr.boolean"));
@@ -88,5 +88,15 @@ public class EnvUtilsTest extends SolrTestCase {
   public void testNotMapped() {
     assertFalse(EnvUtils.getProps().containsKey("solr.ssl.key.store.password"));
     assertFalse(EnvUtils.getProps().containsKey("gc.log.opts"));
+  }
+
+  @Test
+  public void testOverwrite() {
+    EnvUtils.setProp("solr.log.level", "WARN");
+    EnvUtils.setEnvs(Map.of("SOLR_LOG_LEVEL", "DEBUG"));
+    EnvUtils.init(false);
+    assertEquals("WARN", EnvUtils.getEnv("SOLR_LOG_LEVEL"));
+    EnvUtils.init(true);
+    assertEquals("DEBUG", EnvUtils.getEnv("SOLR_LOG_LEVEL"));
   }
 }

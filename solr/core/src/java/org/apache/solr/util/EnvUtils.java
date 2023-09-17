@@ -19,9 +19,11 @@ package org.apache.solr.util;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * This class is a unified provider of environment variables and system properties. It exposes a
@@ -86,7 +88,7 @@ public class EnvUtils {
             "SOLR_DELETE_UNKNOWN_CORES", "solr.deleteUnknownCore",
             "SOLR_ENABLE_REMOTE_STREAMING", "solr.enableRemoteStreaming",
             "SOLR_ENABLE_STREAM_BODY", "solr.enableStreamBody"));
-    init();
+    init(false);
   }
 
   /**
@@ -136,11 +138,9 @@ public class EnvUtils {
     return Boolean.parseBoolean(value);
   }
 
-  /**
-   * Get comma separated strings from env as List
-   */
+  /** Get comma separated strings from env as List */
   public static List<String> getEnvCommaSepAsList(String key) {
-    return List.of(ENV.get(key).split(",\\s?"));
+    return StrUtils.splitSmart(ENV.get(key), ',', true);
   }
 
   /** Set an environment variable */
@@ -203,21 +203,46 @@ public class EnvUtils {
 
   /**
    * Get comma separated strings from sysprop as List
+   *
+   * @return list of strings, or null if not found
    */
   public static List<String> getPropCommaSepAsList(String key) {
-    return List.of(System.getProperties().getProperty(key).split(",\\s?"));
+    return getProp(key) != null ? StrUtils.splitSmart(getProp(key), ",", true) : null;
   }
 
-  /** Re-reads environment variables and updates the internal map. */
-  public static void init() {
+  /**
+   * Get comma separated strings from sysprop as List, or default value
+   *
+   * @return list of strings, or provided default if not found
+   */
+  public static List<String> getPropCommaSepAsList(String key, List<String> defaultValue) {
+    return getProp(key) != null ? StrUtils.splitSmart(getProp(key), ",", true) : defaultValue;
+  }
+
+  /** Set a system property. Shim to {@link System#setProperty(String, String)} */
+  public static void setProp(String key, String value) {
+    System.setProperty(key, value);
+  }
+
+  /**
+   * Re-reads environment variables and updates the internal map.
+   *
+   * @param overwrite if true, overwrite existing system properties with environment variables
+   */
+  public static void init(boolean overwrite) {
     // convert all environment variables with SOLR_ prefix to system properties
     for (String key :
         ENV.keySet().stream().filter(k -> !DO_NOT_MAP.contains(k)).toArray(String[]::new)) {
       String sysPropKey =
-          CUSTOM_MAPPINGS.containsKey(key)
-              ? CUSTOM_MAPPINGS.get(key)
-              : key.toLowerCase().replace('_', '.');
-      System.setProperty(sysPropKey, ENV.get(key));
+          CUSTOM_MAPPINGS.containsKey(key) ? CUSTOM_MAPPINGS.get(key) : envNameToSyspropName(key);
+      // Existing system properties take precedence
+      if (overwrite || getProp(sysPropKey) == null) {
+        setProp(sysPropKey, ENV.get(key));
+      }
     }
+  }
+
+  protected static String envNameToSyspropName(String envName) {
+    return envName.toLowerCase(Locale.ROOT).replace("_", ".");
   }
 }
