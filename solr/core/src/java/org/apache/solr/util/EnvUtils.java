@@ -18,10 +18,14 @@
 package org.apache.solr.util;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -42,12 +46,14 @@ public class EnvUtils {
   static {
     try {
       Properties props = new Properties();
-      props.load(
-          EnvUtils.class.getClassLoader().getResourceAsStream("EnvToSyspropMappings.properties"));
-      for (String key : props.stringPropertyNames()) {
-        CUSTOM_MAPPINGS.put(key, props.getProperty(key));
+      try (InputStream stream =
+          EnvUtils.class.getClassLoader().getResourceAsStream("EnvToSyspropMappings.properties")) {
+        props.load(new InputStreamReader(Objects.requireNonNull(stream), StandardCharsets.UTF_8));
+        for (String key : props.stringPropertyNames()) {
+          CUSTOM_MAPPINGS.put(key, props.getProperty(key));
+        }
+        init(false);
       }
-      init(false);
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE, "Failed loading env.var->properties mapping", e);

@@ -55,7 +55,7 @@ public class ModuleUtils {
    * @return set of raw volume names from sysprop and/or env.var
    */
   static Set<String> resolveFromSyspropOrEnv() {
-    return EnvUtils.getPropAsList("solr.modules").stream()
+    return EnvUtils.getPropAsList("solr.modules", Collections.emptyList()).stream()
         .map(String::trim)
         .collect(Collectors.toSet());
   }
