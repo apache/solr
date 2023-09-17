@@ -112,6 +112,13 @@ elif [ -r "$SOLR_INCLUDE" ]; then
   . "$SOLR_INCLUDE"
 fi
 
+# Export all SOLR variables so they are visible to Solr sub-process
+for var in $(compgen -e); do
+  if [[ "$var" == SOLR_* ]]; then
+    export "$var"
+  fi
+done
+
 # if pid dir is unset, default to $solr_tip/bin
 : "${SOLR_PID_DIR:=$SOLR_TIP/bin}"
 
