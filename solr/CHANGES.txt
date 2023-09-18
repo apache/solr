@@ -184,6 +184,8 @@ Bug Fixes
 
 * SOLR-16973: fix REMOTE_JMX_OPTS to delayed expansion (Tiziano Degaetano via Colvin Cowie)
 
+* SOLR-16931: ReRankScaler explain breaks with debug=true and in distributed mode (Joel Bernstein)
+
 Dependency Upgrades
 ---------------------
 
