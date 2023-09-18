@@ -25,23 +25,31 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  delete_all_collections
   solr stop -all >/dev/null 2>&1
 }
 
-@test "Affinity placement plugin using sysprop" {
-  run solr start -c -Dsolr.placementplugin.default=affinity
-  solr assert -c http://localhost:${SOLR_PORT}/solr -t 3000
-  run solr create_collection -c COLL_NAME
-  collection_exists COLL_NAME
-  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Default replica placement plugin set in solr\.placementplugin\.default to affinity'
+@test "assert for non cloud mode" {
+  run solr start
+
+  run solr assert --not-cloud http://localhost:${SOLR_PORT}/solr
+  assert_output --partial "needn't include Solr's context-root"
+  refute_output --partial "ERROR"
+
+  run solr assert --cloud http://localhost:${SOLR_PORT}
+  assert_output --partial "ERROR: Solr is not running in cloud mode"
+
+  run ! solr assert --cloud http://localhost:${SOLR_PORT}/solr -e
 }
 
-@test "Random placement plugin using ENV" {
-  export SOLR_PLACEMENTPLUGIN_DEFAULT=random
+@test "assert for cloud mode" {
   run solr start -c
-  solr assert -c http://localhost:${SOLR_PORT}/solr -t 3000
-  run solr create_collection -c COLL_NAME
-  collection_exists COLL_NAME
-  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'Default replica placement plugin set in solr\.placementplugin\.default to random'
+
+  run solr assert --cloud http://localhost:${SOLR_PORT}
+  refute_output --partial "ERROR"
+
+  run solr assert --not-cloud http://localhost:${SOLR_PORT}/solr
+  assert_output --partial "needn't include Solr's context-root"
+  assert_output --partial "ERROR: Solr is not running in standalone mode"
+
+  run ! solr assert --not-cloud http://localhost:${SOLR_PORT} -e
 }

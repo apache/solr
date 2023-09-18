@@ -17,19 +17,21 @@
 
 load bats_helper
 
-setup() {
+setup_file() {
   common_clean_setup
 }
 
-teardown() {
-  # save a snapshot of SOLR_HOME for failed tests
-  save_home_on_failure
-
-  solr stop -all >/dev/null 2>&1
+teardown_file() {
+  common_setup
 }
 
-@test "SOLR-16755 test works with noprompt" {
-  solr start -e cloud -noprompt
-  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 10000
-  solr assert --started http://localhost:${SOLR2_PORT}/solr --timeout 10000
+setup() {
+  common_setup
+}
+
+@test "Cleanup" {
+  sleep 1
+  run solr stop -all
+  run solr status -maxWaitSecs 10
+  assert_output --partial "No Solr nodes are running"
 }

@@ -38,42 +38,17 @@ teardown() {
   delete_all_collections
 }
 
-@test "can delete collections" {
-  solr create -c "COLL_NAME"
-  assert collection_exists "COLL_NAME"
+@test "setting property" {
+  solr create -c COLL_NAME
 
-  solr delete -c "COLL_NAME"
-  refute collection_exists "COLL_NAME"
+  run solr config -c COLL_NAME -action set-property -property updateHandler.autoCommit.maxDocs -value 100 -solrUrl http://localhost:${SOLR_PORT}/solr
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
 }
 
-@test "can delete collections with solrUrl" {
-  solr create -c "COLL_NAME"
-  assert collection_exists "COLL_NAME"
+@test "short form of setting property" {
+  solr create -c COLL_NAME
 
-  solr delete -c "COLL_NAME" -solrUrl http://localhost:${SOLR_PORT}
-  refute collection_exists "COLL_NAME"
-}
-
-@test "collection delete also deletes zk config" {
-  solr create_collection -c "COLL_NAME"
-  assert config_exists "COLL_NAME"
-
-  solr delete -c "COLL_NAME"
-  refute config_exists "COLL_NAME"
-}
-
-@test "deletes accompanying zk config with nondefault name" {
-  solr create_collection -c "COLL_NAME" -n "NONDEFAULT_CONFIG_NAME"
-  assert config_exists "NONDEFAULT_CONFIG_NAME"
-
-  solr delete -c "COLL_NAME"
-  refute config_exists "NONDEFAULT_CONFIG_NAME"
-}
-
-@test "deleteConfig option can opt to leave config in zk" {
-  solr create_collection -c "COLL_NAME"
-  assert config_exists "COLL_NAME"
-
-  solr delete -c "COLL_NAME" -deleteConfig false
-  assert config_exists "COLL_NAME"
+  run solr config -c COLL_NAME -property updateHandler.autoCommit.maxDocs -value 100
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
+  assert_output --partial "assuming solrUrl is http://localhost:${SOLR_PORT}."
 }
