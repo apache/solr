@@ -45,7 +45,7 @@ teardown() {
   run solr status -solrUrl http://localhost:9999/solr
   assert_output --partial "needn't include Solr's context-root"
   assert_output --partial "Found 1 Solr nodes:"
-  assert_output --partial "running on port 8983"
+  assert_output --partial "running on port ${SOLR_PORT}"
 }
 
 @test "status help flag outputs message highlighting not to use solrUrl." {
