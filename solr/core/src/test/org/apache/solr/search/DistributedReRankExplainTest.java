@@ -20,7 +20,6 @@ package org.apache.solr.search;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Random;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -81,7 +80,10 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
     Random random = random();
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     String reRank = "{!rerank reRankDocs=10 reRankMainScale=0-10 reRankQuery='test_s:hello'}";
-    solrParams.add("q", "test_s:hello").add(debugParams[random.nextInt(2)], "true").add(CommonParams.RQ, reRank);
+    solrParams
+        .add("q", "test_s:hello")
+        .add(debugParams[random.nextInt(2)], "true")
+        .add(CommonParams.RQ, reRank);
     QueryRequest queryRequest = new QueryRequest(solrParams);
     QueryResponse queryResponse = queryRequest.process(client, COLLECTIONORALIAS);
     Map<String, Object> debug = queryResponse.getDebugMap();
@@ -92,7 +94,10 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
 
     solrParams = new ModifiableSolrParams();
     reRank = "{!rerank reRankDocs=10 reRankScale=0-10 reRankQuery='test_s:hello'}";
-    solrParams.add("q", "test_s:hello").add(debugParams[random.nextInt(2)], "true").add(CommonParams.RQ, reRank);
+    solrParams
+        .add("q", "test_s:hello")
+        .add(debugParams[random.nextInt(2)], "true")
+        .add(CommonParams.RQ, reRank);
     queryRequest = new QueryRequest(solrParams);
     queryResponse = queryRequest.process(client, COLLECTIONORALIAS);
     debug = queryResponse.getDebugMap();
