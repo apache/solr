@@ -58,8 +58,12 @@ save_home_on_failure() {
     fi
 }
 
+shutdown_all() {
+  solr stop -all >/dev/null 2>&1
+}
+
 delete_all_collections() {
-  local collection_list="$(solr zk ls /collections -z localhost:9983)"
+  local collection_list="$(solr zk ls /collections -z localhost:${ZK_PORT})"
   for collection in $collection_list; do
     if [[ -n $collection ]]; then
       solr delete -c $collection >/dev/null 2>&1
@@ -69,7 +73,7 @@ delete_all_collections() {
 
 config_exists() {
   local config_name=$1
-  local config_list=$(solr zk ls /configs -z localhost:9983)
+  local config_list=$(solr zk ls /configs -z localhost:${ZK_PORT})
 
   for config in $config_list; do
     if [[ $(echo $config | tr -d " ") == $config_name ]]; then
@@ -82,7 +86,7 @@ config_exists() {
 
 collection_exists() {
   local coll_name=$1
-  local coll_list=$(solr zk ls /collections -z localhost:9983)
+  local coll_list=$(solr zk ls /collections -z localhost:${ZK_PORT})
 
   for coll in $coll_list; do
     if [[ $(echo $coll | tr -d " ") == $coll_name ]]; then

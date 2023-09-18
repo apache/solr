@@ -19,36 +19,19 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c
 }
 
 teardown_file() {
   common_setup
-  solr stop -all
 }
 
 setup() {
   common_setup
 }
 
-teardown() {
-  # save a snapshot of SOLR_HOME for failed tests
-  save_home_on_failure
-
-  delete_all_collections
-}
-
-@test "setting property" {
-  solr create -c COLL_NAME
-
-  run solr config -c COLL_NAME -action set-property -property updateHandler.autoCommit.maxDocs -value 100 -solrUrl http://localhost:${SOLR_PORT}/solr
-  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
-}
-
-@test "short form of setting property" {
-  solr create -c COLL_NAME
-
-  run solr config -c COLL_NAME -property updateHandler.autoCommit.maxDocs -value 100
-  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
-  assert_output --partial "assuming solrUrl is http://localhost:${SOLR_PORT}."
+@test "Cleanup" {
+  sleep 1
+  run solr stop -all
+  run solr status -maxWaitSecs 10
+  assert_output --partial "No Solr nodes are running"
 }

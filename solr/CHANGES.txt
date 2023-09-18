@@ -212,6 +212,8 @@ Other Changes
 
 * SOLR-16623: new SolrJettyTestRule for tests needing HTTP or Jetty. (David Smiley, Joshua Ouma)
 
+* SOLR-16979: BATS integration tests now start solr instances on a randomly selected port (janhoy)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
