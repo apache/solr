@@ -59,17 +59,17 @@ public class ReloadCoreAPI extends CoreAdminAPIBase {
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_EDIT_PERM)
   public SolrJerseyResponse reloadCore(
-      @Parameter(description = "The name of the core to snapshot.", required = true)
+      @Parameter(description = "The name of the core to reload.", required = true)
           @PathParam("coreName")
           String coreName,
-      @Schema(description = "The POJO for representing additional backup params.") @RequestBody
+      @Schema(description = "Additional parameters for reloading the core") @RequestBody
           ReloadCoreAPI.ReloadCoreRequestBody reloadCoreRequestBody)
       throws Exception {
     SolrJerseyResponse solrJerseyResponse = instantiateJerseyResponse(SolrJerseyResponse.class);
     return handlePotentiallyAsynchronousTask(
         solrJerseyResponse,
         coreName,
-        reloadCoreRequestBody.async,
+        (reloadCoreRequestBody == null) ? null : reloadCoreRequestBody.async,
         "reload",
         () -> {
           coreContainer.reload(coreName);
