@@ -353,6 +353,6 @@ public abstract class RequestHandlerBase
    */
   public static boolean isInternalShardRequest(SolrQueryRequest req) {
     return req.getParams().get("distrib.from") != null
-        || "true".equals(req.getParams().get("isShard"));
+        || "true".equals(req.getParams().get(ShardParams.IS_SHARD));
   }
 }
