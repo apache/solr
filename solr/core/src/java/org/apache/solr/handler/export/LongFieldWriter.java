@@ -17,20 +17,20 @@
 
 package org.apache.solr.handler.export;
 
-import com.carrotsearch.hppc.IntObjectHashMap;
 import java.io.IOException;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.search.DocValuesIteratorCache;
 
 class LongFieldWriter extends FieldWriter {
-  private String field;
+  private final String field;
 
-  private IntObjectHashMap<NumericDocValues> docValuesCache = new IntObjectHashMap<>();
+  private final DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache;
 
-  public LongFieldWriter(String field) {
+  public LongFieldWriter(String field, DocValuesIteratorCache dvIterCache) {
     this.field = field;
+    docValuesCache = dvIterCache.getSupplier(field);
   }
 
   @Override
@@ -47,22 +47,10 @@ class LongFieldWriter extends FieldWriter {
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      int readerOrd = readerContext.ord;
-      NumericDocValues vals = null;
-      if (docValuesCache.containsKey(readerOrd)) {
-        NumericDocValues numericDocValues = docValuesCache.get(readerOrd);
-        if (numericDocValues.docID() < sortDoc.docId) {
-          // We have not advanced beyond the current docId so we can use this docValues.
-          vals = numericDocValues;
-        }
-      }
-
-      if (vals == null) {
-        vals = DocValues.getNumeric(readerContext.reader(), this.field);
-        docValuesCache.put(readerOrd, vals);
-      }
-
-      if (vals.advance(sortDoc.docId) == sortDoc.docId) {
+      NumericDocValues vals =
+          docValuesCache.getNumericDocValues(
+              sortDoc.docId, readerContext.reader(), readerContext.ord);
+      if (vals != null) {
         val = vals.longValue();
       } else {
         return false;
