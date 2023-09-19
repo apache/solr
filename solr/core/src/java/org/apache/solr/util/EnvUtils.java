@@ -36,7 +36,7 @@ import org.apache.solr.common.util.Utils;
 
 /**
  * This class is a unified provider of environment variables and system properties. It exposes a
- * mutable copy of environment variables with. It also converts 'SOLR_FOO' variables to system
+ * mutable copy of the environment variables. It also converts 'SOLR_FOO' variables to system
  * properties 'solr.foo' and provide various convenience accessors for them.
  */
 public class EnvUtils {
