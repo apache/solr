@@ -618,11 +618,10 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
       // Tricky to test configset, since operation such as collection status would direct it to the
       // OS node.
-      // So we use query and check the cache response header which is determined by the
+      // So we use query and check the cache response header, which is determined by the
       // solr-config.xml in the configset
-      // However using solr client would drop cache response header hence we need to use the
-      // underlying httpClient
-      // which has SSL correctly configured
+      // However using solr client would drop cache response header, hence we need to use the
+      // underlying httpClient which has SSL correctly configured
 
       try (HttpSolrClient solrClient =
           new HttpSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
