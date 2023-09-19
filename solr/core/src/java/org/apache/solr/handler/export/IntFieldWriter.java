@@ -27,9 +27,10 @@ class IntFieldWriter extends FieldWriter {
   private final String field;
   private final DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache;
 
-  public IntFieldWriter(String field, DocValuesIteratorCache dvIterCache) {
+  public IntFieldWriter(
+      String field, DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache) {
     this.field = field;
-    docValuesCache = dvIterCache.getSupplier(field);
+    this.docValuesCache = docValuesCache;
   }
 
   @Override

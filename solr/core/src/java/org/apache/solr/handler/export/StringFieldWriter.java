@@ -49,10 +49,13 @@ class StringFieldWriter extends FieldWriter {
         }
       };
 
-  public StringFieldWriter(String field, FieldType fieldType, DocValuesIteratorCache dvIterCache) {
+  public StringFieldWriter(
+      String field,
+      FieldType fieldType,
+      DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache) {
     this.field = field;
     this.fieldType = fieldType;
-    this.docValuesCache = dvIterCache.getSupplier(field);
+    this.docValuesCache = docValuesCache;
   }
 
   @Override

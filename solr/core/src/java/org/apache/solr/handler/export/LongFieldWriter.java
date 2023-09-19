@@ -28,9 +28,10 @@ class LongFieldWriter extends FieldWriter {
 
   private final DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache;
 
-  public LongFieldWriter(String field, DocValuesIteratorCache dvIterCache) {
+  public LongFieldWriter(
+      String field, DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache) {
     this.field = field;
-    docValuesCache = dvIterCache.getSupplier(field);
+    this.docValuesCache = docValuesCache;
   }
 
   @Override

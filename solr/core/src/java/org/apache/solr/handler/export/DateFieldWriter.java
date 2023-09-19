@@ -23,8 +23,9 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.search.DocValuesIteratorCache;
 
 class DateFieldWriter extends LongFieldWriter {
-  public DateFieldWriter(String field, DocValuesIteratorCache dvIterCache) {
-    super(field, dvIterCache);
+  public DateFieldWriter(
+      String field, DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache) {
+    super(field, docValuesCache);
   }
 
   @Override

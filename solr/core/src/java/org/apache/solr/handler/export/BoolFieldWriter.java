@@ -24,8 +24,11 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.DocValuesIteratorCache;
 
 class BoolFieldWriter extends StringFieldWriter {
-  public BoolFieldWriter(String field, FieldType fieldType, DocValuesIteratorCache dvIterCache) {
-    super(field, fieldType, dvIterCache);
+  public BoolFieldWriter(
+      String field,
+      FieldType fieldType,
+      DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache) {
+    super(field, fieldType, docValuesCache);
   }
 
   @Override

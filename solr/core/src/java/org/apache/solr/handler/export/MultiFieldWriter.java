@@ -47,7 +47,7 @@ class MultiFieldWriter extends FieldWriter {
       FieldType fieldType,
       SchemaField schemaField,
       boolean numeric,
-      DocValuesIteratorCache dvIterCache) {
+      DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache) {
     this.field = field;
     this.fieldType = fieldType;
     this.schemaField = schemaField;
@@ -57,7 +57,7 @@ class MultiFieldWriter extends FieldWriter {
     } else {
       bitsToValue = null;
     }
-    docValuesCache = dvIterCache.getSupplier(field);
+    this.docValuesCache = docValuesCache;
   }
 
   @Override

@@ -503,47 +503,51 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
       }
 
-      if (fieldType instanceof IntValueFieldType) {
+      DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache = dvIterCache.getSupplier(field);
+
+      if (docValuesCache == null) {
+        writers[i] = EMPTY_FIELD_WRITER;
+      } else if (fieldType instanceof IntValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, dvIterCache);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new IntFieldWriter(field, dvIterCache);
+          writers[i] = new IntFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof LongValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, dvIterCache);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new LongFieldWriter(field, dvIterCache);
+          writers[i] = new LongFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof FloatValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, dvIterCache);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new FloatFieldWriter(field, dvIterCache);
+          writers[i] = new FloatFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof DoubleValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, dvIterCache);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new DoubleFieldWriter(field, dvIterCache);
+          writers[i] = new DoubleFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof StrField || fieldType instanceof SortableTextField) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false, dvIterCache);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false, docValuesCache);
         } else {
-          writers[i] = new StringFieldWriter(field, fieldType, dvIterCache);
+          writers[i] = new StringFieldWriter(field, fieldType, docValuesCache);
         }
       } else if (fieldType instanceof DateValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false, dvIterCache);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false, docValuesCache);
         } else {
-          writers[i] = new DateFieldWriter(field, dvIterCache);
+          writers[i] = new DateFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof BoolField) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, dvIterCache);
+          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new BoolFieldWriter(field, fieldType, dvIterCache);
+          writers[i] = new BoolFieldWriter(field, fieldType, docValuesCache);
         }
       } else {
         throw new IOException(
@@ -552,6 +556,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
     return writers;
   }
+
+  private static final FieldWriter EMPTY_FIELD_WRITER =
+      new FieldWriter() {
+        @Override
+        public boolean write(
+            SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex)
+            throws IOException {
+          return false;
+        }
+      };
 
   SortDoc getSortDoc(SolrIndexSearcher searcher, SortField[] sortFields) throws IOException {
     SortValue[] sortValues = new SortValue[sortFields.length];
