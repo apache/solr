@@ -192,6 +192,8 @@ Bug Fixes
 
 * SOLR-16971: RealTimeGet with Composite router throws NPE (Alex Deparvu)
 
+* SOLR-16931: ReRankScaler explain breaks with debug=true and in distributed mode (Joel Bernstein)
+
 Dependency Upgrades
 ---------------------
 
