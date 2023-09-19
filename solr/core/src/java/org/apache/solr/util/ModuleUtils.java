@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -55,9 +56,7 @@ public class ModuleUtils {
    * @return set of raw volume names from sysprop and/or env.var
    */
   static Set<String> resolveFromSyspropOrEnv() {
-    return EnvUtils.getPropAsList("solr.modules", Collections.emptyList()).stream()
-        .map(String::trim)
-        .collect(Collectors.toSet());
+    return new HashSet<>(EnvUtils.getPropAsList("solr.modules", Collections.emptyList()));
   }
 
   /** Returns true if a module name is valid and exists in the system */
