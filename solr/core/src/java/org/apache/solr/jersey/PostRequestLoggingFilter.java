@@ -101,7 +101,7 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
         response.responseHeader.qTime);
 
     /* slowQueryThresholdMillis defaults to -1 in SolrConfig -- not enabled.*/
-    if (log.isWarnEnabled()
+    if (slowCoreRequestLogger.isWarnEnabled()
         && solrConfig != null
         && solrConfig.slowQueryThresholdMillis >= 0
         && response.responseHeader.qTime >= solrConfig.slowQueryThresholdMillis) {

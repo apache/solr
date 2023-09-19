@@ -125,7 +125,7 @@ set SOLR_SSL_CHECK_PEER_NAME=true
 .Client Authentication Settings
 WARNING: Enable either `SOLR_SSL_NEED_CLIENT_AUTH` or `SOLR_SSL_WANT_CLIENT_AUTH` but not both at the same time.
 They are mutually exclusive and Jetty will select one of them which may not be what you expect.
-`SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` should be set to false if you want to disable hostname verification.
+`SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` should be set to false if you want to disable hostname verification for client certificates.
 
 When you start Solr, the `bin/solr` script includes these settings and will pass them as system properties to the JVM.
 
