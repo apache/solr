@@ -24,7 +24,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.search.DocValuesIteratorCache;
 
 class LongFieldWriter extends FieldWriter {
-  private final String field;
+  protected final String field;
 
   private final DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache;
 
@@ -56,7 +56,11 @@ class LongFieldWriter extends FieldWriter {
         return false;
       }
     }
-    ew.put(field, val);
+    doWrite(ew, val);
     return true;
+  }
+
+  protected void doWrite(MapWriter.EntryWriter ew, long val) throws IOException {
+    ew.put(field, val);
   }
 }

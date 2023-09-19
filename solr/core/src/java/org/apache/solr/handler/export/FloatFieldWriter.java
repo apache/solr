@@ -36,12 +36,11 @@ class FloatFieldWriter extends FieldWriter {
   public boolean write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex)
       throws IOException {
+    float val;
     SortValue sortValue = sortDoc.getSortValue(this.field);
     if (sortValue != null) {
       if (sortValue.isPresent()) {
-        float val = (float) sortValue.getCurrentValue();
-        ew.put(this.field, val);
-        return true;
+        val = (float) sortValue.getCurrentValue();
       } else { // empty-value
         return false;
       }
@@ -51,12 +50,12 @@ class FloatFieldWriter extends FieldWriter {
           docValuesCache.getNumericDocValues(
               sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (vals != null) {
-        int val = (int) vals.longValue();
-        ew.put(this.field, Float.intBitsToFloat(val));
-        return true;
+        val = Float.intBitsToFloat((int) vals.longValue());
       } else {
         return false;
       }
     }
+    ew.put(this.field, val);
+    return true;
   }
 }

@@ -19,44 +19,16 @@ package org.apache.solr.handler.export;
 
 import java.io.IOException;
 import java.util.Date;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.search.DocValuesIteratorCache;
 
-class DateFieldWriter extends FieldWriter {
-  private final String field;
-  private final DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache;
-
+class DateFieldWriter extends LongFieldWriter {
   public DateFieldWriter(String field, DocValuesIteratorCache dvIterCache) {
-    this.field = field;
-    docValuesCache = dvIterCache.getSupplier(field);
+    super(field, dvIterCache);
   }
 
   @Override
-  public boolean write(
-      SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex)
-      throws IOException {
-    Long val;
-    SortValue sortValue = sortDoc.getSortValue(this.field);
-    if (sortValue != null) {
-      if (sortValue.isPresent()) {
-        val = (long) sortValue.getCurrentValue();
-      } else { // empty-value
-        return false;
-      }
-    } else {
-      // field is not part of 'sort' param, but part of 'fl' param
-      NumericDocValues vals =
-          docValuesCache.getNumericDocValues(
-              sortDoc.docId, readerContext.reader(), readerContext.ord);
-      if (vals != null) {
-        val = vals.longValue();
-      } else {
-        return false;
-      }
-    }
-    ew.put(this.field, new Date(val));
-    return true;
+  protected void doWrite(MapWriter.EntryWriter ew, long val) throws IOException {
+    ew.put(field, new Date(val));
   }
 }

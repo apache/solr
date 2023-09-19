@@ -36,12 +36,11 @@ class DoubleFieldWriter extends FieldWriter {
   public boolean write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex)
       throws IOException {
+    double val;
     SortValue sortValue = sortDoc.getSortValue(this.field);
     if (sortValue != null) {
       if (sortValue.isPresent()) {
-        double val = (double) sortValue.getCurrentValue();
-        ew.put(this.field, val);
-        return true;
+        val = (double) sortValue.getCurrentValue();
       } else { // empty-value
         return false;
       }
@@ -51,12 +50,12 @@ class DoubleFieldWriter extends FieldWriter {
           docValuesCache.getNumericDocValues(
               sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (vals != null) {
-        long val = vals.longValue();
-        ew.put(this.field, Double.longBitsToDouble(val));
-        return true;
+        val = Double.longBitsToDouble(vals.longValue());
       } else {
         return false;
       }
     }
+    ew.put(this.field, val);
+    return true;
   }
 }
