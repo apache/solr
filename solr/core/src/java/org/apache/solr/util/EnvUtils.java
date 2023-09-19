@@ -61,7 +61,7 @@ public class EnvUtils {
   }
 
   /**
-   * Get all environment variables with SOLR_ prefix.
+   * Get Solr's mutable copy of all environment variables.
    *
    * @return sorted map of environment variables
    */
