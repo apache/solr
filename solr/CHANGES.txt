@@ -156,6 +156,8 @@ Other Changes
 
 * SOLR-16623: new SolrJettyTestRule for tests needing HTTP or Jetty. (David Smiley, Joshua Ouma)
 
+* SOLR-16978: Be case insensitive when parsing booleans from text (Tomás Fernández Löbbe)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
