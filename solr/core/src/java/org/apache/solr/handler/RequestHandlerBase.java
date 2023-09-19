@@ -352,7 +352,7 @@ public abstract class RequestHandlerBase
    * @return true if request is internal
    */
   public static boolean isInternalShardRequest(SolrQueryRequest req) {
-    return req.getParams().get("distrib.from") != null
+    return req.getParams().get(DistributedUpdateProcessor.DISTRIB_FROM) != null
         || "true".equals(req.getParams().get(ShardParams.IS_SHARD));
   }
 }
