@@ -113,6 +113,8 @@ Improvements
   dedicated thread pool. Backup, Restore and Split are expensive operations.
   (Pierre Salagnac, David Smiley)
 
+* SOLR-16959: Make the internal CoresLocator implementation configurable in solr.xml (Vincent Primault, David Smiley)
+
 Optimizations
 ---------------------
 
