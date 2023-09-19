@@ -120,12 +120,12 @@ teardown() {
   export SOLR_OPTS="${SOLR_OPTS} -Dsolr.jetty.ssl.sniHostCheck=true"
   solr restart -c
   # This should fail the SNI Hostname check
-  run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
   assert_output --partial 'Invalid SNI'
 
   # Using the right hostname should not fail the SNI Hostname check
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" --resolve "test.solr.apache.org:${SOLR_PORT}:127.0.0.1" "https://test.solr.apache.org:${SOLR_PORT}/solr/test/select?q=*:*"
-  assert_output --partial '"numFound":0'
+  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" --resolve "test.solr.apache.org:${SOLR_PORT}:127.0.0.1" "https://test.solr.apache.org:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
+  assert_output --partial '"urlScheme":"https"'
 }
 
 @test "start solr with ssl and auth" {
