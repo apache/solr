@@ -44,7 +44,7 @@ public final class StartupLoggingUtils {
 
   /** Checks whether mandatory log dir is given */
   public static void checkLogDir() {
-    if (System.getProperty("solr.log.dir") == null) {
+    if (EnvUtils.getProp("solr.log.dir") == null) {
       log.error("Missing Java Option solr.log.dir. Logging may be missing or incomplete.");
     }
   }

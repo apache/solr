@@ -47,6 +47,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.EnvUtils;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -58,7 +59,7 @@ import org.slf4j.LoggerFactory;
 /** This implements the public end points (/api/cluster/package) of package API. */
 public class PackageAPI {
   public final boolean enablePackages =
-      Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
+      EnvUtils.getPropAsBool("enable.packages", false);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR_MSG =
