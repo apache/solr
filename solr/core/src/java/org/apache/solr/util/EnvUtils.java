@@ -42,6 +42,7 @@ import org.apache.solr.common.util.Utils;
 public class EnvUtils {
   private static final SortedMap<String, String> ENV = new TreeMap<>(System.getenv());
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
+  private static boolean initialized = false;
 
   static {
     try {
@@ -123,13 +124,14 @@ public class EnvUtils {
   }
 
   /** Set all environment variables */
-  public static void setEnvs(Map<String, String> env) {
+  public static synchronized void setEnvs(Map<String, String> env) {
     ENV.clear();
     ENV.putAll(env);
   }
 
   /** Get all Solr system properties as a sorted map */
   public static SortedMap<String, String> getProps() {
+    ensureInitialized();
     SortedMap<String, String> props = new TreeMap<>();
     for (String key : System.getProperties().stringPropertyNames()) {
       props.put(key, System.getProperty(key));
@@ -139,21 +141,25 @@ public class EnvUtils {
 
   /** Get a property as string */
   public static String getProp(String key) {
+    ensureInitialized();
     return getProp(key, null);
   }
 
   /** Get a property as string */
   public static String getProp(String key, String defaultValue) {
+    ensureInitialized();
     return System.getProperties().getProperty(key, defaultValue);
   }
 
   /** Get property as integer */
   public static long getPropAsLong(String key) {
+    ensureInitialized();
     return Long.parseLong(getProp(key));
   }
 
   /** Get property as long, or default value */
   public static long getPropAsLong(String key, long defaultValue) {
+    ensureInitialized();
     String value = getProp(key);
     if (value == null) {
       return defaultValue;
@@ -163,11 +169,13 @@ public class EnvUtils {
 
   /** Get property as boolean */
   public static boolean getPropAsBool(String key) {
+    ensureInitialized();
     return StrUtils.parseBool(getProp(key));
   }
 
   /** Get property as boolean, or default value */
   public static boolean getPropAsBool(String key, boolean defaultValue) {
+    ensureInitialized();
     String value = getProp(key);
     if (value == null) {
       return defaultValue;
@@ -181,6 +189,7 @@ public class EnvUtils {
    * @return list of strings, or null if not found
    */
   public static List<String> getPropAsList(String key) {
+    ensureInitialized();
     return getProp(key) != null ? stringValueToList(getProp(key)) : null;
   }
 
@@ -190,6 +199,7 @@ public class EnvUtils {
    * @return list of strings, or provided default if not found
    */
   public static List<String> getPropAsList(String key, List<String> defaultValue) {
+    ensureInitialized();
     return getProp(key) != null ? getPropAsList(key) : defaultValue;
   }
 
@@ -203,7 +213,7 @@ public class EnvUtils {
    *
    * @param overwrite if true, overwrite existing system properties with environment variables
    */
-  public static void init(boolean overwrite) {
+  public static synchronized void init(boolean overwrite) {
     // Convert eligible environment variables with SOLR_ prefix to system properties
     for (String key :
         ENV.keySet().stream().filter(k -> k.startsWith("SOLR_")).toArray(String[]::new)) {
@@ -213,6 +223,7 @@ public class EnvUtils {
         setProp(sysPropKey, ENV.get(key));
       }
     }
+    initialized = true;
   }
 
   protected static String envNameToSyspropName(String envName) {
@@ -230,6 +241,19 @@ public class EnvUtils {
       return StrUtils.splitSmart(string, ",", true).stream()
           .map(String::trim)
           .collect(Collectors.toList());
+    }
+  }
+
+  private static synchronized void ensureInitialized() {
+    while (!initialized) {
+      try {
+        //noinspection BusyWait
+        Thread.sleep(10);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "EnvUtils not initialized", e);
+      }
     }
   }
 }
