@@ -95,7 +95,7 @@ public class EnvUtils {
 
   /** Get an env var as boolean */
   public static boolean getEnvAsBool(String key) {
-    return Boolean.parseBoolean(ENV.get(key));
+    return StrUtils.parseBool(ENV.get(key));
   }
 
   /** Get an env var as boolean, or default value */
@@ -104,7 +104,7 @@ public class EnvUtils {
     if (value == null) {
       return defaultValue;
     }
-    return Boolean.parseBoolean(value);
+    return StrUtils.parseBool(value);
   }
 
   /** Get comma separated strings from env as List */
@@ -163,7 +163,7 @@ public class EnvUtils {
 
   /** Get property as boolean */
   public static boolean getPropAsBool(String key) {
-    return Boolean.parseBoolean(getProp(key));
+    return StrUtils.parseBool(getProp(key));
   }
 
   /** Get property as boolean, or default value */
@@ -172,7 +172,7 @@ public class EnvUtils {
     if (value == null) {
       return defaultValue;
     }
-    return Boolean.parseBoolean(value);
+    return StrUtils.parseBool(value);
   }
 
   /**
