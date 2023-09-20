@@ -1308,7 +1308,7 @@ public class MiniSolrCloudCluster {
      * with span creation without having to enable otel module
      */
     private void injectRandomRecordingFlag() {
-      boolean isRecording = LuceneTestCase.random().nextBoolean();
+      boolean isRecording = LuceneTestCase.rarely();
       TraceUtils.IS_RECORDING = (ignored) -> isRecording;
     }
   }
