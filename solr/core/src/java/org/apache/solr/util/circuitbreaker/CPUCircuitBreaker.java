@@ -17,52 +17,47 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Tracks current CPU usage and triggers if the specified threshold is breached.
  *
- * <p>This circuit breaker gets the average CPU load over the last minute and uses that data to take
- * a decision. We depend on OperatingSystemMXBean which does not allow a configurable interval of
- * collection of data. //TODO: Use Codahale Meter to calculate the value locally.
- *
- * <p>The configuration to define which mode to use and the trigger threshold are defined in
- * solrconfig.xml
+ * <p>This circuit breaker gets the recent average CPU usage and uses that data to take a decision.
+ * We depend on OperatingSystemMXBean which does not allow a configurable interval of collection of
+ * data.
  */
 public class CPUCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final OperatingSystemMXBean operatingSystemMXBean =
-      ManagementFactory.getOperatingSystemMXBean();
 
+  private static boolean warningLogged = false;
   private double cpuUsageThreshold;
+  private final SolrCore core;
 
   private static final ThreadLocal<Double> seenCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
   private static final ThreadLocal<Double> allowedCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
-  public CPUCircuitBreaker() {
+  public CPUCircuitBreaker(SolrCore core) {
     super();
-  }
-
-  public void setThreshold(double threshold) {
-    this.cpuUsageThreshold = threshold;
+    this.core = core;
   }
 
   @Override
   public boolean isTripped() {
-
     double localAllowedCPUUsage = getCpuUsageThreshold();
     double localSeenCPUUsage = calculateLiveCPUUsage();
 
     if (localSeenCPUUsage < 0) {
-      if (log.isWarnEnabled()) {
+      if (!warningLogged && log.isWarnEnabled()) {
         String msg = "Unable to get CPU usage";
-
         log.warn(msg);
+        warningLogged = true;
       }
 
       return false;
@@ -84,11 +79,50 @@ public class CPUCircuitBreaker extends CircuitBreaker {
         + allowedCPUUsage.get();
   }
 
+  public void setThreshold(double thresholdValueInPercentage) {
+    if (thresholdValueInPercentage > 100) {
+      throw new IllegalArgumentException("Invalid Invalid threshold value.");
+    }
+
+    if (thresholdValueInPercentage <= 0) {
+      throw new IllegalStateException("Threshold cannot be less than or equal to zero");
+    }
+    cpuUsageThreshold = thresholdValueInPercentage;
+  }
+
   public double getCpuUsageThreshold() {
     return cpuUsageThreshold;
   }
 
+  /**
+   * Calculate the CPU usage for the system in percentage.
+   *
+   * @return Percent CPU usage of -1 if value could not be obtained.
+   */
   protected double calculateLiveCPUUsage() {
-    return operatingSystemMXBean.getSystemLoadAverage();
+    // TODO: Use Codahale Meter to calculate the value
+    Metric metric =
+        this.core
+            .getCoreContainer()
+            .getMetricManager()
+            .registry("solr.jvm")
+            .getMetrics()
+            .get("os.systemCpuLoad");
+
+    if (metric == null) {
+      return -1.0;
+    }
+
+    if (metric instanceof Gauge) {
+      @SuppressWarnings({"rawtypes"})
+      Gauge gauge = (Gauge) metric;
+      // unwrap if needed
+      if (gauge instanceof SolrMetricManager.GaugeWrapper) {
+        gauge = ((SolrMetricManager.GaugeWrapper) gauge).getGauge();
+      }
+      return (Double) gauge.getValue() * 100;
+    }
+
+    return -1.0; // Unable to unpack metric
   }
 }
