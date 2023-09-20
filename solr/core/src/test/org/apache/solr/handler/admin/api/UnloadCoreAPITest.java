@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin.api;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UnloadCoreRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -29,7 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class UnloadCoreAPITest extends SolrTestCaseJ4 {
-  private UnloadCoreAPI unloadCoreAPI;
+  private UnloadCore unloadCoreAPI;
   private static final String NON_EXISTENT_CORE = "non_existent_core";
 
   @BeforeClass
@@ -48,8 +49,7 @@ public class UnloadCoreAPITest extends SolrTestCaseJ4 {
     CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
         new CoreAdminHandler.CoreAdminAsyncTracker();
     unloadCoreAPI =
-        new UnloadCoreAPI(
-            coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
+        new UnloadCore(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
   }
 
   @Test
@@ -76,9 +76,8 @@ public class UnloadCoreAPITest extends SolrTestCaseJ4 {
     deleteCore();
   }
 
-  private UnloadCoreAPI.UnloadCoreRequestBody getUnloadCoreRequestBodyObj() {
-    UnloadCoreAPI.UnloadCoreRequestBody unloadCoreRequestBody =
-        new UnloadCoreAPI.UnloadCoreRequestBody();
+  private UnloadCoreRequestBody getUnloadCoreRequestBodyObj() {
+    UnloadCoreRequestBody unloadCoreRequestBody = new UnloadCoreRequestBody();
     unloadCoreRequestBody.deleteIndex = false;
     unloadCoreRequestBody.deleteDataDir = false;
     unloadCoreRequestBody.deleteInstanceDir = false;

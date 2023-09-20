@@ -74,7 +74,7 @@ import org.apache.solr.handler.admin.api.RestoreCoreAPI;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCoresAPI;
-import org.apache.solr.handler.admin.api.UnloadCoreAPI;
+import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -406,7 +406,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         BackupCoreAPI.class,
         RestoreCoreAPI.class,
         ReloadCoreAPI.class,
-        UnloadCoreAPI.class);
+        UnloadCore.class);
   }
 
   public interface CoreAdminOp {
