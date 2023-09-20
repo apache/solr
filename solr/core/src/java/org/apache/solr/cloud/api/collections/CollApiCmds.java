@@ -219,7 +219,7 @@ public class CollApiCmds {
             Optional.ofNullable(message.getStr(COLLECTION_PROP, message.getStr(NAME)))
                 .orElse("unknown");
         localSpan =
-            TraceUtils.newInterNodeCommunicationSpan(
+            TraceUtils.startCollectionApiCommandSpan(
                 command.getClass().getSimpleName(), collection);
         localContext = ctx.with(localSpan);
       }

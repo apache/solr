@@ -40,6 +40,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -73,12 +74,15 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CustomTestOtelTracerConfigurator.resetForTest();
   }
 
+  @Before
+  private void resetSpanData() {
+    getAndClearSpans();
+  }
+
   @Test
   public void test() throws IOException, SolrServerException {
     // TODO it would be clearer if we could compare the complete Span tree between reality
     // and what we assert it looks like in a structured visual way.
-
-    getAndClearSpans(); // reset
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     // Indexing
@@ -123,7 +127,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   @Test
   public void testAdminApi() throws Exception {
-    getAndClearSpans(); // reset
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics"));
@@ -137,7 +140,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   @Test
   public void testV2Api() throws Exception {
-    getAndClearSpans(); // reset
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     new V2Request.Builder("/collections/" + COLLECTION + "/reload")
@@ -178,8 +180,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
    */
   @Test
   public void testApacheClient() throws Exception {
-    getAndClearSpans(); // reset
-
     CollectionAdminRequest.ColStatus a1 = CollectionAdminRequest.collectionStatus(COLLECTION);
     CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
     assertEquals(0, r1.getStatus());
@@ -202,7 +202,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   private void verifyCollectionCreation(String collection) throws Exception {
-    getAndClearSpans(); // reset
     var a1 = CollectionAdminRequest.createCollection(collection, 2, 2);
     CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
     assertEquals(0, r1.getStatus());
@@ -248,7 +247,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   }
 
   private void verifyCollectionDeletion(String collection) throws Exception {
-    getAndClearSpans(); // reset
     var a1 = CollectionAdminRequest.deleteCollection(collection);
     CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
     assertEquals(0, r1.getStatus());

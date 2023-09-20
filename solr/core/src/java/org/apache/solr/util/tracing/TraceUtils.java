@@ -162,7 +162,7 @@ public class TraceUtils {
     }
   }
 
-  public static Span newInterNodeCommunicationSpan(String name, String collection) {
+  public static Span startCollectionApiCommandSpan(String name, String collection) {
     Tracer tracer = getGlobalTracer();
     SpanBuilder spanBuilder =
         tracer.spanBuilder(name).setSpanKind(SpanKind.CONSUMER).setAttribute(TAG_DB, collection);
