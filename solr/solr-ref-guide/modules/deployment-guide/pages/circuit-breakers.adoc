@@ -75,11 +75,9 @@ In this scenario, the heap usage at which the circuit breaker will trip is 3.75G
 This circuit breaker tracks system CPU usage and triggers if the recent CPU usage exceeds a configurable threshold.
 
 This is tracked with the JMX metric `OperatingSystemMXBean.getSystemCpuLoad()`. That measures the
-recent CPU usage for the whole system. A value of 0.0 means that all CPUs were idle, while a value
-of 1.0 means that all CPUs were actively running 100% of the time.
-
-This metric is provided by the `com.sun.management` package, which is not implemented on all JVMs.
-If the metric is not available, the circuit breaker will fail with the warning "Unable to get CPU usage".
+recent CPU usage for the whole system. This metric is provided by the `com.sun.management` package,
+which is not implemented on all JVMs. If the metric is not available, the circuit breaker will be
+disabled and log an error message. An alternative can then be to use the <<system-load-average-circuit-breaker>>.
 
 To enable and configure the CPU utilization based circuit breaker:
 
