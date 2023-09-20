@@ -45,6 +45,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -1315,6 +1316,33 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertEquals(2, configMisses.longValue());
     } finally {
       cl.shutdown();
+    }
+  }
+
+  @Test
+  public void testCreateCollectionBooleanValues() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      String collectionName = "testCreateCollectionBooleanValues";
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", collectionName);
+      params.set("collection.configName", "conf1");
+      params.set("numShards", "1");
+      params.set(CollectionAdminParams.PER_REPLICA_STATE, "False");
+      QueryRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        waitForCollection(ZkStateReader.from(cloudClient), collectionName, 1);
+      } finally {
+        try {
+          CollectionAdminRequest.deleteCollection(collectionName).process(client);
+        } catch (Exception e) {
+          // Delete if possible, ignore otherwise. If the test failed, let the original exception
+          // bubble up
+        }
+      }
     }
   }
 }

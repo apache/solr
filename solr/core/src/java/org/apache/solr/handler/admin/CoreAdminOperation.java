@@ -73,6 +73,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.admin.api.ReloadCoreAPI;
 import org.apache.solr.handler.admin.api.UnloadCoreAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -139,7 +140,13 @@ public enum CoreAdminOperation implements CoreAdminOp {
         SolrParams params = it.req.getParams();
         String cname = params.required().get(CoreAdminParams.CORE);
 
-        it.handler.coreContainer.reload(cname);
+        ReloadCoreAPI reloadCoreAPI =
+            new ReloadCoreAPI(
+                it.req, it.rsp, it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker());
+        ReloadCoreAPI.ReloadCoreRequestBody reloadCoreRequestBody =
+            new ReloadCoreAPI.ReloadCoreRequestBody();
+        SolrJerseyResponse response = reloadCoreAPI.reloadCore(cname, reloadCoreRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
   STATUS_OP(STATUS, new StatusOp()),
   SWAP_OP(

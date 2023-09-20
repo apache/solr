@@ -47,11 +47,11 @@ teardown() {
       "class": "solr.extraction.ExtractingRequestHandler",
       "defaults":{ "lowernames": "true", "captureAttr":"true"}
     }
-  }' 'http://localhost:8983/solr/gettingstarted/config'
+  }' "http://localhost:${SOLR_PORT}/solr/gettingstarted/config"
 
-  curl 'http://localhost:8983/solr/gettingstarted/update/extract?literal.id=doc1&commit=true' -F "myfile=@${SOLR_TIP}/example/exampledocs/solr-word.pdf"
+  curl "http://localhost:${SOLR_PORT}/solr/gettingstarted/update/extract?literal.id=doc1&commit=true" -F "myfile=@${SOLR_TIP}/example/exampledocs/solr-word.pdf"
   
-  run curl 'http://localhost:8983/solr/gettingstarted/select?q=id:doc1'
+  run curl "http://localhost:${SOLR_PORT}/solr/gettingstarted/select?q=id:doc1"
   assert_output --partial '"numFound":1'
 }
 
@@ -70,15 +70,15 @@ teardown() {
       "class": "solr.extraction.ExtractingRequestHandler",
       "defaults":{ "lowernames": "true", "captureAttr":"true"}
     }
-  }' 'http://localhost:8983/solr/content_extraction/config'
+  }' "http://localhost:${SOLR_PORT}/solr/content_extraction/config"
   
   # We filter to pdf to invoke the Extract handler.
-  run solr post -filetypes pdf -commit -url http://localhost:8983/solr/content_extraction/update ${SOLR_TIP}/example/exampledocs
+  run solr post -filetypes pdf -commit -url http://localhost:${SOLR_PORT}/solr/content_extraction/update ${SOLR_TIP}/example/exampledocs
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
   
-  run curl 'http://localhost:8983/solr/content_extraction/select?q=*:*'
+  run curl "http://localhost:${SOLR_PORT}/solr/content_extraction/select?q=*:*"
   assert_output --partial '"numFound":1'
 }
 
@@ -97,14 +97,14 @@ teardown() {
       "class": "solr.extraction.ExtractingRequestHandler",
       "defaults":{ "lowernames": "true", "captureAttr":"true"}
     }
-  }' 'http://localhost:8983/solr/website_extraction/config'
+  }' "http://localhost:${SOLR_PORT}/solr/website_extraction/config"
   
   # Change to -recursive 1 to crawl multiple pages, but may be too slow.
-  run solr post -mode web -commit -url http://localhost:8983/solr/website_extraction/update -recursive 0 -delay 1 https://solr.apache.org/
+  run solr post -mode web -commit -url http://localhost:${SOLR_PORT}/solr/website_extraction/update -recursive 0 -delay 1 https://solr.apache.org/
 
   assert_output --partial 'POSTed web resource https://solr.apache.org (depth: 0)'
   refute_output --partial 'ERROR'
   
-  run curl 'http://localhost:8983/solr/website_extraction/select?q=*:*'
+  run curl "http://localhost:${SOLR_PORT}/solr/website_extraction/select?q=*:*"
   assert_output --partial '"numFound":1'
 }
