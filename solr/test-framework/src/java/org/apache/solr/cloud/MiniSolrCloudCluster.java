@@ -83,6 +83,7 @@ import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.SimplePropagator;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -1243,6 +1244,7 @@ public class MiniSolrCloudCluster {
       // eager init to prevent OTEL init races caused by test setup
       if (!disableTraceIdGeneration && TracerConfigurator.TRACE_ID_GEN_ENABLED) {
         SimplePropagator.load();
+        injectRandomRecordingFlag();
       }
 
       JettyConfig jettyConfig = jettyConfigBuilder.build();
@@ -1298,6 +1300,16 @@ public class MiniSolrCloudCluster {
     public Builder withTraceIdGenerationDisabled() {
       this.disableTraceIdGeneration = true;
       return this;
+    }
+
+    /**
+     * It only makes sense to call this if we are using the alwaysOn tracer. this will randomize the
+     * Span::isRecording check for the alwaysOn tracer so we have coverage of all methods that deal
+     * with span creation without having to enable otel module
+     */
+    private void injectRandomRecordingFlag() {
+      boolean isRecording = LuceneTestCase.random().nextBoolean();
+      TraceUtils.IS_RECORDING = (ignored) -> isRecording;
     }
   }
 }
