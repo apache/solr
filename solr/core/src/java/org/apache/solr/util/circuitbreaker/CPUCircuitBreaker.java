@@ -20,6 +20,7 @@ package org.apache.solr.util.circuitbreaker;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import java.lang.invoke.MethodHandles;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class CPUCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static boolean warningLogged = false;
+  private boolean enabled = true;
   private double cpuUsageThreshold;
   private final SolrCore core;
 
@@ -49,19 +50,30 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   }
 
   @Override
-  public boolean isTripped() {
-    double localAllowedCPUUsage = getCpuUsageThreshold();
+  public void init(NamedList<?> args) {
+    super.init(args);
     double localSeenCPUUsage = calculateLiveCPUUsage();
 
     if (localSeenCPUUsage < 0) {
-      if (!warningLogged && log.isWarnEnabled()) {
-        String msg = "Unable to get CPU usage";
-        log.warn(msg);
-        warningLogged = true;
+      String msg =
+          "Initialization failure for CPU circuit breaker. Unable to get 'systemCpuLoad', not supported by the JVM?";
+      if (log.isErrorEnabled()) {
+        log.error(msg);
       }
+      enabled = false;
+    }
+  }
 
+  @Override
+  public boolean isTripped() {
+    if (!enabled) {
+      if (log.isDebugEnabled()) {
+        log.debug("CPU circuit breaker is disabled due to initialization failure.");
+      }
       return false;
     }
+    double localAllowedCPUUsage = getCpuUsageThreshold();
+    double localSeenCPUUsage = calculateLiveCPUUsage();
 
     allowedCPUUsage.set(localAllowedCPUUsage);
 
