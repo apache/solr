@@ -25,11 +25,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** A JSON ResponseWriter that uses jackson. */
 public class JacksonJsonWriter extends BinaryResponseWriter {
+  private static final char[] indentChars = new char[81];
+
+  static {
+    Arrays.fill(indentChars, ' ');
+  }
 
   protected final JsonFactory jsonfactory;
   protected static final PrettyPrinter pretty =
@@ -199,7 +205,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
 
     @Override
     public void indent() throws IOException {
-      // do nothing
+      gen.writeRaw(indentChars, 0, Math.min((level() << 1) + 1, indentChars.length));
     }
 
     @Override
