@@ -196,6 +196,7 @@ public class DocValuesIteratorCache {
           // been returned at its current position, and has therefore not been consumed and
           // is thus eligible to be returned directly. (singleValued dv iterators are always
           // eligible to be returned directly, as they have no concept of being "consumed")
+          noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
           return dv;
         } else if (localId <= currentDoc) {
           if (localId >= noMatchSince[leafOrd]) {
