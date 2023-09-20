@@ -899,6 +899,8 @@ public class SolrDocumentFetcher {
         dv = sndvs[leafOrd];
         int currentDoc = dv.docID();
         if (localId == currentDoc && !consumed[leafOrd]) {
+          consumed[leafOrd] = true;
+          noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
           return dv;
         } else if (localId <= currentDoc) {
           if (localId >= noMatchSince[leafOrd]) {
@@ -949,6 +951,8 @@ public class SolrDocumentFetcher {
         dv = ssdvs[leafOrd];
         int currentDoc = dv.docID();
         if (localId == currentDoc && !consumed[leafOrd]) {
+          consumed[leafOrd] = true;
+          noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
           return dv;
         } else if (localId <= currentDoc) {
           if (localId >= noMatchSince[leafOrd]) {
