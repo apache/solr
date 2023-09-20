@@ -62,22 +62,27 @@ public class UnloadCoreAPI extends CoreAdminAPIBase {
   public SolrJerseyResponse unloadCore(
       @PathParam("coreName") String coreName,
       @Schema(description = "The POJO for representing additional Unload core params") @RequestBody
-          UnloadCoreRequestBody unloadCoreRequestBody)
+          UnloadCoreRequestBody requestBody)
       throws Exception {
     ensureRequiredParameterProvided("coreName", coreName);
     SolrJerseyResponse solrJerseyResponse = instantiateJerseyResponse(SolrJerseyResponse.class);
+    if (requestBody == null) {
+      requestBody = new UnloadCoreRequestBody();
+    }
+
+    final var requestBodyFinal = requestBody; // Lambda below requires a 'final' variable
     return handlePotentiallyAsynchronousTask(
         solrJerseyResponse,
         coreName,
-        unloadCoreRequestBody.async,
+        requestBody.async,
         "unload",
         () -> {
           CoreDescriptor cdescr = coreContainer.getCoreDescriptor(coreName);
           coreContainer.unload(
               coreName,
-              unloadCoreRequestBody.deleteIndex,
-              unloadCoreRequestBody.deleteDataDir,
-              unloadCoreRequestBody.deleteInstanceDir);
+              requestBodyFinal.deleteIndex,
+              requestBodyFinal.deleteDataDir,
+              requestBodyFinal.deleteInstanceDir);
           assert TestInjection.injectNonExistentCoreExceptionAfterUnload(coreName);
           return solrJerseyResponse;
         });
