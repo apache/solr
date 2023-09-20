@@ -194,6 +194,8 @@ Bug Fixes
 
 * SOLR-16931: ReRankScaler explain breaks with debug=true and in distributed mode (Joel Bernstein)
 
+* SOLR-16925: Fix indentation for JacksonJsonWriter (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 
