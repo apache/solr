@@ -248,7 +248,9 @@ public class RunExampleTool extends ToolBase {
 
     boolean isCloudMode = cli.hasOption('c');
     String zkHost = cli.getOptionValue('z');
-    int port = Integer.parseInt(cli.getOptionValue('p', "8983"));
+    int port =
+        Integer.parseInt(
+            cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
     Map<String, Object> nodeStatus =
         startSolr(new File(exDir, "solr"), isCloudMode, cli, port, zkHost, 30);
 
@@ -425,6 +427,13 @@ public class RunExampleTool extends ToolBase {
     boolean prompt = !cli.hasOption("noprompt");
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
+    int defaultPort =
+        Integer.parseInt(
+            cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
+    if (defaultPort != 8983) {
+      // Override the old default port numbers if user has started the example overriding SOLR_PORT
+      cloudPorts = new int[] {defaultPort, defaultPort + 1, defaultPort + 2, defaultPort + 3};
+    }
     File cloudDir = new File(exampleDir, "cloud");
     if (!cloudDir.isDirectory()) cloudDir.mkdir();
 

@@ -43,12 +43,12 @@ teardown() {
   export SOLR_OPTS="-Dsolr.allowPaths=${backup_dir} -Djava.io.tmpdir=${test_tmp_dir}"
   run solr start -c
   run solr create_collection -c COLL_NAME
-  run solr api -get "http://localhost:8983/solr/admin/collections?action=BACKUP&name=test&collection=COLL_NAME&location=file://${backup_dir}"
+  run solr api -get "http://localhost:${SOLR_PORT}/solr/admin/collections?action=BACKUP&name=test&collection=COLL_NAME&location=file://${backup_dir}"
   assert_output --partial '"status":0'
 
   # Solr is not permissioned for this directory, so it should fail
   backup_dir_other="${backup_dir}-other"
   mkdir -p "${backup_dir_other}"
-  run solr api -get "http://localhost:8983/solr/admin/collections?action=BACKUP&name=test-fail&collection=COLL_NAME&location=file://${backup_dir_other}"
+  run solr api -get "http://localhost:${SOLR_PORT}/solr/admin/collections?action=BACKUP&name=test-fail&collection=COLL_NAME&location=file://${backup_dir_other}"
   assert_output --partial 'access denied'
 }
