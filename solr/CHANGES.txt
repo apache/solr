@@ -225,6 +225,8 @@ Other Changes
 
 * SOLR-16978: Be case insensitive when parsing booleans from text (Tomás Fernández Löbbe)
 
+* SOLR-16960: Tests should sometimes run with a Tracer (not no-op) (Alex Deparvu)
+
 ==================  9.3.0 ==================
 
 Upgrade Notes
