@@ -65,7 +65,10 @@ public class TraceUtils {
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
 
-  /** this should only be changed in the context of testing */
+  /**
+   * this should only be changed in the context of testing, otherwise it would risk not recording
+   * trace data.
+   */
   public static Predicate<Span> IS_RECORDING = Span::isRecording;
 
   public static Tracer getGlobalTracer() {
