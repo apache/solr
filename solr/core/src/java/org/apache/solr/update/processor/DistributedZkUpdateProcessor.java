@@ -484,16 +484,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     List<SolrCmdDistributor.Node> leaders = new ArrayList<>(slices.size());
     for (Slice slice : slices) {
       String sliceName = slice.getName();
-      Replica leader = slice.getLeader();
-      if (leader == null) {
-        try {
-          leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
-        } catch (InterruptedException e) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-              "Exception finding leader for shard " + sliceName,
-              e);
-        }
+      Replica leader;
+      try {
+        leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
+      } catch (InterruptedException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+            "Exception finding leader for shard " + sliceName,
+            e);
       }
 
       // TODO: What if leaders changed in the meantime?
@@ -621,10 +619,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     String shardId = cloudDesc.getShardId();
 
     try {
-      Replica leaderReplica = clusterState.getCollection(collection).getLeader(shardId);
-      if (leaderReplica == null) {
-        leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
-      }
+      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
       isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
 
       // TODO: what if we are no longer the leader?
@@ -764,10 +759,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     String shardId = slice.getName();
 
     try {
-      Replica leaderReplica = slice.getLeader();
-      if (leaderReplica == null) {
-        leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
-      }
+      // Not equivalent to getLeaderProps, which  retries to find a leader.
+      // Replica leader = slice.getLeader();
+      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
       isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
 
       if (!isLeader) {
