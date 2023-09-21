@@ -741,10 +741,11 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
             reader.getCollectionLive(collectionName).getSlice(sliceName).getReplica(replicaName)
                 != null);
 
-    try {
+    try (CommonTestInjection.BreakpointSetter breakpointSetter =
+        new CommonTestInjection.BreakpointSetter()) {
       // set breakpoint such that after state.json fetch and before PRS entry fetch, we can delete
       // the state.json and PRS entries to trigger the race condition
-      CommonTestInjection.setBreakpoint(
+      breakpointSetter.setImplementation(
           PerReplicaStatesOps.class.getName() + "/beforePrsFetch",
           (args) -> {
             try {
@@ -764,7 +765,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       // the execution flow, such exception is caught within the logic and not thrown to the
       // caller
       AtomicBoolean prsZkNodeNotFoundExceptionThrown = new AtomicBoolean(false);
-      CommonTestInjection.setBreakpoint(
+      breakpointSetter.setImplementation(
           ZkStateReader.class.getName() + "/exercised",
           (args) -> {
             if (args[0] instanceof PerReplicaStatesOps.PrsZkNodeNotFoundException) {
@@ -781,10 +782,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           });
 
       assertTrue(prsZkNodeNotFoundExceptionThrown.get());
-    } finally {
-      // clear breakpoints
-      CommonTestInjection.setBreakpoint(ZkStateReader.class.getName() + "/beforePrsFetch", null);
-      CommonTestInjection.setBreakpoint(ZkStateReader.class.getName() + "/exercised", null);
     }
   }
 }
