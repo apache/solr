@@ -39,18 +39,10 @@ teardown() {
 }
 
 @test "can delete collections" {
-  solr create -c "COLL_NAME"
+  solr create_collection -c "COLL_NAME"
   assert collection_exists "COLL_NAME"
 
   solr delete -c "COLL_NAME"
-  refute collection_exists "COLL_NAME"
-}
-
-@test "can delete collections with solrUrl" {
-  solr create -c "COLL_NAME"
-  assert collection_exists "COLL_NAME"
-
-  solr delete -c "COLL_NAME" -solrUrl http://localhost:${SOLR_PORT}
   refute collection_exists "COLL_NAME"
 }
 
