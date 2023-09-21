@@ -145,13 +145,16 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
 
     final String url = solrRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
     final HttpGet get = new HttpGet(url);
-    try (var client = HttpClientUtil.createClient(null);
-        CloseableHttpResponse response = client.execute(get)) {
+    var client = HttpClientUtil.createClient(null);
+    try (CloseableHttpResponse response = client.execute(get)) {
+
       assertEquals(500, response.getStatusLine().getStatusCode());
       String responseJson = EntityUtils.toString(response.getEntity());
       assertFalse(responseJson.contains("\"trace\""));
       assertFalse(
           responseJson.contains("org.apache.solr.servlet.HideStackTraceTest$ErrorComponent"));
+    } finally {
+      HttpClientUtil.close(client);
     }
   }
 

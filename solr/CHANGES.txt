@@ -138,6 +138,9 @@ Bug Fixes
 
 * SOLR-16931: ReRankScaler explain breaks with debug=true and in distributed mode (Joel Bernstein)
 
+* SOLR-16983: Fixed a bug that could cause some usages of SolrStream to fail to close InputStreams from the server.
+  Also fixed the usage of ObjectReleaseTracker in SolrTestCaseJ4 to catch these kinds of bugs (hossman)
+
 Dependency Upgrades
 ---------------------
 

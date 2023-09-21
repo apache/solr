@@ -115,7 +115,6 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
@@ -369,7 +368,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
-      ObjectReleaseTracker.clear();
       TestInjection.reset();
       initCoreDataDir = null;
       System.clearProperty("solr.v2RealPath");
@@ -2670,7 +2668,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  /** This method creates a HttpClient from a URL. */
+  /**
+   * This method creates a HttpClient from a URL.
+   *
+   * <p><b>WARNING:</b> if you use this method, the <code>HttpClient</code> returned is tracked by
+   * <code>ObjectReleaseTracker</code>. Your test will fail if you do not pass the <code>HttpClient
+   * </code> to {@link HttpClientUtil#close(HttpClient)} when you are done with it.
+   */
   @Deprecated // We are migrating away from Apache HttpClient.
   public static HttpClient getHttpClient(String url) {
     return new HttpSolrClient.Builder(url).build().getHttpClient();
