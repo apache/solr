@@ -936,7 +936,19 @@ public class ZkStateReader implements SolrCloseable {
   /** Get shard leader properties, with retry if none exist. */
   public Replica getLeaderRetry(String collection, String shard, int timeout)
       throws InterruptedException {
-    AtomicReference<DocCollection> coll = new AtomicReference<>();
+
+    // Try to get from cluster state without retry first, otherwise fallback to retry logic
+    if (clusterState != null) {
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      if (docCollection != null) {
+        Replica leader = docCollection.getLeader(shard);
+        if (leader != null) {
+          log.debug("leader found for {}/{} to be {}", collection, shard, leader);
+          return leader;
+        }
+      }
+    }
+
     AtomicReference<Replica> leader = new AtomicReference<>();
     try {
       waitForState(
@@ -945,7 +957,6 @@ public class ZkStateReader implements SolrCloseable {
           TimeUnit.MILLISECONDS,
           (n, c) -> {
             if (c == null) return false;
-            coll.set(c);
             Replica l = getLeader(n, c, shard);
             if (l != null) {
               log.debug("leader found for {}/{} to be {}", collection, shard, l);
