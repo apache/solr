@@ -162,6 +162,7 @@ public class CommonTestInjection {
       keys.add(key);
     }
 
+    @Override
     public void close() throws IOException {
       for (String key : keys) {
         breakpoints.remove(key);
