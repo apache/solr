@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.Random;
 import java.util.Set;
@@ -61,14 +60,27 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
         }
       };
 
+  private static String fieldConfig(String fieldName, boolean multivalued) {
+    return "<field name=\""
+        + fieldName
+        + "\" type=\"string\" indexed=\"false\" stored=\"false\" docValues=\"true\" useDocValuesAsStored=\"true\" multiValued=\""
+        + multivalued
+        + "\"/>\n";
+  }
+
+  private static final String SINGLE = "single";
+  private static final String MULTI = "multi";
+
   @SuppressWarnings("try")
   public void test() throws Exception {
     Path configSet = LuceneTestCase.createTempDir();
     SolrTestCaseJ4.copyMinConf(configSet.toFile());
-    Files.copy(
-        TEST_PATH().resolve("collection1/conf/schema-docValuesMulti.xml"),
-        configSet.resolve("conf/schema.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
+    Path schemaXml = configSet.resolve("conf/schema.xml");
+    Files.writeString(
+        schemaXml,
+        Files.readString(schemaXml)
+            .replace(
+                "</schema>", fieldConfig(SINGLE, false) + fieldConfig(MULTI, true) + "</schema>"));
 
     solrClientTestRule.newCollection().withConfigSet(configSet.toString()).create();
 
@@ -85,7 +97,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
         assertEquals(DOC_COUNT, s.maxDoc());
         SolrDocumentFetcher docFetcher = s.getDocFetcher();
         DocValuesIteratorCache dvIterCache = new DocValuesIteratorCache(s);
-        final Set<String> getFields = Set.of("stringdv");
+        final Set<String> getFields = Set.of(SINGLE, MULTI);
         final SolrDocument doc = new SolrDocument();
         for (int i = DOC_COUNT * 10; i >= 0; i--) {
           int checkId = r.nextInt(DOC_COUNT);
@@ -95,10 +107,12 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
           if (expected == null) {
             assertTrue(doc.isEmpty());
           } else {
-            assertEquals(1, doc.size());
-            Collection<Object> actualVals = doc.getFieldValues("stringdv");
-            assertEquals(expected.length, actualVals.size());
-            int j = 0;
+            assertEquals(2, doc.size());
+            Object singleValue = doc.getFieldValue(SINGLE);
+            Collection<Object> actualVals = doc.getFieldValues(MULTI);
+            assertEquals(expected.length, actualVals.size() + 1); // +1 for single-valued field
+            assertEquals(expected[0], singleValue);
+            int j = 1;
             for (Object o : actualVals) {
               assertEquals(expected[j++], o);
             }
@@ -116,16 +130,17 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
       if (r.nextInt(100) > pct) {
         client.add(sdoc("id", Integer.toString(i)));
       } else {
+        String str = TestUtil.randomSimpleString(r);
         String str1 = TestUtil.randomSimpleString(r);
         String str2 = TestUtil.randomSimpleString(r);
-        client.add(sdoc("id", Integer.toString(i), "stringdv", str1, "stringdv", str2));
+        client.add(sdoc("id", Integer.toString(i), SINGLE, str, MULTI, str1, MULTI, str2));
         int cmp = str1.compareTo(str2);
         if (cmp == 0) {
-          ret[i] = new String[] {str1};
+          ret[i] = new String[] {str, str1};
         } else if (cmp < 0) {
-          ret[i] = new String[] {str1, str2};
+          ret[i] = new String[] {str, str1, str2};
         } else {
-          ret[i] = new String[] {str2, str1};
+          ret[i] = new String[] {str, str2, str1};
         }
       }
       if (r.nextInt(DOC_COUNT / 5) == 0) {

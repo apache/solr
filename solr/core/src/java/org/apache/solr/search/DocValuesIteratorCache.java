@@ -190,15 +190,24 @@ public class DocValuesIteratorCache {
       } else {
         dv = perLeaf[leafOrd];
         int currentDoc = dv.docID();
-        if (localId == currentDoc
-            && (singleValued || noMatchSince[leafOrd] != DocIdSetIterator.NO_MORE_DOCS)) {
-          // `noMatchSince[leafOrd] != DocIdSetIterator.NO_MORE_DOCS` means that `dv` has not
-          // been returned at its current position, and has therefore not been consumed and
-          // is thus eligible to be returned directly. (singleValued dv iterators are always
-          // eligible to be returned directly, as they have no concept of being "consumed")
-          noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
-          return dv;
-        } else if (localId <= currentDoc) {
+        if (localId == currentDoc) {
+          if (singleValued) {
+            return dv;
+          } else if (noMatchSince[leafOrd] != DocIdSetIterator.NO_MORE_DOCS) {
+            // `noMatchSince[leafOrd] != DocIdSetIterator.NO_MORE_DOCS` means that `dv` has not
+            // been returned at its current position, and has therefore not been consumed and
+            // is thus eligible to be returned directly. (singleValued dv iterators are always
+            // eligible to be returned directly, as they have no concept of being "consumed")
+
+            // NOTE: we must reset `noMatchSince[leafOrd]` here in order to prevent returning
+            // consumed docValues; even though this actually loses us possible skipping information,
+            // it's an edge case, and allows us to use `noMatchSince[leafOrd]` as a signal of
+            // whether we have consumed multivalued docValues.
+            noMatchSince[leafOrd] = DocIdSetIterator.NO_MORE_DOCS;
+            return dv;
+          }
+        }
+        if (localId <= currentDoc) {
           if (localId >= noMatchSince[leafOrd]) {
             // if the requested doc falls between the last requested doc and the current
             // position, then we know there's no match.
