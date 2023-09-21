@@ -54,6 +54,7 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
+  implementation 'io.opentracing:opentracing-api'
   implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'io.dropwizard.metrics:metrics-jetty10'
   implementation 'commons-cli:commons-cli'

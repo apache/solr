@@ -21,10 +21,20 @@ import io.opentracing.noop.NoopSpan;
 import io.opentracing.tag.Tags;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** Utilities for distributed tracing. */
 public class TraceUtils {
+
+  public static final Predicate<Span> DEFAULT_IS_RECORDING =
+      (span) -> span != null && !(span instanceof NoopSpan);
+
+  /**
+   * this should only be changed in the context of testing, otherwise it would risk not recording
+   * trace data.
+   */
+  public static Predicate<Span> IS_RECORDING = DEFAULT_IS_RECORDING;
 
   public static void setDbInstance(SolrQueryRequest req, String coreOrColl) {
     if (req != null && coreOrColl != null) {
@@ -33,7 +43,7 @@ public class TraceUtils {
   }
 
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
-    if (span != null && !(span instanceof NoopSpan)) {
+    if (IS_RECORDING.test(span)) {
       consumer.accept(span);
     }
   }
