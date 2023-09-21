@@ -685,6 +685,7 @@ public class MiniSolrCloudCluster {
       if (!externalZkServer) {
         zkServer.shutdown();
       }
+      resetRecordingFlag();
     }
   }
 
@@ -1301,23 +1302,27 @@ public class MiniSolrCloudCluster {
       this.disableTraceIdGeneration = true;
       return this;
     }
+  }
 
-    /**
-     * Randomizes the tracing Span::isRecording check.
-     *
-     * <p>This will randomize the Span::isRecording check so we have better coverage of all methods
-     * that deal with span creation without having to enable otel module.
-     *
-     * <p>It only makes sense to call this if we are using the alwaysOn tracer, the OTEL tracer
-     * already has this flag turned on and randomizing it would risk not recording trace data.
-     *
-     * <p>Note. Tracing is not a SolrCloud only feature. this method is placed here for convenience
-     * only, any test can make use of this example for more complete coverage of the tracing
-     * mechanics.
-     */
-    private void injectRandomRecordingFlag() {
-      boolean isRecording = LuceneTestCase.rarely();
-      TraceUtils.IS_RECORDING = (ignored) -> isRecording;
-    }
+  /**
+   * Randomizes the tracing Span::isRecording check.
+   *
+   * <p>This will randomize the Span::isRecording check so we have better coverage of all methods
+   * that deal with span creation without having to enable otel module.
+   *
+   * <p>It only makes sense to call this if we are using the alwaysOn tracer, the OTEL tracer
+   * already has this flag turned on and randomizing it would risk not recording trace data.
+   *
+   * <p>Note. Tracing is not a SolrCloud only feature. this method is placed here for convenience
+   * only, any test can make use of this example for more complete coverage of the tracing
+   * mechanics.
+   */
+  private static void injectRandomRecordingFlag() {
+    boolean isRecording = LuceneTestCase.rarely();
+    TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+  }
+
+  private static void resetRecordingFlag() {
+    TraceUtils.IS_RECORDING = TraceUtils.DEFAULT_IS_RECORDING;
   }
 }
