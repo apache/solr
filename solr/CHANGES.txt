@@ -69,6 +69,8 @@ Improvements
 
 * SOLR-16970: SOLR_OPTS is now able to override options set by the Solr control scripts, "bin/solr" and "bin/solr.cmd". (Houston Putman)
 
+* SOLR-16968: The MemoryCircuitBreaker now uses average heap usage over the last 30 seconds (janhoy, Christine Poerschke)
+
 * SOLR-14886: Suppress stack traces in query response (Isabelle Giguere via Alex Deparvu)
 
 * SOLR-16461: `/solr/coreName/replication?command=backup` now has a v2 equivalent, available at

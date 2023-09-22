@@ -17,6 +17,8 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -41,7 +43,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  *
  * @lucene.experimental
  */
-public abstract class CircuitBreaker implements NamedListInitializedPlugin {
+public abstract class CircuitBreaker implements NamedListInitializedPlugin, Closeable {
   // Only query requests are checked by default
   private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
   private final List<SolrRequestType> SUPPORTED_TYPES =
@@ -59,6 +61,11 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
 
   /** Get error message when the circuit breaker triggers */
   public abstract String getErrorMessage();
+
+  @Override
+  public void close() throws IOException {
+    // Nothing to do by default
+  }
 
   /**
    * Set the request types for which this circuit breaker should be checked. If not called, the
