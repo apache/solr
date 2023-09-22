@@ -31,6 +31,7 @@ import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.Utils;
@@ -233,47 +234,49 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     try {
       JettySolrRunner j = cluster.getRandomJetty(random());
       String url = j.getBaseUrl() + "/admin/metrics?key=solr.node:CONTAINER.zkClient&wt=json";
-      HttpClient httpClient = ((HttpSolrClient) j.newClient()).getHttpClient();
-      @SuppressWarnings("unchecked")
-      Map<String, Object> zkMmetrics =
-          (Map<String, Object>)
-              Utils.getObjectByPath(
-                  Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
-                  false,
-                  List.of("metrics", "solr.node:CONTAINER.zkClient"));
+      try (SolrClient solrClient = j.newClient()) {
+        HttpClient httpClient = ((HttpSolrClient) solrClient).getHttpClient();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> zkMmetrics =
+            (Map<String, Object>)
+                Utils.getObjectByPath(
+                    Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
+                    false,
+                    List.of("metrics", "solr.node:CONTAINER.zkClient"));
 
-      Set<String> allKeys =
-          Set.of(
-              "watchesFired",
-              "reads",
-              "writes",
-              "bytesRead",
-              "bytesWritten",
-              "multiOps",
-              "cumulativeMultiOps",
-              "childFetches",
-              "cumulativeChildrenFetched",
-              "existsChecks",
-              "deletes");
+        Set<String> allKeys =
+            Set.of(
+                "watchesFired",
+                "reads",
+                "writes",
+                "bytesRead",
+                "bytesWritten",
+                "multiOps",
+                "cumulativeMultiOps",
+                "childFetches",
+                "cumulativeChildrenFetched",
+                "existsChecks",
+                "deletes");
 
-      for (String k : allKeys) {
-        assertNotNull(zkMmetrics.get(k));
+        for (String k : allKeys) {
+          assertNotNull(zkMmetrics.get(k));
+        }
+        Utils.executeGET(
+            httpClient,
+            j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes",
+            Utils.JSONCONSUMER);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> zkMmetricsNew =
+            (Map<String, Object>)
+                Utils.getObjectByPath(
+                    Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
+                    false,
+                    List.of("metrics", "solr.node:CONTAINER.zkClient"));
+
+        assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "childFetches") >= 1);
+        assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "cumulativeChildrenFetched") >= 3);
+        assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "existsChecks") >= 4);
       }
-      Utils.executeGET(
-          httpClient,
-          j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes",
-          Utils.JSONCONSUMER);
-      @SuppressWarnings("unchecked")
-      Map<String, Object> zkMmetricsNew =
-          (Map<String, Object>)
-              Utils.getObjectByPath(
-                  Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
-                  false,
-                  List.of("metrics", "solr.node:CONTAINER.zkClient"));
-
-      assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "childFetches") >= 1);
-      assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "cumulativeChildrenFetched") >= 3);
-      assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "existsChecks") >= 4);
     } finally {
       cluster.shutdown();
     }
