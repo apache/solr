@@ -28,6 +28,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -44,6 +45,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -341,5 +343,17 @@ public abstract class RequestHandlerBase
   @Override
   public Collection<Api> getApis() {
     return List.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+  }
+
+  /**
+   * Checks whether the given request is an internal request to a shard. We rely on the fact that an
+   * internal search request to a shard contains the param "isShard", and an internal update request
+   * to a shard contains the param "distrib.from".
+   *
+   * @return true if request is internal
+   */
+  public static boolean isInternalShardRequest(SolrQueryRequest req) {
+    return req.getParams().get(DistributedUpdateProcessor.DISTRIB_FROM) != null
+        || "true".equals(req.getParams().get(ShardParams.IS_SHARD));
   }
 }
