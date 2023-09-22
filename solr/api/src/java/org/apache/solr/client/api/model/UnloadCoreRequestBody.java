@@ -21,18 +21,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public class UnloadCoreRequestBody {
   @Schema(description = "If true, will remove the index when unloading the core.")
-  @JsonProperty(defaultValue = "false")
-  public boolean deleteIndex;
+  @JsonProperty
+  public Boolean deleteIndex;
 
   @Schema(description = "If true, removes the data directory and all sub-directories.")
-  @JsonProperty(defaultValue = "false")
-  public boolean deleteDataDir;
+  @JsonProperty
+  public Boolean deleteDataDir;
 
   @Schema(
       description =
           "If true, removes everything related to the core, including the index directory, configuration files and other related files.")
-  @JsonProperty(defaultValue = "false")
-  public boolean deleteInstanceDir;
+  @JsonProperty
+  public Boolean deleteInstanceDir;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")
   @JsonProperty

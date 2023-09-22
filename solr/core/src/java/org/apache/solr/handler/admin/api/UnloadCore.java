@@ -49,6 +49,7 @@ public class UnloadCore extends CoreAdminAPIBase implements UnloadCoreApi {
   }
 
   @PermissionName(CORE_EDIT_PERM)
+  @Override
   public SolrJerseyResponse unloadCore(String coreName, UnloadCoreRequestBody requestBody)
       throws Exception {
     ensureRequiredParameterProvided("coreName", coreName);
@@ -56,7 +57,6 @@ public class UnloadCore extends CoreAdminAPIBase implements UnloadCoreApi {
     if (requestBody == null) {
       requestBody = new UnloadCoreRequestBody();
     }
-
     final var requestBodyFinal = requestBody; // Lambda below requires a 'final' variable
     return handlePotentiallyAsynchronousTask(
         solrJerseyResponse,
@@ -67,9 +67,11 @@ public class UnloadCore extends CoreAdminAPIBase implements UnloadCoreApi {
           CoreDescriptor cdescr = coreContainer.getCoreDescriptor(coreName);
           coreContainer.unload(
               coreName,
-              requestBodyFinal.deleteIndex,
-              requestBodyFinal.deleteDataDir,
-              requestBodyFinal.deleteInstanceDir);
+              requestBodyFinal.deleteIndex == null ? false : requestBodyFinal.deleteIndex,
+              requestBodyFinal.deleteDataDir == null ? false : requestBodyFinal.deleteDataDir,
+              requestBodyFinal.deleteInstanceDir == null
+                  ? false
+                  : requestBodyFinal.deleteInstanceDir);
           assert TestInjection.injectNonExistentCoreExceptionAfterUnload(coreName);
           return solrJerseyResponse;
         });
