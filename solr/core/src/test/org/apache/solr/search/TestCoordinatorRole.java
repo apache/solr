@@ -21,8 +21,6 @@ import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.TRUE;
 
 import java.lang.invoke.MethodHandles;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
@@ -37,10 +35,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -617,23 +618,27 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
       // Tricky to test configset, since operation such as collection status would direct it to the
       // OS node.
-      // So we use query and check the cache response header which is determined by the
+      // So we use query and check the cache response header, which is determined by the
       // solr-config.xml in the configset
-      // However using solr client would drop cache respons header hence we need to use plain java
-      // HttpURLConnection
-      URL url = new URL(coordinatorJetty.getBaseUrl() + "/c1/select?q=*:*");
-      HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-      urlConnection.connect();
+      // However using solr client would drop cache response header, hence we need to use the
+      // underlying httpClient which has SSL correctly configured
 
-      // conf1 has no cache-control
-      assertNull(urlConnection.getHeaderField("cache-control"));
+      try (HttpSolrClient solrClient =
+          new HttpSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
+        HttpResponse response =
+            solrClient
+                .getHttpClient()
+                .execute(new HttpGet(coordinatorJetty.getBaseUrl() + "/c1/select?q=*:*"));
+        // conf1 has no cache-control
+        assertNull(response.getFirstHeader("cache-control"));
 
-      url = new URL(coordinatorJetty.getBaseUrl() + "/c2/select?q=*:*");
-      urlConnection = (HttpURLConnection) url.openConnection();
-      urlConnection.connect();
-
-      // conf2 has cache-control defined
-      assertTrue(urlConnection.getHeaderField("cache-control").contains("max-age=30"));
+        response =
+            solrClient
+                .getHttpClient()
+                .execute(new HttpGet(coordinatorJetty.getBaseUrl() + "/c2/select?q=*:*"));
+        // conf2 has cache-control defined
+        assertTrue(response.getFirstHeader("cache-control").getValue().contains("max-age=30"));
+      }
     } finally {
       cluster.shutdown();
     }

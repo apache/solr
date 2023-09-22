@@ -24,13 +24,26 @@ resource configuration.
 Circuit breakers should be used when the user wishes to trade request throughput for a higher Solr stability.
 If circuit breakers are enabled, requests may be rejected under the condition of high node duress with HTTP error code 429 'Too Many Requests'.
 
-It is up to the client to handle this error and potentially build a retrial logic as this should ideally be a transient situation.
+It is up to the client to handle this error and potentially build retry logic as this should be a transient situation.
+
+In a sharded collection, when a circuit breaker trips on one shard, the entire query will fail,
+even if the other shard requests succeed. This will multiply the failures seen by the end users.
+Setting the `shards.tolerant=true` parameter on requests can help with graceful degradation when
+circuit breaker thresholds are reached on some nodes. See the <<shards.tolerant Parameter>> for details.
 
 == Circuit Breaker Configurations
 All circuit breaker configurations are listed as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown below.
 A circuit breaker can register itself to trip for query requests and/or update requests. By default only search requests are affected. A user may register multiple circuit breakers of the same type with different thresholds for each request type.
 
 == Currently Supported Circuit Breakers
+
+[NOTE]
+====
+The legacy configuration syntax using `CircuitBreakerManager` is deprecated as of Solr 9.4, but will
+continue to work. The "CPU" circuit breaker used by this legacy plugin when configuring a `cpuThreshold`
+is actually the `LoadAverageCircuitBreaker` described below. Also, the `CircuitBreakerManager` will
+return a HTTP 503 code instead of the HTTP 429 code used by the new circuit breakers.
+====
 
 === JVM Heap Usage
 
@@ -48,7 +61,9 @@ To enable and configure the JVM heap usage based circuit breaker, add the follow
 
 The `threshold` is defined as a percentage of the max heap allocated to the JVM.
 
-It does not logically make sense to have a threshold below 50% and above 95% of the max heap allocated to the JVM.
+For the circuit breaker configuration, a value of "0" maps to 0% usage and a value of "100" maps to 100% usage.
+
+It does not logically make sense to have a threshold below 50% or above 95% of the max heap allocated to the JVM.
 Hence, the range of valid values for this parameter is [50, 95], both inclusive.
 
 Consider the following example:
@@ -56,11 +71,13 @@ Consider the following example:
 JVM has been allocated a maximum heap of 5GB (-Xmx) and `threshold` is set to `75`.
 In this scenario, the heap usage at which the circuit breaker will trip is 3.75GB.
 
-=== CPU Utilization
+=== System CPU Usage Circuit Breaker
+This circuit breaker tracks system CPU usage and triggers if the recent CPU usage exceeds a configurable threshold.
 
-This circuit breaker tracks CPU utilization and triggers if the average CPU utilization over the last one minute exceeds a configurable threshold.
-Note that the value used in computation is over the last one minute -- so a sudden spike in traffic that goes down might still cause the circuit breaker to trigger for a short while before it resolves and updates the value.
-For more details of the calculation, please see https://en.wikipedia.org/wiki/Load_(computing)
+This is tracked with the JMX metric `OperatingSystemMXBean.getSystemCpuLoad()`. That measures the
+recent CPU usage for the whole system. This metric is provided by the `com.sun.management` package,
+which is not implemented on all JVMs. If the metric is not available, the circuit breaker will be
+disabled and log an error message. An alternative can then be to use the <<system-load-average-circuit-breaker>>.
 
 To enable and configure the CPU utilization based circuit breaker:
 
@@ -71,7 +88,30 @@ To enable and configure the CPU utilization based circuit breaker:
 </circuitBreaker>
 ----
 
-The `threshold` is defined in units of CPU utilization.
+The triggering threshold is defined in percent CPU usage. A value of "0" maps to 0% usage
+and a value of "100" maps to 100% usage. The example above will trip when the CPU usage is
+equal to or greater than 75%.
+
+=== System Load Average Circuit Breaker
+This circuit breaker tracks system load average and triggers if the recent load average exceeds a configurable threshold.
+
+This is tracked with the JMX metric `OperatingSystemMXBean.getSystemLoadAverage()`. That measures the
+recent load average for the whole system. A "load average" is the number of processes using or waiting for a CPU,
+usually averaged over one minute. Some systems include processes waiting on IO in the load average. Check the
+documentation for your system and JVM to understand this metric. For more information, see the
+https://en.wikipedia.org/wiki/Load_(computing)[Wikipedia page for Load],
+
+To enable and configure the CPU utilization based circuit breaker:
+
+[source,xml]
+----
+<circuitBreaker class="org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker">
+ <double  name="threshold">8.0</double>
+</circuitBreaker>
+----
+
+The triggering threshold is a floating point number matching load average.
+The example circuit breaker above will trip when the load average is equal to or greater than 8.0.
 
 == Advanced example
 
@@ -99,6 +139,7 @@ This would prevent expensive bulk updates from impacting search. Note also the s
 
 == Performance Considerations
 
-It is worth noting that while JVM or CPU circuit breakers do not add any noticeable overhead per request, having too many circuit breakers checked for a single request can cause a performance overhead.
+While JVM or CPU circuit breakers do not add any noticeable overhead per request, having too many circuit breakers checked for a single request can cause a performance overhead.
 
-In addition, it is a good practice to exponentially back off while retrying requests on a busy node.
+In addition, it is a good practice to exponentially back off while retrying requests on a busy node. 
+See the https://en.wikipedia.org/wiki/Exponential_backoff[Wikipedia page for Exponential Backoff].
