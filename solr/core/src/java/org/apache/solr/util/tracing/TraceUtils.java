@@ -65,11 +65,13 @@ public class TraceUtils {
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
 
+  public static final Predicate<Span> DEFAULT_IS_RECORDING = Span::isRecording;
+
   /**
    * this should only be changed in the context of testing, otherwise it would risk not recording
    * trace data.
    */
-  public static Predicate<Span> IS_RECORDING = Span::isRecording;
+  public static Predicate<Span> IS_RECORDING = DEFAULT_IS_RECORDING;
 
   public static Tracer getGlobalTracer() {
     return GlobalOpenTelemetry.getTracer("solr");
