@@ -301,6 +301,12 @@ For example, to set the auto soft-commit frequency to 3 seconds, you can do:
 
 `bin/solr start -Dsolr.autoSoftCommit.maxTime=3000`
 
+Solr will also convert any environment variable on the format `SOLR_FOO_BAR` to
+system property `solr.foo.bar`, making it possible to inject most properties
+through the environment, e.g:
+
+`SOLR_LOG_LEVEL=debug bin/solr start`
+
 The `SOLR_OPTS` environment variable is also available to set additional System Properties for Solr.
 
 In order to set custom System Properties when running any Solr utility other than `start` (e.g. `stop`, `create`, `auth`, `status`, `api`),

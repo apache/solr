@@ -112,9 +112,9 @@ elif [ -r "$SOLR_INCLUDE" ]; then
   . "$SOLR_INCLUDE"
 fi
 
-# Export all SOLR variables so they are visible to Solr sub-process
+# Export variables we want to make visible to Solr sub-process
 for var in $(compgen -e); do
-  if [[ "$var" =~ ^SOLR_ ]]; then
+  if [[ "$var" =~ ^(SOLR_.*|DEFAULT_CONFDIR|ZK_.*|GCS_BUCKET|GCS_.*|S3_.*|OTEL_.*|AWS_.*)$ ]]; then
     export "${var?}"
   fi
 done
