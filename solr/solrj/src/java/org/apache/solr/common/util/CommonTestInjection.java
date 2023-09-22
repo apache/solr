@@ -112,7 +112,7 @@ public class CommonTestInjection {
       breakpoint.executeAndResume(args);
       log.info("Breakpoint with key {} was executed and normal code execution resumes", key);
     } else {
-      log.info(
+      log.debug(
           "Breakpoint with key {} is triggered but there's no implementation set. Skipping...",
           key);
     }
@@ -156,7 +156,7 @@ public class CommonTestInjection {
     public void setImplementation(String key, Breakpoint implementation) {
       if (breakpoints.containsKey(key)) {
         throw new IllegalArgumentException(
-            "Cannot refine Breakpoint implementation with key " + key);
+            "Cannot redefine Breakpoint implementation with key " + key);
       }
       breakpoints.put(key, implementation);
       keys.add(key);
