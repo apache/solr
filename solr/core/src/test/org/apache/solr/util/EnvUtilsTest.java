@@ -36,7 +36,8 @@ public class EnvUtilsTest extends SolrTestCase {
             "SOLR_BOOLEAN", "true",
             "SOLR_LONG", "1234567890",
             "SOLR_COMMASEP", "one,two, three",
-            "SOLR_JSON_LIST", "[\"one\", \"two\", \"three\"]"));
+            "SOLR_JSON_LIST", "[\"one\", \"two\", \"three\"]",
+            "SOLR_ALWAYS_ON_TRACE_ID", "true"));
     EnvUtils.init(true);
   }
 
@@ -85,6 +86,8 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals("INFO", EnvUtils.getProp("solr.logLevel"));
     assertEquals("INFO", EnvUtils.getProp("solr.LogLevel"));
     assertEquals(Long.valueOf(1234567890L), EnvUtils.getPropAsLong("solrLong"));
+    assertEquals(Boolean.TRUE, EnvUtils.getPropAsBool("solr.alwaysOnTraceId"));
+    assertEquals(Boolean.TRUE, EnvUtils.getPropAsBool("solr.always.on.trace.id"));
   }
 
   @Test

@@ -166,10 +166,13 @@ public class EnvUtils {
       return value;
     } else {
       // Figure out if string is CamelCase and convert to dot separated
-      String altKey =
-          String.join(".", key.split("(?=[A-Z])")).replace("..", ".").toLowerCase(Locale.ROOT);
+      String altKey = camelCaseToDotSeparated(key);
       return System.getProperty(altKey);
     }
+  }
+
+  private static String camelCaseToDotSeparated(String key) {
+    return String.join(".", key.split("(?=[A-Z])")).replace("..", ".").toLowerCase(Locale.ROOT);
   }
 
   /** Get property as integer */
@@ -221,6 +224,7 @@ public class EnvUtils {
   /** Set a system property. Shim to {@link System#setProperty(String, String)} */
   public static void setProp(String key, String value) {
     System.setProperty(key, value);
+    System.setProperty(camelCaseToDotSeparated(key), value);
   }
 
   /**
