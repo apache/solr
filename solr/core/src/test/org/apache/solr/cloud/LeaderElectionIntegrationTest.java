@@ -80,9 +80,11 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
               .getCloudDescriptor()
               .getShardId());
       jetty.stop();
-      int numExpectedNodes = 6 - (i+1);
+      int numExpectedNodes = 6 - (i + 1);
       waitForState(
-          "Expected to see " + numExpectedNodes + " nodes available for " + collection, collection, (n, c) -> n.size() == numExpectedNodes);
+          "Expected to see " + numExpectedNodes + " nodes available for " + collection,
+          collection,
+          (n, c) -> n.size() == numExpectedNodes);
       stoppedRunners.add(jetty);
     }
 
