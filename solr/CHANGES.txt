@@ -109,7 +109,7 @@ Improvements
 
 * SOLR-15474: Make Circuit breakers individually pluggable (Atri Sharma, Christine Poerschke, janhoy)
 
-* SOLR-16982: Trip Circuit Breakers only for external requests (janhoy)
+* SOLR-16982: Trip Circuit Breakers only for external requests (janhoy, Christine Poerschke)
 
 * SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
 
