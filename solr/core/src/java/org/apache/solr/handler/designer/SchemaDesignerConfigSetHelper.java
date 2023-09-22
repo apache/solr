@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.apache.solr.common.util.Utils.toJavabin;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
+import static org.apache.solr.handler.admin.ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getConfigSetZkPath;
 import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
@@ -854,6 +855,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       boolean dynamicEnabled,
       String copyFrom)
       throws IOException {
+
+    SolrConfig solrConfig = loadSolrConfig(MULTILINGUAL_CONFIGSET_NAME);
+    ManagedIndexSchema multilingualSchema = loadLatestSchema(solrConfig);
+
     if (!langs.isEmpty()) {
       // there's a subset of languages applied, so remove all the other langs
       schema = removeLanguageSpecificObjectsAndFiles(configSet, schema, langs);
@@ -861,8 +866,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     // now restore any missing types / files for the languages we need, optionally adding back
     // dynamic fields too
-    schema =
-        restoreLanguageSpecificObjectsAndFiles(configSet, schema, langs, dynamicEnabled, copyFrom);
+    schema = restoreLanguageSpecificObjectsAndFiles(configSet, schema, langs, dynamicEnabled);
 
     schema.persistManagedSchema(false);
     return schema;
@@ -939,12 +943,12 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   protected ManagedIndexSchema restoreLanguageSpecificObjectsAndFiles(
-      String configSet,
-      ManagedIndexSchema schema,
-      List<String> langs,
-      boolean dynamicEnabled,
-      String copyFrom)
+      String configSet, ManagedIndexSchema schema, List<String> langs, boolean dynamicEnabled)
       throws IOException {
+
+    // override copyFrom to be multilingual?
+    String copyFrom = MULTILINGUAL_CONFIGSET_NAME;
+
     // pull the dynamic fields from the copyFrom schema
     ManagedIndexSchema copyFromSchema = loadLatestSchema(copyFrom);
 

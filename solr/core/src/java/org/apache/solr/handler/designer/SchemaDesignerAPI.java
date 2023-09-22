@@ -22,7 +22,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
 import static org.apache.solr.common.params.CommonParams.JSON_MIME;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
-import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
+import static org.apache.solr.handler.admin.ConfigSetsHandler.MULTILINGUAL_CONFIGSET_NAME;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
@@ -89,7 +89,8 @@ import org.slf4j.LoggerFactory;
 public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
   private static final Set<String> excludeConfigSetNames =
-      new HashSet<>(Arrays.asList(DEFAULT_CONFIGSET_NAME, BLOB_STORE_ID));
+      new HashSet<>(
+          Arrays.asList(DEFAULT_CONFIGSET_NAME, MULTILINGUAL_CONFIGSET_NAME, BLOB_STORE_ID));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -103,8 +104,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   public SchemaDesignerAPI(CoreContainer coreContainer) {
     this(
         coreContainer,
-        SchemaDesignerAPI.newSchemaSuggester(coreContainer),
-        SchemaDesignerAPI.newSampleDocumentsLoader(coreContainer));
+        SchemaDesignerAPI.newSchemaSuggester(),
+        SchemaDesignerAPI.newSampleDocumentsLoader());
   }
 
   SchemaDesignerAPI(
@@ -119,13 +120,13 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     this.settingsDAO = new SchemaDesignerSettingsDAO(coreContainer, configSetHelper);
   }
 
-  public static SchemaSuggester newSchemaSuggester(CoreContainer coreContainer) {
+  public static SchemaSuggester newSchemaSuggester() {
     DefaultSchemaSuggester suggester = new DefaultSchemaSuggester();
     suggester.init(new NamedList<>());
     return suggester;
   }
 
-  public static SampleDocumentsLoader newSampleDocumentsLoader(CoreContainer coreContainer) {
+  public static SampleDocumentsLoader newSampleDocumentsLoader() {
     SampleDocumentsLoader loader = new DefaultSampleDocumentsLoader();
     loader.init(new NamedList<>());
     return loader;
@@ -889,10 +890,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       schema = (ManagedIndexSchema) schema.addFields(fieldsToAdd);
     }
     return schema;
-  }
-
-  protected String getManagedSchemaZkPath(final String configSet) {
-    return getConfigSetZkPath(configSet, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
   }
 
   protected SchemaDesignerSettings getMutableSchemaForConfigSet(
