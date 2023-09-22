@@ -79,13 +79,15 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
               .getCoreDescriptor()
               .getCloudDescriptor()
               .getShardId());
+      String jettyNodeName = jetty.getNodeName(); // must get before shutdown
       jetty.stop();
-      int numExpectedNodes = 6 - (i + 1);
-      waitForState(
-          "Expected to see " + numExpectedNodes + " nodes available for " + collection,
-          collection,
-          (n, c) -> n.size() == numExpectedNodes);
       stoppedRunners.add(jetty);
+      waitForState(
+          "Leader should not be " + jettyNodeName,
+          collection,
+          (n, c) ->
+              c.getLeader("shard1") != null
+                  && !jettyNodeName.equals(c.getLeader("shard1").getNodeName()));
     }
 
     for (JettySolrRunner runner : stoppedRunners) {
