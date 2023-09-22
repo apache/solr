@@ -87,6 +87,7 @@ public class ApiToolTest extends SolrCloudTestCase {
 
     String response =
         tool.callGet(
+            null,
             cluster.getJettySolrRunner(0).getBaseUrl()
                 + "/"
                 + COLLECTION_NAME

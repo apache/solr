@@ -50,6 +50,33 @@ teardown() {
   refute_output --partial "assuming solrUrl is http://localhost:${SOLR_PORT}"
 }
 
+@test "create collection using port" {
+  tmp_port=${SOLR_PORT}
+  export SOLR_PORT=3090
+  run solr create -c COLL_NAME -p "${tmp_port}"
+  assert_output --partial "Created collection 'COLL_NAME'"
+  refute_output --partial "assuming solrUrl is http://localhost:${SOLR_PORT}"
+}
+
+@test "create collection with -p and --host" {
+  tmp_port=${SOLR_PORT}
+  export SOLR_PORT=
+  export SOLR_HOST=
+  export SOLR_TOOL_HOST=
+
+  run solr create -c "COLL_NAME" -p ${tmp_port} --host localhost
+  assert_output --partial "Created collection 'COLL_NAME'"
+  assert_output --partial "assuming solrUrl is http://localhost:${tmp_port}"
+}
+
+@test "create collection with port scanning" {
+  tmp_port=${SOLR_PORT}
+  export SOLR_PORT=
+  run solr create -c COLL_NAME
+  assert_output --partial "Created collection 'COLL_NAME'"
+  assert_output --partial "assuming solrUrl is http://localhost:${tmp_port}"
+}
+
 @test "create collection using legacy solrUrl" {
   run solr create -c COLL_NAME -solrUrl http://localhost:${SOLR_PORT}/solr
   assert_output --partial "Created collection 'COLL_NAME'"

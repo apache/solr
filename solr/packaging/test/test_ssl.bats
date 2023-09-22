@@ -112,7 +112,7 @@ teardown() {
   export SOLR_SSL_CHECK_PEER_NAME=true
 
   # This should fail the peername check
-  run ! solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial 'Server refused connection'
 
   # Restart the server enabling the SNI hostcheck
@@ -337,10 +337,10 @@ teardown() {
     run solr create -c test -s 2
     assert_output --partial "Created collection 'test'"
 
-    run solr api -get "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
+    run solr api -get "solr/admin/collections?action=CLUSTERSTATUS"
     assert_output --partial '"urlScheme":"https"'
 
-    run solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*&rows=0"
+    run solr api -get "/solr/test/select?q=*:*&rows=0" -p "${SOLR2_PORT}"
     assert_output --partial '"numFound":0'
 
     (
@@ -348,7 +348,7 @@ teardown() {
       export SOLR_SSL_CLIENT_KEY_STORE=
       export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 
-      run ! solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
+      run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
       assert_output --partial 'Server refused connection'
     )
   )
@@ -361,7 +361,7 @@ teardown() {
   # We can't check if the server has come up, because we can't connect to it, so just wait
   sleep 5
 
-  run ! solr api -get "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
+  run ! solr api -verbose -get "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --partial 'Server refused connection'
 }
 
@@ -491,6 +491,6 @@ teardown() {
   export SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 
   # TLS cannot work if a truststore and keystore are not provided (either Server or Client)
-  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
+  run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --partial 'Server refused connection'
 }

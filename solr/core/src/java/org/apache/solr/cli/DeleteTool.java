@@ -64,6 +64,9 @@ public class DeleteTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRPORT,
+        SolrCLI.OPTION_SOLRHOST,
+        SolrCLI.OPTION_URLSCHEME,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")

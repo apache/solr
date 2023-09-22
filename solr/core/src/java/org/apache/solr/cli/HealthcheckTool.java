@@ -60,6 +60,9 @@ public class HealthcheckTool extends ToolBase {
     return List.of(
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_SOLRPORT,
+        SolrCLI.OPTION_SOLRHOST,
+        SolrCLI.OPTION_URLSCHEME,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")

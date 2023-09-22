@@ -72,7 +72,6 @@ public class RunExampleTool extends ToolBase {
   protected String script;
   protected File serverDir;
   protected File exampleDir;
-  protected String urlScheme;
 
   /** Default constructor used by the framework when running as a command-line application. */
   public RunExampleTool() {
@@ -129,19 +128,9 @@ public class RunExampleTool extends ToolBase {
             .desc(
                 "Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
             .build(),
-        Option.builder("urlScheme")
-            .argName("SCHEME")
-            .hasArg()
-            .required(false)
-            .desc("Solr URL scheme: http or https, defaults to http if not specified.")
-            .build(),
-        Option.builder("p")
-            .argName("PORT")
-            .hasArg()
-            .required(false)
-            .desc("Specify the port to start the Solr HTTP listener on; default is 8983.")
-            .longOpt("port")
-            .build(),
+        SolrCLI.OPTION_URLSCHEME,
+        SolrCLI.OPTION_SOLRHOST,
+        SolrCLI.OPTION_SOLRPORT,
         Option.builder("h")
             .argName("HOSTNAME")
             .hasArg()
@@ -182,8 +171,6 @@ public class RunExampleTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    this.urlScheme = cli.getOptionValue("urlScheme", "http");
-
     serverDir = new File(cli.getOptionValue("serverDir"));
     if (!serverDir.isDirectory())
       throw new IllegalArgumentException(
@@ -439,7 +426,7 @@ public class RunExampleTool extends ToolBase {
     boolean prompt = !cli.hasOption("noprompt");
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
-    int defaultPort =
+    int defaultPort = SolrCLI.getSolrPort(cli);
         Integer.parseInt(
             cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
     if (defaultPort != 8983) {
@@ -591,6 +578,9 @@ public class RunExampleTool extends ToolBase {
     String extraArgs = readExtraArgs(cli.getArgs());
 
     String host = cli.getOptionValue('h');
+    if (port == -1) {
+      port = SolrCLI.getSolrPort(cli);
+    }
     String memory = cli.getOptionValue('m');
 
     String hostArg = (host != null && !"localhost".equals(host)) ? " -h " + host : "";
@@ -636,9 +626,7 @@ public class RunExampleTool extends ToolBase {
     echo("\nStarting up Solr on port " + port + " using command:");
     echo(startCmd + "\n");
 
-    String solrUrl =
-        String.format(
-            Locale.ROOT, "%s://%s:%d/solr", urlScheme, (host != null ? host : "localhost"), port);
+    String solrUrl = SolrCLI.getDefaultSolrUrl(cli);
 
     Map<String, Object> nodeStatus = checkPortConflict(solrUrl, solrHomeDir, port);
     if (nodeStatus != null)
@@ -869,6 +857,7 @@ public class RunExampleTool extends ToolBase {
   }
 
   protected Map<String, Object> getNodeStatus(String solrUrl, int maxWaitSecs) throws Exception {
+    solrUrl += "/solr";
     StatusTool statusTool = new StatusTool();
     if (verbose) echo("\nChecking status of Solr at " + solrUrl + " ...");
 

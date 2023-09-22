@@ -80,7 +80,7 @@ public class SolrCLI implements CLIO {
   public static final Option OPTION_ZKHOST =
       Option.builder("z")
           .longOpt("zkHost")
-          .argName("HOST")
+          .argName("ZK_HOST")
           .hasArg()
           .required(false)
           .desc(
@@ -91,12 +91,45 @@ public class SolrCLI implements CLIO {
           .build();
   public static final Option OPTION_SOLRURL =
       Option.builder("solrUrl")
-          .argName("HOST")
+          .argName("SOLR_URL")
           .hasArg()
           .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
-                  + getDefaultSolrUrl()
+                  + getDefaultSolrUrl(null)
+                  + '.')
+          .build();
+  public static final Option OPTION_SOLRPORT =
+      Option.builder("p")
+          .longOpt("port")
+          .argName("PORT")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Solr Port, which will be used, along with SOLR_TOOL_HOST and SOLR_URL_SCHEME, to determine the Solr URL to connect to if a solrURL is not provided; defaults to: "
+                  + getSolrPort(null)
+                  + '.')
+          .build();
+  public static final Option OPTION_SOLRHOST =
+      Option.builder("host")
+          .longOpt("host")
+          .argName("SOLR_HOST")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Solr Host, which will be used, along with SOLR_PORT and SOLR_URL_SCHEME, to determine the Solr URL to connect to if a solrURL is not provided; defaults to: "
+                  + getSolrHost(null)
+                  + '.')
+          .build();
+  public static final Option OPTION_URLSCHEME =
+      Option.builder("urlScheme")
+          .longOpt("url-scheme")
+          .argName("urlScheme")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Solr URL Scheme, which will be used, along with SOLR_TOOL_HOST and SOLR_PORT, to determine the Solr URL to connect to if a solrURL is not provided; defaults to: "
+                  + getSolrScheme(null)
                   + '.')
           .build();
   public static final Option OPTION_VERBOSE =
@@ -186,20 +219,44 @@ public class SolrCLI implements CLIO {
     return cli;
   }
 
-  public static String getDefaultSolrUrl() {
-    String scheme = System.getenv("SOLR_URL_SCHEME");
+  public static String getSolrScheme(CommandLine cli) {
+    String scheme = null;
+    if (cli != null && cli.hasOption("urlScheme")) {
+      scheme = cli.getOptionValue("urlScheme");
+    }
     if (scheme == null) {
-      scheme = "http";
+      scheme = System.getenv().getOrDefault("SOLR_URL_SCHEME", "http");
     }
-    String host = System.getenv("SOLR_TOOL_HOST");
+    return scheme;
+  }
+
+  public static String getSolrHost(CommandLine cli) {
+    String host = null;
+    if (cli != null && cli.hasOption("host")) {
+      host = cli.getOptionValue("host");
+    }
     if (host == null) {
-      host = "localhost";
+      host = System.getenv().getOrDefault("SOLR_TOOL_HOST", "localhost");
     }
-    String port = System.getenv("SOLR_PORT");
+    return host;
+  }
+
+  public static int getSolrPort(CommandLine cli) {
+    String port = null;
+    if (cli != null && cli.hasOption("port")) {
+      port = cli.getOptionValue("port");
+    }
     if (port == null) {
-      port = "8983";
+      port = System.getenv().getOrDefault("SOLR_PORT", "8983");
     }
-    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
+    return Integer.parseInt(port);
+  }
+
+  public static String getDefaultSolrUrl(CommandLine cli) {
+    String scheme = getSolrScheme(cli);
+    String host = getSolrHost(cli);
+    int port = getSolrPort(cli);
+    return String.format(Locale.ROOT, "%s://%s:%d", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
@@ -499,7 +556,7 @@ public class SolrCLI implements CLIO {
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
       if (zkHost == null) {
-        solrUrl = SolrCLI.getDefaultSolrUrl();
+        solrUrl = SolrCLI.getDefaultSolrUrl(cli);
         CLIO.getOutStream()
             .println(
                 "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
@@ -537,7 +594,7 @@ public class SolrCLI implements CLIO {
 
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
-      solrUrl = getDefaultSolrUrl();
+      solrUrl = getDefaultSolrUrl(cli);
       CLIO.getOutStream()
           .println(
               "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "

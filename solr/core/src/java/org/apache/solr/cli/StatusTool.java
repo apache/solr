@@ -75,6 +75,9 @@ public class StatusTool extends ToolBase {
             .required(false)
             .desc("Property set by calling scripts, not meant for user configuration.")
             .build(),
+        SolrCLI.OPTION_SOLRPORT,
+        SolrCLI.OPTION_SOLRHOST,
+        SolrCLI.OPTION_URLSCHEME,
         OPTION_MAXWAITSECS);
   }
 
