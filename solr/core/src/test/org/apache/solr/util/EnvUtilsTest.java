@@ -71,13 +71,20 @@ public class EnvUtilsTest extends SolrTestCase {
     assertFalse(EnvUtils.getPropAsBool("solr.boolean.nonexist", false));
 
     assertEquals("1234567890", EnvUtils.getProp("solr.long"));
-    assertEquals(1234567890L, EnvUtils.getPropAsLong("solr.long"));
-    assertEquals(987L, EnvUtils.getPropAsLong("solr.long.nonexist", 987L));
+    assertEquals(Long.valueOf(1234567890L), EnvUtils.getPropAsLong("solr.long"));
+    assertEquals(Long.valueOf(987L), EnvUtils.getPropAsLong("solr.long.nonexist", 987L));
 
     assertEquals("one,two, three", EnvUtils.getProp("solr.commasep"));
     assertEquals(List.of("one", "two", "three"), EnvUtils.getPropAsList("solr.commasep"));
     assertEquals(List.of("one", "two", "three"), EnvUtils.getPropAsList("solr.json.list"));
     assertEquals(List.of("fallback"), EnvUtils.getPropAsList("SOLR_MISSING", List.of("fallback")));
+  }
+
+  @Test
+  public void getPropWithCamelCase() {
+    assertEquals("INFO", EnvUtils.getProp("solr.logLevel"));
+    assertEquals("INFO", EnvUtils.getProp("solr.LogLevel"));
+    assertEquals(Long.valueOf(1234567890L), EnvUtils.getPropAsLong("solrLong"));
   }
 
   @Test

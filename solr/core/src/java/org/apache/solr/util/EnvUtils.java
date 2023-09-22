@@ -141,25 +141,44 @@ public class EnvUtils {
 
   /** Get a property as string */
   public static String getProp(String key) {
-    ensureInitialized();
     return getProp(key, null);
   }
 
-  /** Get a property as string */
+  /**
+   * Get a property as string with a fallback value. All other getProp* methods use this.
+   *
+   * @param key property key, which treats 'camelCase' the same as 'camel.case'
+   */
   public static String getProp(String key, String defaultValue) {
-    ensureInitialized();
-    return System.getProperties().getProperty(key, defaultValue);
+    ensureInitialized(); // Avoid race condition with init()
+    String value = getPropWithCamelCaseFallback(key);
+    return value != null ? value : defaultValue;
+  }
+
+  /**
+   * Get a property from given key or an alias key converted from CamelCase to dot separated.
+   *
+   * @return property value or value of dot-separated alias key or null if not found
+   */
+  private static String getPropWithCamelCaseFallback(String key) {
+    String value = System.getProperty(key);
+    if (value != null) {
+      return value;
+    } else {
+      // Figure out if string is CamelCase and convert to dot separated
+      String altKey =
+          String.join(".", key.split("(?=[A-Z])")).replace("..", ".").toLowerCase(Locale.ROOT);
+      return System.getProperty(altKey);
+    }
   }
 
   /** Get property as integer */
-  public static long getPropAsLong(String key) {
-    ensureInitialized();
-    return Long.parseLong(getProp(key));
+  public static Long getPropAsLong(String key) {
+    return getPropAsLong(key, null);
   }
 
   /** Get property as long, or default value */
-  public static long getPropAsLong(String key, long defaultValue) {
-    ensureInitialized();
+  public static Long getPropAsLong(String key, Long defaultValue) {
     String value = getProp(key);
     if (value == null) {
       return defaultValue;
@@ -168,14 +187,12 @@ public class EnvUtils {
   }
 
   /** Get property as boolean */
-  public static boolean getPropAsBool(String key) {
-    ensureInitialized();
-    return StrUtils.parseBool(getProp(key));
+  public static Boolean getPropAsBool(String key) {
+    return getPropAsBool(key, null);
   }
 
   /** Get property as boolean, or default value */
-  public static boolean getPropAsBool(String key, boolean defaultValue) {
-    ensureInitialized();
+  public static Boolean getPropAsBool(String key, Boolean defaultValue) {
     String value = getProp(key);
     if (value == null) {
       return defaultValue;
@@ -189,8 +206,7 @@ public class EnvUtils {
    * @return list of strings, or null if not found
    */
   public static List<String> getPropAsList(String key) {
-    ensureInitialized();
-    return getProp(key) != null ? stringValueToList(getProp(key)) : null;
+    return getPropAsList(key, null);
   }
 
   /**
@@ -199,8 +215,7 @@ public class EnvUtils {
    * @return list of strings, or provided default if not found
    */
   public static List<String> getPropAsList(String key, List<String> defaultValue) {
-    ensureInitialized();
-    return getProp(key) != null ? getPropAsList(key) : defaultValue;
+    return getProp(key) != null ? stringValueToList(getProp(key)) : defaultValue;
   }
 
   /** Set a system property. Shim to {@link System#setProperty(String, String)} */
@@ -215,8 +230,7 @@ public class EnvUtils {
    */
   public static synchronized void init(boolean overwrite) {
     // Convert eligible environment variables to system properties
-    for (String key :
-        ENV.keySet().stream().toArray(String[]::new)) {
+    for (String key : ENV.keySet().toArray(String[]::new)) {
       if (key.startsWith("SOLR_") || CUSTOM_MAPPINGS.containsKey(key)) {
         String sysPropKey = envNameToSyspropName(key);
         // Existing system properties take precedence
