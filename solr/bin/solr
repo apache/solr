@@ -184,7 +184,7 @@ else
   fi
   JAVA_VENDOR="Oracle"
    # OpenJ9 was previously known as IBM J9, this will match both
-  if [ "$(echo "$JAVA_VER" | grep -i -E "OpenJ9|IBM J9")" != "" ]; then
+  if [ "$(echo "$JAVA_VER" | grep -i "OpenJ9\|IBM J9")" != "" ]; then
       JAVA_VENDOR="OpenJ9"
   fi
 fi
@@ -1756,6 +1756,35 @@ function mk_writable_dir() {
   fi
 }
 
+# Check whether at least one of lsof/netstat/ss are available
+function get_port_tool() {
+  for tool in 'lsof' 'ss' 'netstat'; do
+      if [[ -x "$(command -v $tool)" ]]; then
+        echo $tool
+        return
+      fi
+  done
+}
+
+# Will get the PID of the java process running on the specified port, if one is running
+# Otherwise empty result. Use get_port_tool to check whether lsof/ss/netstat is installed first
+function check_port_in_use() {
+  local tool=$1
+  local port=$2
+
+  case $tool in
+    lsof)
+      lsof -PniTCP:${port} -sTCP:LISTEN 2>/dev/null | grep -ow "java\s*\?[0-9]\+" | grep -ow "[0-9]\+"
+      ;;
+    ss)
+      ss -ntlp "( sport = :${port} )" 2>/dev/null | grep -ow '"java",pid=[0-9]\+' | grep -ow "[0-9]\+"
+      ;;
+    netstat)
+      netstat -nlp 2>/dev/null | grep ":${port} " | grep -ow " [0-9]\+/java" | grep -ow "[0-9]\+"
+      ;;
+  esac
+}
+
 # Launches Solr in foreground/background depending on parameters
 function start_solr() {
 
@@ -1921,14 +1950,14 @@ function start_solr() {
 	echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
 	echo ""
     fi
-    # no lsof on cygwin though
-    if lsof -v 2>&1 | grep -q revision; then
+    local port_tool=$(get_port_tool)
+    if [ -n "$port_tool" ]; then
       echo -n "Waiting up to $SOLR_START_WAIT seconds to see Solr running on port $SOLR_PORT"
       # Launch in a subshell to show the spinner
       (loops=0
       while true
       do
-        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN || :)
+        running=$(check_port_in_use $port_tool $SOLR_PORT)
         if [ -z "${running:-}" ]; then
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_START_WAIT ]; then
@@ -1947,7 +1976,7 @@ function start_solr() {
       done) &
       spinner $!
     else
-      echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
+      echo -e "NOTE: Please install lsof, netstat, or ss as this script needs to determine if Solr is listening on port $SOLR_PORT."
       sleep 10
       SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
       echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
