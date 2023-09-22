@@ -214,13 +214,15 @@ public class EnvUtils {
    * @param overwrite if true, overwrite existing system properties with environment variables
    */
   public static synchronized void init(boolean overwrite) {
-    // Convert eligible environment variables with SOLR_ prefix to system properties
+    // Convert eligible environment variables to system properties
     for (String key :
-        ENV.keySet().stream().filter(k -> k.startsWith("SOLR_")).toArray(String[]::new)) {
-      String sysPropKey = envNameToSyspropName(key);
-      // Existing system properties take precedence
-      if (!sysPropKey.isBlank() && (overwrite || getProp(sysPropKey) == null)) {
-        setProp(sysPropKey, ENV.get(key));
+        ENV.keySet().stream().toArray(String[]::new)) {
+      if (key.startsWith("SOLR_") || CUSTOM_MAPPINGS.containsKey(key)) {
+        String sysPropKey = envNameToSyspropName(key);
+        // Existing system properties take precedence
+        if (!sysPropKey.isBlank() && (overwrite || getProp(sysPropKey) == null)) {
+          setProp(sysPropKey, ENV.get(key));
+        }
       }
     }
     initialized = true;
