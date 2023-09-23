@@ -209,7 +209,7 @@ Bug Fixes
 
 * SOLR-16701: Fix race condition on PRS enabled collection deletion (Patson Luk)
 
-* SOLR-16991: Fix bug: Concurrent requests failing JWT authentication intermittently (Lamine Idjeraoui, janhoy)
+* SOLR-16991: Concurrent requests failing JWT authentication in Admin UI intermittently (Lamine Idjeraoui, janhoy)
 
 Dependency Upgrades
 ---------------------
