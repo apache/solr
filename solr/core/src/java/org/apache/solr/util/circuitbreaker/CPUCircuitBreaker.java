@@ -21,7 +21,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,15 +38,15 @@ public class CPUCircuitBreaker extends CircuitBreaker {
 
   private boolean enabled = true;
   private double cpuUsageThreshold;
-  private final SolrCore core;
+  private final CoreContainer cc;
 
   private static final ThreadLocal<Double> seenCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
   private static final ThreadLocal<Double> allowedCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
-  public CPUCircuitBreaker(SolrCore core) {
+  public CPUCircuitBreaker(CoreContainer coreContainer) {
     super();
-    this.core = core;
+    this.cc = coreContainer;
   }
 
   @Override
@@ -91,7 +91,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
         + allowedCPUUsage.get();
   }
 
-  public void setThreshold(double thresholdValueInPercentage) {
+  public CPUCircuitBreaker setThreshold(double thresholdValueInPercentage) {
     if (thresholdValueInPercentage > 100) {
       throw new IllegalArgumentException("Invalid Invalid threshold value.");
     }
@@ -100,6 +100,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
       throw new IllegalStateException("Threshold cannot be less than or equal to zero");
     }
     cpuUsageThreshold = thresholdValueInPercentage;
+    return this;
   }
 
   public double getCpuUsageThreshold() {
@@ -114,12 +115,7 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   protected double calculateLiveCPUUsage() {
     // TODO: Use Codahale Meter to calculate the value
     Metric metric =
-        this.core
-            .getCoreContainer()
-            .getMetricManager()
-            .registry("solr.jvm")
-            .getMetrics()
-            .get("os.systemCpuLoad");
+        this.cc.getMetricManager().registry("solr.jvm").getMetrics().get("os.systemCpuLoad");
 
     if (metric == null) {
       return -1.0;
