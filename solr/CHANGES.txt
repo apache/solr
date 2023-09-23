@@ -207,6 +207,8 @@ Bug Fixes
 
 * SOLR-16925: Fix indentation for JacksonJsonWriter (Houston Putman)
 
+* SOLR-16701: Fix race condition on PRS enabled collection deletion (Patson Luk)
+
 Dependency Upgrades
 ---------------------
 
