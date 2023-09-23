@@ -41,6 +41,8 @@ public class TestGlobalCircuitBreaker extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() throws Exception {
     System.clearProperty(CircuitBreakerRegistry.SYSPROP_UPDATE_LOADAVG);
+    // Deregister the global breaker to not interfere with other tests
+    CircuitBreakerRegistry.deregisterGlobal();
   }
 
   @Test

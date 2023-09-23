@@ -3179,6 +3179,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
             type.getSimpleName() + "." + info.name, (SolrMetricProducer) o);
       }
       if (o instanceof CircuitBreaker) {
+        if (o instanceof SolrCoreAware) {
+          ((SolrCoreAware) o).inform(this);
+        }
         circuitBreakerRegistry.register((CircuitBreaker) o);
       }
       if (info.isDefault()) {

@@ -22,7 +22,9 @@ import com.codahale.metrics.Metric;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,16 +35,20 @@ import org.slf4j.LoggerFactory;
  * We depend on OperatingSystemMXBean which does not allow a configurable interval of collection of
  * data.
  */
-public class CPUCircuitBreaker extends CircuitBreaker {
+public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private boolean enabled = true;
+  private Boolean enabled = null;
   private double cpuUsageThreshold;
-  private final CoreContainer cc;
+  private CoreContainer cc;
 
   private static final ThreadLocal<Double> seenCPUUsage = ThreadLocal.withInitial(() -> 0.0);
 
   private static final ThreadLocal<Double> allowedCPUUsage = ThreadLocal.withInitial(() -> 0.0);
+
+  public CPUCircuitBreaker() {
+    super();
+  }
 
   public CPUCircuitBreaker(CoreContainer coreContainer) {
     super();
@@ -52,20 +58,24 @@ public class CPUCircuitBreaker extends CircuitBreaker {
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
-    double localSeenCPUUsage = calculateLiveCPUUsage();
-
-    if (localSeenCPUUsage < 0) {
-      String msg =
-          "Initialization failure for CPU circuit breaker. Unable to get 'systemCpuLoad', not supported by the JVM?";
-      if (log.isErrorEnabled()) {
-        log.error(msg);
-      }
-      enabled = false;
-    }
   }
 
   @Override
   public boolean isTripped() {
+    if (enabled == null) {
+      double localSeenCPUUsage = calculateLiveCPUUsage();
+
+      if (localSeenCPUUsage < 0) {
+        String msg =
+            "Initialization failure for CPU circuit breaker. Unable to get 'systemCpuLoad', not supported by the JVM?";
+        if (log.isErrorEnabled()) {
+          log.error(msg);
+        }
+        enabled = false;
+      } else {
+        enabled = true;
+      }
+    }
     if (!enabled) {
       if (log.isDebugEnabled()) {
         log.debug("CPU circuit breaker is disabled due to initialization failure.");
@@ -132,5 +142,10 @@ public class CPUCircuitBreaker extends CircuitBreaker {
     }
 
     return -1.0; // Unable to unpack metric
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    this.cc = core.getCoreContainer();
   }
 }

@@ -153,6 +153,11 @@ public class CircuitBreakerRegistry implements Closeable {
     globalCircuitBreakerMap.clear();
   }
 
+  @VisibleForTesting
+  public static void deregisterGlobal() {
+    globalCircuitBreakerMap.clear();
+  }
+
   /**
    * Check and return circuit breakers that have triggered
    *
