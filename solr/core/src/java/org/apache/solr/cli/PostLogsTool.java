@@ -89,14 +89,14 @@ public class PostLogsTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
     String rootDir = cli.getOptionValue("rootdir");
-    String credentials = cli.getOptionValue("credentials",null);
+    String credentials = cli.getOptionValue("credentials", null);
     runCommand(url, rootDir, credentials);
   }
 
   public void runCommand(String baseUrl, String root, String credentials) throws IOException {
 
     Http2SolrClient.Builder builder = new Http2SolrClient.Builder(baseUrl);
-    if (credentials != null && credentials.indexOf(':') > 0){
+    if (credentials != null && credentials.indexOf(':') > 0) {
       String[] credentialsArray = credentials.split(":");
       builder.withBasicAuthCredentials(credentialsArray[0], credentialsArray[1]);
     }

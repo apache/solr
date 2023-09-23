@@ -45,7 +45,5 @@ public class SolrCLITest extends SolrTestCase {
   }
 
   @Test
-  public void testGetCredentials(){
-
-  }
+  public void testGetCredentials() {}
 }

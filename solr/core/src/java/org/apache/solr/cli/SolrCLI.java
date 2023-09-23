@@ -424,8 +424,9 @@ public class SolrCLI implements CLIO {
     if (!solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
       solrUrl = solrUrl + "/solr";
     }
-    Http2SolrClient.Builder builder = new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32);
-    if (cli.hasOption("credentials")){
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32);
+    if (cli.hasOption("credentials")) {
       String[] credentials = SolrCLI.getCredentials(cli);
       builder.withBasicAuthCredentials(credentials[0], credentials[1]);
     }
@@ -434,7 +435,7 @@ public class SolrCLI implements CLIO {
 
   static String[] getCredentials(CommandLine cli) throws Exception {
     if (cli.getOptionValue("credentials") == null
-            || !cli.getOptionValue("credentials").contains(":")){
+        || !cli.getOptionValue("credentials").contains(":")) {
       CLIO.out("Option -credentials is not in correct format.");
       throw new Exception("Option -credentials is not in correct format.");
     }

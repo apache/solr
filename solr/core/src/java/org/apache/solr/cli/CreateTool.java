@@ -197,10 +197,11 @@ public class CreateTool extends ToolBase {
   }
 
   protected void createCollection(CommandLine cli) throws Exception {
-    Http2SolrClient.Builder builder = new Http2SolrClient.Builder()
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS);
-    if (cli.hasOption("credentials")){
+    if (cli.hasOption("credentials")) {
       String[] credentials = SolrCLI.getCredentials(cli);
       builder.withBasicAuthCredentials(credentials[0], credentials[1]);
     }

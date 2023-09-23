@@ -30,7 +30,7 @@ teardown() {
 }
 
 # Remaining commands that should support basic auth:
-# healthcheck, create, delete, 
+# healthcheck, delete, 
 # zk, 
 # auth, 
 # assert, config, export, api, package, post
