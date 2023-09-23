@@ -51,13 +51,18 @@ teardown() {
   export SOLR_HOST=localhost
 
   solr start -c
-  solr assert --started https://localhost:8983/solr --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
 
-  run solr api -get 'https://localhost:8983/solr/test/select?q=*:*'
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
+
+  run curl --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '"numFound":0'
+
+  run ! curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
 }
 
 @test "use different hostname when not checking peer-name" {
@@ -81,27 +86,46 @@ teardown() {
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=false
   export SOLR_SSL_CHECK_PEER_NAME=false
-  export SOLR_HOST=localhost
+  export SOLR_HOST=127.0.0.1
 
   solr start -c
-  solr assert --started https://localhost:8983/solr --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
 
-  # Just test that curl can connect via insecure or via a custom host header
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -k 'https://localhost:8983/solr/test/select?q=*:*'
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
 
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -H "Host: test.solr.apache.org" 'https://127.0.0.1:8983/solr/test/select?q=*:*'
+  # Just test that curl can connect via insecure or via a custom host header
+  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --partial 'no alternative certificate subject name matches target host name'
+
+  # Just test that curl can connect via insecure or via a custom host header
+  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" -k "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '"numFound":0'
+
+  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" --resolve "test.solr.apache.org:${SOLR_PORT}:127.0.0.1" "https://test.solr.apache.org:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
 
   # This is a client setting, so we don't need to restart Solr to make sure that it fails
   export SOLR_SSL_CHECK_PEER_NAME=true
 
   # This should fail the peername check
-  run ! solr api -get 'https://localhost:8983/solr/test/select?q=*:*'
+  run ! solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial 'Server refused connection'
+
+  # Restart the server enabling the SNI hostcheck
+  export SOLR_SSL_CHECK_PEER_NAME=false
+  export SOLR_OPTS="${SOLR_OPTS} -Dsolr.jetty.ssl.sniHostCheck=true"
+  solr restart -c
+  # This should fail the SNI Hostname check
+  run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
+  assert_output --partial 'Invalid SNI'
+
+  # Using the right hostname should not fail the SNI Hostname check
+  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" --resolve "test.solr.apache.org:${SOLR_PORT}:127.0.0.1" "https://test.solr.apache.org:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
+  assert_output --partial '"urlScheme":"https"'
 }
 
 @test "start solr with ssl and auth" {
@@ -128,16 +152,16 @@ teardown() {
 
   solr start -c
   solr auth enable -type basicAuth -credentials name:password
-  solr assert --started https://localhost:8983/solr --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
-  run curl -u name:password --basic --cacert "$ssl_dir/solr-ssl.pem" 'https://localhost:8983/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json'
+  run curl -u name:password --basic --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json"
   assert_output --partial '"status":0'
 
-  run curl -u name:password --basic --http2 --cacert "$ssl_dir/solr-ssl.pem" 'https://localhost:8983/solr/test/select?q=*:*'
+  run curl -u name:password --basic --http2 --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
 
   # When the Jenkins box "curl" supports --fail-with-body, add "--fail-with-body" and change "run" to "run !", to expect a failure
-  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" 'https://localhost:8983/solr/test/select?q=*:*'
+  run curl --http2 --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial 'Error 401 Authentication'
 }
 
@@ -190,12 +214,12 @@ teardown() {
   export SOLR_SSL_TRUST_STORE=
   export SOLR_SSL_TRUST_STORE_PASSWORD=
 
-  solr assert --started https://localhost:8983/solr --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
 
-  run solr api -get 'https://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS'
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
   assert_output --partial '"urlScheme":"https"'
 }
 
@@ -298,7 +322,7 @@ teardown() {
   export SOLR_HOST=localhost
 
   solr start -c
-  solr start -c -z localhost:9983 -p 8984
+  solr start -c -z localhost:${ZK_PORT} -p ${SOLR2_PORT}
 
   # Test Client connections, which do not need the server keystore/truststore
   (
@@ -307,16 +331,16 @@ teardown() {
     export SOLR_SSL_TRUST_STORE=
     export SOLR_SSL_TRUST_STORE_PASSWORD=
 
-    solr assert --started https://localhost:8983/solr --timeout 5000
-    solr assert --started https://localhost:8984/solr --timeout 5000
+    solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
+    solr assert --started https://localhost:${SOLR2_PORT}/solr --timeout 5000
 
     run solr create -c test -s 2
     assert_output --partial "Created collection 'test'"
 
-    run solr api -get 'https://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS'
+    run solr api -get "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
     assert_output --partial '"urlScheme":"https"'
 
-    run solr api -get 'https://localhost:8984/solr/test/select?q=*:*&rows=0'
+    run solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*&rows=0"
     assert_output --partial '"numFound":0'
 
     (
@@ -324,7 +348,7 @@ teardown() {
       export SOLR_SSL_CLIENT_KEY_STORE=
       export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 
-      run ! solr api -get 'https://localhost:8983/solr/test/select?q=*:*&rows=0'
+      run ! solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
       assert_output --partial 'Server refused connection'
     )
   )
@@ -332,12 +356,12 @@ teardown() {
   # Turn on client hostname verification, and start a new Solr node since the property is a server setting.
   # Test that it fails because the client cert does not use "localhost"
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
-  solr start -c -z localhost:9983 -p 8985
+  solr start -c -z localhost:${ZK_PORT} -p ${SOLR3_PORT}
 
   # We can't check if the server has come up, because we can't connect to it, so just wait
   sleep 5
 
-  run ! solr api -get 'https://localhost:8985/solr/test/select?q=*:*&rows=0'
+  run ! solr api -get "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --partial 'Server refused connection'
 }
 
@@ -437,36 +461,36 @@ teardown() {
   export SOLR_HOST=localhost
 
   solr start -c
-  solr start -c -z localhost:9983 -p 8984
+  solr start -c -z localhost:${ZK_PORT} -p ${SOLR2_PORT}
 
   export SOLR_SSL_KEY_STORE=
   export SOLR_SSL_KEY_STORE_PASSWORD=
   export SOLR_SSL_TRUST_STORE=
   export SOLR_SSL_TRUST_STORE_PASSWORD=
 
-  solr assert --started https://localhost:8983/solr --timeout 5000
-  solr assert --started https://localhost:8984/solr --timeout 5000
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
+  solr assert --started https://localhost:${SOLR2_PORT}/solr --timeout 5000
 
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
 
-  run solr api -get 'https://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS'
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
   assert_output --partial '"urlScheme":"https"'
 
-  run solr api -get 'https://localhost:8984/solr/test/select?q=*:*&rows=0'
+  run solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0'
 
   export SOLR_SSL_CLIENT_KEY_STORE=
   export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 
   # mTLS requires a keyStore, so just using the truststore would fail if mTLS was "NEED"ed, however it is only "WANT"ed, so its ok
-  run solr api -get 'https://localhost:8983/solr/test/select?q=*:*&rows=0'
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0'
 
   export SOLR_SSL_CLIENT_TRUST_STORE=
   export SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 
   # TLS cannot work if a truststore and keystore are not provided (either Server or Client)
-  run solr api -get 'https://localhost:8983/solr/test/select?q=*:*&rows=0'
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --partial 'Server refused connection'
 }
