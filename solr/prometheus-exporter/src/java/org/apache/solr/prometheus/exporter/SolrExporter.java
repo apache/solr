@@ -96,6 +96,20 @@ public class SolrExporter {
           + ARG_NUM_THREADS_DEFAULT
           + ".";
 
+  private static final String[] ARG_USER_FLAGS = {"-u", "--user"};
+  private static final String ARG_USER_METAVAR = "USER";
+  private static final String ARG_USER_DEST = "user";
+  private static final String ARG_USER_DEFAULT = "";
+  private static final String ARG_USER_HELP =
+      "Specify the user in case Basic Authentication is enabled.";
+
+  private static final String[] ARG_PASSWORD_FLAGS = {"-pw", "--password"};
+  private static final String ARG_PASSWORD_METAVAR = "PASSWORD";
+  private static final String ARG_PASSWORD_DEST = "password";
+  private static final String ARG_PASSWORD_DEFAULT = "";
+  private static final String ARG_PASSWORD_HELP =
+      "Specify the password in case Basic Authentication is enabled.";
+
   public static final CollectorRegistry defaultRegistry = new CollectorRegistry();
 
   private final int port;
@@ -161,7 +175,7 @@ public class SolrExporter {
       SolrScrapeConfiguration configuration,
       PrometheusExporterSettings settings,
       String clusterId) {
-    SolrClientFactory factory = new SolrClientFactory(settings);
+    SolrClientFactory factory = new SolrClientFactory(settings, configuration);
 
     switch (configuration.getType()) {
       case STANDALONE:
@@ -242,6 +256,22 @@ public class SolrExporter {
         .setDefault(ARG_CLUSTER_ID_DEFAULT)
         .help(ARG_CLUSTER_ID_HELP);
 
+    parser
+        .addArgument(ARG_USER_FLAGS)
+        .metavar(ARG_USER_METAVAR)
+        .dest(ARG_USER_DEST)
+        .type(String.class)
+        .setDefault(ARG_USER_DEFAULT)
+        .help(ARG_USER_HELP);
+
+    parser
+        .addArgument(ARG_PASSWORD_FLAGS)
+        .metavar(ARG_PASSWORD_METAVAR)
+        .dest(ARG_PASSWORD_DEST)
+        .type(String.class)
+        .setDefault(ARG_PASSWORD_DEFAULT)
+        .help(ARG_PASSWORD_HELP);
+
     try {
       Namespace res = parser.parseArgs(args);
 
@@ -264,6 +294,12 @@ public class SolrExporter {
       String clusterId = res.getString(ARG_CLUSTER_ID_DEST);
       if (StrUtils.isNullOrEmpty(clusterId)) {
         clusterId = defaultClusterId;
+      }
+
+      if (!res.getString(ARG_USER_DEST).isEmpty() && !res.getString(ARG_PASSWORD_DEST).isEmpty()) {
+        String user = res.getString(ARG_USER_DEST);
+        String password = res.getString(ARG_PASSWORD_DEST);
+        scrapeConfiguration.withBasicAuthCredentials(user, password);
       }
 
       SolrExporter solrExporter =

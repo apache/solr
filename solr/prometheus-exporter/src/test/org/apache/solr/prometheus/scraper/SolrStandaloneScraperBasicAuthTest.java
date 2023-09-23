@@ -14,15 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.prometheus.scraper;
 
 import io.prometheus.client.Collector;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -31,7 +28,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
-import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
 import org.apache.solr.prometheus.exporter.PrometheusExporterSettings;
 import org.apache.solr.prometheus.exporter.SolrClientFactory;
@@ -43,49 +39,49 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class SolrStandaloneScraperTest extends SolrTestCaseJ4 {
+public class SolrStandaloneScraperBasicAuthTest extends SolrTestCaseJ4 {
 
   @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
 
+  private static Http2SolrClient solrClient;
   private static MetricsConfiguration configuration;
   private static SolrStandaloneScraper solrScraper;
   private static ExecutorService executor;
-  private static Http2SolrClient solrClient;
+
+  private static String user = "solr";
+  private static String pass = "SolrRocks";
 
   @BeforeClass
-  public static void setupBeforeClass() throws Exception {
-    solrRule.startSolr(LuceneTestCase.createTempDir());
+  public static void setupSolrHome() throws Exception {
+    Path solrHome = LuceneTestCase.createTempDir();
+    Files.copy(
+        SolrTestCaseJ4.TEST_PATH().resolve("security.json"), solrHome.resolve("security.json"));
+    solrRule.startSolr(solrHome);
 
     Path configSet = LuceneTestCase.createTempDir();
-    createConf(configSet);
-    solrRule.newCollection().withConfigSet(configSet.toString()).create();
+    SolrStandaloneScraperTest.createConf(configSet);
+    solrRule
+        .newCollection()
+        .withConfigSet(configSet.toString())
+        .withBasicAuthCredentials(user, pass)
+        .create();
+
+    configuration =
+        Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
 
     PrometheusExporterSettings settings = PrometheusExporterSettings.builder().build();
     SolrScrapeConfiguration scrapeConfiguration =
-        SolrScrapeConfiguration.standalone(solrRule.getBaseUrl());
+        SolrScrapeConfiguration.standalone(solrRule.getBaseUrl())
+            .withBasicAuthCredentials(user, pass);
     solrClient =
         new SolrClientFactory(settings, scrapeConfiguration)
             .createStandaloneSolrClient(solrRule.getBaseUrl());
     executor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             25, new SolrNamedThreadFactory("solr-cloud-scraper-tests"));
-    configuration =
-        Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
     solrScraper = new SolrStandaloneScraper(solrClient, executor, "test");
 
     Helpers.indexAllDocs(solrClient);
-  }
-
-  public static void createConf(Path configSet) throws IOException {
-    Path subHome = configSet.resolve("conf");
-    Files.createDirectories(subHome);
-
-    Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
-    Files.copy(top.resolve("managed-schema.xml"), subHome.resolve("schema.xml"));
-    Files.copy(top.resolve("solrconfig.xml"), subHome.resolve("solrconfig.xml"));
-
-    Files.copy(top.resolve("stopwords.txt"), subHome.resolve("stopwords.txt"));
-    Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
   }
 
   @AfterClass
@@ -93,57 +89,6 @@ public class SolrStandaloneScraperTest extends SolrTestCaseJ4 {
     // scraper also closes the client
     IOUtils.closeQuietly(solrScraper);
     ExecutorUtil.shutdownNowAndAwaitTermination(executor);
-  }
-
-  @Test
-  public void pingCollections() throws IOException {
-    Map<String, MetricSamples> collectionMetrics =
-        solrScraper.pingAllCollections(configuration.getPingConfiguration().get(0));
-
-    assertTrue(collectionMetrics.isEmpty());
-  }
-
-  @Test
-  public void pingCores() throws Exception {
-    Map<String, MetricSamples> allCoreMetrics =
-        solrScraper.pingAllCores(configuration.getPingConfiguration().get(0));
-
-    assertEquals(1, allCoreMetrics.size());
-
-    List<Collector.MetricFamilySamples> allSamples = allCoreMetrics.get("collection1").asList();
-    Collector.MetricFamilySamples samples = allSamples.get(0);
-
-    assertEquals("solr_ping", samples.name);
-    assertEquals(1, samples.samples.size());
-    assertEquals(1.0, samples.samples.get(0).value, 0.001);
-    assertEquals(List.of("base_url", "cluster_id"), samples.samples.get(0).labelNames);
-    assertEquals(List.of(solrRule.getBaseUrl(), "test"), samples.samples.get(0).labelValues);
-  }
-
-  @Test
-  public void queryCollections() throws Exception {
-    List<Collector.MetricFamilySamples> collection1Metrics =
-        solrScraper.collections(configuration.getCollectionsConfiguration().get(0)).asList();
-
-    assertTrue(collection1Metrics.isEmpty());
-  }
-
-  @Test
-  public void metricsForHost() throws Exception {
-    Map<String, MetricSamples> metricsByHost =
-        solrScraper.metricsForAllHosts(configuration.getMetricsConfiguration().get(0));
-
-    assertEquals(1, metricsByHost.size());
-
-    List<Collector.MetricFamilySamples> replicaSamples =
-        metricsByHost.get(solrRule.getBaseUrl()).asList();
-
-    assertEquals(1, replicaSamples.size());
-
-    assertEquals("solr_metrics_jvm_buffers", replicaSamples.get(0).name);
-
-    assertEquals("cluster_id", replicaSamples.get(0).samples.get(0).labelNames.get(2));
-    assertEquals("test", replicaSamples.get(0).samples.get(0).labelValues.get(2));
   }
 
   @Test
