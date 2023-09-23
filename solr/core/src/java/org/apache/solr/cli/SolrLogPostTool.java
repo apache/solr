@@ -45,6 +45,6 @@ public class SolrLogPostTool {
     String baseUrl = args[0];
     String root = args[1];
     PostLogsTool postLogsTool = new PostLogsTool();
-    postLogsTool.runCommand(baseUrl, root);
+    postLogsTool.runCommand(baseUrl, root, null);
   }
 }

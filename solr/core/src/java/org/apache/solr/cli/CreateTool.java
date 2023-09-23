@@ -112,15 +112,15 @@ public class CreateTool extends ToolBase {
             .required(false)
             .desc("Configuration name; default is the collection name.")
             .build(),
+        SolrCLI.OPTION_CREDENTIALS,
         SolrCLI.OPTION_VERBOSE);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
 
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
+    try (var solrClient = SolrCLI.betterGetSolrClient(cli)) {
       if (SolrCLI.isCloudMode(solrClient)) {
         createCollection(cli);
       } else {
@@ -197,13 +197,17 @@ public class CreateTool extends ToolBase {
   }
 
   protected void createCollection(CommandLine cli) throws Exception {
+    Http2SolrClient.Builder builder = new Http2SolrClient.Builder()
+            .withIdleTimeout(30, TimeUnit.SECONDS)
+            .withConnectionTimeout(15, TimeUnit.SECONDS);
+    if (cli.hasOption("credentials")){
+      String[] credentials = SolrCLI.getCredentials(cli);
+      builder.withBasicAuthCredentials(credentials[0], credentials[1]);
+    }
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-            .withInternalClientBuilder(
-                new Http2SolrClient.Builder()
-                    .withIdleTimeout(30, TimeUnit.SECONDS)
-                    .withConnectionTimeout(15, TimeUnit.SECONDS))
+            .withInternalClientBuilder(builder)
             .build()) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();

@@ -74,12 +74,7 @@ public class AuthTool extends ToolBase {
             .desc(
                 "The authentication mechanism to enable (basicAuth or kerberos). Defaults to 'basicAuth'.")
             .build(),
-        Option.builder("credentials")
-            .argName("credentials")
-            .hasArg()
-            .desc(
-                "Credentials in the format username:password. Example: -credentials solr:SolrRocks")
-            .build(),
+        SolrCLI.OPTION_CREDENTIALS,
         Option.builder("prompt")
             .argName("prompt")
             .hasArg()

@@ -112,6 +112,16 @@ public class SolrCLI implements CLIO {
           .desc("Recurse (true|false), default is false.")
           .build();
 
+  public static final Option OPTION_CREDENTIALS =
+      Option.builder("u")
+          .longOpt("credentials")
+          .argName("credentials")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
+          .build();
+
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);
@@ -403,6 +413,32 @@ public class SolrCLI implements CLIO {
       solrUrl = solrUrl + "/solr";
     }
     return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
+  }
+
+  public static SolrClient betterGetSolrClient(CommandLine cli) throws Exception {
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    // today we require all urls to end in /solr, however in the future we will need to support the
+    // /api url end point instead.
+    // The /solr/ check is because sometimes a full url is passed in, like
+    // http://localhost:8983/solr/films_shard1_replica_n1/.
+    if (!solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
+      solrUrl = solrUrl + "/solr";
+    }
+    Http2SolrClient.Builder builder = new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32);
+    if (cli.hasOption("credentials")){
+      String[] credentials = SolrCLI.getCredentials(cli);
+      builder.withBasicAuthCredentials(credentials[0], credentials[1]);
+    }
+    return builder.build();
+  }
+
+  static String[] getCredentials(CommandLine cli) throws Exception {
+    if (cli.getOptionValue("credentials") == null
+            || !cli.getOptionValue("credentials").contains(":")){
+      CLIO.out("Option -credentials is not in correct format.");
+      throw new Exception("Option -credentials is not in correct format.");
+    }
+    return cli.getOptionValue("credentials").split(":");
   }
 
   private static final String JSON_CONTENT_TYPE = "application/json";
