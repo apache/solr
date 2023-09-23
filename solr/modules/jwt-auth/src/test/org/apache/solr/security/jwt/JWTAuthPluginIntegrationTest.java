@@ -86,7 +86,6 @@ import org.junit.Test;
  */
 @SolrTestCaseJ4.SuppressSSL
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
-  private final String COLLECTION = "jwtColl";
 
   private static String mockOAuthToken;
   private static Path pemFilePath;
@@ -143,7 +142,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  public void mockOAuth2ServerWrongPEMInTruststore() throws Exception {
+  public void mockOAuth2ServerWrongPEMInTruststore() {
     // JWTAuthPlugin throws SSLHandshakeException when fetching JWK, so this trips cluster init
     assertThrows(Exception.class, () -> configureClusterMockOauth(2, wrongPemFilePath, 2000));
   }
@@ -209,6 +208,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     CloseableHttpClient cl = HttpClientUtil.createClient(null);
 
+    String COLLECTION = "jwtColl";
     createCollection(cluster, COLLECTION);
 
     // Missing token
@@ -520,8 +520,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
           TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       trustManagerFactory.init(keystore);
 
-      MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper();
-      MockWebServer mockWebServer = mockWebServerWrapper.getMockWebServer();
+      MockWebServer mockWebServer;
+      try (MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper()) {
+        mockWebServer = mockWebServerWrapper.getMockWebServer();
+      }
       SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
       sslContext.init(
           keyManagerFactory.getKeyManagers(), /*trustManagerFactory.getTrustManagers()*/
