@@ -108,7 +108,8 @@ public class ConfigTool extends ToolBase {
     echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
     echo(jsonBody);
 
-    try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
+    try (SolrClient solrClient =
+        SolrCLI.getSolrClient(solrUrl, cli.getOptionValue("credentials"))) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
       Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
       if (statusCode == 0) {

@@ -170,10 +170,13 @@ public class HealthcheckTool extends ToolBase {
           q = new SolrQuery("*:*");
           q.setRows(0);
           q.set(DISTRIB, "false");
-          try (var solrClientForCollection = SolrCLI.getSolrClient(coreUrl)) {
+          try (var solrClientForCollection =
+              SolrCLI.getSolrClient(coreUrl, cli.getOptionValue("credentials"))) {
             qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
-            try (var solrClient = SolrCLI.getSolrClient(replicaCoreProps.getBaseUrl())) {
+            try (var solrClient =
+                SolrCLI.getSolrClient(
+                    replicaCoreProps.getBaseUrl(), cli.getOptionValue("credentials"))) {
               NamedList<Object> systemInfo =
                   solrClient.request(
                       new GenericSolrRequest(

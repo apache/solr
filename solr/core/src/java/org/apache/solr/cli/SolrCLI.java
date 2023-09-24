@@ -404,7 +404,7 @@ public class SolrCLI implements CLIO {
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
 
-  public static SolrClient getSolrClient(String solrUrl) {
+  public static SolrClient getSolrClient(String solrUrl, String credentials) {
     // today we require all urls to end in /solr, however in the future we will need to support the
     // /api url end point instead.
     // The /solr/ check is because sometimes a full url is passed in, like
@@ -412,7 +412,13 @@ public class SolrCLI implements CLIO {
     if (!solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
       solrUrl = solrUrl + "/solr";
     }
-    return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32);
+    if (credentials != null && credentials.indexOf(":") > 0) {
+      String[] credentialsArray = credentials.split(":");
+      builder.withBasicAuthCredentials(credentialsArray[0], credentialsArray[1]);
+    }
+    return builder.build();
   }
 
   public static SolrClient betterGetSolrClient(CommandLine cli) throws Exception {
@@ -583,7 +589,7 @@ public class SolrCLI implements CLIO {
     }
     solrUrl = normalizeSolrUrl(solrUrl);
 
-    try (var solrClient = getSolrClient(solrUrl)) {
+    try (var solrClient = betterGetSolrClient(cli)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
           solrClient.request(
@@ -606,9 +612,10 @@ public class SolrCLI implements CLIO {
     return zkHost;
   }
 
-  public static boolean safeCheckCollectionExists(String solrUrl, String collection) {
+  public static boolean safeCheckCollectionExists(
+      String solrUrl, String collection, String credentials) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(solrUrl)) {
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
       NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
       @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
@@ -620,9 +627,9 @@ public class SolrCLI implements CLIO {
   }
 
   @SuppressWarnings("unchecked")
-  public static boolean safeCheckCoreExists(String solrUrl, String coreName) {
+  public static boolean safeCheckCoreExists(String solrUrl, String coreName, String credentials) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(solrUrl)) {
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
       boolean wait = false;
       final long startWaitAt = System.nanoTime();
       do {

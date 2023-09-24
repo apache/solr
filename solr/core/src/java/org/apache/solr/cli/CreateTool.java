@@ -155,7 +155,7 @@ public class CreateTool extends ToolBase {
     // convert raw JSON into user-friendly output
     coreRootDirectory = (String) systemInfo.get("core_root");
 
-    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName)) {
+    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName, cli.getOptionValue("credentials"))) {
       throw new IllegalArgumentException(
           "\nCore '"
               + coreName
@@ -280,7 +280,8 @@ public class CreateTool extends ToolBase {
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
-    if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+    if (SolrCLI.safeCheckCollectionExists(
+        solrUrl, collectionName, cli.getOptionValue("credentials"))) {
       throw new IllegalStateException(
           "\nCollection '"
               + collectionName

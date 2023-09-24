@@ -196,6 +196,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
     assertFalse(
         SolrCLI.safeCheckCollectionExists(
-            solrUrl, testCollectionName)); // it should not exist anymore
+            solrUrl, testCollectionName, null)); // it should not exist anymore
   }
 }
