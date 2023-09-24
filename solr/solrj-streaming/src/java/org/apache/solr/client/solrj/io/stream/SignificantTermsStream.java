@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 import java.io.IOException;
@@ -28,8 +29,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -47,9 +46,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 /**
  * @since 6.5.0
@@ -71,7 +68,6 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   private transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
   private transient StreamContext streamContext;
-  private transient ExecutorService executorService;
 
   public SignificantTermsStream(
       String zkHost,
@@ -251,10 +247,6 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     } else {
       doCloseCache = false;
     }
-
-    this.executorService =
-        ExecutorUtil.newMDCAwareCachedThreadPool(
-            new SolrNamedThreadFactory("SignificantTermsStream"));
   }
 
   @Override
@@ -262,9 +254,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     return null;
   }
 
-  private List<Future<NamedList<?>>> callShards(List<String> baseUrls) throws IOException {
-
-    List<Future<NamedList<?>>> futures = new ArrayList<>();
+  private List<NamedList<?>> callShards(List<String> baseUrls) throws IOException {
+    List<SignificantTermsCall> tasks = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       SignificantTermsCall lc =
           new SignificantTermsCall(
@@ -277,12 +268,10 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
               this.numTerms,
               streamContext.isLocal(),
               clientCache);
-
-      Future<NamedList<?>> future = executorService.submit(lc);
-      futures.add(future);
+      tasks.add(lc);
     }
-
-    return futures;
+    var results = submitAllAndAwaitAggregatingExceptions(tasks, "SignificantTermsStream");
+    return results;
   }
 
   @Override
@@ -290,8 +279,6 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     if (doCloseCache) {
       clientCache.close();
     }
-
-    executorService.shutdown();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
@@ -316,9 +303,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (Future<NamedList<?>> getTopTermsCall :
-            callShards(getShards(zkHost, collection, streamContext))) {
-          NamedList<?> fullResp = getTopTermsCall.get();
+        for (NamedList<?> fullResp : callShards(getShards(zkHost, collection, streamContext))) {
           Map<?, ?> stResp = (Map<?, ?>) fullResp.get("significantTerms");
 
           @SuppressWarnings({"unchecked"})
