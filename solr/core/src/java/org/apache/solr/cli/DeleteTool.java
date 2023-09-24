@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -92,6 +93,12 @@ public class DeleteTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+
+    System.out.println("HEre are teh options:");
+    HelpFormatter formatter = new HelpFormatter();
+    for (Option o : cli.getOptions()) {
+      System.out.println(o.getLongOpt() + "-" + o.getOpt() + ":" + o.getValue());
+    }
 
     try (var solrClient = SolrCLI.betterGetSolrClient(cli)) {
       if (SolrCLI.isCloudMode(solrClient)) {
