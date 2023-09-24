@@ -44,6 +44,20 @@ teardown() {
 
 @test "create, api, and delete with basic auth" {
 
+  # Test create
+  run solr create -u name:password -c COLL_NAME 
+  assert_output --partial "Created collection 'COLL_NAME'"
+  sleep 5
+  
+  # Test api
+  # run solr api -u name:password -get "https://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*"
+  # assert_output --partial '"numFound":0'
+  
+  # Test delete
+  run solr delete -u user:password -c "COLL_NAME"
+  assert_output --partial "BOB"
+  sleep 5
+  refute collection_exists "COLL_NAME"
   
 }
 
