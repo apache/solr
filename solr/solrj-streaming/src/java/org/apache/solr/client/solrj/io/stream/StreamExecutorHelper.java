@@ -20,9 +20,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -40,23 +40,29 @@ public class StreamExecutorHelper {
       List<Future<T>> futures =
           tasks.stream().map(service::submit).collect(Collectors.toUnmodifiableList());
 
-      AtomicReference<IOException> ex = new AtomicReference<>();
+      IOException parentException = null;
       for (Future<T> f : futures) {
         try {
           T result = f.get();
           if (result != null) {
             results.add(result);
           }
-        } catch (Exception e) {
-          if (ex.get() != null) {
-            ex.get().addSuppressed(e);
+        } catch (ExecutionException e) {
+          if (parentException == null) {
+            parentException = new IOException(e.getCause());
           } else {
-            ex.set(new IOException(e));
+            parentException.addSuppressed(e.getCause());
+          }
+        } catch (Exception e) {
+          if (parentException == null) {
+            parentException = new IOException(e);
+          } else {
+            parentException.addSuppressed(e);
           }
         }
       }
-      if (ex.get() != null) {
-        throw ex.get();
+      if (parentException != null) {
+        throw parentException;
       }
 
     } finally {
