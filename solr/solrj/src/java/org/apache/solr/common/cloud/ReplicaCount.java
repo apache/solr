@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 
-/** Tracks a number of replica per replica types. This class is mutable. */
+/** Tracks the number of replicas per replica type. This class is mutable. */
 public final class ReplicaCount {
   private final Map<Replica.Type, Integer> countByType;
 
