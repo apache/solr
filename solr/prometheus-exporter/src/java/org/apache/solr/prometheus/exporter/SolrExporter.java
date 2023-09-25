@@ -96,19 +96,12 @@ public class SolrExporter {
           + ARG_NUM_THREADS_DEFAULT
           + ".";
 
-  private static final String[] ARG_USER_FLAGS = {"-u", "--user"};
-  private static final String ARG_USER_METAVAR = "USER";
-  private static final String ARG_USER_DEST = "user";
-  private static final String ARG_USER_DEFAULT = "";
-  private static final String ARG_USER_HELP =
-      "Specify the user in case Basic Authentication is enabled.";
-
-  private static final String[] ARG_PASSWORD_FLAGS = {"-pw", "--password"};
-  private static final String ARG_PASSWORD_METAVAR = "PASSWORD";
-  private static final String ARG_PASSWORD_DEST = "password";
-  private static final String ARG_PASSWORD_DEFAULT = "";
-  private static final String ARG_PASSWORD_HELP =
-      "Specify the password in case Basic Authentication is enabled.";
+  private static final String[] ARG_CREDENTIALS_FLAGS = {"-u", "--credentials"};
+  private static final String ARG_CREDENTIALS_METAVAR = "CREDENTIALS";
+  private static final String ARG_CREDENTIALS_DEST = "credentials";
+  private static final String ARG_CREDENTIALS_DEFAULT = "";
+  private static final String ARG_CREDENTIALS_HELP =
+      "Specify the credentials in the format username:password. Example: --credentials solr:SolrRocks";
 
   public static final CollectorRegistry defaultRegistry = new CollectorRegistry();
 
@@ -257,20 +250,12 @@ public class SolrExporter {
         .help(ARG_CLUSTER_ID_HELP);
 
     parser
-        .addArgument(ARG_USER_FLAGS)
-        .metavar(ARG_USER_METAVAR)
-        .dest(ARG_USER_DEST)
+        .addArgument(ARG_CREDENTIALS_FLAGS)
+        .metavar(ARG_CREDENTIALS_METAVAR)
+        .dest(ARG_CREDENTIALS_DEST)
         .type(String.class)
-        .setDefault(ARG_USER_DEFAULT)
-        .help(ARG_USER_HELP);
-
-    parser
-        .addArgument(ARG_PASSWORD_FLAGS)
-        .metavar(ARG_PASSWORD_METAVAR)
-        .dest(ARG_PASSWORD_DEST)
-        .type(String.class)
-        .setDefault(ARG_PASSWORD_DEFAULT)
-        .help(ARG_PASSWORD_HELP);
+        .setDefault(ARG_CREDENTIALS_DEFAULT)
+        .help(ARG_CREDENTIALS_HELP);
 
     try {
       Namespace res = parser.parseArgs(args);
@@ -296,10 +281,12 @@ public class SolrExporter {
         clusterId = defaultClusterId;
       }
 
-      if (!res.getString(ARG_USER_DEST).isEmpty() && !res.getString(ARG_PASSWORD_DEST).isEmpty()) {
-        String user = res.getString(ARG_USER_DEST);
-        String password = res.getString(ARG_PASSWORD_DEST);
-        scrapeConfiguration.withBasicAuthCredentials(user, password);
+      if (!res.getString(ARG_CREDENTIALS_DEST).isEmpty()) {
+        String credentials = res.getString(ARG_CREDENTIALS_DEST);
+        if (credentials.indexOf(':') > 0) {
+          String[] credentialsArray = credentials.split(":");
+          scrapeConfiguration.withBasicAuthCredentials(credentialsArray[0], credentialsArray[1]);
+        }
       }
 
       SolrExporter solrExporter =
