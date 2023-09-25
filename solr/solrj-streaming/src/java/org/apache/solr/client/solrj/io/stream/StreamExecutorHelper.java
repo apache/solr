@@ -29,18 +29,27 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 public class StreamExecutorHelper {
 
-  // this could easily live in ExecutorUtil
+  /**
+   * Takes a list of Callables and executes them returning the results as a list. The method waits
+   * for the return of every task even if one of them throws an exception. If any exception happens
+   * it will be thrown, wrapped into an IOException, and other following exceptions will be added as
+   * `addSuppressed` to the original exception
+   *
+   * @param <T> the response type
+   * @param tasks the list of callables to be executed
+   * @param threadsName name to be used by the SolrNamedThreadFactory
+   * @return results list, null results are excluded
+   * @throws IOException in case any exceptions happened
+   */
   public static <T> List<T> submitAllAndAwaitAggregatingExceptions(
       List<? extends Callable<T>> tasks, String threadsName) throws IOException {
     ExecutorService service =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(threadsName));
     List<T> results = new ArrayList<>();
-
+    IOException parentException = null;
     try {
       List<Future<T>> futures =
           tasks.stream().map(service::submit).collect(Collectors.toUnmodifiableList());
-
-      IOException parentException = null;
       for (Future<T> f : futures) {
         try {
           T result = f.get();
@@ -61,14 +70,12 @@ public class StreamExecutorHelper {
           }
         }
       }
-      if (parentException != null) {
-        throw parentException;
-      }
-
     } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(service);
+      ExecutorUtil.shutdownNowAndAwaitTermination(service);
     }
-
+    if (parentException != null) {
+      throw parentException;
+    }
     return results;
   }
 }
