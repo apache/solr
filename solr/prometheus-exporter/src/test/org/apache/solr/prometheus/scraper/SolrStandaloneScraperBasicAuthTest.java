@@ -17,6 +17,7 @@
 package org.apache.solr.prometheus.scraper;
 
 import io.prometheus.client.Collector;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -50,12 +51,26 @@ public class SolrStandaloneScraperBasicAuthTest extends SolrTestCaseJ4 {
 
   private static String user = "solr";
   private static String pass = "SolrRocks";
+  private static String securityJson =
+      "{\n"
+          + "\"authentication\":{ \n"
+          + "   \"blockUnknown\": true, \n"
+          + "   \"class\":\"solr.BasicAuthPlugin\",\n"
+          + "   \"credentials\":{\"solr\":\"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=\"}, \n"
+          + "   \"realm\":\"My Solr users\", \n"
+          + "   \"forwardCredentials\": false \n"
+          + "},\n"
+          + "\"authorization\":{\n"
+          + "   \"class\":\"solr.RuleBasedAuthorizationPlugin\",\n"
+          + "   \"permissions\":[{\"name\":\"security-edit\",\n"
+          + "      \"role\":\"admin\"}],\n"
+          + "   \"user-role\":{\"solr\":\"admin\"}\n"
+          + "}}";
 
   @BeforeClass
   public static void setupSolrHome() throws Exception {
     Path solrHome = LuceneTestCase.createTempDir();
-    Files.copy(
-        SolrTestCaseJ4.TEST_PATH().resolve("security.json"), solrHome.resolve("security.json"));
+    Files.write(solrHome.resolve("security.json"), securityJson.getBytes(StandardCharsets.UTF_8));
     solrRule.startSolr(solrHome);
 
     Path configSet = LuceneTestCase.createTempDir();
