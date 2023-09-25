@@ -33,13 +33,24 @@ import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.ResponseParser;
+
+{{#imports}}
+import {{import}};
+{{/imports}}
+
 {{#operations}}
 {{#operation}}
-{{#imports}}
-import {{modelPackage}}.{{.}};
-{{/imports}}
+{{#bodyParam}}
+{{#vars}}
+{{#isModel}}
+import {{modelPackage}}.{{dataType}};
+{{/isModel}}
+{{/vars}}
+{{/bodyParam}}
 {{/operation}}
+{{/operations}}
 
+{{#operations}}
 // WARNING: This class is generated from a Mustache template; any intended
 // changes should be made to the underlying template and not this file directly.
 
