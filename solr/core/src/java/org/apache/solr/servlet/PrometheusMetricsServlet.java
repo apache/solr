@@ -551,25 +551,25 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
               mergeMinorDocs));
       results.add(
           new PrometheusMetric(
-              "distributed_requests_get",
+              "top_level_requests_get",
               PrometheusMetricType.COUNTER,
               "cumulative number of top-level gets across cores",
               distribGet));
       results.add(
           new PrometheusMetric(
-              "local_requests_get",
+              "sub_shard_requests_get",
               PrometheusMetricType.COUNTER,
               "cumulative number of sub (spawned by re-distributing a top-level req) gets across cores",
               localGet));
       results.add(
           new PrometheusMetric(
-              "distributed_requests_select",
+              "top_level_requests_select",
               PrometheusMetricType.COUNTER,
               "cumulative number of top-level selects across cores",
               distribSelect));
       results.add(
           new PrometheusMetric(
-              "local_requests_select",
+              "sub_shard_requests_select",
               PrometheusMetricType.COUNTER,
               "cumulative number of sub (spawned by re-distributing a top-level req) selects across cores",
               localSelect));
