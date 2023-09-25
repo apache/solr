@@ -18,7 +18,7 @@
 solrAdminApp.controller('LoginController',
     ['$scope', '$routeParams', '$rootScope', '$location', '$window', 'AuthenticationService', 'Constants',
       function ($scope, $routeParams, $rootScope, $location, $window, AuthenticationService, Constants) {
-        $scope.resetMenu("login", Constants.IS_ROOT_PAGE);
+        $scope.showHideMenu();
         $scope.subPath = $routeParams.route;
         $rootScope.exceptions = {};
 
