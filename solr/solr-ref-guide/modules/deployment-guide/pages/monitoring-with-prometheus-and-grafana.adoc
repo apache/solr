@@ -173,23 +173,15 @@ The freshness of the metrics can be improved by reducing the scrape interval but
 +
 A unique ID for the cluster to monitor. This ID will be added to all metrics as a label `cluster_id` and can be used as a filter in the Grafana dashboard if you operate multiple Solr clusters reporting to the same Prometheus instance. If this option is omitted, a hash of the `baseUrl` or `zkHost` will be used as ID by default.
 
-`-u`, `--user`, `$USER`::
+`-u`, `--credentials`, `$CREDENTIALS`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
-Specify the user in case Basic Authentication is enabled.
+Specify the credentials in the format `username:password`. Example: `--credentials solr:SolrRocks`.
 
-`-pw`, `--password`, `$PASSWORD`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Specify the password in case Basic Authentication is enabled.
 
 === Environment Variable Options
 
