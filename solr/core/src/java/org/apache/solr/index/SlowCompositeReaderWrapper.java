@@ -17,6 +17,7 @@
 package org.apache.solr.index;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.ByteVectorValues;
@@ -47,6 +48,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
@@ -171,6 +173,73 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     return MultiDocValues.getSortedNumericValues(in, field); // TODO cache?
   }
 
+  public static SortedDocValues[] getSortedLeafDocValues(
+      List<LeafReaderContext> leaves, String field) throws IOException {
+    int size = leaves.size();
+    SortedDocValues[] ret = new SortedDocValues[size];
+    if (getLeafDocValues(
+        leaves, field, ret, new int[size], DocValuesType.SORTED, DocValues.emptySorted())) {
+      return ret;
+    } else {
+      return null;
+    }
+  }
+
+  public static SortedSetDocValues[] getSortedSetLeafDocValues(
+      List<LeafReaderContext> leaves, String field) throws IOException {
+    int size = leaves.size();
+    SortedSetDocValues[] ret = new SortedSetDocValues[size];
+    if (getLeafDocValues(
+        leaves, field, ret, new int[size], DocValuesType.SORTED_SET, DocValues.emptySortedSet())) {
+      return ret;
+    } else {
+      return null;
+    }
+  }
+
+  private static boolean getLeafDocValues(
+      List<LeafReaderContext> leaves,
+      String field,
+      DocIdSetIterator[] values,
+      int[] starts,
+      DocValuesType type,
+      DocIdSetIterator empty)
+      throws IOException {
+    final int size = values.length;
+    boolean anyReal = false;
+    for (int i = 0; i < size; i++) {
+      LeafReaderContext context = leaves.get(i);
+      final LeafReader reader = context.reader();
+      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
+      DocIdSetIterator v;
+      if (fieldInfo == null) {
+        v = empty;
+      } else {
+        if (fieldInfo.getDocValuesType() != type) {
+          return false;
+        }
+        switch (type) {
+          case SORTED:
+            v = reader.getSortedDocValues(field);
+            break;
+          case SORTED_SET:
+            v = reader.getSortedSetDocValues(field);
+            break;
+          default:
+            throw new IllegalStateException();
+        }
+        if (v == null) {
+          v = empty;
+        } else {
+          anyReal = true;
+        }
+      }
+      values[i] = v;
+      starts[i] = context.docBase;
+    }
+    return anyReal;
+  }
+
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
@@ -190,31 +259,14 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       return leaves.get(0).reader().getSortedDocValues(field);
     }
 
-    boolean anyReal = false;
     final SortedDocValues[] values = new SortedDocValues[size];
     final int[] starts = new int[size + 1];
-    long totalCost = 0;
-    for (int i = 0; i < size; i++) {
-      LeafReaderContext context = in.leaves().get(i);
-      final LeafReader reader = context.reader();
-      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-      if (fieldInfo != null && fieldInfo.getDocValuesType() != DocValuesType.SORTED) {
-        return null;
-      }
-      SortedDocValues v = reader.getSortedDocValues(field);
-      if (v == null) {
-        v = DocValues.emptySorted();
-      } else {
-        anyReal = true;
-      }
-      totalCost += v.cost();
-      values[i] = v;
-      starts[i] = context.docBase;
-    }
-    starts[size] = maxDoc();
-    if (anyReal == false) {
+    if (!getLeafDocValues(
+        in.leaves(), field, values, starts, DocValuesType.SORTED, DocValues.emptySorted())) {
       return null;
     }
+    long totalCost = Arrays.stream(values).mapToLong(SortedDocValues::cost).sum();
+    starts[size] = maxDoc();
 
     CacheHelper cacheHelper = getReaderCacheHelper();
 
@@ -225,7 +277,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       IOFunction<? super String, ? extends OrdinalMapValue> producer =
           (notUsed) ->
               OrdMapRegenerator.wrapValue(
-                  OrdinalMap.build(cacheHelper.getKey(), values, PackedInts.DEFAULT));
+                  OrdinalMap.build(cacheHelper.getKey(), values, PackedInts.DEFAULT), false);
       map = cachedOrdMaps.computeIfAbsent(field, producer).get();
     } else {
       map = OrdinalMap.build(null, values, PackedInts.DEFAULT);
@@ -253,31 +305,14 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       return leaves.get(0).reader().getSortedSetDocValues(field);
     }
 
-    boolean anyReal = false;
     final SortedSetDocValues[] values = new SortedSetDocValues[size];
     final int[] starts = new int[size + 1];
-    long totalCost = 0;
-    for (int i = 0; i < size; i++) {
-      LeafReaderContext context = in.leaves().get(i);
-      final LeafReader reader = context.reader();
-      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-      if (fieldInfo != null && fieldInfo.getDocValuesType() != DocValuesType.SORTED_SET) {
-        return null;
-      }
-      SortedSetDocValues v = reader.getSortedSetDocValues(field);
-      if (v == null) {
-        v = DocValues.emptySortedSet();
-      } else {
-        anyReal = true;
-      }
-      totalCost += v.cost();
-      values[i] = v;
-      starts[i] = context.docBase;
-    }
-    starts[size] = maxDoc();
-    if (anyReal == false) {
+    if (!getLeafDocValues(
+        in.leaves(), field, values, starts, DocValuesType.SORTED_SET, DocValues.emptySortedSet())) {
       return null;
     }
+    long totalCost = Arrays.stream(values).mapToLong(SortedSetDocValues::cost).sum();
+    starts[size] = maxDoc();
 
     CacheHelper cacheHelper = getReaderCacheHelper();
 
@@ -288,7 +323,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       IOFunction<? super String, ? extends OrdinalMapValue> producer =
           (notUsed) ->
               OrdMapRegenerator.wrapValue(
-                  OrdinalMap.build(cacheHelper.getKey(), values, PackedInts.DEFAULT));
+                  OrdinalMap.build(cacheHelper.getKey(), values, PackedInts.DEFAULT), true);
       map = cachedOrdMaps.computeIfAbsent(field, producer).get();
     } else {
       map = OrdinalMap.build(null, values, PackedInts.DEFAULT);

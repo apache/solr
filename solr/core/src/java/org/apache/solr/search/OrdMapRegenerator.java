@@ -26,11 +26,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
@@ -39,6 +35,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.util.IOFunction;
 
 /** Cache regenerator that builds OrdinalMap instances against the new searcher. */
@@ -63,10 +60,12 @@ public class OrdMapRegenerator implements CacheRegenerator {
     private static final long BASE_RAM_BYTES_USED =
         RamUsageEstimator.shallowSizeOfInstance(OrdinalMapValue.class);
     private final OrdinalMap ordinalMap;
+    private final boolean multivalued;
     private long accessTimestampNanos;
 
-    private OrdinalMapValue(OrdinalMap ordinalMap, long accessTimestampNanos) {
+    private OrdinalMapValue(OrdinalMap ordinalMap, boolean multivalued, long accessTimestampNanos) {
       this.ordinalMap = ordinalMap;
+      this.multivalued = multivalued;
       this.accessTimestampNanos = accessTimestampNanos;
     }
 
@@ -82,8 +81,8 @@ public class OrdMapRegenerator implements CacheRegenerator {
     }
   }
 
-  public static OrdinalMapValue wrapValue(OrdinalMap ordinalMap) {
-    return new OrdinalMapValue(ordinalMap, 0);
+  public static OrdinalMapValue wrapValue(OrdinalMap ordinalMap, boolean multivalued) {
+    return new OrdinalMapValue(ordinalMap, multivalued, 0);
   }
 
   public static CacheConfig getDefaultCacheConfig(SolrConfig solrConfig) {
@@ -192,77 +191,38 @@ public class OrdMapRegenerator implements CacheRegenerator {
       return false;
     }
 
-    final long extantTimestamp = ((OrdinalMapValue) oldVal).accessTimestampNanos;
+    OrdinalMapValue ordinalMapValue = (OrdinalMapValue) oldVal;
+    final long extantTimestamp = ordinalMapValue.accessTimestampNanos;
     if (System.nanoTime() - extantTimestamp > regenKeepAliveNanos) {
       // it has been long enough since this was last accessed that we don't want to carry it forward
       return true;
     }
 
     final String field = (String) oldKey;
-    boolean anyReal = false;
-    final SortedDocValues[] sdvs = new SortedDocValues[size];
-    final SortedSetDocValues[] ssdvs = new SortedSetDocValues[size];
-    DocValuesType type = null;
-    for (int i = 0; i < size; i++) {
-      LeafReaderContext context = leaves.get(i);
-      final LeafReader reader = context.reader();
-      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
-      if (fieldInfo == null) {
-        sdvs[i] = DocValues.emptySorted();
-        ssdvs[i] = DocValues.emptySortedSet();
-      } else {
-        DocValuesType leafType = fieldInfo.getDocValuesType();
-        if (type == null) {
-          type = leafType;
-        } else if (leafType != type) {
-          throw new IllegalStateException("mixed docValues types " + type + " and " + leafType);
-        }
-        switch (leafType) {
-          case SORTED:
-            SortedDocValues sdv = reader.getSortedDocValues(field);
-            if (sdv == null) {
-              sdv = DocValues.emptySorted();
-            } else {
-              anyReal = true;
-            }
-            sdvs[i] = sdv;
-            break;
-          case SORTED_SET:
-            SortedSetDocValues ssdv = reader.getSortedSetDocValues(field);
-            if (ssdv == null) {
-              ssdv = DocValues.emptySortedSet();
-            } else {
-              anyReal = true;
-            }
-            ssdvs[i] = ssdv;
-            break;
-          default:
-            throw new IllegalStateException("unexpected docValues type: " + leafType);
-        }
-      }
-    }
-    if (!anyReal) {
-      // All empty for this field, but should still warm others
-      return true;
-    }
-
-    IndexReader.CacheKey readerKey = cacheHelper.getKey();
+    final IndexReader.CacheKey readerKey = cacheHelper.getKey();
     final IOFunction<? super String, ? extends Supplier<OrdinalMap>> producer;
-    switch (type) {
-      case SORTED:
-        producer =
-            (notUsed) ->
-                new OrdinalMapValue(
-                    OrdinalMap.build(readerKey, sdvs, PackedInts.DEFAULT), extantTimestamp);
-        break;
-      case SORTED_SET:
-        producer =
-            (notUsed) ->
-                new OrdinalMapValue(
-                    OrdinalMap.build(readerKey, ssdvs, PackedInts.DEFAULT), extantTimestamp);
-        break;
-      default:
-        throw new IllegalStateException();
+    if (ordinalMapValue.multivalued) {
+      final SortedSetDocValues[] dvs =
+          SlowCompositeReaderWrapper.getSortedSetLeafDocValues(leaves, field);
+      if (dvs == null) {
+        // All empty for this field, but should still warm others
+        return true;
+      }
+      producer =
+          (notUsed) ->
+              new OrdinalMapValue(
+                  OrdinalMap.build(readerKey, dvs, PackedInts.DEFAULT), true, extantTimestamp);
+    } else {
+      final SortedDocValues[] dvs =
+          SlowCompositeReaderWrapper.getSortedLeafDocValues(leaves, field);
+      if (dvs == null) {
+        // All empty for this field, but should still warm others
+        return true;
+      }
+      producer =
+          (notUsed) ->
+              new OrdinalMapValue(
+                  OrdinalMap.build(readerKey, dvs, PackedInts.DEFAULT), false, extantTimestamp);
     }
 
     @SuppressWarnings("unchecked")
