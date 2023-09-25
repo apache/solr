@@ -100,6 +100,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   public static final int DEFAULT_BATCH_SIZE = 30000;
   public static final int DEFAULT_QUEUE_SIZE = 150000;
+  private static final FieldWriter EMPTY_FIELD_WRITER =
+      new FieldWriter() {
+        @Override
+        public boolean write(
+            SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex) {
+          return false;
+        }
+      };
 
   private OutputStreamWriter respWriter;
   final SolrQueryRequest req;
@@ -556,16 +564,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
     return writers;
   }
-
-  private static final FieldWriter EMPTY_FIELD_WRITER =
-      new FieldWriter() {
-        @Override
-        public boolean write(
-            SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex)
-            throws IOException {
-          return false;
-        }
-      };
 
   SortDoc getSortDoc(SolrIndexSearcher searcher, SortField[] sortFields) throws IOException {
     SortValue[] sortValues = new SortValue[sortFields.length];
