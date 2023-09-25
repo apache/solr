@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -54,6 +55,7 @@ public class CreateAliasCmd extends AliasCmd {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     // make sure we have the latest version of existing aliases
+    //noinspection ConstantConditions
     if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       zkStateReader.aliasesManager.update();
     }
@@ -99,10 +101,10 @@ public class CreateAliasCmd extends AliasCmd {
    * "b"]). We also maintain support for the legacy format, a comma-separated list (e.g. a,b).
    */
   @SuppressWarnings("unchecked")
-  private List<String> parseCollectionsParameter(Object colls) {
-    if (colls == null) throw new SolrException(BAD_REQUEST, "missing collections param");
-    if (colls instanceof List) return (List<String>) colls;
-    return StrUtils.splitSmart(colls.toString(), ",", true).stream()
+  private List<String> parseCollectionsParameter(Object collections) {
+    if (collections == null) throw new SolrException(BAD_REQUEST, "missing collections param");
+    if (collections instanceof List) return (List<String>) collections;
+    return StrUtils.splitSmart(collections.toString(), ",", true).stream()
         .map(String::trim)
         .filter(s -> !s.isEmpty())
         .collect(Collectors.toList());
@@ -140,15 +142,22 @@ public class CreateAliasCmd extends AliasCmd {
                   .collect(Collectors.joining(",")));
     }
 
-    // Create the first collection.
-    String initialColl = routedAlias.computeInitialCollectionName();
-    ensureAliasCollection(
-        aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), initialColl);
+    Aliases aliases = zkStateReader.aliasesManager.getAliases();
+
+    final String collectionListStr;
+    if (!aliases.isRoutedAlias(aliasName)) {
+      // Create the first collection. Prior validation ensures that this is not a standard alias
+      collectionListStr = routedAlias.computeInitialCollectionName();
+      ensureAliasCollection(
+          aliasName, zkStateReader, state, routedAlias.getAliasMetadata(), collectionListStr);
+    } else {
+      List<String> collectionList = aliases.resolveAliases(aliasName);
+      collectionListStr = String.join(",", collectionList);
+    }
     // Create/update the alias
     zkStateReader.aliasesManager.applyModificationAndExportToZk(
-        aliases ->
-            aliases
-                .cloneWithCollectionAlias(aliasName, initialColl)
+        a ->
+            a.cloneWithCollectionAlias(aliasName, collectionListStr)
                 .cloneWithCollectionAliasProperties(aliasName, routedAlias.getAliasMetadata()));
   }
 

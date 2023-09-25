@@ -111,7 +111,9 @@ If routing parameters are present this parameter is prohibited.
 
 ==== Routed Alias Parameters
 
-Most routed alias parameters become _alias properties_ that can subsequently be inspected and <<aliasprop,modified>>.
+Most routed alias parameters become _alias properties_ that can subsequently be inspected and modified either by issuing a new CREATEALIAS for the same name or via <<aliasprop,ALIASPROP>>.
+CREATEALIAS will validate against many (but not all) bad values, whereas ALIASPROP blindly accepts any key or value you give it.
+Some "valid" modifications allowed by CREATEALIAS may still be unwise, see notes below. "Expert only" modifications are technically possible, but require good understanding of how the code works and may require several precursor operations.
 
 Routed aliases currently support up to two "dimensions" of routing, with each dimension being either a "time" or "category"-based.
 Each dimension takes a number of parameters, which vary based on its type.
@@ -126,7 +128,7 @@ On v2 requests, routing-dimensions are specified as individual objects within a 
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+s|Required |Default: none |Modify: Do not change after creation
 |===
 +
 The type of routing to use.
@@ -136,15 +138,17 @@ v2 requests only allow `time` or `category` since dimensionality information liv
 In the case of a xref:aliases.adoc#dimensional-routed-aliases[multi-dimensional routed alias] (aka "DRA"), it is required to express all the dimensions in the same order that they will appear in the dimension
 array.
 The format for a DRA `router.name` is `Dimensional[dim1,dim2]` where `dim1` and `dim2` are valid `router.name` values for each sub-dimension.
-Note that DRA's are very new, and only 2D DRA's are presently supported.
-Higher numbers of dimensions will be supported soon.
+Note that DRA's are experimental, and only 2D DRA's are presently supported.
+Higher numbers of dimensions may be supported in the future.
+Careful design of dimensional routing is required to avoid an explosion in the number of collections in the cluster.
+Solr Cloud may have difficulty managing more than a thousand collections.
 See examples below for further clarification on how to configure individual dimensions.
 
 `router.field` (v1), `field` (v2)::
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+s|Required |Default: none |Modify: Do not change after creation
 |===
 +
 The field to inspect to determine which underlying collection an incoming document should be routed to.
@@ -154,7 +158,7 @@ This field is required on all incoming documents.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: none | Modify: Yes, only new collections affected, use with care
 |===
 +
 The `*` wildcard can be replaced with any parameter from the xref:collection-management.adoc#create[CREATE] command except `name`.
@@ -170,7 +174,7 @@ On v2 requests, `create-collection` takes a JSON object containing all provided 
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+s|Required |Default: none | Modify: Expert only
 |===
 +
 The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW" optionally with xref:indexing-guide:date-formatting-math.adoc#date-math[date math]).
@@ -184,7 +188,7 @@ Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECO
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `UTC`
+|Optional |Default: `UTC` | Modify: Expert only
 |===
 +
 The timezone to be used when evaluating any date math in `router.start` or `router.interval`.
@@ -198,7 +202,7 @@ If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+s|Required |Default: none | Modify: Yes
 |===
 +
 A date math expression that will be appended to a timestamp to determine the next collection in the series.
@@ -208,7 +212,7 @@ Any date math expression that can be evaluated if appended to a timestamp of the
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `600000` milliseconds
+|Optional |Default: `600000` milliseconds | Modify: Yes
 |===
 +
 The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted without error.
@@ -218,7 +222,7 @@ If there was no limit, then an erroneous value could trigger many collections to
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: none | Modify: Yes
 |===
 +
 A date math expression that results in early creation of new collections.
@@ -245,7 +249,7 @@ This property is empty by default indicating just-in-time, synchronous creation 
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: none | Modify: Yes, Possible data loss, use with care!
 |===
 +
 A date math expression that results in the oldest collections getting deleted automatically.
@@ -263,7 +267,7 @@ The default is not to delete.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: none | Modify: Yes
 |===
 +
 The maximum number of categories allowed for this alias.
@@ -273,7 +277,7 @@ This setting safeguards against the inadvertent creation of an infinite number o
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: none | Modify: Yes
 |===
 +
 A regular expression that the value of the field specified by `router.field` must match before a corresponding collection will be created.
@@ -289,7 +293,7 @@ Overly complex patterns will produce CPU or garbage collection overhead during i
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: none | Modify: As per above
 |===
 +
 A prefix used on v1 request parameters to associate the parameter with a particular dimensional, in multi-dimensional aliases.
