@@ -938,15 +938,11 @@ public class ZkStateReader implements SolrCloseable {
       throws InterruptedException {
 
     // Try to get from cluster state without retry first, otherwise fallback to retry logic
-    if (clusterState != null) {
-      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-      if (docCollection != null) {
-        Replica leader = docCollection.getLeader(shard);
-        if (leader != null) {
-          log.debug("leader found for {}/{} to be {}", collection, shard, leader);
-          return leader;
-        }
-      }
+    Replica leaderReplica = getLeader(collection, shard);
+    if (leaderReplica != null) {
+      log.debug(
+          "leader found from clusterState for {}/{} to be {}", collection, shard, leaderReplica);
+      return leaderReplica;
     }
 
     AtomicReference<Replica> leader = new AtomicReference<>();
