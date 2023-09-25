@@ -80,6 +80,7 @@ public class DelegatingCollector extends SimpleCollector {
     leafDelegate = delegate.getLeafCollector(context);
   }
 
+  @Override
   public void finish() throws IOException {
     if (delegate instanceof DelegatingCollector) {
       ((DelegatingCollector) delegate).finish();
