@@ -95,18 +95,23 @@ However, `uniqueKey` will continue to work, as long as the field is properly use
 Similarity is a Lucene class used to score a document in searching.
 
 Each collection has one "global" Similarity.
-By default Solr uses an implicit {solr-javadocs}/core/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] which allows individual field types to be configured with a "per-type" specific Similarity and implicitly uses `BM25Similarity` for any field type which does not have an explicit Similarity.
+By default, Solr uses an implicit {solr-javadocs}/core/org/apache/solr/search/similarities/SchemaSimilarityFactory.html[`SchemaSimilarityFactory`] which allows individual field types to be configured with a "per-type" specific Similarity and implicitly uses `BM25Similarity` for any field type which does not have an explicit Similarity.
 
 This default behavior can be overridden by declaring a top level `<similarity/>` element in your schema, outside of any single field type.
 This similarity declaration can either refer directly to the name of a class with a no-argument constructor, such as in this example showing `BM25Similarity`:
 
 [source,xml]
 ----
+<similarity class="org.apache.lucene.search.similarities.BM25Similarity"/>
+----
+
+or by referencing a `SimilarityFactory` implementation:
+[source,xml]
+----
 <similarity class="solr.BM25SimilarityFactory"/>
 ----
 
-or by referencing a `SimilarityFactory` implementation, which may take optional initialization parameters:
-
+When using the similarity factory, it is possible to specify optional initialization parameters:
 [source,xml]
 ----
 <similarity class="solr.DFRSimilarityFactory">
