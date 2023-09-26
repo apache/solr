@@ -926,6 +926,57 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
+  public void testUseOptionalCredentials() {
+    // username foo, password with embedded colon separator is "expli:cit".
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
+            .withOptionalBasicAuthCredentials("foo:expli:cit")
+            .build(); ) {
+      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
+      try {
+        ignoreException("Error from server");
+        client.request(r);
+      } catch (Exception e) {
+        // expected
+      }
+      unIgnoreException("Error from server");
+      assertTrue(DebugServlet.headers.size() > 0);
+      String authorizationHeader = DebugServlet.headers.get("authorization");
+      assertNotNull(
+          "No authorization information in headers found. Headers: " + DebugServlet.headers,
+          authorizationHeader);
+      assertEquals(
+          "Basic "
+              + Base64.getEncoder()
+                  .encodeToString("foo:expli:cit".getBytes(StandardCharsets.UTF_8)),
+          authorizationHeader);
+    }
+  }
+
+  @Test
+  public void testUseOptionalCredentialsWithNull() {
+    // username foo, password with embedded colon separator is "expli:cit".
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
+            .withOptionalBasicAuthCredentials(null)
+            .build(); ) {
+      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
+      try {
+        ignoreException("Error from server");
+        client.request(r);
+      } catch (Exception e) {
+        // expected
+      }
+      unIgnoreException("Error from server");
+      assertTrue(DebugServlet.headers.size() > 0);
+      String authorizationHeader = DebugServlet.headers.get("authorization");
+      assertNull(
+          "No authorization headers expected. Headers: " + DebugServlet.headers,
+          authorizationHeader);
+    }
+  }
+
+  @Test
   public void testBadHttpFactory() {
     System.setProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
     try {

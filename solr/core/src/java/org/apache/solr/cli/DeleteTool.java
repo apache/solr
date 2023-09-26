@@ -94,12 +94,6 @@ public class DeleteTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
 
-    System.out.println("HEre are teh options:");
-    HelpFormatter formatter = new HelpFormatter();
-    for (Option o : cli.getOptions()) {
-      System.out.println(o.getLongOpt() + "-" + o.getOpt() + ":" + o.getValue());
-    }
-
     try (var solrClient = SolrCLI.betterGetSolrClient(cli)) {
       if (SolrCLI.isCloudMode(solrClient)) {
         deleteCollection(cli);
@@ -113,11 +107,12 @@ public class DeleteTool extends ToolBase {
     Http2SolrClient.Builder builder =
         new Http2SolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
-            .withConnectionTimeout(15, TimeUnit.SECONDS);
-    if (cli.hasOption("credentials")) {
-      String[] credentials = SolrCLI.getCredentials(cli);
-      builder.withBasicAuthCredentials(credentials[0], credentials[1]);
-    }
+            .withConnectionTimeout(15, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(cli.getOptionValue(("credentials")));
+    // if (cli.hasOption("credentials")) {
+    // String[] credentials = SolrCLI.getCredentials(cli);
+    // builder.withBasicAuthCredentials(credentials[0], credentials[1]);
+    // }
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
