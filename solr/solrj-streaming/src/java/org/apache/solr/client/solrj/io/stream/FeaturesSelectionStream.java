@@ -296,7 +296,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     }
   }
 
-  private List<NamedList<?>> callShards(List<String> baseUrls) throws IOException {
+  private Collection<NamedList<?>> callShards(List<String> baseUrls) throws IOException {
     List<FeaturesSelectionCall> tasks = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       FeaturesSelectionCall lc =
@@ -310,8 +310,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
               this.clientCache);
       tasks.add(lc);
     }
-    var results = submitAllAndAwaitAggregatingExceptions(tasks, "FeaturesSelectionStream");
-    return results;
+    return submitAllAndAwaitAggregatingExceptions(tasks, "FeaturesSelectionStream");
   }
 
   @Override

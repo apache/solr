@@ -112,7 +112,7 @@ public class ExecutorUtilTest extends SolrTestCase {
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("test"));
     try {
       List<Callable<Long>> tasks = List.of(c, c, c, c, c);
-      results = ExecutorUtil.submitAllAndAwaitAggregatingExceptions(service, tasks);
+      results.addAll(ExecutorUtil.submitAllAndAwaitAggregatingExceptions(service, tasks));
     } finally {
       ExecutorUtil.shutdownNowAndAwaitTermination(service);
     }
@@ -137,9 +137,10 @@ public class ExecutorUtilTest extends SolrTestCase {
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("test"));
     try {
       List<Callable<Long>> tasks = List.of(c, c, c, c, c);
-      ExecutorUtil.submitAllAndAwaitAggregatingExceptions(service, tasks);
-      fail("call needs to fail");
-    } catch (IOException ex) {
+      IOException ex =
+          expectThrows(
+              IOException.class,
+              () -> ExecutorUtil.submitAllAndAwaitAggregatingExceptions(service, tasks));
       List<String> results = new ArrayList<>();
       results.add(ex.getCause().getMessage());
       for (var s : ex.getSuppressed()) {

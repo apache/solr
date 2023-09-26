@@ -16,18 +16,16 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
-public class StreamExecutorHelperTest {
+public class StreamExecutorHelperTest extends SolrTestCase {
 
   @Test
   public void submitAllTest() throws IOException {
@@ -35,7 +33,8 @@ public class StreamExecutorHelperTest {
     Callable<Long> c = () -> idx.getAndIncrement();
 
     List<Callable<Long>> tasks = List.of(c, c, c, c, c);
-    List<Long> results = StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions(tasks, "test");
+    List<Long> results =
+        List.copyOf(StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions(tasks, "test"));
     Collections.sort(results);
     List<Long> expected = List.of(0l, 1l, 2l, 3l, 4l);
     assertEquals(expected, results);
@@ -52,20 +51,18 @@ public class StreamExecutorHelperTest {
           }
           return id;
         };
-
     List<Callable<Long>> tasks = List.of(c, c, c, c, c);
-    try {
-      StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions(tasks, "test");
-      fail("call needs to fail");
-    } catch (IOException ex) {
-      List<String> results = new ArrayList<>();
-      results.add(ex.getCause().getMessage());
-      for (var s : ex.getSuppressed()) {
-        results.add(s.getMessage());
-      }
-      Collections.sort(results);
-      List<String> expected = List.of("TestException0", "TestException2", "TestException4");
-      assertEquals(expected, results);
+    IOException ex =
+        expectThrows(
+            IOException.class,
+            () -> StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions(tasks, "test"));
+    List<String> results = new ArrayList<>();
+    results.add(ex.getCause().getMessage());
+    for (var s : ex.getSuppressed()) {
+      results.add(s.getMessage());
     }
+    Collections.sort(results);
+    List<String> expected = List.of("TestException0", "TestException2", "TestException4");
+    assertEquals(expected, results);
   }
 }

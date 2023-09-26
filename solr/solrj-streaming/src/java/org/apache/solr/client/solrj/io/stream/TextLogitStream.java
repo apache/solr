@@ -403,7 +403,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
   }
 
-  private List<Tuple> callShards(List<String> baseUrls) throws IOException {
+  private Collection<Tuple> callShards(List<String> baseUrls) throws IOException {
     List<LogitCall> tasks = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       LogitCall lc =
@@ -422,8 +422,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
               this.clientCache);
       tasks.add(lc);
     }
-    var results = submitAllAndAwaitAggregatingExceptions(tasks, "TextLogitSolrStream");
-    return results;
+    return submitAllAndAwaitAggregatingExceptions(tasks, "TextLogitSolrStream");
   }
 
   @Override

@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -254,7 +255,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     return null;
   }
 
-  private List<NamedList<?>> callShards(List<String> baseUrls) throws IOException {
+  private Collection<NamedList<?>> callShards(List<String> baseUrls) throws IOException {
     List<SignificantTermsCall> tasks = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       SignificantTermsCall lc =
@@ -270,8 +271,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
               clientCache);
       tasks.add(lc);
     }
-    var results = submitAllAndAwaitAggregatingExceptions(tasks, "SignificantTermsStream");
-    return results;
+    return submitAllAndAwaitAggregatingExceptions(tasks, "SignificantTermsStream");
   }
 
   @Override

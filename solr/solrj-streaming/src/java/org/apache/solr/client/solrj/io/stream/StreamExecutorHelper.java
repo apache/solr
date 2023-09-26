@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -38,7 +39,7 @@ public class StreamExecutorHelper {
    * @return results list
    * @throws IOException in case any exceptions happened
    */
-  public static <T> List<T> submitAllAndAwaitAggregatingExceptions(
+  public static <T> Collection<T> submitAllAndAwaitAggregatingExceptions(
       List<? extends Callable<T>> tasks, String threadsName) throws IOException {
     ExecutorService service =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(threadsName));

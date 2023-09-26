@@ -347,11 +347,13 @@ public class ExecutorUtil {
    * @return results list
    * @throws IOException in case any exceptions happened
    */
-  public static <T> List<T> submitAllAndAwaitAggregatingExceptions(
+  public static <T> Collection<T> submitAllAndAwaitAggregatingExceptions(
       ExecutorService service, List<? extends Callable<T>> tasks) throws IOException {
-    List<T> results = new ArrayList<>();
+    List<T> results = new ArrayList<>(tasks.size());
     IOException parentException = null;
 
+    // Could alternatively use service.invokeAll, but this way we can start looping over futures
+    // before all are done
     List<Future<T>> futures =
         tasks.stream().map(service::submit).collect(Collectors.toUnmodifiableList());
     for (Future<T> f : futures) {
