@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud;
+package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import org.apache.solr.cli.PackageTool;
-import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.LogLevel;
 import org.eclipse.jetty.server.Handler;
@@ -37,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LogLevel("org.apache=INFO")
-public class PackageManagerCLITest extends SolrCloudTestCase {
+public class PackageToolTest extends SolrCloudTestCase {
 
   // Note for those who want to modify the jar files used in the packages used in this test:
   // You need to re-sign the jars for install step, as follows:
@@ -79,7 +78,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testPackageManager() throws Exception {
+  public void testPackageTool() throws Exception {
     PackageTool tool = new PackageTool();
 
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
@@ -220,7 +219,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   }
 
   static class LocalWebServer {
-    private int port = 0;
+    private final int port = 0;
     private final String resourceDir;
     Server server;
     ServerConnector connector;
