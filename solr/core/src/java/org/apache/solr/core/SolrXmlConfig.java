@@ -375,6 +375,9 @@ public class SolrXmlConfig {
               case "allowPaths":
                 builder.setAllowPaths(separatePaths(it.txt()));
                 break;
+              case "hideStackTrace":
+                builder.setHideStackTrace(it.boolVal(false));
+                break;
               case "configSetBaseDir":
                 builder.setConfigSetBaseDirectory(it.txt());
                 break;

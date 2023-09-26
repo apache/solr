@@ -649,10 +649,10 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testGetRawStream() throws SolrServerException, IOException {
-    CloseableHttpClient client = HttpClientUtil.createClient(null);
+    CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
     try (SolrClient solrClient =
         new HttpSolrClient.Builder(getCoreUrl())
-            .withHttpClient(client)
+            .withHttpClient(httpClient)
             .withResponseParser(null)
             .build(); ) {
 
@@ -661,6 +661,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       InputStream stream = (InputStream) response.get("stream");
       assertNotNull(stream);
       stream.close();
+    } finally {
+      HttpClientUtil.close(httpClient);
     }
   }
 

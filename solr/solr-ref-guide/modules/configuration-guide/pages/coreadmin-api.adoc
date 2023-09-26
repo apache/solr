@@ -318,11 +318,7 @@ http://localhost:8983/solr/admin/cores?action=RELOAD&core=techproducts
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/techproducts -H 'Content-Type: application/json' -d '
-  {
-    "reload": {}
-  }
-'
+curl -X POST http://localhost:8983/api/cores/techproducts/reload
 ----
 ====
 --
