@@ -175,7 +175,7 @@ import org.apache.solr.handler.admin.api.CreateAliasAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
-import org.apache.solr.handler.admin.api.CreateReplicaAPI;
+import org.apache.solr.handler.admin.api.CreateReplica;
 import org.apache.solr.handler.admin.api.CreateShardAPI;
 import org.apache.solr.handler.admin.api.DeleteAlias;
 import org.apache.solr.handler.admin.api.DeleteCollection;
@@ -942,9 +942,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final var params = req.getParams();
           params.required().check(COLLECTION_PROP, SHARD_ID_PROP);
 
-          final var api = new CreateReplicaAPI(h.coreContainer, req, rsp);
-          final var requestBody =
-              CreateReplicaAPI.AddReplicaRequestBody.fromV1Params(req.getParams());
+          final var api = new CreateReplica(h.coreContainer, req, rsp);
+          final var requestBody = CreateReplica.createRequestBodyFromV1Params(req.getParams());
           final var response =
               api.createReplica(
                   params.get(COLLECTION_PROP), params.get(SHARD_ID_PROP), requestBody);
@@ -1362,7 +1361,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
-        CreateReplicaAPI.class,
+        CreateReplica.class,
         AddReplicaProperty.class,
         BalanceShardUniqueAPI.class,
         CreateAliasAPI.class,

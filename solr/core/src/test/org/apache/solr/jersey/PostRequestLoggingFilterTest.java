@@ -26,7 +26,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.UriInfo;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.admin.api.CreateReplicaAPI;
+import org.apache.solr.client.api.model.CreateReplicaRequestBody;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -122,10 +122,10 @@ public class PostRequestLoggingFilterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRequestBodyRepresentedAsJsonWhenFound() {
-    final var requestBody = new CreateReplicaAPI.AddReplicaRequestBody();
+    final var requestBody = new CreateReplicaRequestBody();
     requestBody.name = "someReplicaName";
     requestBody.type = "NRT";
-    requestBody.asyncId = "someAsyncId";
+    requestBody.async = "someAsyncId";
     final var mockContext = mock(ContainerRequestContext.class);
     when(mockContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY)).thenReturn(requestBody);
 
