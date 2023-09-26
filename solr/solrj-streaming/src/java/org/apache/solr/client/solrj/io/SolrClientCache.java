@@ -75,7 +75,7 @@ public class SolrClientCache implements Closeable {
   }
 
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
-    checkState();
+    ensureOpen();
     Objects.requireNonNull(zkHost, "ZooKeeper host cannot be null!");
     if (solrClients.containsKey(zkHost)) {
       return (CloudSolrClient) solrClients.get(zkHost);
@@ -112,7 +112,7 @@ public class SolrClientCache implements Closeable {
   }
 
   public synchronized SolrClient getHttpSolrClient(String baseUrl) {
-    checkState();
+    ensureOpen();
     Objects.requireNonNull(baseUrl, "Url cannot be null!");
     if (solrClients.containsKey(baseUrl)) {
       return solrClients.get(baseUrl);
@@ -172,7 +172,7 @@ public class SolrClientCache implements Closeable {
     }
   }
 
-  private void checkState() {
+  private void ensureOpen() {
     if (isClosed.get()) {
       throw new AlreadyClosedException();
     }

@@ -17,12 +17,10 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -45,37 +43,12 @@ public class StreamExecutorHelper {
       List<? extends Callable<T>> tasks, String threadsName) throws IOException {
     ExecutorService service =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(threadsName));
-    List<T> results = new ArrayList<>();
-    IOException parentException = null;
     try {
-      List<Future<T>> futures =
-          tasks.stream().map(service::submit).collect(Collectors.toUnmodifiableList());
-      for (Future<T> f : futures) {
-        try {
-          T result = f.get();
-          if (result != null) {
-            results.add(result);
-          }
-        } catch (ExecutionException e) {
-          if (parentException == null) {
-            parentException = new IOException(e.getCause());
-          } else {
-            parentException.addSuppressed(e.getCause());
-          }
-        } catch (Exception e) {
-          if (parentException == null) {
-            parentException = new IOException(e);
-          } else {
-            parentException.addSuppressed(e);
-          }
-        }
-      }
+      return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(service, tasks).stream()
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList());
     } finally {
       ExecutorUtil.shutdownNowAndAwaitTermination(service);
     }
-    if (parentException != null) {
-      throw parentException;
-    }
-    return results;
   }
 }
