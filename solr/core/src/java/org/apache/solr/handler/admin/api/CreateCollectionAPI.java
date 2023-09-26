@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.SHARD_NAMES;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
@@ -36,15 +35,12 @@ import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FA
 import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
-import static org.apache.solr.common.params.CoreAdminParams.CONFIG;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.handler.admin.CollectionsHandler.waitForActiveCollection;
 import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
-import static org.apache.solr.schema.IndexSchema.FIELD;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -57,11 +53,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
 import org.apache.solr.client.api.endpoint.CreateCollectionApi;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionRouterProperties;
@@ -83,7 +74,6 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -107,7 +97,8 @@ public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectio
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SubResponseAccumulatingJerseyResponse createCollection(CreateCollectionRequestBody requestBody) throws Exception {
+  public SubResponseAccumulatingJerseyResponse createCollection(
+      CreateCollectionRequestBody requestBody) throws Exception {
 
     if (requestBody == null) {
       throw new SolrException(BAD_REQUEST, "Request body is missing but required");
@@ -300,10 +291,10 @@ public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectio
   }
 
   public static CreateCollectionRequestBody createRequestBodyFromV1Params(
-          SolrParams params, boolean nameRequired) {
+      SolrParams params, boolean nameRequired) {
     final var requestBody = new CreateCollectionRequestBody();
     requestBody.name =
-            nameRequired ? params.required().get(CommonParams.NAME) : params.get(CommonParams.NAME);
+        nameRequired ? params.required().get(CommonParams.NAME) : params.get(CommonParams.NAME);
     requestBody.replicationFactor = params.getInt(ZkStateReader.REPLICATION_FACTOR);
     requestBody.config = params.get(COLL_CONF);
     requestBody.numShards = params.getInt(NUM_SLICES);
@@ -317,9 +308,9 @@ public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectio
     }
     requestBody.shuffleNodes = params.getBool(CREATE_NODE_SET_SHUFFLE);
     requestBody.shardNames =
-            params.get(SHARDS_PROP) != null
-                    ? Arrays.stream(params.get(SHARDS_PROP).split(",")).collect(Collectors.toList())
-                    : new ArrayList<>();
+        params.get(SHARDS_PROP) != null
+            ? Arrays.stream(params.get(SHARDS_PROP).split(",")).collect(Collectors.toList())
+            : new ArrayList<>();
     requestBody.tlogReplicas = params.getInt(ZkStateReader.TLOG_REPLICAS);
     requestBody.pullReplicas = params.getInt(ZkStateReader.PULL_REPLICAS);
     requestBody.nrtReplicas = params.getInt(ZkStateReader.NRT_REPLICAS);
@@ -328,7 +319,7 @@ public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectio
     requestBody.alias = params.get(ALIAS);
     requestBody.async = params.get(ASYNC);
     requestBody.properties =
-            copyPrefixedPropertiesWithoutPrefix(params, new HashMap<>(), PROPERTY_PREFIX);
+        copyPrefixedPropertiesWithoutPrefix(params, new HashMap<>(), PROPERTY_PREFIX);
     if (params.get("router.name") != null || params.get("router.field") != null) {
       final var routerProperties = new CreateCollectionRouterProperties();
       routerProperties.name = params.get("router.name");
@@ -341,11 +332,11 @@ public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectio
 
   public static void validateRequestBody(CreateCollectionRequestBody requestBody) {
     if (requestBody.replicationFactor != null
-            && requestBody.nrtReplicas != null
-            && (!requestBody.replicationFactor.equals(requestBody.nrtReplicas))) {
+        && requestBody.nrtReplicas != null
+        && (!requestBody.replicationFactor.equals(requestBody.nrtReplicas))) {
       throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
     }
 
     SolrIdentifierValidator.validateCollectionName(requestBody.name);
@@ -372,12 +363,12 @@ public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectio
       switch (key) {
         case V2ApiConstants.PROPERTIES_KEY:
           final Map<String, Object> propertiesMap =
-                  (Map<String, Object>) v2MapVals.remove(V2ApiConstants.PROPERTIES_KEY);
+              (Map<String, Object>) v2MapVals.remove(V2ApiConstants.PROPERTIES_KEY);
           flattenMapWithPrefix(propertiesMap, v2MapVals, CollectionAdminParams.PROPERTY_PREFIX);
           break;
         case ROUTER_KEY:
           final Map<String, Object> routerProperties =
-                  (Map<String, Object>) v2MapVals.remove(V2ApiConstants.ROUTER_KEY);
+              (Map<String, Object>) v2MapVals.remove(V2ApiConstants.ROUTER_KEY);
           flattenMapWithPrefix(routerProperties, v2MapVals, CollectionAdminParams.ROUTER_PREFIX);
           break;
         case V2ApiConstants.CONFIG:
@@ -385,13 +376,13 @@ public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectio
           break;
         case SHARD_NAMES:
           final String shardsValue =
-                  String.join(",", (Collection<String>) v2MapVals.remove(SHARD_NAMES));
+              String.join(",", (Collection<String>) v2MapVals.remove(SHARD_NAMES));
           v2MapVals.put(SHARDS_PROP, shardsValue);
           break;
         case V2ApiConstants.SHUFFLE_NODES:
           v2MapVals.put(
-                  CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
-                  v2MapVals.remove(V2ApiConstants.SHUFFLE_NODES));
+              CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM,
+              v2MapVals.remove(V2ApiConstants.SHUFFLE_NODES));
           break;
         case V2ApiConstants.NODE_SET:
           final Object nodeSetValUncast = v2MapVals.remove(V2ApiConstants.NODE_SET);
@@ -409,8 +400,10 @@ public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectio
     }
   }
 
-  public static void addToRemoteMessageWithPrefix(CreateCollectionRequestBody requestBody, Map<String, Object> remoteMessage, String prefix) {
-    final Map<String, Object> v1Params = ((Utils.DelegateReflectWriter) Utils.getReflectWriter(requestBody)).toMap(new HashMap<>());
+  public static void addToRemoteMessageWithPrefix(
+      CreateCollectionRequestBody requestBody, Map<String, Object> remoteMessage, String prefix) {
+    final Map<String, Object> v1Params =
+        ((Utils.DelegateReflectWriter) Utils.getReflectWriter(requestBody)).toMap(new HashMap<>());
     convertV2CreateCollectionMapToV1ParamMap(v1Params);
     for (Map.Entry<String, Object> v1Param : v1Params.entrySet()) {
       remoteMessage.put(prefix + v1Param.getKey(), v1Param.getValue());

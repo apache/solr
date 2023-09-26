@@ -17,20 +17,18 @@
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-
-/**
- * V2 API definition for creating a SolrCLoud collection
- */
+/** V2 API definition for creating a SolrCloud collection */
 @Path("/collections")
 public interface CreateCollectionApi {
-    @POST
-    @Operation(
-            summary = "Creates a new SolrCloud collection.",
-            tags = {"collections"})
-    SubResponseAccumulatingJerseyResponse createCollection(CreateCollectionRequestBody requestBody) throws Exception;
+  @POST
+  @Operation(
+      summary = "Creates a new SolrCloud collection.",
+      tags = {"collections"})
+  SubResponseAccumulatingJerseyResponse createCollection(CreateCollectionRequestBody requestBody)
+      throws Exception;
 }

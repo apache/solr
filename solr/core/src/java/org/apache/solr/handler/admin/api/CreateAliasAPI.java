@@ -47,7 +47,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
@@ -162,7 +161,7 @@ public class CreateAliasAPI extends AdminAPIBase {
 
     if (requestBody.collCreationParameters != null) {
       CreateCollectionAPI.addToRemoteMessageWithPrefix(
-              requestBody.collCreationParameters, remoteMessage, "create-collection.");
+          requestBody.collCreationParameters, remoteMessage, "create-collection.");
     }
     return new ZkNodeProps(remoteMessage);
   }

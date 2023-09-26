@@ -198,8 +198,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     solrParams.set("router.field", "someField");
     solrParams.set("property.somePropName", "somePropValue");
 
-    final var v2RequestBody =
-        CreateCollectionAPI.createRequestBodyFromV1Params(solrParams, true);
+    final var v2RequestBody = CreateCollectionAPI.createRequestBodyFromV1Params(solrParams, true);
 
     assertEquals("someName", v2RequestBody.name);
     assertEquals(Integer.valueOf(123), v2RequestBody.numShards);
@@ -225,8 +224,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     solrParams.set(NAME, "someName");
     solrParams.set(CREATE_NODE_SET, "EMPTY");
 
-    final var v2RequestBody =
-        CreateCollectionAPI.createRequestBodyFromV1Params(solrParams, true);
+    final var v2RequestBody = CreateCollectionAPI.createRequestBodyFromV1Params(solrParams, true);
 
     assertEquals("someName", v2RequestBody.name);
     assertEquals(Boolean.FALSE, v2RequestBody.createReplicas);
