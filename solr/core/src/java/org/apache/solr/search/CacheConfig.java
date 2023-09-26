@@ -168,6 +168,7 @@ public class CacheConfig implements MapSerializable {
     try {
       SolrCache<?, ?> cache = clazz.get().getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
+      cache = regenerator == null ? cache : regenerator.wrap(cache);
       return cache;
     } catch (Exception e) {
       log.error("Error instantiating cache", e);
@@ -175,6 +176,10 @@ public class CacheConfig implements MapSerializable {
       // in some cases (like an OOM) we probably should try to continue.
       return null;
     }
+  }
+
+  public <K> SolrCache<K, ?> unwrap(SolrCache<K, ?> external) {
+    return regenerator == null ? external : regenerator.unwrap(external);
   }
 
   @Override

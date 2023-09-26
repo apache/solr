@@ -16,13 +16,16 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
@@ -64,6 +67,13 @@ public class TestOrdMapCache extends SolrTestCaseJ4 {
                     (metricName, metric) -> ORD_MAP_CACHE_METRIC_NAME.equals(metricName))
                 .get(ORD_MAP_CACHE_METRIC_NAME);
     return metrics.getValue();
+  }
+
+  private static SolrCache<String, OrdinalMap> getOrdMapCache(
+      SolrClient client, String collectionName) throws IOException {
+    try (SolrCore core = ((EmbeddedSolrServer) client).getCoreContainer().getCore(collectionName)) {
+      return core.withSearcher(SolrIndexSearcher::getOrdMapCache);
+    }
   }
 
   public void testDefaultBehavior() throws Exception {
@@ -118,6 +128,9 @@ public class TestOrdMapCache extends SolrTestCaseJ4 {
     assertEquals(2L, metrics.get("cumulative_lookups"));
     assertEquals(2L, metrics.get("cumulative_inserts"));
     assertEquals(0L, metrics.get("cumulative_hits"));
+
+    SolrCache<String, OrdinalMap> ordMapCache = getOrdMapCache(client, name);
+    assertEquals(CaffeineCache.class, ordMapCache.getClass());
   }
 
   public void testLongKeepAlive() throws Exception {
@@ -208,6 +221,9 @@ public class TestOrdMapCache extends SolrTestCaseJ4 {
     assertEquals(2L, metrics.get("cumulative_lookups"));
     assertEquals(1L, metrics.get("cumulative_inserts"));
     assertEquals(1L, metrics.get("cumulative_hits"));
+
+    SolrCache<String, OrdinalMap> ordMapCache = getOrdMapCache(client, name);
+    assertEquals(MetaSolrCache.class, ordMapCache.getClass());
   }
 
   public void testShortKeepAlive() throws Exception {
@@ -310,6 +326,9 @@ public class TestOrdMapCache extends SolrTestCaseJ4 {
     assertEquals(3L, metrics.get("cumulative_lookups"));
     assertEquals(2L, metrics.get("cumulative_inserts"));
     assertEquals(1L, metrics.get("cumulative_hits"));
+
+    SolrCache<String, OrdinalMap> ordMapCache = getOrdMapCache(client, name);
+    assertEquals(MetaSolrCache.class, ordMapCache.getClass());
   }
 
   public void testSizeLimited() throws Exception {
@@ -368,5 +387,8 @@ public class TestOrdMapCache extends SolrTestCaseJ4 {
     assertEquals(2L, metrics.get("lookups"));
     assertEquals(2L, metrics.get("inserts"));
     assertEquals(0L, metrics.get("hits"));
+
+    SolrCache<String, OrdinalMap> ordMapCache = getOrdMapCache(client, name);
+    assertEquals(CaffeineCache.class, ordMapCache.getClass());
   }
 }

@@ -29,13 +29,13 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.search.OrdMapRegenerator;
-import org.apache.solr.search.OrdMapRegenerator.OrdinalMapValue;
 import org.apache.solr.search.SolrCache;
 
 public class TestSlowCompositeReaderWrapper extends SolrTestCase {
@@ -119,7 +119,7 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
     IndexReader reader = w.getReader();
     assertTrue(reader.leaves().size() > 1);
     @SuppressWarnings("unchecked")
-    SolrCache<String, OrdinalMapValue> ordMapCache =
+    SolrCache<String, OrdinalMap> ordMapCache =
         OrdMapRegenerator.getDefaultCacheConfig(null).newInstance();
     SlowCompositeReaderWrapper slowWrapper =
         (SlowCompositeReaderWrapper) SlowCompositeReaderWrapper.wrap(reader, ordMapCache);

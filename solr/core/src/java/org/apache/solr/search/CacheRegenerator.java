@@ -44,4 +44,12 @@ public interface CacheRegenerator {
       K oldKey,
       V oldVal)
       throws IOException;
+
+  default <K> SolrCache<K, ?> wrap(SolrCache<K, ?> internal) {
+    return internal;
+  }
+
+  default <K> SolrCache<K, ?> unwrap(SolrCache<K, ?> external) {
+    return external;
+  }
 }

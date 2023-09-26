@@ -46,6 +46,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
+import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
@@ -107,7 +108,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.OrdMapRegenerator.OrdinalMapValue;
 import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.search.stats.StatsSource;
@@ -157,7 +157,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private final boolean cachingEnabled;
   private final SolrCache<Query, DocSet> filterCache;
-  private final SolrCache<String, OrdinalMapValue> ordMapCache;
+  private final SolrCache<String, OrdinalMap> ordMapCache;
   private final SolrCache<QueryResultKey, DocList> queryResultCache;
   private final SolrCache<String, UnInvertedField> fieldValueCache;
   private final LongAdder fullSortCount = new LongAdder();
@@ -385,32 +385,37 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.cachingEnabled = enableCache;
     if (cachingEnabled) {
       final ArrayList<SolrCache> clist = new ArrayList<>();
-      clist.add(ordMapCache);
+      clist.add(solrConfig.ordMapCacheConfig.unwrap(ordMapCache));
       fieldValueCache =
           solrConfig.fieldValueCacheConfig == null
               ? null
               : solrConfig.fieldValueCacheConfig.newInstance();
-      if (fieldValueCache != null) clist.add(fieldValueCache);
+      if (fieldValueCache != null) {
+        clist.add(solrConfig.fieldValueCacheConfig.unwrap(fieldValueCache));
+      }
       filterCache =
           solrConfig.filterCacheConfig == null ? null : solrConfig.filterCacheConfig.newInstance();
-      if (filterCache != null) clist.add(filterCache);
+      if (filterCache != null) clist.add(solrConfig.filterCacheConfig.unwrap(filterCache));
       queryResultCache =
           solrConfig.queryResultCacheConfig == null
               ? null
               : solrConfig.queryResultCacheConfig.newInstance();
-      if (queryResultCache != null) clist.add(queryResultCache);
+      if (queryResultCache != null) {
+        clist.add(solrConfig.queryResultCacheConfig.unwrap(queryResultCache));
+      }
       SolrCache<Integer, Document> documentCache = docFetcher.getDocumentCache();
-      if (documentCache != null) clist.add(documentCache);
+      if (documentCache != null) clist.add(solrConfig.documentCacheConfig.unwrap(documentCache));
 
       if (solrConfig.userCacheConfigs.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
       } else {
         cacheMap = CollectionUtil.newHashMap(solrConfig.userCacheConfigs.size());
         for (Map.Entry<String, CacheConfig> e : solrConfig.userCacheConfigs.entrySet()) {
-          SolrCache<?, ?> cache = e.getValue().newInstance();
+          CacheConfig config = e.getValue();
+          SolrCache<?, ?> cache = config.newInstance();
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
-            clist.add(cache);
+            clist.add(config.unwrap(cache));
           }
         }
       }
@@ -622,7 +627,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         .collect(Collectors.toUnmodifiableList());
   }
 
-  public SolrCache<String, OrdinalMapValue> getOrdMapCache() {
+  public SolrCache<String, OrdinalMap> getOrdMapCache() {
     return ordMapCache;
   }
 

@@ -387,16 +387,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   @Override
   public void warm(SolrIndexSearcher searcher, SolrCache<K, V> old) {
-    if (regenerator == null) {
-      return;
-    }
-
     long warmingStartTime = System.nanoTime();
     Map<K, V> hottest = Collections.emptyMap();
     CaffeineCache<K, V> other = (CaffeineCache<K, V>) old;
 
     // warm entries
-    if (isAutowarmingOn()) {
+    if (isAutowarmingOn() && regenerator != null) {
       int size = autowarm.getWarmCount(other.cache.asMap().size());
       hottest =
           other.cache.policy().eviction().map(p -> p.hottest(size)).orElse(Collections.emptyMap());

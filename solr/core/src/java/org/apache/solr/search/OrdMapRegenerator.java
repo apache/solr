@@ -31,6 +31,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
@@ -56,16 +57,14 @@ public class OrdMapRegenerator implements CacheRegenerator {
     this.regenKeepAliveNanos = regenKeepAliveNanos;
   }
 
-  public static class OrdinalMapValue implements Supplier<OrdinalMap>, Accountable {
+  private static class OrdinalMapValue implements Supplier<OrdinalMap>, Accountable {
     private static final long BASE_RAM_BYTES_USED =
         RamUsageEstimator.shallowSizeOfInstance(OrdinalMapValue.class);
     private final OrdinalMap ordinalMap;
-    private final boolean multivalued;
     private long accessTimestampNanos;
 
-    private OrdinalMapValue(OrdinalMap ordinalMap, boolean multivalued, long accessTimestampNanos) {
+    private OrdinalMapValue(OrdinalMap ordinalMap, long accessTimestampNanos) {
       this.ordinalMap = ordinalMap;
-      this.multivalued = multivalued;
       this.accessTimestampNanos = accessTimestampNanos;
     }
 
@@ -81,8 +80,8 @@ public class OrdMapRegenerator implements CacheRegenerator {
     }
   }
 
-  public static OrdinalMapValue wrapValue(OrdinalMap ordinalMap, boolean multivalued) {
-    return new OrdinalMapValue(ordinalMap, multivalued, 0);
+  private static OrdinalMapValue wrapValue(OrdinalMap ordinalMap) {
+    return new OrdinalMapValue(ordinalMap, 0);
   }
 
   public static CacheConfig getDefaultCacheConfig(SolrConfig solrConfig) {
@@ -97,7 +96,14 @@ public class OrdMapRegenerator implements CacheRegenerator {
   }
 
   public static void configureRegenerator(SolrConfig solrConfig, CacheConfig config) {
-    if (config.getRegenerator() != null) {
+    if (config.getRegenerator() != null
+        || !new SolrCacheBase.AutoWarmCountRef(
+                (String) config.toMap(new HashMap<>()).get("autowarmCount"))
+            .isAutoWarmingOn()) {
+      // If a regenerator is already explicitly configured, we don't want to replace it.
+      // Also, if autowarming is not on, we don't configure a regenerator. This is important
+      // because the regenerator is also used to wrap/unwrap the cache for the purpose of
+      // tracking metadata, etc. If there's no autowarm, the extra overhead is useless.
       return;
     }
     String keepAliveConfig = (String) config.toMap(Collections.emptyMap()).get("regenKeepAlive");
@@ -201,33 +207,43 @@ public class OrdMapRegenerator implements CacheRegenerator {
     final String field = (String) oldKey;
     final IndexReader.CacheKey readerKey = cacheHelper.getKey();
     final IOFunction<? super String, ? extends Supplier<OrdinalMap>> producer;
-    if (ordinalMapValue.multivalued) {
-      final SortedSetDocValues[] dvs =
-          SlowCompositeReaderWrapper.getSortedSetLeafDocValues(leaves, field);
-      if (dvs == null) {
-        // All empty for this field, but should still warm others
-        return true;
-      }
+    DocIdSetIterator[] dvs = SlowCompositeReaderWrapper.getLeafDocValues(leaves, field);
+    if (dvs == null) {
+      // All empty for this field, but should still warm others
+      return true;
+    } else if (dvs instanceof SortedDocValues[]) {
       producer =
           (notUsed) ->
               new OrdinalMapValue(
-                  OrdinalMap.build(readerKey, dvs, PackedInts.DEFAULT), true, extantTimestamp);
+                  OrdinalMap.build(readerKey, (SortedDocValues[]) dvs, PackedInts.DEFAULT),
+                  extantTimestamp);
+    } else if (dvs instanceof SortedSetDocValues[]) {
+      producer =
+          (notUsed) ->
+              new OrdinalMapValue(
+                  OrdinalMap.build(readerKey, (SortedSetDocValues[]) dvs, PackedInts.DEFAULT),
+                  extantTimestamp);
     } else {
-      final SortedDocValues[] dvs =
-          SlowCompositeReaderWrapper.getSortedLeafDocValues(leaves, field);
-      if (dvs == null) {
-        // All empty for this field, but should still warm others
-        return true;
-      }
-      producer =
-          (notUsed) ->
-              new OrdinalMapValue(
-                  OrdinalMap.build(readerKey, dvs, PackedInts.DEFAULT), false, extantTimestamp);
+      throw new IllegalStateException();
     }
 
     @SuppressWarnings("unchecked")
     SolrCache<String, Supplier<OrdinalMap>> c = (SolrCache<String, Supplier<OrdinalMap>>) newCache;
     c.computeIfAbsent(field, producer);
     return true;
+  }
+
+  @Override
+  public <K> SolrCache<K, ?> unwrap(SolrCache<K, ?> external) {
+    @SuppressWarnings("unchecked")
+    SolrCache<K, ?> ret = ((MetaSolrCache<K, ?, ?>) external).unwrap();
+    return ret;
+  }
+
+  @Override
+  public <K> SolrCache<K, ?> wrap(SolrCache<K, ?> internal) {
+    @SuppressWarnings("unchecked")
+    SolrCache<K, OrdinalMapValue> backing = (SolrCache<K, OrdinalMapValue>) internal;
+    return new MetaSolrCache<>(backing, OrdMapRegenerator::wrapValue);
   }
 }
