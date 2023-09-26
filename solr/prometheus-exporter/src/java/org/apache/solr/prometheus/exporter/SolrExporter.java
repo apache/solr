@@ -21,7 +21,6 @@ import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
