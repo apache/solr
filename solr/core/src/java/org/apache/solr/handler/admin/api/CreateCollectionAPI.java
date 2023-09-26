@@ -367,9 +367,13 @@ public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectio
           flattenMapWithPrefix(propertiesMap, v2MapVals, CollectionAdminParams.PROPERTY_PREFIX);
           break;
         case ROUTER_KEY:
-          final Map<String, Object> routerProperties =
-              (Map<String, Object>) v2MapVals.remove(V2ApiConstants.ROUTER_KEY);
-          flattenMapWithPrefix(routerProperties, v2MapVals, CollectionAdminParams.ROUTER_PREFIX);
+          final var routerProperties =
+              (CreateCollectionRouterProperties) v2MapVals.remove(ROUTER_KEY);
+          final Map<String, Object> routerPropertiesAsMap =
+              ((Utils.DelegateReflectWriter) Utils.getReflectWriter(routerProperties))
+                  .toMap(new HashMap<>());
+          flattenMapWithPrefix(
+              routerPropertiesAsMap, v2MapVals, CollectionAdminParams.ROUTER_PREFIX);
           break;
         case V2ApiConstants.CONFIG:
           v2MapVals.put(CollectionAdminParams.COLL_CONF, v2MapVals.remove(V2ApiConstants.CONFIG));
