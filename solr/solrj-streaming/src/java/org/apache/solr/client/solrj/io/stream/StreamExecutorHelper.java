@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
@@ -36,7 +35,7 @@ public class StreamExecutorHelper {
    * @param <T> the response type
    * @param tasks the list of callables to be executed
    * @param threadsName name to be used by the SolrNamedThreadFactory
-   * @return results list, null results are excluded
+   * @return results list
    * @throws IOException in case any exceptions happened
    */
   public static <T> List<T> submitAllAndAwaitAggregatingExceptions(
@@ -45,7 +44,6 @@ public class StreamExecutorHelper {
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(threadsName));
     try {
       return ExecutorUtil.submitAllAndAwaitAggregatingExceptions(service, tasks).stream()
-          .filter(Objects::nonNull)
           .collect(Collectors.toList());
     } finally {
       ExecutorUtil.shutdownNowAndAwaitTermination(service);

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
@@ -340,7 +341,10 @@ public class TopicStream extends CloudSolrStream implements Expressible {
         solrStreams.stream()
             .map(s -> new StreamOpener((SolrStream) s, comp))
             .collect(Collectors.toUnmodifiableList());
-    var results = submitAllAndAwaitAggregatingExceptions(tasks, "TopicStream");
+    var results =
+        submitAllAndAwaitAggregatingExceptions(tasks, "TopicStream").stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     tuples.addAll(results);
   }
 

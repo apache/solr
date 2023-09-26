@@ -323,7 +323,10 @@ public class DeepRandomStream extends TupleStream implements Expressible {
         solrStreams.stream()
             .map(s -> new StreamOpener((SolrStream) s, comp))
             .collect(Collectors.toUnmodifiableList());
-    var results = submitAllAndAwaitAggregatingExceptions(tasks, "DeepRandomStream");
+    var results =
+        submitAllAndAwaitAggregatingExceptions(tasks, "DeepRandomStream").stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     tuples.addAll(results);
   }
 
