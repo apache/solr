@@ -97,7 +97,7 @@ public class StatusTool extends ToolBase {
       int solrPort = (new URL(solrUrl)).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
       try {
-        waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS, cli.getOptionValue("credentials"));
+        waitToSeeSolrUp(solrUrl, cli.getOptionValue("credentials"), maxWaitSecs, TimeUnit.SECONDS);
         echo("Started Solr server on port " + solrPort + ". Happy searching!");
       } catch (TimeoutException timeout) {
         throw new Exception(
@@ -124,7 +124,7 @@ public class StatusTool extends ToolBase {
   }
 
   public Map<String, Object> waitToSeeSolrUp(
-      String solrUrl, long maxWait, TimeUnit unit, String credentials) throws Exception {
+      String solrUrl, String credentials, long maxWait, TimeUnit unit) throws Exception {
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWait, unit);
     while (System.nanoTime() < timeout) {
 

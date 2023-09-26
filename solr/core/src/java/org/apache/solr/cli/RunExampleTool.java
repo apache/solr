@@ -882,7 +882,7 @@ public class RunExampleTool extends ToolBase {
 
     URL solrURL = new URL(solrUrl);
     Map<String, Object> nodeStatus =
-        statusTool.waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS, credentials);
+        statusTool.waitToSeeSolrUp(solrUrl, credentials, maxWaitSecs, TimeUnit.SECONDS);
     nodeStatus.put("baseUrl", solrUrl);
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(nodeStatus);
