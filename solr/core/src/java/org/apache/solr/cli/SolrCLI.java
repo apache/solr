@@ -552,9 +552,6 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    System.out.println("Here is zk:" + cli.getOptionValue("zkHost"));
-    System.out.println("Here is solrUrl:" + cli.getOptionValue("solrUrl"));
-    System.out.println("Here is credentials:" + cli.getOptionValue("credentials"));
     String zkHost = cli.getOptionValue("zkHost");
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
