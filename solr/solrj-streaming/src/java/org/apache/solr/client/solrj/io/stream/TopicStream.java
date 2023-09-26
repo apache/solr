@@ -344,7 +344,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
     var results =
         submitAllAndAwaitAggregatingExceptions(tasks, "TopicStream").stream()
             .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+            .collect(Collectors.toUnmodifiableList());
     tuples.addAll(results);
   }
 

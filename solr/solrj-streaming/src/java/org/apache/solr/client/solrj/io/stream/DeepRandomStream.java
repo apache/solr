@@ -326,7 +326,7 @@ public class DeepRandomStream extends TupleStream implements Expressible {
     var results =
         submitAllAndAwaitAggregatingExceptions(tasks, "DeepRandomStream").stream()
             .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+            .collect(Collectors.toUnmodifiableList());
     tuples.addAll(results);
   }
 

@@ -416,7 +416,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     var results =
         submitAllAndAwaitAggregatingExceptions(tasks, "CloudSolrStream").stream()
             .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+            .collect(Collectors.toUnmodifiableList());
     tuples.addAll(results);
   }
 
