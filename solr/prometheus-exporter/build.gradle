@@ -56,8 +56,8 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
+  testImplementation 'org.apache.lucene:lucene-test-framework'
 
-  testImplementation 'commons-io:commons-io'
   testImplementation 'org.apache.httpcomponents:httpclient'
   testImplementation 'org.apache.httpcomponents:httpcore'
 }
