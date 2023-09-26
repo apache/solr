@@ -180,7 +180,7 @@ For most use cases, this provides the best possible behavior, but if you wish fo
   </analyzer>
   <!-- No analysis at all when doing queries that involved Multi-Term expansion -->
   <analyzer type="multiterm">
-    <tokenizer class="solr.KeywordTokenizerFactory" />
+    <tokenizer name="keyword" />
   </analyzer>
 </fieldType>
 ----
