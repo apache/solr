@@ -21,7 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-/** Unit tests for {@link ForceLeaderAPI} */
+/** Unit tests for {@link ForceLeader} */
 public class ForceLeaderAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
@@ -29,8 +29,8 @@ public class ForceLeaderAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new ForceLeaderAPI(null, null, null);
-              api.forceLeader(null, "someShard");
+              final var api = new ForceLeader(null, null, null);
+              api.forceShardLeader(null, "someShard");
             });
 
     assertEquals(400, thrown.code());
@@ -43,8 +43,8 @@ public class ForceLeaderAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new ForceLeaderAPI(null, null, null);
-              api.forceLeader("someCollection", null);
+              final var api = new ForceLeader(null, null, null);
+              api.forceShardLeader("someCollection", null);
             });
 
     assertEquals(400, thrown.code());

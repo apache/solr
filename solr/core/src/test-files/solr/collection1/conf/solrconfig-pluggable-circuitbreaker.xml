@@ -98,6 +98,10 @@
     <double  name="threshold">75</double>
   </circuitBreaker>
 
+  <circuitBreaker class="solr.LoadAverageCircuitBreaker">
+    <double  name="threshold">3</double>
+  </circuitBreaker>
+
   <initParams path="/select">
     <lst name="defaults">
       <str name="df">text</str>

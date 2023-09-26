@@ -17,34 +17,64 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
+import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tracks the current JVM heap usage and triggers if it exceeds the defined percentage of the
- * maximum heap size allocated to the JVM. This circuit breaker is a part of the default
- * CircuitBreakerRegistry so is checked for every request -- hence it is realtime. Once the memory
- * usage goes below the threshold, it will start allowing queries again.
+ * Tracks the current JVM heap usage and triggers if a moving heap usage average over 30 seconds
+ * exceeds the defined percentage of the maximum heap size allocated to the JVM. Once the average
+ * memory usage goes below the threshold, it will start allowing queries again.
  *
  * <p>The memory threshold is defined as a percentage of the maximum memory allocated -- see
- * memThreshold in solrconfig.xml.
+ * memThreshold in <code>solrconfig.xml</code>.
  */
 public class MemoryCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final MemoryMXBean MEMORY_MX_BEAN = ManagementFactory.getMemoryMXBean();
+  // One shared provider / executor for all instances of this class
+  private static RefCounted<AveragingMetricProvider> averagingMetricProvider;
 
   private long heapMemoryThreshold;
 
-  // Assumption -- the value of these parameters will be set correctly before invoking
-  // getDebugInfo()
   private static final ThreadLocal<Long> seenMemory = ThreadLocal.withInitial(() -> 0L);
   private static final ThreadLocal<Long> allowedMemory = ThreadLocal.withInitial(() -> 0L);
 
+  /** Creates an instance which averages over 6 samples during last 30 seconds. */
   public MemoryCircuitBreaker() {
+    this(6, 5);
+  }
+
+  /**
+   * Constructor that allows override of sample interval for which the memory usage is fetched. This
+   * is provided for testing, not intended for general use because the average metric provider
+   * implementation is the same for all instances of the class.
+   *
+   * @param numSamples number of samples to calculate average for
+   * @param sampleInterval interval between each sample
+   */
+  protected MemoryCircuitBreaker(int numSamples, int sampleInterval) {
     super();
+    synchronized (MemoryCircuitBreaker.class) {
+      if (averagingMetricProvider == null || averagingMetricProvider.getRefcount() == 0) {
+        averagingMetricProvider =
+            new RefCounted<>(
+                new AveragingMetricProvider(
+                    () -> MEMORY_MX_BEAN.getHeapMemoryUsage().getUsed(),
+                    numSamples,
+                    sampleInterval)) {
+              @Override
+              protected void close() {
+                get().close();
+              }
+            };
+      }
+      averagingMetricProvider.incref();
+    }
   }
 
   public void setThreshold(double thresholdValueInPercentage) {
@@ -62,14 +92,11 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     }
   }
 
-  // TODO: An optimization can be to trip the circuit breaker for a duration of time
-  // after the circuit breaker condition is matched. This will optimize for per call
-  // overhead of calculating the condition parameters but can result in false positives.
   @Override
   public boolean isTripped() {
 
     long localAllowedMemory = getCurrentMemoryThreshold();
-    long localSeenMemory = calculateLiveMemoryUsage();
+    long localSeenMemory = getAvgMemoryUsage();
 
     allowedMemory.set(localAllowedMemory);
 
@@ -78,13 +105,8 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     return (localSeenMemory >= localAllowedMemory);
   }
 
-  @Override
-  public String getDebugInfo() {
-    if (seenMemory.get() == 0L || allowedMemory.get() == 0L) {
-      log.warn("MemoryCircuitBreaker's monitored values (seenMemory, allowedMemory) not set");
-    }
-
-    return "seenMemory=" + seenMemory.get() + " allowedMemory=" + allowedMemory.get();
+  protected long getAvgMemoryUsage() {
+    return (long) averagingMetricProvider.get().getMetricValue();
   }
 
   @Override
@@ -100,17 +122,12 @@ public class MemoryCircuitBreaker extends CircuitBreaker {
     return heapMemoryThreshold;
   }
 
-  /**
-   * Calculate the live memory usage for the system. This method has package visibility to allow
-   * using for testing.
-   *
-   * @return Memory usage in bytes.
-   */
-  protected long calculateLiveMemoryUsage() {
-    // NOTE: MemoryUsageGaugeSet provides memory usage statistics but we do not use them
-    // here since it will require extra allocations and incur cost, hence it is cheaper to use
-    // MemoryMXBean directly. Ideally, this call should not add noticeable
-    // latency to a query -- but if it does, please signify on SOLR-14588
-    return MEMORY_MX_BEAN.getHeapMemoryUsage().getUsed();
+  @Override
+  public void close() throws IOException {
+    synchronized (MemoryCircuitBreaker.class) {
+      if (averagingMetricProvider != null && averagingMetricProvider.getRefcount() > 0) {
+        averagingMetricProvider.decref();
+      }
+    }
   }
 }

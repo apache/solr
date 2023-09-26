@@ -123,6 +123,7 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -166,7 +167,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
-import org.apache.solr.handler.admin.api.BalanceReplicasAPI;
+import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
 import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
@@ -184,7 +185,7 @@ import org.apache.solr.handler.admin.api.DeleteNode;
 import org.apache.solr.handler.admin.api.DeleteReplica;
 import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
-import org.apache.solr.handler.admin.api.ForceLeaderAPI;
+import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardDataAPI;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
@@ -196,11 +197,11 @@ import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
 import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
-import org.apache.solr.handler.admin.api.RenameCollectionAPI;
-import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
+import org.apache.solr.handler.admin.api.RenameCollection;
+import org.apache.solr.handler.admin.api.ReplaceNode;
 import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
-import org.apache.solr.handler.admin.api.SyncShardAPI;
+import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -607,7 +608,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     SYNCSHARD_OP(
         SYNCSHARD,
         (req, rsp, h) -> {
-          SyncShardAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          SyncShard.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
 
@@ -722,7 +723,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     FORCELEADER_OP(
         FORCELEADER,
         (req, rsp, h) -> {
-          ForceLeaderAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          ForceLeader.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     CREATESHARD_OP(
@@ -1175,12 +1176,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           final SolrParams params = req.getParams();
           final RequiredSolrParams requiredParams = req.getParams().required();
-          final ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
-              new ReplaceNodeAPI.ReplaceNodeRequestBody();
+          final var requestBody = new ReplaceNodeRequestBody();
           requestBody.targetNodeName = params.get(TARGET_NODE);
           requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
           requestBody.async = params.get(ASYNC);
-          final ReplaceNodeAPI replaceNodeAPI = new ReplaceNodeAPI(h.coreContainer, req, rsp);
+          final ReplaceNode replaceNodeAPI = new ReplaceNode(h.coreContainer, req, rsp);
           final SolrJerseyResponse replaceNodeResponse =
               replaceNodeAPI.replaceNode(requiredParams.get(SOURCE_NODE), requestBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, replaceNodeResponse);
@@ -1375,17 +1375,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteReplica.class,
         DeleteReplicaProperty.class,
         DeleteShardAPI.class,
-        ForceLeaderAPI.class,
+        ForceLeader.class,
         InstallShardDataAPI.class,
         ListCollections.class,
         ListCollectionBackups.class,
         ReloadCollectionAPI.class,
-        RenameCollectionAPI.class,
-        ReplaceNodeAPI.class,
+        RenameCollection.class,
+        ReplaceNode.class,
         MigrateReplicasAPI.class,
-        BalanceReplicasAPI.class,
+        BalanceReplicas.class,
         RestoreCollectionAPI.class,
-        SyncShardAPI.class,
+        SyncShard.class,
         CollectionPropertyAPI.class,
         DeleteNode.class,
         ListAliases.class,

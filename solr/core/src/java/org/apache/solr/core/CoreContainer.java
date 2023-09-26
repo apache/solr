@@ -2443,6 +2443,10 @@ public class CoreContainer {
     return status;
   }
 
+  public boolean hideStackTrace() {
+    return cfg.hideStackTraces();
+  }
+
   /**
    * Retrieve the aliases from zookeeper. This is typically cached and does not hit zookeeper after
    * the first use.

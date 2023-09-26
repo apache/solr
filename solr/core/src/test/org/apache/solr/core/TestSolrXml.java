@@ -34,6 +34,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.TestThinCache;
 import org.apache.solr.search.ThinCache;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.hamcrest.MatcherAssert;
@@ -134,6 +135,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
                     : Set.of("/tmp", "/home/john").stream()
                         .map(s -> Path.of(s))
                         .collect(Collectors.toSet())));
+    assertTrue("hideStackTrace", cfg.hideStackTraces());
     System.clearProperty("solr.allowPaths");
   }
 
@@ -155,11 +157,9 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertFalse("schema cache", cfg.hasSchemaCache());
   }
 
-  public void testNodeLevelCache() throws IOException {
-    Path testSrcRoot = TEST_PATH();
-    Files.copy(testSrcRoot.resolve("solr-nodelevelcaches.xml"), solrHome.resolve("solr.xml"));
-
-    NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
+  public void testNodeLevelCache() {
+    NodeConfig cfg =
+        SolrXmlConfig.fromString(createTempDir(), TestThinCache.SOLR_NODE_LEVEL_CACHE_XML);
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     SolrCache<?, ?> nodeLevelCache = cachesConfig.get("myNodeLevelCache").newInstance();
     assertTrue(nodeLevelCache instanceof CaffeineCache);
@@ -303,11 +303,11 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testFailAtConfigParseTimeWhenBoolTypeIsExpectedAndValueIsInvalidString() {
     String solrXml =
-        "<solr><solrcloud><bool name=\"genericCoreNodeNames\">NOT_A_BOOLEAN</bool></solrcloud></solr>";
+        "<solr><solrcloud><bool name=\"genericCoreNodeNames\">FOO</bool></solrcloud></solr>";
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
-    assertEquals("invalid boolean value: NOT_A_BOOLEAN", thrown.getMessage());
+    assertEquals("invalid boolean value: FOO", thrown.getMessage());
   }
 
   public void testFailAtConfigParseTimeWhenIntTypeIsExpectedAndBoolTypeIsGiven() {
