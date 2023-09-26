@@ -216,7 +216,7 @@ public class AssertTool extends ToolBase {
     return ret;
   }
 
-  public int assertSolrRunning(String url, String credentials) throws Exception {
+  public static int assertSolrRunning(String url, String credentials) throws Exception {
     StatusTool status = new StatusTool();
     try {
       status.waitToSeeSolrUp(url, timeoutMs, TimeUnit.MILLISECONDS, credentials);
@@ -234,7 +234,7 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public int assertSolrNotRunning(String url, String credentials) throws Exception {
+  public static int assertSolrNotRunning(String url, String credentials) throws Exception {
     StatusTool status = new StatusTool();
     long timeout =
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
@@ -270,7 +270,7 @@ public class AssertTool extends ToolBase {
             + " seconds");
   }
 
-  public int assertSolrRunningInCloudMode(String url, String credentials) throws Exception {
+  public static int assertSolrRunningInCloudMode(String url, String credentials) throws Exception {
     if (!isSolrRunningOn(url, credentials)) {
       return exitOrException(
           "Solr is not running on url "
@@ -286,7 +286,7 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public int assertSolrNotRunningInCloudMode(String url, String credentials) throws Exception {
+  public static int assertSolrNotRunningInCloudMode(String url, String credentials) throws Exception {
     if (!isSolrRunningOn(url, credentials)) {
       return exitOrException(
           "Solr is not running on url "
@@ -302,7 +302,7 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public int sameUser(String directory) throws Exception {
+  public static int sameUser(String directory) throws Exception {
     if (Files.exists(Paths.get(directory))) {
       String userForDir = userForDir(Paths.get(directory));
       if (!currentUser().equals(userForDir)) {
@@ -314,28 +314,28 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public int assertFileExists(String directory) throws Exception {
+  public static int assertFileExists(String directory) throws Exception {
     if (!Files.exists(Paths.get(directory))) {
       return exitOrException("Directory " + directory + " does not exist.");
     }
     return 0;
   }
 
-  public int assertFileNotExists(String directory) throws Exception {
+  public static int assertFileNotExists(String directory) throws Exception {
     if (Files.exists(Paths.get(directory))) {
       return exitOrException("Directory " + directory + " should not exist.");
     }
     return 0;
   }
 
-  public int assertRootUser() throws Exception {
+  public static int assertRootUser() throws Exception {
     if (!currentUser().equals("root")) {
       return exitOrException("Must run as root user");
     }
     return 0;
   }
 
-  public int assertNotRootUser() throws Exception {
+  public static int assertNotRootUser() throws Exception {
     if (currentUser().equals("root")) {
       return exitOrException("Not allowed to run as root user");
     }
