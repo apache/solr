@@ -120,7 +120,7 @@ public class CreateTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    try (var solrClient = SolrCLI.betterGetSolrClient(cli)) {
+    try (var solrClient = SolrCLI.getSolrClient(cli)) {
       if (SolrCLI.isCloudMode(solrClient)) {
         createCollection(cli);
       } else {
@@ -200,11 +200,8 @@ public class CreateTool extends ToolBase {
     Http2SolrClient.Builder builder =
         new Http2SolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
-            .withConnectionTimeout(15, TimeUnit.SECONDS);
-    if (cli.hasOption("credentials")) {
-      String[] credentials = SolrCLI.getCredentials(cli);
-      builder.withBasicAuthCredentials(credentials[0], credentials[1]);
-    }
+            .withConnectionTimeout(15, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(cli.getOptionValue("credentials"));
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())

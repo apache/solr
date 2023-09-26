@@ -76,13 +76,7 @@ public class PostLogsTool extends ToolBase {
             .required(true)
             .desc("All files found at or below the root directory will be indexed.")
             .build(),
-        Option.builder("u")
-            .longOpt("credentials")
-            .argName("USERNAME:PASSWORD")
-            .hasArg()
-            .desc(
-                "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-            .build());
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -95,11 +89,8 @@ public class PostLogsTool extends ToolBase {
 
   public void runCommand(String baseUrl, String root, String credentials) throws IOException {
 
-    Http2SolrClient.Builder builder = new Http2SolrClient.Builder(baseUrl);
-    if (credentials != null && credentials.indexOf(':') > 0) {
-      String[] credentialsArray = credentials.split(":");
-      builder.withBasicAuthCredentials(credentialsArray[0], credentialsArray[1]);
-    }
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder(baseUrl).withOptionalBasicAuthCredentials(credentials);
     try (SolrClient client = builder.build()) {
       int rec = 0;
       UpdateRequest request = new UpdateRequest();

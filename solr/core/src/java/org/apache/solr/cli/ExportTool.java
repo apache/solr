@@ -212,11 +212,8 @@ public class ExportTool extends ToolBase {
       Http2SolrClient.Builder builder =
           new Http2SolrClient.Builder()
               .withIdleTimeout(30, TimeUnit.SECONDS)
-              .withConnectionTimeout(15, TimeUnit.SECONDS);
-      if (credentials != null && credentials.indexOf(":") > 0) {
-        String[] credentialsArray = credentials.split(":");
-        builder.withBasicAuthCredentials(credentialsArray[0], credentialsArray[1]);
-      }
+              .withConnectionTimeout(15, TimeUnit.SECONDS)
+              .withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
           new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl))

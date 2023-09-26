@@ -93,7 +93,7 @@ public class DeleteTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
 
-    try (var solrClient = SolrCLI.betterGetSolrClient(cli)) {
+    try (var solrClient = SolrCLI.getSolrClient(cli)) {
       if (SolrCLI.isCloudMode(solrClient)) {
         deleteCollection(cli);
       } else {
@@ -108,10 +108,7 @@ public class DeleteTool extends ToolBase {
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(cli.getOptionValue(("credentials")));
-    // if (cli.hasOption("credentials")) {
-    // String[] credentials = SolrCLI.getCredentials(cli);
-    // builder.withBasicAuthCredentials(credentials[0], credentials[1]);
-    // }
+
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
