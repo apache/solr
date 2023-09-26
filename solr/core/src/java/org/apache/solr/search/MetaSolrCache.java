@@ -24,15 +24,28 @@ import org.apache.lucene.util.Accountable;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.IOFunction;
 
+/**
+ * A shim cache implementation that may be used to provide an "external" view over an associated
+ * {@link #backing} cache. Commonly used in conjunction with {@link
+ * CacheRegenerator#wrap(SolrCache)}.
+ */
 public class MetaSolrCache<K, V, M extends Supplier<V> & Accountable> implements SolrCache<K, V> {
   private final SolrCache<K, M> backing;
   private final Function<V, M> mapping;
 
+  /**
+   * Creates an external view over the specified backing cache.
+   *
+   * @param backing the associated backing cache
+   * @param mapping a function that wraps "external" values as "internal" values associated with the
+   *     backing cache.
+   */
   public MetaSolrCache(SolrCache<K, M> backing, Function<V, M> mapping) {
     this.backing = backing;
     this.mapping = mapping;
   }
 
+  /** Returns the associated backing cache. */
   public SolrCache<K, M> unwrap() {
     return backing;
   }

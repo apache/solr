@@ -42,7 +42,9 @@ import org.apache.solr.util.IOFunction;
 /** Cache regenerator that builds OrdinalMap instances against the new searcher. */
 public class OrdMapRegenerator implements CacheRegenerator {
 
-  private static final long DEFAULT_REGEN_KEEPALIVE_NANOS = TimeUnit.MINUTES.toNanos(2);
+  private static final int DEFAULT_REGEN_KEEPALIVE_MINUTES = 2;
+  private static final long DEFAULT_REGEN_KEEPALIVE_NANOS =
+      TimeUnit.MINUTES.toNanos(DEFAULT_REGEN_KEEPALIVE_MINUTES);
   private static final OrdMapRegenerator DEFAULT_INSTANCE =
       new OrdMapRegenerator(DEFAULT_REGEN_KEEPALIVE_NANOS);
 
@@ -84,17 +86,26 @@ public class OrdMapRegenerator implements CacheRegenerator {
     return new OrdinalMapValue(ordinalMap, 0);
   }
 
-  public static CacheConfig getDefaultCacheConfig(SolrConfig solrConfig) {
+  /**
+   * Configures and supplies a default `ordMapCache` {@link CacheConfig} of unlimited maximum size
+   * and modest initial size, with no autowarming.
+   */
+  public static CacheConfig getDefaultCacheConfig() {
     // for back-compat, default to an effectively unlimited-sized cache with no regeneration
     Map<String, String> args = new HashMap<>();
     args.put(NAME, "ordMapCache");
     args.put("size", Integer.toString(Integer.MAX_VALUE)); // effectively unlimited
     args.put("initialSize", "10");
-    CacheConfig c = new CacheConfig(CaffeineCache.class, args, null);
-    configureRegenerator(solrConfig, c);
-    return c;
+    return new CacheConfig(CaffeineCache.class, args, null);
   }
 
+  /**
+   * If no regenerator is explicitly configured for the specified {@link CacheConfig}, and if
+   * autowarming is on, this method configures a regenerator. `regenKeepAlive` is respected if
+   * explicitly set, implicitly defaulting to 2x the autocommit interval defined by the specified
+   * {@link SolrConfig} (or default of {@value #DEFAULT_REGEN_KEEPALIVE_MINUTES} minutes if no
+   * autocommit interval can be determined).
+   */
   public static void configureRegenerator(SolrConfig solrConfig, CacheConfig config) {
     if (config.getRegenerator() != null
         || !new SolrCacheBase.AutoWarmCountRef(

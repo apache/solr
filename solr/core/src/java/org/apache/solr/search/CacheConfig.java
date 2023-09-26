@@ -178,6 +178,12 @@ public class CacheConfig implements MapSerializable {
     }
   }
 
+  /**
+   * A convenience method that uses the configured {@link #regenerator} (if non-null) to unwrap the
+   * provided external cache. The returned value will be the internal representation of this cache
+   * (internal and external representations are often identical, in the common case where no extra
+   * metadata needs to be tracked) that will be used for autowarming and lifecycle events.
+   */
   public <K> SolrCache<K, ?> unwrap(SolrCache<K, ?> external) {
     return regenerator == null ? external : regenerator.unwrap(external);
   }
