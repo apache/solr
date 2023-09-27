@@ -175,7 +175,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public TestHarness(NodeConfig nodeConfig) {
-    this(nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
+    this(nodeConfig, new CorePropertiesLocator(nodeConfig));
   }
 
   /**
