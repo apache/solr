@@ -1800,6 +1800,7 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
+    // Check predicate against known clusterState before trying to add watchers
     if (clusterState != null) {
       Set<String> liveNodes = clusterState.getLiveNodes();
       DocCollection docCollection = clusterState.getCollectionOrNull(collection);
@@ -1864,6 +1865,7 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
+    // Check predicate against known clusterState before trying to add watchers
     if (clusterState != null) {
       DocCollection docCollection = clusterState.getCollectionOrNull(collection);
       if (docCollection != null) {
