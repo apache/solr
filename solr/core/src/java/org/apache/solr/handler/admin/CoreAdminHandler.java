@@ -56,7 +56,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.BackupCoreAPI;
-import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.InstallCoreData;
 import org.apache.solr.handler.admin.api.MergeIndexesAPI;
@@ -402,7 +402,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
-        CoreSnapshotAPI.class,
+        CoreSnapshot.class,
         InstallCoreData.class,
         BackupCoreAPI.class,
         RestoreCoreAPI.class,

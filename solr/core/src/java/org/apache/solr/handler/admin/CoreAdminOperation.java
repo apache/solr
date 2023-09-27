@@ -58,6 +58,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.api.model.ListCoreSnapshotsResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -72,7 +73,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
-import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.ReloadCoreAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -293,12 +294,10 @@ public enum CoreAdminOperation implements CoreAdminOp {
         final String coreName = params.required().get(CoreAdminParams.CORE);
 
         final CoreContainer coreContainer = it.handler.getCoreContainer();
-        final CoreSnapshotAPI coreSnapshotAPI =
-            new CoreSnapshotAPI(
-                it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
+        final CoreSnapshot coreSnapshotAPI =
+            new CoreSnapshot(it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
-        final CoreSnapshotAPI.ListSnapshotsResponse response =
-            coreSnapshotAPI.listSnapshots(coreName);
+        final ListCoreSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
 
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       });

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.core.snapshots;
 
+import static org.apache.solr.client.api.model.Constants.SNAPSHOT_GENERATION_NUM;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -49,7 +51,7 @@ public class SolrSnapshotManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String INDEX_DIR_PATH = "indexDirPath";
-  public static final String GENERATION_NUM = "generation";
+  public static final String GENERATION_NUM = SNAPSHOT_GENERATION_NUM;
   public static final String SNAPSHOT_STATUS = "status";
   public static final String CREATION_DATE = "creationDate";
   public static final String SNAPSHOT_REPLICAS = "replicas";
