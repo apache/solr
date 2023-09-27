@@ -1915,27 +1915,30 @@ function start_solr() {
         -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG \
 	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
-  entropy_threshold=300
-  # Determine if the operating system is Ubuntu
-  os_name=$(lsb_release -is)
-  if [[ "$os_name" == "Ubuntu" ]]; then
-    # Get the kernel version
-    kernel_version=$(uname -r | awk -F. '{print $1"."$2}')
-    # Set entropy threshold based on kernel version
-    if [[ $(echo "$kernel_version >= 5.15" | bc) -eq 1 ]]; then
-      # For kernels 5.15 and newer
-      entropy_threshold=64  # Adjusted for 256 pool size (approx 25% of 256)
-    else
-      # For older kernels
-      entropy_threshold=300  # Original threshold for 4096 pool size
-    fi
-  fi
+  #!/bin/bash
 
-        # Check entropy and display warning if below threshold
-    if [[ -f /proc/sys/kernel/random/entropy_avail ]] && (( $(cat /proc/sys/kernel/random/entropy_avail) < $entropy_threshold)); then
+# Get the current entropy available
+entropy_avail=$(cat /proc/sys/kernel/random/entropy_avail)
+
+# Get the pool size
+pool_size=$(cat /proc/sys/kernel/random/poolsize)
+
+# Check if entropy is available and pool size is non-zero
+if [[ $entropy_avail -gt 0 && $pool_size -ne 0 ]]; then
+    # Compute the ratio of entropy available to pool size
+    ratio=$(awk -v ea="$entropy_avail" -v ps="$pool_size" 'BEGIN {print (ea/ps)*100}')
+    
+    # Check if the ratio is less than 25%
+    if (( $(echo "$ratio < 25" | bc -l) )); then
       echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
       echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
     fi
+else
+    echo "Error: Either no entropy is available or the pool size is zero."
+fi
+
+
+ 
 
     # no lsof on cygwin though
     if lsof -v 2>&1 | grep -q revision; then
