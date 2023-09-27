@@ -176,7 +176,7 @@ import org.apache.solr.handler.admin.api.CreateCollectionAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.CreateReplica;
-import org.apache.solr.handler.admin.api.CreateShardAPI;
+import org.apache.solr.handler.admin.api.CreateShard;
 import org.apache.solr.handler.admin.api.DeleteAlias;
 import org.apache.solr.handler.admin.api.DeleteCollection;
 import org.apache.solr.handler.admin.api.DeleteCollectionBackup;
@@ -729,7 +729,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATESHARD_OP(
         CREATESHARD,
         (req, rsp, h) -> {
-          CreateShardAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          CreateShard.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     DELETEREPLICA_OP(
@@ -1367,7 +1367,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateAliasAPI.class,
         CreateCollectionAPI.class,
         CreateCollectionBackupAPI.class,
-        CreateShardAPI.class,
+        CreateShard.class,
         DeleteAlias.class,
         DeleteCollectionBackup.class,
         DeleteCollection.class,

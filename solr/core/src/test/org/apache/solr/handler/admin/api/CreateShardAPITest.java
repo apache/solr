@@ -33,12 +33,13 @@ import static org.hamcrest.Matchers.containsString;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CreateShardRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
-/** Unit tests for {@link CreateShardAPI} */
+/** Unit tests for {@link CreateShard} */
 public class CreateShardAPITest extends SolrTestCaseJ4 {
 
   @Test
@@ -47,7 +48,7 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new CreateShardAPI(null, null, null);
+              final var api = new CreateShard(null, null, null);
               api.createShard("someCollName", null);
             });
 
@@ -57,13 +58,13 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
-    final var requestBody = new CreateShardAPI.CreateShardRequestBody();
+    final var requestBody = new CreateShardRequestBody();
     requestBody.shardName = "someShardName";
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new CreateShardAPI(null, null, null);
+              final var api = new CreateShard(null, null, null);
               api.createShard(null, requestBody);
             });
 
@@ -73,13 +74,13 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfShardNameMissing() {
-    final var requestBody = new CreateShardAPI.CreateShardRequestBody();
+    final var requestBody = new CreateShardRequestBody();
     requestBody.shardName = null;
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new CreateShardAPI(null, null, null);
+              final var api = new CreateShard(null, null, null);
               api.createShard("someCollectionName", requestBody);
             });
 
@@ -89,13 +90,13 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfShardNameIsInvalid() {
-    final var requestBody = new CreateShardAPI.CreateShardRequestBody();
+    final var requestBody = new CreateShardRequestBody();
     requestBody.shardName = "invalid$shard@name";
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new CreateShardAPI(null, null, null);
+              final var api = new CreateShard(null, null, null);
               api.createShard("someCollectionName", requestBody);
             });
 
@@ -106,7 +107,7 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateRemoteMessageAllProperties() {
-    final var requestBody = new CreateShardAPI.CreateShardRequestBody();
+    final var requestBody = new CreateShardRequestBody();
     requestBody.shardName = "someShardName";
     requestBody.replicationFactor = 123;
     requestBody.nrtReplicas = 123;
@@ -116,11 +117,11 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
     requestBody.nodeSet = List.of("node1", "node2");
     requestBody.waitForFinalState = true;
     requestBody.followAliases = true;
-    requestBody.asyncId = "someAsyncId";
+    requestBody.async = "someAsyncId";
     requestBody.properties = Map.of("propName1", "propVal1", "propName2", "propVal2");
 
     final var remoteMessage =
-        CreateShardAPI.createRemoteMessage("someCollectionName", requestBody).getProperties();
+        CreateShard.createRemoteMessage("someCollectionName", requestBody).getProperties();
 
     assertEquals(13, remoteMessage.size());
     assertEquals("createshard", remoteMessage.get(QUEUE_OPERATION));
@@ -154,7 +155,7 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
     v1Params.add("property.propName1", "propVal1");
     v1Params.add("property.propName2", "propVal2");
 
-    final var requestBody = CreateShardAPI.CreateShardRequestBody.fromV1Params(v1Params);
+    final var requestBody = CreateShard.createRequestBodyFromV1Params(v1Params);
 
     assertEquals("someShardName", requestBody.shardName);
     assertEquals(Integer.valueOf(123), requestBody.replicationFactor);
@@ -165,7 +166,7 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
     assertEquals(List.of("node1", "node2"), requestBody.nodeSet);
     assertEquals(Boolean.TRUE, requestBody.waitForFinalState);
     assertEquals(Boolean.TRUE, requestBody.followAliases);
-    assertEquals("someAsyncId", requestBody.asyncId);
+    assertEquals("someAsyncId", requestBody.async);
     assertEquals("propVal1", requestBody.properties.get("propName1"));
     assertEquals("propVal2", requestBody.properties.get("propName2"));
   }
