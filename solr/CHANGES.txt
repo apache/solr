@@ -221,6 +221,8 @@ Bug Fixes
 
 * SOLR-16980: Connect to SOLR standalone with basic authentication (Alex Deparvu)
 
+* SOLR-16992: Non-reproducible StreamingTest failures -- suggests CloudSolrStream concurency race condition (Alex Deparvu, hossman)
+
 Dependency Upgrades
 ---------------------
 

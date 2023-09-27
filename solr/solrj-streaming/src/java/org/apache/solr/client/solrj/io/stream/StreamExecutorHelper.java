@@ -36,7 +36,7 @@ public class StreamExecutorHelper {
    * @param <T> the response type
    * @param tasks the list of callables to be executed
    * @param threadsName name to be used by the SolrNamedThreadFactory
-   * @return results list
+   * @return results collection
    * @throws IOException in case any exceptions happened
    */
   public static <T> Collection<T> submitAllAndAwaitAggregatingExceptions(
