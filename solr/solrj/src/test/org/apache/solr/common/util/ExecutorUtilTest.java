@@ -17,10 +17,16 @@
 package org.apache.solr.common.util;
 
 import com.carrotsearch.randomizedtesting.annotations.Timeout;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
@@ -94,5 +100,57 @@ public class ExecutorUtilTest extends SolrTestCase {
       }
     }
     return true; // ran full time
+  }
+
+  @Test
+  public void submitAllTest() throws IOException {
+    AtomicLong idx = new AtomicLong();
+    Callable<Long> c = () -> idx.getAndIncrement();
+
+    List<Long> results = new ArrayList<>();
+    ExecutorService service =
+        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("test"));
+    try {
+      List<Callable<Long>> tasks = List.of(c, c, c, c, c);
+      results.addAll(ExecutorUtil.submitAllAndAwaitAggregatingExceptions(service, tasks));
+    } finally {
+      ExecutorUtil.shutdownNowAndAwaitTermination(service);
+    }
+    Collections.sort(results);
+    List<Long> expected = List.of(0l, 1l, 2l, 3l, 4l);
+    assertEquals(expected, results);
+  }
+
+  @Test
+  public void submitAllWithExceptionsTest() {
+    AtomicLong idx = new AtomicLong();
+    Callable<Long> c =
+        () -> {
+          long id = idx.getAndIncrement();
+          if (id % 2 == 0) {
+            throw new Exception("TestException" + id);
+          }
+          return id;
+        };
+
+    ExecutorService service =
+        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("test"));
+    try {
+      List<Callable<Long>> tasks = List.of(c, c, c, c, c);
+      IOException ex =
+          expectThrows(
+              IOException.class,
+              () -> ExecutorUtil.submitAllAndAwaitAggregatingExceptions(service, tasks));
+      List<String> results = new ArrayList<>();
+      results.add(ex.getCause().getMessage());
+      for (var s : ex.getSuppressed()) {
+        results.add(s.getMessage());
+      }
+      Collections.sort(results);
+      List<String> expected = List.of("TestException0", "TestException2", "TestException4");
+      assertEquals(expected, results);
+    } finally {
+      ExecutorUtil.shutdownNowAndAwaitTermination(service);
+    }
   }
 }
