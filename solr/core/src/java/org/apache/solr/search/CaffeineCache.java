@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.metrics.MetricsMap;
@@ -99,7 +100,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   private boolean async;
 
   private MetricsMap cacheMap;
-  private SolrMetricsContext solrMetricsContext;
 
   private long initialRamBytes = 0;
   private final LongAdder ramBytes = new LongAdder();
@@ -456,18 +456,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   }
 
   @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return solrMetricsContext;
-  }
-
-  @Override
   public String toString() {
     return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    super.initializeMetrics(parentContext, scope);
     cacheMap =
         new MetricsMap(
             map -> {
@@ -497,10 +492,15 @@ public class CaffeineCache<K, V> extends SolrCacheBase
                 map.put("cumulative_evictions", cumulativeStats.evictionCount());
               }
             });
-    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
+    getSolrMetricsContext().gauge(cacheMap, true, scope, getCategory().toString());
   }
 
   private static double hitRate(long hitCount, long lookupCount) {
     return lookupCount == 0 ? 1.0 : (double) hitCount / lookupCount;
+  }
+
+  @Override
+  public void forEach(BiConsumer<K, V> action) {
+    cache.asMap().forEach(action);
   }
 }

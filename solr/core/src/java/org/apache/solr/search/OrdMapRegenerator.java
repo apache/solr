@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -32,21 +33,22 @@ import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.search.SolrCache.MetaEntry;
 import org.apache.solr.util.IOFunction;
 
 /** Cache regenerator that builds OrdinalMap instances against the new searcher. */
-public class OrdMapRegenerator implements CacheRegenerator {
+public class OrdMapRegenerator<M extends MetaEntry<OrdinalMap, M>>
+    extends MetaCacheRegenerator<String, OrdinalMap, M> {
 
   private static final int DEFAULT_REGEN_KEEPALIVE_MINUTES = 2;
   private static final long DEFAULT_REGEN_KEEPALIVE_NANOS =
       TimeUnit.MINUTES.toNanos(DEFAULT_REGEN_KEEPALIVE_MINUTES);
-  private static final OrdMapRegenerator DEFAULT_INSTANCE =
-      new OrdMapRegenerator(DEFAULT_REGEN_KEEPALIVE_NANOS);
+  private static final OrdMapRegenerator<?> DEFAULT_INSTANCE =
+      new OrdMapRegenerator<>(DEFAULT_REGEN_KEEPALIVE_NANOS);
 
   private final long regenKeepAliveNanos;
 
@@ -56,10 +58,16 @@ public class OrdMapRegenerator implements CacheRegenerator {
   }
 
   private OrdMapRegenerator(long regenKeepAliveNanos) {
+    super(getWrapFunction());
     this.regenKeepAliveNanos = regenKeepAliveNanos;
   }
 
-  private static class OrdinalMapValue implements Supplier<OrdinalMap>, Accountable {
+  @SuppressWarnings({"unchecked", "UnnecessaryLambda"})
+  private static <M> Function<OrdinalMap, M> getWrapFunction() {
+    return (v) -> (M) new OrdinalMapValue(v, 0);
+  }
+
+  public static class OrdinalMapValue implements MetaEntry<OrdinalMap, OrdinalMapValue> {
     private static final long BASE_RAM_BYTES_USED =
         RamUsageEstimator.shallowSizeOfInstance(OrdinalMapValue.class);
     private final OrdinalMap ordinalMap;
@@ -80,10 +88,11 @@ public class OrdMapRegenerator implements CacheRegenerator {
     public long ramBytesUsed() {
       return BASE_RAM_BYTES_USED + ordinalMap.ramBytesUsed();
     }
-  }
 
-  private static OrdinalMapValue wrapValue(OrdinalMap ordinalMap) {
-    return new OrdinalMapValue(ordinalMap, 0);
+    @Override
+    public OrdinalMapValue metaClone(OrdinalMap val) {
+      return new OrdinalMapValue(val, accessTimestampNanos);
+    }
   }
 
   /**
@@ -165,7 +174,7 @@ public class OrdMapRegenerator implements CacheRegenerator {
       config.setRegenerator(DEFAULT_INSTANCE);
       return;
     }
-    config.setRegenerator(new OrdMapRegenerator(regenKeepAliveNanos));
+    config.setRegenerator(new OrdMapRegenerator<>(regenKeepAliveNanos));
   }
 
   private static long getOpenSearcherIntervalNanos(SolrConfig solrConfig) {
@@ -242,19 +251,5 @@ public class OrdMapRegenerator implements CacheRegenerator {
     SolrCache<String, Supplier<OrdinalMap>> c = (SolrCache<String, Supplier<OrdinalMap>>) newCache;
     c.computeIfAbsent(field, producer);
     return true;
-  }
-
-  @Override
-  public <K> SolrCache<K, ?> unwrap(SolrCache<K, ?> external) {
-    @SuppressWarnings("unchecked")
-    SolrCache<K, ?> ret = ((MetaSolrCache<K, ?, ?>) external).unwrap();
-    return ret;
-  }
-
-  @Override
-  public <K> SolrCache<K, ?> wrap(SolrCache<K, ?> internal) {
-    @SuppressWarnings("unchecked")
-    SolrCache<K, OrdinalMapValue> backing = (SolrCache<K, OrdinalMapValue>) internal;
-    return new MetaSolrCache<>(backing, OrdMapRegenerator::wrapValue);
   }
 }

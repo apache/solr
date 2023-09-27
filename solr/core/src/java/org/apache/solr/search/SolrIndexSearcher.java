@@ -385,26 +385,26 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.cachingEnabled = enableCache;
     if (cachingEnabled) {
       final ArrayList<SolrCache> clist = new ArrayList<>();
-      clist.add(solrConfig.ordMapCacheConfig.unwrap(ordMapCache));
+      clist.add(ordMapCache.toInternal());
       fieldValueCache =
           solrConfig.fieldValueCacheConfig == null
               ? null
               : solrConfig.fieldValueCacheConfig.newInstance();
       if (fieldValueCache != null) {
-        clist.add(solrConfig.fieldValueCacheConfig.unwrap(fieldValueCache));
+        clist.add(fieldValueCache.toInternal());
       }
       filterCache =
           solrConfig.filterCacheConfig == null ? null : solrConfig.filterCacheConfig.newInstance();
-      if (filterCache != null) clist.add(solrConfig.filterCacheConfig.unwrap(filterCache));
+      if (filterCache != null) clist.add(filterCache.toInternal());
       queryResultCache =
           solrConfig.queryResultCacheConfig == null
               ? null
               : solrConfig.queryResultCacheConfig.newInstance();
       if (queryResultCache != null) {
-        clist.add(solrConfig.queryResultCacheConfig.unwrap(queryResultCache));
+        clist.add(queryResultCache.toInternal());
       }
       SolrCache<Integer, Document> documentCache = docFetcher.getDocumentCache();
-      if (documentCache != null) clist.add(solrConfig.documentCacheConfig.unwrap(documentCache));
+      if (documentCache != null) clist.add(documentCache.toInternal());
 
       if (solrConfig.userCacheConfigs.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
@@ -415,7 +415,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           SolrCache<?, ?> cache = config.newInstance();
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
-            clist.add(config.unwrap(cache));
+            clist.add(cache.toInternal());
           }
         }
       }

@@ -277,7 +277,6 @@ public class ThinCache<S, K, V> extends SolrCacheBase
   }
 
   private MetricsMap cacheMap;
-  private SolrMetricsContext solrMetricsContext;
 
   private final LongAdder hits = new LongAdder();
   private final LongAdder inserts = new LongAdder();
@@ -292,7 +291,7 @@ public class ThinCache<S, K, V> extends SolrCacheBase
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    super.initializeMetrics(parentContext, scope);
     cacheMap =
         new MetricsMap(
             map -> {
@@ -319,7 +318,7 @@ public class ThinCache<S, K, V> extends SolrCacheBase
               map.put("cumulative_inserts", priorInserts + insertCount);
               map.put("cumulative_evictions", priorEvictions + evictionCount);
             });
-    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
+    getSolrMetricsContext().gauge(cacheMap, true, scope, getCategory().toString());
   }
 
   @VisibleForTesting
@@ -330,11 +329,6 @@ public class ThinCache<S, K, V> extends SolrCacheBase
   // TODO: refactor this common method out of here and `CaffeineCache`
   private static double hitRate(long hitCount, long lookupCount) {
     return lookupCount == 0 ? 1.0 : (double) hitCount / lookupCount;
-  }
-
-  @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return solrMetricsContext;
   }
 
   @Override

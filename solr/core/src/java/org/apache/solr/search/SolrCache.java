@@ -18,8 +18,13 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import org.apache.lucene.util.Accountable;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.IOFunction;
 
 /** Primary API for dealing with Solr's internal caches. */
@@ -107,6 +112,19 @@ public interface SolrCache<K, V> extends SolrInfoBean {
   public void clear();
 
   /**
+   * As {@link Map#forEach(BiConsumer)}, executes the specified action for each key/value entry in
+   * this cache.
+   *
+   * <p>This method is potentially expensive, and should generally not be used, except e.g. in
+   * contexts that require per-entry input for nuanced metrics computation.
+   *
+   * <p>The default implementation throws {@link UnsupportedOperationException}.
+   */
+  default void forEach(BiConsumer<K, V> action) {
+    throw new UnsupportedOperationException("forEach() is not implemented for " + getClass());
+  }
+
+  /**
    * Enumeration of possible States for cache instances. :TODO: only state that seems to ever be set
    * is LIVE ?
    */
@@ -186,5 +204,54 @@ public interface SolrCache<K, V> extends SolrInfoBean {
    */
   default boolean isRecursionSupported() {
     return false;
+  }
+
+  /**
+   * Returns an external representation of this cache, to be used for most interactions with the
+   * cache (except autowarming and lifecycle operations).
+   *
+   * <p>The default implementation simply returns <code>this</code>.
+   */
+  default SolrCache<?, ?> toExternal() {
+    return this;
+  }
+
+  /**
+   * Returns an internal representation of this cache, to be used for autowarming and lifecycle
+   * operations. The returned cache may, e.g., have its values wrapped, so may not be suitable for
+   * other types of interactions (e.g. naive insertion and retrieval).
+   *
+   * <p>The default implementation simply returns <code>this</code>.
+   */
+  default SolrCache<?, ?> toInternal() {
+    return this;
+  }
+
+  /**
+   * Intended for use as a cache value that wraps a raw value of type <code>V</code> in a {@link
+   * MetaEntry} for tracking additional per-entry metadata.
+   */
+  interface MetaEntry<V, E extends MetaEntry<V, E>> extends Supplier<V>, Accountable {
+    /**
+     * Returns a {@link MetaEntry} instance of the same concrete type, wrapping the specified raw
+     * value. The returned value should inherit any relevant metadata from <code>this</code>
+     * instance.
+     */
+    E metaClone(V val);
+  }
+
+  /**
+   * A special extension of SolrMetricProducer that may be implemented by {@link CacheRegenerator}s
+   * to register extra metrics associated with their associated {@link SolrCache}.
+   */
+  interface SidecarMetricProducer<K, M extends MetaEntry<?, M>> extends SolrMetricProducer {
+    /**
+     * Special metrics initialization method.
+     *
+     * @param parentContext the context of the associated cache.
+     * @param scope the scope of this metrics sidecar, as defined by the caller
+     * @param cache the associated cache
+     */
+    void initializeMetrics(SolrMetricsContext parentContext, String scope, SolrCache<K, M> cache);
   }
 }

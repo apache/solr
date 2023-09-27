@@ -19,9 +19,8 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import org.apache.lucene.util.Accountable;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.search.SolrCache.MetaEntry;
 import org.apache.solr.util.IOFunction;
 
 /**
@@ -29,7 +28,7 @@ import org.apache.solr.util.IOFunction;
  * {@link #backing} cache. Commonly used in conjunction with {@link
  * CacheRegenerator#wrap(SolrCache)}.
  */
-public class MetaSolrCache<K, V, M extends Supplier<V> & Accountable> implements SolrCache<K, V> {
+public class MetaSolrCache<K, V, M extends MetaEntry<V, M>> implements SolrCache<K, V> {
   private final SolrCache<K, M> backing;
   private final Function<V, M> mapping;
 
@@ -46,7 +45,8 @@ public class MetaSolrCache<K, V, M extends Supplier<V> & Accountable> implements
   }
 
   /** Returns the associated backing cache. */
-  public SolrCache<K, M> unwrap() {
+  @Override
+  public SolrCache<?, ?> toInternal() {
     return backing;
   }
 
@@ -67,19 +67,19 @@ public class MetaSolrCache<K, V, M extends Supplier<V> & Accountable> implements
 
   @Override
   public V put(K key, V value) {
-    M replaced = backing.put(key, mapping.apply(value));
+    MetaEntry<V, ?> replaced = backing.put(key, mapping.apply(value));
     return replaced == null ? null : replaced.get();
   }
 
   @Override
   public V get(K key) {
-    M ret = backing.get(key);
+    MetaEntry<V, ?> ret = backing.get(key);
     return ret == null ? null : ret.get();
   }
 
   @Override
   public V remove(K key) {
-    M removed = backing.remove(key);
+    MetaEntry<V, ?> removed = backing.remove(key);
     return removed == null ? null : removed.get();
   }
 

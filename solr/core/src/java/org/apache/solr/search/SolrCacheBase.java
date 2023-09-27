@@ -23,10 +23,13 @@ import java.math.RoundingMode;
 import java.util.Map;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Category;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.search.SolrCache.SidecarMetricProducer;
 import org.apache.solr.search.SolrCache.State;
 
 /** Common base class of reusable functionality for SolrCaches */
-public abstract class SolrCacheBase {
+public abstract class SolrCacheBase implements SolrMetricProducer {
 
   protected CacheRegenerator regenerator;
 
@@ -127,5 +130,43 @@ public abstract class SolrCacheBase {
 
   public String name() {
     return this.name;
+  }
+
+  /**
+   * Delegates to {@link #regenerator} {@link CacheRegenerator#wrap(SolrCache)} to determine whether
+   * the internal representation of this cache should be wrapped for the purpose of naive insertion
+   * and retrieval.
+   */
+  public SolrCache<?, ?> toExternal() {
+    SolrCache<?, ?> internal = (SolrCache<?, ?>) this;
+    return regenerator == null ? internal : regenerator.wrap(internal);
+  }
+
+  /**
+   * Delegates to {@link #regenerator} {@link CacheRegenerator#unwrap(SolrCache)} to determine
+   * whether the external representation of this cache should be unwrwapped for the purpose of
+   * autowarming and lifecycle operations.
+   */
+  public SolrCache<?, ?> toInternal() {
+    SolrCache<?, ?> internal = (SolrCache<?, ?>) this;
+    return regenerator == null ? internal : regenerator.unwrap(internal);
+  }
+
+  private SolrMetricsContext solrMetricsContext;
+
+  @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
+    if (regenerator instanceof SidecarMetricProducer) {
+      // provide regenerators the opportunity to register extra metrics
+      ((SidecarMetricProducer) regenerator)
+          .initializeMetrics(solrMetricsContext, scope, (SolrCache) this);
+    }
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 }
