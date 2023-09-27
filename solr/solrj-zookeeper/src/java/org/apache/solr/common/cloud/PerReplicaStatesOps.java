@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
@@ -56,6 +57,8 @@ public class PerReplicaStatesOps {
   public static PerReplicaStates fetch(
       String path, SolrZkClient zkClient, PerReplicaStates current) {
     try {
+      assert CommonTestInjection.injectBreakpoint(
+          PerReplicaStatesOps.class.getName() + "/beforePrsFetch");
       if (current != null) {
         Stat stat = zkClient.exists(current.path, null, true);
         if (stat == null) return new PerReplicaStates(path, 0, Collections.emptyList());
@@ -64,6 +67,11 @@ public class PerReplicaStatesOps {
       Stat stat = new Stat();
       List<String> children = zkClient.getChildren(path, null, stat, true);
       return new PerReplicaStates(path, stat.getCversion(), Collections.unmodifiableList(children));
+    } catch (KeeperException.NoNodeException e) {
+      throw new PrsZkNodeNotFoundException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error fetching per-replica states. The node [" + path + "] is not found",
+          e);
     } catch (KeeperException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Error fetching per-replica states", e);
@@ -73,6 +81,12 @@ public class PerReplicaStatesOps {
           SolrException.ErrorCode.SERVER_ERROR,
           "Thread interrupted when loading per-replica states from " + path,
           e);
+    }
+  }
+
+  public static class PrsZkNodeNotFoundException extends SolrException {
+    private PrsZkNodeNotFoundException(ErrorCode code, String msg, Throwable cause) {
+      super(code, msg, cause);
     }
   }
 

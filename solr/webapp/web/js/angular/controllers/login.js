@@ -18,7 +18,7 @@
 solrAdminApp.controller('LoginController',
     ['$scope', '$routeParams', '$rootScope', '$location', '$window', 'AuthenticationService', 'Constants',
       function ($scope, $routeParams, $rootScope, $location, $window, AuthenticationService, Constants) {
-        $scope.resetMenu("login", Constants.IS_ROOT_PAGE);
+        $scope.showHideMenu();
         $scope.subPath = $routeParams.route;
         $rootScope.exceptions = {};
 
@@ -60,92 +60,166 @@ solrAdminApp.controller('LoginController',
             var hp = AuthenticationService.decodeHashParams(hash);
             var expectedState = sessionStorage.getItem("auth.stateRandom") + "_" + sessionStorage.getItem("auth.location");
             sessionStorage.setItem("auth.state", "error");
-            if (hp['access_token'] && hp['token_type'] && hp['state']) {
-              // Validate state
-              if (hp['state'] !== expectedState) {
-                $scope.error = "Problem with auth callback";
-                console.log("Expected state param " + expectedState + " but got " + hp['state']);
-                errorText += "Invalid values in state parameter. ";
-              }
-              // Validate token type
-              if (hp['token_type'].toLowerCase() !== "bearer") {
-                console.log("Expected token_type param 'bearer', but got " + hp['token_type']);
-                errorText += "Invalid values in token_type parameter. ";
-              }
-              // Unpack ID token and validate nonce, get username
-              if (hp['id_token']) {
-                var idToken = hp['id_token'].split(".");
-                if (idToken.length === 3) {
-                  var payload = AuthenticationService.decodeJwtPart(idToken[1]);
-                  if (!payload['nonce'] || payload['nonce'] !== sessionStorage.getItem("auth.nonce")) {
-                    errorText += "Invalid 'nonce' value, possible attack detected. Please log in again. ";
-                  }
-
-                  if (errorText === "") {
-                    sessionStorage.setItem("auth.username", payload['sub']);
-                    sessionStorage.setItem("auth.header", "Bearer " + hp['access_token']);
-                    sessionStorage.removeItem("auth.statusText");
-                    sessionStorage.removeItem("auth.stateRandom");
-                    sessionStorage.removeItem("auth.wwwAuthHeader");
-                    console.log("User " + payload['sub'] + " is logged in");
-                    var redirectTo = sessionStorage.getItem("auth.location");
-                    console.log("Redirecting to stored location " + redirectTo);
-                    sessionStorage.setItem("auth.state", "authenticated");
-                    sessionStorage.removeItem("http401");
-                    $location.path(redirectTo).hash("");
-                  }
-                } else {
-                  console.log("Expected JWT compact id_token param but got " + idToken);
-                  errorText += "Invalid values in id_token parameter. ";
-                }
-              } else {
-                console.log("Callback was missing the id_token parameter, could not validate nonce.");
-                errorText += "Callback was missing the id_token parameter, could not validate nonce. ";
-              }
-              if (hp['access_token'].split(".").length !== 3) {
-                console.log("Expected JWT compact access_token param but got " + hp['access_token']);
-                errorText += "Invalid values in access_token parameter. ";
-              }
-              if (errorText !== "") {
-                $scope.error = "Problems with OpenID callback";
-                $scope.errorDescription = errorText;
-                $scope.http401 = "true";
-              }
-              // End callback processing
-            } else if (hp['error']) {
-              // The callback had errors
-              console.log("Error received from idp: " + hp['error']);
-              var errorDescriptions = {};
-              errorDescriptions['invalid_request'] = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.";
-              errorDescriptions['unauthorized_client'] = "The client is not authorized to request an access token using this method.";
-              errorDescriptions['access_denied'] = "The resource owner or authorization server denied the request.";
-              errorDescriptions['unsupported_response_type'] = "The authorization server does not support obtaining an access token using this method.";
-              errorDescriptions['invalid_scope'] = "The requested scope is invalid, unknown, or malformed.";
-              errorDescriptions['server_error'] = "The authorization server encountered an unexpected condition that prevented it from fulfilling the request.";
-              errorDescriptions['temporarily_unavailable'] = "The authorization server is currently unable to handle the request due to a temporary overloading or maintenance of the server.";
-              $scope.error = "Callback from Id Provider contained error. ";
-              if (hp['error_description']) {
-                $scope.errorDescription = decodeURIComponent(hp['error_description']);
-              } else {
-                $scope.errorDescription = errorDescriptions[hp['error']];
-              }
-              if (hp['error_uri']) {
-                $scope.errorDescription += " More information at " + hp['error_uri'] + ". ";
-              }
-              if (hp['state'] !== expectedState) {
-                $scope.errorDescription += "The state parameter returned from ID Provider did not match the one we sent.";
-              }
+            $scope.authData = AuthenticationService.getAuthDataHeader();
+            if (!validateState(hp['state'], expectedState)) {
+              $scope.error = "Problems with OpenID callback";
+              $scope.errorDescription = errorText;
+              $scope.http401 = "true";
               sessionStorage.setItem("auth.state", "error");
             }
-          }
+            else {
+              var flow = $scope.authData ? $scope.authData['authorization_flow'] : undefined;
+              console.log("Callback: authorization_flow : " +flow);
+              var isCodePKCE = flow == 'code_pkce';
+              if (isCodePKCE) {
+                // code flow with PKCE
+                var code = hp['code'];
+                var tokenEndpoint = $scope.authData['tokenEndpoint'];
+                // concurrent Solr API calls will trigger 401 and erase session's "auth.realm" in app.js
+                // save it before it's erased
+                var authRealm = sessionStorage.getItem("auth.realm");
+
+                var data = {
+                  'grant_type': 'authorization_code',
+                  'code': code,
+                  'redirect_uri': $window.location.href.split('#')[0],
+                  'scope': "openid " + $scope.authData['scope'],
+                  'code_verifier': sessionStorage.getItem('codeVerifier'),
+                  "client_id": $scope.authData['client_id']
+                };
+
+                console.debug(`Callback. Got code: ${code} \nCalling token endpoint:: ${tokenEndpoint} `);
+                AuthenticationService.getOAuthTokens(tokenEndpoint, data).then(function(response) {
+                    var accessToken = response.access_token;
+                    var idToken = response.id_token;
+                    var tokenType = response.access_type;
+                    sessionStorage.setItem("auth.realm", authRealm);
+                    processTokensResponse(accessToken, idToken, tokenType, expectedState, hp);
+                }).catch(function (error) {
+                  errorText += "Error calling token endpoint. ";
+                  $scope.error = "Problems with OpenID callback";
+                  $scope.errorDescription = errorText;
+                  $scope.http401 = "true";
+                  sessionStorage.setItem("auth.state", "error");
+                  if (error && error.data) {
+                    console.error("Error getting tokens: " + JSON.stringify(error.data));
+                  } else {
+                    console.error("Error getting tokens: " + error);
+                  }
+                });
+              }
+              else {
+                // implicit flow
+                processTokensResponse(hp['access_token'], hp['id_token'], hp['token_type'], expectedState, hp);
+              }
+            }
         }
+      }
+
+      function validateState(state, expectedState) {
+        if (state !== expectedState) {
+          $scope.error = "Problem with auth callback";
+          console.error("Expected state param " + expectedState + " but got " + state);
+          errorText += "Invalid values in state parameter. ";
+          return false;
+        }
+        return true;
+      }
+
+      function processTokensResponse(accessToken, idToken, tokenType, expectedState, hp) {
+        if (accessToken && hp['state']) {
+          // Validate token type.
+          if (!tokenType) {
+            //Assume the type is 'bearer' if it's not returned. Most IdProviders support 'bearer' by default but don't always return the type.
+            tokenType = "bearer";
+          }
+          else if(tokenType.toLowerCase() !== "bearer") {
+            console.error("Expected token_type param 'bearer', but got " + tokenType);
+            errorText += "Invalid values in token_type parameter. ";
+          }
+          // Unpack ID token and validate nonce, get username
+          if (idToken) {
+            var idTokenArray = idToken.split(".");
+            if (idTokenArray.length === 3) {
+              var payload = AuthenticationService.decodeJwtPart(idTokenArray[1]);
+              if (!payload['nonce'] || payload['nonce'] !== sessionStorage.getItem("auth.nonce")) {
+                errorText += "Invalid 'nonce' value, possible attack detected. Please log in again. ";
+              }
+
+              if (errorText === "") {
+                sessionStorage.setItem("auth.username", payload['sub']);
+                sessionStorage.setItem("auth.header", "Bearer " + accessToken);
+                sessionStorage.removeItem("auth.statusText");
+                sessionStorage.removeItem("auth.stateRandom");
+                sessionStorage.removeItem("auth.wwwAuthHeader");
+                console.log("User " + payload['sub'] + " is logged in");
+                var redirectTo = sessionStorage.getItem("auth.location");
+                console.log("Redirecting to stored location " + redirectTo);
+                sessionStorage.setItem("auth.state", "authenticated");
+                sessionStorage.removeItem("http401");
+                sessionStorage.setItem("auth.scheme", "Bearer");
+                $location.path(redirectTo).hash("");
+              }
+            } else {
+              console.error("Expected JWT compact id_token param but got " + idTokenArray);
+              errorText += "Invalid values in id_token parameter. ";
+            }
+          } else {
+            console.error("Callback was missing the id_token parameter, could not validate nonce.");
+            errorText += "Callback was missing the id_token parameter, could not validate nonce. ";
+          }
+          if (accessToken.split(".").length !== 3) {
+            console.error("Expected JWT compact access_token param but got " + accessToken);
+            errorText += "Invalid values in access_token parameter. ";
+          }
+          if (errorText !== "") {
+            $scope.error = "Problems with OpenID callback";
+            $scope.errorDescription = errorText;
+            $scope.http401 = "true";
+          }
+          // End callback processing
+        } else if (hp['error']) {
+          // The callback had errors
+          console.error("Error received from idp: " + hp['error']);
+          var errorDescriptions = {};
+          errorDescriptions['invalid_request'] = "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.";
+          errorDescriptions['unauthorized_client'] = "The client is not authorized to request an access token using this method.";
+          errorDescriptions['access_denied'] = "The resource owner or authorization server denied the request.";
+          errorDescriptions['unsupported_response_type'] = "The authorization server does not support obtaining an access token using this method.";
+          errorDescriptions['invalid_scope'] = "The requested scope is invalid, unknown, or malformed.";
+          errorDescriptions['server_error'] = "The authorization server encountered an unexpected condition that prevented it from fulfilling the request.";
+          errorDescriptions['temporarily_unavailable'] = "The authorization server is currently unable to handle the request due to a temporary overloading or maintenance of the server.";
+          $scope.error = "Callback from Id Provider contained error. ";
+          if (hp['error_description']) {
+            $scope.errorDescription = decodeURIComponent(hp['error_description']);
+          } else {
+            $scope.errorDescription = errorDescriptions[hp['error']];
+          }
+          if (hp['error_uri']) {
+            $scope.errorDescription += " More information at " + hp['error_uri'] + ". ";
+          }
+          if (hp['state'] !== expectedState) {
+            $scope.errorDescription += "The state parameter returned from ID Provider did not match the one we sent.";
+          }
+          sessionStorage.setItem("auth.state", "error");
+        }
+        else{
+          console.error(`Invalid data received from idp: accessToken: ${accessToken},
+                      idToken: ${idToken}, state: ${hp['state']}`);
+          errorText += "Invalid data received from the OpenID provider. ";
+          $scope.http401 = "true";
+          $scope.error = "Problems with OpenID callback.";
+          $scope.errorDescription = errorText;
+          sessionStorage.setItem("auth.state", "error");
+        }
+      }
 
         if (errorText === "" && !$scope.error && authParams) {
           $scope.error = authParams['error'];
           $scope.errorDescription = authParams['error_description'];
           $scope.authData = AuthenticationService.getAuthDataHeader();
         }
-        
+
         $scope.authScheme = sessionStorage.getItem("auth.scheme");
         $scope.authRealm = sessionStorage.getItem("auth.realm");
         $scope.wwwAuthHeader = sessionStorage.getItem("auth.wwwAuthHeader");
@@ -165,20 +239,49 @@ solrAdminApp.controller('LoginController',
           $location.path("/");
         };
 
-        $scope.jwtLogin = function () {
+        $scope.jwtLogin = async function () {
           var stateRandom = Math.random().toString(36).substr(2);
           sessionStorage.setItem("auth.stateRandom", stateRandom);
           var authState = stateRandom + "_" + sessionStorage.getItem("auth.location");
           var authNonce = Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
           sessionStorage.setItem("auth.nonce", authNonce);
-          var params = {
-            "response_type" : "id_token token",
-            "client_id" : $scope.authData['client_id'],
-            "redirect_uri" : $window.location.href.split('#')[0],
-            "scope" : "openid " + $scope.authData['scope'],
-            "state" : authState,
-            "nonce" : authNonce
-          };
+          var authData = AuthenticationService.getAuthDataHeader();
+          var flow = authData ? authData['authorization_flow'] : "implicit";
+          console.log("jwtLogin flow: "+ flow);
+          var isCodePKCE = flow == 'code_pkce';
+
+          var params = {};
+          if (isCodePKCE) {
+            console.debug("Login with 'Code PKCE' flow");
+            var codeVerifier = AuthenticationService.generateCodeVerifier();
+            var code_challenge = await AuthenticationService.generateCodeChallengeFromVerifier(codeVerifier);
+            var codeChallengeMethod = AuthenticationService.getCodeChallengeMethod();
+            sessionStorage.setItem('codeVerifier', codeVerifier);
+            params = {
+              "response_type": "code",
+              "client_id": $scope.authData['client_id'],
+              "redirect_uri": $window.location.href.split('#')[0],
+              "scope": "openid " + $scope.authData['scope'],
+              "state": authState,
+              "nonce": authNonce,
+              "response_mode": "fragment",
+              "code_challenge": code_challenge,
+              "code_challenge_method": codeChallengeMethod
+            };
+          }
+          else {
+            console.debug("Login with 'Implicit' flow");
+            params = {
+              "response_type": "id_token token",
+              "client_id": $scope.authData['client_id'],
+              "redirect_uri": $window.location.href.split('#')[0],
+              "scope": "openid " + $scope.authData['scope'],
+              "state": authState,
+              "nonce": authNonce,
+              "response_mode": 'fragment',
+              "grant_type": 'implicit'
+            };
+          }
 
           var endpointBaseUrl = $scope.authData['authorizationEndpoint'];
           var loc = endpointBaseUrl + "?" + paramsToString(params);
@@ -191,7 +294,7 @@ solrAdminApp.controller('LoginController',
             for (var p in params) {
                if( params.hasOwnProperty(p) ) {
                  arr.push(p + "=" + encodeURIComponent(params[p]));
-               } 
+               }
              }
              return arr.join("&");
           }
@@ -204,7 +307,7 @@ solrAdminApp.controller('LoginController',
             redirect.forEach(function(uri) { // Check that current node URL is among the configured callback URIs
               if ($window.location.href.startsWith(uri)) isLoginNode = true;
             });
-            return isLoginNode; 
+            return isLoginNode;
           } else {
             return true; // no redirect UIRs configured, all nodes are potential login nodes
           }

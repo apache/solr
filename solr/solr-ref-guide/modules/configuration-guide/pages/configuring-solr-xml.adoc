@@ -39,6 +39,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
   <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.allowUrls:}</str>
+  <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
 
   <solrcloud>
 
@@ -94,7 +95,7 @@ The tables below list the child nodes of each XML element in `solr.xml`.
 +
 This attribute does not need to be set.
 +
-If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter which the type is `org.apache.solr.core.CoreContainer`.
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
 For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
 If this attribute isn't set, Solr uses the default `configSetService`, with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
@@ -188,6 +189,18 @@ The default value is equal to the number of processors.
 +
 The root of the core discovery tree, defaults to `$SOLR_HOME`.
 
+`coresLocator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.core.CorePropertiesLocator`
+|===
++
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that implements `CoresLocator`, and you must provide a constructor with one parameter of type `org.apache.solr.core.NodeConfig`.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>`.
+
 `managementPath`::
 +
 [%autowidth,frame=none]
@@ -253,6 +266,15 @@ In SolrCloud mode, the allow-list is automatically configured to include all liv
 +
 The allow-list can also be configured with the `solr.allowUrls` system property in `solr.in.sh` / `solr.in.cmd`.
 If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
+
+`hideStackTrace`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+When this attribute is set to `true`, Solr will not return any stack traces in the HTTP response in case of errors.  By default (`false`), stack traces are hidden only for predictable Solr exceptions, but are returned in the response for unexpected exceptions (i.e.: HTTP 500)
 
 `shareSchema`::
 +

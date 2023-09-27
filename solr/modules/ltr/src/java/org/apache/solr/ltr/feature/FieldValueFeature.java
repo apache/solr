@@ -56,17 +56,21 @@ import org.apache.solr.search.SolrIndexSearcher;
  * <p>There are 4 different types of FeatureScorers that a FieldValueFeatureWeight may use. The
  * chosen scorer depends on the field attributes.
  *
- * <p>FieldValueFeatureScorer (FVFS): used for stored=true, no matter if docValues=true or
- * docValues=false
+ * <p>FieldValueFeatureScorer (FVFS): used for stored=true if docValues=false
  *
- * <p>NumericDocValuesFVFS: used for stored=false and docValues=true, if docValueType == NUMERIC
+ * <p>NumericDocValuesFVFS: used for docValues=true, if docValueType == NUMERIC
  *
- * <p>SortedDocValuesFVFS: used for stored=false and docValues=true, if docValueType == SORTED
+ * <p>SortedDocValuesFVFS: used for docValues=true, if docValueType == SORTED
  *
- * <p>DefaultValueFVFS: used for stored=false and docValues=true, a fallback scorer that is used on
- * segments where no document has a value set in the field of this feature
+ * <p>DefaultValueFVFS: used for docValues=true, a fallback scorer that is used on segments where no
+ * document has a value set in the field of this feature
+ *
+ * <p>Use {@link LegacyFieldValueFeature} for the pre 9.4 behaviour of not using DocValues when
+ * docValues=true is combined with stored=true.
  */
 public class FieldValueFeature extends Feature {
+
+  protected boolean useDocValuesForStored = true;
 
   private String field;
   private Set<String> fieldAsSet;
@@ -134,7 +138,9 @@ public class FieldValueFeature extends Feature {
      */
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
-      if (schemaField != null && !schemaField.stored() && schemaField.hasDocValues()) {
+      if (schemaField != null
+          && (!schemaField.stored() || useDocValuesForStored)
+          && schemaField.hasDocValues()) {
 
         final FieldInfo fieldInfo = context.reader().getFieldInfos().fieldInfo(field);
         final DocValuesType docValuesType =

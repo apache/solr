@@ -56,6 +56,7 @@ public class NodeConfig {
   private final String nodeName;
 
   private final Path coreRootDirectory;
+  private final String coresLocatorClass;
 
   private final Path solrDataHome;
 
@@ -66,6 +67,8 @@ public class NodeConfig {
   private final Set<Path> allowPaths;
 
   private final List<String> allowUrls;
+
+  private final boolean hideStackTraces;
 
   private final String sharedLibDirectory;
 
@@ -123,6 +126,7 @@ public class NodeConfig {
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
+      String coresLocatorClass,
       Path solrDataHome,
       Integer booleanQueryMaxClauseCount,
       Path configSetBaseDirectory,
@@ -153,12 +157,14 @@ public class NodeConfig {
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
+      boolean hideStackTraces,
       String configSetServiceClass,
       String modules,
       Set<String> hiddenSysProps) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
+    this.coresLocatorClass = coresLocatorClass;
     this.solrDataHome = solrDataHome;
     this.booleanQueryMaxClauseCount = booleanQueryMaxClauseCount;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -189,6 +195,7 @@ public class NodeConfig {
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
+    this.hideStackTraces = hideStackTraces;
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
     this.hiddenSysProps = hiddenSysProps;
@@ -265,6 +272,10 @@ public class NodeConfig {
   /** Absolute. */
   public Path getCoreRootDirectory() {
     return coreRootDirectory;
+  }
+
+  public String getCoresLocatorClass() {
+    return this.coresLocatorClass;
   }
 
   /** Absolute. */
@@ -452,6 +463,10 @@ public class NodeConfig {
     return allowUrls;
   }
 
+  public boolean hideStackTraces() {
+    return hideStackTraces;
+  }
+
   // Configures SOLR_HOME/lib to the shared class loader
   private void setupSharedLib() {
     // Always add $SOLR_HOME/lib to the shared resource loader
@@ -584,6 +599,7 @@ public class NodeConfig {
     // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
+    private String coresLocatorClass = DEFAULT_CORESLOCATORCLASS;
     private Path solrDataHome;
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
@@ -615,6 +631,7 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
+    private boolean hideStackTrace = Boolean.getBoolean("solr.hideStackTrace");
 
     private final Path solrHome;
     private final String nodeName;
@@ -623,6 +640,8 @@ public class NodeConfig {
     // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
+    private static final String DEFAULT_CORESLOCATORCLASS =
+        "org.apache.solr.core.CorePropertiesLocator";
     private static final String DEFAULT_ADMINHANDLERCLASS =
         "org.apache.solr.handler.admin.CoreAdminHandler";
     private static final String DEFAULT_INFOHANDLERCLASS =
@@ -659,6 +678,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
       this.coreRootDirectory = solrHome.resolve(coreRootDirectory).normalize();
+      return this;
+    }
+
+    public NodeConfigBuilder setCoresLocatorClass(String coresLocatorClass) {
+      this.coresLocatorClass = coresLocatorClass;
       return this;
     }
 
@@ -746,8 +770,8 @@ public class NodeConfig {
       this.replayUpdatesThreads = replayUpdatesThreads;
       return this;
     }
-
     // Remove in Solr 10.0
+
     @Deprecated
     public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
       this.transientCacheSize = transientCacheSize;
@@ -806,6 +830,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setAllowUrls(List<String> urls) {
       this.allowUrls = urls;
+      return this;
+    }
+
+    public NodeConfigBuilder setHideStackTrace(boolean hide) {
+      this.hideStackTrace = hide;
       return this;
     }
 
@@ -872,6 +901,7 @@ public class NodeConfig {
       return new NodeConfig(
           nodeName,
           coreRootDirectory,
+          coresLocatorClass,
           solrDataHome,
           booleanQueryMaxClauseCount,
           configSetBaseDirectory,
@@ -902,6 +932,7 @@ public class NodeConfig {
           defaultZkHost,
           allowPaths,
           allowUrls,
+          hideStackTrace,
           configSetServiceClass,
           modules,
           resolveHiddenSysPropsFromSysPropOrEnvOrDefault(hiddenSysProps));

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.jersey;
 
+import javax.inject.Singleton;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
 /** Jersey binder for APIConfigProvider */
@@ -29,6 +30,8 @@ public class APIConfigProviderBinder extends AbstractBinder {
 
   @Override
   protected void configure() {
-    bindFactory(cfgProvider).to(cfgProvider.getConfigClass());
+    bindFactory(new InjectionFactories.SingletonFactory<>(cfgProvider.provide()))
+        .to(cfgProvider.getConfigClass())
+        .in(Singleton.class);
   }
 }

@@ -348,6 +348,9 @@ public class SolrXmlConfig {
               case "configSetService":
                 builder.setConfigSetServiceClass(it.txt());
                 break;
+              case "coresLocator":
+                builder.setCoresLocatorClass(it.txt());
+                break;
               case "coreRootDirectory":
                 builder.setCoreRootDirectory(it.txt());
                 break;
@@ -371,6 +374,9 @@ public class SolrXmlConfig {
                 break;
               case "allowPaths":
                 builder.setAllowPaths(separatePaths(it.txt()));
+                break;
+              case "hideStackTrace":
+                builder.setHideStackTrace(it.boolVal(false));
                 break;
               case "configSetBaseDir":
                 builder.setConfigSetBaseDirectory(it.txt());

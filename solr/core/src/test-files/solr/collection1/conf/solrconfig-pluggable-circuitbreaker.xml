@@ -79,7 +79,7 @@
   </query>
 
   <circuitBreaker class="solr.MemoryCircuitBreaker">
-    <double  name="threshold">75</double>
+    <double  name="threshold">99</double>
     <arr name="requestTypes">
       <str>update</str>
     </arr>
@@ -96,6 +96,10 @@
 
   <circuitBreaker class="solr.CPUCircuitBreaker">
     <double  name="threshold">75</double>
+  </circuitBreaker>
+
+  <circuitBreaker class="solr.LoadAverageCircuitBreaker">
+    <double  name="threshold">3</double>
   </circuitBreaker>
 
   <initParams path="/select">
