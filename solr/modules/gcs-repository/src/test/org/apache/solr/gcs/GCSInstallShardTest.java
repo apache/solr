@@ -20,6 +20,7 @@ package org.apache.solr.gcs;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractInstallShardTest;
+import org.apache.solr.handler.admin.api.InstallShardData;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -27,7 +28,7 @@ import org.junit.BeforeClass;
  * Tests validating that the 'Install Shard API' works when used with {@link GCSBackupRepository}
  *
  * @see org.apache.solr.cloud.api.collections.AbstractInstallShardTest
- * @see org.apache.solr.handler.admin.api.InstallShardDataAPI
+ * @see InstallShardData
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})

@@ -123,6 +123,7 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.InstallShardDataRequestBody;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
@@ -186,7 +187,7 @@ import org.apache.solr.handler.admin.api.DeleteReplica;
 import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
 import org.apache.solr.handler.admin.api.DeleteShardAPI;
 import org.apache.solr.handler.admin.api.ForceLeader;
-import org.apache.solr.handler.admin.api.InstallShardDataAPI;
+import org.apache.solr.handler.admin.api.InstallShardData;
 import org.apache.solr.handler.admin.api.ListAliases;
 import org.apache.solr.handler.admin.api.ListCollectionBackups;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
@@ -1080,13 +1081,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           req.getParams().required().check(COLLECTION, SHARD);
           final String collectionName = req.getParams().get(COLLECTION);
           final String shardName = req.getParams().get(SHARD);
-          final InstallShardDataAPI.InstallShardRequestBody reqBody =
-              new InstallShardDataAPI.InstallShardRequestBody();
-          reqBody.asyncId = req.getParams().get(ASYNC);
+          final InstallShardDataRequestBody reqBody = new InstallShardDataRequestBody();
+          reqBody.async = req.getParams().get(ASYNC);
           reqBody.repository = req.getParams().get(BACKUP_REPOSITORY);
           reqBody.location = req.getParams().get(BACKUP_LOCATION);
 
-          final InstallShardDataAPI installApi = new InstallShardDataAPI(h.coreContainer, req, rsp);
+          final InstallShardData installApi = new InstallShardData(h.coreContainer, req, rsp);
           final SolrJerseyResponse installResponse =
               installApi.installShardData(collectionName, shardName, reqBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, installResponse);
@@ -1375,7 +1375,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteReplicaProperty.class,
         DeleteShardAPI.class,
         ForceLeader.class,
-        InstallShardDataAPI.class,
+        InstallShardData.class,
         ListCollections.class,
         ListCollectionBackups.class,
         ReloadCollectionAPI.class,
