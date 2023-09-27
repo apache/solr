@@ -26,7 +26,7 @@ import org.apache.solr.api.ApiSupport;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
+import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.configsets.ListConfigSets;
 import org.apache.solr.jersey.APIConfigProvider;
@@ -149,7 +149,7 @@ public class PluginBagTest extends SolrTestCaseJ4 {
     @Override
     public Collection<Class<? extends JerseyResource>> getJerseyResources() {
       // random pick of v2 api
-      return List.of(CollectionPropertyAPI.class);
+      return List.of(CollectionProperty.class);
     }
 
     @Override

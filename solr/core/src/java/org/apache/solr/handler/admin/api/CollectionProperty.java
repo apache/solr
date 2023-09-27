@@ -17,49 +17,38 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.IOException;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import org.apache.solr.client.api.endpoint.CollectionPropertyApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * V2 API for modifying collection-level properties.
+ * V2 API implementations for modifying collection-level properties.
  *
  * <p>These APIs (PUT and DELETE /api/collections/collName/properties/propName) are analogous to the
  * v1 /admin/collections?action=COLLECTIONPROP command.
  */
-@Path("/collections/{collName}/properties/{propName}")
-public class CollectionPropertyAPI extends AdminAPIBase {
+public class CollectionProperty extends AdminAPIBase implements CollectionPropertyApi {
 
-  public CollectionPropertyAPI(
+  public CollectionProperty(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @PUT
+  @Override
   @PermissionName(COLL_EDIT_PERM)
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   public SolrJerseyResponse createOrUpdateCollectionProperty(
-      @PathParam("collName") String collName,
-      @PathParam("propName") String propName,
-      UpdateCollectionPropertyRequestBody requestBody)
+      String collName, String propName, UpdateCollectionPropertyRequestBody requestBody)
       throws Exception {
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
@@ -70,11 +59,9 @@ public class CollectionPropertyAPI extends AdminAPIBase {
     return response;
   }
 
-  @DELETE
+  @Override
   @PermissionName(COLL_EDIT_PERM)
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
-  public SolrJerseyResponse deleteCollectionProperty(
-      @PathParam("collName") String collName, @PathParam("propName") String propName)
+  public SolrJerseyResponse deleteCollectionProperty(String collName, String propName)
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
@@ -89,16 +76,5 @@ public class CollectionPropertyAPI extends AdminAPIBase {
     CollectionProperties cp =
         new CollectionProperties(coreContainer.getZkController().getZkClient());
     cp.setCollectionProperty(resolvedCollection, propertyName, propertyValue);
-  }
-
-  public static class UpdateCollectionPropertyRequestBody implements JacksonReflectMapWriter {
-    public UpdateCollectionPropertyRequestBody() {}
-
-    public UpdateCollectionPropertyRequestBody(String value) {
-      this.value = value;
-    }
-
-    @JsonProperty(required = true)
-    public String value;
   }
 }
