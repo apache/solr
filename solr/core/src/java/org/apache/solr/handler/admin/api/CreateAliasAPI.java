@@ -160,7 +160,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     }
 
     if (requestBody.collCreationParameters != null) {
-      CreateCollectionAPI.addToRemoteMessageWithPrefix(
+      CreateCollection.addToRemoteMessageWithPrefix(
           requestBody.collCreationParameters, remoteMessage, "create-collection.");
     }
     return new ZkNodeProps(remoteMessage);
@@ -204,7 +204,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     final SolrParams createCollectionParams =
         getHierarchicalParametersByPrefix(params, CREATE_COLLECTION_PREFIX);
     createBody.collCreationParameters =
-        CreateCollectionAPI.createRequestBodyFromV1Params(createCollectionParams, false);
+        CreateCollection.createRequestBodyFromV1Params(createCollectionParams, false);
 
     return createBody;
   }

@@ -173,7 +173,7 @@ import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
 import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
-import org.apache.solr.handler.admin.api.CreateCollectionAPI;
+import org.apache.solr.handler.admin.api.CreateCollection;
 import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
 import org.apache.solr.handler.admin.api.CreateReplica;
@@ -509,8 +509,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CREATE,
         (req, rsp, h) -> {
           final var requestBody =
-              CreateCollectionAPI.createRequestBodyFromV1Params(req.getParams(), true);
-          final CreateCollectionAPI createApi = new CreateCollectionAPI(h.coreContainer, req, rsp);
+              CreateCollection.createRequestBodyFromV1Params(req.getParams(), true);
+          final CreateCollection createApi = new CreateCollection(h.coreContainer, req, rsp);
           final SolrJerseyResponse response = createApi.createCollection(requestBody);
 
           // 'rsp' may be null, as when overseer commands execute CollectionAction impl's directly.
@@ -1365,7 +1365,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         AddReplicaProperty.class,
         BalanceShardUniqueAPI.class,
         CreateAliasAPI.class,
-        CreateCollectionAPI.class,
+        CreateCollection.class,
         CreateCollectionBackupAPI.class,
         CreateShard.class,
         DeleteAlias.class,

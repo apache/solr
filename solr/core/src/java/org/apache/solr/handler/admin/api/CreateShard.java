@@ -33,7 +33,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.SHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.admin.api.CreateCollectionAPI.copyPrefixedPropertiesWithoutPrefix;
+import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import java.util.Arrays;
@@ -73,6 +73,7 @@ public class CreateShard extends AdminAPIBase implements CreateShardApi {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse createShard(
       String collectionName, CreateShardRequestBody requestBody) throws Exception {

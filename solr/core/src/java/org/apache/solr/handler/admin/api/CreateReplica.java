@@ -37,7 +37,7 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
-import static org.apache.solr.handler.admin.api.CreateCollectionAPI.copyPrefixedPropertiesWithoutPrefix;
+import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import java.util.Arrays;
@@ -74,6 +74,7 @@ public class CreateReplica extends AdminAPIBase implements CreateReplicaApi {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse createReplica(
       String collectionName, String shardName, CreateReplicaRequestBody requestBody)

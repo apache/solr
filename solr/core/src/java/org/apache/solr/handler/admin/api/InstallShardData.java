@@ -57,6 +57,7 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse installShardData(
       String collName, String shardName, InstallShardDataRequestBody requestBody) throws Exception {

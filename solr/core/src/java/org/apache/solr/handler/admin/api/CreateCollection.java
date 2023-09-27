@@ -85,10 +85,10 @@ import org.apache.zookeeper.KeeperException;
  *
  * <p>This API is analogous to the v1 /admin/collections?action=CREATE command.
  */
-public class CreateCollectionAPI extends AdminAPIBase implements CreateCollectionApi {
+public class CreateCollection extends AdminAPIBase implements CreateCollectionApi {
 
   @Inject
-  public CreateCollectionAPI(
+  public CreateCollection(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {

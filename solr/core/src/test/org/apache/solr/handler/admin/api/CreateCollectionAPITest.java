@@ -43,7 +43,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
-/** Unit tests for {@link CreateCollectionAPI}. */
+/** Unit tests for {@link CreateCollection}. */
 public class CreateCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
@@ -52,7 +52,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new CreateCollectionAPI(null, null, null);
+              final var api = new CreateCollection(null, null, null);
               api.createCollection(null);
             });
 
@@ -74,7 +74,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              CreateCollectionAPI.validateRequestBody(requestBody);
+              CreateCollection.validateRequestBody(requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -93,7 +93,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              CreateCollectionAPI.validateRequestBody(requestBody);
+              CreateCollection.validateRequestBody(requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -115,7 +115,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              CreateCollectionAPI.validateRequestBody(requestBody);
+              CreateCollection.validateRequestBody(requestBody);
             });
 
     assertEquals(400, thrown.code());
@@ -145,7 +145,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.nodeSet = List.of("node1", "node2");
     requestBody.shuffleNodes = false;
 
-    final var remoteMessage = CreateCollectionAPI.createRemoteMessage(requestBody).getProperties();
+    final var remoteMessage = CreateCollection.createRemoteMessage(requestBody).getProperties();
 
     assertEquals("create", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("true", remoteMessage.get("fromApi"));
@@ -174,7 +174,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.name = "someName";
     requestBody.createReplicas = false;
 
-    final var remoteMessage = CreateCollectionAPI.createRemoteMessage(requestBody).getProperties();
+    final var remoteMessage = CreateCollection.createRemoteMessage(requestBody).getProperties();
 
     assertEquals("create", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someName", remoteMessage.get(NAME));
@@ -198,7 +198,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     solrParams.set("router.field", "someField");
     solrParams.set("property.somePropName", "somePropValue");
 
-    final var v2RequestBody = CreateCollectionAPI.createRequestBodyFromV1Params(solrParams, true);
+    final var v2RequestBody = CreateCollection.createRequestBodyFromV1Params(solrParams, true);
 
     assertEquals("someName", v2RequestBody.name);
     assertEquals(Integer.valueOf(123), v2RequestBody.numShards);
@@ -224,7 +224,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     solrParams.set(NAME, "someName");
     solrParams.set(CREATE_NODE_SET, "EMPTY");
 
-    final var v2RequestBody = CreateCollectionAPI.createRequestBodyFromV1Params(solrParams, true);
+    final var v2RequestBody = CreateCollection.createRequestBodyFromV1Params(solrParams, true);
 
     assertEquals("someName", v2RequestBody.name);
     assertEquals(Boolean.FALSE, v2RequestBody.createReplicas);

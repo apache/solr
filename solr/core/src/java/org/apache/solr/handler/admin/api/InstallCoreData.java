@@ -51,6 +51,7 @@ public class InstallCoreData extends CoreAdminAPIBase implements InstallCoreData
     super(coreContainer, coreAdminAsyncTracker, req, rsp);
   }
 
+  @Override
   @PermissionName(CORE_EDIT_PERM)
   public SolrJerseyResponse installCoreData(String coreName, InstallCoreDataRequestBody requestBody)
       throws Exception {
