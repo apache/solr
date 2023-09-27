@@ -17,37 +17,28 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.endpoint.ReloadCoreApi;
+import org.apache.solr.client.api.model.ReloadCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * V2 API for reloading an individual core.
+ * V2 API implementation for reloading an individual core.
  *
  * <p>The new API (POST /v2/cores/coreName/reload is analogous to the v1 /admin/cores?action=RELOAD
  * command.
  */
-@Path("/cores/{coreName}/reload")
-public class ReloadCoreAPI extends CoreAdminAPIBase {
+public class ReloadCore extends CoreAdminAPIBase implements ReloadCoreApi {
 
   @Inject
-  public ReloadCoreAPI(
+  public ReloadCore(
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse,
       CoreContainer coreContainer,
@@ -55,15 +46,9 @@ public class ReloadCoreAPI extends CoreAdminAPIBase {
     super(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
   }
 
-  @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(CORE_EDIT_PERM)
-  public SolrJerseyResponse reloadCore(
-      @Parameter(description = "The name of the core to reload.", required = true)
-          @PathParam("coreName")
-          String coreName,
-      @Schema(description = "Additional parameters for reloading the core") @RequestBody
-          ReloadCoreAPI.ReloadCoreRequestBody reloadCoreRequestBody)
+  public SolrJerseyResponse reloadCore(String coreName, ReloadCoreRequestBody reloadCoreRequestBody)
       throws Exception {
     SolrJerseyResponse solrJerseyResponse = instantiateJerseyResponse(SolrJerseyResponse.class);
     return handlePotentiallyAsynchronousTask(
@@ -75,11 +60,5 @@ public class ReloadCoreAPI extends CoreAdminAPIBase {
           coreContainer.reload(coreName);
           return solrJerseyResponse;
         });
-  }
-
-  public static class ReloadCoreRequestBody implements JacksonReflectMapWriter {
-    @Schema(description = "Request ID to track this action which will be processed asynchronously.")
-    @JsonProperty("async")
-    public String async;
   }
 }

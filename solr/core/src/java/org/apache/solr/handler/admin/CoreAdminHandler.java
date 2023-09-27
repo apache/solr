@@ -63,7 +63,7 @@ import org.apache.solr.handler.admin.api.MergeIndexesAPI;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
 import org.apache.solr.handler.admin.api.PrepareCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
-import org.apache.solr.handler.admin.api.ReloadCoreAPI;
+import org.apache.solr.handler.admin.api.ReloadCore;
 import org.apache.solr.handler.admin.api.RenameCoreAPI;
 import org.apache.solr.handler.admin.api.RequestApplyCoreUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestBufferUpdatesAPI;
@@ -406,7 +406,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         InstallCoreData.class,
         BackupCoreAPI.class,
         RestoreCoreAPI.class,
-        ReloadCoreAPI.class);
+        ReloadCore.class);
   }
 
   public interface CoreAdminOp {

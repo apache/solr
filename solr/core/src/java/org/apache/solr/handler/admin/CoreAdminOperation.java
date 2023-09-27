@@ -59,6 +59,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.api.model.ListCoreSnapshotsResponse;
+import org.apache.solr.client.api.model.ReloadCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -74,7 +75,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
-import org.apache.solr.handler.admin.api.ReloadCoreAPI;
+import org.apache.solr.handler.admin.api.ReloadCore;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -136,11 +137,10 @@ public enum CoreAdminOperation implements CoreAdminOp {
         SolrParams params = it.req.getParams();
         String cname = params.required().get(CoreAdminParams.CORE);
 
-        ReloadCoreAPI reloadCoreAPI =
-            new ReloadCoreAPI(
+        ReloadCore reloadCoreAPI =
+            new ReloadCore(
                 it.req, it.rsp, it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker());
-        ReloadCoreAPI.ReloadCoreRequestBody reloadCoreRequestBody =
-            new ReloadCoreAPI.ReloadCoreRequestBody();
+        ReloadCoreRequestBody reloadCoreRequestBody = new ReloadCoreRequestBody();
         SolrJerseyResponse response = reloadCoreAPI.reloadCore(cname, reloadCoreRequestBody);
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
