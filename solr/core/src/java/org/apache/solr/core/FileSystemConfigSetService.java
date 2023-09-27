@@ -80,8 +80,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
-    Path solrConfigXmlFile = getConfigDir(configName).resolve("solrconfig.xml");
-    return Files.exists(solrConfigXmlFile);
+    return Files.exists(getConfigDir(configName));
   }
 
   @Override
