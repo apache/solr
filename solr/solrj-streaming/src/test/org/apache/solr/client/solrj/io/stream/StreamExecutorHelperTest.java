@@ -33,8 +33,8 @@ public class StreamExecutorHelperTest extends SolrTestCase {
     Callable<Long> c = () -> idx.getAndIncrement();
 
     List<Callable<Long>> tasks = List.of(c, c, c, c, c);
-    List<Long> results =
-        List.copyOf(StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions(tasks, "test"));
+    List<Long> results = new ArrayList<>();
+    results.addAll(StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions(tasks, "test"));
     Collections.sort(results);
     List<Long> expected = List.of(0l, 1l, 2l, 3l, 4l);
     assertEquals(expected, results);
