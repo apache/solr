@@ -21,7 +21,7 @@ setup() {
   common_clean_setup
   
   echo "Starting Solr"
-  solr start -c
+  solr start -c -Denable.packages=true
   
   # The auth command exports some system variables that are injected as basic auth username and password, 
   # however that defeats our test so fake that out via -solrIncludeFile param specifing a bogus path.
@@ -80,4 +80,13 @@ run solr create -c COLL_NAME
   #run solr export -u name:password -url "http://localhost:${SOLR_PORT}/solr/COLL_NAME" -query "*:*" -out "${BATS_TEST_TMPDIR}/output"
   #assert_output --partial 'Export complete'
   
+}
+
+@test "package with basic auth" {
+  
+  run solr package deploy PACKAGE_NAME -credentials name:password -collections foo-1.2
+  # verify that package tool is communicating with Solr via basic auth
+  assert_output --partial "Collection(s) doesn't exist: [foo-1.2]"
+  #assert_output --partial "Deployment successful"
+  #refute_output --partial "Invalid collection"
 }
