@@ -19,13 +19,13 @@ package org.apache.solr.search;
 import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SimpleCollector;
 
 /** A simple delegating collector where one can set the delegate after creation */
-public class DelegatingCollector implements Collector, LeafCollector {
+public class DelegatingCollector extends SimpleCollector {
 
   /* for internal testing purposes only to determine the number of times a delegating collector chain was used */
   public static int setLastDelegateCount;
@@ -73,27 +73,16 @@ public class DelegatingCollector implements Collector, LeafCollector {
     leafDelegate.collect(doc);
   }
 
+  @Override
   protected void doSetNextReader(LeafReaderContext context) throws IOException {
     this.context = context;
     this.docBase = context.docBase;
     leafDelegate = delegate.getLeafCollector(context);
   }
 
-  @Override
-  public void finish() throws IOException {
+  public void complete() throws IOException {
     if (delegate instanceof DelegatingCollector) {
-      ((DelegatingCollector) delegate).finish();
+      ((DelegatingCollector) delegate).complete();
     }
-  }
-
-  @Override
-  public final LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-    doSetNextReader(context);
-    return new FilterLeafCollector(this) {
-      @Override
-      public void finish() throws IOException {
-        // ignore call on leaf collector branch
-      }
-    };
   }
 }
