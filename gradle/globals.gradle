@@ -31,7 +31,6 @@ allprojects {
       url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
     }
     */
-    maven { url 'https://dist.apache.org/repos/dist/dev/lucene/lucene-9.8.0-RC1-rev-d914b3722bd5b8ef31ccf7e8ddc638a87fd648db/lucene/maven' }
   }
 
   // Artifacts will have names after full gradle project path
