@@ -277,6 +277,11 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     }
   }
 
+  @Override
+  protected String getCoreOrColName() {
+    return collectionName;
+  }
+
   public static SolrQueryRequest wrappedReq(
       SolrQueryRequest delegate, String collectionName, HttpSolrCall httpSolrCall) {
     Properties p = new Properties();
