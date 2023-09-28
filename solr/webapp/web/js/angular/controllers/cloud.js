@@ -422,6 +422,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
               // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
               var cores = nodes[node]['cores'];
+              var indexSizeTotal = 0;
               var indexSizeMax = 0;
               var docsTotal = 0;
               var graphData = [];
@@ -440,6 +441,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
+                  indexSizeTotal = indexSizeTotal + size;
                   indexSizeMax = size > indexSizeMax ? size : indexSizeMax;
                   var numDocs = coreMetric['SEARCHER.searcher.numDocs'];
                   numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
@@ -475,9 +477,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               });
               nodes[node]['graphData'] = graphData;
               nodes[node]['numDocs'] = numDocsHuman(docsTotal);
-              nodes[node]['sizeInBytes'] = indexSizeMax;
-              nodes[node]['size'] = bytesToSize(indexSizeMax);
-              nodes[node]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeMax / docsTotal);
+              nodes[node]['sizeInBytes'] = indexSizeTotal;
+              nodes[node]['size'] = bytesToSize(indexSizeTotal);
+              nodes[node]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeTotal / docsTotal);
 
               // Build the d3 powered bar chart
               $('#chart' + nodes[node]['id']).empty();
