@@ -57,8 +57,10 @@ import javax.servlet.Filter;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -159,6 +161,7 @@ public class MiniSolrCloudCluster {
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
   private CloudSolrClient solrClient;
+  private final String credentials;
   private final JettyConfig jettyConfig;
   private final boolean trackJettyMetrics;
 
@@ -242,6 +245,7 @@ public class MiniSolrCloudCluster {
         jettyConfig,
         zkTestServer,
         securityJson,
+        null,
         false,
         formatZkServer);
   }
@@ -266,6 +270,7 @@ public class MiniSolrCloudCluster {
       JettyConfig jettyConfig,
       ZkTestServer zkTestServer,
       Optional<String> securityJson,
+      String credentials,
       boolean trackJettyMetrics,
       boolean formatZkServer)
       throws Exception {
@@ -274,6 +279,7 @@ public class MiniSolrCloudCluster {
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
     this.trackJettyMetrics = trackJettyMetrics;
+    this.credentials = credentials;
 
     log.info("Starting cluster of {} servers in {}", numServers, baseDir);
 
@@ -341,7 +347,7 @@ public class MiniSolrCloudCluster {
   }
 
   private void waitForAllNodes(int numServers, int timeoutSeconds)
-      throws IOException, InterruptedException, TimeoutException {
+      throws InterruptedException, TimeoutException {
     log.info("waitForAllNodes: numServers={}", numServers);
 
     int numRunning;
@@ -744,11 +750,22 @@ public class MiniSolrCloudCluster {
   }
 
   protected CloudSolrClient buildSolrClient() {
-    return new CloudLegacySolrClient.Builder(
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder()
+            .withIdleTimeout(15, TimeUnit.SECONDS)
+            .withConnectionTimeout(90, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(credentials);
+    return new CloudHttp2SolrClient.Builder(
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
-        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-        .build(); // we choose 90 because we run in some harsh envs
+        .withInternalClientBuilder(builder)
+        .build();
+
+    //    return new CloudLegacySolrClient.Builder(
+    //            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
+    //        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+    //        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+    //            .withO
+    //        .build(); // we choose 90 because we run in some harsh envs
   }
 
   /**
@@ -762,13 +779,6 @@ public class MiniSolrCloudCluster {
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
         .withSocketTimeout(90000) // we choose 90 because we run in some harsh envs
         .withConnectionTimeout(15000);
-  }
-
-  private static String getHostContextSuitableForServletContext(String ctx) {
-    if (ctx == null || ctx.isEmpty()) ctx = "/solr";
-    if (ctx.endsWith("/")) ctx = ctx.substring(0, ctx.length() - 1);
-    if (!ctx.startsWith("/")) ctx = "/" + ctx;
-    return ctx;
   }
 
   private Exception checkForExceptions(String message, Collection<Future<JettySolrRunner>> futures)
@@ -811,6 +821,7 @@ public class MiniSolrCloudCluster {
     }
   }
 
+  // Currently not used ;-(
   public synchronized void injectChaos(Random random) throws Exception {
 
     // sometimes we restart one of the jetty nodes
@@ -1038,6 +1049,7 @@ public class MiniSolrCloudCluster {
     private String solrXml = DEFAULT_CLOUD_SOLR_XML;
     private JettyConfig.Builder jettyConfigBuilder;
     private Optional<String> securityJson = Optional.empty();
+    private String credentials;
 
     private List<Config> configs = new ArrayList<>();
     private Map<String, Object> clusterProperties = new HashMap<>();
@@ -1111,6 +1123,17 @@ public class MiniSolrCloudCluster {
      */
     public Builder withSecurityJson(String securityJson) {
       this.securityJson = Optional.of(securityJson);
+      return this;
+    }
+
+    /**
+     * Configure the solrClients for the {@linkplain MiniSolrCloudCluster}
+     *
+     * @param credentials The string specifying the username:password to use
+     * @return the instance of {@linkplain Builder}
+     */
+    public Builder withCredentials(String credentials) {
+      this.credentials = credentials;
       return this;
     }
 
@@ -1254,6 +1277,7 @@ public class MiniSolrCloudCluster {
               jettyConfig,
               null,
               securityJson,
+              credentials,
               trackJettyMetrics,
               formatZkServer);
       for (Config config : configs) {

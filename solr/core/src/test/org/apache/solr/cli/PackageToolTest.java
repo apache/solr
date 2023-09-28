@@ -17,11 +17,26 @@
 
 package org.apache.solr.cli;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
+
+import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.common.LinkedHashMapWriter;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.security.BasicAuthPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.util.LogLevel;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -32,11 +47,14 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.noggit.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LogLevel("org.apache=INFO")
 public class PackageToolTest extends SolrCloudTestCase {
+  private static final String USER = "solr";
+  private static final String PASS = "SolrRocksAgain";
 
   // Note for those who want to modify the jar files used in the packages used in this test:
   // You need to re-sign the jars for install step, as follows:
@@ -51,14 +69,36 @@ public class PackageToolTest extends SolrCloudTestCase {
   private static LocalWebServer repositoryServer;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupClusterWithSecurityEnabled() throws Exception {
     System.setProperty("enable.packages", "true");
 
-    configureCluster(1)
+    final String SECURITY_JSON =
+        Utils.toJSONString(
+            Map.of(
+                "authorization",
+                Map.of(
+                    "class",
+                    RuleBasedAuthorizationPlugin.class.getName(),
+                    "user-role",
+                    singletonMap(USER, "admin"),
+                    "permissions",
+                    singletonList(Map.of("name", "all", "role", "admin"))),
+                "authentication",
+                Map.of(
+                    "class",
+                    BasicAuthPlugin.class.getName(),
+                    "blockUnknown",
+                    true,
+                    "credentials",
+                    singletonMap(USER, getSaltedHashedValue(PASS)))));
+
+    configureCluster(2)
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .addConfig(
             "conf3", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSecurityJson(SECURITY_JSON)
+        .withCredentials(USER + ":" + PASS)
         .configure();
 
     repositoryServer =
@@ -77,36 +117,66 @@ public class PackageToolTest extends SolrCloudTestCase {
     }
   }
 
+  private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
+    req.setBasicAuthCredentials(USER, PASS);
+    return req;
+  }
+
   @Test
   public void testPackageTool() throws Exception {
     PackageTool tool = new PackageTool();
 
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
+    run(
+        tool,
+        new String[] {"-solrUrl", solrUrl, "list-installed", "-credentials", USER + ":" + PASS});
 
     run(
         tool,
         new String[] {
           "-solrUrl",
           solrUrl,
+          "-credentials",
+          USER + ":" + PASS,
           "add-repo",
           "fullstory",
-          "http://localhost:" + repositoryServer.getPort()
+          "http://localhost:" + repositoryServer.getPort(),
+          "-credentials",
+          USER + ":" + PASS
         });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-available"});
+    run(
+        tool,
+        new String[] {"-solrUrl", solrUrl, "list-available", "-credentials", USER + ":" + PASS});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer:1.0.0"});
+    run(
+        tool,
+        new String[] {
+          "-solrUrl", solrUrl, "install", "question-answer:1.0.0", "-credentials", USER + ":" + PASS
+        });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
+    run(
+        tool,
+        new String[] {"-solrUrl", solrUrl, "list-installed", "-credentials", USER + ":" + PASS});
 
-    CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection("def", "conf3", 1, 1).process(cluster.getSolrClient());
+    withBasicAuth(CollectionAdminRequest.createCollection("abc", "conf1", 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    withBasicAuth(CollectionAdminRequest.createCollection("def", "conf3", 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+
+    // CollectionAdminRequest.createCollection("abc", "conf1", 1,
+    // 1).process(cluster.getSolrClient());
+    // CollectionAdminRequest.createCollection("def", "conf3", 1,
+    // 1).process(cluster.getSolrClient());
 
     String rhPath = "/mypath2";
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+    run(
+        tool,
+        new String[] {
+          "-solrUrl", solrUrl, "list-deployed", "question-answer", "-credentials", USER + ":" + PASS
+        });
 
     run(
         tool,
@@ -119,13 +189,23 @@ public class PackageToolTest extends SolrCloudTestCase {
           "-collections",
           "abc",
           "-p",
-          "RH-HANDLER-PATH=" + rhPath
+          "RH-HANDLER-PATH=" + rhPath,
+          "-credentials",
+          USER + ":" + PASS
         });
-    assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
+    assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0", USER + ":" + PASS);
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+    run(
+        tool,
+        new String[] {
+          "-solrUrl", solrUrl, "list-deployed", "question-answer", "-credentials", USER + ":" + PASS
+        });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "-c", "abc"});
+    run(
+        tool,
+        new String[] {
+          "-solrUrl", solrUrl, "list-deployed", "-c", "abc", "-credentials", USER + ":" + PASS
+        });
 
     // Should we test the "auto-update to latest" functionality or the default explicit deploy
     // functionality
@@ -138,17 +218,33 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl", solrUrl, "deploy", "question-answer:latest", "-y", "-collections", "abc"
+            "-solrUrl",
+            solrUrl,
+            "deploy",
+            "question-answer:latest",
+            "-y",
+            "-collections",
+            "abc",
+            "-credentials",
+            USER + ":" + PASS
           });
-      assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.0.0");
+      assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.0.0", USER + ":" + PASS);
 
-      run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
-      assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.1.0");
+      run(
+          tool,
+          new String[] {
+            "-solrUrl", solrUrl, "install", "question-answer", "-credentials", USER + ":" + PASS
+          });
+      assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.1.0", USER + ":" + PASS);
     } else {
       log.info("Testing explicit deployment to a different/newer version");
 
-      run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
-      assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
+      run(
+          tool,
+          new String[] {
+            "-solrUrl", solrUrl, "install", "question-answer", "-credentials", USER + ":" + PASS
+          });
+      assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0", USER + ":" + PASS);
 
       // even if parameters are not passed in, they should be picked up from previous deployment
       if (random().nextBoolean()) {
@@ -164,7 +260,9 @@ public class PackageToolTest extends SolrCloudTestCase {
               "-collections",
               "abc",
               "-p",
-              "RH-HANDLER-PATH=" + rhPath
+              "RH-HANDLER-PATH=" + rhPath,
+              "-credentials",
+              USER + ":" + PASS
             });
       } else {
         run(
@@ -177,40 +275,120 @@ public class PackageToolTest extends SolrCloudTestCase {
               "-y",
               "question-answer",
               "-collections",
-              "abc"
+              "abc",
+              "-credentials",
+              USER + ":" + PASS
             });
       }
-      assertPackageVersion("abc", "question-answer", "1.1.0", rhPath, "1.1.0");
+      assertPackageVersion("abc", "question-answer", "1.1.0", rhPath, "1.1.0", USER + ":" + PASS);
     }
 
     log.info("Running undeploy...");
     run(
         tool,
-        new String[] {"-solrUrl", solrUrl, "undeploy", "question-answer", "-collections", "abc"});
+        new String[] {
+          "-solrUrl",
+          solrUrl,
+          "undeploy",
+          "question-answer",
+          "-collections",
+          "abc",
+          "-credentials",
+          USER + ":" + PASS
+        });
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+    run(
+        tool,
+        new String[] {
+          "-solrUrl", solrUrl, "list-deployed", "question-answer", "-credentials", USER + ":" + PASS
+        });
   }
 
   void assertPackageVersion(
-      String collection, String pkg, String version, String component, String componentVersion)
+      String collection,
+      String pkg,
+      String version,
+      String component,
+      String componentVersion,
+      String credentials)
       throws Exception {
-    TestSolrConfigHandler.testForResponseElement(
-        null,
+
+    testForResponseElement(
         cluster.getJettySolrRunner(0).getBaseUrl().toString() + "/" + collection,
         "/config/params?meta=true",
-        cluster.getSolrClient(),
+        credentials,
         Arrays.asList("response", "params", "PKG_VERSIONS", pkg),
         version,
         10);
 
-    TestSolrConfigHandler.testForResponseElement(
-        null,
+    testForResponseElement(
         cluster.getJettySolrRunner(0).getBaseUrl().toString() + "/" + collection,
         "/config/requestHandler?componentName=" + component + "&meta=true",
-        cluster.getSolrClient(),
+        credentials,
         Arrays.asList("config", "requestHandler", component, "_packageinfo_", "version"),
         componentVersion,
         10);
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static void testForResponseElement(
+      String testServerBaseUrl,
+      String uri,
+      String credentials,
+      List<String> jsonPath,
+      Object expected,
+      long maxTimeoutSeconds)
+      throws Exception {
+
+    // nocommit this needs some work!  Copied method from TestSolrConfigHandler.java
+    // and then tweaked it to handle basic auth.  We need a nice pattern for doing
+    // http gets/puts to various end points that can be used across all tests.
+    // using the apitool makes me sad ;-)
+
+    boolean success = false;
+    LinkedHashMapWriter m = null;
+
+    ApiTool apiTool = new ApiTool();
+    String response = apiTool.callGet(testServerBaseUrl + uri, credentials);
+
+    // TimeOut timeOut = new TimeOut(maxTimeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    // while (!timeOut.hasTimedOut()) {
+    // try {
+    //   m =
+    //       testServerBaseUrl == null
+    //                 ? getRespMap(uri, harness)
+    //             : TestSolrConfigHandlerConcurrent.getAsMap(
+    //           testServerBaseUrl + uri, cloudSolrClient);
+    // } catch (Exception e) {
+    //        Thread.sleep(100);
+    //      continue;
+    //  }
+    m =
+        (LinkedHashMapWriter)
+            Utils.MAPWRITEROBJBUILDER.apply(new JSONParser(new StringReader(response))).getVal();
+    Object actual = Utils.getObjectByPath(m, false, jsonPath);
+
+    if (expected instanceof ValidatingJsonMap.PredicateWithErrMsg) {
+      ValidatingJsonMap.PredicateWithErrMsg predicate =
+          (ValidatingJsonMap.PredicateWithErrMsg) expected;
+      if (predicate.test(actual) == null) {
+        success = true;
+        // break;
+      }
+
+    } else {
+      if (Objects.equals(expected, actual)) {
+        success = true;
+        // break;
+      }
+    }
+    // Thread.sleep(100);
+    // }
+    assertTrue(
+        StrUtils.formatString(
+            "Could not get expected value  ''{0}'' for path ''{1}'' full output: {2},  from server:  {3}",
+            expected, StrUtils.join(jsonPath, '/'), m.toString(), testServerBaseUrl),
+        success);
   }
 
   private void run(PackageTool tool, String[] args) throws Exception {

@@ -30,7 +30,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
@@ -85,7 +84,7 @@ public class PackageTool extends ToolBase {
 
       log.info("ZK: {}", zkHost);
 
-      try (SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build()) {
+      try (SolrClient solrClient = SolrCLI.getSolrClient(cli, true)) {
         packageManager = new PackageManager(solrClient, solrUrl, zkHost);
         try {
           repositoryManager = new RepositoryManager(solrClient, packageManager);
@@ -342,6 +341,14 @@ public class PackageTool extends ToolBase {
             .required(false)
             .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .longOpt("noprompt")
+            .build(),
+        // u was taken, can we change that instead?
+        Option.builder("credentials")
+            .argName("credentials")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
             .build());
   }
 }

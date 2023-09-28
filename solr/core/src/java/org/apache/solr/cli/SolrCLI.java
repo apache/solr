@@ -404,12 +404,13 @@ public class SolrCLI implements CLIO {
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
 
-  public static SolrClient getSolrClient(String solrUrl, String credentials) {
+  public static SolrClient getSolrClient(String solrUrl, String credentials, boolean barePath) {
     // today we require all urls to end in /solr, however in the future we will need to support the
-    // /api url end point instead.
+    // /api url end point instead.   Eventually we want to have this method always
+    // return a bare url, and then individual calls decide if they are /solr or /api
     // The /solr/ check is because sometimes a full url is passed in, like
     // http://localhost:8983/solr/films_shard1_replica_n1/.
-    if (!solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
+    if (!barePath && !solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
       solrUrl = solrUrl + "/solr";
     }
     Http2SolrClient.Builder builder =
@@ -420,10 +421,27 @@ public class SolrCLI implements CLIO {
     return builder.build();
   }
 
+  /**
+   * Helper method for all the places where we assume a /solr on the url.
+   *
+   * @param solrUrl The solr url that you want the client for
+   * @param credentials The username:password for basic auth.
+   * @return The SolrClient
+   */
+  public static SolrClient getSolrClient(String solrUrl, String credentials) {
+    return getSolrClient(solrUrl, credentials, false);
+  }
+
+  public static SolrClient getSolrClient(CommandLine cli, boolean barePath) throws Exception {
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    String credentials = cli.getOptionValue("credentials");
+    return getSolrClient(solrUrl, credentials, barePath);
+  }
+
   public static SolrClient getSolrClient(CommandLine cli) throws Exception {
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     String credentials = cli.getOptionValue("credentials");
-    return getSolrClient(solrUrl, credentials);
+    return getSolrClient(solrUrl, credentials, false);
   }
 
   private static final String JSON_CONTENT_TYPE = "application/json";
