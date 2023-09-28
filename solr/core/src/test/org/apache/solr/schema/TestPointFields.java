@@ -5751,7 +5751,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
               // our own SlowCompositeReader to check DocValues on disk w/o the UninvertingReader
               // added by SolrIndexSearcher
               final LeafReader leafReaderForCheckingDVs =
-                  SlowCompositeReaderWrapper.wrap(searcher.getRawReader());
+                  SlowCompositeReaderWrapper.wrap(
+                      searcher.getRawReader(), searcher.getOrdMapCache());
 
               if (sf.indexed()) {
                 assertEquals(

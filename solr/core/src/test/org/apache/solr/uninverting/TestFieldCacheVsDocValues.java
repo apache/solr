@@ -170,7 +170,8 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
 
         DirectoryReader r = DirectoryReader.open(w);
 
-        try (LeafReader ar = SlowCompositeReaderWrapper.wrap(r)) {
+        try (LeafReader ar =
+            SlowCompositeReaderWrapper.wrap(r, SlowCompositeReaderWrapper.NO_CACHED_ORDMAPS)) {
           TestUtil.checkReader(ar);
 
           BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field");

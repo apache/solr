@@ -44,4 +44,19 @@ public interface CacheRegenerator {
       K oldKey,
       V oldVal)
       throws IOException;
+
+  /**
+   * {@link CacheRegenerator} implementations may override this method to return an "external" view
+   * of the input cache. The returned value should not be used for autowarming or lifecycle
+   * operations, but should otherwise be the main interface via which application code interacts
+   * with the associated cache. This is useful, e.g., if the {@link CacheRegenerator} would like to
+   * wrap cache entry values with extra metadata (such as access timestamps or per-entry hit
+   * counts), but would not like to expose such metadata to the application generally.
+   *
+   * <p>Returned values should make the wrapped internal cache available via {@link
+   * SolrCache#toInternal()}.
+   */
+  default <K> SolrCache<K, ?> wrap(SolrCache<K, ?> internal) {
+    return internal;
+  }
 }
