@@ -25,8 +25,6 @@ import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHas
 
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
@@ -66,11 +64,6 @@ public class CreateToolTest extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal"))
         .withSecurityJson(SECURITY_JSON)
         .configure();
-  }
-
-  private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
-    req.setBasicAuthCredentials(USER, PASS);
-    return req;
   }
 
   @Test
