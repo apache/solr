@@ -142,16 +142,6 @@ public abstract class SolrCacheBase implements SolrMetricProducer {
     return regenerator == null ? internal : regenerator.wrap(internal);
   }
 
-  /**
-   * Delegates to {@link #regenerator} {@link CacheRegenerator#unwrap(SolrCache)} to determine
-   * whether the external representation of this cache should be unwrwapped for the purpose of
-   * autowarming and lifecycle operations.
-   */
-  public SolrCache<?, ?> toInternal() {
-    SolrCache<?, ?> internal = (SolrCache<?, ?>) this;
-    return regenerator == null ? internal : regenerator.unwrap(internal);
-  }
-
   private SolrMetricsContext solrMetricsContext;
 
   @Override

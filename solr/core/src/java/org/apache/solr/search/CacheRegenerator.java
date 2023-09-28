@@ -53,18 +53,10 @@ public interface CacheRegenerator {
    * wrap cache entry values with extra metadata (such as access timestamps or per-entry hit
    * counts), but would not like to expose such metadata to the application generally.
    *
-   * <p>Implementations that override this method should also override the corresponding {@link
-   * #unwrap(SolrCache)} method.
+   * <p>Returned values should make the wrapped internal cache available via {@link
+   * SolrCache#toInternal()}.
    */
   default <K> SolrCache<K, ?> wrap(SolrCache<K, ?> internal) {
     return internal;
-  }
-
-  /**
-   * Input should be the output of the {@link #wrap(SolrCache)} method. The returned value should be
-   * the raw, "internal" representation of the cache, used for autowarming and lifecycle operations.
-   */
-  default <K> SolrCache<K, ?> unwrap(SolrCache<K, ?> external) {
-    return external;
   }
 }

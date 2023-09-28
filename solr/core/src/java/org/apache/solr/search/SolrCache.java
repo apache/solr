@@ -210,7 +210,7 @@ public interface SolrCache<K, V> extends SolrInfoBean {
    * Returns an external representation of this cache, to be used for most interactions with the
    * cache (except autowarming and lifecycle operations).
    *
-   * <p>The default implementation simply returns <code>this</code>.
+   * <p>The default implementation returns <code>this</code>.
    */
   default SolrCache<?, ?> toExternal() {
     return this;
@@ -219,9 +219,9 @@ public interface SolrCache<K, V> extends SolrInfoBean {
   /**
    * Returns an internal representation of this cache, to be used for autowarming and lifecycle
    * operations. The returned cache may, e.g., have its values wrapped, so may not be suitable for
-   * other types of interactions (e.g. naive insertion and retrieval).
+   * naive insertion and retrieval.
    *
-   * <p>The default implementation simply returns <code>this</code>.
+   * <p>The default implementation returns <code>this</code>.
    */
   default SolrCache<?, ?> toInternal() {
     return this;

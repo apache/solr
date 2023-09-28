@@ -200,13 +200,6 @@ public class MetaCacheRegenerator<K, V, M extends MetaEntry<V, M>>
   }
 
   @Override
-  public <K1> SolrCache<K1, ?> unwrap(SolrCache<K1, ?> external) {
-    @SuppressWarnings("unchecked")
-    SolrCache<K1, ?> ret = (SolrCache<K1, ?>) external.toInternal();
-    return ret;
-  }
-
-  @Override
   public void initializeMetrics(
       SolrMetricsContext parentContext, String scope, SolrCache<K, M> cache) {
     this.metricsContext = parentContext;
