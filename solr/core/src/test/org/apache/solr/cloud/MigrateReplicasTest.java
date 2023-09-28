@@ -349,7 +349,9 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     try {
       httpRequest = new HttpPost(uri);
 
-      httpRequest.setEntity(new ByteArrayEntity(Utils.toJSON(body), ContentType.APPLICATION_JSON));
+      httpRequest.setEntity(
+          new ByteArrayEntity(
+              Utils.toJSON(Utils.getReflectWriter(body)), ContentType.APPLICATION_JSON));
       httpRequest.setHeader("Accept", "application/json");
       entity =
           ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();
