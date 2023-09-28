@@ -176,6 +176,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
       return delegate.fieldsReader(state);
     }
 
+    @Override
     public int getMaxDimensions(String fieldName) {
       return maxDimensions;
     }
