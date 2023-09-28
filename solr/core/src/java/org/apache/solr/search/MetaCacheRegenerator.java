@@ -35,10 +35,10 @@ import org.apache.solr.search.SolrCache.SidecarMetricProducer;
 
 /**
  * Base class for {@link CacheRegenerator} implementations that may be used to internally wrap cache
- * values to track extra metadata like access timestamps or hit counts. Wrapping/unwrapping of the
- * associated cache is implemented in {@link CacheRegenerator#wrap(SolrCache)} and {@link
- * CacheRegenerator#unwrap(SolrCache)}, and invoked via {@link SolrCache#toExternal()} and {@link
- * SolrCache#toInternal()}.
+ * values to track extra metadata like access timestamps or hit counts. Wrapping of the associated
+ * cache is implemented in {@link CacheRegenerator#wrap(SolrCache)}, and invoked via {@link
+ * SolrCache#toExternal()}. The internal backing cache may be retrieved from the wrapping cache via
+ * {@link SolrCache#toInternal()}.
  *
  * <p>Two common use cases for this approach are:
  *
