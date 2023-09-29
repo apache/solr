@@ -159,6 +159,8 @@ Bug Fixes
 
 * SOLR-16997: OTEL configurator NPE when SOLR_HOST not set (janhoy)
 
+* PR#1963: Fix the admin UI green core-size graph on nodes screen (janhoy)
+
 * SOLR-16980: Connect to SOLR standalone with basic authentication (Alex Deparvu)
 
 * SOLR-16992: Non-reproducible StreamingTest failures -- suggests CloudSolrStream concurency race condition (Alex Deparvu, hossman)
