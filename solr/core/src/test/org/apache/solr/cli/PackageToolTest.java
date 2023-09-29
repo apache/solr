@@ -98,7 +98,6 @@ public class PackageToolTest extends SolrCloudTestCase {
         .addConfig(
             "conf3", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSecurityJson(SECURITY_JSON)
-        .withCredentials(USER + ":" + PASS)
         .configure();
 
     repositoryServer =
