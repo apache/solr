@@ -87,6 +87,9 @@ public class DelegatingCollector extends SimpleCollector {
    */
   @Override
   public final void finish() throws IOException {
+    if (leafDelegate != null) {
+      leafDelegate.finish();
+    }
     super.finish();
   }
 
