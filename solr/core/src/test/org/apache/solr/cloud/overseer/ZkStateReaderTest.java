@@ -704,23 +704,30 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         });
 
     ClusterState clusterState = reader.getClusterState();
+    DocCollection collection;
+    int dataVersion = -1;
     for (int i = 0; i < iterations; i++) {
-      DocCollection collection = clusterState.getCollectionOrNull("c1");
-      int currentVersion = collection != null ? collection.getZNodeVersion() : 0;
-      // create new collection
+      // create or update collection
       DocCollection state =
           DocCollection.create(
               "c1",
               new HashMap<>(),
               Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
               DocRouter.DEFAULT,
-              currentVersion,
+              dataVersion,
               PerReplicaStatesOps.getZkClientPrsSupplier(
                   fixture.zkClient, DocCollection.getCollectionPath("c1")));
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
       clusterState = writer.writePendingUpdates();
       fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1" + i, true);
+      int retries = 0;
+      int nextDataVersion;
+      do {
+        collection = clusterState.getCollectionOrNull("c1");
+      } while ((nextDataVersion = collection.getZNodeVersion()) <= dataVersion
+          && backoff(++retries, 4));
+      dataVersion = nextDataVersion;
     }
     // expect to have been invoked for each iteration ...
     assertEquals(iterations, invoked.size());
@@ -728,6 +735,14 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     assertTrue(
         "wrong number of watchers (expected 1): " + invoked,
         invoked.values().stream().mapToLong(LongAdder::sum).allMatch((l) -> l == 1));
+  }
+
+  private static boolean backoff(int iteration, int limit) throws InterruptedException {
+    if (iteration > limit) {
+      return false;
+    }
+    TimeUnit.MILLISECONDS.wait(iteration * 25L);
+    return true;
   }
 
   /**
