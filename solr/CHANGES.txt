@@ -220,6 +220,8 @@ Dependency Upgrades
 
 * PR#1846: Update io.opentelemetry to 1.29.0 (Alex Deparvu)
 
+* SOLR-16985: Upgrade Lucene to 9.8.0 (Alex Deparvu, Christine Poerschke)
+
 Other Changes
 ---------------------
 
