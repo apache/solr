@@ -936,7 +936,6 @@ public class ZkStateReader implements SolrCloseable {
   /** Get shard leader properties, with retry if none exist. */
   public Replica getLeaderRetry(String collection, String shard, int timeout)
       throws InterruptedException {
-    AtomicReference<DocCollection> coll = new AtomicReference<>();
     AtomicReference<Replica> leader = new AtomicReference<>();
     try {
       waitForState(
@@ -945,7 +944,6 @@ public class ZkStateReader implements SolrCloseable {
           TimeUnit.MILLISECONDS,
           (n, c) -> {
             if (c == null) return false;
-            coll.set(c);
             Replica l = getLeader(n, c, shard);
             if (l != null) {
               log.debug("leader found for {}/{} to be {}", collection, shard, l);
@@ -1802,6 +1800,18 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
+    // Check predicate against known clusterState before trying to add watchers
+    if (clusterState != null) {
+      Set<String> liveNodes = clusterState.getLiveNodes();
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      if (liveNodes != null && docCollection != null) {
+        if (predicate.matches(liveNodes, docCollection)) {
+          log.debug("Found {} directly in clusterState", predicate);
+          return;
+        }
+      }
+    }
+
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
@@ -1855,12 +1865,23 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
+    // Check predicate against known clusterState before trying to add watchers
+    if (clusterState != null) {
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      if (docCollection != null) {
+        if (predicate.test(docCollection)) {
+          log.debug("Found {} directly in clusterState", predicate);
+          return docCollection;
+        }
+      }
+    }
+
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
-    AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    AtomicReference<DocCollection> docCollectionReference = new AtomicReference<>();
     DocCollectionWatcher watcher =
         (c) -> {
-          docCollection.set(c);
+          docCollectionReference.set(c);
           boolean matches = predicate.test(c);
           if (matches) latch.countDown();
 
@@ -1875,8 +1896,8 @@ public class ZkStateReader implements SolrCloseable {
             "Timeout waiting to see state for collection="
                 + collection
                 + " :"
-                + docCollection.get());
-      return docCollection.get();
+                + docCollectionReference.get());
+      return docCollectionReference.get();
     } finally {
       removeDocCollectionWatcher(collection, watcher);
       waitLatches.remove(latch);

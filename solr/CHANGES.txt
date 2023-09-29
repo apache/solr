@@ -96,6 +96,8 @@ Optimizations
 
 * SOLR-16989: Optimize and consolidate reuse of DocValues iterators for value retrieval (Michael Gibney)
 
+* SOLR-17004: ZkStateReader waitForState should check clusterState before using watchers (Kevin Risden)
+
 Bug Fixes
 ---------------------
 
