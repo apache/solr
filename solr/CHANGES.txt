@@ -21,7 +21,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-17004: ZkStateReader waitForState should check clusterState before using watchers (Kevin Risden)
 
 Bug Fixes
 ---------------------
