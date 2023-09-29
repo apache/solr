@@ -25,10 +25,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
@@ -693,18 +696,23 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       }
     }
     final ConcurrentHashMap<Integer, LongAdder> invoked = new ConcurrentHashMap<>();
+    CyclicBarrier barrier = new CyclicBarrier(2);
     reader.registerDocCollectionWatcher(
         "c1",
         (coll) -> {
           // add a watcher that tracks how many times it's invoked per znode version
           if (coll != null) {
+            try {
+              barrier.await(250, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException | TimeoutException | BrokenBarrierException e) {
+              throw new RuntimeException(e);
+            }
             invoked.computeIfAbsent(coll.getZNodeVersion(), (k) -> new LongAdder()).increment();
           }
           return false;
         });
 
     ClusterState clusterState = reader.getClusterState();
-    DocCollection collection;
     int dataVersion = -1;
     for (int i = 0; i < iterations; i++) {
       // create or update collection
@@ -720,14 +728,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
       writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
       clusterState = writer.writePendingUpdates();
+      barrier.await(250, TimeUnit.MILLISECONDS); // wait for the watch callback to execute
       fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1" + i, true);
-      int retries = 0;
-      int nextDataVersion;
-      do {
-        collection = clusterState.getCollectionOrNull("c1");
-      } while ((nextDataVersion = collection.getZNodeVersion()) <= dataVersion
-          && backoff(++retries, 4));
-      dataVersion = nextDataVersion;
+      dataVersion = clusterState.getCollectionOrNull("c1").getZNodeVersion();
     }
     // expect to have been invoked for each iteration ...
     assertEquals(iterations, invoked.size());
