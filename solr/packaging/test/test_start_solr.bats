@@ -30,9 +30,9 @@ teardown() {
 
 @test "SOLR-11740 check 'solr stop' connection" {
   solr start
-  solr start -p 7574
-  solr assert --started http://localhost:8983/solr --timeout 5000
-  solr assert --started http://localhost:7574/solr --timeout 5000
+  solr start -p ${SOLR2_PORT}
+  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
+  solr assert --started http://localhost:${SOLR2_PORT}/solr --timeout 5000
   run bash -c 'solr stop -all 2>&1'
   refute_output --partial 'forcefully killing'
 }
@@ -40,12 +40,12 @@ teardown() {
 @test "stop command for single port" {
 
   solr start
-  solr start -p 7574
-  solr assert --started http://localhost:8983/solr --timeout 5000
-  solr assert --started http://localhost:7574/solr --timeout 5000
+  solr start -p ${SOLR2_PORT}
+  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
+  solr assert --started http://localhost:${SOLR2_PORT}/solr --timeout 5000
   
-  run solr stop -p 7574
-  solr assert --not-started http://localhost:7574/solr --timeout 5000
-  solr assert --started http://localhost:8983/solr --timeout 5000
+  run solr stop -p ${SOLR2_PORT}
+  solr assert --not-started http://localhost:${SOLR2_PORT}/solr --timeout 5000
+  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
 
 }

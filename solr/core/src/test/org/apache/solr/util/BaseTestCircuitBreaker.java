@@ -19,6 +19,7 @@ package org.apache.solr.util;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,9 +31,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
@@ -41,8 +44,11 @@ import org.slf4j.LoggerFactory;
 
 public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final CircuitBreaker dummyMemBreaker = new MemoryCircuitBreaker();
+  private static final CircuitBreaker dummyCBManager = new CircuitBreakerManager();
 
   protected static void indexDocs() {
+    removeAllExistingCircuitBreakers();
     for (int i = 0; i < 20; i++) {
       assertU(adoc("name", "john smith", "id", "1"));
       assertU(adoc("name", "johathon smith", "id", "2"));
@@ -59,11 +65,13 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
+    dummyMemBreaker.close();
+    dummyCBManager.close();
   }
 
   @After
   public void after() {
-    h.getCore().getCircuitBreakerRegistry().deregisterAll();
+    removeAllExistingCircuitBreakers();
   }
 
   public void testCBAlwaysTrips() {
@@ -113,67 +121,41 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testBadRequestType() {
+
     expectThrows(
         IllegalArgumentException.class,
-        () -> new MemoryCircuitBreaker().setRequestTypes(List.of("badRequestType")));
+        () -> dummyMemBreaker.setRequestTypes(List.of("badRequestType")));
   }
 
   public void testBuildingMemoryPressure() {
-    ExecutorService executor =
-        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TestCircuitBreaker"));
+    MemoryCircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker();
+    circuitBreaker.setThreshold(75);
 
-    AtomicInteger failureCount = new AtomicInteger();
-
-    try {
-      removeAllExistingCircuitBreakers();
-
-      CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker();
-      MemoryCircuitBreaker memoryCircuitBreaker = (MemoryCircuitBreaker) circuitBreaker;
-
-      memoryCircuitBreaker.setThreshold(75);
-
-      h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
-
-      List<Future<?>> futures = new ArrayList<>();
-
-      for (int i = 0; i < 5; i++) {
-        Future<?> future =
-            executor.submit(
-                () -> {
-                  try {
-                    h.query(req("name:\"john smith\""));
-                  } catch (SolrException e) {
-                    MatcherAssert.assertThat(
-                        e.getMessage(), containsString("Circuit Breakers tripped"));
-                    failureCount.incrementAndGet();
-                  } catch (Exception e) {
-                    throw new RuntimeException(e.getMessage());
-                  }
-                });
-
-        futures.add(future);
-      }
-
-      for (Future<?> future : futures) {
-        try {
-          future.get();
-        } catch (Exception e) {
-          throw new RuntimeException(e.getMessage());
-        }
-      }
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
-      assertEquals("Number of failed queries is not correct", 1, failureCount.get());
-    }
+    assertThatHighQueryLoadTrips(circuitBreaker, 1);
   }
 
   public void testFakeCPUCircuitBreaker() {
+    CPUCircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(h.getCore());
+    circuitBreaker.setThreshold(75);
+
+    assertThatHighQueryLoadTrips(circuitBreaker, 5);
+  }
+
+  public void testFakeLoadAverageCircuitBreaker() {
+    LoadAverageCircuitBreaker circuitBreaker = new FakeLoadAverageCircuitBreaker();
+    circuitBreaker.setThreshold(75);
+
+    assertThatHighQueryLoadTrips(circuitBreaker, 5);
+  }
+
+  /**
+   * Common assert method to be reused in tests
+   *
+   * @param circuitBreaker the breaker to test
+   * @param numShouldTrip the number of queries that should trip the breaker
+   */
+  private void assertThatHighQueryLoadTrips(CircuitBreaker circuitBreaker, int numShouldTrip) {
     removeAllExistingCircuitBreakers();
-
-    CircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker();
-    CPUCircuitBreaker cpuCircuitBreaker = (CPUCircuitBreaker) circuitBreaker;
-
-    cpuCircuitBreaker.setThreshold(75);
 
     h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
 
@@ -211,7 +193,7 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
       }
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
-      assertEquals("Number of failed queries is not correct", 5, failureCount.get());
+      assertEquals("Number of failed queries is not correct", numShouldTrip, failureCount.get());
     }
   }
 
@@ -260,17 +242,21 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
         "//lst[@name='process']/double[@name='time']");
   }
 
-  public void testErrorCode() {
+  public void testErrorCode() throws Exception {
     assertEquals(
         SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-        CircuitBreaker.getErrorCode(List.of(new CircuitBreakerManager())));
+        CircuitBreaker.getErrorCode(List.of(dummyCBManager)));
     assertEquals(
         SolrException.ErrorCode.TOO_MANY_REQUESTS,
-        CircuitBreaker.getErrorCode(List.of(new MemoryCircuitBreaker())));
+        CircuitBreaker.getErrorCode(List.of(dummyMemBreaker)));
   }
 
-  private void removeAllExistingCircuitBreakers() {
-    h.getCore().getCircuitBreakerRegistry().deregisterAll();
+  private static void removeAllExistingCircuitBreakers() {
+    try {
+      h.getCore().getCircuitBreakerRegistry().deregisterAll();
+    } catch (IOException e) {
+      fail("Failed to unload circuit breakers");
+    }
   }
 
   private static class MockCircuitBreaker extends MemoryCircuitBreaker {
@@ -285,18 +271,15 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
     public boolean isTripped() {
       return this.tripped;
     }
-
-    @Override
-    public String getDebugInfo() {
-      return "MockCircuitBreaker";
-    }
   }
 
   private static class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
+    public FakeMemoryPressureCircuitBreaker() {
+      super(1, 1);
+    }
 
     @Override
-    protected long calculateLiveMemoryUsage() {
-      // Return a number large enough to trigger a pushback from the circuit breaker
+    protected long getAvgMemoryUsage() {
       return Long.MAX_VALUE;
     }
   }
@@ -305,11 +288,12 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
     private AtomicInteger count;
 
     public BuildingUpMemoryPressureCircuitBreaker() {
+      super(1, 1);
       this.count = new AtomicInteger(0);
     }
 
     @Override
-    protected long calculateLiveMemoryUsage() {
+    protected long getAvgMemoryUsage() {
       int localCount = count.getAndIncrement();
 
       if (localCount >= 4) {
@@ -334,9 +318,20 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   private static class FakeCPUCircuitBreaker extends CPUCircuitBreaker {
+    public FakeCPUCircuitBreaker(SolrCore core) {
+      super(core);
+    }
+
     @Override
     protected double calculateLiveCPUUsage() {
-      return 92; // Return a value large enough to trigger the circuit breaker
+      return Double.MAX_VALUE;
+    }
+  }
+
+  private static class FakeLoadAverageCircuitBreaker extends LoadAverageCircuitBreaker {
+    @Override
+    protected double calculateLiveLoadAverage() {
+      return Double.MAX_VALUE;
     }
   }
 }

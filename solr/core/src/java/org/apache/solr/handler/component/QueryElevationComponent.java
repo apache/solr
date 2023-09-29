@@ -329,8 +329,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *
    * @return The cached or loaded {@link ElevationProvider}.
    */
-  @VisibleForTesting
-  ElevationProvider getElevationProvider(IndexReader reader, SolrCore core) {
+  protected ElevationProvider getElevationProvider(IndexReader reader, SolrCore core) {
     synchronized (LOCK) {
       if (cacheElevationProvider != null && Objects.equals(cacheIndexReader.get(), reader)) {
         return cacheElevationProvider; // cache hit !
@@ -377,7 +376,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *
    * @return The loaded {@link ElevationProvider}; not null.
    */
-  private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException {
+  protected ElevationProvider loadElevationProvider(SolrCore core)
+      throws IOException, SAXException {
     Document xmlDocument;
     try {
       xmlDocument = SafeXMLParsing.parseConfigXML(log, core.getResourceLoader(), configFileName);

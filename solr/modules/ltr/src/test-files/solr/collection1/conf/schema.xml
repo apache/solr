@@ -35,6 +35,7 @@
     <field name="normHits" type="float" indexed="true" stored="true" />
 
     <field name="isTrendy" type="boolean" indexed="true" stored="true" />
+    <field name="storedDvIsTrendy" type="boolean" indexed="true" stored="true" docValues="true"/>
     <field name="dvIsTrendy" type="boolean" indexed="true" stored="false" docValues="true"/>
 
     <field name="dvIntField" type="int" indexed="false" docValues="true" stored="false" default="-1" multiValued="false"/>
@@ -67,6 +68,7 @@
   <copyField source="popularity" dest="dvDoublePopularity"/>
 
   <copyField source="isTrendy" dest="dvIsTrendy"/>
+  <copyField source="isTrendy" dest="storedDvIsTrendy"/>
 
   <types>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />

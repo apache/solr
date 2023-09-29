@@ -17,7 +17,10 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -56,6 +59,7 @@ import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -769,25 +773,25 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");
 
-    System.setProperty("solr.jetty.ssl.verifyClientHostName", "true");
+    System.setProperty("solr.ssl.checkPeerName", "true");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
     System.setProperty("javax.net.ssl.trustStoreType", "bar");
     SslContextFactory.Client sslContextFactory2 = Http2SolrClient.getDefaultSslContextFactory();
     assertEquals("HTTPS", sslContextFactory2.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory2.getKeyStoreType());
     assertEquals("bar", sslContextFactory2.getTrustStoreType());
-    System.clearProperty("solr.jetty.ssl.verifyClientHostName");
+    System.clearProperty("solr.ssl.checkPeerName");
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");
 
-    System.setProperty("solr.jetty.ssl.verifyClientHostName", "false");
+    System.setProperty("solr.ssl.checkPeerName", "false");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
     System.setProperty("javax.net.ssl.trustStoreType", "bar");
     SslContextFactory.Client sslContextFactory3 = Http2SolrClient.getDefaultSslContextFactory();
     assertNull(sslContextFactory3.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory3.getKeyStoreType());
     assertEquals("bar", sslContextFactory3.getTrustStoreType());
-    System.clearProperty("solr.jetty.ssl.verifyClientHostName");
+    System.clearProperty("solr.ssl.checkPeerName");
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");
   }
@@ -947,7 +951,10 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params("q", "*:*"));
       req.setResponseParser(new InputStreamResponseParser("xml"));
       SimpleSolrResponse rsp = req.process(client);
-      assertNotNull(rsp.getResponse().get("stream"));
+      Object stream = rsp.getResponse().get("stream");
+      assertNotNull(stream);
+      MatcherAssert.assertThat(stream, instanceOf(InputStream.class));
+      org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
     }
   }
 
@@ -958,31 +965,34 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
             .withBasicAuthCredentials("testu", "testp")
             .build()) {
 
-      Http2SolrClient clone1 =
-          new Http2SolrClient.Builder("baseSolrUrl").withHttpClient(seed).build();
-      String expected1 =
-          Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu", "testp");
-      assertEquals(expected1, clone1.basicAuthAuthorizationStr);
+      try (Http2SolrClient clone1 =
+          new Http2SolrClient.Builder("baseSolrUrl").withHttpClient(seed).build()) {
+        String expected1 =
+            Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu", "testp");
+        assertEquals(expected1, clone1.basicAuthAuthorizationStr);
+      }
 
       // test overwrite seed value
-      Http2SolrClient clone2 =
+      try (Http2SolrClient clone2 =
           new Http2SolrClient.Builder("baseSolrUrl")
               .withHttpClient(seed)
               .withBasicAuthCredentials("testu2", "testp2")
-              .build();
-      String expected2 =
-          Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu2", "testp2");
-      assertEquals(expected2, clone2.basicAuthAuthorizationStr);
+              .build()) {
+        String expected2 =
+            Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu2", "testp2");
+        assertEquals(expected2, clone2.basicAuthAuthorizationStr);
+      }
 
       // test overwrite seed value, order of builder method calls reversed
-      Http2SolrClient clone3 =
+      try (Http2SolrClient clone3 =
           new Http2SolrClient.Builder("baseSolrUrl")
               .withBasicAuthCredentials("testu3", "testp3")
               .withHttpClient(seed)
-              .build();
-      String expected3 =
-          Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu3", "testp3");
-      assertEquals(expected3, clone3.basicAuthAuthorizationStr);
+              .build()) {
+        String expected3 =
+            Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu3", "testp3");
+        assertEquals(expected3, clone3.basicAuthAuthorizationStr);
+      }
     }
   }
 

@@ -19,7 +19,6 @@ package org.apache.solr.response;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.PrettyPrinter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -32,7 +31,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class JacksonJsonWriter extends BinaryResponseWriter {
 
   protected final JsonFactory jsonfactory;
-  protected static final PrettyPrinter pretty =
+  protected static final DefaultPrettyPrinter pretty =
       new DefaultPrettyPrinter()
           .withoutSpacesInObjectEntries()
           .withArrayIndenter(DefaultPrettyPrinter.NopIndenter.instance);
@@ -71,7 +70,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
       try {
         gen = j.createGenerator(out, JsonEncoding.UTF8);
         if (doIndent) {
-          gen.setPrettyPrinter(pretty);
+          gen.setPrettyPrinter(pretty.createInstance());
         }
       } catch (IOException e) {
         throw new RuntimeException(e);

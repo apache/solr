@@ -67,6 +67,8 @@ public class NodeConfig {
 
   private final List<String> allowUrls;
 
+  private final boolean hideStackTraces;
+
   private final String sharedLibDirectory;
 
   private final String modules;
@@ -153,6 +155,7 @@ public class NodeConfig {
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
+      boolean hideStackTraces,
       String configSetServiceClass,
       String modules,
       Set<String> hiddenSysProps) {
@@ -189,6 +192,7 @@ public class NodeConfig {
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
+    this.hideStackTraces = hideStackTraces;
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
     this.hiddenSysProps = hiddenSysProps;
@@ -452,6 +456,10 @@ public class NodeConfig {
     return allowUrls;
   }
 
+  public boolean hideStackTraces() {
+    return hideStackTraces;
+  }
+
   // Configures SOLR_HOME/lib to the shared class loader
   private void setupSharedLib() {
     // Always add $SOLR_HOME/lib to the shared resource loader
@@ -615,6 +623,7 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
+    private boolean hideStackTrace = Boolean.getBoolean("solr.hideStackTrace");
 
     private final Path solrHome;
     private final String nodeName;
@@ -809,6 +818,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setHideStackTrace(boolean hide) {
+      this.hideStackTrace = hide;
+      return this;
+    }
+
     public NodeConfigBuilder setConfigSetServiceClass(String configSetServiceClass) {
       this.configSetServiceClass = configSetServiceClass;
       return this;
@@ -902,6 +916,7 @@ public class NodeConfig {
           defaultZkHost,
           allowPaths,
           allowUrls,
+          hideStackTrace,
           configSetServiceClass,
           modules,
           resolveHiddenSysPropsFromSysPropOrEnvOrDefault(hiddenSysProps));

@@ -44,7 +44,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -503,22 +502,7 @@ public class V2HttpCall extends HttpSolrCall {
 
     // Get the templatize-ed path, ex: "/c/{collection}"
     final String path = computeEndpointPath();
-
-    String verb = null;
-    // if this api has commands ...
-    final Map<String, JsonSchemaValidator> validators = getValidators(); // should be cached
-    if (validators != null && validators.isEmpty() == false && solrReq != null) {
-      boolean validateInput = true; // because getCommands caches it; and we want it validated later
-      // does this request have one command?
-      List<CommandOperation> cmds = solrReq.getCommands(validateInput);
-      if (cmds.size() == 1) {
-        verb = cmds.get(0).name;
-      }
-    }
-    if (verb == null) {
-      verb = req.getMethod().toLowerCase(Locale.ROOT);
-    }
-
+    final String verb = req.getMethod().toLowerCase(Locale.ROOT);
     span.updateName(verb + ":" + path);
   }
 

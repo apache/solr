@@ -62,7 +62,7 @@ public class CustomTestOtelTracerConfigurator extends OtelTracerConfigurator {
 
     // force early init
     CustomTestOtelTracerConfigurator tracer = new CustomTestOtelTracerConfigurator();
-    tracer.prepareConfiguration();
+    tracer.prepareConfiguration(new NamedList<>());
 
     bootOtel();
   }

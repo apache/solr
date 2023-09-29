@@ -22,10 +22,11 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -35,7 +36,6 @@ public class TraceUtils {
 
   private static final String REQ_ATTR_TRACING_SPAN = Span.class.getName();
   private static final String REQ_ATTR_TRACING_TRACER = Tracer.class.getName();
-  private static final Tracer NOOP_TRACER = TracerProvider.noop().get(null);
 
   public static final String DEFAULT_SPAN_NAME = "http.request";
   public static final String WRITE_QUERY_RESPONSE_SPAN_NAME = "writeQueryResponse";
@@ -52,6 +52,8 @@ public class TraceUtils {
   public static final AttributeKey<String> TAG_RESPONSE_WRITER =
       AttributeKey.stringKey("responseWriter");
   public static final AttributeKey<String> TAG_CONTENT_TYPE = AttributeKey.stringKey("contentType");
+  public static final AttributeKey<List<String>> TAG_OPS = AttributeKey.stringArrayKey("ops");
+  public static final AttributeKey<String> TAG_CLASS = AttributeKey.stringKey("class");
 
   @Deprecated
   private static final AttributeKey<String> TAG_HTTP_METHOD_DEP =
@@ -63,8 +65,16 @@ public class TraceUtils {
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
 
-  public static Tracer noop() {
-    return NOOP_TRACER;
+  public static final Predicate<Span> DEFAULT_IS_RECORDING = Span::isRecording;
+
+  /**
+   * this should only be changed in the context of testing, otherwise it would risk not recording
+   * trace data.
+   */
+  public static Predicate<Span> IS_RECORDING = DEFAULT_IS_RECORDING;
+
+  public static Tracer getGlobalTracer() {
+    return GlobalOpenTelemetry.getTracer("solr");
   }
 
   public static TextMapPropagator getTextMapPropagator() {
@@ -93,7 +103,7 @@ public class TraceUtils {
   }
 
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
-    if (span.isRecording()) {
+    if (IS_RECORDING.test(span)) {
       consumer.accept(span);
     }
   }
@@ -139,5 +149,12 @@ public class TraceUtils {
     }
     spanBuilder.setAttribute(TAG_DB_TYPE, TAG_DB_TYPE_SOLR);
     return spanBuilder.startSpan();
+  }
+
+  public static void setOperations(SolrQueryRequest req, String clazz, List<String> ops) {
+    if (!ops.isEmpty()) {
+      req.getSpan().setAttribute(TAG_OPS, ops);
+      req.getSpan().setAttribute(TAG_CLASS, clazz);
+    }
   }
 }

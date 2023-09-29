@@ -80,6 +80,26 @@ Therefore, when using the default settings, nodes that were previously excluded 
 * The Embedded Zookeeper can now be configured to listen to (or bind to) more hosts than just `localhost`,
 see the  xref:deployment-guide:securing-solr.adoc#network-configuration[Network Configuration documentation] for more information.
 
+=== Circuit Breaker
+* The Circuit Breakers are now pluggable, and you can define multiple circuit breakers including custom ones. The existing `CircuitBreakerManager` is deprecated, and users are encouraged to switch to the new plugins. While the old `CircuitBreakerManager` returned HTTP 503 when a circuit breaker was tripped, the new plugins return HTTP 429.
+
+=== Security
+* Since Solr 8.4.1/8.5.0, the `solr.jetty.ssl.verifyClientHostName` sysProp and `SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` envVar have been used incorrectly.
+It has instead been used to override the `solr.ssl.checkPeerName` sysProp in the `HTTP2SolrClient`.
+This has been fixed, and the setting once again tells the server to check the originating client hostname against the client certificate when doing mTLS.
+This option is still enabled by default.
+
+* The `solr.jetty.ssl.sniHostCheck` option now defaults to the value of `SOLR_SSL_CHECK_PEER_NAME`, if it is provided.
+This will enable client and server hostName check settings to be governed by the same environment variable.
+If users want separate client/server settings, they can manually override the `solr.jetty.ssl.sniHostCheck` option in `SOLR_OPTS`.
+
+=== Deprecations
+* The `rid` request id query parameter has been deprecated in favor of the always-on trace generation.
+To disable the `rid` generation set the system property `solr.disableRequestId` to `true`.
+To disable the always-on trace generation set the system property `solr.alwaysOnTraceId` to `false`.
+
+=== Learning To Rank
+* The FieldValueFeature class now always uses DocValues when docValues=true is set. A LegacyFieldValueFeature class provides the prior behaviour of not using DocValues when the docValues=true and stored=true field attributes are both set.
 
 == Solr 9.3
 === Binary Releases

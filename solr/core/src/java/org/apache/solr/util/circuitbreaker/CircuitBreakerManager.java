@@ -17,14 +17,15 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Single CircuitBreaker that registers both a Memory and a CPU CircuitBreaker. This is only for
- * backward compatibility with the 9.x versions prior to 9.4.
+ * Single CircuitBreaker that registers both a Memory and a LoadAverage CircuitBreaker. This is only
+ * for backward compatibility with the 9.x versions prior to 9.4.
  *
  * @deprecated Use individual Circuit Breakers instead
  */
@@ -36,7 +37,7 @@ public class CircuitBreakerManager extends CircuitBreaker {
   private int memThreshold = 100;
   private int cpuThreshold = 100;
   private MemoryCircuitBreaker memCB;
-  private CPUCircuitBreaker cpuCB;
+  private LoadAverageCircuitBreaker cpuCB;
 
   public CircuitBreakerManager() {
     super();
@@ -45,21 +46,6 @@ public class CircuitBreakerManager extends CircuitBreaker {
   @Override
   public boolean isTripped() {
     return (memEnabled && memCB.isTripped()) || (cpuEnabled && cpuCB.isTripped());
-  }
-
-  @Override
-  public String getDebugInfo() {
-    StringBuilder sb = new StringBuilder();
-    if (memEnabled) {
-      sb.append(memCB.getDebugInfo());
-    }
-    if (memEnabled && cpuEnabled) {
-      sb.append("\n");
-    }
-    if (cpuEnabled) {
-      sb.append(cpuCB.getDebugInfo());
-    }
-    return sb.toString();
   }
 
   @Override
@@ -86,8 +72,22 @@ public class CircuitBreakerManager extends CircuitBreaker {
       memCB.setThreshold(memThreshold);
     }
     if (cpuEnabled) {
-      cpuCB = new CPUCircuitBreaker();
+      // In SOLR-15056 CPUCircuitBreaker was renamed to LoadAverageCircuitBreaker, need back-compat
+      cpuCB = new LoadAverageCircuitBreaker();
       cpuCB.setThreshold(cpuThreshold);
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    try {
+      if (memEnabled) {
+        memCB.close();
+      }
+    } finally {
+      if (cpuEnabled) {
+        cpuCB.close();
+      }
     }
   }
 

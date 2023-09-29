@@ -201,7 +201,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(child.getTraceId(), parent.getTraceId());
   }
 
-  private List<SpanData> getAndClearSpans() {
+  static List<SpanData> getAndClearSpans() {
     InMemorySpanExporter exporter = CustomTestOtelTracerConfigurator.getInMemorySpanExporter();
     List<SpanData> result = new ArrayList<>(exporter.getFinishedSpanItems());
     Collections.reverse(result); // nicer to see spans chronologically

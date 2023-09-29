@@ -1051,7 +1051,10 @@ public class RealTimeGetComponent extends SearchComponent {
       for (String id : reqIds.allIds) {
         Slice slice =
             coll.getRouter()
-                .getTargetSlice(params.get(ShardParams._ROUTE_, id), null, null, params, coll);
+                .getTargetSlice(id, null, params.get(ShardParams._ROUTE_), params, coll);
+        if (slice == null) {
+          continue;
+        }
 
         List<String> idsForShard = sliceToId.get(slice.getName());
         if (idsForShard == null) {
@@ -1112,7 +1115,7 @@ public class RealTimeGetComponent extends SearchComponent {
     // the mappings.
 
     for (int i = 0; i < rb.slices.length; i++) {
-      log.info("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
+      log.trace("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
       if (lookup.equals(rb.slices[i]) || slice.equals(rb.slices[i])) {
         return new String[] {rb.shards[i]};
       }

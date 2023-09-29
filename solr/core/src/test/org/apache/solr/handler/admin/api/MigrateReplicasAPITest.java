@@ -40,7 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for {@link ReplaceNodeAPI} */
+/** Unit tests for {@link ReplaceNode} */
 public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
 
   private CoreContainer mockCoreContainer;
