@@ -665,7 +665,7 @@ public class MiniSolrCloudCluster {
                 IOUtils.closeQuietly(c);
               });
       solrClientByCollection.clear();
-      ;
+
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
@@ -934,11 +934,7 @@ public class MiniSolrCloudCluster {
           }
         }
       }
-      if (activeReplicas == expectedReplicas) {
-        return true;
-      }
-
-      return false;
+      return activeReplicas == expectedReplicas;
     };
   }
 
@@ -1032,7 +1028,6 @@ public class MiniSolrCloudCluster {
     private String solrXml = DEFAULT_CLOUD_SOLR_XML;
     private JettyConfig.Builder jettyConfigBuilder;
     private Optional<String> securityJson = Optional.empty();
-    private String credentials;
 
     private List<Config> configs = new ArrayList<>();
     private Map<String, Object> clusterProperties = new HashMap<>();
@@ -1106,17 +1101,6 @@ public class MiniSolrCloudCluster {
      */
     public Builder withSecurityJson(String securityJson) {
       this.securityJson = Optional.of(securityJson);
-      return this;
-    }
-
-    /**
-     * Configure the solrClients for the {@linkplain MiniSolrCloudCluster}
-     *
-     * @param credentials The string specifying the username:password to use
-     * @return the instance of {@linkplain Builder}
-     */
-    public Builder withCredentials(String credentials) {
-      this.credentials = credentials;
       return this;
     }
 
