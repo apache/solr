@@ -25,11 +25,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.OverseerTest;
@@ -666,6 +668,66 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       CommonTestInjection.reset();
       ExecutorUtil.awaitTermination(executorService);
     }
+  }
+
+  /**
+   * Simulates race condition that might arise when state updates triggered by watch notification
+   * contend with removal of collection watches.
+   *
+   * <p>Such race condition should no longer exist with the new code that uses a single map for both
+   * "collection watches" and "latest state of watched collection"
+   */
+  public void testStateWatcherRaceCondition() throws Exception {
+    ZkStateWriter writer = fixture.writer;
+    final ZkStateReader reader = fixture.reader;
+    fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+    int extraWatchers = 10;
+    int iterations = 10;
+    for (int i = 0; i < extraWatchers; i++) {
+      // add and remove a bunch of watchers
+      DocCollectionWatcher w = (coll) -> false;
+      try {
+        reader.registerDocCollectionWatcher("c1", w);
+      } finally {
+        reader.removeDocCollectionWatcher("c1", w);
+      }
+    }
+    final ConcurrentHashMap<Integer, LongAdder> invoked = new ConcurrentHashMap<>();
+    reader.registerDocCollectionWatcher(
+        "c1",
+        (coll) -> {
+          // add a watcher that tracks how many times it's invoked per znode version
+          if (coll != null) {
+            invoked.computeIfAbsent(coll.getZNodeVersion(), (k) -> new LongAdder()).increment();
+          }
+          return false;
+        });
+
+    ClusterState clusterState = reader.getClusterState();
+    for (int i = 0; i < iterations; i++) {
+      DocCollection collection = clusterState.getCollectionOrNull("c1");
+      int currentVersion = collection != null ? collection.getZNodeVersion() : 0;
+      // create new collection
+      DocCollection state =
+          DocCollection.create(
+              "c1",
+              new HashMap<>(),
+              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+              DocRouter.DEFAULT,
+              currentVersion,
+              PerReplicaStatesOps.getZkClientPrsSupplier(
+                  fixture.zkClient, DocCollection.getCollectionPath("c1")));
+      ZkWriteCommand wc = new ZkWriteCommand("c1", state);
+      writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+      clusterState = writer.writePendingUpdates();
+      fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1" + i, true);
+    }
+    // expect to have been invoked for each iteration ...
+    assertEquals(iterations, invoked.size());
+    // ... and only _once_ for each iteration
+    assertTrue(
+        "wrong number of watchers (expected 1): " + invoked,
+        invoked.values().stream().mapToLong(LongAdder::sum).allMatch((l) -> l == 1));
   }
 
   /**
