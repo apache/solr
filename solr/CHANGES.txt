@@ -21,7 +21,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-17004: ZkStateReader waitForState should check clusterState before using watchers (Kevin Risden)
 
 Bug Fixes
 ---------------------
@@ -222,6 +223,10 @@ Bug Fixes
 * PR#1963: Fix the admin UI green core-size graph on nodes screen (janhoy)
 
 * SOLR-16980: Connect to SOLR standalone with basic authentication (Alex Deparvu)
+
+* SOLR-16992: Non-reproducible StreamingTest failures -- suggests CloudSolrStream concurency race condition (Alex Deparvu, hossman)
+
+* SOLR-16644: Fixing the entropy warning threshold using scaling based on poolsize (Raghavan Muthuregunathan)
 
 Dependency Upgrades
 ---------------------

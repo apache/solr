@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -34,6 +34,8 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientBuilder;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +56,7 @@ public class SolrClientCache implements Closeable {
   private final Map<String, SolrClient> solrClients = new HashMap<>();
   private final HttpClient apacheHttpClient;
   private final Http2SolrClient http2SolrClient;
+  private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
   public SolrClientCache() {
     this.apacheHttpClient = null;
@@ -72,6 +75,7 @@ public class SolrClientCache implements Closeable {
   }
 
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
+    ensureOpen();
     Objects.requireNonNull(zkHost, "ZooKeeper host cannot be null!");
     if (solrClients.containsKey(zkHost)) {
       return (CloudSolrClient) solrClients.get(zkHost);
@@ -108,6 +112,7 @@ public class SolrClientCache implements Closeable {
   }
 
   public synchronized SolrClient getHttpSolrClient(String baseUrl) {
+    ensureOpen();
     Objects.requireNonNull(baseUrl, "Url cannot be null!");
     if (solrClients.containsKey(baseUrl)) {
       return solrClients.get(baseUrl);
@@ -159,13 +164,17 @@ public class SolrClientCache implements Closeable {
 
   @Override
   public synchronized void close() {
-    for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
-      try {
-        entry.getValue().close();
-      } catch (IOException e) {
-        log.error("Error closing SolrClient for {}", entry.getKey(), e);
+    if (isClosed.compareAndSet(false, true)) {
+      for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
+        IOUtils.closeQuietly(entry.getValue());
       }
+      solrClients.clear();
     }
-    solrClients.clear();
+  }
+
+  private void ensureOpen() {
+    if (isClosed.get()) {
+      throw new AlreadyClosedException();
+    }
   }
 }
