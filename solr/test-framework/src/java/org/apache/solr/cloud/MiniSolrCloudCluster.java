@@ -57,10 +57,8 @@ import javax.servlet.Filter;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -161,7 +159,6 @@ public class MiniSolrCloudCluster {
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
   private CloudSolrClient solrClient;
-  private final String credentials;
   private final JettyConfig jettyConfig;
   private final boolean trackJettyMetrics;
 
@@ -245,7 +242,6 @@ public class MiniSolrCloudCluster {
         jettyConfig,
         zkTestServer,
         securityJson,
-        null,
         false,
         formatZkServer);
   }
@@ -270,7 +266,6 @@ public class MiniSolrCloudCluster {
       JettyConfig jettyConfig,
       ZkTestServer zkTestServer,
       Optional<String> securityJson,
-      String credentials,
       boolean trackJettyMetrics,
       boolean formatZkServer)
       throws Exception {
@@ -279,7 +274,6 @@ public class MiniSolrCloudCluster {
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
     this.trackJettyMetrics = trackJettyMetrics;
-    this.credentials = credentials;
 
     log.info("Starting cluster of {} servers in {}", numServers, baseDir);
 
@@ -750,22 +744,11 @@ public class MiniSolrCloudCluster {
   }
 
   protected CloudSolrClient buildSolrClient() {
-    Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder()
-            .withIdleTimeout(15, TimeUnit.SECONDS)
-            .withConnectionTimeout(90, TimeUnit.SECONDS)
-            .withOptionalBasicAuthCredentials(credentials);
-    return new CloudHttp2SolrClient.Builder(
+    return new CloudLegacySolrClient.Builder(
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-        .withInternalClientBuilder(builder)
-        .build();
-
-    //    return new CloudLegacySolrClient.Builder(
-    //            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-    //        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
-    //        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-    //            .withO
-    //        .build(); // we choose 90 because we run in some harsh envs
+        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+        .build(); // we choose 90 because we run in some harsh envs
   }
 
   /**
@@ -1277,7 +1260,6 @@ public class MiniSolrCloudCluster {
               jettyConfig,
               null,
               securityJson,
-              credentials,
               trackJettyMetrics,
               formatZkServer);
       for (Config config : configs) {
