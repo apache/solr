@@ -136,7 +136,7 @@ public class FieldValueFeature extends Feature {
      * @param val value of the field
      * @return value after transformation
      */
-    protected long interprete_NumericDocValues_NumberType_DATE(long val) {
+    protected long readNumericDocValuesDate(long val) {
       return val;
     }
 
@@ -273,7 +273,7 @@ public class FieldValueFeature extends Feature {
           // handle double value conversion
           return (float) Double.longBitsToDouble(docValues.longValue());
         } else if (NumberType.DATE.equals(numberType)) {
-          return interprete_NumericDocValues_NumberType_DATE(docValues.longValue());
+          return readNumericDocValuesDate(docValues.longValue());
         }
         // just take the long value
         return docValues.longValue();

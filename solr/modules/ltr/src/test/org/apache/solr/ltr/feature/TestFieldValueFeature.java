@@ -740,7 +740,7 @@ public class TestFieldValueFeature extends TestRerankBase {
         private final long timeZero = Instant.parse("2000-01-01T00:00:00.000Z").toEpochMilli();
 
         @Override
-        public long interprete_NumericDocValues_NumberType_DATE(long val) {
+        public long readNumericDocValuesDate(long val) {
           if (since) return TimeUnit.MILLISECONDS.toMinutes(val - this.timeZero);
           if (until) return TimeUnit.MILLISECONDS.toMinutes(this.timeZero - val);
           return 0;
