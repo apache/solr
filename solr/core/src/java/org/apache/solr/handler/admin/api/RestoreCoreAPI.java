@@ -42,6 +42,7 @@ import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.UpdateLog;
 
 /**
  * V2 API for restoring a previously taken backup to a core
@@ -146,6 +147,10 @@ public class RestoreCoreAPI extends CoreAdminAPIBase {
           .getZkController()
           .getShardTerms(cd.getCollectionName(), cd.getShardId())
           .ensureHighestTermsAreNotZero();
+
+      // transitions state of update log to ACTIVE
+      UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
+      updateLog.applyBufferedUpdates();
     }
   }
 
