@@ -163,6 +163,8 @@ Bug Fixes
 
 * SOLR-16992: Non-reproducible StreamingTest failures -- suggests CloudSolrStream concurency race condition (Alex Deparvu, hossman)
 
+* SOLR-16644: Fixing the entropy warning threshold using scaling based on poolsize (Raghavan Muthuregunathan)
+
 Dependency Upgrades
 ---------------------
 
