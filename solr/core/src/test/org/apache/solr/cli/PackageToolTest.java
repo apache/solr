@@ -34,7 +34,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.util.LogLevel;
@@ -317,26 +316,23 @@ public class PackageToolTest extends SolrCloudTestCase {
         "/config/params?meta=true",
         credentials,
         Arrays.asList("response", "params", "PKG_VERSIONS", pkg),
-        version,
-        10);
+        version);
 
     testForResponseElement(
         cluster.getJettySolrRunner(0).getBaseUrl().toString() + "/" + collection,
         "/config/requestHandler?componentName=" + component + "&meta=true",
         credentials,
         Arrays.asList("config", "requestHandler", component, "_packageinfo_", "version"),
-        componentVersion,
-        10);
+        componentVersion);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings({"rawtypes"})
   public static void testForResponseElement(
       String testServerBaseUrl,
       String uri,
       String credentials,
       List<String> jsonPath,
-      Object expected,
-      long maxTimeoutSeconds)
+      Object expected)
       throws Exception {
 
     // nocommit this needs some work!  Copied method from TestSolrConfigHandler.java
@@ -345,44 +341,19 @@ public class PackageToolTest extends SolrCloudTestCase {
     // using the apitool makes me sad ;-)
 
     boolean success = false;
-    LinkedHashMapWriter m = null;
 
     ApiTool apiTool = new ApiTool();
     String response = apiTool.callGet(testServerBaseUrl + uri, credentials);
 
-    // TimeOut timeOut = new TimeOut(maxTimeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    // while (!timeOut.hasTimedOut()) {
-    // try {
-    //   m =
-    //       testServerBaseUrl == null
-    //                 ? getRespMap(uri, harness)
-    //             : TestSolrConfigHandlerConcurrent.getAsMap(
-    //           testServerBaseUrl + uri, cloudSolrClient);
-    // } catch (Exception e) {
-    //        Thread.sleep(100);
-    //      continue;
-    //  }
-    m =
+    LinkedHashMapWriter m =
         (LinkedHashMapWriter)
             Utils.MAPWRITEROBJBUILDER.apply(new JSONParser(new StringReader(response))).getVal();
     Object actual = Utils.getObjectByPath(m, false, jsonPath);
 
-    if (expected instanceof ValidatingJsonMap.PredicateWithErrMsg) {
-      ValidatingJsonMap.PredicateWithErrMsg predicate =
-          (ValidatingJsonMap.PredicateWithErrMsg) expected;
-      if (predicate.test(actual) == null) {
-        success = true;
-        // break;
-      }
-
-    } else {
-      if (Objects.equals(expected, actual)) {
-        success = true;
-        // break;
-      }
+    if (Objects.equals(expected, actual)) {
+      success = true;
     }
-    // Thread.sleep(100);
-    // }
+
     assertTrue(
         StrUtils.formatString(
             "Could not get expected value  ''{0}'' for path ''{1}'' full output: {2},  from server:  {3}",
