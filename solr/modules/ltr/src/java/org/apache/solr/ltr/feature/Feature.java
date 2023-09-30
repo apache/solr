@@ -61,6 +61,8 @@ import org.apache.solr.util.SolrPluginUtils;
  * #validate()} function, and must implement the {@link #paramsToMap()} and createWeight() methods.
  */
 public abstract class Feature extends Query implements Accountable {
+  // TODO SOLR-16509 make all fields final
+
   private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(Feature.class);
 
   protected final String name;

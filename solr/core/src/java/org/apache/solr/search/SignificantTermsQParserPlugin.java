@@ -72,12 +72,11 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
   }
 
   private static class SignificantTermsQuery extends AnalyticsQuery {
-
-    private String field;
-    private int numTerms;
-    private float maxDocs;
-    private float minDocs;
-    private int minTermLength;
+    private final String field;
+    private final int numTerms;
+    private final float maxDocs;
+    private final float minDocs;
+    private final int minTermLength;
 
     public SignificantTermsQuery(
         String field, int numTerms, float minDocs, float maxDocs, int minTermLength) {

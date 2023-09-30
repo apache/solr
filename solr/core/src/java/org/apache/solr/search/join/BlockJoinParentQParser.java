@@ -120,12 +120,11 @@ public class BlockJoinParentQParser extends FiltersQParser {
 
   /** A constant score query based on a {@link BitSetProducer}. */
   static class BitSetProducerQuery extends ExtendedQueryBase {
-
     final BitSetProducer bitSetProducer;
 
     public BitSetProducerQuery(BitSetProducer bitSetProducer) {
+      super(false); // because we assume the bitSetProducer is itself cached
       this.bitSetProducer = bitSetProducer;
-      setCache(false); // because we assume the bitSetProducer is itself cached
     }
 
     @Override

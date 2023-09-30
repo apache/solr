@@ -65,10 +65,12 @@ public class JoinQParserPlugin extends QParserPlugin {
       @Override
       Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         final JoinParams jParams = parseJoin(qparser);
-        final JoinQuery q =
-            new JoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
-        q.fromCoreOpenTime = jParams.fromCoreOpenTime;
-        return q;
+        return new JoinQuery(
+            jParams.fromField,
+            jParams.toField,
+            jParams.fromCore,
+            jParams.fromQuery,
+            jParams.fromCoreOpenTime);
       }
 
       @Override
@@ -94,9 +96,7 @@ public class JoinQParserPlugin extends QParserPlugin {
       @Override
       Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         final JoinParams jParams = parseJoin(qparser);
-        final JoinQuery q = createTopLevelJoin(jParams);
-        q.fromCoreOpenTime = jParams.fromCoreOpenTime;
-        return q;
+        return createTopLevelJoin(jParams);
       }
 
       @Override
@@ -106,10 +106,15 @@ public class JoinQParserPlugin extends QParserPlugin {
 
       private JoinQuery createTopLevelJoin(JoinParams jParams) {
         if (isSelfJoin(jParams)) {
-          return new TopLevelJoinQuery.SelfJoin(jParams.fromField, jParams.fromQuery);
+          return new TopLevelJoinQuery.SelfJoin(
+              jParams.fromField, jParams.fromQuery, jParams.fromCoreOpenTime);
         }
         return new TopLevelJoinQuery(
-            jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
+            jParams.fromField,
+            jParams.toField,
+            jParams.fromCore,
+            jParams.fromQuery,
+            jParams.fromCoreOpenTime);
       }
 
       private boolean isSelfJoin(JoinParams jparams) {

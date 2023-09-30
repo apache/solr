@@ -66,11 +66,10 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
   }
 
   private static class IGainTermsQuery extends AnalyticsQuery {
-
-    private String field;
-    private String outcome;
-    private int numTerms;
-    private int positiveLabel;
+    private final String field;
+    private final String outcome;
+    private final int numTerms;
+    private final int positiveLabel;
 
     public IGainTermsQuery(String field, String outcome, int positiveLabel, int numTerms) {
       this.field = field;

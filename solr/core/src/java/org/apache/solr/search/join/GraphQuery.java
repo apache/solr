@@ -59,58 +59,62 @@ import org.apache.solr.search.SolrIndexSearcher;
  * @lucene.experimental
  */
 public class GraphQuery extends Query {
+  public static final int MAX_DEPTH_DEFAULT = -1;
+  public static final boolean ONLY_LEAF_NODES_DEFAULT = false;
+  public static final boolean RETURN_ROOT_DEFAULT = true;
+  public static final boolean USE_AUTN_DEFAULT = true;
 
-  /** The inital node matching query */
-  private Query q;
+  /** The initial node matching query */
+  private final Query q;
   /** the field with the node id */
-  private String fromField;
+  private final String fromField;
   /** the field containing the edge ids */
-  private String toField;
+  private final String toField;
   /** A query to apply while traversing the graph to filter out edges */
-  private Query traversalFilter;
+  private final Query traversalFilter;
   /** The max depth to traverse the graph, -1 means no limit. */
-  private int maxDepth = -1;
-
+  private final int maxDepth;
   /** Use automaton compilation for graph query traversal (experimental + expert use only) */
-  private boolean useAutn = true;
-
+  private final boolean useAutn;
   /**
    * If this is true, the graph traversal result will only return documents that do not have a value
    * in the edge field. (Only leaf nodes returned from the graph)
    */
-  private boolean onlyLeafNodes = false;
-
+  private final boolean onlyLeafNodes;
   /**
    * False if documents matching the start query for the graph will be excluded from the final
    * result set.
    */
-  private boolean returnRoot = true;
-
-  /**
-   * Create a graph query q - the starting node query fromField - the field containing the node id
-   * toField - the field containing the edge ids
-   */
-  public GraphQuery(Query q, String fromField, String toField) {
-    this(q, fromField, toField, null);
-  }
+  private final boolean returnRoot;
 
   /**
    * Create a graph query with a traversal filter applied while traversing the frontier. q - the
    * starting node query fromField - the field containing the node id toField - the field containing
    * the edge ids traversalFilter - the filter to be applied on each iteration of the frontier.
    */
-  public GraphQuery(Query q, String fromField, String toField, Query traversalFilter) {
+  public GraphQuery(
+      Query q,
+      String fromField,
+      String toField,
+      Query traversalFilter,
+      int maxDepth,
+      boolean onlyLeafNodes,
+      boolean returnRoot,
+      boolean useAutn) {
     this.q = q;
     this.fromField = fromField;
     this.toField = toField;
     this.traversalFilter = traversalFilter;
+    this.maxDepth = maxDepth;
+    this.onlyLeafNodes = onlyLeafNodes;
+    this.returnRoot = returnRoot;
+    this.useAutn = useAutn;
   }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
-    Weight graphWeight = new GraphQueryWeight((SolrIndexSearcher) searcher, boost);
-    return graphWeight;
+    return new GraphQueryWeight((SolrIndexSearcher) searcher, boost);
   }
 
   @Override
@@ -330,16 +334,8 @@ public class GraphQuery extends Query {
     return traversalFilter;
   }
 
-  public void setTraversalFilter(Query traversalFilter) {
-    this.traversalFilter = traversalFilter;
-  }
-
   public Query getQ() {
     return q;
-  }
-
-  public void setQ(Query q) {
-    this.q = q;
   }
 
   /**
@@ -349,10 +345,6 @@ public class GraphQuery extends Query {
     return fromField;
   }
 
-  public void setFromField(String fromField) {
-    this.fromField = fromField;
-  }
-
   /**
    * @return the field that contains the edge id(s)
    */
@@ -360,19 +352,11 @@ public class GraphQuery extends Query {
     return toField;
   }
 
-  public void setToField(String toField) {
-    this.toField = toField;
-  }
-
   /**
    * @return Max depth for traversal, -1 for infinite!
    */
   public int getMaxDepth() {
     return maxDepth;
-  }
-
-  public void setMaxDepth(int maxDepth) {
-    this.maxDepth = maxDepth;
   }
 
   /**
@@ -383,19 +367,11 @@ public class GraphQuery extends Query {
     return useAutn;
   }
 
-  public void setUseAutn(boolean useAutn) {
-    this.useAutn = useAutn;
-  }
-
   /**
    * @return if true only documents that do not have a value in the edge id field will be returned.
    */
   public boolean isOnlyLeafNodes() {
     return onlyLeafNodes;
-  }
-
-  public void setOnlyLeafNodes(boolean onlyLeafNodes) {
-    this.onlyLeafNodes = onlyLeafNodes;
   }
 
   /**
@@ -404,10 +380,6 @@ public class GraphQuery extends Query {
    */
   public boolean isReturnRoot() {
     return returnRoot;
-  }
-
-  public void setReturnRoot(boolean returnRoot) {
-    this.returnRoot = returnRoot;
   }
 
   @Override

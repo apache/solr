@@ -108,7 +108,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
               vals[i] = Integer.parseInt(splitVals[i]);
             }
             Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+            setQ = PointSetQuery.newSetQuery(sf.getName(), maxDocFreq, vals);
           } else if (sf.getType().getNumberType() == NumberType.LONG
               || sf.getType().getNumberType() == NumberType.DATE) {
             long[] vals = new long[splitVals.length];
@@ -116,24 +116,23 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
               vals[i] = Long.parseLong(splitVals[i]);
             }
             Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+            setQ = PointSetQuery.newSetQuery(sf.getName(), maxDocFreq, vals);
           } else if (sf.getType().getNumberType() == NumberType.FLOAT) {
             float[] vals = new float[splitVals.length];
             for (int i = 0; i < vals.length; i++) {
               vals[i] = Float.parseFloat(splitVals[i]);
             }
             Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+            setQ = PointSetQuery.newSetQuery(sf.getName(), maxDocFreq, vals);
           } else if (sf.getType().getNumberType() == NumberType.DOUBLE) {
             double[] vals = new double[splitVals.length];
             for (int i = 0; i < vals.length; i++) {
               vals[i] = Double.parseDouble(splitVals[i]);
             }
             Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+            setQ = PointSetQuery.newSetQuery(sf.getName(), maxDocFreq, vals);
           }
 
-          setQ.setMaxDocFreq(maxDocFreq);
           return setQ;
         }
 
@@ -160,10 +159,10 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
   private static class GraphTermsQuery extends Query implements ExtendedQuery {
     // Not a post filter. This will typically be used as the main query.
 
-    private Term[] queryTerms;
-    private String field;
-    private int maxDocFreq;
-    private Object id;
+    private final Term[] queryTerms;
+    private final String field;
+    private final int maxDocFreq;
+    private final Object id;
 
     public GraphTermsQuery(String field, Term[] terms, int maxDocFreq) {
       this.maxDocFreq = maxDocFreq;
@@ -186,18 +185,10 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void setCache(boolean cache) {
-      // TODO support user choice
-    }
-
-    @Override
     public int getCost() {
       // 0 is the default and keeping it avoids a needless wrapper for TwoPhaseIterator matchCost.
       return 0;
     }
-
-    @Override
-    public void setCost(int cost) {}
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
@@ -341,7 +332,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   final String field;
   final int bytesPerDim;
   final int numDims;
-  int maxDocFreq = Integer.MAX_VALUE;
+  final int maxDocFreq;
   final long ramBytesUsed; // cache
 
   /** Iterator of encoded point values. */
@@ -351,11 +342,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     public abstract BytesRef next();
   }
 
-  public void setMaxDocFreq(int maxDocFreq) {
-    this.maxDocFreq = maxDocFreq;
-  }
-
-  public static PointSetQuery newSetQuery(String field, float... sortedValues) {
+  public static PointSetQuery newSetQuery(String field, int maxDocFreq, float... sortedValues) {
 
     final BytesRef encoded = new BytesRef(new byte[Float.BYTES]);
 
@@ -377,7 +364,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
               return encoded;
             }
           }
-        }) {
+        },
+        maxDocFreq) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Float.BYTES;
@@ -386,7 +374,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     };
   }
 
-  public static PointSetQuery newSetQuery(String field, long... sortedValues) {
+  public static PointSetQuery newSetQuery(String field, int maxDocFreq, long... sortedValues) {
     final BytesRef encoded = new BytesRef(new byte[Long.BYTES]);
 
     return new PointSetQuery(
@@ -407,7 +395,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
               return encoded;
             }
           }
-        }) {
+        },
+        maxDocFreq) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Long.BYTES;
@@ -416,7 +405,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     };
   }
 
-  public static PointSetQuery newSetQuery(String field, int... sortedValues) {
+  public static PointSetQuery newSetQuery(String field, int maxDocFreq, int... sortedValues) {
     final BytesRef encoded = new BytesRef(new byte[Integer.BYTES]);
 
     return new PointSetQuery(
@@ -437,7 +426,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
               return encoded;
             }
           }
-        }) {
+        },
+        maxDocFreq) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Integer.BYTES;
@@ -446,7 +436,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     };
   }
 
-  public static PointSetQuery newSetQuery(String field, double... values) {
+  public static PointSetQuery newSetQuery(String field, int maxDocFreq, double... values) {
 
     // Don't unexpectedly change the user's incoming values array:
     double[] sortedValues = values.clone();
@@ -472,7 +462,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
               return encoded;
             }
           }
-        }) {
+        },
+        maxDocFreq) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Double.BYTES;
@@ -481,10 +472,12 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
     };
   }
 
-  public PointSetQuery(String field, int numDims, int bytesPerDim, Stream packedPoints) {
+  public PointSetQuery(
+      String field, int numDims, int bytesPerDim, Stream packedPoints, int maxDocFreq) {
     this.field = field;
     this.bytesPerDim = bytesPerDim;
     this.numDims = numDims;
+    this.maxDocFreq = maxDocFreq;
 
     // In the 1D case this works well (the more points, the more common prefixes they share,
     // typically), but in the > 1 D case, where we are only looking at the first dimension's prefix

@@ -640,15 +640,17 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       // elevated doc ids; the first clause of the BooleanQuery will be a FilterQuery if the
       // original filter was cacheable, and FilterQueries always consult the cache; the second
       // clause is a set of doc ids that should be fast on its own
-      WrappedQuery wrappedUpdatedFilter = new WrappedQuery(updatedFilter);
-      wrappedUpdatedFilter.setCache(false);
+      final WrappedQuery wrappedUpdatedFilter;
 
       // if the original filter is an ExtendedQuery, it may have a user-provided cost; this cost
       // would be ignored for nested queries so we copy it to the outer WrappedQuery; this allows it
       // serve as a tiebreaker for filters that produce the same internal cost in the case where the
       // user-provided cost is >= 100
       if (filter instanceof ExtendedQuery) {
-        wrappedUpdatedFilter.setCost(((ExtendedQuery) filter).getCost());
+        wrappedUpdatedFilter =
+            new WrappedQuery(updatedFilter, false, ((ExtendedQuery) filter).getCost());
+      } else {
+        wrappedUpdatedFilter = new WrappedQuery(updatedFilter, false);
       }
 
       updatedFilters.add(wrappedUpdatedFilter);

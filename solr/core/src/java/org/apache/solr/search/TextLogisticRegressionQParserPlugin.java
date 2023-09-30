@@ -103,7 +103,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
   }
 
   private static class TextLogisticRegressionQuery extends AnalyticsQuery {
-    private TrainingParams trainingParams;
+    private final TrainingParams trainingParams;
 
     public TextLogisticRegressionQuery(TrainingParams trainingParams) {
       this.trainingParams = trainingParams;

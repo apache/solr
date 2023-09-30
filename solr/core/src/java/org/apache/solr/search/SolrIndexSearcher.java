@@ -1193,8 +1193,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (filterCache == null) {
         // there is no cache: don't pull bitsets
         if (notCached == null) notCached = new ArrayList<>(sets.length - end);
-        WrappedQuery uncached = new WrappedQuery(q);
-        uncached.setCache(false);
+        WrappedQuery uncached = new WrappedQuery(q, false);
         notCached.add(uncached);
         continue;
       }

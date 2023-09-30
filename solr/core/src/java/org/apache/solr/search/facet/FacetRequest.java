@@ -34,7 +34,6 @@ import org.apache.solr.search.JoinQParserPlugin;
 import org.apache.solr.search.QueryContext;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.WrappedQuery;
-import org.apache.solr.search.join.GraphQuery;
 import org.apache.solr.search.join.GraphQueryParser;
 import org.apache.solr.util.RTimer;
 
@@ -261,11 +260,10 @@ public abstract class FacetRequest {
         // (ie: if we add a score mode, or some other modifier to how the joins are done)
 
         final Query fromQuery = fcontext.base.makeQuery();
-        WrappedQuery wrappedFromQuery = new WrappedQuery(fromQuery);
 
-        // this shouldn't matter once we're wrapped in a join query, but just in case it ever
+        // cache shouldn't matter once we're wrapped in a join query, but just in case it ever
         // does...
-        wrappedFromQuery.setCache(false);
+        WrappedQuery wrappedFromQuery = new WrappedQuery(fromQuery, false);
 
         return JoinQParserPlugin.createJoinQuery(wrappedFromQuery, this.from, this.to, this.method);
       }
@@ -321,17 +319,13 @@ public abstract class FacetRequest {
        */
       public Query createDomainQuery(FacetContext fcontext) {
         final Query fromQuery = fcontext.base.makeQuery();
-        WrappedQuery wrappedFromQuery = new WrappedQuery(fromQuery);
-
-        // this shouldn't matter once we're wrapped in a join query, but just in case it ever
+        // cache shouldn't matter once we're wrapped in a join query, but just in case it ever
         // does...
-        wrappedFromQuery.setCache(false);
+        WrappedQuery wrappedFromQuery = new WrappedQuery(fromQuery, false);
 
         GraphQueryParser graphParser = new GraphQueryParser(null, localParams, null, fcontext.req);
         try {
-          GraphQuery graphQuery = (GraphQuery) graphParser.parse();
-          graphQuery.setQ(wrappedFromQuery);
-          return graphQuery;
+          return graphParser.parse(wrappedFromQuery);
         } catch (SyntaxError syntaxError) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
         }

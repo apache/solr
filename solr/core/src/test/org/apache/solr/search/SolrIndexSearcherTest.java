@@ -476,15 +476,9 @@ public class SolrIndexSearcherTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void setCache(boolean cache) {}
-
-    @Override
     public int getCost() {
       return cost;
     }
-
-    @Override
-    public void setCost(int cost) {}
 
     @Override
     public DelegatingCollector getFilterCollector(IndexSearcher searcher) {

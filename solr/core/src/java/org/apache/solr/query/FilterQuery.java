@@ -47,20 +47,6 @@ public class FilterQuery extends ExtendedQueryBase {
   }
 
   @Override
-  public final void setCache(boolean cache) {
-    /*
-    NOTE: at the implementation level, we silently ignore explicit `setCache` directives. But at a higher level
-    (i.e., from the client's perspective) by ignoring at the implementation level, we in fact respect the semantics
-    both of explicit `{!cache=false}filter(q)` and `{!cache=true}filter(q)`. Since the purpose of FilterQuery
-    is to handle caching _internal_ to the query, external `cache=false` _should_ have no effect. Slightly
-    less intuitive: the `cache=true` case should be interpreted as directing "ensure that we consult the
-    filterCache for this query" -- and indeed because caching is handled internally, the essence of the
-    top-level `cache=true` directive is most appropriately respected by having `getCache()` continue to return
-    `false` at the level of the FilterQuery _per se_.
-     */
-  }
-
-  @Override
   public final boolean getCache() {
     return false;
     /*

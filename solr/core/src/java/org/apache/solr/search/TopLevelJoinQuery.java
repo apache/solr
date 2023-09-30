@@ -53,6 +53,11 @@ public class TopLevelJoinQuery extends JoinQuery {
     super(fromField, toField, coreName, subQuery);
   }
 
+  public TopLevelJoinQuery(
+      String fromField, String toField, String coreName, Query subQuery, long fromCoreOpenTime) {
+    super(fromField, toField, coreName, subQuery, fromCoreOpenTime);
+  }
+
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
@@ -261,8 +266,8 @@ public class TopLevelJoinQuery extends JoinQuery {
    * match and no ordinal- conversion is necessary.
    */
   static class SelfJoin extends TopLevelJoinQuery {
-    public SelfJoin(String joinField, Query subQuery) {
-      super(joinField, joinField, null, subQuery);
+    public SelfJoin(String joinField, Query subQuery, long fromCoreOpenTime) {
+      super(joinField, joinField, null, subQuery, fromCoreOpenTime);
     }
 
     @Override

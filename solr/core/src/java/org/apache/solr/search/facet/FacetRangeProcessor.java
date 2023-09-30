@@ -582,12 +582,9 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       if (fcontext.cache) {
         rangeQ = rangeQuery;
       } else if (rangeQuery instanceof ExtendedQuery) {
-        ((ExtendedQuery) rangeQuery).setCache(false);
-        rangeQ = rangeQuery;
+        rangeQ = new WrappedQuery(rangeQuery, false, ((ExtendedQuery) rangeQuery).getCost());
       } else {
-        final WrappedQuery wrappedQuery = new WrappedQuery(rangeQuery);
-        wrappedQuery.setCache(false);
-        rangeQ = wrappedQuery;
+        rangeQ = new WrappedQuery(rangeQuery, false);
       }
     }
     // TODO: specialize count only

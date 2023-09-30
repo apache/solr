@@ -19,22 +19,32 @@ package org.apache.solr.search;
 import org.apache.lucene.search.Query;
 
 public abstract class ExtendedQueryBase extends Query implements ExtendedQuery {
-  private int cost;
-  private boolean cache = true;
+  public static final boolean DEFAULT_CACHE = true;
+  public static final int DEFAULT_COST = 0;
 
-  @Override
-  public void setCache(boolean cache) {
+  private final boolean cache;
+  private final int cost;
+
+  protected ExtendedQueryBase() {
+    this(DEFAULT_CACHE, DEFAULT_COST);
+  }
+
+  protected ExtendedQueryBase(boolean cache) {
+    this(cache, DEFAULT_COST);
+  }
+
+  protected ExtendedQueryBase(int cost) {
+    this(DEFAULT_CACHE, cost);
+  }
+
+  protected ExtendedQueryBase(boolean cache, int cost) {
     this.cache = cache;
+    this.cost = cost;
   }
 
   @Override
   public boolean getCache() {
     return cache;
-  }
-
-  @Override
-  public void setCost(int cost) {
-    this.cost = cost;
   }
 
   @Override

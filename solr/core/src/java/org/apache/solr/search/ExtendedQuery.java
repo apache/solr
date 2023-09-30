@@ -25,9 +25,7 @@ import org.apache.lucene.search.TwoPhaseIterator;
  */
 public interface ExtendedQuery {
   /** Should this query be cached in the query cache or filter cache. */
-  public boolean getCache();
-
-  public void setCache(boolean cache);
+  boolean getCache();
 
   /**
    * Returns the cost of this query, used to order checking of filters that are not cached. If
@@ -35,9 +33,7 @@ public interface ExtendedQuery {
    * PostFilter interface will be used for filtering. Otherwise, for smaller costs, this cost will
    * be used for {@link TwoPhaseIterator#matchCost()}.
    */
-  public int getCost();
-
-  public void setCost(int cost);
+  int getCost();
 
   /**
    * Returns this Query, applying {@link QueryUtils#makeQueryable(Query)} and maybe wrapping it to
@@ -45,7 +41,7 @@ public interface ExtendedQuery {
    * internally applies the configurable cost on the underlying {@link
    * TwoPhaseIterator#matchCost()}.
    */
-  public default Query getCostAppliedQuery() {
+  default Query getCostAppliedQuery() {
     Query me = QueryUtils.makeQueryable((Query) this);
     if (getCost() <= 0) {
       return me;

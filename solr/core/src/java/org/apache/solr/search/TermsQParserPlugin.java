@@ -126,9 +126,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     };
 
     private static Query disableCacheByDefault(Query q) {
-      final WrappedQuery wrappedQuery = new WrappedQuery(q);
-      wrappedQuery.setCache(false);
-      return wrappedQuery;
+      return new WrappedQuery(q, false);
     }
 
     abstract Query makeFilter(String fname, BytesRef[] byteRefs);
