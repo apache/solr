@@ -90,13 +90,13 @@ public class AnalyticsTestQParserPlugin extends QParserPlugin {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       @SuppressWarnings({"rawtypes"})
       NamedList analytics = new NamedList();
       rb.rsp.add("analytics", analytics);
       analytics.add("mycount", count + base);
       if (this.delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) this.delegate).finish();
+        ((DelegatingCollector) this.delegate).complete();
       }
     }
   }

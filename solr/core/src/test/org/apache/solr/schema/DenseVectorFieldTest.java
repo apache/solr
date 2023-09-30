@@ -461,7 +461,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void indexing_highDimensionalityVectorDocument_shouldBeIndexed() throws Exception {
     try {
-      initCore("solrconfig-basic.xml", "schema-densevector-high-dimensionality.xml");
+      initCore("solrconfig_codec.xml", "schema-densevector-high-dimensionality.xml");
 
       List<Float> highDimensionalityVector = new ArrayList<>();
       for (float i = 0; i < 2048f; i++) {

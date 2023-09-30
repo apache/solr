@@ -101,6 +101,9 @@ To disable the always-on trace generation set the system property `solr.alwaysOn
 === Learning To Rank
 * The FieldValueFeature class now always uses DocValues when docValues=true is set. A LegacyFieldValueFeature class provides the prior behaviour of not using DocValues when the docValues=true and stored=true field attributes are both set.
 
+=== Other
+* From Solr 9.4 using Lucene 9.8 onwards `DelegatingCollector.finish` clashes with the super class's `LeafCollector.finish` method. Any custom component extending the `DelegatingCollector` needs to rename the `finish` method to `complete` to follow Solr's implementation.
+
 == Solr 9.3
 === Binary Releases
 * Solr now comes with two xref:deployment-guide:installing-solr.adoc#available-solr-packages[binary releases] and xref:deployment-guide:solr-in-docker.adoc#available-images[docker images], **full** and **slim**.
