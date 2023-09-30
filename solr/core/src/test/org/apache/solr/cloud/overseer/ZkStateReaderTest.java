@@ -740,14 +740,6 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         invoked.values().stream().mapToLong(LongAdder::sum).allMatch((l) -> l == 1));
   }
 
-  private static boolean backoff(int iteration, int limit) throws InterruptedException {
-    if (iteration > limit) {
-      return false;
-    }
-    TimeUnit.MILLISECONDS.wait(iteration * 25L);
-    return true;
-  }
-
   /**
    * Ensure that collection state fetching (getCollectionLive etc.) would not throw exception when
    * the state.json is deleted in between the state.json read and PRS entries read
