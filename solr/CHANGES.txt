@@ -235,6 +235,8 @@ Dependency Upgrades
 
 * SOLR-16985: Upgrade Lucene to 9.8.0 (Alex Deparvu, Christine Poerschke)
 
+* PR#xxxx: Update forbiddenapis to 3.6 to support Java 21/22 and commons-io up to 2.14.0 (Uwe Schindler)
+
 Other Changes
 ---------------------
 
