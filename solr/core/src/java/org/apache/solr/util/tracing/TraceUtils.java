@@ -21,6 +21,7 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
@@ -104,6 +105,20 @@ public class TraceUtils {
 
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
     if (IS_RECORDING.test(span)) {
+      consumer.accept(span);
+    }
+  }
+
+  /**
+   * Sometimes the tests will use a recoding noop span to verify the complete code path so we need
+   * to distinguish this case and only perform a specific operation (like updating the MDC context)
+   * only in case the generated trace id is valid
+   *
+   * @param span current span
+   * @param consumer consumer to be called
+   */
+  public static void ifValidTraceId(Span span, Consumer<Span> consumer) {
+    if (TraceId.isValid(span.getSpanContext().getTraceId())) {
       consumer.accept(span);
     }
   }
