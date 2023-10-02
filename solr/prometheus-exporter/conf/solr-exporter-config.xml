@@ -278,7 +278,7 @@
             <str name="expr">solr\.core\..*:CORE\.fs\..*</str>
             <str name="expr">solr\.core\..*:HIGHLIGHTER\..*</str>
             <str name="expr">solr\.core\..*:INDEX\..*</str>
-            <str name="expr">solr\.core\..*:REPLICATION\.replication\..*</str>
+            <str name="expr">solr\.core\..*:REPLICATION\./replication\..*</str>
             <str name="expr">solr\.core\..*:SEARCHER\.searcher\..*</str>
           </lst>
         </lst>

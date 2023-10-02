@@ -16,11 +16,15 @@
  */
 package org.apache.solr.servlet;
 
+import com.google.common.net.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.output.CloseShieldOutputStream;
@@ -37,6 +41,8 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
   // check system properties for whether or not admin UI is disabled, default is false
   private static final boolean disabled =
       Boolean.parseBoolean(System.getProperty("disableAdminUI", "false"));
+  // list of comma separated URLs to inject into the CSP connect-src directive
+  public static final String SYSPROP_CSP_CONNECT_SRC_URLS = "solr.ui.headers.csp.connect-src.urls";
 
   @Override
   public void doGet(HttpServletRequest _request, HttpServletResponse _response) throws IOException {
@@ -60,20 +66,47 @@ public final class LoadAdminUiServlet extends BaseSolrServlet {
       if (in != null && cores != null) {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("text/html");
+        String connectSrc = generateCspConnectSrc();
+        response.setHeader(
+            HttpHeaders.CONTENT_SECURITY_POLICY,
+            "default-src 'none'; base-uri 'none'; connect-src "
+                + connectSrc
+                + "; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';");
 
         // We have to close this to flush OutputStreamWriter buffer
         try (Writer out =
             new OutputStreamWriter(
                 CloseShieldOutputStream.wrap(response.getOutputStream()), StandardCharsets.UTF_8)) {
-          Package pack = SolrCore.class.getPackage();
           String html =
               new String(in.readAllBytes(), StandardCharsets.UTF_8)
-                  .replace("${version}", pack.getSpecificationVersion());
+                  .replace("${version}", getSolrCorePackageSpecVersion());
           out.write(html);
         }
       } else {
         response.sendError(404);
       }
     }
+  }
+
+  /**
+   * Retrieves the specification version of the SolrCore package.
+   *
+   * @return The specification version of the SolrCore class's package or Unknown if it's
+   *     unavailable.
+   */
+  private String getSolrCorePackageSpecVersion() {
+    Package pack = SolrCore.class.getPackage();
+    return pack.getSpecificationVersion() != null ? pack.getSpecificationVersion() : "Unknown";
+  }
+
+  /**
+   * Fetch the value of {@link #SYSPROP_CSP_CONNECT_SRC_URLS} system property, split by comma, and
+   * concatenate them into a space-separated string that can be used in CSP connect-src directive
+   */
+  private String generateCspConnectSrc() {
+    String cspURLs = System.getProperty(SYSPROP_CSP_CONNECT_SRC_URLS, "");
+    List<String> props = new ArrayList<>(Arrays.asList(cspURLs.split(",")));
+    props.add("'self'");
+    return String.join(" ", props);
   }
 }

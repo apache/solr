@@ -26,20 +26,15 @@ import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Supports assert command in the bin/solr script. */
 /** Asserts various conditions and exists with error code if fails, else continues with no output */
 public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -135,7 +130,7 @@ public class AssertTool extends ToolBase {
   public int runTool(CommandLine cli) throws Exception {
     verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
 
-    int toolExitStatus = 0;
+    int toolExitStatus;
     try {
       toolExitStatus = runAssert(cli);
     } catch (Exception exc) {
@@ -168,13 +163,6 @@ public class AssertTool extends ToolBase {
    * @throws Exception if a tool failed, e.g. authentication failure
    */
   protected int runAssert(CommandLine cli) throws Exception {
-    if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
-      new HelpFormatter()
-          .printHelp(
-              "bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]",
-              SolrCLI.getToolOptions(this));
-      return 1;
-    }
     if (cli.hasOption("m")) {
       message = cli.getOptionValue("m");
     }
@@ -208,10 +196,10 @@ public class AssertTool extends ToolBase {
       ret += assertSolrNotRunning(cli.getOptionValue("S"));
     }
     if (cli.hasOption("c")) {
-      ret += assertSolrRunningInCloudMode(cli.getOptionValue("c"));
+      ret += assertSolrRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("c")));
     }
     if (cli.hasOption("C")) {
-      ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("C"));
+      ret += assertSolrNotRunningInCloudMode(SolrCLI.normalizeSolrUrl(cli.getOptionValue("C")));
     }
     return ret;
   }
@@ -242,8 +230,6 @@ public class AssertTool extends ToolBase {
       NamedList<Object> response = solrClient.request(new HealthCheckRequest());
       Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
       SolrCLI.checkCodeForAuthError(statusCode);
-    } catch (SolrException se) {
-      throw se;
     } catch (IOException | SolrServerException e) {
       log.debug("Opening connection to {} failed, Solr does not seem to be running", url, e);
       return 0;
@@ -358,11 +344,11 @@ public class AssertTool extends ToolBase {
     }
   }
 
-  private static int exitOrException(String msg) throws SolrCLI.AssertionFailureException {
+  private static int exitOrException(String msg) throws AssertionFailureException {
     if (useExitCode) {
       return 1;
     } else {
-      throw new SolrCLI.AssertionFailureException(message != null ? message : msg);
+      throw new AssertionFailureException(message != null ? message : msg);
     }
   }
 
@@ -380,16 +366,14 @@ public class AssertTool extends ToolBase {
   }
 
   private static boolean runningSolrIsCloud(String url) throws Exception {
-    try (final SolrClient client = new Http2SolrClient.Builder(url).build()) {
-      final SolrRequest<CollectionAdminResponse> request =
-          new CollectionAdminRequest.ClusterStatus();
-      final CollectionAdminResponse response = request.process(client);
-      return true; // throws an exception otherwise
-    } catch (Exception e) {
-      if (SolrCLI.exceptionIsAuthRelated(e)) {
-        throw e;
-      }
-      return false;
+    try (final SolrClient client = SolrCLI.getSolrClient(url)) {
+      return SolrCLI.isCloudMode(client);
+    }
+  }
+
+  public static class AssertionFailureException extends Exception {
+    public AssertionFailureException(String message) {
+      super(message);
     }
   }
 }

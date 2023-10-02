@@ -46,6 +46,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
+import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMConfigNode;
@@ -172,7 +173,12 @@ public class SolrXmlConfig {
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
+    // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
+    // <hiddenSysProps> is not provided under <solr>.
+    // Remove this line in 10.0
+    configBuilder.setHiddenSysProps(getHiddenSysProps(root.get("metrics")));
     configBuilder.setMetricsConfig(getMetricsConfig(root.get("metrics")));
+    configBuilder.setCachesConfig(getCachesConfig(loader, root.get("caches")));
     configBuilder.setFromZookeeper(fromZookeeper);
     configBuilder.setDefaultZkHost(defaultZkHost);
     configBuilder.setCoreAdminHandlerActions(coreAdminHandlerActions);
@@ -342,6 +348,9 @@ public class SolrXmlConfig {
               case "configSetService":
                 builder.setConfigSetServiceClass(it.txt());
                 break;
+              case "coresLocator":
+                builder.setCoresLocatorClass(it.txt());
+                break;
               case "coreRootDirectory":
                 builder.setCoreRootDirectory(it.txt());
                 break;
@@ -360,8 +369,14 @@ public class SolrXmlConfig {
               case "modules":
                 builder.setModules(it.txt());
                 break;
+              case "hiddenSysProps":
+                builder.setHiddenSysProps(it.txt());
+                break;
               case "allowPaths":
                 builder.setAllowPaths(separatePaths(it.txt()));
+                break;
+              case "hideStackTrace":
+                builder.setHideStackTrace(it.boolVal(false));
                 break;
               case "configSetBaseDir":
                 builder.setConfigSetBaseDirectory(it.txt());
@@ -502,10 +517,15 @@ public class SolrXmlConfig {
       hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
     }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
-    String hostContext = required("solrcloud", "hostContext", removeValue(nl, "hostContext"));
 
-    CloudConfig.CloudConfigBuilder builder =
-        new CloudConfig.CloudConfigBuilder(hostName, hostPort, hostContext);
+    // We no longer require or support the hostContext property, but legacy users may have it, so
+    // remove it from the list.
+    String hostContext = removeValue(nl, "hostContext");
+    if (hostContext != null) {
+      log.warn("solr.xml hostContext -- hostContext is deprecated and ignored.");
+    }
+
+    CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort);
     // set the defaultZkHost until/unless it's overridden in the "cloud section" (below)...
     builder.setZkHost(defaultZkHost);
 
@@ -673,11 +693,21 @@ public class SolrXmlConfig {
     }
 
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
-    Set<String> hiddenSysProps = getHiddenSysProps(metrics);
-    return builder
-        .setMetricReporterPlugins(reporterPlugins)
-        .setHiddenSysProps(hiddenSysProps)
-        .build();
+    return builder.setMetricReporterPlugins(reporterPlugins).build();
+  }
+
+  private static Map<String, CacheConfig> getCachesConfig(
+      SolrResourceLoader loader, ConfigNode caches) {
+    Map<String, CacheConfig> ret =
+        CacheConfig.getMultipleConfigs(loader, null, null, caches.getAll("cache"));
+    for (CacheConfig c : ret.values()) {
+      if (c.getRegenerator() != null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "node-level caches should not be configured with a regenerator!");
+      }
+    }
+    return Collections.unmodifiableMap(ret);
   }
 
   private static Object decodeNullValue(Object o) {
@@ -721,20 +751,24 @@ public class SolrXmlConfig {
     return configs.toArray(new PluginInfo[configs.size()]);
   }
 
-  private static Set<String> getHiddenSysProps(ConfigNode metrics) {
+  /**
+   * Deprecated as of 9.3, will be removed in 10.0
+   *
+   * @param metrics configNode for the metrics
+   * @return a comma-separated list of hidden Sys Props
+   */
+  @Deprecated(forRemoval = true, since = "9.3")
+  private static String getHiddenSysProps(ConfigNode metrics) {
     ConfigNode p = metrics.get("hiddenSysProps");
-    if (!p.exists()) return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
+    if (!p.exists()) return null;
     Set<String> props = new HashSet<>();
     p.forEachChild(
         it -> {
-          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt())) props.add(it.txt());
+          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt()))
+            props.add(Pattern.quote(it.txt()));
           return Boolean.TRUE;
         });
-    if (props.isEmpty()) {
-      return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
-    } else {
-      return props;
-    }
+    return String.join(",", props);
   }
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {

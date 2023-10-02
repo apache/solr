@@ -27,7 +27,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
@@ -43,14 +42,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class JettyWebappTest extends SolrTestCaseJ4 {
   int port = 0;
-  static final String context = "/test";
 
   Server server;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.solr.home", SolrJettyTestBase.legacyExampleCollection1SolrHome());
+    System.setProperty("solr.solr.home", legacyExampleCollection1SolrHome());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.tests.doContainerStreamCloseAssert", "false");
 
@@ -64,7 +62,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     // insecure: only use for tests!!!!
     server.setSessionIdManager(
         new DefaultSessionIdManager(server, new Random(random().nextLong())));
-    new WebAppContext(server, path, context);
+    new WebAppContext(server, path, "/solr");
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     connector.setIdleTimeout(1000 * 60 * 60);
@@ -89,10 +87,8 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   }
 
   public void testAdminUI() throws Exception {
-    // Currently not an extensive test, but it does fire up the JSP pages and make
-    // sure they compile ok
-
-    String adminPath = "http://127.0.0.1:" + port + context + "/";
+    // Not an extensive test, but it does connect to Solr and verify the Admin ui shows up.
+    String adminPath = "http://127.0.0.1:" + port + "/solr/";
     try (InputStream is = new URL(adminPath).openStream()) {
       assertNotNull(is.readAllBytes()); // real error will be an exception
     }

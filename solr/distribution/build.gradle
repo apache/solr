@@ -59,7 +59,7 @@ configurations {
 
 dependencies {
   changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
-  docker project(path: ':solr:docker', configuration: project.ext.withSignedArtifacts ? 'packagingOfficial' : 'packagingLocal')
+  docker project(path: ':solr:docker', configuration: 'packagingOfficial')
 }
 
 def fullDistTarTask = rootProject.getTasksByName("fullDistTar", true)[0]
@@ -126,7 +126,7 @@ task assembleRelease(type: Sync) {
   })
 
   from(configurations.docker, {
-    include 'Dockerfile.*'
+    include 'Dockerfile.official*'
     into "docker"
   })
 

@@ -17,16 +17,12 @@
 
 package org.apache.solr.jersey;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.info.License;
 import java.util.Map;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.SolrVersion;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 import org.glassfish.jersey.process.internal.RequestScoped;
@@ -36,13 +32,6 @@ import org.glassfish.jersey.server.ResourceConfig;
  * JAX-RS "application" configurations for Solr's {@link org.apache.solr.core.CoreContainer} and
  * {@link SolrCore} instances
  */
-@OpenAPIDefinition(
-    info =
-        @Info(
-            title = "v2 API",
-            description = "OpenAPI spec for Solr's v2 API endpoints",
-            license = @License(name = "ASL 2.0"),
-            version = SolrVersion.LATEST_STRING))
 public class JerseyApplications {
 
   public static class CoreContainerApp extends ResourceConfig {
@@ -58,7 +47,8 @@ public class JerseyApplications {
       register(MessageBodyWriters.XmlMessageBodyWriter.class);
       register(MessageBodyWriters.CsvMessageBodyWriter.class);
       register(MessageBodyWriters.RawMessageBodyWriter.class);
-      register(JacksonJsonProvider.class);
+      register(JacksonJsonProvider.class, 5);
+      register(MessageBodyReaders.CachingJsonMessageBodyReader.class, 10);
       register(SolrJacksonMapper.class);
 
       // Request lifecycle logic
@@ -68,6 +58,7 @@ public class JerseyApplications {
       register(RequestMetricHandling.PreRequestMetricsFilter.class);
       register(RequestMetricHandling.PostRequestMetricsFilter.class);
       register(PostRequestDecorationFilter.class);
+      register(PostRequestLoggingFilter.class);
       register(
           new AbstractBinder() {
             @Override

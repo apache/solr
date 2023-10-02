@@ -43,7 +43,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.configsets.CreateConfigSetAPI;
 import org.apache.solr.handler.configsets.DeleteConfigSetAPI;
-import org.apache.solr.handler.configsets.ListConfigSetsAPI;
+import org.apache.solr.handler.configsets.ListConfigSets;
 import org.apache.solr.handler.configsets.UploadConfigSetAPI;
 import org.apache.solr.handler.configsets.UploadConfigSetFileAPI;
 import org.apache.solr.request.DelegatingSolrQueryRequest;
@@ -142,7 +142,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         }
         break;
       case LIST:
-        final ListConfigSetsAPI listConfigSetsAPI = new ListConfigSetsAPI(coreContainer);
+        final ListConfigSets listConfigSetsAPI = new ListConfigSets(coreContainer);
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listConfigSetsAPI.listConfigSet());
         break;
       case CREATE:
@@ -217,7 +217,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(ListConfigSetsAPI.class);
+    return List.of(ListConfigSets.class);
   }
 
   @Override

@@ -433,9 +433,27 @@ http://_follower_host:port_/solr/_core_name_/replication?command=details
 
 `filelist`::
 Retrieve a list of Lucene files present in the specified host's index.
+
 +
+====
+[.tab-label]*V1 API*
+
 [source,bash]
+----
 http://_host:port_/solr/_core_name_/replication?command=filelist&generation=<_generation-number_>
+
+----
+====
++
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+http://_host:port_/api/cores/_core_name_/replication/files?generation=<_generation-number_>
+
+----
+====
 +
 You can discover the generation number of the index by running the `indexversion` command.
 

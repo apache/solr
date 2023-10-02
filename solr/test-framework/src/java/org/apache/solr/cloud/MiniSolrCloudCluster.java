@@ -78,9 +78,12 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.TracerConfigurator;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.tracing.SimplePropagator;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -121,7 +124,6 @@ public class MiniSolrCloudCluster {
           + "  <solrcloud>\n"
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-          + "    <str name=\"hostContext\">${hostContext:solr}</str>\n"
           + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
           + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
           + "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n"
@@ -175,61 +177,6 @@ public class MiniSolrCloudCluster {
   public MiniSolrCloudCluster(int numServers, Path baseDir, JettyConfig jettyConfig)
       throws Exception {
     this(numServers, baseDir, DEFAULT_CLOUD_SOLR_XML, jettyConfig, null, false);
-  }
-
-  /**
-   * Create a MiniSolrCloudCluster
-   *
-   * @param numServers number of Solr servers to start
-   * @param hostContext context path of Solr servers used by Jetty
-   * @param baseDir base directory that the mini cluster should be run from
-   * @param solrXml solr.xml file to be uploaded to ZooKeeper
-   * @param extraServlets Extra servlets to be started by Jetty
-   * @param extraRequestFilters extra filters to be started by Jetty
-   * @throws Exception if there was an error starting the cluster
-   */
-  public MiniSolrCloudCluster(
-      int numServers,
-      String hostContext,
-      Path baseDir,
-      String solrXml,
-      SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class<? extends Filter>, String> extraRequestFilters)
-      throws Exception {
-    this(numServers, hostContext, baseDir, solrXml, extraServlets, extraRequestFilters, null);
-  }
-
-  /**
-   * Create a MiniSolrCloudCluster
-   *
-   * @param numServers number of Solr servers to start
-   * @param hostContext context path of Solr servers used by Jetty
-   * @param baseDir base directory that the mini cluster should be run from
-   * @param solrXml solr.xml file to be uploaded to ZooKeeper
-   * @param extraServlets Extra servlets to be started by Jetty
-   * @param extraRequestFilters extra filters to be started by Jetty
-   * @param sslConfig SSL configuration
-   * @throws Exception if there was an error starting the cluster
-   */
-  public MiniSolrCloudCluster(
-      int numServers,
-      String hostContext,
-      Path baseDir,
-      String solrXml,
-      SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class<? extends Filter>, String> extraRequestFilters,
-      SSLConfig sslConfig)
-      throws Exception {
-    this(
-        numServers,
-        baseDir,
-        solrXml,
-        JettyConfig.builder()
-            .setContext(hostContext)
-            .withSSLConfig(sslConfig)
-            .withFilters(extraRequestFilters)
-            .withServlets(extraServlets)
-            .build());
   }
 
   /**
@@ -370,7 +317,7 @@ public class MiniSolrCloudCluster {
 
     List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
     for (int i = 0; i < numServers; ++i) {
-      startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig));
+      startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig));
     }
 
     final ExecutorService executorLauncher =
@@ -510,13 +457,12 @@ public class MiniSolrCloudCluster {
       SortedMap<ServletHolder, String> extraServlets,
       SortedMap<Class<? extends Filter>, String> extraRequestFilters)
       throws Exception {
-    return startJettySolrRunner(name, hostContext, extraServlets, extraRequestFilters, null);
+    return startJettySolrRunner(name, extraServlets, extraRequestFilters, null);
   }
 
   /**
    * Start a new Solr instance
    *
-   * @param hostContext context path of Solr servers used by Jetty
    * @param extraServlets Extra servlets to be started by Jetty
    * @param extraRequestFilters extra filters to be started by Jetty
    * @param sslConfig SSL configuration
@@ -524,14 +470,12 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner startJettySolrRunner(
       String name,
-      String hostContext,
       SortedMap<ServletHolder, String> extraServlets,
       SortedMap<Class<? extends Filter>, String> extraRequestFilters,
       SSLConfig sslConfig)
       throws Exception {
     return startJettySolrRunner(
         name,
-        hostContext,
         JettyConfig.builder()
             .withServlets(extraServlets)
             .withFilters(extraRequestFilters)
@@ -547,19 +491,16 @@ public class MiniSolrCloudCluster {
    * Start a new Solr instance on a particular servlet context
    *
    * @param name the instance name
-   * @param hostContext the context to run on
    * @param config a JettyConfig for the instance's {@link org.apache.solr.embedded.JettySolrRunner}
    * @return a JettySolrRunner
    */
-  public JettySolrRunner startJettySolrRunner(String name, String hostContext, JettyConfig config)
-      throws Exception {
+  public JettySolrRunner startJettySolrRunner(String name, JettyConfig config) throws Exception {
     // tell solr node to look in zookeeper for solr.xml
     final Properties nodeProps = new Properties();
     nodeProps.setProperty("zkHost", zkServer.getZkAddress());
 
     Path runnerPath = createInstancePath(name);
-    String context = getHostContextSuitableForServletContext(hostContext);
-    JettyConfig newConfig = JettyConfig.builder(config).setContext(context).build();
+    JettyConfig newConfig = JettyConfig.builder(config).build();
     JettySolrRunner jetty =
         !trackJettyMetrics
             ? new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig)
@@ -578,7 +519,7 @@ public class MiniSolrCloudCluster {
    * @return a JettySolrRunner
    */
   public JettySolrRunner startJettySolrRunner() throws Exception {
-    return startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig);
+    return startJettySolrRunner(newNodeName(), jettyConfig);
   }
 
   /**
@@ -744,6 +685,7 @@ public class MiniSolrCloudCluster {
       if (!externalZkServer) {
         zkServer.shutdown();
       }
+      resetRecordingFlag();
     }
   }
 
@@ -1106,6 +1048,7 @@ public class MiniSolrCloudCluster {
     private boolean useDistributedCollectionConfigSetExecution;
     private boolean useDistributedClusterStateUpdate;
     private boolean formatZkServer = true;
+    private boolean disableTraceIdGeneration = false;
 
     /**
      * Create a builder
@@ -1117,7 +1060,7 @@ public class MiniSolrCloudCluster {
       this.nodeCount = nodeCount;
       this.baseDir = baseDir;
 
-      jettyConfigBuilder = JettyConfig.builder().setContext("/solr");
+      jettyConfigBuilder = JettyConfig.builder();
       if (SolrTestCaseJ4.sslConfig != null) {
         jettyConfigBuilder =
             jettyConfigBuilder.withSSLConfig(SolrTestCaseJ4.sslConfig.buildServerSSLConfig());
@@ -1203,7 +1146,6 @@ public class MiniSolrCloudCluster {
       return this;
     }
 
-    @SuppressWarnings("InvalidParam")
     /**
      * Force the cluster Collection and config state API execution as well as the cluster state
      * update strategy to be either Overseer based or distributed. <b>This method can be useful when
@@ -1238,6 +1180,7 @@ public class MiniSolrCloudCluster {
      *     <p>If {@code distributedCollectionConfigSetApi} is {@code true} then this parameter must
      *     be {@code true}.
      */
+    @SuppressWarnings("InvalidParam")
     public Builder withDistributedClusterStateUpdates(
         boolean distributedCollectionConfigSetApi, boolean distributedClusterStateUpdates) {
       useDistributedCollectionConfigSetExecution = distributedCollectionConfigSetApi;
@@ -1299,6 +1242,12 @@ public class MiniSolrCloudCluster {
           "solr.distributedClusterStateUpdates",
           Boolean.toString(useDistributedClusterStateUpdate));
 
+      // eager init to prevent OTEL init races caused by test setup
+      if (!disableTraceIdGeneration && TracerConfigurator.TRACE_ID_GEN_ENABLED) {
+        SimplePropagator.load();
+        injectRandomRecordingFlag();
+      }
+
       JettyConfig jettyConfig = jettyConfigBuilder.build();
       MiniSolrCloudCluster cluster =
           new MiniSolrCloudCluster(
@@ -1341,5 +1290,39 @@ public class MiniSolrCloudCluster {
       cluster.put(key, value);
       return this;
     }
+
+    /**
+     * Disables the default/built-in simple trace ID generation/propagation.
+     *
+     * <p>Tracers are registered as global singletons and if for example a test needs to use a
+     * MockTracer or a "real" Tracer, it needs to call this method so that the test setup doesn't
+     * accidentally reset the Tracer it wants to use.
+     */
+    public Builder withTraceIdGenerationDisabled() {
+      this.disableTraceIdGeneration = true;
+      return this;
+    }
+  }
+
+  /**
+   * Randomizes the tracing Span::isRecording check.
+   *
+   * <p>This will randomize the Span::isRecording check so we have better coverage of all methods
+   * that deal with span creation without having to enable otel module.
+   *
+   * <p>It only makes sense to call this if we are using the alwaysOn tracer, the OTEL tracer
+   * already has this flag turned on and randomizing it would risk not recording trace data.
+   *
+   * <p>Note. Tracing is not a SolrCloud only feature. this method is placed here for convenience
+   * only, any test can make use of this example for more complete coverage of the tracing
+   * mechanics.
+   */
+  private static void injectRandomRecordingFlag() {
+    boolean isRecording = LuceneTestCase.rarely();
+    TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+  }
+
+  private static void resetRecordingFlag() {
+    TraceUtils.IS_RECORDING = TraceUtils.DEFAULT_IS_RECORDING;
   }
 }

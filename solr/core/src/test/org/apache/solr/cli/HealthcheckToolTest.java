@@ -48,7 +48,7 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
 
     String[] args =
         new String[] {
-          "healthcheck", "-collection", "bob", "-zkHost", cluster.getZkClient().getZkServerAddress()
+          "healthcheck", "-c", "bob", "-zkHost", cluster.getZkClient().getZkServerAddress()
         };
     assertEquals(0, runTool(args));
   }
@@ -61,7 +61,21 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
     String solrUrl =
         ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(firstLiveNode);
 
-    String[] args = new String[] {"healthcheck", "-collection", "bob", "-solrUrl", solrUrl};
+    String[] args = new String[] {"healthcheck", "-c", "bob", "-solrUrl", solrUrl};
+    assertEquals(0, runTool(args));
+  }
+
+  @Test
+  public void testHealthcheckWithSolrRootUrlParameter() throws Exception {
+
+    Set<String> liveNodes = cluster.getSolrClient().getClusterState().getLiveNodes();
+    String firstLiveNode = liveNodes.iterator().next();
+    String solrUrl =
+        ZkStateReader.from(cluster.getSolrClient()).getBaseUrlForNodeName(firstLiveNode);
+
+    solrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+
+    String[] args = new String[] {"healthcheck", "-c", "bob", "-solrUrl", solrUrl};
     assertEquals(0, runTool(args));
   }
 

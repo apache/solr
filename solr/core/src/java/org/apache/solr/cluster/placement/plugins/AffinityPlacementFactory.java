@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
@@ -110,7 +111,7 @@ import org.slf4j.LoggerFactory;
 public class AffinityPlacementFactory implements PlacementPluginFactory<AffinityPlacementConfig> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private AffinityPlacementConfig config = AffinityPlacementConfig.DEFAULT;
+  AffinityPlacementConfig config = AffinityPlacementConfig.DEFAULT;
 
   /**
    * Empty public constructor is used to instantiate this factory. Using a factory pattern to allow
@@ -123,10 +124,12 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
   @Override
   public PlacementPlugin createPluginInstance() {
+    config.validate();
     return new AffinityPlacementPlugin(
         config.minimalFreeDiskGB,
         config.prioritizedFreeDiskGB,
         config.withCollection,
+        config.withCollectionShards,
         config.collectionNodeType,
         config.spreadAcrossDomains);
   }
@@ -134,6 +137,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
   @Override
   public void configure(AffinityPlacementConfig cfg) {
     Objects.requireNonNull(cfg, "configuration must never be null");
+    cfg.validate();
     this.config = cfg;
   }
 
@@ -154,7 +158,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     // primary to secondary (1:1)
     private final Map<String, String> withCollections;
-    // secondary to primary (1:N)
+    // same but shardwise
+    private final Map<String, String> withCollectionShards;
+    // secondary to primary (1:N) + shard-wise_primary (1:N)
     private final Map<String, Set<String>> collocatedWith;
 
     private final Map<String, Set<String>> nodeTypes;
@@ -165,26 +171,32 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      * The factory has decoded the configuration for the plugin instance and passes it the
      * parameters it needs.
      */
-    private AffinityPlacementPlugin(
+    AffinityPlacementPlugin(
         long minimalFreeDiskGB,
         long prioritizedFreeDiskGB,
         Map<String, String> withCollections,
+        Map<String, String> withCollectionShards,
         Map<String, String> collectionNodeTypes,
         boolean spreadAcrossDomains) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
       this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
       Objects.requireNonNull(withCollections, "withCollections must not be null");
       Objects.requireNonNull(collectionNodeTypes, "collectionNodeTypes must not be null");
+      Objects.requireNonNull(withCollectionShards, "withCollectionShards must not be null");
       this.spreadAcrossDomains = spreadAcrossDomains;
       this.withCollections = withCollections;
-      if (withCollections.isEmpty()) {
-        collocatedWith = Map.of();
-      } else {
-        collocatedWith = new HashMap<>();
-        withCollections.forEach(
-            (primary, secondary) ->
-                collocatedWith.computeIfAbsent(secondary, s -> new HashSet<>()).add(primary));
-      }
+      this.withCollectionShards = withCollectionShards;
+      Map<String, Set<String>> collocated = new HashMap<>();
+      // reverse both relations: shard-agnostic and shard-wise
+      List.of(this.withCollections, this.withCollectionShards)
+          .forEach(
+              direct ->
+                  direct.forEach(
+                      (primary, secondary) ->
+                          collocated
+                              .computeIfAbsent(secondary, s -> new HashSet<>())
+                              .add(primary)));
+      this.collocatedWith = Collections.unmodifiableMap(collocated);
 
       if (collectionNodeTypes.isEmpty()) {
         nodeTypes = Map.of();
@@ -521,6 +533,12 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
             && Optional.ofNullable(withCollections.get(collection))
                 .map(this::hasCollectionOnNode)
                 .orElse(true)
+            // Ensure same shard is collocated if required
+            && Optional.ofNullable(withCollectionShards.get(collection))
+                .map(
+                    shardWiseOf ->
+                        getShardsOnNode(shardWiseOf).contains(replica.getShard().getShardName()))
+                .orElse(true)
             // Ensure the disk space will not go below the minimum if the replica is added
             && (minimalFreeDiskGB <= 0
                 || nodeFreeDiskGB - getProjectedSizeOfReplica(replica) > minimalFreeDiskGB);
@@ -547,6 +565,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
             continue;
           }
 
+          Stream<String> shardWiseCollocations =
+              collocatedCollections.stream()
+                  .filter(
+                      priColl -> collection.getName().equals(withCollectionShards.get(priColl)));
+          final Set<String> mandatoryShardsOrAll =
+              shardWiseCollocations
+                  .flatMap(priColl -> getShardsOnNode(priColl).stream())
+                  .collect(Collectors.toSet());
           // There are collocatedCollections for this shard, so make sure there is a replica of this
           // shard left on the node after it is removed
           Set<Replica> replicasRemovedForShard =
@@ -555,11 +581,18 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                       replica.getShard().getCollection().getName(), k -> new HashMap<>())
                   .computeIfAbsent(replica.getShard().getShardName(), k -> new HashSet<>());
           replicasRemovedForShard.add(replica);
-
-          if (replicasRemovedForShard.size()
-              >= getReplicasForShardOnNode(replica.getShard()).size()) {
-            replicaRemovalExceptions.put(
-                replica, "co-located with replicas of " + collocatedCollections);
+          // either if all shards are mandatory, or the current one is mandatory
+          boolean shardWise = false;
+          if (mandatoryShardsOrAll.isEmpty()
+              || (shardWise = mandatoryShardsOrAll.contains(replica.getShard().getShardName()))) {
+            if (replicasRemovedForShard.size()
+                >= getReplicasForShardOnNode(replica.getShard()).size()) {
+              replicaRemovalExceptions.put(
+                  replica,
+                  "co-located with replicas of "
+                      + (shardWise ? replica.getShard().getShardName() + " of " : "")
+                      + collocatedCollections);
+            }
           }
         }
         return replicaRemovalExceptions;

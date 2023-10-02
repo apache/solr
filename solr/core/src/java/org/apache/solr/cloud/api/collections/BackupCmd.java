@@ -84,6 +84,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
+    boolean backupConfigset = message.getBool(CoreAdminParams.BACKUP_CONFIGSET, true);
     String configName =
         ccc.getSolrCloudManager()
             .getClusterStateProvider()
@@ -145,8 +146,12 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
 
       log.info("Starting to backup ZK data for backupName={}", backupName);
 
-      // Download the configs
-      backupMgr.downloadConfigDir(configName, cc.getConfigSetService());
+      backupMgr.createZkStateDir();
+
+      if (backupConfigset) {
+        // Download the configs
+        backupMgr.downloadConfigDir(configName, cc.getConfigSetService());
+      }
 
       // Save the collection's state. Can be part of the monolithic clusterstate.json or a
       // individual state.json. Since we don't want to distinguish we extract the state and back it

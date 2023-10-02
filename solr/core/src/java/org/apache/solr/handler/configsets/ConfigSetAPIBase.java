@@ -109,18 +109,13 @@ public class ConfigSetAPIBase {
     return contentStreamsIterator.next().getStream();
   }
 
-  protected boolean isTrusted(Principal userPrincipal, AuthenticationPlugin authPlugin) {
+  public static boolean isTrusted(Principal userPrincipal, AuthenticationPlugin authPlugin) {
     if (authPlugin != null && userPrincipal != null) {
       log.debug("Trusted configset request");
       return true;
     }
     log.debug("Untrusted configset request");
     return false;
-  }
-
-  protected boolean isCurrentlyTrusted(String configName) throws IOException {
-    Map<String, Object> contentMap = configSetService.getConfigMetadata(configName);
-    return (boolean) contentMap.getOrDefault("trusted", true);
   }
 
   protected void createBaseNode(
@@ -146,7 +141,7 @@ public class ConfigSetAPIBase {
    * Fail if an untrusted request tries to update a trusted ConfigSet
    */
   private void ensureOverwritingUntrustedConfigSet(String configName) throws IOException {
-    boolean isCurrentlyTrusted = isCurrentlyTrusted(configName);
+    boolean isCurrentlyTrusted = configSetService.isConfigSetTrusted(configName);
     if (isCurrentlyTrusted) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,

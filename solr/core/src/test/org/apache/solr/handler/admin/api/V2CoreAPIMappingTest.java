@@ -67,7 +67,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new ReloadCoreAPI(handler));
     apiBag.registerObject(new SwapCoresAPI(handler));
     apiBag.registerObject(new RenameCoreAPI(handler));
     apiBag.registerObject(new UnloadCoreAPI(handler));
@@ -79,15 +78,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     apiBag.registerObject(new RequestSyncShardAPI(handler));
     apiBag.registerObject(new RequestBufferUpdatesAPI(handler));
     apiBag.registerObject(new RequestCoreCommandStatusAPI(handler));
-  }
-
-  @Test
-  public void testReloadCoreAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params("/cores/coreName", "POST", "{\"reload\": {}}");
-
-    assertEquals("reload", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
   }
 
   @Test

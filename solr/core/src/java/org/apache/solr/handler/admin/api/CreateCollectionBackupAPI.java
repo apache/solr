@@ -24,6 +24,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_CONFIGSET;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_INCREMENTAL;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
@@ -42,6 +43,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import org.apache.solr.client.api.model.BackupDeletionData;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -53,8 +57,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJacksonMapper;
-import org.apache.solr.jersey.SolrJerseyResponse;
-import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.common.StringUtils;
@@ -162,6 +164,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     requestBody.backupStrategy = params.get(INDEX_BACKUP_STRATEGY);
     requestBody.snapshotName = params.get(COMMIT_NAME);
     requestBody.incremental = params.getBool(BACKUP_INCREMENTAL);
+    requestBody.backupConfigset = params.getBool(BACKUP_CONFIGSET);
     requestBody.maxNumBackupPoints = params.getInt(MAX_NUM_BACKUP_POINTS);
     requestBody.async = params.get(ASYNC);
 
@@ -186,6 +189,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     @JsonProperty public String backupStrategy;
     @JsonProperty public String snapshotName;
     @JsonProperty public Boolean incremental;
+    @JsonProperty public Boolean backupConfigset;
     @JsonProperty public Integer maxNumBackupPoints;
     @JsonProperty public String async;
   }
@@ -216,12 +220,5 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     public Double uploadedIndexSizeMB;
 
     @JsonProperty public List<String> shardBackupIds;
-  }
-
-  public static class BackupDeletionData implements JacksonReflectMapWriter {
-    @JsonProperty public String startTime;
-    @JsonProperty public Integer backupId;
-    @JsonProperty public Long size;
-    @JsonProperty public Integer numFiles;
   }
 }

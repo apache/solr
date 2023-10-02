@@ -83,8 +83,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
     HttpClient httpClient = getHttpClient();
-    HttpPost post =
-        new HttpPost(jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME + "/update/json/docs");
+    HttpPost post = new HttpPost(getCoreUrl() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -112,8 +111,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
             + "{\"p.q\" : \"name\"}"
             + "{\"a&b\" : \"name\"}";
     HttpClient httpClient = getHttpClient();
-    HttpPost post =
-        new HttpPost(jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME + "/update/json/docs");
+    HttpPost post = new HttpPost(getCoreUrl() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -132,7 +130,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Override
   public SolrClient createNewSolrClient() {
-    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getServerUrl());
+    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getCoreUrl());
     if (random().nextBoolean()) {
       httpSolrClientBuilder
           .withRequestWriter(new BinaryRequestWriter())

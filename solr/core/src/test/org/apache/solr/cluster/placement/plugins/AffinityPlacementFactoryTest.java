@@ -18,10 +18,13 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
@@ -48,6 +52,7 @@ import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.BalanceRequestImpl;
 import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.Before;
@@ -793,6 +798,18 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         () -> plugin.computePlacement(badShardPlacementRequest, placementContext));
   }
 
+  @Test(expected = SolrException.class)
+  public void testWithCollectionDisjointWithShards() {
+    AffinityPlacementConfig config =
+        new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(primaryCollectionName, secondaryCollectionName),
+            Map.of(primaryCollectionName, secondaryCollectionName),
+            Map.of());
+    configurePlugin(config);
+  }
+
   @Test
   public void testWithCollectionPlacement() throws Exception {
     AffinityPlacementConfig config =
@@ -849,6 +866,96 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
     } catch (PlacementException pe) {
       assertTrue(pe.toString().contains("Not enough eligible nodes"));
     }
+  }
+
+  @Test
+  public void testWithCollectionShardsPlacement() throws Exception {
+    AffinityPlacementConfig config =
+        new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(),
+            Map.of(primaryCollectionName, secondaryCollectionName),
+            Map.of());
+    configurePlugin(config);
+
+    int NUM_NODES = 3;
+    Builders.ClusterBuilder clusterBuilder =
+        Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
+    Builders.CollectionBuilder collectionBuilder =
+        Builders.newCollectionBuilder(secondaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(2, 1, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
+
+    SolrCollection secondaryCollection = cluster.getCollection(secondaryCollectionName);
+    SolrCollection primaryCollection = cluster.getCollection(primaryCollectionName);
+
+    Set<Node> secondaryNodes = new HashSet<>();
+    secondaryCollection
+        .shards()
+        .forEach(s -> s.replicas().forEach(r -> secondaryNodes.add(r.getNode())));
+
+    final List<Node> liveNodes = new ArrayList<>(cluster.getLiveNodes());
+    Collections.shuffle(liveNodes, random());
+    PlacementRequestImpl placementRequest =
+        new PlacementRequestImpl(
+            primaryCollection,
+            shuffle(Arrays.asList("shard2", "shard1")),
+            shuffle(cluster.getLiveNodes()),
+            1,
+            0,
+            0);
+
+    PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
+    assertEquals(2, pp.getReplicaPlacements().size());
+    // verify that all placements are on nodes with the secondary replica
+    pp.getReplicaPlacements()
+        .forEach(
+            placement -> {
+              assertTrue(
+                  "placement node " + placement.getNode() + " not in secondary=" + secondaryNodes,
+                  secondaryNodes.contains(placement.getNode()));
+              boolean collocated = false;
+              final Shard shard = secondaryCollection.getShard(placement.getShardName());
+              StringBuilder msg = new StringBuilder();
+              for (Iterator<Replica> secReplicas = shard.iterator();
+                  secReplicas.hasNext() && !collocated; ) {
+                final Replica secReplica = secReplicas.next();
+                collocated |= placement.getNode().getName().equals(secReplica.getNode().getName());
+                msg.append(secReplica.getReplicaName());
+                msg.append("@");
+                msg.append(secReplica.getNode().getName());
+                msg.append(", ");
+              }
+              assertTrue(placement + " is expected to be collocated with " + msg, collocated);
+            });
+
+    placementRequest =
+        new PlacementRequestImpl(
+            primaryCollection, Set.of("shard3"), cluster.getLiveNodes(), 1, 0, 0);
+    try {
+      pp = plugin.computePlacement(placementRequest, placementContext);
+      fail("should generate 'has no replicas on eligible nodes' failure here");
+    } catch (PlacementException pe) {
+      assertTrue(pe.toString(), pe.toString().contains("Not enough eligible nodes"));
+    }
+  }
+
+  private <T> Set<T> shuffle(Set<T> liveNodes) {
+    final List<T> nodes = new ArrayList<>(liveNodes);
+    return shuffle(nodes);
+  }
+
+  private static <T> Set<T> shuffle(List<T> nodes) {
+    Collections.shuffle(nodes, random());
+    return new LinkedHashSet<>(nodes);
   }
 
   @Test
@@ -922,6 +1029,101 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
       fail("should have failed: " + deleteReplicasRequest);
     } catch (PlacementException pe) {
     }
+  }
+
+  @Test
+  public void testWithCollectionShardsModificationRejected() throws Exception {
+    AffinityPlacementConfig config =
+        new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(),
+            Map.of(primaryCollectionName, secondaryCollectionName),
+            Map.of());
+    configurePlugin(config);
+
+    int NUM_NODES = 2;
+    Builders.ClusterBuilder clusterBuilder =
+        Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
+    Builders.CollectionBuilder collectionBuilder =
+        Builders.newCollectionBuilder(secondaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(2, 3, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(
+        2, random().nextBoolean() ? 1 : 2, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
+
+    SolrCollection secondaryCollection = cluster.getCollection(secondaryCollectionName);
+    SolrCollection primaryCollection = cluster.getCollection(primaryCollectionName);
+
+    final ArrayList<Node> nodes = new ArrayList<>(cluster.getLiveNodes());
+    Collections.shuffle(nodes, random());
+    Set<Replica> toRemove = new HashSet<>();
+    DeleteReplicasRequest deleteReplicasRequest;
+    for (Node node : nodes) {
+      Set<String> seen = new HashSet<>();
+      final Set<String> mustHaveShards =
+          replicas(primaryCollection)
+              .filter(r -> r.getNode().getName().equals(node.getName()))
+              .map(r -> r.getShard().getShardName())
+              .collect(Collectors.toSet());
+
+      replicas(secondaryCollection)
+          .filter(r -> r.getNode().getName().equals(node.getName()))
+          .forEach(
+              r -> {
+                final String secRepShard = r.getShard().getShardName();
+                if (mustHaveShards.contains(secRepShard)) {
+                  if (seen.contains(secRepShard)) {
+                    toRemove.add(r);
+                  } else {
+                    seen.add(secRepShard);
+                  }
+                } else {
+                  toRemove.add(r);
+                }
+              });
+
+      assertFalse(toRemove.isEmpty());
+      deleteReplicasRequest =
+          ModificationRequestImpl.createDeleteReplicasRequest(secondaryCollection, toRemove);
+      try {
+        plugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
+      } catch (PlacementException pe) {
+        fail("should have succeeded: " + pe);
+      }
+    }
+    final List<Replica> remainingReplicas =
+        replicas(secondaryCollection)
+            .filter(r -> !toRemove.contains(r))
+            .collect(Collectors.toList());
+    Collections.shuffle(remainingReplicas, random());
+    toRemove.add(remainingReplicas.iterator().next());
+
+    deleteReplicasRequest =
+        ModificationRequestImpl.createDeleteReplicasRequest(secondaryCollection, toRemove);
+    try {
+      plugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
+      fail("should have failed: " + deleteReplicasRequest);
+    } catch (PlacementException pe) {
+    }
+  }
+
+  private Stream<Replica> replicas(SolrCollection primaryCollection) {
+    return shards(primaryCollection).flatMap(shard -> replicas(shard));
+  }
+
+  private Stream<Replica> replicas(Shard shard) {
+    return StreamSupport.stream(shard.replicas().spliterator(), false);
+  }
+
+  private static Stream<Shard> shards(SolrCollection primaryCollection) {
+    return StreamSupport.stream(primaryCollection.shards().spliterator(), false);
   }
 
   @Test
