@@ -248,7 +248,7 @@ public class ExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
-    String credentials = cli.getOptionValue("credentials");
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
     Info info = new MultiThreadedRunner(url, credentials);
     info.query = cli.getOptionValue("query", "*:*");
     info.setOutFormat(

@@ -155,7 +155,7 @@ public class CreateTool extends ToolBase {
     // convert raw JSON into user-friendly output
     coreRootDirectory = (String) systemInfo.get("core_root");
 
-    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName, cli.getOptionValue("credentials"))) {
+    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
       throw new IllegalArgumentException(
           "\nCore '"
               + coreName
@@ -201,7 +201,7 @@ public class CreateTool extends ToolBase {
         new Http2SolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
-            .withOptionalBasicAuthCredentials(cli.getOptionValue("credentials"));
+            .withOptionalBasicAuthCredentials(cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
@@ -278,7 +278,7 @@ public class CreateTool extends ToolBase {
 
     // since creating a collection is a heavy-weight operation, check for existence first
     if (SolrCLI.safeCheckCollectionExists(
-        solrUrl, collectionName, cli.getOptionValue("credentials"))) {
+        solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
       throw new IllegalStateException(
           "\nCollection '"
               + collectionName

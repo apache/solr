@@ -287,8 +287,8 @@ public class AuthTool extends ToolBase {
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
           SolrCLI.exit(1);
         } else if (!prompt
-            && (cli.getOptionValue("credentials") == null
-                || !cli.getOptionValue("credentials").contains(":"))) {
+            && (cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()) == null
+                || !cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()).contains(":"))) {
           CLIO.out("Option -credentials is not in correct format.");
           new HelpFormatter()
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
@@ -332,8 +332,8 @@ public class AuthTool extends ToolBase {
         }
 
         String username, password;
-        if (cli.hasOption("credentials")) {
-          String credentials = cli.getOptionValue("credentials");
+        if (cli.hasOption(SolrCLI.OPTION_CREDENTIALS.getLongOpt())) {
+          String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
           username = credentials.split(":")[0];
           password = credentials.split(":")[1];
         } else {

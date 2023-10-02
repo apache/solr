@@ -66,7 +66,7 @@ public class ApiTool extends ToolBase {
     String response = null;
     String getUrl = cli.getOptionValue("get");
     if (getUrl != null) {
-      response = callGet(getUrl, cli.getOptionValue("credentials"));
+      response = callGet(getUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
     if (response != null) {
       // pretty-print the response to stdout

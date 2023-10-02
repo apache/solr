@@ -133,7 +133,7 @@ public class PostTool extends ToolBase {
     boolean commit = cli.hasOption("commit");
     boolean optimize = cli.hasOption("optimize");
 
-    String credentials = cli.getOptionValue("credentials");
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
 
     String[] args = cli.getArgs();
 
