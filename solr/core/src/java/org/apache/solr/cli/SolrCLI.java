@@ -513,7 +513,7 @@ public class SolrCLI implements CLIO {
    */
   public static String normalizeSolrUrl(String solrUrl) {
     if (solrUrl != null) {
-      if (solrUrl.indexOf("/solr") > -1) { //
+      if (solrUrl.contains("/solr")) { //
         String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
         CLIO.out(
             "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
@@ -574,17 +574,6 @@ public class SolrCLI implements CLIO {
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
-
-    String solrUrl = cli.getOptionValue("solrUrl");
-    if (solrUrl == null) {
-      solrUrl = getDefaultSolrUrl();
-      CLIO.getOutStream()
-          .println(
-              "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
-                  + solrUrl
-                  + ".");
-    }
-    solrUrl = normalizeSolrUrl(solrUrl);
 
     try (SolrClient solrClient = getSolrClient(cli)) {
       // hit Solr to get system info
