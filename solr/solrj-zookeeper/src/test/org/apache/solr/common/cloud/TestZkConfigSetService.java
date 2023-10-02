@@ -100,6 +100,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       List<String> configs = configSetService.listConfigs();
       assertEquals(1, configs.size());
       assertEquals("testconfig", configs.get(0));
+      assertTrue(configSetService.checkConfigExists("testconfig"));
 
       // check downloading
       Path downloadPath = createTempDir("download");

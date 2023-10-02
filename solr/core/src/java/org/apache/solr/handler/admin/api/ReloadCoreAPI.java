@@ -17,52 +17,69 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.ReflectMapWriter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 
 /**
  * V2 API for reloading an individual core.
  *
- * <p>The new API (POST /v2/cores/coreName {'reload': {...}}) is equivalent to the v1
- * /admin/cores?action=reload command.
- *
- * @see ReloadCorePayload
+ * <p>The new API (POST /v2/cores/coreName/reload is analogous to the v1 /admin/cores?action=RELOAD
+ * command.
  */
-@EndPoint(
-    path = {"/cores/{core}"},
-    method = POST,
-    permission = CORE_EDIT_PERM)
-public class ReloadCoreAPI {
-  private static final String V2_RELOAD_CORE_CMD = "reload";
+@Path("/cores/{coreName}/reload")
+public class ReloadCoreAPI extends CoreAdminAPIBase {
 
-  private final CoreAdminHandler coreHandler;
-
-  public ReloadCoreAPI(CoreAdminHandler coreHandler) {
-    this.coreHandler = coreHandler;
+  @Inject
+  public ReloadCoreAPI(
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse,
+      CoreContainer coreContainer,
+      CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker) {
+    super(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
   }
 
-  @Command(name = V2_RELOAD_CORE_CMD)
-  public void reloadCore(PayloadObj<ReloadCorePayload> obj) throws Exception {
-    final String coreName = obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE);
-
-    final Map<String, Object> v1Params = new HashMap<>();
-    v1Params.put(ACTION, CoreAdminParams.CoreAdminAction.RELOAD.name().toLowerCase(Locale.ROOT));
-    v1Params.put(CoreAdminParams.CORE, coreName);
-
-    coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
+  @POST
+  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @PermissionName(CORE_EDIT_PERM)
+  public SolrJerseyResponse reloadCore(
+      @Parameter(description = "The name of the core to reload.", required = true)
+          @PathParam("coreName")
+          String coreName,
+      @Schema(description = "Additional parameters for reloading the core") @RequestBody
+          ReloadCoreAPI.ReloadCoreRequestBody reloadCoreRequestBody)
+      throws Exception {
+    SolrJerseyResponse solrJerseyResponse = instantiateJerseyResponse(SolrJerseyResponse.class);
+    return handlePotentiallyAsynchronousTask(
+        solrJerseyResponse,
+        coreName,
+        (reloadCoreRequestBody == null) ? null : reloadCoreRequestBody.async,
+        "reload",
+        () -> {
+          coreContainer.reload(coreName);
+          return solrJerseyResponse;
+        });
   }
 
-  public static class ReloadCorePayload implements ReflectMapWriter {}
+  public static class ReloadCoreRequestBody implements JacksonReflectMapWriter {
+    @Schema(description = "Request ID to track this action which will be processed asynchronously.")
+    @JsonProperty("async")
+    public String async;
+  }
 }

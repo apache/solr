@@ -47,6 +47,15 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A coordinator node can serve requests as if it hosts all collections in the cluster. it does so
+ * by hosting a synthetic replica for each configset used in the cluster.
+ *
+ * <p>This class is responsible for forwarding the requests to the right core when the node is
+ * acting as a Coordinator The responsibilities also involve creating a synthetic collection or
+ * replica if they do not exist. It also sets the right threadlocal variables which reflects the
+ * current collection being served.
+ */
 public class CoordinatorHttpSolrCall extends HttpSolrCall {
   public static final String SYNTHETIC_COLL_PREFIX =
       Assign.SYSTEM_COLL_PREFIX + "COORDINATOR-COLL-";
@@ -275,6 +284,11 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     if (action == SolrDispatchFilter.Action.PROCESS && core != null) {
       solrReq = wrappedReq(solrReq, collectionName, this);
     }
+  }
+
+  @Override
+  protected String getCoreOrColName() {
+    return collectionName;
   }
 
   public static SolrQueryRequest wrappedReq(

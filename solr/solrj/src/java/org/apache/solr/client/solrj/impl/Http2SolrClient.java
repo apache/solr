@@ -20,6 +20,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -418,7 +419,7 @@ public class Http2SolrClient extends SolrClient {
             .method(HttpMethod.POST)
             .body(content);
     decorateRequest(postRequest, updateRequest, false);
-    InputStreamResponseListener responseListener = new InputStreamResponseListener();
+    InputStreamResponseListener responseListener = new InputStreamReleaseTrackingResponseListener();
     postRequest.send(responseListener);
 
     boolean isXml = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType());
@@ -468,14 +469,13 @@ public class Http2SolrClient extends SolrClient {
     try {
       String url = getRequestPath(solrRequest, collection);
       InputStreamResponseListener listener =
-          new InputStreamResponseListener() {
+          new InputStreamReleaseTrackingResponseListener() {
             @Override
             public void onHeaders(Response response) {
               super.onHeaders(response);
               executor.execute(
                   () -> {
                     InputStream is = getInputStream();
-                    assert ObjectReleaseTracker.track(is);
                     try {
                       NamedList<Object> body =
                           processErrorsAndResponse(solrRequest, response, is, url);
@@ -525,12 +525,11 @@ public class Http2SolrClient extends SolrClient {
     Throwable abortCause = null;
     Request req = null;
     try {
-      InputStreamResponseListener listener = new InputStreamResponseListener();
+      InputStreamResponseListener listener = new InputStreamReleaseTrackingResponseListener();
       req = makeRequestAndSend(solrRequest, url, listener, false);
       Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
       url = req.getURI().toString();
       InputStream is = listener.getInputStream();
-      assert ObjectReleaseTracker.track(is);
       return processErrorsAndResponse(solrRequest, response, is, url);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -928,7 +927,6 @@ public class Http2SolrClient extends SolrClient {
       if (shouldClose) {
         try {
           is.close();
-          assert ObjectReleaseTracker.release(is);
         } catch (IOException e) {
           // quitely
         }
@@ -1092,8 +1090,10 @@ public class Http2SolrClient extends SolrClient {
         HttpClientBuilderFactory factory;
         try {
           factory =
-              (HttpClientBuilderFactory)
-                  Class.forName(factoryClassName).getConstructor().newInstance();
+              Class.forName(factoryClassName)
+                  .asSubclass(HttpClientBuilderFactory.class)
+                  .getDeclaredConstructor()
+                  .newInstance();
         } catch (InstantiationException
             | IllegalAccessException
             | ClassNotFoundException
@@ -1434,6 +1434,34 @@ public class Http2SolrClient extends SolrClient {
         MDC.setContextMap(context);
       } else {
         MDC.clear();
+      }
+    }
+  }
+
+  /**
+   * Extension of InputStreamResponseListener that handles Object release tracking of the
+   * InputStreams
+   *
+   * @see ObjectReleaseTracker
+   */
+  private static class InputStreamReleaseTrackingResponseListener
+      extends InputStreamResponseListener {
+
+    @Override
+    public InputStream getInputStream() {
+      return new ObjectReleaseTrackedInputStream(super.getInputStream());
+    }
+
+    private static final class ObjectReleaseTrackedInputStream extends FilterInputStream {
+      public ObjectReleaseTrackedInputStream(final InputStream in) {
+        super(in);
+        assert ObjectReleaseTracker.track(in);
+      }
+
+      @Override
+      public void close() throws IOException {
+        assert ObjectReleaseTracker.release(in);
+        super.close();
       }
     }
   }

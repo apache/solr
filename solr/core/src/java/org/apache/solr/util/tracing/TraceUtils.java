@@ -26,6 +26,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -64,6 +65,14 @@ public class TraceUtils {
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
 
+  public static final Predicate<Span> DEFAULT_IS_RECORDING = Span::isRecording;
+
+  /**
+   * this should only be changed in the context of testing, otherwise it would risk not recording
+   * trace data.
+   */
+  public static Predicate<Span> IS_RECORDING = DEFAULT_IS_RECORDING;
+
   public static Tracer getGlobalTracer() {
     return GlobalOpenTelemetry.getTracer("solr");
   }
@@ -94,7 +103,7 @@ public class TraceUtils {
   }
 
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
-    if (span.isRecording()) {
+    if (IS_RECORDING.test(span)) {
       consumer.accept(span);
     }
   }

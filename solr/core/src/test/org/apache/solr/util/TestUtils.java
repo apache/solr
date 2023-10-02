@@ -39,82 +39,11 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.junit.Assert;
 
 /** */
 public class TestUtils extends SolrTestCaseJ4 {
-
-  public void testJoin() {
-    assertEquals("a|b|c", StrUtils.join(asList("a", "b", "c"), '|'));
-    assertEquals("a,b,c", StrUtils.join(asList("a", "b", "c"), ','));
-    assertEquals("a\\,b,c", StrUtils.join(asList("a,b", "c"), ','));
-    assertEquals("a,b|c", StrUtils.join(asList("a,b", "c"), '|'));
-
-    assertEquals("a\\\\b|c", StrUtils.join(asList("a\\b", "c"), '|'));
-  }
-
-  public void testEscapeTextWithSeparator() {
-    assertEquals("a", StrUtils.escapeTextWithSeparator("a", '|'));
-    assertEquals("a", StrUtils.escapeTextWithSeparator("a", ','));
-
-    assertEquals("a\\|b", StrUtils.escapeTextWithSeparator("a|b", '|'));
-    assertEquals("a|b", StrUtils.escapeTextWithSeparator("a|b", ','));
-    assertEquals("a,b", StrUtils.escapeTextWithSeparator("a,b", '|'));
-    assertEquals("a\\,b", StrUtils.escapeTextWithSeparator("a,b", ','));
-    assertEquals("a\\\\b", StrUtils.escapeTextWithSeparator("a\\b", ','));
-
-    assertEquals("a\\\\\\,b", StrUtils.escapeTextWithSeparator("a\\,b", ','));
-  }
-
-  public void testSplitEscaping() {
-    List<String> arr = StrUtils.splitSmart("\\r\\n:\\t\\f\\b", ":", true);
-    assertEquals(2, arr.size());
-    assertEquals("\r\n", arr.get(0));
-    assertEquals("\t\f\b", arr.get(1));
-
-    arr = StrUtils.splitSmart("\\r\\n:\\t\\f\\b", ":", false);
-    assertEquals(2, arr.size());
-    assertEquals("\\r\\n", arr.get(0));
-    assertEquals("\\t\\f\\b", arr.get(1));
-
-    arr = StrUtils.splitWS("\\r\\n \\t\\f\\b", true);
-    assertEquals(2, arr.size());
-    assertEquals("\r\n", arr.get(0));
-    assertEquals("\t\f\b", arr.get(1));
-
-    arr = StrUtils.splitWS("\\r\\n \\t\\f\\b", false);
-    assertEquals(2, arr.size());
-    assertEquals("\\r\\n", arr.get(0));
-    assertEquals("\\t\\f\\b", arr.get(1));
-
-    arr = StrUtils.splitSmart("\\:foo\\::\\:bar\\:", ":", true);
-    assertEquals(2, arr.size());
-    assertEquals(":foo:", arr.get(0));
-    assertEquals(":bar:", arr.get(1));
-
-    arr = StrUtils.splitWS("\\ foo\\  \\ bar\\ ", true);
-    assertEquals(2, arr.size());
-    assertEquals(" foo ", arr.get(0));
-    assertEquals(" bar ", arr.get(1));
-
-    arr = StrUtils.splitFileNames("/h/s,/h/\\,s,");
-    assertEquals(2, arr.size());
-    assertEquals("/h/s", arr.get(0));
-    assertEquals("/h/,s", arr.get(1));
-
-    arr = StrUtils.splitFileNames("/h/s");
-    assertEquals(1, arr.size());
-    assertEquals("/h/s", arr.get(0));
-  }
-
-  public void testToLower() {
-    assertEquals(List.of(), StrUtils.toLower(List.of()));
-    assertEquals(List.of(""), StrUtils.toLower(List.of("")));
-    assertEquals(List.of("foo"), StrUtils.toLower(List.of("foo")));
-    assertEquals(List.of("bar", "baz-123"), StrUtils.toLower(List.of("BAR", "Baz-123")));
-  }
 
   public void testNamedLists() {
     SimpleOrderedMap<Integer> map = new SimpleOrderedMap<>();

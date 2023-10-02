@@ -72,6 +72,10 @@ New Features
 
 * SOLR-16954: Make Circuit Breakers available for Update Requests (janhoy, Christine Poerschke, Pierre Salagnac)
 
+* SOLR-15056: A new Circuit breaker for percentage of CPU utilization is added. The former "CPU" circuit breaker
+  is now more correctly named LoadAverageCircuitBreaker as it trips on system load average which is not a percentage.
+  Users of legacy CircuitBreakerManager are not affected by this change. (Walter Underwood, janhoy, Christine Poerschke, Atri Sharma)
+
 * SOLR-15771: bin/auth creates reasonable roles and permissions for security: 'search', 'index', 'admin', and 'superadmin' and assigns user superadmin role. (Eric Pugh, janhoy)
 
 * SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
@@ -109,6 +113,8 @@ Improvements
 
 * SOLR-15474: Make Circuit breakers individually pluggable (Atri Sharma, Christine Poerschke, janhoy)
 
+* SOLR-16982: Trip Circuit Breakers only for external requests (janhoy, Christine Poerschke)
+
 * SOLR-16927: Allow SolrClientCache clients to use Jetty HTTP2 clients (Alex Deparvu, David Smiley)
 
 * SOLR-16896, SOLR-16897: Add support of OAuth 2.0/OIDC 'code with PKCE' flow (Lamine Idjeraoui, janhoy, Kevin Risden, Anshum Gupta)
@@ -123,6 +129,8 @@ Improvements
 
 * SOLR-16970: SOLR_OPTS is now able to override options set by the Solr control scripts, "bin/solr" and "bin/solr.cmd". (Houston Putman)
 
+* SOLR-16968: The MemoryCircuitBreaker now uses average heap usage over the last 30 seconds (janhoy, Christine Poerschke)
+
 * SOLR-14886: Suppress stack traces in query response (Isabelle Giguere via Alex Deparvu)
 
 * SOLR-16461: `/solr/coreName/replication?command=backup` now has a v2 equivalent, available at
@@ -134,6 +142,11 @@ Improvements
 
 * SOLR-15440: The Learning To Rank FieldValueFeature now uses DocValues when docValues=true and stored=true are combined. (Christine Poerschke, Tom Gilke)
 
+* SOLR-16959: Make the internal CoresLocator implementation configurable in solr.xml (Vincent Primault via David Smiley)
+
+* SOLR-16967: Some ConfigSet operations formerly required that solrconfig.xml exist but should not have because
+  the name of the file is configurable when creating cores / collections.  (David Smiley)
+
 Optimizations
 ---------------------
 
@@ -141,6 +154,9 @@ Optimizations
 
 * SOLR-16265: reduce memory usage of ContentWriter based requests in Http2SolrClient (Alex Deparvu, Kevin Risden, David Smiley)
 
+* SOLR-16989: Optimize and consolidate reuse of DocValues iterators for value retrieval (Michael Gibney)
+
+* SOLR-17004: ZkStateReader waitForState should check clusterState before using watchers (Kevin Risden)
 
 Bug Fixes
 ---------------------
@@ -192,10 +208,35 @@ Bug Fixes
 
 * SOLR-16971: RealTimeGet with Composite router throws NPE (Alex Deparvu)
 
+* SOLR-16931: ReRankScaler explain breaks with debug=true and in distributed mode (Joel Bernstein)
+
+* SOLR-16983: Fixed a bug that could cause some usages of SolrStream to fail to close InputStreams from the server.
+  Also fixed the usage of ObjectReleaseTracker in SolrTestCaseJ4 to catch these kinds of bugs (hossman)
+
+* SOLR-16925: Fix indentation for JacksonJsonWriter (Houston Putman)
+
+* SOLR-16701: Fix race condition on PRS enabled collection deletion (Patson Luk)
+
+* SOLR-16991: Concurrent requests failing JWT authentication in Admin UI intermittently (Lamine Idjeraoui, janhoy)
+
+* SOLR-16997: OTEL configurator NPE when SOLR_HOST not set (janhoy)
+
+* PR#1963: Fix the admin UI green core-size graph on nodes screen (janhoy)
+
+* SOLR-16980: Connect to SOLR standalone with basic authentication (Alex Deparvu)
+
+* SOLR-16992: Non-reproducible StreamingTest failures -- suggests CloudSolrStream concurency race condition (Alex Deparvu, hossman)
+
+* SOLR-16644: Fixing the entropy warning threshold using scaling based on poolsize (Raghavan Muthuregunathan)
+
 Dependency Upgrades
 ---------------------
 
 * PR#1846: Update io.opentelemetry to 1.29.0 (Alex Deparvu)
+
+* SOLR-16985: Upgrade Lucene to 9.8.0 (Alex Deparvu, Christine Poerschke)
+
+* PR#1971: Update forbiddenapis to 3.6 to support Java 21/22 and commons-io up to 2.14.0 (Uwe Schindler)
 
 Other Changes
 ---------------------
@@ -213,6 +254,10 @@ Other Changes
 * SOLR-16623: new SolrJettyTestRule for tests needing HTTP or Jetty. (David Smiley, Joshua Ouma)
 
 * SOLR-16979: BATS integration tests now start solr instances on a randomly selected port (janhoy)
+
+* SOLR-16978: Be case insensitive when parsing booleans from text (Tomás Fernández Löbbe)
+
+* SOLR-16960: Tests should sometimes run with a Tracer (not no-op) (Alex Deparvu)
 
 ==================  9.3.0 ==================
 
@@ -375,6 +420,9 @@ Improvements
   `GET /api/cores/coreName/replication/files?generation=123` (Matthew Biscocho via Jason Gerlowski)
 
 * SOLR-16878: Use Log4J JUL manager when starting Java. This is necessary for Lucene logs to be included with Solr logs. (Houston Putman, Uwe Schindler)
+
+* SOLR-16397: Reload core v2 endpoints have been updated to be more REST-ful.
+  RELOAD is now available at `POST /api/cores/coreName/reload` (Sanjay Dutt via Jason Gerlowski)
 
 Optimizations
 ---------------------
