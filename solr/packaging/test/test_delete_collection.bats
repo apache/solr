@@ -54,6 +54,29 @@ teardown() {
   refute collection_exists "COLL_NAME"
 }
 
+@test "can delete collections with -p and --host" {
+  solr create -c "COLL_NAME"
+  assert collection_exists "COLL_NAME"
+
+  tmp_port=${SOLR_PORT}
+  export SOLR_PORT=
+  export SOLR_HOST=
+  export SOLR_TOOL_HOST=
+
+  solr delete -c "COLL_NAME" -p ${tmp_port} --host localhost
+  refute collection_exists "COLL_NAME"
+}
+
+@test "can delete collections with port scanning" {
+  solr create -c "COLL_NAME"
+  assert collection_exists "COLL_NAME"
+
+  export SOLR_PORT=
+
+  solr delete -c "COLL_NAME"
+  refute collection_exists "COLL_NAME"
+}
+
 @test "collection delete also deletes zk config" {
   solr create -c "COLL_NAME"
   assert config_exists "COLL_NAME"

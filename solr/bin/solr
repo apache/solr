@@ -148,7 +148,7 @@ fi
 : "${SOLR_START_WAIT:=$SOLR_STOP_WAIT}" # defaulting to $SOLR_STOP_WAIT for backwards compatibility reasons
 
 # Store whether a solr port was explicitly provided, for the "solr stop" command.
-PROVIDED_SOLR_PORT="${SOLR_PORT:-}"
+PROVIDED_SOLR_PORT_ENV="${SOLR_PORT:-}"
 : "${SOLR_PORT:=8983}"
 export SOLR_PORT
 
@@ -626,6 +626,7 @@ function jetty_port() {
 # run a Solr command-line tool using the SolrCLI class;
 # useful for doing cross-platform work from the command-line using Java
 function run_tool() {
+  export SOLR_PORT="$(choose_default_solr_port)"
 
   # shellcheck disable=SC2086
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} ${SOLR_TOOL_OPTS:-} -Dsolr.install.dir="$SOLR_TIP" \
@@ -636,97 +637,75 @@ function run_tool() {
   return $?
 } # end run_tool function
 
+function get_all_running_solr_processes() {
+  # no pid files but check using ps just to be sure
+  numSolrs=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//')
+  if [ "$numSolrs" != "0" ]; then
+    PROCESSES=($(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | awk '{print $2}' | sort -r))
+    echo "${PROCESSES[@]}"
+  else
+    echo -e "\nNo Solr nodes are running.\n" >&2
+  fi
+}
+
+function get_all_running_solr_ports() {
+  for ID in $(get_all_running_solr_processes); do
+    port=$(jetty_port "$ID")
+    if [ "$port" != "" ]; then
+      echo -e "\nSolr process $ID running on port $port\n" >&2
+      echo "$port"
+    fi
+  done
+}
+
+# This chooses a default solr port if one is not provided via the command line.
+#  1. If a port is provided to the function, use that.
+#  2. If a SOLR_PORT is explicitly provided, use it.
+#  3. If there is a single SOLR process running on the machine, use that.
+function choose_default_solr_port() {
+  chosen_solr_port=""
+  explicit_solr_port="${1:-}"
+  explicit_solr_port_env="${PROVIDED_SOLR_PORT_ENV}"
+
+  if [ -n "${explicit_solr_port:-}" ]; then
+    chosen_solr_port="${explicit_solr_port}"
+  elif [ -n "${explicit_solr_port_env:-}" ]; then
+    chosen_solr_port="${explicit_solr_port_env}"
+  else
+    # no-commit - check if the SOLR_TOOL_HOST is the localhost, otherwise don't do this
+    all_solr_ports=($(get_all_running_solr_ports))
+    if [ "${#all_solr_ports[@]}" == "0" ]; then
+      chosen_solr_port="8983"
+    elif [ "${#all_solr_ports[@]}" == "1" ]; then
+      chosen_solr_port="${all_solr_ports[0]}"
+    else
+      echo -e "\n${#all_solr_ports[@]} Solr processes found, cannot choose a default process to connect to.\n" >&2
+      exit 1
+    fi
+  fi
+
+  echo "${chosen_solr_port}"
+}
+
 # get status about any Solr nodes running on this host
 function get_status() {
-  # first, see if Solr is running
-  numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
-  if [ "$numSolrs" != "0" ]; then
-    echo -e "\nFound $numSolrs Solr nodes: "
-    while read PIDF
-      do
-        ID=$(cat "$PIDF")
-        port=$(jetty_port "$ID")
-        if [ "$port" != "" ]; then
-          echo -e "\nSolr process $ID running on port $port"
-          run_tool status -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
-          echo ""
-        else
-          echo -e "\nSolr process $ID from $PIDF not found."
-        fi
-    done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
+  PROCESSES=($(get_all_running_solr_processes))
+  if [ "${#PROCESSES[@]}" != "0" ]; then
+    echo -e "\nFound ${#PROCESSES[@]} Solr nodes: "
+    for ID in $PROCESSES; do
+      port="$(jetty_port "$ID")"
+      if [ "$port" != "" ]; then
+        echo ""
+        echo "Solr process $ID running on port $port"
+        run_tool status -p "${port}" "$@"
+        echo ""
+      fi
+    done
   else
-    # no pid files but check using ps just to be sure
-    numSolrs=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//')
-    if [ "$numSolrs" != "0" ]; then
-      echo -e "\nFound $numSolrs Solr nodes: "
-      PROCESSES=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | awk '{print $2}' | sort -r)
-      for ID in $PROCESSES
-        do
-          port=$(jetty_port "$ID")
-          if [ "$port" != "" ]; then
-            echo ""
-            echo "Solr process $ID running on port $port"
-            run_tool status -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
-            echo ""
-          fi
-      done
-    else
-      echo -e "\nNo Solr nodes are running.\n"
-      run_tool status "$@"
-    fi
+    run_tool status "$@"
   fi
-
+  exit
 } # end get_status
-
-function run_package() {
-  runningSolrUrl=""
-
-  numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
-  if [ "$numSolrs" != "0" ]; then
-    #echo -e "\nFound $numSolrs Solr nodes: "
-    while read PIDF
-      do
-        ID=$(cat "$PIDF")
-        port=$(jetty_port "$ID")
-        if [ "$port" != "" ]; then
-          #echo -e "\nSolr process $ID running on port $port"
-          runningSolrUrl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-          break
-          CODE=$?
-          echo ""
-        else
-          echo -e "\nSolr process $ID from $PIDF not found."
-          CODE=1
-        fi
-    done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
-  else
-    # no pid files but check using ps just to be sure
-    numSolrs=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//')
-    if [ "$numSolrs" != "0" ]; then
-      echo -e "\nFound $numSolrs Solr nodes: "
-      PROCESSES=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | awk '{print $2}' | sort -r)
-      for ID in $PROCESSES
-        do
-          port=$(jetty_port "$ID")
-          if [ "$port" != "" ]; then
-            echo ""
-            echo "Solr process $ID running on port $port"
-            runningSolrUrl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-            break
-            CODE=$?
-            echo ""
-          fi
-      done
-    else
-      echo -e "\nNo Solr nodes are running.\n"
-      exit 1
-      CODE=3
-    fi
-  fi
-
-  run_tool package -solrUrl "$runningSolrUrl" "$@"
-  #exit $?
-}
 
 # tries to gracefully stop Solr using the Jetty
 # stop command and if that fails, then uses kill -9
@@ -739,36 +718,31 @@ function stop_solr() {
   STOP_KEY="$3"
   SOLR_PID="$4"
 
-  if [ -n "$SOLR_PID"  ]; then
-    echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
-    # shellcheck disable=SC2086
-    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_TOOL_OPTS:-} -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
-      (loops=0
-      while true
-      do
-        # Check if a process is running with the specified PID.
-        # -o stat will output the STAT, where Z indicates a zombie
-        # stat='' removes the header (--no-headers isn't supported on all platforms)
-        # Note the space after '$('. It is needed to avoid confusion with special bash eval syntax
-        STAT=$( (ps -o stat='' -p "$SOLR_PID" || :) | tr -d ' ')
-        if [[ "${STAT:-Z}" != "Z" ]]; then
-          slept=$((loops * 2))
-          if [ $slept -lt $SOLR_STOP_WAIT ]; then
-            sleep 2
-            loops=$((loops+1))
-          else
-            exit # subshell!
-          fi
+  echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
+  # shellcheck disable=SC2086
+  "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_TOOL_OPTS:-} -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
+    (loops=0
+    while true
+    do
+      # Check if a process is running with the specified PID.
+      # -o stat will output the STAT, where Z indicates a zombie
+      # stat='' removes the header (--no-headers isn't supported on all platforms)
+      # Note the space after '$('. It is needed to avoid confusion with special bash eval syntax
+      STAT=$( (ps -o stat='' -p "$SOLR_PID" || :) | tr -d ' ')
+      if [[ "${STAT:-Z}" != "Z" ]]; then
+        slept=$((loops * 2))
+        if [ $slept -lt $SOLR_STOP_WAIT ]; then
+          sleep 2
+          loops=$((loops+1))
         else
           exit # subshell!
         fi
-      done) &
-    spinner $!
-    rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
-  else
-    echo -e "No Solr nodes found to stop."
-    exit 0
-  fi
+      else
+        exit # subshell!
+      fi
+    done) &
+  spinner $!
+  rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
   # Note the space after '$('. It is needed to avoid confusion with special bash eval syntax
   STAT=$( (ps -o stat='' -p "$SOLR_PID" || :) | tr -d ' ')
@@ -1017,7 +991,7 @@ if [[ "$SCRIPT_CMD" == "package" ]]; then
       esac
     done
   fi
-  run_package "$@"
+  run_tool package "$@"
   exit $?
 fi
 
@@ -1037,6 +1011,21 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         -z|-zkhost|-zkHost)
             ZK_HOST="$2"
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-zkHost" "$ZK_HOST")
+            shift 2
+        ;;
+        -p|-port)
+            PORT="$2"
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-p" "$PORT")
+            shift 2
+        ;;
+        -host|--host)
+            HOST="$2"
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--host" "$HOST")
+            shift 2
+        ;;
+        -urlScheme)
+            SCHEME="$2"
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-urlScheme" "$SCHEME")
             shift 2
         ;;
         -t|-type)
@@ -1143,17 +1132,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
 
   AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-solrIncludeFile" "$SOLR_INCLUDE")
 
-  if [ -z "${AUTH_PORT:-}" ]; then
-    for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
-      do
-        port=$(jetty_port "$ID")
-        if [ "$port" != "" ]; then
-          AUTH_PORT=$port
-          break
-        fi
-      done
-  fi
-  run_tool auth "${AUTH_PARAMS[@]}" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}/solr" -authConfDir "$SOLR_HOME" $VERBOSE
+  run_tool auth "${AUTH_PARAMS[@]}" -authConfDir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 
@@ -1302,7 +1281,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_PORT="$2"
-            PROVIDED_SOLR_PORT="${SOLR_PORT}"
+            PROVIDED_PORT="$2"
             PASS_TO_RUN_EXAMPLE+=("-p" "$SOLR_PORT")
             shift 2
         ;;
@@ -1450,46 +1429,15 @@ fi
 if [[ "$SCRIPT_CMD" == "stop" ]]; then
   if $stop_all; then
     none_stopped=true
-    find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | while read PIDF
-      do
-        NEXT_PID=$(cat "$PIDF")
+    all_solr_pids=($(get_all_running_solr_processes))
+    if [ "0" != "${#all_solr_pids[@]}" ]; then
+      for NEXT_PID in "${all_solr_pids[@]}"; do
         port=$(jetty_port "$NEXT_PID")
-        if [ "$port" != "" ]; then
-          stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
-          none_stopped=false
-        fi
-        rm -f "$PIDF"
-    done
-    # TODO: none_stopped doesn't get reflected across the subshell
-    # This can be uncommented once we find a clean way out of it
-    # if $none_stopped; then
-    #   echo -e "\nNo Solr nodes found to stop.\n"
-    # fi
-    exit
-  elif [[ -z "${PROVIDED_SOLR_PORT:-}" ]]; then
-    # not stopping all and don't have a port, but if we can find a single pid file for Solr, then use that
-    none_stopped=true
-    numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
-    if [ "$numSolrs" -eq 1 ]; then
-      # only do this if there is only 1 node running, otherwise they must provide the -p or -all
-      PID="$(cat "$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)")"
-      CHECK_PID=$(ps -o pid='' -p "$PID" | tr -d ' ')
-      if [ "$CHECK_PID" != "" ]; then
-        port=$(jetty_port "$CHECK_PID")
-        if [ "$port" != "" ]; then
-          stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$CHECK_PID"
-          none_stopped=false
-        fi
-      fi
-    fi
-
-    if $none_stopped; then
-      if [ "$numSolrs" -gt 0 ]; then
-        echo -e "\nFound $numSolrs Solr nodes running! Must either specify a port using -p or -all to stop all Solr nodes on this host.\n"
-      else
-        echo -e "\nNo Solr nodes found to stop.\n"
-      fi
-      exit 1
+        echo stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
+        stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
+      done
+    else
+      echo -e "No Solr nodes found to stop."
     fi
     exit
   fi
@@ -1533,6 +1481,7 @@ if [[ "$SCRIPT_CMD" == "start" ]]; then
 else
   # either stop or restart
   # see if Solr is already running
+  SOLR_PORT="$(choose_default_solr_port "${PROVIDED_PORT-}")"
   SOLR_PID=$(solr_pid_by_port "$SOLR_PORT")
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found

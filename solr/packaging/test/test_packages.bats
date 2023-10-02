@@ -29,7 +29,12 @@ teardown() {
 }
 
 @test "package detects no running solr" {
-  # not sure this is actually a good thing..  we may not want this..
+  # When a SOLR_PORT variable is set, it shouldn't look for running Solr processes
+  run solr package
+  refute_output --partial "No Solr nodes are running."
+
+  # When a SOLR_PORT variable is not set, it should look for running Solr processes
+  export SOLR_PORT=
   run solr package
   assert_output --partial "No Solr nodes are running."
 }

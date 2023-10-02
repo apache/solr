@@ -310,6 +310,18 @@ public class PackageTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         SolrCLI.OPTION_SOLRURL,
+        // Cannot use the default OPTION_SOLRPORT, because -p is already taken by PARAMS
+        Option.builder("port")
+            .longOpt("port")
+            .argName("PORT")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Solr Port, which will be used, along with SOLR_TOOL_HOST and SOLR_URL_SCHEME, to determine the Solr URL to connect to if a solrURL is not provided; defaults to: "
+                    + SolrCLI.getSolrPort(null)
+                    + '.')
+            .build(),
+        SolrCLI.OPTION_URLSCHEME,
         Option.builder("collections")
             .argName("COLLECTIONS")
             .hasArg()

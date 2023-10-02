@@ -56,8 +56,14 @@ public class ApiTool extends ToolBase {
             .argName("URL")
             .hasArg()
             .required(true)
-            .desc("Send a GET request to a Solr API endpoint.")
-            .build());
+            .desc("Send a GET request to a Solr API endpoint, or path to use with the default Solr URL.")
+            .build(),
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRPORT,
+        SolrCLI.OPTION_SOLRHOST,
+        SolrCLI.OPTION_URLSCHEME,
+        SolrCLI.OPTION_VERBOSE);
   }
 
   @Override
@@ -65,7 +71,7 @@ public class ApiTool extends ToolBase {
     String response = null;
     String getUrl = cli.getOptionValue("get");
     if (getUrl != null) {
-      response = callGet(getUrl);
+      response = callGet(cli, getUrl);
     }
     if (response != null) {
       // pretty-print the response to stdout
@@ -73,7 +79,15 @@ public class ApiTool extends ToolBase {
     }
   }
 
-  protected String callGet(String url) throws Exception {
+  protected String callGet(CommandLine cli, String url) throws Exception {
+    if (!url.startsWith("http")) {
+      // Assume the url is a path and query string
+      if (!url.startsWith("/")) {
+        url = "/" + url;
+      }
+      url = SolrCLI.normalizeSolrUrl(cli) + url;
+    }
+    System.out.println("LOOK HERE - " + url);
     URI uri = new URI(url.replace("+", "%20"));
     String solrUrl = getSolrUrlFromUri(uri);
     String path = uri.getPath();
