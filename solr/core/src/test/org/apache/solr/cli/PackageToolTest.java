@@ -163,11 +163,6 @@ public class PackageToolTest extends SolrCloudTestCase {
     withBasicAuth(CollectionAdminRequest.createCollection("def", "conf3", 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
 
-    // CollectionAdminRequest.createCollection("abc", "conf1", 1,
-    // 1).process(cluster.getSolrClient());
-    // CollectionAdminRequest.createCollection("def", "conf3", 1,
-    // 1).process(cluster.getSolrClient());
-
     String rhPath = "/mypath2";
 
     run(
@@ -335,10 +330,10 @@ public class PackageToolTest extends SolrCloudTestCase {
       Object expected)
       throws Exception {
 
-    // nocommit this needs some work!  Copied method from TestSolrConfigHandler.java
+    // Copied method from TestSolrConfigHandler.java
     // and then tweaked it to handle basic auth.  We need a nice pattern for doing
     // http gets/puts to various end points that can be used across all tests.
-    // using the apitool makes me sad ;-)
+    // using the ApiTool makes me sad ;-)
 
     boolean success = false;
 

@@ -277,7 +277,8 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       String coreName = collectionName;
-      if (SolrCLI.safeCheckCoreExists(solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+      if (SolrCLI.safeCheckCoreExists(
+          solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
         alreadyExists = true;
         echo(
             "\nWARNING: Core '"
@@ -539,7 +540,11 @@ public class RunExampleTool extends ToolBase {
     // create the collection
     String collectionName =
         createCloudExampleCollection(
-            numNodes, readInput, prompt, solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+            numNodes,
+            readInput,
+            prompt,
+            solrUrl,
+            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
 
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
   }
@@ -692,7 +697,8 @@ public class RunExampleTool extends ToolBase {
     }
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
-    return getNodeStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs);
+    return getNodeStatus(
+        solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs);
   }
 
   protected Map<String, Object> checkPortConflict(

@@ -155,7 +155,8 @@ public class CreateTool extends ToolBase {
     // convert raw JSON into user-friendly output
     coreRootDirectory = (String) systemInfo.get("core_root");
 
-    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
+    if (SolrCLI.safeCheckCoreExists(
+        solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
       throw new IllegalArgumentException(
           "\nCore '"
               + coreName
@@ -201,7 +202,8 @@ public class CreateTool extends ToolBase {
         new Http2SolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
-            .withOptionalBasicAuthCredentials(cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+            .withOptionalBasicAuthCredentials(
+                cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())

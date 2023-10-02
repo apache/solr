@@ -97,7 +97,11 @@ public class StatusTool extends ToolBase {
       int solrPort = (new URL(solrUrl)).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
       try {
-        waitToSeeSolrUp(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs, TimeUnit.SECONDS);
+        waitToSeeSolrUp(
+            solrUrl,
+            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()),
+            maxWaitSecs,
+            TimeUnit.SECONDS);
         echo("Started Solr server on port " + solrPort + ". Happy searching!");
       } catch (TimeoutException timeout) {
         throw new Exception(
@@ -106,7 +110,8 @@ public class StatusTool extends ToolBase {
     } else {
       try {
         CharArr arr = new CharArr();
-        new JSONWriter(arr, 2).write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
+        new JSONWriter(arr, 2)
+            .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
         echo(arr.toString());
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {

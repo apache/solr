@@ -210,8 +210,7 @@ public class ExportTool extends ToolBase {
 
     void fetchUniqueKey() throws SolrServerException, IOException {
       Http2SolrClient.Builder builder =
-          new Http2SolrClient.Builder()
-              .withOptionalBasicAuthCredentials(credentials);
+          new Http2SolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
           new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl))
