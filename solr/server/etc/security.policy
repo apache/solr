@@ -202,6 +202,9 @@ grant {
   permission java.io.FilePermission "${solr.solr.home}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.solr.home}${/}-", "read,write,delete,readlink";
 
+  permission java.io.FilePermission "${solr.tlogs.home}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.tlogs.home}${/}-", "read,write,delete,readlink";
+
   permission java.io.FilePermission "${solr.data.home}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.data.home}${/}-", "read,write,delete,readlink";
 
