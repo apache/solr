@@ -21,8 +21,7 @@ Improvements
 
 Optimizations
 ---------------------
-
-* SOLR-17004: ZkStateReader waitForState should check clusterState before using watchers (Kevin Risden)
+(No changes)
 
 Bug Fixes
 ---------------------
@@ -156,6 +155,8 @@ Optimizations
 * SOLR-16265: reduce memory usage of ContentWriter based requests in Http2SolrClient (Alex Deparvu, Kevin Risden, David Smiley)
 
 * SOLR-16989: Optimize and consolidate reuse of DocValues iterators for value retrieval (Michael Gibney)
+
+* SOLR-17004: ZkStateReader waitForState should check clusterState before using watchers (Kevin Risden)
 
 Bug Fixes
 ---------------------
