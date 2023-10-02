@@ -977,6 +977,20 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
+  public void testMalformedOptionalCredentials() {
+
+    expectThrowsAndMessage(
+        IllegalStateException.class,
+        () -> new Http2SolrClient.Builder().withOptionalBasicAuthCredentials("usernamepassword"),
+        "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
+
+    expectThrowsAndMessage(
+        IllegalStateException.class,
+        () -> new Http2SolrClient.Builder().withOptionalBasicAuthCredentials("username password"),
+        "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
+  }
+
+  @Test
   public void testBadHttpFactory() {
     System.setProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
     try {
