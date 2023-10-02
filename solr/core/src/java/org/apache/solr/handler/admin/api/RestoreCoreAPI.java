@@ -150,7 +150,9 @@ public class RestoreCoreAPI extends CoreAdminAPIBase {
 
       // transitions state of update log to ACTIVE
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
-      updateLog.applyBufferedUpdates();
+      if (updateLog != null) {
+        updateLog.applyBufferedUpdates();
+      }
     }
   }
 
