@@ -29,13 +29,13 @@ public abstract class ReductionCheckedDataReader<A> extends ReductionDataReader<
     super(inputStream, applier);
   }
 
-  @Override
   /**
    * Read a piece of data from the input stream and feed it to the applier. <br>
    * First checks that the piece of data exists before reading.
    *
    * @throws IOException if an exception occurs while reading from the input stream
    */
+  @Override
   public void read() throws IOException {
     if (inputStream.readBoolean()) {
       checkedRead();
