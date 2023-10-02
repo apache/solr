@@ -211,8 +211,6 @@ public class ExportTool extends ToolBase {
     void fetchUniqueKey() throws SolrServerException, IOException {
       Http2SolrClient.Builder builder =
           new Http2SolrClient.Builder()
-              .withIdleTimeout(30, TimeUnit.SECONDS)
-              .withConnectionTimeout(15, TimeUnit.SECONDS)
               .withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
