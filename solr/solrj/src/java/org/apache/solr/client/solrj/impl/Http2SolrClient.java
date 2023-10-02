@@ -1090,8 +1090,10 @@ public class Http2SolrClient extends SolrClient {
         HttpClientBuilderFactory factory;
         try {
           factory =
-              (HttpClientBuilderFactory)
-                  Class.forName(factoryClassName).getConstructor().newInstance();
+              Class.forName(factoryClassName)
+                  .asSubclass(HttpClientBuilderFactory.class)
+                  .getDeclaredConstructor()
+                  .newInstance();
         } catch (InstantiationException
             | IllegalAccessException
             | ClassNotFoundException
