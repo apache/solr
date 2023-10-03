@@ -39,11 +39,12 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CreateReplicaRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
-/** Unit tests for {@link CreateReplicaAPI} */
+/** Unit tests for {@link CreateReplica} */
 public class CreateReplicaAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
@@ -51,7 +52,7 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new CreateReplicaAPI(null, null, null);
+              final var api = new CreateReplica(null, null, null);
               api.createReplica("someCollName", "someShardName", null);
             });
 
@@ -61,12 +62,12 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
-    final var requestBody = new CreateReplicaAPI.AddReplicaRequestBody();
+    final var requestBody = new CreateReplicaRequestBody();
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new CreateReplicaAPI(null, null, null);
+              final var api = new CreateReplica(null, null, null);
               api.createReplica(null, "shardName", requestBody);
             });
 
@@ -76,12 +77,12 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfShardNameMissing() {
-    final var requestBody = new CreateReplicaAPI.AddReplicaRequestBody();
+    final var requestBody = new CreateReplicaRequestBody();
     final SolrException thrown =
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new CreateReplicaAPI(null, null, null);
+              final var api = new CreateReplica(null, null, null);
               api.createReplica("someCollectionName", null, requestBody);
             });
 
@@ -91,7 +92,7 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateRemoteMessageAllProperties() {
-    final var requestBody = new CreateReplicaAPI.AddReplicaRequestBody();
+    final var requestBody = new CreateReplicaRequestBody();
     requestBody.name = "someName";
     requestBody.type = "NRT";
     requestBody.instanceDir = "/some/dir1";
@@ -106,11 +107,11 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     requestBody.skipNodeAssignment = Boolean.TRUE;
     requestBody.waitForFinalState = true;
     requestBody.followAliases = true;
-    requestBody.asyncId = "someAsyncId";
+    requestBody.async = "someAsyncId";
     requestBody.properties = Map.of("propName1", "propVal1", "propName2", "propVal2");
 
     final var remoteMessage =
-        CreateReplicaAPI.createRemoteMessage("someCollectionName", "someShardName", requestBody)
+        CreateReplica.createRemoteMessage("someCollectionName", "someShardName", requestBody)
             .getProperties();
 
     assertEquals(20, remoteMessage.size());
@@ -159,7 +160,7 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     v1Params.add("property.propName1", "propVal1");
     v1Params.add("property.propName2", "propVal2");
 
-    final var requestBody = CreateReplicaAPI.AddReplicaRequestBody.fromV1Params(v1Params);
+    final var requestBody = CreateReplica.createRequestBodyFromV1Params(v1Params);
 
     assertEquals("someName", requestBody.name);
     assertEquals("NRT", requestBody.type);
@@ -175,7 +176,7 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     assertEquals(Boolean.TRUE, requestBody.skipNodeAssignment);
     assertEquals(Boolean.TRUE, requestBody.waitForFinalState);
     assertEquals(Boolean.TRUE, requestBody.followAliases);
-    assertEquals("someAsyncId", requestBody.asyncId);
+    assertEquals("someAsyncId", requestBody.async);
     assertEquals("propVal1", requestBody.properties.get("propName1"));
     assertEquals("propVal2", requestBody.properties.get("propName2"));
   }

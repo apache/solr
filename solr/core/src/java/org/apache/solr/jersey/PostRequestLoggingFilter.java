@@ -41,6 +41,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.servlet.HttpSolrCall;
@@ -141,19 +142,23 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
       return "{}";
     }
 
-    if (!(requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY)
-        instanceof JacksonReflectMapWriter)) {
-      log.warn(
-          "Encountered unexpected request-body type {} for request {}; only {} expected.",
-          requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY).getClass().getName(),
-          requestContext.getUriInfo().getPath(),
-          JacksonReflectMapWriter.class.getName());
-      return "{}";
+    final Object deserializedBody = requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY);
+    if (deserializedBody instanceof JacksonReflectMapWriter) {
+      return ((JacksonReflectMapWriter) requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY))
+          .jsonStr()
+          .replace("\n", "");
     }
 
-    return ((JacksonReflectMapWriter) requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY))
-        .jsonStr()
-        .replace("\n", "");
+    final Object reflectWritable = Utils.getReflectWriter(deserializedBody);
+    if (reflectWritable instanceof Utils.DelegateReflectWriter) {
+      return Utils.toJSONString(reflectWritable).replaceAll("\n", "");
+    }
+
+    log.warn(
+        "No reflection data found for request-body type {} for request {}; omitting request-body details from logging",
+        deserializedBody.getClass().getName(),
+        requestContext.getUriInfo().getPath());
+    return "{}";
   }
 
   public static String filterAndStringifyQueryParameters(
