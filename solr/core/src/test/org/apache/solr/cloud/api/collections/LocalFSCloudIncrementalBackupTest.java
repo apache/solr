@@ -17,8 +17,19 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
@@ -84,5 +95,62 @@ public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackup
   @Override
   public String getBackupLocation() {
     return backupLocation;
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testCustomProperties() throws Exception {
+    setTestSuffix("testCustomProperties");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "_restore";
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    String backupName = BACKUPNAME_PREFIX + testSuffix;
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      Properties extraProps = new Properties();
+      extraProps.putAll(Map.of("foo", "bar", "number", "12345"));
+      CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+          .setLocation(backupLocation)
+          .setExtraProperties(extraProps)
+          .setRepositoryName(BACKUP_REPO_NAME)
+          .processAndWait(cluster.getSolrClient(), 100);
+      CollectionAdminResponse response =
+          CollectionAdminRequest.listBackup(backupName)
+              .setBackupLocation(backupLocation)
+              .setBackupRepository(BACKUP_REPO_NAME)
+              .process(cluster.getSolrClient());
+      assertNotNull(response.getResponse().get("backups"));
+      assertTrue(response.getResponse().get("backups") instanceof List);
+      List<Map<String, Object>> backups =
+          (List<Map<String, Object>>) response.getResponse().get("backups");
+      assertEquals(1, backups.size());
+      Map<String, Object> backup0 = backups.get(0);
+      assertNotNull(backup0.get("extraProperties"));
+      assertTrue(backup0.get("extraProperties") instanceof Map);
+      Map<String, Object> extraProperties = (Map<String, Object>) backup0.get("extraProperties");
+      assertEquals("bar", extraProperties.get("foo"));
+      assertEquals("12345", extraProperties.get("number"));
+
+      CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+          .setLocation(backupLocation)
+          .setRepositoryName(BACKUP_REPO_NAME)
+          .processAndWait(solrClient, 500);
+
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+          restoreCollectionName, ZkStateReader.from(solrClient), false, false, 3);
+      assertEquals(
+          numDocs,
+          cluster
+              .getSolrClient()
+              .query(restoreCollectionName, new SolrQuery("*:*"))
+              .getResults()
+              .getNumFound());
+    }
   }
 }

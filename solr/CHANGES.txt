@@ -45,6 +45,8 @@ New Features
 
 * SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
 
+* SOLR-16852: Backups now allow metadata to be added as key-values (Tomás Fernández Löbbe)
+
 Improvements
 ---------------------
 * SOLR-16490: `/admin/cores?action=backupcore` now has a v2 equivalent, available at
