@@ -115,15 +115,19 @@ public class BackupProperties {
 
   private static Map<String, String> extractExtraProperties(Properties props) {
     Map<String, String> extraProperties = new HashMap<>();
-    props.forEach(
-        (key, value) -> {
-          String entryKey = key.toString();
-          if (entryKey.startsWith(EXTRA_PROPERTY_PREFIX)) {
-            extraProperties.put(
-                entryKey.substring(EXTRA_PROPERTY_PREFIX.length()), String.valueOf(value));
-            props.remove(key);
-          }
-        });
+    props
+        .entrySet()
+        .removeIf(
+            e -> {
+              String entryKey = e.getKey().toString();
+              if (entryKey.startsWith(EXTRA_PROPERTY_PREFIX)) {
+                extraProperties.put(
+                    entryKey.substring(EXTRA_PROPERTY_PREFIX.length()),
+                    String.valueOf(e.getValue()));
+                return true;
+              }
+              return false;
+            });
     return extraProperties;
   }
 
