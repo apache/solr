@@ -44,7 +44,7 @@ def update_changes(filename, new_version, init_changes, headers):
   print('done' if changed else 'uptodate')
 
 def update_solrversion_class(new_version):
-  filename = 'solr/core/src/java/org/apache/solr/util/SolrVersion.java'
+  filename = 'solr/api/src/java/org/apache/solr/client/api/util/SolrVersion.java'
   print('  changing version to %s...' % new_version.dot, end='', flush=True)
   constant_prefix = 'public static final String LATEST_STRING = "(.*?)"'
   matcher = re.compile(constant_prefix)
@@ -104,7 +104,7 @@ def update_solrconfig(filename, matcher, new_version):
 
 def check_solr_version_class_tests():
   print('  checking solr version tests...', end='', flush=True)
-  run('./gradlew -p solr/core test --tests TestSolrVersion')
+  run('./gradlew -p solr/api test --tests TestSolrVersion')
   print('ok')
 
 def check_lucene_match_version_tests():

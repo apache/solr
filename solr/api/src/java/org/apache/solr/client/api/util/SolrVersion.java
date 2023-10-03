@@ -29,7 +29,7 @@ public final class SolrVersion implements Comparable<SolrVersion> {
   private final Semver version;
 
   // This static variable should be bumped for each release
-  public static final String LATEST_STRING = "9.4.0";
+  public static final String LATEST_STRING = "9.5.0";
 
   /** This instance represents the current (latest) version of Solr. */
   public static final SolrVersion LATEST = SolrVersion.valueOf(LATEST_STRING);
