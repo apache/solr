@@ -51,7 +51,7 @@ If no nodes are already running, restart will skip the step to stop and proceed 
 The `bin/solr` script provides many options to allow you to customize the server in common ways, such as changing the listening port.
 However, most of the defaults are adequate for most Solr installations, especially when just getting started.
 
-`-a "<jvmParams>"`::
+`-a <jvmParams>`::
 +
 [%autowidth,frame=none]
 |===
@@ -69,7 +69,7 @@ If you are passing JVM parameters that begin with `-D`, you can omit the `-a` op
 [source,bash]
 bin/solr start -a "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
 
-`-j "<jettyParams>"`::
+`-j <jettyParams>`::
 +
 [%autowidth,frame=none]
 |===
@@ -911,7 +911,7 @@ Here are some example usages:
 ----
 Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>] [-V]
        solr auth enable [-type basicAuth] -prompt <true|false> [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>] [-V]
-       solr auth enable -type kerberos -config "<kerberos configs>" [-updateIncludeFileOnly <true|false>] [-V]
+       solr auth enable -type kerberos -config <kerberos configs> [-updateIncludeFileOnly <true|false>] [-V]
        solr auth disable [-updateIncludeFileOnly <true|false>] [-V]
 ----
 
