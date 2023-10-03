@@ -1,7 +1,7 @@
 # The lines in this file needs to be lexicographically sorted.
 # Please only add direct dependencies. Overrides of transitive versions should be called out in a comment.
 biz.aQute.bnd:biz.aQute.bnd.annotation=6.4.1
-com.adobe.testing:s3mock-junit4=2.13.0
+com.adobe.testing:s3mock-junit4=2.17.0
 com.carrotsearch.randomizedtesting:*=2.8.1
 com.carrotsearch:hppc=0.9.1
 com.cybozu.labs:langdetect=1.1-20120112
