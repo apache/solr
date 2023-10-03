@@ -17,16 +17,11 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.endpoint.InstallCoreDataApi;
+import org.apache.solr.client.api.model.InstallCoreDataRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -36,25 +31,19 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.RestoreCore;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * v2 implementation of the "Install Core Data" Core-Admin API
+ * V2 API implementation of the "Install Core Data" Core-Admin API
  *
  * <p>This is an internal API intended for use only by the Collection Admin "Install Shard Data"
  * API.
  */
-@Path("/cores/{coreName}/install")
-public class InstallCoreDataAPI extends CoreAdminAPIBase {
+public class InstallCoreData extends CoreAdminAPIBase implements InstallCoreDataApi {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public InstallCoreDataAPI(
+  public InstallCoreData(
       CoreContainer coreContainer,
       CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker,
       SolrQueryRequest req,
@@ -62,11 +51,9 @@ public class InstallCoreDataAPI extends CoreAdminAPIBase {
     super(coreContainer, coreAdminAsyncTracker, req, rsp);
   }
 
-  @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(CORE_EDIT_PERM)
-  public SolrJerseyResponse installCoreData(
-      @PathParam("coreName") String coreName, InstallCoreDataRequestBody requestBody)
+  public SolrJerseyResponse installCoreData(String coreName, InstallCoreDataRequestBody requestBody)
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
 
@@ -117,19 +104,5 @@ public class InstallCoreDataAPI extends CoreAdminAPIBase {
     }
 
     return response;
-  }
-
-  public static class InstallCoreDataRequestBody implements JacksonReflectMapWriter {
-    // Expected to point to an index directory (e.g. data/techproducts_shard1_replica_n1/data/index)
-    // for a single core that has previously been uploaded to the backup repository previously
-    // uploaded to the backup repository.
-    @JsonProperty("location")
-    public String location;
-
-    @JsonProperty("repository")
-    public String repository;
-
-    @JsonProperty("async")
-    public String asyncId;
   }
 }

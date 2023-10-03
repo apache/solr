@@ -46,6 +46,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -121,8 +122,8 @@ public class RestoreCollectionAPI extends BackupAPIBase {
 
     final var createRequestBody = requestBody.createCollectionParams;
     if (createRequestBody != null) {
-      CreateCollectionAPI.populateDefaultsIfNecessary(coreContainer, createRequestBody);
-      createRequestBody.validate();
+      CreateCollection.populateDefaultsIfNecessary(coreContainer, createRequestBody);
+      CreateCollection.validateRequestBody(createRequestBody);
       if (Boolean.FALSE.equals(createRequestBody.createReplicas)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -160,7 +161,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       // RESTORE only supports a subset of collection-creation params, so filter by those when
       // constructing the remote message
       remoteMessage.remove("create-collection");
-      CreateCollectionAPI.createRemoteMessage(createReqBody).getProperties().entrySet().stream()
+      CreateCollection.createRemoteMessage(createReqBody).getProperties().entrySet().stream()
           .filter(
               e ->
                   CREATE_PARAM_ALLOWLIST.contains(e.getKey())
@@ -204,7 +205,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
     @JsonProperty public Integer backupId;
 
     @JsonProperty(CREATE_COLLECTION_KEY)
-    public CreateCollectionAPI.CreateCollectionRequestBody createCollectionParams;
+    public CreateCollectionRequestBody createCollectionParams;
 
     @JsonProperty public String async;
 
@@ -217,7 +218,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       restoreBody.async = solrParams.get(ASYNC);
 
       restoreBody.createCollectionParams =
-          CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(solrParams, false);
+          CreateCollection.createRequestBodyFromV1Params(solrParams, false);
 
       return restoreBody;
     }

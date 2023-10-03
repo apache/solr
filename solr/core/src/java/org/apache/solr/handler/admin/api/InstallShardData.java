@@ -17,18 +17,13 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.endpoint.InstallShardDataApi;
+import org.apache.solr.client.api.model.InstallShardDataRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.api.collections.InstallShardDataCmd;
@@ -41,42 +36,31 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * A V2 API that allows users to import an index constructed offline into a shard of their
- * collection
+ * V2 API implementation allowing users to import offline-constructed index into a shard.
  *
  * <p>Particularly useful for installing (per-shard) indices constructed offline into a SolrCloud
  * deployment. Callers are required to put the collection into read-only mode prior to installing
  * data into any shards of that collection, and should exit read only mode when completed.
  */
-@Path("/collections/{collName}/shards/{shardName}/install")
-public class InstallShardDataAPI extends AdminAPIBase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class InstallShardData extends AdminAPIBase implements InstallShardDataApi {
 
   @Inject
-  public InstallShardDataAPI(
+  public InstallShardData(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse installShardData(
-      @PathParam("collName") String collName,
-      @PathParam("shardName") String shardName,
-      InstallShardRequestBody requestBody)
-      throws Exception {
+      String collName, String shardName, InstallShardDataRequestBody requestBody) throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
@@ -130,28 +114,17 @@ public class InstallShardDataAPI extends AdminAPIBase {
   }
 
   public static ZkNodeProps createRemoteMessage(
-      String collectionName, String shardName, InstallShardRequestBody requestBody) {
+      String collectionName, String shardName, InstallShardDataRequestBody requestBody) {
     final InstallShardDataCmd.RemoteMessage messageTyped = new InstallShardDataCmd.RemoteMessage();
     messageTyped.collection = collectionName;
     messageTyped.shard = shardName;
     if (requestBody != null) {
       messageTyped.location = requestBody.location;
       messageTyped.repository = requestBody.repository;
-      messageTyped.asyncId = requestBody.asyncId;
+      messageTyped.asyncId = requestBody.async;
     }
 
     messageTyped.validate();
     return new ZkNodeProps(messageTyped.toMap(new HashMap<>()));
-  }
-
-  public static class InstallShardRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty(defaultValue = "location", required = true)
-    public String location;
-
-    @JsonProperty("repository")
-    public String repository;
-
-    @JsonProperty("async")
-    public String asyncId;
   }
 }

@@ -47,6 +47,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
@@ -159,8 +160,8 @@ public class CreateAliasAPI extends AdminAPIBase {
     }
 
     if (requestBody.collCreationParameters != null) {
-      requestBody.collCreationParameters.addToRemoteMessageWithPrefix(
-          remoteMessage, "create-collection.");
+      CreateCollection.addToRemoteMessageWithPrefix(
+          requestBody.collCreationParameters, remoteMessage, "create-collection.");
     }
     return new ZkNodeProps(remoteMessage);
   }
@@ -203,7 +204,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     final SolrParams createCollectionParams =
         getHierarchicalParametersByPrefix(params, CREATE_COLLECTION_PREFIX);
     createBody.collCreationParameters =
-        CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(createCollectionParams, false);
+        CreateCollection.createRequestBodyFromV1Params(createCollectionParams, false);
 
     return createBody;
   }
@@ -239,7 +240,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     public List<RoutedAliasProperties> routers;
 
     @JsonProperty("create-collection")
-    public CreateCollectionAPI.CreateCollectionRequestBody collCreationParameters;
+    public CreateCollectionRequestBody collCreationParameters;
 
     public void validate() {
       SolrIdentifierValidator.validateAliasName(name);
@@ -257,8 +258,7 @@ public class CreateAliasAPI extends AdminAPIBase {
               BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
         }
 
-        final CreateCollectionAPI.CreateCollectionRequestBody createCollReqBody =
-            collCreationParameters;
+        final var createCollReqBody = collCreationParameters;
         if (createCollReqBody != null) {
           if (createCollReqBody.name != null) {
             throw new SolrException(

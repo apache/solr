@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -38,19 +37,15 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
-import static org.apache.solr.handler.admin.api.CreateCollectionAPI.copyPrefixedPropertiesWithoutPrefix;
+import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.endpoint.CreateReplicaApi;
+import org.apache.solr.client.api.model.CreateReplicaRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -59,35 +54,30 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * V2 API for adding a new replica to an existing shard.
+ * V2 API implementation for adding a new replica to an existing shard.
  *
  * <p>This API (POST /v2/collections/cName/shards/sName/replicas {...}) is analogous to the v1
  * /admin/collections?action=ADDREPLICA command.
  */
-@Path("/collections/{collectionName}/shards/{shardName}/replicas")
-public class CreateReplicaAPI extends AdminAPIBase {
+public class CreateReplica extends AdminAPIBase implements CreateReplicaApi {
 
   @Inject
-  public CreateReplicaAPI(
+  public CreateReplica(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse createReplica(
-      @PathParam("collectionName") String collectionName,
-      @PathParam("shardName") String shardName,
-      AddReplicaRequestBody requestBody)
+      String collectionName, String shardName, CreateReplicaRequestBody requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     if (requestBody == null) {
@@ -103,12 +93,12 @@ public class CreateReplicaAPI extends AdminAPIBase {
     final ZkNodeProps remoteMessage =
         createRemoteMessage(resolvedCollectionName, shardName, requestBody);
     submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.ADDREPLICA, remoteMessage, requestBody.asyncId);
+        response, CollectionParams.CollectionAction.ADDREPLICA, remoteMessage, requestBody.async);
     return response;
   }
 
   public static ZkNodeProps createRemoteMessage(
-      String collectionName, String shardName, AddReplicaRequestBody requestBody) {
+      String collectionName, String shardName, CreateReplicaRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.ADDREPLICA.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
@@ -129,7 +119,7 @@ public class CreateReplicaAPI extends AdminAPIBase {
     insertIfNotNull(remoteMessage, TLOG_REPLICAS, requestBody.tlogReplicas);
     insertIfNotNull(remoteMessage, PULL_REPLICAS, requestBody.pullReplicas);
     insertIfNotNull(remoteMessage, FOLLOW_ALIASES, requestBody.followAliases);
-    insertIfNotNull(remoteMessage, ASYNC, requestBody.asyncId);
+    insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
 
     if (requestBody.properties != null) {
       requestBody
@@ -144,59 +134,31 @@ public class CreateReplicaAPI extends AdminAPIBase {
     return new ZkNodeProps(remoteMessage);
   }
 
-  public static class AddReplicaRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty public String name;
-    @JsonProperty public String type; // TODO Make this an enum - see SOLR-15796
-    @JsonProperty public String instanceDir;
-    @JsonProperty public String dataDir;
-    @JsonProperty public String ulogDir;
-    @JsonProperty public String route;
-    @JsonProperty public Integer nrtReplicas;
-    @JsonProperty public Integer tlogReplicas;
-    @JsonProperty public Integer pullReplicas;
-    @JsonProperty public Boolean waitForFinalState;
-    @JsonProperty public Boolean followAliases;
+  public static CreateReplicaRequestBody createRequestBodyFromV1Params(SolrParams params) {
+    final var requestBody = new CreateReplicaRequestBody();
 
-    @JsonProperty(ASYNC)
-    public String asyncId;
+    requestBody.name = params.get(NAME);
+    requestBody.type = params.get(REPLICA_TYPE);
+    requestBody.instanceDir = params.get(INSTANCE_DIR);
+    requestBody.dataDir = params.get(DATA_DIR);
+    requestBody.ulogDir = params.get(ULOG_DIR);
+    requestBody.route = params.get(_ROUTE_);
+    requestBody.nrtReplicas = params.getInt(NRT_REPLICAS);
+    requestBody.tlogReplicas = params.getInt(TLOG_REPLICAS);
+    requestBody.pullReplicas = params.getInt(PULL_REPLICAS);
+    requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
+    requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
+    requestBody.async = params.get(ASYNC);
 
-    // TODO This cluster of properties could probably be simplified down to just "nodeSet".  See
-    // SOLR-15542
-    @JsonProperty public String node;
-
-    @JsonProperty("nodeSet")
-    public List<String> nodeSet;
-
-    @JsonProperty public Boolean skipNodeAssignment;
-
-    @JsonProperty public Map<String, String> properties;
-
-    public static AddReplicaRequestBody fromV1Params(SolrParams params) {
-      final var requestBody = new AddReplicaRequestBody();
-
-      requestBody.name = params.get(NAME);
-      requestBody.type = params.get(REPLICA_TYPE);
-      requestBody.instanceDir = params.get(INSTANCE_DIR);
-      requestBody.dataDir = params.get(DATA_DIR);
-      requestBody.ulogDir = params.get(ULOG_DIR);
-      requestBody.route = params.get(_ROUTE_);
-      requestBody.nrtReplicas = params.getInt(NRT_REPLICAS);
-      requestBody.tlogReplicas = params.getInt(TLOG_REPLICAS);
-      requestBody.pullReplicas = params.getInt(PULL_REPLICAS);
-      requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
-      requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
-      requestBody.asyncId = params.get(ASYNC);
-
-      requestBody.node = params.get(NODE);
-      if (params.get(CREATE_NODE_SET_PARAM) != null) {
-        requestBody.nodeSet = Arrays.asList(params.get(CREATE_NODE_SET).split(","));
-      }
-      requestBody.skipNodeAssignment = params.getBool(SKIP_NODE_ASSIGNMENT);
-
-      requestBody.properties =
-          copyPrefixedPropertiesWithoutPrefix(params, new HashMap<>(), PROPERTY_PREFIX);
-
-      return requestBody;
+    requestBody.node = params.get(NODE);
+    if (params.get(CREATE_NODE_SET_PARAM) != null) {
+      requestBody.nodeSet = Arrays.asList(params.get(CREATE_NODE_SET).split(","));
     }
+    requestBody.skipNodeAssignment = params.getBool(SKIP_NODE_ASSIGNMENT);
+
+    requestBody.properties =
+        copyPrefixedPropertiesWithoutPrefix(params, new HashMap<>(), PROPERTY_PREFIX);
+
+    return requestBody;
   }
 }
