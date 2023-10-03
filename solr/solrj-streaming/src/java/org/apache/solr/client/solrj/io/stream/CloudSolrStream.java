@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -32,8 +33,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -54,8 +53,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 /**
  * Connects to Zookeeper to pick replicas from a specific collection to send the query to. Under the
@@ -412,24 +409,15 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service =
-        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("CloudSolrStream"));
-    List<Future<TupleWrapper>> futures =
+    List<StreamOpener> tasks =
         solrStreams.stream()
-            .map(ss -> service.submit(new StreamOpener((SolrStream) ss, comp)))
-            .collect(Collectors.toList());
-    try {
-      for (Future<TupleWrapper> f : futures) {
-        TupleWrapper w = f.get();
-        if (w != null) {
-          tuples.add(w);
-        }
-      }
-    } catch (Exception e) {
-      throw new IOException(e);
-    } finally {
-      service.shutdown();
-    }
+            .map(s -> new StreamOpener((SolrStream) s, comp))
+            .collect(Collectors.toUnmodifiableList());
+    var results =
+        submitAllAndAwaitAggregatingExceptions(tasks, "CloudSolrStream").stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toUnmodifiableList());
+    tuples.addAll(results);
   }
 
   /** Closes the CloudSolrStream */

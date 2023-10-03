@@ -996,5 +996,5 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     }
   }
 
-  /** Missed tests : - set cookies via interceptor - invariant params - compression */
+  /* Missed tests : - set cookies via interceptor - invariant params - compression */
 }
