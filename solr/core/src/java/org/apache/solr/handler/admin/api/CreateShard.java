@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -34,19 +33,15 @@ import static org.apache.solr.common.params.CollectionAdminParams.SHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.admin.api.CreateCollectionAPI.copyPrefixedPropertiesWithoutPrefix;
+import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.endpoint.CreateShardApi;
+import org.apache.solr.client.api.model.CreateShardRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
@@ -58,7 +53,6 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -69,23 +63,20 @@ import org.apache.solr.response.SolrQueryResponse;
  * <p>This API (POST /v2/collections/collectionName/shards {...}) is analogous to the v1
  * /admin/collections?action=CREATESHARD command.
  */
-@Path("/collections/{collectionName}/shards")
-public class CreateShardAPI extends AdminAPIBase {
+public class CreateShard extends AdminAPIBase implements CreateShardApi {
 
   @Inject
-  public CreateShardAPI(
+  public CreateShard(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse createShard(
-      @PathParam("collectionName") String collectionName, CreateShardRequestBody requestBody)
-      throws Exception {
+      String collectionName, CreateShardRequestBody requestBody) throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     if (requestBody == null) {
       throw new SolrException(
@@ -101,71 +92,34 @@ public class CreateShardAPI extends AdminAPIBase {
 
     final ZkNodeProps remoteMessage = createRemoteMessage(resolvedCollectionName, requestBody);
     submitRemoteMessageAndHandleResponse(
-        response,
-        CollectionParams.CollectionAction.CREATESHARD,
-        remoteMessage,
-        requestBody.asyncId);
+        response, CollectionParams.CollectionAction.CREATESHARD, remoteMessage, requestBody.async);
     return response;
   }
 
-  public static class CreateShardRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty(NAME)
-    public String shardName;
+  public static CreateShardRequestBody createRequestBodyFromV1Params(SolrParams params) {
+    params.required().check(COLLECTION, SHARD);
 
-    @JsonProperty(REPLICATION_FACTOR)
-    public Integer replicationFactor;
-
-    @JsonProperty(NRT_REPLICAS)
-    public Integer nrtReplicas;
-
-    @JsonProperty(TLOG_REPLICAS)
-    public Integer tlogReplicas;
-
-    @JsonProperty(PULL_REPLICAS)
-    public Integer pullReplicas;
-
-    @JsonProperty("createReplicas")
-    public Boolean createReplicas;
-
-    @JsonProperty("nodeSet")
-    public List<String> nodeSet;
-
-    @JsonProperty(WAIT_FOR_FINAL_STATE)
-    public Boolean waitForFinalState;
-
-    @JsonProperty(FOLLOW_ALIASES)
-    public Boolean followAliases;
-
-    @JsonProperty(ASYNC)
-    public String asyncId;
-
-    @JsonProperty public Map<String, String> properties;
-
-    public static CreateShardRequestBody fromV1Params(SolrParams params) {
-      params.required().check(COLLECTION, SHARD);
-
-      final var requestBody = new CreateShardRequestBody();
-      requestBody.shardName = params.get(SHARD);
-      requestBody.replicationFactor = params.getInt(REPLICATION_FACTOR);
-      requestBody.nrtReplicas = params.getInt(NRT_REPLICAS);
-      requestBody.tlogReplicas = params.getInt(TLOG_REPLICAS);
-      requestBody.pullReplicas = params.getInt(PULL_REPLICAS);
-      if (params.get(CREATE_NODE_SET_PARAM) != null) {
-        final String nodeSetStr = params.get(CREATE_NODE_SET_PARAM);
-        if ("EMPTY".equals(nodeSetStr)) {
-          requestBody.createReplicas = false;
-        } else {
-          requestBody.nodeSet = Arrays.asList(nodeSetStr.split(","));
-        }
+    final var requestBody = new CreateShardRequestBody();
+    requestBody.shardName = params.get(SHARD);
+    requestBody.replicationFactor = params.getInt(REPLICATION_FACTOR);
+    requestBody.nrtReplicas = params.getInt(NRT_REPLICAS);
+    requestBody.tlogReplicas = params.getInt(TLOG_REPLICAS);
+    requestBody.pullReplicas = params.getInt(PULL_REPLICAS);
+    if (params.get(CREATE_NODE_SET_PARAM) != null) {
+      final String nodeSetStr = params.get(CREATE_NODE_SET_PARAM);
+      if ("EMPTY".equals(nodeSetStr)) {
+        requestBody.createReplicas = false;
+      } else {
+        requestBody.nodeSet = Arrays.asList(nodeSetStr.split(","));
       }
-      requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
-      requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
-      requestBody.asyncId = params.get(ASYNC);
-      requestBody.properties =
-          copyPrefixedPropertiesWithoutPrefix(params, new HashMap<>(), PROPERTY_PREFIX);
-
-      return requestBody;
     }
+    requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
+    requestBody.followAliases = params.getBool(FOLLOW_ALIASES);
+    requestBody.async = params.get(ASYNC);
+    requestBody.properties =
+        copyPrefixedPropertiesWithoutPrefix(params, new HashMap<>(), PROPERTY_PREFIX);
+
+    return requestBody;
   }
 
   public static void invokeFromV1Params(
@@ -173,9 +127,8 @@ public class CreateShardAPI extends AdminAPIBase {
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse)
       throws Exception {
-    final var requestBody = CreateShardRequestBody.fromV1Params(solrQueryRequest.getParams());
-    final var createShardApi =
-        new CreateShardAPI(coreContainer, solrQueryRequest, solrQueryResponse);
+    final var requestBody = CreateShard.createRequestBodyFromV1Params(solrQueryRequest.getParams());
+    final var createShardApi = new CreateShard(coreContainer, solrQueryRequest, solrQueryResponse);
     final var response =
         createShardApi.createShard(solrQueryRequest.getParams().get(COLLECTION), requestBody);
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(solrQueryResponse, response);
@@ -201,7 +154,7 @@ public class CreateShardAPI extends AdminAPIBase {
     insertIfNotNull(remoteMessage, PULL_REPLICAS, requestBody.pullReplicas);
     insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
     insertIfNotNull(remoteMessage, FOLLOW_ALIASES, requestBody.followAliases);
-    insertIfNotNull(remoteMessage, ASYNC, requestBody.asyncId);
+    insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
 
     if (requestBody.properties != null) {
       requestBody
