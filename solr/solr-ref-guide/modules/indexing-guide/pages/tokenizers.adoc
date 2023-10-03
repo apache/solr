@@ -100,7 +100,7 @@ Arguments may be passed to tokenizer factories by setting attributes on the `<to
 
 === When to Use a CharFilter vs. a TokenFilter
 
-There are several pairs of CharFilters and TokenFilters that have related (i.e., `MappingCharFilter` and `ASCIIFoldingFilter`) or nearly identical (i.e., `PatternReplaceCharFilterFactory` and `PatternReplaceFilterFactory`) functionality and it may not always be obvious which is the best choice.
+There are several pairs of CharFilters and TokenFilters that have related (i.e., `MappingCharFilter` and `ASCIIFoldingFilter`) or nearly identical (i.e., `PatternReplaceCharFilterFactory` and `PatternReplaceFilterFactory`) functionality, and it may not always be obvious which is the best choice.
 
 The decision about which to use depends largely on which Tokenizer you are using, and whether you need to preprocess the stream of characters.
 
@@ -125,7 +125,14 @@ The Standard Tokenizer supports http://unicode.org/reports/tr29/#Word_Boundaries
 
 *Arguments:*
 
-`maxTokenLength`: (integer, default 255) Solr ignores tokens that exceed the number of characters specified by `maxTokenLength`.
+`maxTokenLength`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `255`
+|===
++
+Solr ignores tokens that exceed the number of characters specified by `maxTokenLength`.
 
 *Example:*
 
@@ -174,7 +181,14 @@ Delimiter characters are discarded, with the following exceptions:
 
 *Arguments:*
 
-`maxTokenLength`: (integer, default 255) Solr ignores tokens that exceed the number of characters specified by `maxTokenLength`.
+`maxTokenLength`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `255`
+|===
++
+Solr ignores tokens that exceed the number of characters specified by `maxTokenLength`.
 
 *Example:*
 
@@ -212,7 +226,16 @@ This tokenizer treats the entire text field as a single token.
 
 *Factory class:* `solr.KeywordTokenizerFactory`
 
-*Arguments:* None
+*Arguments:*
+
+`maxTokenLen`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `256`
+|===
++
+Maximum token length the tokenizer will emit.
 
 *Example:*
 
@@ -250,7 +273,16 @@ This tokenizer creates tokens from strings of contiguous letters, discarding all
 
 *Factory class:* `solr.LetterTokenizerFactory`
 
-*Arguments:* None
+*Arguments:*
+
+`maxTokenLen`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `255`
+|===
++
+Maximum token length the tokenizer will emit.
 
 *Example:*
 
@@ -289,7 +321,16 @@ Whitespace and non-letters are discarded.
 
 *Factory class:* `solr.LowerCaseTokenizerFactory`
 
-*Arguments:* None
+*Arguments:*
+
+`maxTokenLen`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `255`
+|===
++
+Maximum token length the tokenizer will emit.
 
 *Example:*
 
@@ -329,9 +370,23 @@ Reads the field text and generates n-gram tokens of sizes in the given range.
 
 *Arguments:*
 
-`minGramSize`: (integer, default 1) The minimum n-gram size, must be > 0.
+`minGramSize`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `1`
+|===
++
+The minimum n-gram size, must be > 0.
 
-`maxGramSize`: (integer, default 2) The maximum n-gram size, must be >= `minGramSize`.
+`maxGramSize`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `2`
+|===
++
+The maximum n-gram size, must be >= `minGramSize`.
 
 *Example:*
 
@@ -408,9 +463,23 @@ Reads the field text and generates edge n-gram tokens of sizes in the given rang
 
 *Arguments:*
 
-`minGramSize`: (integer, default is 1) The minimum n-gram size, must be > 0.
+`minGramSize`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `1`
+|===
++
+The minimum n-gram size, must be > 0.
 
-`maxGramSize`: (integer, default is 1) The maximum n-gram size, must be >= `minGramSize`.
+`maxGramSize`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `1`
+|===
++
+The maximum n-gram size, must be >= `minGramSize`.
 
 *Example:*
 
@@ -490,7 +559,33 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
 
 *Arguments:*
 
-`rulefile`: a comma-separated list of `code:rulefile` pairs in the following format: four-letter ISO 15924 script code, followed by a colon, then a resource path.
+`rulefile`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: none
+|===
++
+A comma-separated list of `code:rulefile` pairs in the following format: four-letter ISO 15924 script code, followed by a colon, then a resource path.
+
+`cjkAsWords`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `true`
+|===
++
+If `true`, CJK text would undergo dictionary-based segmentation, and all Han+Hiragana+Katakana words will be tagged as IDEOGRAPHIC.
+Otherwise, text will be segmented according to UAX#29 defaults.
+
+`myanmarAsWords`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `true`
+|===
++
+If `true`, Myanmar text would undergo dictionary-based segmentation, otherwise it will be tokenized as syllables.
 
 *Example:*
 
@@ -562,13 +657,47 @@ This tokenizer creates synonyms from file path hierarchies.
 
 *Arguments:*
 
-`delimiter`: (character, no default) You can specify the file path delimiter and replace it with a delimiter you provide.
+`delimiter`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+You can specify the file path delimiter and replace it with a delimiter you provide.
 This can be useful for working with backslash delimiters.
 
-`replace`: (character, no default) Specifies the delimiter character Solr uses in the tokenized output.
+`replace`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Specifies the delimiter character Solr uses in the tokenized output.
+
+`reverse`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `false`
+|===
++
+If `true`, switch the tokenizer behavior to build the path hierarchy in "reversed" order.
+This is typically useful for tokenizing the URLs.
+
+`skip`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `0`
+|===
++
+Number of leftmost (or rightmost, if reverse=true) path elements to drop from each emitted token.
 
 *Example:*
 
+Default behavior
 [.dynamic-tabs]
 --
 [example.tab-pane#byname-tokenizer-pathhierarchy]
@@ -601,6 +730,41 @@ This can be useful for working with backslash delimiters.
 
 *Out:* "c:", "c:/usr", "c:/usr/local", "c:/usr/local/apache"
 
+*Example:*
+
+Reverse order
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tokenizer-pathhierarchy-reversed]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<fieldType name="text_path" class="solr.TextField" positionIncrementGap="100">
+  <analyzer>
+    <tokenizer name="pathHierarchy" delimiter="." replace="." reverse="true"/>
+  </analyzer>
+</fieldType>
+----
+====
+[example.tab-pane#byclass-tokenizer-pathhierarchy-reversed]
+====
+[.tab-label]*With class name (legacy)*
+[source,xml]
+----
+<fieldType name="text_path" class="solr.TextField" positionIncrementGap="100">
+  <analyzer>
+    <tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="." replace="." reverse="true"/>
+  </analyzer>
+</fieldType>
+----
+====
+--
+
+*In:* "www.site.co.uk"
+
+*Out:* "www.site.co.uk", "site.co.uk", "co.uk", "uk"
+
 == Regular Expression Pattern Tokenizer
 
 This tokenizer uses a Java regular expression to break the input text stream into tokens.
@@ -612,9 +776,23 @@ See {java-javadocs}java/util/regex/Pattern.html[the Javadocs for `java.util.rege
 
 *Arguments:*
 
-`pattern`: (Required) The regular expression, as defined by in `java.util.regex.Pattern`.
+`pattern`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The regular expression, as defined by in `java.util.regex.Pattern`.
 
-`group`: (Optional, default -1) Specifies which regex group to extract as the token(s).
+`group`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `-1`
+|===
++
+Specifies which regex group to extract as the token(s).
 The value -1 means the regex should be treated as a delimiter that separates tokens.
 Non-negative group numbers (>= 0) indicate that character sequences matching that regex group should be converted to tokens.
 Group zero refers to the entire regex, groups greater than zero refer to parenthesized sub-expressions of the regex, counted from left to right.
@@ -687,7 +865,7 @@ A sequence of at least one capital letter followed by zero or more letters of ei
 
 *Example:*
 
-Extract part numbers which are preceded by "SKU", "Part" or "Part Number", case sensitive, with an optional semi-colon separator.
+Extract part numbers which are preceded by "SKU", "Part" or "Part Number", case sensitive, with an optional semicolon separator.
 Part numbers must be all numeric digits, with an optional hyphen.
 Regex capture groups are numbered by counting left parenthesis from left to right.
 Group 3 is the subexpression "[0-9-]+", which matches one or more digits or hyphens.
@@ -729,11 +907,25 @@ The syntax is more limited than `PatternTokenizerFactory`, but the tokenization 
 
 *Arguments:*
 
-`pattern`: (Required) The regular expression, as defined by in the {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] javadocs, identifying the characters to include in tokens.
+`pattern`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The regular expression, as defined in the {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] javadocs, identifying the characters to include in tokens.
 The matching is greedy such that the longest token matching at a given point is created.
 Empty tokens are never created.
 
-`maxDeterminizedStates`: (Optional, default 10000) the limit on total state count for the determined automaton computed from the regexp.
+`determinizeWorkLimit`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `10000`
+|===
++
+The limit on total state count for the determined automaton computed from the regexp.
 
 *Example:*
 
@@ -772,11 +964,25 @@ The syntax is more limited than `PatternTokenizerFactory`, but the tokenization 
 
 *Arguments:*
 
-`pattern`: (Required) The regular expression, as defined by in the {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] javadocs, identifying the characters that should split tokens.
+`pattern`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The regular expression, as defined by in the {lucene-javadocs}/core/org/apache/lucene/util/automaton/RegExp.html[`RegExp`] javadocs, identifying the characters that should split tokens.
 The matching is greedy such that the longest token separator matching at a given point is matched.
 Empty tokens are never created.
 
-`maxDeterminizedStates`: (Optional, default 10000) the limit on total state count for the determined automaton computed from the regexp.
+`determinizeWorkLimit`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `10000`
+|===
++
+The limit on total state count for the determined automaton computed from the regexp.
 
 *Example:*
 
@@ -827,7 +1033,14 @@ The UAX29 URL Email Tokenizer supports http://unicode.org/reports/tr29/#Word_Bou
 
 *Arguments:*
 
-`maxTokenLength`: (integer, default 255) Solr ignores tokens that exceed the number of characters specified by `maxTokenLength`.
+`maxTokenLength`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `255`
+|===
++
+Solr ignores tokens that exceed the number of characters specified by `maxTokenLength`.
 
 *Example:*
 
@@ -880,6 +1093,15 @@ Valid values:
 
 * `java`: Uses {java-javadocs}java/lang/Character.html#isWhitespace-int-[Character.isWhitespace(int)]
 * `unicode`: Uses Unicode's WHITESPACE property
+
+`maxTokenLen`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `255`
+|===
++
+Maximum token length the tokenizer will emit.
 
 *Example:*
 
