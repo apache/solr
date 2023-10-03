@@ -577,6 +577,16 @@ This parameter is unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.i
 +
 *Example*: `bin/solr healthcheck -z localhost:2181`
 
+`-u <username:password>` or `--credentials <username:password>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password seperated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
+
 Below is an example healthcheck request and response using a non-standard ZooKeeper connect string, with 2 nodes running:
 
 `$ bin/solr healthcheck -c gettingstarted -z localhost:9865`
@@ -1671,6 +1681,7 @@ $ curl -X POST --header "Content-Type: application/javabin" --data-binary @getti
 == Interacting with API
 
 The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
+If you have configured basicAuth or TLS with your Solr you may find this easier than using a separate tool like `curl`.
 
 `bin/solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
 
@@ -1689,18 +1700,27 @@ Send a GET request to a Solr API endpoint.
 +
 *Example*: `bin/solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
 
-=== API
+`-u <username:password>` or `--credentials <username:password>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password seperated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
-If you have configured basicAuth or TLS with your Solr you may find this easier than using a separate tool like `curl`.
+*Examples*
+
+Simple search passing in Basic authentication credentials:
 
 [source,bash]
-$ bin/solr api api -get http://localhost:8983/solr/techproducts/select?q=*:*
+$ bin/solr api -get http://localhost:8983/solr/techproducts/select?q=*:* -u user:password
 
 
-Here is an example of sending a SQL query to the techproducts /sql end point (assumes you started Solr in Cloud mode with the SQL module enabled):
+Here is an example of sending a SQL query to the techproducts `/sql` end point (assumes you started Solr in Cloud mode with the SQL module enabled):
 
 [source,bash]
-$ bin/solr api api -get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
+$ bin/solr api -get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
 
 Results are streamed to the terminal.
