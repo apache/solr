@@ -53,7 +53,7 @@ OPTIONS
   Solr options:
     -url <base Solr update URL>
     -commit issue a commit
-    -u or -user <user:pass> (sets BasicAuth credentials)
+    -u or -credentials <user:pass> (sets BasicAuth credentials)
 
   Web crawl options:
     -recursive <depth> (default: 1)
