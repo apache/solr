@@ -585,7 +585,7 @@ This parameter is unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.i
 |Optional | Default: none
 |===
 +
-Basic authentication username and password seperated by a `:` character.
+Basic authentication username and password separated by a `:` character.
 This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 Below is an example healthcheck request and response using a non-standard ZooKeeper connect string, with 2 nodes running:
@@ -752,7 +752,7 @@ Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper co
 |Optional | Default: none
 |===
 +
-Basic authentication username and password seperated by a `:` character.
+Basic authentication username and password separated by a `:` character.
 This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 ==== Configuration Directories and SolrCloud
@@ -871,7 +871,7 @@ Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper co
 |Optional | Default: none
 |===
 +
-Basic authentication username and password seperated by a `:` character.
+Basic authentication username and password separated by a `:` character.
 This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 == Authentication
@@ -1126,7 +1126,7 @@ The scheme for accessing Solr. Accepted values: http or https.  Default is 'http
 |Optional | Default: none
 |===
 +
-Basic authentication username and password seperated by a `:` character.
+Basic authentication username and password separated by a `:` character.
 This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 
@@ -1662,7 +1662,7 @@ The value `-1` will export all documents.
 |Optional | Default: none
 |===
 +
-Basic authentication username and password seperated by a `:` character.
+Basic authentication username and password separated by a `:` character.
 This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 *Examples*
@@ -1748,7 +1748,7 @@ Send a GET request to a Solr API endpoint.
 |Optional | Default: none
 |===
 +
-Basic authentication username and password seperated by a `:` character.
+Basic authentication username and password separated by a `:` character.
 This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 *Examples*

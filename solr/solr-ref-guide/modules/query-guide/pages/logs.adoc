@@ -63,7 +63,7 @@ If the path points to a single log file only that log file will be loaded.
 |Optional | Default: none
 |===
 +
-Basic authentication username and password seperated by a `:` character.
+Basic authentication username and password separated by a `:` character.
 This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 +
