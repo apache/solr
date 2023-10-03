@@ -16,10 +16,7 @@
  */
 package org.apache.solr.client.api.model;
 
-import static org.apache.solr.client.api.model.Constants.NUM_SLICES;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
 
@@ -31,9 +28,7 @@ public class CreateCollectionRequestBody {
 
   @JsonProperty public String config;
 
-  @JsonProperty(NUM_SLICES)
-  @Schema(name = "numShards")
-  public Integer numShards;
+  @JsonProperty public Integer numShards;
 
   @JsonProperty public List<String> shardNames;
 

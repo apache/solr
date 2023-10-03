@@ -51,6 +51,4 @@ public class Constants {
 
   /** The name of the config set to be used for a collection */
   public static final String COLL_CONF = "collection.configName";
-
-  public static final String NUM_SLICES = "numShards";
 }
