@@ -171,6 +171,66 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
+* PR#1676: Update org.glassfish.jersey*:* to v2.39.1 (solrbot)
+
+* PR#1741: Update dependency com.adobe.testing:s3mock-junit4 to v2.17.0 (solrbot)
+
+* PR#1967: Update io.netty:* to v4.1.99.Final (solrbot)
+
+* PR#1968: Update dependency org.semver4j:semver4j to v5.2.1 (solrbot)
+
+* PR#1815: Update org.apache.calcite to v1.35.0 (solrbot)
+
+* PR#1970: Update io.dropwizard.metrics:* to v4.2.20 (solrbot)
+
+* PR#1966: Update dependency org.xerial.snappy:snappy-java to v1.1.10.5 (solrbot)
+
+* PR#1953: Update dependency io.swagger.core.v3:swagger-annotations to v2.2.16 (solrbot)
+
+* PR#1812: Update dependency com.github.ben-manes.caffeine:caffeine to v3.1.8 (solrbot)
+
+* PR#1877: Update software.amazon.awssdk:* to v2.20.155 (solrbot)
+
+* PR#1608: Update dependency no.nav.security:mock-oauth2-server to v0.5.10 (solrbot)
+
+* PR#1910: Update dependency org.apache.commons:commons-compress to v1.24.0 (solrbot)
+
+* PR#1701: Update dependency com.google.errorprone:error_prone_annotations to v2.22.0 (solrbot)
+
+* PR#1653: Update dependency commons-io:commons-io to v2.14.0 (solrbot)
+
+* PR#1806: Update dependency org.xerial.snappy:snappy-java to v1.1.10.4 (solrbot)
+
+* PR#1934: Update dependency io.opentelemetry:opentelemetry-bom to v1.30.1 (solrbot)
+
+* PR#1887: Update io.netty:* to v4.1.97.Final (solrbot)
+
+* PR#1909: Update org.slf4j:* to v2.0.9 (solrbot)
+
+* PR#1747: Update dependency io.swagger.core.v3:swagger-annotations to v2.2.15 (solrbot)
+
+* PR#1770: Update dependency com.google.guava:guava to v32.1.2-jre (solrbot)
+
+* PR#1746: Update org.mockito:mockito* to v5.5.0 (solrbot)
+
+* PR#1742: Update dependency org.hsqldb:hsqldb to v2.7.2 (solrbot)
+
+* PR#1888: Update org.eclipse.jetty*:* to v10.0.16 (solrbot)
+
+* PR#1771: Update org.semver4j:semver4j dependency from 4.3 to 5.1 (solrbot)
+
+* PR#1820: Update software.amazon.awssdk:* to v2.20.128 (solrbot)
+
+* PR#1807: Update org.apache.zookeeper:* to v3.9.0 (solrbot)
+
+* PR#1719: Update dependency commons-codec:commons-codec to v1.16.0 (solrbot)
+
+* PR#1814: Update dependency org.apache.commons:commons-lang3 to v3.13.0 (solrbot)
+
+* PR#1838: Update dependency org.openjdk.jmh:jmh-core to v1.37 (solrbot)
+
+* PR#1813: Update io.netty:* to v4.1.96.Final (solrbot)
+
 
 * PR#1846: Update io.opentelemetry to 1.29.0 (Alex Deparvu)
 
