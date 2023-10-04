@@ -215,6 +215,21 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     }
   }
 
+  public void testCircuitBreakerDebug() {
+    CircuitBreakerManager circuitBreakerManager = new CircuitBreakerManager(true, true);
+    PluginInfo pluginInfo =
+        h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
+
+    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig =
+        CircuitBreakerManager.buildCBConfig(pluginInfo);
+    CircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(circuitBreakerConfig);
+    circuitBreakerManager.register(circuitBreaker);
+
+    assertFalse(circuitBreakerManager.checkAnyTripped());
+
+    assertNull(circuitBreakerManager.checkTripped());
+  }
+
   private void removeAllExistingCircuitBreakers() {
     List<CircuitBreaker> registeredCircuitBreakers =
         h.getCore().getCircuitBreakerManager().getRegisteredCircuitBreakers();
