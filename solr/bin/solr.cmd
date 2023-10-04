@@ -1348,19 +1348,19 @@ IF "%verbose%"=="1" (
   )
 
   IF NOT "%SOLR_OPTS%"=="" (
-    @echo     SOLR_OPTS (USER)   = %SOLR_OPTS%
+    CALL :safe_echo "    SOLR_OPTS (USER)   = %SOLR_OPTS%"
   )
 
   IF NOT "%SCRIPT_SOLR_OPTS%"=="" (
-    @echo     SOLR_OPTS (SCRIPT) = %SCRIPT_SOLR_OPTS%
+    CALL :safe_echo "    SOLR_OPTS (SCRIPT) = %SCRIPT_SOLR_OPTS%"
   )
 
   IF NOT "%SOLR_ADDL_ARGS%"=="" (
-    CALL :safe_echo "     SOLR_ADDL_ARGS    = %SOLR_ADDL_ARGS%"
+    CALL :safe_echo "    SOLR_ADDL_ARGS     = %SOLR_ADDL_ARGS%"
   )
 
   IF NOT "%SOLR_JETTY_ADDL_CONFIG%"=="" (
-    CALL :safe_echo "     SOLR_JETTY_ADDL_CONFIG    = %SOLR_JETTY_ADDL_CONFIG%"
+    CALL :safe_echo "    SOLR_JETTY_ADDL_CONFIG = %SOLR_JETTY_ADDL_CONFIG%"
   )
 
   IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
