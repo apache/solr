@@ -171,6 +171,8 @@ Bug Fixes
 
 * SOLR-16644: Fixing the entropy warning threshold using scaling based on poolsize (Raghavan Muthuregunathan)
 
+* SOLR-17009: json.wrf parameter ignored in JacksonJsonWriter (Alex Deparvu)
+
 Dependency Upgrades
 ---------------------
 * PR#1676: Update org.glassfish.jersey*:* to v2.39.1 (solrbot)
