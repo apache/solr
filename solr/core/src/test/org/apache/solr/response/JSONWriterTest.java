@@ -326,7 +326,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     JacksonJsonWriter w = new JacksonJsonWriter();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     w.write(baos, req, rsp);
-    String received = new String(baos.toByteArray());
+    String received = new String(baos.toByteArray(), StandardCharsets.UTF_8);
     String expected = "testFun( {\n  \"param0\":\"v0\",\n  \"param1\":42\n} )";
     jsonEq(expected, received);
     req.close();
