@@ -79,7 +79,13 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
 
     @Override
     public void writeResponse() throws IOException {
+      if (wrapperFunction != null) {
+        writeStr(null, wrapperFunction + "(", false);
+      }
       super.writeNamedList(null, rsp.getValues());
+      if (wrapperFunction != null) {
+        writeStr(null, ")", false);
+      }
       gen.close();
     }
 
