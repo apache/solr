@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.SchemaNameResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -63,7 +64,7 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
   public void testLooksUpNameFromLatestCoreSchema() throws Exception {
     when(mockSchema.getSchemaName()).thenReturn("expectedSchemaName");
 
-    final GetSchemaAPI.SchemaNameResponse response = api.getSchemaName();
+    final SchemaNameResponse response = api.getSchemaName();
 
     assertEquals("expectedSchemaName", response.name);
     assertNull(response.error);
@@ -73,7 +74,7 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
    * Test the v2 to v1 response mapping for /schema/name
    *
    * <p>{@link SchemaHandler} uses the v2 {@link GetSchemaAPI} (and its response class {@link
-   * GetSchemaAPI.SchemaNameResponse}) internally to serve the v1 version of this functionality. So
+   * SchemaNameResponse}) internally to serve the v1 version of this functionality. So
    * it's important to make sure that our response stays compatible with SolrJ - both because that's
    * important in its own right and because that ensures we haven't accidentally changed the v1
    * response format.
@@ -81,7 +82,7 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
   @Test
   public void testResponseCanBeParsedBySolrJ() {
     final NamedList<Object> squashedResponse = new NamedList<>();
-    final GetSchemaAPI.SchemaNameResponse typedResponse = new GetSchemaAPI.SchemaNameResponse();
+    final SchemaNameResponse typedResponse = new SchemaNameResponse();
     typedResponse.name = "someName";
 
     V2ApiUtils.squashIntoNamedList(squashedResponse, typedResponse);
@@ -103,8 +104,9 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
 
     assertNotNull(response);
     assertNotNull(response.similarity);
-    assertEquals(1, response.similarity.size());
-    assertEquals("flagValue", response.similarity.get("flagKey"));
+    final var similarityMap = (SimpleOrderedMap<Object>) response.similarity;
+    assertEquals(1, similarityMap.size());
+    assertEquals("flagValue", similarityMap.get("flagKey"));
   }
 
   @Test

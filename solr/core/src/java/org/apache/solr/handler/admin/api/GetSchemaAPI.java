@@ -19,17 +19,18 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SchemaInfoResponse;
+import org.apache.solr.client.api.model.SchemaNameResponse;
+import org.apache.solr.client.api.model.SchemaSimilarityResponse;
+import org.apache.solr.client.api.model.SchemaUniqueKeyResponse;
+import org.apache.solr.client.api.model.SchemaVersionResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
@@ -55,15 +56,6 @@ public class GetSchemaAPI extends JerseyResource {
     return response;
   }
 
-  public static class SchemaInfoResponse extends SolrJerseyResponse {
-    // TODO The schema response is quite complicated, so for the moment it's sufficient to record it
-    // here only as a Map.  However, if SOLR-16825 is tackled then there will be a lot of value in
-    // describing this response format more accurately so that clients can navigate the contents
-    // without lots of map fetching and casting.
-    @JsonProperty("schema")
-    public Map<String, Object> schema;
-  }
-
   @GET
   @Path("/name")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
@@ -78,11 +70,6 @@ public class GetSchemaAPI extends JerseyResource {
     return response;
   }
 
-  public static class SchemaNameResponse extends SolrJerseyResponse {
-    @JsonProperty("name")
-    public String name;
-  }
-
   @GET
   @Path("/similarity")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
@@ -93,15 +80,6 @@ public class GetSchemaAPI extends JerseyResource {
     response.similarity = indexSchema.getSimilarityFactory().getNamedPropertyValues();
 
     return response;
-  }
-
-  public static class SchemaSimilarityResponse extends SolrJerseyResponse {
-    // TODO The schema response is quite complicated, so for the moment it's sufficient to record it
-    // here only as a Map.  However, if SOLR-16825 is tackled then there will be a lot of value in
-    // describing this response format more accurately so that clients can navigate the contents
-    // without lots of map fetching and casting.
-    @JsonProperty("similarity")
-    public SimpleOrderedMap<Object> similarity;
   }
 
   @GET
@@ -116,11 +94,6 @@ public class GetSchemaAPI extends JerseyResource {
     return response;
   }
 
-  public static class SchemaUniqueKeyResponse extends SolrJerseyResponse {
-    @JsonProperty("uniqueKey")
-    public String uniqueKey;
-  }
-
   @GET
   @Path("/version")
   @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
@@ -131,10 +104,5 @@ public class GetSchemaAPI extends JerseyResource {
     response.version = indexSchema.getVersion();
 
     return response;
-  }
-
-  public static class SchemaVersionResponse extends SolrJerseyResponse {
-    @JsonProperty("version")
-    public float version;
   }
 }
