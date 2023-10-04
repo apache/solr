@@ -161,11 +161,4 @@ public class TraceUtils {
       req.getSpan().setAttribute(TAG_CLASS, clazz);
     }
   }
-
-  public static Span startCollectionApiCommandSpan(String name, String collection) {
-    Tracer tracer = getGlobalTracer();
-    SpanBuilder spanBuilder =
-        tracer.spanBuilder(name).setSpanKind(SpanKind.CONSUMER).setAttribute(TAG_DB, collection);
-    return spanBuilder.startSpan();
-  }
 }
