@@ -84,7 +84,6 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-(No changes)
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
 
 Other Changes
