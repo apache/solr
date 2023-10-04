@@ -25,6 +25,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.GetSchemaApi;
 import org.apache.solr.client.api.model.SchemaInfoResponse;
 import org.apache.solr.client.api.model.SchemaNameResponse;
 import org.apache.solr.client.api.model.SchemaSimilarityResponse;
@@ -35,8 +36,8 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.PermissionNameProvider;
 
-@Path("/{a:cores|collections}/{collectionName}/schema")
-public class GetSchemaAPI extends JerseyResource {
+
+public class GetSchemaAPI extends JerseyResource implements GetSchemaApi {
 
   protected final IndexSchema indexSchema;
 
@@ -45,8 +46,7 @@ public class GetSchemaAPI extends JerseyResource {
     this.indexSchema = indexSchema;
   }
 
-  @GET
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaInfoResponse getSchemaInfo() {
     final var response = instantiateJerseyResponse(SchemaInfoResponse.class);
@@ -56,9 +56,7 @@ public class GetSchemaAPI extends JerseyResource {
     return response;
   }
 
-  @GET
-  @Path("/name")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaNameResponse getSchemaName() throws Exception {
     final SchemaNameResponse response = instantiateJerseyResponse(SchemaNameResponse.class);
@@ -70,9 +68,7 @@ public class GetSchemaAPI extends JerseyResource {
     return response;
   }
 
-  @GET
-  @Path("/similarity")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaSimilarityResponse getSchemaSimilarity() {
     final var response = instantiateJerseyResponse(SchemaSimilarityResponse.class);
@@ -82,9 +78,7 @@ public class GetSchemaAPI extends JerseyResource {
     return response;
   }
 
-  @GET
-  @Path("/uniquekey")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaUniqueKeyResponse getSchemaUniqueKey() {
     final var response = instantiateJerseyResponse(SchemaUniqueKeyResponse.class);
@@ -94,9 +88,7 @@ public class GetSchemaAPI extends JerseyResource {
     return response;
   }
 
-  @GET
-  @Path("/version")
-  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public SchemaVersionResponse getSchemaVersion() {
     final var response = instantiateJerseyResponse(SchemaVersionResponse.class);
