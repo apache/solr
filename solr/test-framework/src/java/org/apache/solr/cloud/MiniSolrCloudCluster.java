@@ -321,7 +321,7 @@ public class MiniSolrCloudCluster {
     }
 
     final ExecutorService executorLauncher =
-        ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("jetty-launcher"));
+        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jetty-launcher"));
     Collection<Future<JettySolrRunner>> futures = executorLauncher.invokeAll(startups);
     ExecutorUtil.shutdownAndAwaitTermination(executorLauncher);
     Exception startupError = checkForExceptions("Error starting up MiniSolrCloudCluster", futures);
