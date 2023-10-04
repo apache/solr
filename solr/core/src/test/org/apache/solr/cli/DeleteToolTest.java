@@ -78,7 +78,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
 
     withBasicAuth(
             CollectionAdminRequest.createCollection(
-                "testDeleteCollectionWithBasicAuth", "conf", 1, 1, 0, 0))
+                "testDeleteCollectionWithBasicAuth", "conf", 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
     waitForState(
         "Expected collection to be created with 1 shard and 1 replicas",
@@ -89,6 +89,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
       "delete",
       "-c",
       "testDeleteCollectionWithBasicAuth",
+            "-deleteConfig","false",
       "-zkHost",
       cluster.getZkClient().getZkServerAddress(),
       "-credentials",
@@ -103,7 +104,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
 
     withBasicAuth(
             CollectionAdminRequest.createCollection(
-                "testFailsToDeleteProtectedCollection", "conf", 1, 1, 0, 0))
+                "testFailsToDeleteProtectedCollection", "conf", 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
     waitForState(
         "Expected collection to be created with 1 shard and 1 replicas",
