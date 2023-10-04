@@ -28,6 +28,7 @@ import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -38,6 +39,7 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL
 public class PostToolTest extends SolrCloudTestCase {
 
   private static final String USER = "solr";
