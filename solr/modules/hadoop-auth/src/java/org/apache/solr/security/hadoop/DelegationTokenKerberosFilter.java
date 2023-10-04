@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -41,6 +42,8 @@ import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
@@ -51,6 +54,7 @@ import org.apache.zookeeper.data.ACL;
  * reuse the authentication of an end-user or another application.
  */
 public class DelegationTokenKerberosFilter extends DelegationTokenAuthenticationFilter {
+  private ExecutorService curatorSafeServiceExecutor;
   private CuratorFramework curatorFramework;
 
   @Override
@@ -123,8 +127,14 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
   @Override
   public void destroy() {
     super.destroy();
-    if (curatorFramework != null) curatorFramework.close();
-    curatorFramework = null;
+    if (curatorFramework != null) {
+      curatorFramework.close();
+      curatorFramework = null;
+    }
+    if (curatorSafeServiceExecutor != null) {
+      ExecutorUtil.shutdownNowAndAwaitTermination(curatorSafeServiceExecutor);
+      curatorSafeServiceExecutor = null;
+    }
   }
 
   @Override
@@ -167,6 +177,9 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
       // ignore?
     }
 
+    curatorSafeServiceExecutor =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(
+            new SolrNamedThreadFactory("delegationtokenkerberosfilter-curator-safeService"));
     curatorFramework =
         CuratorFrameworkFactory.builder()
             .namespace(zkNamespace)
@@ -176,6 +189,7 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
             .authorization(curatorToSolrZk.getAuthInfos())
             .sessionTimeoutMs(zkClient.getZkClientTimeout())
             .connectionTimeoutMs(connectionTimeoutMs)
+            .runSafeService(curatorSafeServiceExecutor)
             .build();
     curatorFramework.start();
     return curatorFramework;

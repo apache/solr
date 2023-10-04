@@ -19,6 +19,7 @@ package org.apache.solr.security.hadoop;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -39,6 +40,8 @@ import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
@@ -53,6 +56,7 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
    */
   static final String DELEGATION_TOKEN_ZK_CLIENT = "solr.kerberos.delegation.token.zk.client";
 
+  private ExecutorService curatorSafeServiceExecutor;
   private CuratorFramework curatorFramework;
 
   @Override
@@ -104,8 +108,12 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
     super.destroy();
     if (curatorFramework != null) {
       curatorFramework.close();
+      curatorFramework = null;
     }
-    curatorFramework = null;
+    if (curatorSafeServiceExecutor != null) {
+      ExecutorUtil.shutdownNowAndAwaitTermination(curatorSafeServiceExecutor);
+      curatorSafeServiceExecutor = null;
+    }
   }
 
   @Override
@@ -151,6 +159,9 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
       }
     }
 
+    curatorSafeServiceExecutor =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(
+            new SolrNamedThreadFactory("hadoopauthfilter-curator-safeService"));
     curatorFramework =
         CuratorFrameworkFactory.builder()
             .namespace(zkNamespace)
@@ -160,6 +171,7 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
             .authorization(curatorToSolrZk.getAuthInfos())
             .sessionTimeoutMs(zkClient.getZkClientTimeout())
             .connectionTimeoutMs(connectionTimeoutMs)
+            .runSafeService(curatorSafeServiceExecutor)
             .build();
     curatorFramework.start();
     return curatorFramework;
