@@ -348,6 +348,9 @@ public class SolrXmlConfig {
               case "configSetService":
                 builder.setConfigSetServiceClass(it.txt());
                 break;
+              case "coresLocator":
+                builder.setCoresLocatorClass(it.txt());
+                break;
               case "coreRootDirectory":
                 builder.setCoreRootDirectory(it.txt());
                 break;

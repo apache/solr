@@ -18,12 +18,19 @@
 package org.apache.solr.util.circuitbreaker;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Keeps track of all registered circuit breaker instances for various request types. Responsible
@@ -32,26 +39,35 @@ import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
  * @lucene.experimental
  * @since 9.4
  */
-public class CircuitBreakerRegistry {
+public class CircuitBreakerRegistry implements Closeable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<SolrRequestType, List<CircuitBreaker>> circuitBreakerMap = new HashMap<>();
 
   public CircuitBreakerRegistry() {}
 
   public void register(CircuitBreaker circuitBreaker) {
-    circuitBreaker
-        .getRequestTypes()
-        .forEach(
-            r -> {
-              List<CircuitBreaker> list =
-                  circuitBreakerMap.computeIfAbsent(r, k -> new ArrayList<>());
-              list.add(circuitBreaker);
-            });
+    synchronized (circuitBreakerMap) {
+      circuitBreaker
+          .getRequestTypes()
+          .forEach(
+              r -> {
+                List<CircuitBreaker> list =
+                    circuitBreakerMap.computeIfAbsent(r, k -> new ArrayList<>());
+                list.add(circuitBreaker);
+                if (log.isInfoEnabled()) {
+                  log.info(
+                      "Registered circuit breaker {} for request type(s) {}",
+                      circuitBreaker.getClass().getSimpleName(),
+                      r);
+                }
+              });
+    }
   }
 
   @VisibleForTesting
-  public void deregisterAll() {
-    circuitBreakerMap.clear();
+  public void deregisterAll() throws IOException {
+    this.close();
   }
 
   /**
@@ -96,5 +112,42 @@ public class CircuitBreakerRegistry {
 
   public boolean isEnabled(SolrRequestType requestType) {
     return circuitBreakerMap.containsKey(requestType);
+  }
+
+  @Override
+  public void close() throws IOException {
+    synchronized (circuitBreakerMap) {
+      final AtomicInteger closeFailedCounter = new AtomicInteger(0);
+      circuitBreakerMap
+          .values()
+          .forEach(
+              list ->
+                  list.forEach(
+                      it -> {
+                        try {
+                          if (log.isDebugEnabled()) {
+                            log.debug(
+                                "Closed circuit breaker {} for request type(s) {}",
+                                it.getClass().getSimpleName(),
+                                it.getRequestTypes());
+                          }
+                          it.close();
+                        } catch (IOException e) {
+                          if (log.isErrorEnabled()) {
+                            log.error(
+                                String.format(
+                                    Locale.ROOT,
+                                    "Failed to close circuit breaker %s",
+                                    it.getClass().getSimpleName()),
+                                e);
+                          }
+                          closeFailedCounter.incrementAndGet();
+                        }
+                      }));
+      circuitBreakerMap.clear();
+      if (closeFailedCounter.get() > 0) {
+        throw new IOException("Failed to close " + closeFailedCounter.get() + " circuit breakers");
+      }
+    }
   }
 }

@@ -80,6 +80,9 @@ Therefore, when using the default settings, nodes that were previously excluded 
 * The Embedded Zookeeper can now be configured to listen to (or bind to) more hosts than just `localhost`,
 see the  xref:deployment-guide:securing-solr.adoc#network-configuration[Network Configuration documentation] for more information.
 
+=== Circuit Breaker
+* The Circuit Breakers are now pluggable, and you can define multiple circuit breakers including custom ones. The existing `CircuitBreakerManager` is deprecated, and users are encouraged to switch to the new plugins. While the old `CircuitBreakerManager` returned HTTP 503 when a circuit breaker was tripped, the new plugins return HTTP 429.
+
 === Security
 * Since Solr 8.4.1/8.5.0, the `solr.jetty.ssl.verifyClientHostName` sysProp and `SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` envVar have been used incorrectly.
 It has instead been used to override the `solr.ssl.checkPeerName` sysProp in the `HTTP2SolrClient`.
@@ -97,6 +100,9 @@ To disable the always-on trace generation set the system property `solr.alwaysOn
 
 === Learning To Rank
 * The FieldValueFeature class now always uses DocValues when docValues=true is set. A LegacyFieldValueFeature class provides the prior behaviour of not using DocValues when the docValues=true and stored=true field attributes are both set.
+
+=== Other
+* From Solr 9.4 using Lucene 9.8 onwards `DelegatingCollector.finish` clashes with the super class's `LeafCollector.finish` method. Any custom component extending the `DelegatingCollector` needs to rename the `finish` method to `complete` to follow Solr's implementation.
 
 == Solr 9.3
 === Binary Releases

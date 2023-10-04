@@ -21,12 +21,14 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.context.propagation.TextMapSetter;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.http.HttpRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -66,6 +68,14 @@ public class TraceUtils {
 
   public static final String TAG_DB_TYPE_SOLR = "solr";
 
+  public static final Predicate<Span> DEFAULT_IS_RECORDING = Span::isRecording;
+
+  /**
+   * this should only be changed in the context of testing, otherwise it would risk not recording
+   * trace data.
+   */
+  public static Predicate<Span> IS_RECORDING = DEFAULT_IS_RECORDING;
+
   public static Tracer getGlobalTracer() {
     return GlobalOpenTelemetry.getTracer("solr");
   }
@@ -96,7 +106,21 @@ public class TraceUtils {
   }
 
   public static void ifNotNoop(Span span, Consumer<Span> consumer) {
-    if (span.isRecording()) {
+    if (IS_RECORDING.test(span)) {
+      consumer.accept(span);
+    }
+  }
+
+  /**
+   * Sometimes the tests will use a recoding noop span to verify the complete code path so we need
+   * to distinguish this case and only perform a specific operation (like updating the MDC context)
+   * only in case the generated trace id is valid
+   *
+   * @param span current span
+   * @param consumer consumer to be called
+   */
+  public static void ifValidTraceId(Span span, Consumer<Span> consumer) {
+    if (TraceId.isValid(span.getSpanContext().getTraceId())) {
       consumer.accept(span);
     }
   }
