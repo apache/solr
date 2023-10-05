@@ -95,7 +95,7 @@ The tables below list the child nodes of each XML element in `solr.xml`.
 +
 This attribute does not need to be set.
 +
-If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter which the type is `org.apache.solr.core.CoreContainer`.
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
 For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
 If this attribute isn't set, Solr uses the default `configSetService`, with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
@@ -188,6 +188,18 @@ The default value is equal to the number of processors.
 |===
 +
 The root of the core discovery tree, defaults to `$SOLR_HOME`.
+
+`coresLocator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.core.CorePropertiesLocator`
+|===
++
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that implements `CoresLocator`, and you must provide a constructor with one parameter of type `org.apache.solr.core.NodeConfig`.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>`.
 
 `managementPath`::
 +

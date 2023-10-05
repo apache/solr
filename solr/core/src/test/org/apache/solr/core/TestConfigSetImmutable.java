@@ -50,7 +50,7 @@ public class TestConfigSetImmutable extends RestTestBase {
     // make the ConfigSet immutable
     Files.writeString(
         tmpConfDir.resolve("configsetprops.json"),
-        new StringBuilder("{\"immutable\":\"true\"}"),
+        "{\"immutable\":\"true\"}",
         StandardCharsets.UTF_8);
 
     System.setProperty("managed.schema.mutable", "true");

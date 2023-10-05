@@ -17,8 +17,10 @@
 package org.apache.solr.ltr.feature;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -685,6 +687,113 @@ public class TestFieldValueFeature extends TestRerankBase {
 
         final SolrQuery query = new SolrQuery("id:21");
         query.add("rq", "{!ltr model=" + field + "-model reRankDocs=4}");
+        query.add("fl", "[fv]");
+
+        assertJQ("/query" + query.toQueryString(), inputAndTest[1]);
+      }
+    }
+  }
+
+  public static class RelativeDateFieldValueFeature extends FieldValueFeature {
+
+    private boolean since = false;
+    private boolean until = false;
+
+    public boolean getSince() {
+      return this.since;
+    }
+
+    public void setSince(boolean since) {
+      this.since = since;
+    }
+
+    public boolean getUntil() {
+      return this.until;
+    }
+
+    public void setUntil(boolean until) {
+      this.until = until;
+    }
+
+    public RelativeDateFieldValueFeature(String name, Map<String, Object> params) {
+      super(name, params);
+    }
+
+    @Override
+    protected void validate() throws FeatureException {
+      if (since != until) {
+        return;
+      }
+      throw new FeatureException(
+          getClass().getSimpleName() + ": exactly one of 'since' and 'until' must be provided");
+    }
+
+    @Override
+    public FeatureWeight createWeight(
+        IndexSearcher searcher,
+        boolean needsScores,
+        SolrQueryRequest request,
+        Query originalQuery,
+        Map<String, String[]> efi)
+        throws IOException {
+      return new FieldValueFeatureWeight(searcher, request, originalQuery, efi) {
+        private final long timeZero = Instant.parse("2000-01-01T00:00:00.000Z").toEpochMilli();
+
+        @Override
+        public long readNumericDocValuesDate(long val) {
+          if (since) return TimeUnit.MILLISECONDS.toMinutes(val - this.timeZero);
+          if (until) return TimeUnit.MILLISECONDS.toMinutes(this.timeZero - val);
+          return 0;
+        }
+      };
+    }
+  }
+
+  @Test
+  public void testRelativeDateFieldValueFeature() throws Exception {
+    final String field = "dvDateField";
+    for (boolean since : new boolean[] {false, true}) {
+      final String[][] inputsAndTests = {
+        new String[] {
+          "2000-01-01T00:00:00.000Z",
+          "/response/docs/[0]/=={'[fv]':'"
+              + FeatureLoggerTestUtils.toFeatureVector(field, "0.0")
+              + "'}"
+        },
+        new String[] {
+          "2000-01-01T00:01:02.003Z",
+          "/response/docs/[0]/=={'[fv]':'"
+              + FeatureLoggerTestUtils.toFeatureVector(field, (since ? "1.0" : "-1.0"))
+              + "'}"
+        },
+        new String[] {
+          "2000-01-01T01:02:03.004Z",
+          "/response/docs/[0]/=={'[fv]':'"
+              + FeatureLoggerTestUtils.toFeatureVector(field, (since ? "62.0" : "-62.0"))
+              + "'}"
+        }
+      };
+
+      final String fstore = "testRelativeDateFieldValueFeature" + field + "_" + since;
+      final String model = fstore + "-model";
+      loadFeature(
+          field,
+          RelativeDateFieldValueFeature.class.getName(),
+          fstore,
+          "{\"field\":\"" + field + "\", \"" + (since ? "since" : "until") + "\": true}");
+      loadModel(
+          model,
+          LinearModel.class.getName(),
+          new String[] {field},
+          fstore,
+          "{\"weights\":{\"" + field + "\":1.0}}");
+
+      for (String[] inputAndTest : inputsAndTests) {
+        assertU(adoc("id", "21", field, inputAndTest[0]));
+        assertU(commit());
+
+        final SolrQuery query = new SolrQuery("id:21");
+        query.add("rq", "{!ltr model=" + model + " reRankDocs=4}");
         query.add("fl", "[fv]");
 
         assertJQ("/query" + query.toQueryString(), inputAndTest[1]);

@@ -81,7 +81,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
           query.getAnalyticsCollector(
               new ResponseBuilder(null, resp, Collections.emptyList()), searcher.get());
       assertNotNull(analyticsCollector);
-      analyticsCollector.finish();
+      analyticsCollector.complete();
       LinkedHashMap<String, Object> expectedValues = new LinkedHashMap<>();
       expectedValues.put("numDocs", 0);
       expectedValues.put("sterms", new ArrayList<String>());
@@ -116,7 +116,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
       DelegatingCollector analyticsCollector =
           query.getAnalyticsCollector(responseBuilder, searcher.get());
       assertNotNull(analyticsCollector);
-      analyticsCollector.finish();
+      analyticsCollector.complete();
 
       LinkedHashMap<String, Object> expectedValues = new LinkedHashMap<>();
       expectedValues.put("numDocs", 1);
