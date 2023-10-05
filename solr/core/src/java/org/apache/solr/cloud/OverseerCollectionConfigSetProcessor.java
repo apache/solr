@@ -16,11 +16,8 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
-
 import java.io.IOException;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.component.HttpShardHandler;
@@ -32,6 +29,8 @@ import org.apache.solr.metrics.SolrMetricsContext;
  * configset-related Overseer messages
  */
 public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor {
+
+  private static final String CONFIGSETS_ACTION_PREFIX = "configsets:";
 
   public OverseerCollectionConfigSetProcessor(
       ZkStateReader zkStateReader,
@@ -107,9 +106,6 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
             stats,
             overseer,
             overseerNodePrioritizer);
-    // coreContainer is passed instead of configSetService as configSetService is loaded late
-    final OverseerConfigSetMessageHandler configMessageHandler =
-        new OverseerConfigSetMessageHandler(zkStateReader, overseer.getCoreContainer());
     return new OverseerMessageHandlerSelector() {
       @Override
       public void close() throws IOException {
@@ -117,10 +113,9 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
       }
 
       @Override
-      public OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message) {
-        String operation = message.getStr(Overseer.QUEUE_OPERATION);
-        if (operation != null && operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
-          return configMessageHandler;
+      public OverseerMessageHandler selectOverseerMessageHandler(String operation) {
+        if (operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
+          return null;
         }
         return collMessageHandler;
       }

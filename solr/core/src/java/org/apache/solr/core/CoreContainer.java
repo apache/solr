@@ -314,8 +314,7 @@ public class CoreContainer {
    * CoreContainer has been initialized properly, i.e. method {@link #load()} called. Until then it
    * is null, and it is not expected to be read.
    */
-  private volatile Optional<DistributedCollectionConfigSetCommandRunner>
-      distributedCollectionCommandRunner;
+  private volatile DistributedCollectionConfigSetCommandRunner distributedCollectionCommandRunner;
 
   private enum CoreInitFailedAction {
     fromleader,
@@ -657,7 +656,7 @@ public class CoreContainer {
     cfg = null;
     containerProperties = null;
     replayUpdatesExecutor = null;
-    distributedCollectionCommandRunner = Optional.empty();
+    distributedCollectionCommandRunner = null;
     allowPaths = null;
     allowListUrlChecker = null;
   }
@@ -868,9 +867,7 @@ public class CoreContainer {
     // TODO: manage to completely build CoreContainer in the constructor and not in the load()
     // method... Requires some test refactoring.
     this.distributedCollectionCommandRunner =
-        isZooKeeperAware() && cfg.getCloudConfig().getDistributedCollectionConfigSetExecution()
-            ? Optional.of(new DistributedCollectionConfigSetCommandRunner(this))
-            : Optional.empty();
+        isZooKeeperAware() ? new DistributedCollectionConfigSetCommandRunner(this) : null;
 
     collectionsHandler =
         createHandler(
@@ -1160,7 +1157,7 @@ public class CoreContainer {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
-      if (!distributedCollectionCommandRunner.isPresent()) {
+      if (!getDistributedCollectionExecution()) {
         zkSys.getZkController().checkOverseerDesignate();
       }
     }
@@ -1231,10 +1228,9 @@ public class CoreContainer {
 
     ZkController zkController = getZkController();
     if (zkController != null) {
-      if (distributedCollectionCommandRunner.isPresent()) {
-        // Local (i.e. distributed) Collection API processing
-        distributedCollectionCommandRunner.get().stopAndWaitForPendingTasksToComplete();
-      } else {
+      // Local (i.e. distributed) Collection API processing
+      distributedCollectionCommandRunner.stopAndWaitForPendingTasksToComplete();
+      if (!getDistributedCollectionExecution()) {
         // Overseer based processing
         OverseerTaskQueue overseerCollectionQueue = zkController.getOverseerCollectionQueue();
         overseerCollectionQueue.allowOverseerPendingTasksToComplete();
@@ -2513,7 +2509,17 @@ public class CoreContainer {
 
   public Optional<DistributedCollectionConfigSetCommandRunner>
       getDistributedCollectionCommandRunner() {
+    return getDistributedCollectionExecution()
+        ? Optional.of(this.distributedCollectionCommandRunner)
+        : Optional.empty();
+  }
+
+  public DistributedCollectionConfigSetCommandRunner getDistributedConfigSetCommandRunner() {
     return this.distributedCollectionCommandRunner;
+  }
+
+  public boolean getDistributedCollectionExecution() {
+    return isZooKeeperAware() && cfg.getCloudConfig().getDistributedCollectionConfigSetExecution();
   }
 
   /**

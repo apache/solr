@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This class contains methods dealing with Config Sets and called for Config Set API execution,
- * called from the {@link OverseerConfigSetMessageHandler} or from {@link
+ * called from {@link
  * org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner#runConfigSetCommand}
  * depending on whether Collection and Config Set APIs are Overseer based or distributed.
  */

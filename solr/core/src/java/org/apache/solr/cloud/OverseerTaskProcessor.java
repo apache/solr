@@ -340,7 +340,13 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               workQueue.remove(head);
               continue;
             }
-            OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
+            OverseerMessageHandler messageHandler =
+                selector.selectOverseerMessageHandler(operation);
+            if (messageHandler == null) {
+              log.error("No handler defined for operation {}", operation);
+              workQueue.remove(head);
+              continue;
+            }
             OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, batchSessionId);
             if (lock == null) {
               if (log.isDebugEnabled()) {
@@ -699,6 +705,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
    * contents of the message.
    */
   public interface OverseerMessageHandlerSelector extends Closeable {
-    OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message);
+    OverseerMessageHandler selectOverseerMessageHandler(String operation);
   }
 }
