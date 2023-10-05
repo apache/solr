@@ -30,10 +30,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import org.apache.solr.client.api.endpoint.DeleteShardApi;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -44,32 +41,31 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * V2 API for deleting a particular shard from its collection.
+ * V2 API implementation for deleting a particular shard from its collection.
  *
  * <p>This API (DELETE /v2/collections/collectionName/shards/shardName) is analogous to the v1
  * /admin/collections?action=DELETESHARD command.
  */
-@Path("/collections/{collectionName}/shards/{shardName}")
-public class DeleteShardAPI extends AdminAPIBase {
+public class DeleteShard extends AdminAPIBase implements DeleteShardApi {
 
   @Inject
-  public DeleteShardAPI(
+  public DeleteShard(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @DELETE
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse deleteShard(
-      @PathParam("collectionName") String collectionName,
-      @PathParam("shardName") String shardName,
-      @QueryParam(DELETE_INSTANCE_DIR) Boolean deleteInstanceDir,
-      @QueryParam(DELETE_DATA_DIR) Boolean deleteDataDir,
-      @QueryParam(DELETE_INDEX) Boolean deleteIndex,
-      @QueryParam(FOLLOW_ALIASES) Boolean followAliases,
-      @QueryParam(ASYNC) String asyncId)
+      String collectionName,
+      String shardName,
+      Boolean deleteInstanceDir,
+      Boolean deleteDataDir,
+      Boolean deleteIndex,
+      Boolean followAliases,
+      String asyncId)
       throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     ensureRequiredParameterProvided(COLLECTION_PROP, collectionName);
@@ -120,8 +116,7 @@ public class DeleteShardAPI extends AdminAPIBase {
     final var v1Params = solrQueryRequest.getParams();
     v1Params.required().check(COLLECTION_PROP, SHARD_ID_PROP);
 
-    final var deleteShardApi =
-        new DeleteShardAPI(coreContainer, solrQueryRequest, solrQueryResponse);
+    final var deleteShardApi = new DeleteShard(coreContainer, solrQueryRequest, solrQueryResponse);
     final var v2Response =
         deleteShardApi.deleteShard(
             v1Params.get(COLLECTION_PROP),
