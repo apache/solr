@@ -19,10 +19,10 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SchemaSimilarityResponse extends SolrJerseyResponse {
-    // TODO The schema response is quite complicated, so for the moment it's sufficient to record it
-    // here only as a Map.  However, if SOLR-16825 is tackled then there will be a lot of value in
-    // describing this response format more accurately so that clients can navigate the contents
-    // without lots of map fetching and casting.
-    @JsonProperty("similarity")
-    public Object similarity;
+  // TODO The schema response is quite complicated, so for the moment it's sufficient to record it
+  // here only as a Map.  However, if SOLR-16825 is tackled then there will be a lot of value in
+  // describing this response format more accurately so that clients can navigate the contents
+  // without lots of map fetching and casting.
+  @JsonProperty("similarity")
+  public Object similarity;
 }

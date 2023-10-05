@@ -18,7 +18,6 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class SchemaVersionResponse extends SolrJerseyResponse {
-  @JsonProperty("version")
-  public float version;
+public class SchemaZkVersionResponse extends SolrJerseyResponse {
+  @JsonProperty public int zkversion;
 }

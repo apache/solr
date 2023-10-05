@@ -25,6 +25,7 @@ import org.apache.solr.client.api.model.SchemaNameResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.schema.IndexSchema;
@@ -37,6 +38,7 @@ import org.junit.Test;
 /** Unit tests for {@link GetSchemaAPI} */
 public class GetSchemaAPITest extends SolrTestCaseJ4 {
 
+  private SolrCore mockCore;
   private IndexSchema mockSchema;
   private GetSchemaAPI api;
 
@@ -44,8 +46,10 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
   public void setUpMocks() {
     assumeWorkingMockito();
 
+    mockCore = mock(SolrCore.class);
     mockSchema = mock(IndexSchema.class);
-    api = new GetSchemaAPI(mockSchema);
+    when(mockCore.getLatestSchema()).thenReturn(mockSchema);
+    api = new GetSchemaAPI(mockCore, mockSchema);
   }
 
   @Test
@@ -74,8 +78,8 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
    * Test the v2 to v1 response mapping for /schema/name
    *
    * <p>{@link SchemaHandler} uses the v2 {@link GetSchemaAPI} (and its response class {@link
-   * SchemaNameResponse}) internally to serve the v1 version of this functionality. So
-   * it's important to make sure that our response stays compatible with SolrJ - both because that's
+   * SchemaNameResponse}) internally to serve the v1 version of this functionality. So it's
+   * important to make sure that our response stays compatible with SolrJ - both because that's
    * important in its own right and because that ensures we haven't accidentally changed the v1
    * response format.
    */
@@ -93,6 +97,7 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testReliesOnIndexSchemaWhenFetchingSimilarity() {
     final var map = new SimpleOrderedMap<Object>();
     map.add("flagKey", "flagValue");
@@ -127,5 +132,14 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
 
     assertNotNull(response);
     assertEquals(123.456f, response.version, 0.1f);
+  }
+
+  @Test
+  public void testReturnsInvalidZkVersionWhenNotManagedIndexSchema() throws Exception {
+
+    final var response = api.getSchemaZkVersion(-1);
+
+    assertNotNull(response);
+    assertEquals(-1, response.zkversion);
   }
 }

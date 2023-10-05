@@ -17,13 +17,8 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
-
+import java.lang.invoke.MethodHandles;
 import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.GetSchemaApi;
 import org.apache.solr.client.api.model.SchemaInfoResponse;
@@ -31,18 +26,28 @@ import org.apache.solr.client.api.model.SchemaNameResponse;
 import org.apache.solr.client.api.model.SchemaSimilarityResponse;
 import org.apache.solr.client.api.model.SchemaUniqueKeyResponse;
 import org.apache.solr.client.api.model.SchemaVersionResponse;
+import org.apache.solr.client.api.model.SchemaZkVersionResponse;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.ManagedIndexSchema;
+import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.solr.security.PermissionNameProvider;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GetSchemaAPI extends JerseyResource implements GetSchemaApi {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   protected final IndexSchema indexSchema;
+  protected final SolrCore solrCore;
 
   @Inject
-  public GetSchemaAPI(IndexSchema indexSchema) {
+  public GetSchemaAPI(SolrCore solrCore, IndexSchema indexSchema) {
+    this.solrCore = solrCore;
     this.indexSchema = indexSchema;
   }
 
@@ -95,6 +100,32 @@ public class GetSchemaAPI extends JerseyResource implements GetSchemaApi {
 
     response.version = indexSchema.getVersion();
 
+    return response;
+  }
+
+  @Override
+  @PermissionName(PermissionNameProvider.Name.SCHEMA_READ_PERM)
+  public SchemaZkVersionResponse getSchemaZkVersion(Integer refreshIfBelowVersion)
+      throws Exception {
+    final SchemaZkVersionResponse response =
+        instantiateJerseyResponse(SchemaZkVersionResponse.class);
+    int zkVersion = -1;
+    if (solrCore.getLatestSchema() instanceof ManagedIndexSchema) {
+      ManagedIndexSchema managed = (ManagedIndexSchema) solrCore.getLatestSchema();
+      zkVersion = managed.getSchemaZkVersion();
+      if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
+        log.info(
+            "REFRESHING SCHEMA (refreshIfBelowVersion={}, currentVersion={}) before returning version!",
+            refreshIfBelowVersion,
+            zkVersion);
+        ZkSolrResourceLoader zkSolrResourceLoader =
+            (ZkSolrResourceLoader) solrCore.getResourceLoader();
+        ZkIndexSchemaReader zkIndexSchemaReader = zkSolrResourceLoader.getZkIndexSchemaReader();
+        managed = zkIndexSchemaReader.refreshSchemaFromZk(refreshIfBelowVersion);
+        zkVersion = managed.getSchemaZkVersion();
+      }
+    }
+    response.zkversion = zkVersion;
     return response;
   }
 }

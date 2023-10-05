@@ -19,6 +19,6 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SchemaUniqueKeyResponse extends SolrJerseyResponse {
-    @JsonProperty("uniqueKey")
-    public String uniqueKey;
+  @JsonProperty("uniqueKey")
+  public String uniqueKey;
 }

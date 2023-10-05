@@ -19,6 +19,6 @@ package org.apache.solr.client.api.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SchemaNameResponse extends SolrJerseyResponse {
-    @JsonProperty("name")
-    public String name;
+  @JsonProperty("name")
+  public String name;
 }
