@@ -108,12 +108,12 @@ public class ReplicaCountTest {
   }
 
   @Test
-  public void testToDebugString() {
+  public void testToString() {
     ReplicaCount replicaCount = ReplicaCount.empty();
     replicaCount.put(Replica.Type.NRT, 1);
     replicaCount.put(Replica.Type.TLOG, 2);
 
-    assertEquals("nrt=1, tlog=2, pull=0", replicaCount.toDebugString());
+    assertEquals("nrt=1, tlog=2, pull=0", replicaCount.toString());
   }
 
   @Test

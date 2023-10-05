@@ -519,7 +519,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
           ImplicitDocRouter.NAME,
           null,
           checkNotNull("shards", shards),
-          new ReplicaCount(numNrtReplicas, 0, 0));
+          ReplicaCount.of(Replica.Type.NRT, numNrtReplicas));
     }
 
     private Create(

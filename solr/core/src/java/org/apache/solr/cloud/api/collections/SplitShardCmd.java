@@ -243,7 +243,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             "aborting split - inconsistent replica types in collection "
                 + collectionName
                 + ": "
-                + numReplicas.toDebugString()
+                + numReplicas
                 + ", shard leader type is "
                 + leaderReplicaType);
       }

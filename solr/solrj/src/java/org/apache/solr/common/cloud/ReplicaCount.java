@@ -19,13 +19,12 @@ package org.apache.solr.common.cloud;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 
 /** Tracks the number of replicas per replica type. This class is mutable. */
 public final class ReplicaCount {
-  private final Map<Replica.Type, Integer> countByType;
+  private final EnumMap<Replica.Type, Integer> countByType;
 
   public ReplicaCount(Integer nrtReplicas, Integer tlogReplicas, Integer pullReplicas) {
     this.countByType = new EnumMap<>(Replica.Type.class);
@@ -115,7 +114,7 @@ public final class ReplicaCount {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "Unexpected number of replicas ("
-            + toDebugString()
+            + this
             + "), there must be at least one leader-eligible replica");
   }
 
@@ -125,7 +124,8 @@ public final class ReplicaCount {
   }
 
   /** Returns a representation of this class which can be used for debugging. */
-  public String toDebugString() {
+  @Override
+  public String toString() {
     return Arrays.stream(Replica.Type.values())
         .map(t -> t.name().toLowerCase(Locale.ROOT) + "=" + get(t))
         .collect(Collectors.joining(", "));

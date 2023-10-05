@@ -335,7 +335,7 @@ public class Assign {
       log.debug(
           "getNodesForNewReplicas() shard={}, {} , createNodeSet={}",
           shard,
-          numReplicas.toDebugString(),
+          numReplicas,
           createNodeSet);
     }
     List<String> createNodeList;
