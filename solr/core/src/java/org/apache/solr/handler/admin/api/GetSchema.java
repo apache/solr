@@ -38,7 +38,7 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GetSchemaAPI extends JerseyResource implements GetSchemaApi {
+public class GetSchema extends JerseyResource implements GetSchemaApi {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -46,7 +46,7 @@ public class GetSchemaAPI extends JerseyResource implements GetSchemaApi {
   protected final SolrCore solrCore;
 
   @Inject
-  public GetSchemaAPI(SolrCore solrCore, IndexSchema indexSchema) {
+  public GetSchema(SolrCore solrCore, IndexSchema indexSchema) {
     this.solrCore = solrCore;
     this.indexSchema = indexSchema;
   }

@@ -35,12 +35,12 @@ import org.apache.solr.schema.StrField;
 import org.junit.Before;
 import org.junit.Test;
 
-/** Unit tests for {@link GetSchemaAPI} */
+/** Unit tests for {@link GetSchema} */
 public class GetSchemaAPITest extends SolrTestCaseJ4 {
 
   private SolrCore mockCore;
   private IndexSchema mockSchema;
-  private GetSchemaAPI api;
+  private GetSchema api;
 
   @Before
   public void setUpMocks() {
@@ -49,7 +49,7 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
     mockCore = mock(SolrCore.class);
     mockSchema = mock(IndexSchema.class);
     when(mockCore.getLatestSchema()).thenReturn(mockSchema);
-    api = new GetSchemaAPI(mockCore, mockSchema);
+    api = new GetSchema(mockCore, mockSchema);
   }
 
   @Test
@@ -77,7 +77,7 @@ public class GetSchemaAPITest extends SolrTestCaseJ4 {
   /**
    * Test the v2 to v1 response mapping for /schema/name
    *
-   * <p>{@link SchemaHandler} uses the v2 {@link GetSchemaAPI} (and its response class {@link
+   * <p>{@link SchemaHandler} uses the v2 {@link GetSchema} (and its response class {@link
    * SchemaNameResponse}) internally to serve the v1 version of this functionality. So it's
    * important to make sure that our response stays compatible with SolrJ - both because that's
    * important in its own right and because that ensures we haven't accidentally changed the v1
