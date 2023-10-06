@@ -34,6 +34,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.UpdateLog;
 
 /**
  * V2 API implementation for restoring a previously taken backup to a core
@@ -137,6 +138,12 @@ public class RestoreCore extends CoreAdminAPIBase implements RestoreCoreApi {
           .getZkController()
           .getShardTerms(cd.getCollectionName(), cd.getShardId())
           .ensureHighestTermsAreNotZero();
+
+      // transitions state of update log to ACTIVE
+      UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
+      if (updateLog != null) {
+        updateLog.applyBufferedUpdates();
+      }
     }
   }
 

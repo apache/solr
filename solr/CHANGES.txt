@@ -72,7 +72,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
+  REQUESTAPPLYUPDATES call in Collection restore. The latter will still happen in 9.x for
+  backwards-compatibility.  (Julia Lamoine, David Smiley)
 
 Optimizations
 ---------------------
@@ -84,7 +86,7 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-(No changes)
+* SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
 
 Other Changes
 ---------------------
@@ -104,6 +106,8 @@ New Features
 * SOLR-15771: bin/auth creates reasonable roles and permissions for security: 'search', 'index', 'admin', and 'superadmin' and assigns user superadmin role. (Eric Pugh, janhoy)
 
 * SOLR-15367: Convert "rid" functionality into a default Tracer (Alex Deparvu, David Smiley)
+
+* SOLR-16852: Backups now allow metadata to be added as key-values (Tomás Fernández Löbbe)
 
 Improvements
 ---------------------
@@ -253,6 +257,8 @@ Bug Fixes
 * SOLR-16992: Non-reproducible StreamingTest failures -- suggests CloudSolrStream concurency race condition (Alex Deparvu, hossman)
 
 * SOLR-16644: Fixing the entropy warning threshold using scaling based on poolsize (Raghavan Muthuregunathan)
+
+* SOLR-17009: json.wrf parameter ignored in JacksonJsonWriter (Alex Deparvu)
 
 Dependency Upgrades
 ---------------------
