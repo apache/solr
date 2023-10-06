@@ -1668,10 +1668,18 @@ This parameter has no effect if `incremental=false` is specified.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: true
+|Optional |Default: `true`
 |===
 +
 Indicates if configset files should be included with the index backup or not. Note that in order to restore a collection, the configset must either exist in ZooKeeper or be part of the backup. Only set this to `false` if you can restore configsets by other means external to Solr (i.e. you have it stored with your application source code, is part of your ZooKeeper backups, etc).
+
+`property.<propertyName>` (V1), `extraProperties` (V2)::
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Allows storing additional key/value pairs for custom information related to the backup. In v2, the value is a map of key-value pairs.
 
 `incremental`::
 +

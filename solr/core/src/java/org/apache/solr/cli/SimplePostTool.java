@@ -409,7 +409,6 @@ public class SimplePostTool {
     } catch (MalformedURLException e) {
       fatal("Wrong URL trying to append /extract to " + solrUrl);
     }
-    return;
   }
 
   private void doStdinMode() {

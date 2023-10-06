@@ -180,7 +180,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     }
     range = tmpRange;
 
-    /**
+    /*
      * debugging. this isn't an error condition for custom sharding. if (range == null) {
      * System.out.println("###### NO RANGE for " + name + " props=" + props); }
      */

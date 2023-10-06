@@ -1146,7 +1146,6 @@ public class MiniSolrCloudCluster {
       return this;
     }
 
-    @SuppressWarnings("InvalidParam")
     /**
      * Force the cluster Collection and config state API execution as well as the cluster state
      * update strategy to be either Overseer based or distributed. <b>This method can be useful when
@@ -1181,6 +1180,7 @@ public class MiniSolrCloudCluster {
      *     <p>If {@code distributedCollectionConfigSetApi} is {@code true} then this parameter must
      *     be {@code true}.
      */
+    @SuppressWarnings("InvalidParam")
     public Builder withDistributedClusterStateUpdates(
         boolean distributedCollectionConfigSetApi, boolean distributedClusterStateUpdates) {
       useDistributedCollectionConfigSetExecution = distributedCollectionConfigSetApi;
@@ -1318,8 +1318,13 @@ public class MiniSolrCloudCluster {
    * mechanics.
    */
   private static void injectRandomRecordingFlag() {
-    boolean isRecording = LuceneTestCase.rarely();
-    TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+    try {
+      boolean isRecording = LuceneTestCase.rarely();
+      TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+    } catch (IllegalStateException e) {
+      // This can happen in benchmarks or other places that aren't in a randomized test
+      log.warn("Unable to inject random recording flag due to outside randomized context", e);
+    }
   }
 
   private static void resetRecordingFlag() {

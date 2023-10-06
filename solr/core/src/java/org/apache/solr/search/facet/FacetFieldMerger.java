@@ -104,7 +104,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
     List<SimpleOrderedMap<?>> resultBuckets = new ArrayList<>(Math.max(0, (int) (last - first)));
 
-    /**
+    /*
      * this only works if there are no filters (like mincount) for (int i=first; i<last; i++) {
      * FacetBucket bucket = sortedBuckets.get(i); resultBuckets.add( bucket.getMergedBucket() ); } *
      */
@@ -166,7 +166,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
         refinement =
             getRefinementSpecial(mcontext, refinement, tagsWithPartial, missingBucket, "missing");
       }
-      /**
+      /*
        * allBuckets does not execute sub-facets because we don't change the domain. We may need
        * refinement info in the future though for stats. if (freq.allBuckets) { refinement =
        * getRefinementSpecial(mcontext, refinement, tagsWithPartial, allBuckets, "allBuckets"); }
