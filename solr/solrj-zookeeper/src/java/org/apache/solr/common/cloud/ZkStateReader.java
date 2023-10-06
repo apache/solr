@@ -1322,6 +1322,7 @@ public class ZkStateReader implements SolrCloseable {
     StateWatcher(String coll) {
       this.coll = coll;
       collectionPath = DocCollection.getCollectionPath(coll);
+     // log.warn("Hitesh in statewatcher " + coll, new RuntimeException("from SW"));
     }
 
     @Override
@@ -1413,6 +1414,19 @@ public class ZkStateReader implements SolrCloseable {
       } catch (NoNodeException e) {
         log.info("{} is deleted, stop watching children", collectionPath);
       }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      StateWatcher that = (StateWatcher) o;
+      return coll.equals(that.coll);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(coll);
     }
   }
 
