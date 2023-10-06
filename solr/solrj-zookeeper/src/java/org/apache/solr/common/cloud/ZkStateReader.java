@@ -1817,9 +1817,11 @@ public class ZkStateReader implements SolrCloseable {
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
     CollectionStateWatcher watcher =
         (n, c) -> {
-          docCollection.set(c);
           boolean matches = predicate.matches(n, c);
-          if (matches) latch.countDown();
+          if (matches) {
+            docCollection.set(c);
+            latch.countDown();
+          }
 
           return matches;
         };
