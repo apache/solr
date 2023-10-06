@@ -147,6 +147,11 @@ fi
 : "${SOLR_STOP_WAIT:=180}"
 : "${SOLR_START_WAIT:=$SOLR_STOP_WAIT}" # defaulting to $SOLR_STOP_WAIT for backwards compatibility reasons
 
+# Store whether a solr port was explicitly provided, for the "solr stop" command.
+PROVIDED_SOLR_PORT="${SOLR_PORT:-}"
+: "${SOLR_PORT:=8983}"
+export SOLR_PORT
+
 # test that Java exists, is executable and correct version
 JAVA_VER=$("$JAVA" -version 2>&1)
 # shellcheck disable=SC2181
@@ -224,8 +229,8 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
   fi
 
-  if [ "${SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION:-true}" == "false" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=false"
+  if [ "${SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION:true}" == "true" ] ; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
   fi
 
   if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
@@ -254,7 +259,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   fi
 
   if [ -n "$SOLR_SSL_CHECK_PEER_NAME" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.ssl.checkPeerName=$SOLR_SSL_CHECK_PEER_NAME"
+    SOLR_SSL_OPTS+=" -Dsolr.ssl.checkPeerName=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sniHostCheck=$SOLR_SSL_CHECK_PEER_NAME"
   fi
 
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
@@ -278,6 +283,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
 else
   SOLR_JETTY_CONFIG+=("--module=http")
 fi
+export SOLR_URL_SCHEME
 
 # Requestlog options
 if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
@@ -330,6 +336,7 @@ AUTHC_OPTS="${AUTHC_OPTS:-}${SOLR_AUTHENTICATION_OPTS:+ $SOLR_AUTHENTICATION_OPT
 
 # Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
 SOLR_TOOL_HOST="${SOLR_HOST:-localhost}"
+export SOLR_TOOL_HOST
 
 function print_usage() {
   CMD="${1:-}"
@@ -547,7 +554,7 @@ function print_usage() {
     echo ""
   elif [ "$CMD" == "package" ]; then
     echo ""
-    run_tool package -solrUrl "http://fake.to.allow.help.to.run" "help"
+    run_tool package "help"
   fi
 } # end print_usage
 
@@ -621,7 +628,7 @@ function jetty_port() {
 function run_tool() {
 
   # shellcheck disable=SC2086
-  "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} -Dsolr.install.dir="$SOLR_TIP" \
+  "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} ${SOLR_TOOL_OPTS:-} -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
     org.apache.solr.cli.SolrCLI "$@"
@@ -735,7 +742,7 @@ function stop_solr() {
   if [ -n "$SOLR_PID"  ]; then
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
     # shellcheck disable=SC2086
-    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
+    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_TOOL_OPTS:-} -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
       (loops=0
       while true
       do
@@ -1215,6 +1222,7 @@ fi
 FG="false"
 FORCE=false
 SOLR_OPTS=(${SOLR_OPTS:-})
+SCRIPT_SOLR_OPTS=()
 PASS_TO_RUN_EXAMPLE=()
 
 if [ $# -gt 0 ]; then
@@ -1294,6 +1302,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_PORT="$2"
+            PROVIDED_SOLR_PORT="${SOLR_PORT}"
             PASS_TO_RUN_EXAMPLE+=("-p" "$SOLR_PORT")
             shift 2
         ;;
@@ -1362,6 +1371,7 @@ if [ $# -gt 0 ]; then
               break # out-of-args, stop looping
             elif [ "${1:0:2}" == "-D" ]; then
               # pass thru any opts that begin with -D (java system props)
+              # These should go to the end of SOLR_OPTS, as they should override everything else
               SOLR_OPTS+=("$1")
               PASS_TO_RUN_EXAMPLE+=("$1")
               shift
@@ -1380,20 +1390,20 @@ fi
 
 # Solr modules option
 if [[ -n "${SOLR_MODULES:-}" ]] ; then
-  SOLR_OPTS+=("-Dsolr.modules=$SOLR_MODULES")
+  SCRIPT_SOLR_OPTS+=("-Dsolr.modules=$SOLR_MODULES")
 fi
 
 # Default placement plugin
 if [[ -n "${SOLR_PLACEMENTPLUGIN_DEFAULT:-}" ]] ; then
-  SOLR_OPTS+=("-Dsolr.placementplugin.default=$SOLR_PLACEMENTPLUGIN_DEFAULT")
+  SCRIPT_SOLR_OPTS+=("-Dsolr.placementplugin.default=$SOLR_PLACEMENTPLUGIN_DEFAULT")
 fi
 
 # Remote streaming and stream body
 if [ "${SOLR_ENABLE_REMOTE_STREAMING:-false}" == "true" ]; then
-  SOLR_OPTS+=("-Dsolr.enableRemoteStreaming=true")
+  SCRIPT_SOLR_OPTS+=("-Dsolr.enableRemoteStreaming=true")
 fi
 if [ "${SOLR_ENABLE_STREAM_BODY:-false}" == "true" ]; then
-  SOLR_OPTS+=("-Dsolr.enableStreamBody=true")
+  SCRIPT_SOLR_OPTS+=("-Dsolr.enableStreamBody=true")
 fi
 
 : ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
@@ -1436,8 +1446,8 @@ fi
 
 : "${STOP_KEY:=solrrocks}"
 
-# stop all if no port specified
-if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
+# stop all if no port specified or "all" is used
+if [[ "$SCRIPT_CMD" == "stop" ]]; then
   if $stop_all; then
     none_stopped=true
     find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | while read PIDF
@@ -1455,8 +1465,9 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
     # if $none_stopped; then
     #   echo -e "\nNo Solr nodes found to stop.\n"
     # fi
-  else
-    # not stopping all and don't have a port, but if we can find the pid file for the default port 8983, then use that
+    exit
+  elif [[ -z "${PROVIDED_SOLR_PORT:-}" ]]; then
+    # not stopping all and don't have a port, but if we can find a single pid file for Solr, then use that
     none_stopped=true
     numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
     if [ "$numSolrs" -eq 1 ]; then
@@ -1480,18 +1491,20 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "${SOLR_PORT:-}" ]]; then
       fi
       exit 1
     fi
+    exit
   fi
-  exit
 fi
 
-: "${SOLR_PORT:=8983}"
-
 if [ -n "${SOLR_PORT_ADVERTISE:-}" ]; then
-  SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
+  SCRIPT_SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
 fi
 
 if [ -n "${SOLR_JETTY_HOST:-}" ]; then
-  SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
+  SCRIPT_SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
+fi
+
+if [ -n "${SOLR_ZK_EMBEDDED_HOST:-}" ]; then
+  SCRIPT_SOLR_OPTS+=("-Dsolr.zk.embedded.host=$SOLR_ZK_EMBEDDED_HOST")
 fi
 
 : "${STOP_PORT:=$((SOLR_PORT - 1000))}"
@@ -1725,8 +1738,8 @@ else
   JAVA_MEM_OPTS=("-Xms$SOLR_HEAP" "-Xmx$SOLR_HEAP")
 fi
 
-# Pick default for Java thread stack size, and then add to SOLR_OPTS
-SOLR_OPTS+=(${SOLR_JAVA_STACK_SIZE:-"-Xss256k"})
+# Pick default for Java thread stack size, and then add to SCRIPT_SOLR_OPTS
+SCRIPT_SOLR_OPTS+=(${SOLR_JAVA_STACK_SIZE:-"-Xss256k"})
 
 : "${SOLR_TIMEZONE:=UTC}"
 
@@ -1767,79 +1780,83 @@ function start_solr() {
   fi
 
   if [ -n "${SOLR_WAIT_FOR_ZK:-}" ]; then
-    SOLR_OPTS+=("-DwaitForZk=$SOLR_WAIT_FOR_ZK")
+    SCRIPT_SOLR_OPTS+=("-DwaitForZk=$SOLR_WAIT_FOR_ZK")
   fi
 
   if [ -n "${SOLR_DATA_HOME:-}" ]; then
-    SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
+    SCRIPT_SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
   fi
 
   if [ -n "${SOLR_DELETE_UNKNOWN_CORES:-}" ]; then
-    SOLR_OPTS+=("-Dsolr.deleteUnknownCores=$SOLR_DELETE_UNKNOWN_CORES")
+    SCRIPT_SOLR_OPTS+=("-Dsolr.deleteUnknownCores=$SOLR_DELETE_UNKNOWN_CORES")
   fi
 
-  # If SSL-related system props are set, add them to SOLR_OPTS
+  # If SSL-related system props are set, add them to SCRIPT_SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
     SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
-    SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
+    SCRIPT_SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
   fi
 
-  # If authentication system props are set, add them to SOLR_OPTS
+  # If authentication system props are set, add them to SCRIPT_SOLR_OPTS
   if [ -n "$AUTHC_OPTS" ]; then
-    SOLR_OPTS+=($AUTHC_OPTS)
+    SCRIPT_SOLR_OPTS+=($AUTHC_OPTS)
   fi
 
-  # If there are internal options set by Solr (users should not use this variable), add them to SOLR_OPTS
+  # If there are internal options set by Solr (users should not use this variable), add them to SCRIPT_SOLR_OPTS
   if [ -n "$SOLR_OPTS_INTERNAL" ]; then
-    SOLR_OPTS+=($SOLR_OPTS_INTERNAL)
+    SCRIPT_SOLR_OPTS+=($SOLR_OPTS_INTERNAL)
   fi
 
-  # If a heap dump directory is specified, enable it in SOLR_OPTS
+  # If a heap dump directory is specified, enable it in SCRIPT_SOLR_OPTS
   if [[ -z "${SOLR_HEAP_DUMP_DIR:-}" ]] && [[ "${SOLR_HEAP_DUMP:-}" == "true" ]]; then
     SOLR_HEAP_DUMP_DIR="${SOLR_LOGS_DIR}/dumps"
   fi
   if [[ -n "${SOLR_HEAP_DUMP_DIR:-}" ]]; then
-    SOLR_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
-    SOLR_OPTS+=("-XX:HeapDumpPath=$SOLR_HEAP_DUMP_DIR/solr-$(date +%s)-pid$$.hprof")
+    SCRIPT_SOLR_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
+    SCRIPT_SOLR_OPTS+=("-XX:HeapDumpPath=$SOLR_HEAP_DUMP_DIR/solr-$(date +%s)-pid$$.hprof")
   fi
 
   if $verbose ; then
     echo -e "\nStarting Solr using the following settings:"
-    echo -e "    JAVA            = $JAVA"
-    echo -e "    SOLR_SERVER_DIR = $SOLR_SERVER_DIR"
-    echo -e "    SOLR_HOME       = $SOLR_HOME"
-    echo -e "    SOLR_HOST       = ${SOLR_HOST:-}"
-    echo -e "    SOLR_PORT       = $SOLR_PORT"
-    echo -e "    STOP_PORT       = $STOP_PORT"
-    echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[*]}"
-    echo -e "    GC_TUNE         = ${GC_TUNE_ARR[*]}"
-    echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[*]}"
-    echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
+    echo -e "    JAVA               = $JAVA"
+    echo -e "    SOLR_SERVER_DIR    = $SOLR_SERVER_DIR"
+    echo -e "    SOLR_HOME          = $SOLR_HOME"
+    echo -e "    SOLR_HOST          = ${SOLR_HOST:-}"
+    echo -e "    SOLR_PORT          = $SOLR_PORT"
+    echo -e "    STOP_PORT          = $STOP_PORT"
+    echo -e "    JAVA_MEM_OPTS      = ${JAVA_MEM_OPTS[*]}"
+    echo -e "    GC_TUNE            = ${GC_TUNE_ARR[*]}"
+    echo -e "    GC_LOG_OPTS        = ${GC_LOG_OPTS[*]}"
+    echo -e "    SOLR_TIMEZONE      = $SOLR_TIMEZONE"
 
     if [ "$SOLR_MODE" == "solrcloud" ]; then
-      echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[*]}"
+      echo -e "    CLOUD_MODE_OPTS    = ${CLOUD_MODE_OPTS[*]}"
     fi
 
     if [ -n "${SOLR_OPTS:-}" ]; then
-      echo -e "    SOLR_OPTS       = ${SOLR_OPTS[*]}"
+      echo -e "    SOLR_OPTS (USER)   = ${SOLR_OPTS[*]}"
+    fi
+
+    if [ -n "${SCRIPT_SOLR_OPTS:-}" ]; then
+      echo -e "    SOLR_OPTS (SCRIPT) = ${SCRIPT_SOLR_OPTS[*]}"
     fi
 
     if [ -n "${SOLR_ADDL_ARGS:-}" ]; then
-      echo -e "    SOLR_ADDL_ARGS  = $SOLR_ADDL_ARGS"
+      echo -e "    SOLR_ADDL_ARGS     = $SOLR_ADDL_ARGS"
     fi
 
     if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
-      echo -e "    RMI_PORT        = ${RMI_PORT:-}"
-      echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[*]}"
+      echo -e "    RMI_PORT           = ${RMI_PORT:-}"
+      echo -e "    REMOTE_JMX_OPTS    = ${REMOTE_JMX_OPTS[*]}"
     fi
 
     if [ -n "${SOLR_LOG_LEVEL:-}" ]; then
-      echo -e "    SOLR_LOG_LEVEL  = $SOLR_LOG_LEVEL"
+      echo -e "    SOLR_LOG_LEVEL     = $SOLR_LOG_LEVEL"
     fi
 
     if [ -n "${SOLR_DATA_HOME:-}" ]; then
-      echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
+      echo -e "    SOLR_DATA_HOME     = $SOLR_DATA_HOME"
     fi
     echo
   fi
@@ -1854,14 +1871,14 @@ function start_solr() {
 
   # Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
   if [[ "$JAVA_VER_NUM" -ge "17" ]] ; then
-    SOLR_OPTS+=("-XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put")
+    SCRIPT_SOLR_OPTS+=("-XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put")
     echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
   fi
 
   # Vector optimizations are only supported for Java 20 and 21 for now.
   # This will need to change as Lucene is upgraded and newer Java versions are released
   if [[ "$JAVA_VER_NUM" -ge "20" ]] && [[ "$JAVA_VER_NUM" -le "21" ]] ; then
-    SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
+    SCRIPT_SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
     echo "Java $JAVA_VER_NUM detected. Incubating Panama Vector APIs have been enabled"
   fi
 
@@ -1875,7 +1892,7 @@ function start_solr() {
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" "-Dsolr.install.symDir=$SOLR_TIP_SYM" \
-    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SCRIPT_SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}" "${SOLR_OPTS[@]}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
   if [[ -n "${SOLR_HEAP_DUMP_DIR:-}" ]]; then
@@ -1898,12 +1915,26 @@ function start_solr() {
         -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG \
 	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
-    # check if /proc/sys/kernel/random/entropy_avail exists then check output of cat /proc/sys/kernel/random/entropy_avail to see if less than 300
-    if [[ -f /proc/sys/kernel/random/entropy_avail ]] && (( $(cat /proc/sys/kernel/random/entropy_avail) < 300)); then
-	echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
-	echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
-	echo ""
+    # Get the current entropy available
+    entropy_avail=$(cat /proc/sys/kernel/random/entropy_avail)
+
+    # Get the pool size
+    pool_size=$(cat /proc/sys/kernel/random/poolsize)
+
+    # Check if entropy is available and pool size is non-zero
+    if [[ $entropy_avail -gt 0 && $pool_size -ne 0 ]]; then
+        # Compute the ratio of entropy available to pool size
+        ratio=$(awk -v ea="$entropy_avail" -v ps="$pool_size" 'BEGIN {print (ea/ps)*100}')
+        
+        # Check if the ratio is less than 25%
+        if (( $(echo "$ratio < 25" | bc -l) )); then
+          echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
+          echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
+        fi
+    else
+        echo "Error: Either no entropy is available or the pool size is zero."
     fi
+
     # no lsof on cygwin though
     if lsof -v 2>&1 | grep -q revision; then
       echo -n "Waiting up to $SOLR_START_WAIT seconds to see Solr running on port $SOLR_PORT"

@@ -16,10 +16,8 @@
  */
 package org.apache.solr.opentelemetry;
 
-import io.opentelemetry.opentracingshim.OpenTracingShim;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
-import io.opentracing.Tracer;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,27 +25,49 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.TracerConfigurator;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * OpenTracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP
- * format. This impl re-uses the existing OpenTracing instrumentation through a shim, and takes care
- * of properly closing the backing Tracer when Solr shuts down.
+ * Tracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP format.
  */
 public class OtelTracerConfigurator extends TracerConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  // Copy of environment. Can be overridden by tests
-  Map<String, String> currentEnv = System.getenv();
+
+  private final Map<String, String> currentEnv;
+
+  public OtelTracerConfigurator() {
+    this(System.getenv());
+  }
+
+  OtelTracerConfigurator(Map<String, String> currentEnv) {
+    this.currentEnv = currentEnv;
+  }
 
   @Override
   public Tracer getTracer() {
+    return TraceUtils.getGlobalTracer();
+  }
+
+  @Override
+  public void init(NamedList<?> args) {
+    prepareConfiguration(args);
+    AutoConfiguredOpenTelemetrySdk.initialize();
+  }
+
+  void prepareConfiguration(NamedList<?> args) {
+    injectPluginSettingsIfNotConfigured(args);
     setDefaultIfNotConfigured("OTEL_SERVICE_NAME", "solr");
     setDefaultIfNotConfigured("OTEL_TRACES_EXPORTER", "otlp");
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
-    addOtelResourceAttributes(Map.of("host.name", System.getProperty("host")));
+    setDefaultIfNotConfigured("OTEL_PROPAGATORS", "tracecontext,baggage");
+    if (System.getProperty("host") != null) {
+      addOtelResourceAttributes(Map.of("host.name", System.getProperty("host")));
+    }
 
     final String currentConfig = getCurrentOtelConfigAsString();
     log.info("OpenTelemetry tracer enabled with configuration: {}", currentConfig);
@@ -62,10 +82,20 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     }
     System.setProperty("otel.metrics.exporter", "none");
     System.setProperty("otel.logs.exporter", "none");
+  }
 
-    OpenTelemetrySdk otelSdk = AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk();
-    Tracer shim = OpenTracingShim.createTracerShim(otelSdk);
-    return new ClosableTracerShim(shim, otelSdk.getSdkTracerProvider());
+  /**
+   * Will inject plugin configuration values into system properties if not already setup (existing
+   * system properties take precedence)
+   */
+  private void injectPluginSettingsIfNotConfigured(NamedList<?> args) {
+    args.forEach(
+        (k, v) -> {
+          var asSysName = envNameToSyspropName(k);
+          if (asSysName.startsWith("otel.")) {
+            setDefaultIfNotConfigured(asSysName, v.toString());
+          }
+        });
   }
 
   /**
@@ -124,24 +154,11 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   /**
    * Returns system property if found, else returns environment variable, or null if none found.
    *
-   * @param envName the environment to look for
+   * @param envName the environment variable to look for
    * @return the resolved value
    */
   String getEnvOrSysprop(String envName) {
-    String envValue = currentEnv.get(envName);
-    String propValue = System.getProperty(envNameToSyspropName(envName));
-    return propValue != null ? propValue : envValue;
-  }
-
-  /**
-   * In OTEL Java SDK there is a convention that the java property name for OTEL_FOO_BAR is
-   * otel.foo.bar
-   *
-   * @param envName the environmnet name to convert
-   * @return the corresponding sysprop name
-   */
-  static String envNameToSyspropName(String envName) {
-    return envName.toLowerCase(Locale.ROOT).replace("_", ".");
+    return getConfig(envName, currentEnv);
   }
 
   /**

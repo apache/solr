@@ -42,6 +42,7 @@ import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
@@ -83,7 +84,7 @@ public class PackageManager implements Closeable {
     this.zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkHost)
-            .withTimeout(30000, TimeUnit.MILLISECONDS)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
     log.info("Done initializing a zkClient instance...");
   }

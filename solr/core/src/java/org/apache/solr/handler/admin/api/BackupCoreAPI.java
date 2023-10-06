@@ -56,6 +56,11 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
     super(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
+  boolean isExpensive() {
+    return true;
+  }
+
   @POST
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(COLL_EDIT_PERM)

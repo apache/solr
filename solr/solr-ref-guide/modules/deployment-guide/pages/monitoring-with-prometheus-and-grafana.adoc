@@ -40,6 +40,8 @@ See the section below <<Prometheus Configuration>>
 == Starting the Exporter
 You can start `solr-exporter` by running `./bin/solr-exporter` (Linux) or `.\bin\solr-exporter.cmd` (Windows) from the `prometheus-exporter/` directory.
 
+The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
+
 See the commands below depending on your operating system and Solr operating mode:
 
 [.dynamic-tabs]
@@ -171,7 +173,15 @@ The freshness of the metrics can be improved by reducing the scrape interval but
 +
 A unique ID for the cluster to monitor. This ID will be added to all metrics as a label `cluster_id` and can be used as a filter in the Grafana dashboard if you operate multiple Solr clusters reporting to the same Prometheus instance. If this option is omitted, a hash of the `baseUrl` or `zkHost` will be used as ID by default.
 
-The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
+`-u`, `--credentials`, `$CREDENTIALS`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Specify the credentials in the format `username:password`. Example: `--credentials solr:SolrRocks`.
+
 
 === Environment Variable Options
 

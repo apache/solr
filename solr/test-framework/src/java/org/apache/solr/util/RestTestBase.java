@@ -56,8 +56,7 @@ public abstract class RestTestBase extends SolrJettyTestBase {
 
     createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
 
-    restTestHarness =
-        new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
+    restTestHarness = new RestTestHarness(() -> getCoreUrl());
   }
 
   /** Validates an update XML String is successful */

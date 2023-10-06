@@ -130,6 +130,8 @@ REM set this value as narrowly as required before going to production. In
 REM environments where security is not a concern, 0.0.0.0 can be used to allow
 REM Solr to accept connections on all network interfaces.
 REM set SOLR_JETTY_HOST=127.0.0.1
+REM Sets the network interface the Embedded ZK binds to.
+REM set SOLR_ZK_EMBEDDED_HOST=127.0.0.1
 
 REM Restrict access to solr by IP address.
 REM Specify a comma-separated list of addresses or networks, for example:
@@ -157,7 +159,8 @@ REM set SOLR_SSL_WANT_CLIENT_AUTH=false
 REM Verify client hostname during SSL handshake
 REM set SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-REM this to false can be useful to disable these checks when re-using a certificate on many hosts
+REM this to false can be useful to disable these checks when re-using a certificate on many hosts.
+REM This will also be used for the default value of whether SNI Host checking should be enabled.
 REM set SOLR_SSL_CHECK_PEER_NAME=true
 REM Override Key/Trust Store types if necessary
 REM set SOLR_SSL_KEY_STORE_TYPE=PKCS12

@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -130,7 +131,7 @@ public class CreateTool extends ToolBase {
 
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue("name");
-    String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
+    String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName = cli.getOptionValue("confdir", SolrCLI.DEFAULT_CONFIG_SET);
@@ -287,16 +288,18 @@ public class CreateTool extends ToolBase {
 
     NamedList<Object> response;
     try {
-      response =
-          cloudSolrClient.request(
-              CollectionAdminRequest.createCollection(
-                  collectionName, confName, numShards, replicationFactor));
+      var req =
+          CollectionAdminRequest.createCollection(
+              collectionName, confName, numShards, replicationFactor);
+      req.setResponseParser(new JsonMapResponseParser());
+      response = cloudSolrClient.request(req);
     } catch (SolrServerException sse) {
       throw new Exception(
           "Failed to create collection '" + collectionName + "' due to: " + sse.getMessage());
     }
 
     if (cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt())) {
+      // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());
       echo(arr.toString());
@@ -343,7 +346,7 @@ public class CreateTool extends ToolBase {
     if (confDirectoryName.equals("_default")
         && (confName.equals("") || confName.equals("_default"))) {
       final String collectionName = cli.getOptionValue("collection");
-      final String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.DEFAULT_SOLR_URL);
+      final String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
       final String curlCommand =
           String.format(
               Locale.ROOT,

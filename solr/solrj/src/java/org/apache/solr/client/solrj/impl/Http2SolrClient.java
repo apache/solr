@@ -20,6 +20,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -76,7 +77,12 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.Origin.Address;
+import org.eclipse.jetty.client.Origin.Protocol;
 import org.eclipse.jetty.client.ProtocolHandlers;
+import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -165,11 +171,7 @@ public class Http2SolrClient extends SolrClient {
       this.serverBaseUrl = null;
     }
 
-    if (builder.idleTimeoutMillis != null && builder.idleTimeoutMillis > 0) {
-      this.idleTimeoutMillis = builder.idleTimeoutMillis;
-    } else {
-      this.idleTimeoutMillis = HttpClientUtil.DEFAULT_SO_TIMEOUT;
-    }
+    this.idleTimeoutMillis = builder.idleTimeoutMillis;
 
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
@@ -278,8 +280,9 @@ public class Http2SolrClient extends SolrClient {
     this.authenticationStore = new AuthenticationStoreHolder();
     httpClient.setAuthenticationStore(this.authenticationStore);
 
-    if (builder.connectionTimeoutMillis != null)
-      httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
+    httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
+
+    setupProxy(builder, httpClient);
 
     try {
       httpClient.start();
@@ -289,6 +292,29 @@ public class Http2SolrClient extends SolrClient {
     }
 
     return httpClient;
+  }
+
+  private void setupProxy(Builder builder, HttpClient httpClient) {
+    if (builder.proxyHost == null) {
+      return;
+    }
+    Address address = new Address(builder.proxyHost, builder.proxyPort);
+
+    final ProxyConfiguration.Proxy proxy;
+    if (builder.proxyIsSocks4) {
+      proxy = new Socks4Proxy(address, builder.proxyIsSecure);
+    } else {
+      final Protocol protocol;
+      if (builder.useHttp1_1) {
+        protocol = HttpClientTransportOverHTTP.HTTP11;
+      } else {
+        // see HttpClientTransportOverHTTP2#newOrigin
+        String protocolName = builder.proxyIsSecure ? "h2" : "h2c";
+        protocol = new Protocol(List.of(protocolName), false);
+      }
+      proxy = new HttpProxy(address, builder.proxyIsSecure, protocol);
+    }
+    httpClient.getProxyConfiguration().addProxy(proxy);
   }
 
   @Override
@@ -393,7 +419,7 @@ public class Http2SolrClient extends SolrClient {
             .method(HttpMethod.POST)
             .body(content);
     decorateRequest(postRequest, updateRequest, false);
-    InputStreamResponseListener responseListener = new InputStreamResponseListener();
+    InputStreamResponseListener responseListener = new InputStreamReleaseTrackingResponseListener();
     postRequest.send(responseListener);
 
     boolean isXml = ClientUtils.TEXT_XML.equals(requestWriter.getUpdateContentType());
@@ -443,14 +469,13 @@ public class Http2SolrClient extends SolrClient {
     try {
       String url = getRequestPath(solrRequest, collection);
       InputStreamResponseListener listener =
-          new InputStreamResponseListener() {
+          new InputStreamReleaseTrackingResponseListener() {
             @Override
             public void onHeaders(Response response) {
               super.onHeaders(response);
               executor.execute(
                   () -> {
                     InputStream is = getInputStream();
-                    assert ObjectReleaseTracker.track(is);
                     try {
                       NamedList<Object> body =
                           processErrorsAndResponse(solrRequest, response, is, url);
@@ -500,37 +525,37 @@ public class Http2SolrClient extends SolrClient {
     Throwable abortCause = null;
     Request req = null;
     try {
-      InputStreamResponseListener listener = new InputStreamResponseListener();
+      InputStreamResponseListener listener = new InputStreamReleaseTrackingResponseListener();
       req = makeRequestAndSend(solrRequest, url, listener, false);
       Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
+      url = req.getURI().toString();
       InputStream is = listener.getInputStream();
-      assert ObjectReleaseTracker.track(is);
-      return processErrorsAndResponse(solrRequest, response, is, req.getURI().toString());
+      return processErrorsAndResponse(solrRequest, response, is, url);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       abortCause = e;
       throw new RuntimeException(e);
     } catch (TimeoutException e) {
       throw new SolrServerException(
-          "Timeout occurred while waiting response from server at: " + req.getURI(), e);
+          "Timeout occurred while waiting response from server at: " + url, e);
     } catch (ExecutionException e) {
       Throwable cause = e.getCause();
       abortCause = cause;
       if (cause instanceof ConnectException) {
-        throw new SolrServerException("Server refused connection at: " + req.getURI(), cause);
+        throw new SolrServerException("Server refused connection at: " + url, cause);
       }
       if (cause instanceof SolrServerException) {
         throw (SolrServerException) cause;
       } else if (cause instanceof IOException) {
         throw new SolrServerException(
-            "IOException occurred when talking to server at: " + req.getURI(), cause);
+            "IOException occurred when talking to server at: " + url, cause);
       }
       throw new SolrServerException(cause.getMessage(), cause);
     } catch (SolrServerException | RuntimeException sse) {
       abortCause = sse;
       throw sse;
     } finally {
-      if (abortCause != null) {
+      if (abortCause != null && req != null) {
         req.abort(abortCause);
       }
     }
@@ -829,6 +854,7 @@ public class Http2SolrClient extends SolrClient {
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", is);
+        rsp.add("responseStatus", httpStatus);
         // Only case where stream should not be closed
         shouldClose = false;
         return rsp;
@@ -844,6 +870,9 @@ public class Http2SolrClient extends SolrClient {
       }
 
       Object error = rsp == null ? null : rsp.get("error");
+      if (rsp != null && error == null && processor instanceof NoOpResponseParser) {
+        error = rsp.get("response");
+      }
       if (error != null
           && (String.valueOf(getObjectByPath(error, true, errPath))
               .endsWith("ExceptionWithErrObject"))) {
@@ -880,9 +909,12 @@ public class Http2SolrClient extends SolrClient {
         if (reason == null) {
           StringBuilder msg = new StringBuilder();
           msg.append(response.getReason())
-              .append("\n\n")
+              .append("\n")
               .append("request: ")
               .append(response.getRequest().getMethod());
+          if (error != null) {
+            msg.append("\n\nError returned:\n").append(error);
+          }
           reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
         }
         RemoteSolrException rss =
@@ -895,7 +927,6 @@ public class Http2SolrClient extends SolrClient {
       if (shouldClose) {
         try {
           is.close();
-          assert ObjectReleaseTracker.release(is);
         } catch (IOException e) {
           // quitely
         }
@@ -1018,6 +1049,10 @@ public class Http2SolrClient extends SolrClient {
     protected ResponseParser responseParser;
     private Set<String> urlParamNames;
     private CookieStore cookieStore = getDefaultCookieStore();
+    private String proxyHost;
+    private int proxyPort;
+    private boolean proxyIsSocks4;
+    private boolean proxyIsSecure;
 
     public Builder() {}
 
@@ -1026,6 +1061,13 @@ public class Http2SolrClient extends SolrClient {
     }
 
     public Http2SolrClient build() {
+      if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
+        idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
+      }
+      if (connectionTimeoutMillis == null) {
+        connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+      }
+
       Http2SolrClient client = new Http2SolrClient(baseSolrUrl, this);
       try {
         httpClientBuilderSetup(client);
@@ -1048,8 +1090,10 @@ public class Http2SolrClient extends SolrClient {
         HttpClientBuilderFactory factory;
         try {
           factory =
-              (HttpClientBuilderFactory)
-                  Class.forName(factoryClassName).getConstructor().newInstance();
+              Class.forName(factoryClassName)
+                  .asSubclass(HttpClientBuilderFactory.class)
+                  .getDeclaredConstructor()
+                  .newInstance();
         } catch (InstantiationException
             | IllegalAccessException
             | ClassNotFoundException
@@ -1188,6 +1232,10 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
+    public Long getIdleTimeoutMillis() {
+      return idleTimeoutMillis;
+    }
+
     public Builder useHttp1_1(boolean useHttp1_1) {
       this.useHttp1_1 = useHttp1_1;
       return this;
@@ -1205,6 +1253,10 @@ public class Http2SolrClient extends SolrClient {
     public Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
       this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
       return this;
+    }
+
+    public Long getConnectionTimeout() {
+      return connectionTimeoutMillis;
     }
 
     /**
@@ -1239,6 +1291,24 @@ public class Http2SolrClient extends SolrClient {
      */
     public Builder withCookieStore(CookieStore cookieStore) {
       this.cookieStore = cookieStore;
+      return this;
+    }
+
+    /**
+     * Setup a proxy
+     *
+     * @param host The proxy host
+     * @param port The proxy port
+     * @param isSocks4 If true creates an SOCKS 4 proxy, otherwise creates an HTTP proxy
+     * @param isSecure If true enables the secure flag on the proxy
+     * @return this Builder
+     */
+    public Builder withProxyConfiguration(
+        String host, int port, boolean isSocks4, boolean isSecure) {
+      this.proxyHost = host;
+      this.proxyPort = port;
+      this.proxyIsSocks4 = isSocks4;
+      this.proxyIsSecure = isSecure;
       return this;
     }
   }
@@ -1316,12 +1386,6 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory.setTrustStoreType(System.getProperty("javax.net.ssl.trustStoreType"));
     }
 
-    if (Boolean.parseBoolean(System.getProperty("solr.jetty.ssl.verifyClientHostName", "true"))) {
-      sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
-    } else {
-      sslContextFactory.setEndpointIdentificationAlgorithm(null);
-    }
-
     return sslContextFactory;
   }
 
@@ -1350,6 +1414,34 @@ public class Http2SolrClient extends SolrClient {
         MDC.setContextMap(context);
       } else {
         MDC.clear();
+      }
+    }
+  }
+
+  /**
+   * Extension of InputStreamResponseListener that handles Object release tracking of the
+   * InputStreams
+   *
+   * @see ObjectReleaseTracker
+   */
+  private static class InputStreamReleaseTrackingResponseListener
+      extends InputStreamResponseListener {
+
+    @Override
+    public InputStream getInputStream() {
+      return new ObjectReleaseTrackedInputStream(super.getInputStream());
+    }
+
+    private static final class ObjectReleaseTrackedInputStream extends FilterInputStream {
+      public ObjectReleaseTrackedInputStream(final InputStream in) {
+        super(in);
+        assert ObjectReleaseTracker.track(in);
+      }
+
+      @Override
+      public void close() throws IOException {
+        assert ObjectReleaseTracker.release(in);
+        super.close();
       }
     }
   }

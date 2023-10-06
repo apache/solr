@@ -17,12 +17,8 @@
 
 package org.apache.solr.servlet;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.noop.NoopSpan;
-import io.opentracing.noop.NoopTracer;
-import io.opentracing.propagation.Format;
-import io.opentracing.tag.Tags;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,7 +41,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.tracing.HttpServletCarrier;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,15 +230,14 @@ public abstract class ServletUtils {
   private static void traceHttpRequestExecution2(
       HttpServletRequest request, HttpServletResponse response, Runnable tracedExecution)
       throws ServletException, IOException {
-    Tracer tracer = getTracer(request);
-    Span span = buildSpan(tracer, request);
+    Context context = TraceUtils.extractContext(request);
+    Span span = TraceUtils.startHttpRequestSpan(request, context);
 
-    request.setAttribute(SolrDispatchFilter.ATTR_TRACING_SPAN, span);
-    try (var scope = tracer.scopeManager().activate(span)) {
-
+    try (var scope = context.with(span).makeCurrent()) {
       assert scope != null; // prevent javac warning about scope being unused
-      MDCLoggingContext.setTracerId(span.context().toTraceId()); // handles empty string
-
+      TraceUtils.setSpan(request, span);
+      TraceUtils.ifValidTraceId(
+          span, s -> MDCLoggingContext.setTracerId(s.getSpanContext().getTraceId()));
       tracedExecution.run();
     } catch (ExceptionWhileTracing e) {
       if (e.e instanceof SolrAuthenticationException) {
@@ -261,31 +256,9 @@ public abstract class ServletUtils {
         throw new RuntimeException(e.e);
       }
     } finally {
-      span.setTag(Tags.HTTP_STATUS, response.getStatus());
-      span.finish();
+      TraceUtils.setHttpStatus(span, response.getStatus());
+      span.end();
     }
-  }
-
-  private static Tracer getTracer(HttpServletRequest req) {
-    return (Tracer) req.getAttribute(SolrDispatchFilter.ATTR_TRACING_TRACER);
-  }
-
-  protected static Span buildSpan(Tracer tracer, HttpServletRequest request) {
-    if (tracer instanceof NoopTracer) {
-      return NoopSpan.INSTANCE;
-    }
-    Tracer.SpanBuilder spanBuilder =
-        tracer
-            .buildSpan("http.request") // will be changed later
-            .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
-            .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
-            .withTag(Tags.HTTP_METHOD, request.getMethod())
-            .withTag(Tags.HTTP_URL, request.getRequestURL().toString());
-    if (request.getQueryString() != null) {
-      spanBuilder.withTag("http.params", request.getQueryString());
-    }
-    spanBuilder.withTag(Tags.DB_TYPE, "solr");
-    return spanBuilder.start();
   }
 
   // we make sure we read the full client request so that the client does

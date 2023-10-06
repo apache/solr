@@ -50,7 +50,7 @@ teardown() {
   solr create -c "COLL_NAME"
   assert collection_exists "COLL_NAME"
 
-  solr delete -c "COLL_NAME" -solrUrl http://localhost:8983
+  solr delete -c "COLL_NAME" -solrUrl http://localhost:${SOLR_PORT}
   refute collection_exists "COLL_NAME"
 }
 

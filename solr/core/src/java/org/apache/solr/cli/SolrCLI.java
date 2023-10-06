@@ -27,7 +27,6 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -75,7 +74,7 @@ public class SolrCLI implements CLIO {
       TimeUnit.NANOSECONDS.convert(1, TimeUnit.MINUTES);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String DEFAULT_SOLR_URL = "http://localhost:8983";
+
   public static final String ZK_HOST = "localhost:9983";
 
   public static final Option OPTION_ZKHOST =
@@ -97,13 +96,13 @@ public class SolrCLI implements CLIO {
           .required(false)
           .desc(
               "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
-                  + DEFAULT_SOLR_URL
+                  + getDefaultSolrUrl()
                   + '.')
           .build();
   public static final Option OPTION_VERBOSE =
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
 
-  // should this be boolean or just a otption?
+  // should this be boolean or just an option?
   public static final Option OPTION_RECURSE =
       Option.builder("r")
           .longOpt("recurse")
@@ -185,6 +184,22 @@ public class SolrCLI implements CLIO {
     }
 
     return cli;
+  }
+
+  public static String getDefaultSolrUrl() {
+    String scheme = System.getenv("SOLR_URL_SCHEME");
+    if (scheme == null) {
+      scheme = "http";
+    }
+    String host = System.getenv("SOLR_TOOL_HOST");
+    if (host == null) {
+      host = "localhost";
+    }
+    String port = System.getenv("SOLR_PORT");
+    if (port == null) {
+      port = "8983";
+    }
+    return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
   protected static void checkSslStoreSysProp(String solrInstallDir, String key) {
@@ -362,11 +377,7 @@ public class SolrCLI implements CLIO {
    */
   public static boolean checkCommunicationError(Exception exc) {
     Throwable rootCause = SolrException.getRootCause(exc);
-    boolean wasCommError =
-        (rootCause instanceof ConnectException
-            || rootCause instanceof SolrServerException
-            || rootCause instanceof SocketException);
-    return wasCommError;
+    return (rootCause instanceof SolrServerException || rootCause instanceof SocketException);
   }
 
   public static void checkCodeForAuthError(int code) {
@@ -488,11 +499,11 @@ public class SolrCLI implements CLIO {
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
       if (zkHost == null) {
-        solrUrl = DEFAULT_SOLR_URL;
+        solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.getOutStream()
             .println(
                 "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
-                    + DEFAULT_SOLR_URL
+                    + solrUrl
                     + ".");
       } else {
 
@@ -526,11 +537,11 @@ public class SolrCLI implements CLIO {
 
     String solrUrl = cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
-      solrUrl = DEFAULT_SOLR_URL;
+      solrUrl = getDefaultSolrUrl();
       CLIO.getOutStream()
           .println(
               "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
-                  + DEFAULT_SOLR_URL
+                  + solrUrl
                   + ".");
     }
     solrUrl = normalizeSolrUrl(solrUrl);
@@ -584,8 +595,8 @@ public class SolrCLI implements CLIO {
         }
         NamedList<Object> existsCheckResult =
             CoreAdminRequest.getStatus(coreName, solrClient).getResponse();
-        NamedList<Object> status = (NamedList) existsCheckResult.get("status");
-        NamedList<Object> coreStatus = (NamedList) status.get(coreName);
+        NamedList<Object> status = (NamedList<Object>) existsCheckResult.get("status");
+        NamedList<Object> coreStatus = (NamedList<Object>) status.get(coreName);
         Map<String, Object> failureStatus =
             (Map<String, Object>) existsCheckResult.get("initFailures");
         String errorMsg = (String) failureStatus.get(coreName);

@@ -30,7 +30,6 @@ import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -231,8 +230,6 @@ public class AssertTool extends ToolBase {
       NamedList<Object> response = solrClient.request(new HealthCheckRequest());
       Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
       SolrCLI.checkCodeForAuthError(statusCode);
-    } catch (SolrException se) {
-      throw se;
     } catch (IOException | SolrServerException e) {
       log.debug("Opening connection to {} failed, Solr does not seem to be running", url, e);
       return 0;

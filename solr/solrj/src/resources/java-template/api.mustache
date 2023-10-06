@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -33,13 +34,26 @@ import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.ResponseParser;
+
+{{! Covers all top-level request/response model classes, but not necessarily any types nested in those classes }}
+{{#imports}}
+import {{import}};
+{{/imports}}
+
+{{! Imports any model types nested in request body POJOs }}
 {{#operations}}
 {{#operation}}
-{{#imports}}
-import {{modelPackage}}.{{.}};
-{{/imports}}
+{{#bodyParam}}
+{{#vars}}
+{{#isModel}}
+import {{modelPackage}}.{{dataType}};
+{{/isModel}}
+{{/vars}}
+{{/bodyParam}}
 {{/operation}}
+{{/operations}}
 
+{{#operations}}
 // WARNING: This class is generated from a Mustache template; any intended
 // changes should be made to the underlying template and not this file directly.
 
@@ -53,16 +67,18 @@ public class {{classname}} {
         }
 
         public static class {{operationIdCamelCase}} extends SolrRequest<{{operationIdCamelCase}}Response> {
-            {{#requiredParams}}
-            {{#isBodyParam}}
+            {{#bodyParam}}
             private final {{{dataType}}} requestBody;
-            {{/isBodyParam}}
+            {{/bodyParam}}
+            {{#requiredParams}}
             {{^isBodyParam}}
             private final {{{dataType}}} {{paramName}};
             {{/isBodyParam}}
             {{/requiredParams}}
             {{#optionalParams}}
+            {{^isBodyParam}}
             private {{{dataType}}} {{paramName}};
+            {{/isBodyParam}}
             {{/optionalParams}}
 
             /**
@@ -82,23 +98,25 @@ public class {{classname}} {
                 {{^isBodyParam}}
                     this.{{paramName}} = {{paramName}};
                 {{/isBodyParam}}
-                {{#isBodyParam}}
+                {{/requiredParams}}
+                {{#bodyParam}}
                     this.requestBody = new {{baseName}}();
                     addHeader("Content-type", "application/json");
-                {{/isBodyParam}}
-                {{/requiredParams}}
+                {{/bodyParam}}
             }
 
             {{#optionalParams}}
+            {{^isBodyParam}}
             {{#description}}
             /**
              * @param {{paramName}} {{description}}
              */
             {{/description}}
-            public void {{schema.setter}}({{dataType}} {{paramName}}) {
+            public void {{schema.setter}}({{{dataType}}} {{paramName}}) {
                 this.{{paramName}} = {{paramName}};
             }
 
+            {{/isBodyParam}}
             {{/optionalParams}}
 
             {{#bodyParam}}
@@ -109,7 +127,7 @@ public class {{classname}} {
              * @param {{baseName}} {{description}}
              */
              {{/description}}
-             public void {{setter}}({{dataType}} {{baseName}}) {
+             public void {{setter}}({{{dataType}}} {{baseName}}) {
                this.requestBody.{{baseName}} = {{baseName}};
             }
             {{/vars}}

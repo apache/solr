@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.propagation.Format;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +47,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.apache.solr.util.tracing.SolrRequestCarrier;
+import org.apache.solr.util.tracing.TraceUtils;
 
 @NotThreadSafe
 public class HttpShardHandler extends ShardHandler {
@@ -128,8 +125,6 @@ public class HttpShardHandler extends ShardHandler {
       final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard);
-    final Tracer tracer = sreq.tracer; // not null
-    final Span span = tracer.activeSpan(); // probably not null?
 
     params.remove(CommonParams.WT); // use default (currently javabin)
     params.remove(CommonParams.VERSION);
@@ -171,10 +166,7 @@ public class HttpShardHandler extends ShardHandler {
 
               @Override
               public void onStart() {
-                if (span != null) {
-                  tracer.inject(
-                      span.context(), Format.Builtin.HTTP_HEADERS, new SolrRequestCarrier(req));
-                }
+                TraceUtils.injectContextIntoRequest(req);
                 SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
                 if (requestInfo != null)
                   req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());

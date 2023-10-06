@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
@@ -130,8 +129,6 @@ public class StatusTool extends ToolBase {
     while (System.nanoTime() < timeout) {
       try {
         return getStatus(solrUrl);
-      } catch (SSLPeerUnverifiedException exc) {
-        throw exc;
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {
           throw exc;
@@ -204,7 +201,7 @@ public class StatusTool extends ToolBase {
     cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
     Map<String, Object> collections =
-        ((NamedList) json.findRecursive("cluster", "collections")).asMap();
+        ((NamedList<Object>) json.findRecursive("cluster", "collections")).asMap();
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;

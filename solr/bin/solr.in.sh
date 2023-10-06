@@ -154,6 +154,8 @@
 # environments where security is not a concern, 0.0.0.0 can be used to allow
 # Solr to accept connections on all network interfaces.
 #SOLR_JETTY_HOST="127.0.0.1"
+# Sets the network interface the Embedded ZK binds to.
+#SOLR_ZK_EMBEDDED_HOST="127.0.0.1"
 
 # Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 # to enable https module with custom jetty configuration.
@@ -171,7 +173,8 @@
 # Verify client's hostname during SSL handshake
 #SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 # SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-# this to false can be useful to disable these checks when re-using a certificate on many hosts
+# this to false can be useful to disable these checks when re-using a certificate on many hosts.
+# This will also be used for the default value of whether SNI Host checking should be enabled.
 #SOLR_SSL_CHECK_PEER_NAME=true
 # Override Key/Trust Store types if necessary
 #SOLR_SSL_KEY_STORE_TYPE=PKCS12

@@ -104,7 +104,7 @@ public interface IteratorWriter extends JSONWriter.Writable {
                 writer.writeValueSeparator();
               }
               writer.indent();
-              write(writer);
+              writer.write(o);
               return this;
             }
           });

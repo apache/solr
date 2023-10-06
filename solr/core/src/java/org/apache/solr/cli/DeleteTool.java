@@ -32,6 +32,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -173,7 +175,9 @@ public class DeleteTool extends ToolBase {
 
     NamedList<Object> response;
     try {
-      response = cloudSolrClient.request(CollectionAdminRequest.deleteCollection(collectionName));
+      var req = CollectionAdminRequest.deleteCollection(collectionName);
+      req.setResponseParser(new JsonMapResponseParser());
+      response = cloudSolrClient.request(req);
     } catch (SolrServerException sse) {
       throw new Exception(
           "Failed to delete collection '" + collectionName + "' due to: " + sse.getMessage());
@@ -194,6 +198,7 @@ public class DeleteTool extends ToolBase {
     }
 
     if (response != null) {
+      // pretty-print the response to stdout
       CharArr arr = new CharArr();
       new JSONWriter(arr, 2).write(response.asMap());
       echo(arr.toString());
@@ -215,15 +220,14 @@ public class DeleteTool extends ToolBase {
       unloadRequest.setDeleteDataDir(true);
       unloadRequest.setDeleteInstanceDir(true);
       unloadRequest.setCoreName(coreName);
+      unloadRequest.setResponseParser(new NoOpResponseParser("json"));
       response = solrClient.request(unloadRequest);
     } catch (SolrServerException sse) {
       throw new Exception("Failed to delete core '" + coreName + "' due to: " + sse.getMessage());
     }
 
     if (response != null) {
-      CharArr arr = new CharArr();
-      new JSONWriter(arr, 2).write(response.asMap());
-      echoIfVerbose(arr.toString(), cli);
+      echoIfVerbose((String) response.get("response"), cli);
       echoIfVerbose("\n", cli);
     }
   }

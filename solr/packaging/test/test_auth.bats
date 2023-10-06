@@ -23,6 +23,8 @@ setup() {
   run solr auth disable
 }
 
+# Note: there are additional auth related tests in test_ssl.bats
+
 @test "auth rejects blockUnknown option with invalid boolean" {
   run ! solr auth enable -type basicAuth -credentials any:any -blockUnknown ture
   assert_output --partial "Argument [blockUnknown] must be either true or false, but was [ture]"
@@ -44,7 +46,5 @@ setup() {
   solr auth disable
   run curl 'http://localhost:8983/solr/test/select?q=*:*'
   assert_output --partial '"numFound":0'
-  solr stop -all
-  
-  
+  solr stop -all  
 }

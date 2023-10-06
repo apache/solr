@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryRescorer;
@@ -25,6 +26,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  *
@@ -50,6 +53,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
   public static final String RERANK_SCALE = "reRankScale";
   public static final String RERANK_MAIN_SCALE = "reRankMainScale";
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public QParser createParser(
@@ -85,6 +89,19 @@ public class ReRankQParserPlugin extends QParserPlugin {
       String mainScale = localParams.get(RERANK_MAIN_SCALE);
       String reRankScale = localParams.get(RERANK_SCALE);
       boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
+
+      if (!debugQuery) {
+        String[] debugParams = params.getParams(CommonParams.DEBUG);
+        if (debugParams != null) {
+          for (String debugParam : debugParams) {
+            if ("true".equals(debugParam)) {
+              debugQuery = true;
+              break;
+            }
+          }
+        }
+      }
+
       double reRankScaleWeight = reRankWeight;
 
       ReRankScaler reRankScaler =

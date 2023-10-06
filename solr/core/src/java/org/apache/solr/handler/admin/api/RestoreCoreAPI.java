@@ -61,6 +61,11 @@ public class RestoreCoreAPI extends CoreAdminAPIBase {
     super(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
   }
 
+  @Override
+  boolean isExpensive() {
+    return true;
+  }
+
   @POST
   @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_EDIT_PERM)

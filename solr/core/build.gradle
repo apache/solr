@@ -141,10 +141,8 @@ dependencies {
   implementation 'com.tdunning:t-digest'
 
   // Distributed Tracing
-  api 'io.opentracing:opentracing-api' // Tracer is exposed on some methods
-  implementation 'io.opentracing:opentracing-noop'
-  implementation 'io.opentracing:opentracing-util'
-  testImplementation 'io.opentracing:opentracing-mock'
+  api 'io.opentelemetry:opentelemetry-api' // Tracer is exposed on some methods
+  implementation 'io.opentelemetry:opentelemetry-context'
 
   implementation 'org.apache.commons:commons-exec'
 

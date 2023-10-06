@@ -29,6 +29,11 @@ import org.apache.solr.handler.api.V2ApiUtils;
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
   @Override
+  public boolean isExpensive() {
+    return true;
+  }
+
+  @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     final SolrParams params = it.req.getParams();
     BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody =

@@ -44,9 +44,7 @@ public class HavingStream extends TupleStream implements Expressible {
 
   private TupleStream stream;
   private RecursiveBooleanEvaluator evaluator;
-  private StreamContext streamContext;
-
-  private transient Tuple currentGroupHead;
+  private transient StreamContext streamContext;
 
   public HavingStream(TupleStream stream, RecursiveBooleanEvaluator evaluator) throws IOException {
     init(stream, evaluator);
