@@ -636,7 +636,7 @@ groups:
       Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
-      NOTE: Do not add every single JIRA issue, but distill the Release notes into important changes!
+      NOTE: Do not add every single JIRA issue, but distill the release notes into important changes!
     links:
     - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
   - !Todo
