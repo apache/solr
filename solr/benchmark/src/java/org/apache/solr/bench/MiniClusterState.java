@@ -52,7 +52,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.SolrTestNonSecureRandomProvider;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;
@@ -175,11 +174,7 @@ public class MiniClusterState {
                           .map(Path::toFile)
                           .mapToLong(File::length)
                           .sum();
-                  log(
-                      "mini cluster node size "
-                          + node
-                          + " "
-                          + NumberUtils.readableSize(clusterSize));
+                  log("mini cluster node size (bytes) " + node + " " + clusterSize);
                 } catch (IOException e) {
                   throw new RuntimeException(e);
                 }
