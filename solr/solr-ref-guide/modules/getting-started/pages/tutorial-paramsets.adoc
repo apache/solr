@@ -1,0 +1,140 @@
+= Exercise 4: Using ParamSets
+:experimental:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[[exercise-4]]
+== Exercise 4: Using ParamSets
+
+This exercise will teach you to use ParamSets to group a number of different query parameters into a labelled grouping that you can refer to in your queries.
+
+=== Getting Ready
+
+Make sure you have a running Solr, following the steps in xref:tutorial-films.adoc#restart-solr[].
+Then go ahead to the next section.
+
+=== Create a New Collection
+
+[,console]
+----
+$ bin/solr create -c films
+----
+
+Because we didn't specify a ConfigSet, we will end up using the `_default` ConfigSet.
+We'll specify the specific schema for a couple of fields that Solr would otherwise guess differently (than we'd like) about:
+
+[,console]
+----
+curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
+  "add-field" : [
+    {
+      "name":"name",
+      "type":"text_general",
+      "multiValued":false,
+      "stored":true
+    },
+    {
+      "name":"initial_release_date",
+      "type":"pdate",
+      "stored":true
+    }
+  ]
+}'
+----
+
+
+=== Index the Data
+
+Now that we have updated our Schema, we need to index the sample film data, or, if you already had indexed it, then re-index it to take advantage of the two new field definitions we added.  
+Look back at the xref:tutorial-films.adoc#index-sample-film-data[] for the specific steps.
+
+=== Let's get Searching!
+
+Search for 'Batman':
+
+http://localhost:8983/solr/films/query?q=name:batman
+
+* If you get an error about the name field not existing, you haven't yet indexed the data
+* If you don't get an error, but zero results, chances are that the _name_ field schema type override wasn't set
+  before indexing the data the first time (it ended up as a "string" type, requiring exact matching by case even).
+  It's easiest to simply reset your environment and try again, ensuring that each step successfully executes.
+
+Show me all 'Super hero' movies:
+
+[source]
+----
+curl 'http://localhost:8983/solr/films/query?q=*:*&fq=genre:"Superhero movie"'
+----
+
+Let's see the distribution of genres across all the movies. See the facet section of the response for the counts:
+
+[source]
+----
+curl 'http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre'
+----
+
+=== Time for relevancy tuning with ParamSets :
+
+Now that we can query our data, let's actually use the ParamSets.
+
+Search for 'harry potter':
+
+http://localhost:8983/solr/films/query?q=name:harry%20potter
+
+Notice the very first result is the movie _Dumb &amp; Dumberer: When Harry Met Lloyd_?
+That is clearly not what we are looking for.  
+
+Let's set up two relevancy algorithms, using our APIs, and then compare the quality of the results.
+Algorithm *A* will use the `dismax` and a `qf` parameters, and Algorithm *B* will use `dismax`, `qf` and a must match `mm` set to 100%.
+
+[, console]
+----
+curl http://localhost:8983/solr/films/config/params -X POST -H 'Content-type:application/json' --data-binary '{
+"set": {
+    "algo_a":{
+      "defType":"dismax",
+      "qf":"name"
+    }
+  },
+  "set": {
+    "algo_b":{
+      "defType":"dismax",
+      "qf":"name",
+      "mm":"100%"
+    }
+  }            
+}'
+----
+
+Now, search for 'harry potter' with Algorithm *A*:
+
+http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_a
+
+Now we are returning the five results, including the Harry Potter movies, however notice that we still have the _Dumb &amp; Dumberer: When Harry Met Lloyd_ movie coming back?   
+
+Search for 'harry potter' with Algorithm *B*:
+
+http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_b
+
+We are now returning only the four Harry Potter movies, leading to more precise results!
+We can say that we believe Algorithm *B* is better then Algorithm *A*.  
+You can extend this to online A/B testing very easily to confirm with real users.
+
+
+=== Exercise 4 Wrap Up
+
+In this excercise, we used the Schema API to customize the fields that we needed, and then learned how to organize our query parameters into named groups of parameters called ParamSets that we created using the APIs.
