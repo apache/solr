@@ -474,6 +474,7 @@ public class V2HttpCall extends HttpSolrCall {
         // Whatever this API call is, it's not a core-level request so make sure we free our
         // SolrCore counter
         core.close();
+        core = null;
         response.getHeaderNames().stream().forEach(name -> response.setHeader(name, null));
         invokeJerseyRequest(
             cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), rsp);
