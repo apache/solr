@@ -21,9 +21,10 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 
+import org.apache.solr.client.api.model.InstallCoreDataRequestBody;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.handler.admin.api.InstallCoreDataAPI;
+import org.apache.solr.handler.admin.api.InstallCoreData;
 import org.apache.solr.handler.api.V2ApiUtils;
 
 /**
@@ -31,7 +32,7 @@ import org.apache.solr.handler.api.V2ApiUtils;
  * "Install Shard Data" Collection-Admin functionality
  *
  * <p>Converts v1-style query parameters into a v2-style request body and delegating to {@link
- * InstallCoreDataAPI}.
+ * InstallCoreData}.
  */
 public class InstallCoreDataOp implements CoreAdminHandler.CoreAdminOp {
   @Override
@@ -39,11 +40,10 @@ public class InstallCoreDataOp implements CoreAdminHandler.CoreAdminOp {
     final SolrParams params = it.req.getParams();
     final String coreName = params.required().get(CoreAdminParams.CORE);
 
-    final InstallCoreDataAPI api =
-        new InstallCoreDataAPI(
+    final InstallCoreData api =
+        new InstallCoreData(
             it.handler.getCoreContainer(), it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
-    final InstallCoreDataAPI.InstallCoreDataRequestBody requestBody =
-        new InstallCoreDataAPI.InstallCoreDataRequestBody();
+    final InstallCoreDataRequestBody requestBody = new InstallCoreDataRequestBody();
     requestBody.repository = params.get(BACKUP_REPOSITORY);
     requestBody.location = params.get(BACKUP_LOCATION);
     requestBody.asyncId = params.get(ASYNC);

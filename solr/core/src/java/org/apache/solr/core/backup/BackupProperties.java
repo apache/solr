@@ -48,18 +48,33 @@ import org.apache.solr.util.PropertiesInputStream;
  */
 public class BackupProperties {
 
+  private static final String EXTRA_PROPERTY_PREFIX = "property.";
+
   private double indexSizeMB;
   private int indexFileCount;
 
-  private Properties properties;
+  private final Properties properties;
 
-  private BackupProperties(Properties properties) {
+  private final Map<String, String> extraProperties;
+
+  private BackupProperties(Properties properties, Map<String, String> extraProperties) {
     this.properties = properties;
+    if (extraProperties == null) {
+      extraProperties = Map.of();
+    } else if (extraProperties.keySet().stream().anyMatch(String::isEmpty)) {
+      throw new IllegalArgumentException("Can't have an extra property with an empty key");
+    }
+    this.extraProperties = extraProperties;
   }
 
   public static BackupProperties create(
-      String backupName, String collectionName, String extCollectionName, String configName) {
-    Properties properties = new Properties();
+      String backupName,
+      String collectionName,
+      String extCollectionName,
+      String configName,
+      Map<String, String> extraProperties) {
+    final Properties properties = new Properties();
+
     properties.put(BackupManager.BACKUP_NAME_PROP, backupName);
     properties.put(BackupManager.COLLECTION_NAME_PROP, collectionName);
     properties.put(BackupManager.COLLECTION_ALIAS_PROP, extCollectionName);
@@ -67,7 +82,7 @@ public class BackupProperties {
     properties.put(BackupManager.START_TIME_PROP, Instant.now().toString());
     properties.put(BackupManager.INDEX_VERSION_PROP, Version.LATEST.toString());
 
-    return new BackupProperties(properties);
+    return new BackupProperties(properties, extraProperties);
   }
 
   public static Optional<BackupProperties> readFromLatest(
@@ -93,8 +108,27 @@ public class BackupProperties {
                 repository.openInput(backupPath, fileName, IOContext.DEFAULT)),
             StandardCharsets.UTF_8)) {
       props.load(is);
-      return new BackupProperties(props);
+      Map<String, String> extraProperties = extractExtraProperties(props);
+      return new BackupProperties(props, extraProperties);
     }
+  }
+
+  private static Map<String, String> extractExtraProperties(Properties props) {
+    Map<String, String> extraProperties = new HashMap<>();
+    props
+        .entrySet()
+        .removeIf(
+            e -> {
+              String entryKey = e.getKey().toString();
+              if (entryKey.startsWith(EXTRA_PROPERTY_PREFIX)) {
+                extraProperties.put(
+                    entryKey.substring(EXTRA_PROPERTY_PREFIX.length()),
+                    String.valueOf(e.getValue()));
+                return true;
+              }
+              return false;
+            });
+    return extraProperties;
   }
 
   public List<String> getAllShardBackupMetadataFiles() {
@@ -128,10 +162,14 @@ public class BackupProperties {
   }
 
   public void store(Writer propsWriter) throws IOException {
-    properties.put("indexSizeMB", String.valueOf(indexSizeMB));
-    properties.put("indexFileCount", String.valueOf(indexFileCount));
-    properties.put(BackupManager.END_TIME_PROP, Instant.now().toString());
-    properties.store(propsWriter, "Backup properties file");
+    Properties propertiesCopy = (Properties) properties.clone();
+    propertiesCopy.put("indexSizeMB", String.valueOf(indexSizeMB));
+    propertiesCopy.put("indexFileCount", String.valueOf(indexFileCount));
+    propertiesCopy.put(BackupManager.END_TIME_PROP, Instant.now().toString());
+    if (extraProperties != null && !extraProperties.isEmpty()) {
+      extraProperties.forEach((k, v) -> propertiesCopy.put(EXTRA_PROPERTY_PREFIX + k, v));
+    }
+    propertiesCopy.store(propsWriter, "Backup properties file");
   }
 
   public String getCollection() {
@@ -158,14 +196,20 @@ public class BackupProperties {
     return properties.getProperty(BackupManager.INDEX_VERSION_PROP);
   }
 
+  public Map<String, String> getExtraProperties() {
+    return extraProperties;
+  }
+
   public Map<String, Object> getDetails() {
     final Map<String, Object> result = new HashMap<>();
-    properties.entrySet().stream()
-        .forEach(entry -> result.put(entry.getKey().toString(), entry.getValue()));
+    properties.entrySet().forEach(entry -> result.put(entry.getKey().toString(), entry.getValue()));
     result.remove(BackupManager.BACKUP_NAME_PROP);
     result.remove(BackupManager.COLLECTION_NAME_PROP);
     result.put("indexSizeMB", Double.valueOf(properties.getProperty("indexSizeMB")));
     result.put("indexFileCount", Integer.valueOf(properties.getProperty("indexFileCount")));
+    if (extraProperties != null && !extraProperties.isEmpty()) {
+      result.put("extraProperties", extraProperties);
+    }
 
     Map<String, String> shardBackupIds = new HashMap<>();
     Iterator<String> keyIt = result.keySet().iterator();
