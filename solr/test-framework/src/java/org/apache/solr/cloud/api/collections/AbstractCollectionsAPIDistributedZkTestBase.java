@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
@@ -31,7 +30,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,13 +39,11 @@ import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectName;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -70,46 +66,39 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Category;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Tests the Cloud Collections API. */
-@Slow
+/**
+ * Tests the Cloud Collections API.
+ *
+ * <p>Because the different setups require distinct config-sets, we have to push down cluster
+ * creation to subclasses
+ */
 public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected abstract String getConfigSet();
-
-  @Before
-  public void setupCluster() throws Exception {
+  @BeforeClass
+  public static void setupCluster() {
     // we don't want this test to have zk timeouts
     System.setProperty("zkClientTimeout", "60000");
     System.setProperty("createCollectionWaitTimeTillActive", "5");
     TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
     System.setProperty("solr.allowPaths", "*");
-
-    configureCluster(4)
-        .addConfig("conf", configset(getConfigSet()))
-        .addConfig("conf2", configset(getConfigSet()))
-        .withSolrXml(TEST_PATH().resolve("solr.xml"))
-        .configure();
   }
 
+  @Override
   @After
-  public void tearDownCluster() throws Exception {
-    try {
-      shutdownCluster();
-    } finally {
-      System.clearProperty("createCollectionWaitTimeTillActive");
-      System.clearProperty("solr.allowPaths");
-      super.tearDown();
-    }
+  public void tearDown() throws Exception {
+    cluster.deleteAllCollections();
+    super.tearDown();
   }
 
   @Test
@@ -381,8 +370,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     JettySolrRunner jetty1 = cluster.getRandomJetty(random());
     JettySolrRunner jetty2 = cluster.getRandomJetty(random());
 
-    List<String> baseUrls =
-        ImmutableList.of(jetty1.getBaseUrl().toString(), jetty2.getBaseUrl().toString());
+    List<String> baseUrls = List.of(jetty1.getBaseUrl().toString(), jetty2.getBaseUrl().toString());
 
     CollectionAdminRequest.createCollection("nodeset_collection", "conf", 2, 1)
         .setCreateNodeSet(baseUrls.get(0) + "," + baseUrls.get(1))
@@ -582,7 +570,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         for (Replica replica : shard) {
           ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
           CoreStatus coreStatus;
-          try (HttpSolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
+          try (SolrClient server = getHttpSolrClient(coreProps.getBaseUrl())) {
             coreStatus = CoreAdminRequest.getCoreStatus(coreProps.getCoreName(), false, server);
           }
           long before = coreStatus.getCoreStartTime().getTime();
@@ -597,7 +585,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
   private void checkNoTwoShardsUseTheSameIndexDir() {
     Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<>();
 
-    List<MBeanServer> servers = new LinkedList<>();
+    List<MBeanServer> servers = new ArrayList<>();
     servers.add(ManagementFactory.getPlatformMBeanServer());
     servers.addAll(MBeanServerFactory.findMBeanServer(null));
     for (final MBeanServer server : servers) {
@@ -671,7 +659,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
     assertNotNull(newReplica);
 
-    try (HttpSolrClient coreclient = getHttpSolrClient(newReplica.getBaseUrl())) {
+    try (SolrClient coreclient = getHttpSolrClient(newReplica.getBaseUrl())) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
       NamedList<Object> coreStatus = status.getCoreStatus(newReplica.getStr("core"));
       String instanceDirStr = (String) coreStatus.get("instanceDir");

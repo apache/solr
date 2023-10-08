@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.DistributedMultiLock;
 import org.apache.solr.cloud.ZkDistributedCollectionLockFactory;
@@ -42,7 +43,11 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
     try {
       server.run();
-      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
         CollectionApiLockFactory apiLockFactory =
             new CollectionApiLockFactory(
                 new ZkDistributedCollectionLockFactory(zkClient, "/apiLockTestRoot"));
@@ -55,7 +60,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void monothreadedTests(CollectionApiLockFactory apiLockingHelper) throws Exception {
+  private void monothreadedTests(CollectionApiLockFactory apiLockingHelper) {
     // Lock at collection level (which prevents locking + acquiring on any other level of the
     // hierarchy)
     DistributedMultiLock collLock =
@@ -169,7 +174,7 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     new Thread(
             () -> {
               replicaShard1Lock.waitUntilAcquired();
-              // countDown() will not be called if waitUntilAcquired() threw exception of any kind
+              // countDown() will not be called if waitUntilAcquired() threw any kind of exception
               latch.countDown();
             })
         .start();

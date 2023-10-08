@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -31,7 +30,8 @@ public class HelloQueryBuilder extends SolrQueryBuilder {
     super(defaultField, analyzer, req, queryFactory);
   }
 
-  public Query getQuery(Element e) throws ParserException {
+  @Override
+  public Query getQuery(Element e) {
     return new MatchAllDocsQuery();
   }
 }

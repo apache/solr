@@ -18,7 +18,11 @@
 package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.util.Utils.fromJSONString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -49,26 +53,25 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
         apiBag,
         "/cores",
         SolrRequest.METHOD.POST,
-        "{create:{name: hello, instanceDir : someDir, schema: 'schema.xml'}}",
-        mockCC);
+        "{create:{name: hello, instanceDir : someDir, schema: 'schema.xml'}}");
     Object[] params = calls.get("create");
     assertEquals("hello", params[0]);
     assertEquals(fromJSONString("{schema : schema.xml}"), params[2]);
 
     TestCollectionAPIs.makeCall(
-        apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{swap:{with: core2}}", mockCC);
+        apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{swap:{with: core2}}");
     params = calls.get("swap");
     assertEquals("core1", params[0]);
     assertEquals("core2", params[1]);
 
     TestCollectionAPIs.makeCall(
-        apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{rename:{to: core2}}", mockCC);
+        apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{rename:{to: core2}}");
     params = calls.get("rename");
     assertEquals("core1", params[0]);
     assertEquals("core2", params[1]);
 
     TestCollectionAPIs.makeCall(
-        apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{unload:{deleteIndex : true}}", mockCC);
+        apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{unload:{deleteIndex : true}}");
     params = calls.get("unload");
     assertEquals("core1", params[0]);
     assertEquals(Boolean.TRUE, params[1]);

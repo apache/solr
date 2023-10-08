@@ -152,6 +152,21 @@ There must be an even number of ValueSource instances passed in and the method a
 * `dist(2, x,y,z,0,0,0):` Euclidean distance between (0,0,0) and (x,y,z) for each document.
 * `dist(1,x,y,z,e,f,g)`: Manhattan distance between (x,y,z) and (e,f,g) where each letter is a field name.
 
+=== vectorSimilarity Function
+Returns the similarity between two Knn vectors in an n-dimensional space.
+Takes in input the vector element encoding, the similarity measure plus two ValueSource instances and calculates the similarity between the two vectors.
+
+* The encodings supported are: `BYTE`, `FLOAT32`.
+* The similarities supported are: `EUCLIDEAN`, `COSINE`, `DOT_PRODUCT`
+
+Each ValueSource must be a knn vector (field or constant).
+
+*Syntax Examples*
+
+* `vectorSimilarity(FLOAT32, COSINE, [1,2,3], [4,5,6])`: calculates the cosine similarity between [1, 2, 3] and [4, 5, 6] for each document.
+* `vectorSimilarity(FLOAT32, DOT_PRODUCT, vectorField1, vectorField2)`: calculates the dot product similarity between the vector in 'vectorField1' and in 'vectorField2' for each document.
+* `vectorSimilarity(BYTE, EUCLIDEAN, [1,5,4,3], vectorField)`: calculates the euclidean similarity between the vector in 'vectorField' and the constant vector [1, 5, 4, 3] for each document.
+
 === docfreq(field,val) Function
 Returns the number of documents that contain the term in the field.
 This is a constant (the same value for all documents in the index).
@@ -563,6 +578,16 @@ Returns `true` if any member of the field exists.
 *Syntax Example*
 
 * `if(lt(ms(mydatefield),315569259747),0.8,1)` translates to this pseudocode: `if mydatefield < 315569259747 then 0.8 else 1`
+
+=== isnan Function
+Returns `true` if the value is a float NaN (not a number).
+
+*Syntax Example*
+
+* `isnan(myfield)`: returns `true` for any document having a NaN stored in "myfield".
+* `isnan(12.3456)`: returns `false`.
+* `isnan(0)`: returns `false`.
+* `isnan(div(0,0))`: returns `true` (since 0 divided by 0 is not defined and returns a NaN).
 
 == Example Function Queries
 

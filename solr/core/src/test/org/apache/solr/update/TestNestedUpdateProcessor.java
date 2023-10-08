@@ -17,6 +17,8 @@
 
 package org.apache.solr.update;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,7 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -32,11 +34,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
@@ -101,15 +102,13 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
           + "    }\n"
           + "}";
 
-  @Rule public ExpectedException thrown = ExpectedException.none();
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-minimal.xml", "schema-nest.xml");
   }
 
   @Before
-  public void before() throws Exception {
+  public void before() {
     clearIndex();
     assertU(commit());
   }
@@ -265,9 +264,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPFieldNameException() throws Exception {
     final String errMsg =
         "contains: '" + PATH_SEP_CHAR + "' , which is reserved for the nested URP";
-    thrown.expect(SolrException.class);
-    indexSampleData(errDoc);
-    thrown.expectMessage(errMsg);
+    SolrException thrown = assertThrows(SolrException.class, () -> indexSampleData(errDoc));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString(errMsg));
   }
 
   private void indexSampleData(String cmd) throws Exception {
@@ -282,10 +280,10 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
    *
    * @see <a href="https://issues.apache.org/jira/browse/SOLR-14687">SOLR-14687</a>
    */
-  public void testRandomNestPathQueryFiltering() throws Exception {
+  public void testRandomNestPathQueryFiltering() {
 
     // First: build a bunch of complex randomly nested documents, with random "nest paths"
-    // re-use the same "path segments" at various levels of nested, so as to confuse things even
+    // re-use the same "path segments" at various levels of nested, to confuse things even
     // more
     final RandomNestedDocModel docs = new RandomNestedDocModel();
     for (int i = 0; i < 50; i++) {
@@ -296,7 +294,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
     // now do some systematic parent/child queries.
     // we're checking both for "parser errors" (ie: children matching "parent filter")
-    // as well as that the test_path_s of all matching docs meets our expectations
+    // and that the test_path_s of all matching docs meets our expectations
 
     // *:* w/ parent parser...
     // starts at "root" parent_path and recurses until we get no (expected) results
@@ -304,7 +302,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
         // but there will be more because we'll try lots of sub-paths that have no docs
         docs.numDocsDescendentFromPath.keySet().size()
             < docs.recursiveCheckParentQueryOfAllChildren(Collections.<String>emptyList()));
-    // sanity check: path that is garunteed not to exist...
+    // check: path that is guaranteed not to exist...
     assertEquals(1, docs.recursiveCheckParentQueryOfAllChildren(Arrays.asList("xxx", "yyy")));
 
     // *:* w/ child parser...
@@ -313,10 +311,10 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
         // but there will be more because we'll try lots of sub-paths that have no docs
         docs.numDocsWithPathWithKids.keySet().size()
             < docs.recursiveCheckChildQueryOfAllParents(Collections.<String>emptyList()));
-    // sanity check: path that is garunteed not to exist...
+    // check: path that is guaranteed not to exist...
     assertEquals(1, docs.recursiveCheckChildQueryOfAllParents(Arrays.asList("xxx", "yyy")));
 
-    // quering against individual child ids w/ both parent & child parser...
+    // querying against individual child ids w/ both parent & child parser...
     docs.checkParentAndChildQueriesOfEachDocument();
   }
 
@@ -361,7 +359,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
       }
 
       for (int i = 0; i < test_path.size(); i++) {
-        // NOTE: '<' not '<=" .. we only includes paths we are descendents of, not our full path...
+        // NOTE: '<' not '<=" .. we only include paths we are descendents of, not our full path...
         numDocsDescendentFromPath.merge(joinPath(test_path.subList(0, i)), 1, Math::addExact);
       }
 
@@ -402,10 +400,10 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
         if (!doc_path.equals("/")) {
 
-          // doc_id -> descdentId must have at least one ancestor (since it's not a root level
+          // doc_id -> descendentId must have at least one ancestor (since it's not a root level
           // document)
           final String descendentId = doc_id;
-          assert allDocs.get(descendentId).containsKey("ancestor_ids_ss");
+          assertTrue(allDocs.get(descendentId).containsKey("ancestor_ids_ss"));
           final List<Object> allAncestorIds =
               new ArrayList<>(allDocs.get(descendentId).getFieldValues("ancestor_ids_ss"));
 
@@ -436,8 +434,8 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               "//result/@numFound=1",
               "//doc/str[@name='id'][.='" + ancestorId + "']");
 
-          // meanwhile, a 'child' query wrapped arround a query for the ancestorId, using the
-          // ancestor_path, should match all of it's descendents (for simplicity we'll check just
+          // meanwhile, a 'child' query wrapped around a query for the ancestorId, using the
+          // ancestor_path, should match all of its descendents (for simplicity we'll check just
           // the numFound and the 'descendentId' we started with)
           assertQ(
               req(
@@ -454,7 +452,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               "//doc/str[@name='id'][.='" + descendentId + "']");
         }
 
-        // regardless of wether doc_id has an ancestor or not, a 'parent' query with a path that
+        // regardless of whether doc_id has an ancestor or not, a 'parent' query with a path that
         // isn't a prefix of the path of the (child) doc_id in the wrapped query should match 0 docs
         // w/o failing
         assertQ(
@@ -466,7 +464,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
                 "true"),
             "//result/@numFound=0");
 
-        // likewise: a 'child' query wrapped around a query for our doc_id (regardless of wether if
+        // likewise: a 'child' query wrapped around a query for our doc_id (regardless of whether if
         // has any kids), using a path that doesn't start with the same prefix as doc_id, should
         // match 0 docs w/o failing
         assertQ(
@@ -480,7 +478,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
         // lastly: wrapping a child query around a query for our doc_id, using a path that "extends"
         // the doc_id's path should always get 0 results if that path doesn't match any actual kids
-        // (regardless of wether doc_id has any children/descendents)
+        // (regardless of whether doc_id has any children/descendents)
         assertQ(
             req(
                 childQueryMaker(doc_path + "/xxx/yyy", "id:" + doc_id),
@@ -541,7 +539,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      *     simple string <code>*:*</code> or <code>id:foo</code>
      */
     private SolrParams parentQueryMaker(String parent_path, String inner_child_query) {
-      assertValidPathSytax(parent_path);
+      assertValidPathSyntax(parent_path);
       final boolean verbose = random().nextBoolean();
 
       if (parent_path.equals("/")) {
@@ -564,7 +562,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
             "parent_filt", "(*:* -{!prefix f='_nest_path_' v='" + path + "'})",
             "child_q", "(+" + inner_child_query + " +{!prefix f='_nest_path_' v='" + path + "'})");
       } else {
-        // '/' has to be escaped other wise it will be treated as a regex query...
+        // '/' has to be escaped otherwise it will be treated as a regex query...
         // (and of course '\' escaping is the java syntax as well, we have to double it)
         final String path = (parent_path + "/").replace("/", "\\/");
         // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
@@ -629,7 +627,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      *     simple string <code>*:*</code> or <code>id:foo</code>
      */
     private SolrParams childQueryMaker(String parent_path, String inner_parent_query) {
-      assertValidPathSytax(parent_path);
+      assertValidPathSyntax(parent_path);
       final boolean verbose = random().nextBoolean();
 
       if (parent_path.equals("/")) {
@@ -652,7 +650,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
             "parent_q",
                 "(+" + inner_parent_query + " +{!field f='_nest_path_' v='" + parent_path + "'})");
       } else {
-        // '/' has to be escaped other wise it will be treated as a regex query...
+        // '/' has to be escaped otherwise it will be treated as a regex query...
         // (and of course '\' escaping is the java syntax as well, we have to double it)
         final String exact_path = parent_path.replace("/", "\\/");
         // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
@@ -671,9 +669,9 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
       }
     }
 
-    private void assertValidPathSytax(String path) {
-      assert path.startsWith("/");
-      assert (1 == path.length()) ^ !path.endsWith("/");
+    private void assertValidPathSyntax(String path) {
+      assertTrue(path.startsWith("/"));
+      assertTrue((1 == path.length()) ^ !path.endsWith("/"));
     }
   }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,8 +34,11 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MBeansHandlerTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -125,7 +129,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testXMLDiffWithExternalEntity() throws Exception {
+  public void testXMLDiffWithExternalEntity() {
     String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -203,12 +207,14 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
                   bean.getSolrMetricsContext().getMetricsSnapshot();
                 } catch (Exception e) {
                   runSnapshots = false;
-                  e.printStackTrace();
-                  fail("Exception getting metrics snapshot: " + e.toString());
+                  log.error("Exception getting metrics snapshot", e);
+                  fail("Exception getting metrics snapshot: " + e);
                 }
                 try {
                   Thread.sleep(53);
                 } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  log.error("interrupted", e);
                   runSnapshots = false;
                   break;
                 }

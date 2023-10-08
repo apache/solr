@@ -16,13 +16,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr allows users to control their running tasks by monitoring them, specifying tasks as cancellation enabled and allowing
-cancellation of the same.
+Solr offers a task management framework, that allows users to monitor (and even cancel) certain types of long-running tasks.
+Queries are the only type of "task" currently supported, but additional types may be added in the future.
 
-This is achieved using the task management interface.
-Currently, this is supported for queries.
+== Registering Tasks for Task Management
 
-== Types of Operations
+Task-tracking and management is an opt-in feature: tracking must be explicitly enabled on each individual task.
+For queries (the only type of "task" currently supported), this is done by specifying the `canCancel` boolean flag as a query-parameter.
+A value of `true` enables task-management; `false` (the default) leaves it disabled.
+
+Solr will assign each task a UUID for tracking purposes.
+Users may override this if desired with an arbitrary string of their choice using the `queryUUID` query-parameter.
+(Users are responsible for ensuring that any `queryUUID` values they provide are unique and don't conflict with other running tasks.)
+This UUID, whether generated or provided by the user, can then be used to track or cancel the task.
+
+== Task Management Operations
 Task management interface supports the following types of operations:
 
 . List all currently running cancellable tasks.
@@ -32,33 +40,126 @@ Task management interface supports the following types of operations:
 == Listing All Active Cancellable Tasks
 To list all the active cancellable tasks currently running, please use the following syntax:
 
-`\http://localhost:8983/solr/tasks/list`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listalltasks]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl -X GET "http://localhost:8983/solr/collectionName/tasks/list"
+----
+====
+
+[example.tab-pane#v2listalltasks]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list"
+----
+====
+--
 
 === Sample Response
 
-`{responseHeader={status=0, QTime=11370}, taskList={0=q=*%3A*&canCancel=true&queryUUID=0&_stateVer_=collection1%3A4&wt=javabin&version=2, 5=q=*%3A*&canCancel=true&queryUUID=5&_stateVer_=collection1%3A4&wt=javabin&version=2, 7=q=*%3A*&canCancel=true&queryUUID=7&_stateVer_=collection1%3A4&wt=javabin&version=2}`
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":16},
+  "taskList":[
+    "0,"q=weight_i:[0+TO+200]&canCancel=true&queryUUID=0",
+    "5","q=weight_i:[0+TO+200]&canCancel=true&queryUUID=5",
+    "4bcd27bb-0792-4512-a699-532fa7878bd3","q=weight_i:[0+TO+200]&canCancel=true"]}
+----
 
 == Cancelling An Active Cancellable Task
 To cancel an active task, please use the following syntax:
 
-`\http://localhost:8983/solr/tasks/cancel?queryUUID=foobar`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1cancelalltasks]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl -X GET "http://localhost:8983/solr/collectionName/tasks/cancel?queryUUID=5"
+----
+====
+
+[example.tab-pane#v2cancelalltasks]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/cancel?queryUUID=5"
+----
+====
+--
 
 === Sample Response
 ==== If the task UUID was found and successfully cancelled:
 
-`{responseHeader={status=0, QTime=39}, status=Query with queryID 85 cancelled successfully}`
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":26},
+  "status":"Query with queryID 5 cancelled successfully",
+  "responseCode":200}
+----
 
 ==== If the task UUID was not found
 
-`{responseHeader={status=0, QTime=39}, status=Query with queryID 85 not found}`
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":24},
+  "status":"Query with queryID 5 not found",
+  "responseCode":404}
+----
 
 == Check Status of a Specific Task
 To check the status of a specific task, please use the following syntax:
 
-`\http://localhost:8983/solr/tasks/list?taskUUID=foobar`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1checksingletask]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl -X GET "http://localhost:8983/solr/collectionName/tasks/list?taskUUID=5"
+----
+====
+
+[example.tab-pane#v2checksingletask]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET "http://localhost:8983/v2/collections/collectionName/tasks/list?taskUUID=5"
+----
+====
+--
 
 === taskUUID Parameter
 `taskUUID` parameter can be used to specify a task UUID whose status can be checked.
 
 === Sample Response
-`{responseHeader={status=0, QTime=6128}, taskStatus=foobar:true}`
+
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":16},
+  "taskStatus":"id:5, status: active"}
+----

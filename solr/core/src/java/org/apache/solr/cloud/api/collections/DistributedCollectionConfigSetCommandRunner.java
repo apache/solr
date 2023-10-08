@@ -52,7 +52,6 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
@@ -186,7 +185,7 @@ public class DistributedCollectionConfigSetCommandRunner {
    */
   public void runConfigSetCommand(
       SolrQueryResponse rsp,
-      ConfigSetsHandler.ConfigSetOperation operation,
+      ConfigSetParams.ConfigSetAction action,
       Map<String, Object> result,
       long timeoutMs)
       throws Exception {
@@ -197,8 +196,6 @@ public class DistributedCollectionConfigSetCommandRunner {
           SolrException.ErrorCode.CONFLICT,
           "Solr is shutting down, no more Config Set API tasks may be executed");
     }
-
-    ConfigSetParams.ConfigSetAction action = operation.getAction();
 
     // never null
     String configSetName = (String) result.get(NAME);
@@ -278,10 +275,9 @@ public class DistributedCollectionConfigSetCommandRunner {
     // Happens either in the CollectionCommandRunner below or in the catch when the runner would not
     // execute.
     if (!asyncTaskTracker.createNewAsyncJobTracker(asyncId)) {
-      NamedList<Object> resp = new NamedList<>();
-      resp.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
-      resp.add(CoreAdminParams.REQUESTID, asyncId);
-      return new OverseerSolrResponse(resp);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Task with the same requestid already exists. (" + asyncId + ")");
     }
 
     CollectionCommandRunner commandRunner = new CollectionCommandRunner(message, action, asyncId);
@@ -457,9 +453,9 @@ public class DistributedCollectionConfigSetCommandRunner {
         }
         // Output some error logs
         if (collName == null) {
-          SolrException.log(log, "Operation " + action + " failed", e);
+          log.error("Operation {} failed", action, e);
         } else {
-          SolrException.log(log, "Collection " + collName + ", operation " + action + " failed", e);
+          log.error("Collection {}}, operation {} failed", collName, action, e);
         }
 
         results.add("Operation " + action + " caused exception:", e);

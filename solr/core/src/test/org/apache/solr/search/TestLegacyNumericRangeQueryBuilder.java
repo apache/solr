@@ -112,7 +112,7 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();
 
     String xml =
-        "<LegacyNumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023'/>";
+        "<LegacyNumericRangeQuery fieldName='AGE' type='double' lowerTerm='-23.21' upperTerm='60000.00023'/>";
     Document doc = getDocumentFromString(xml);
 
     Query filter = filterBuilder.getQuery(doc.getDocumentElement());
@@ -126,7 +126,7 @@ public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
     assertTrue(numRangeFilter.includesMax());
 
     String xml2 =
-        "<LegacyNumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
+        "<LegacyNumericRangeQuery fieldName='AGE' type='double' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
     Document doc2 = getDocumentFromString(xml2);
     Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
     assertTrue(filter2 instanceof LegacyNumericRangeQuery<?>);

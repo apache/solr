@@ -23,7 +23,7 @@ import org.apache.solr.search.QParserPlugin;
 
 /**
  * A neural query parser to run K-nearest neighbors search on Dense Vector fields. See Wiki page
- * https://solr.apache.org/guide/neural-search.html
+ * https://solr.apache.org/guide/solr/latest/query-guide/dense-vector-search.html
  */
 public class KnnQParserPlugin extends QParserPlugin {
   public static final String NAME = "knn";

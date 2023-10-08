@@ -68,7 +68,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     }
   }
 
-  private class ManagedTestResource extends ManagedResource {
+  private static class ManagedTestResource extends ManagedResource {
 
     private Object managedData;
 
@@ -100,7 +100,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
       this.managedData = managedData;
     }
 
-    // NOTE: These methods are better tested from the REST API
+    // NOTE: These methods are better tested from the REST API,
     // so they are stubbed out here and not used in this test
 
     @Override
@@ -179,7 +179,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     }
   }
 
-  private class CustomStorageFormatResource extends ManagedTestResource {
+  private static class CustomStorageFormatResource extends ManagedTestResource {
     private CustomStorageFormatResource(
         String resourceId, SolrResourceLoader loader, StorageIO storageIO) throws SolrException {
       super(resourceId, loader, storageIO);
@@ -198,7 +198,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
    */
   @SuppressWarnings("unchecked")
   @Test
-  public void testLoadingAndStoringOfManagedData() throws Exception {
+  public void testLoadingAndStoringOfManagedData() {
     String resourceId = "/config/test/foo";
     String storedResourceId = "_config_test_foo.json";
 

@@ -35,8 +35,9 @@ import org.slf4j.LoggerFactory;
  * Identifies the language of a set of input fields using
  * https://github.com/shuyo/language-detection
  *
- * <p>See <a href="https://solr.apache.org/guide/language-detection.html">Detecting Languages During
- * Indexing</a> in the Solr Ref Guide
+ * <p>See <a
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html">Detecting
+ * Languages During Indexing</a> in the Solr Ref Guide
  *
  * @since 3.5
  */

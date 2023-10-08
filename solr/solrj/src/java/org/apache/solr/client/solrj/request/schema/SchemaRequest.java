@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.request.schema;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
@@ -44,8 +44,11 @@ import org.apache.solr.common.util.Utils;
  *
  * <p>This class is experimental and it is subject to change.
  *
- * @see <a href="https://solr.apache.org/guide/schema-api.html">Solr Schema API</a>
- * @see <a href="https://solr.apache.org/guide/managed-resources.html">Solr managed resources</a>
+ * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/schema-api.html">Solr
+ *     Schema API</a>
+ * @see <a
+ *     href="https://solr.apache.org/guide/solr/latest/configuration-guide/managed-resources.html">Solr
+ *     managed resources</a>
  * @since solr 5.3
  */
 public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
@@ -102,7 +105,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     if (analyzerAttributes != null) analyzerNamedList.addAll(analyzerAttributes);
     List<Map<String, Object>> charFiltersAttributes = analyzerDefinition.getCharFilters();
     if (charFiltersAttributes != null) {
-      List<NamedList<Object>> charFiltersList = new LinkedList<>();
+      List<NamedList<Object>> charFiltersList = new ArrayList<>();
       for (Map<String, Object> charFilterAttributes : charFiltersAttributes)
         charFiltersList.add(new NamedList<>(charFilterAttributes));
       analyzerNamedList.add("charFilters", charFiltersList);
@@ -113,7 +116,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
     List<Map<String, Object>> filtersAttributes = analyzerDefinition.getFilters();
     if (filtersAttributes != null) {
-      List<NamedList<Object>> filtersList = new LinkedList<>();
+      List<NamedList<Object>> filtersList = new ArrayList<>();
       for (Map<String, Object> filterAttributes : filtersAttributes)
         filtersList.add(new NamedList<>(filterAttributes));
       analyzerNamedList.add("filters", filtersList);
@@ -357,7 +360,8 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
      * Creates a new instance of the request.
      *
      * @param fieldAttributes field type attributes that can be used to enrich the field definition.
-     * @see <a href="https://solr.apache.org/guide/defining-fields.html">Defining Solr fields</a>
+     * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining
+     *     Solr fields</a>
      */
     public AddField(Map<String, Object> fieldAttributes) {
       this(fieldAttributes, null);
@@ -380,7 +384,8 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
    * this command will not partially modify a field's definition. If the field does not exist in the
    * schema the method call {@link #process(SolrClient, String)} will fail.
    *
-   * @see <a href="https://solr.apache.org/guide/defining-fields.html">Defining Solr fields</a>
+   * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining
+   *     Solr fields</a>
    */
   public static class ReplaceField extends SingleUpdate {
     /**
@@ -436,8 +441,11 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
   /**
    * Adds a new dynamic field rule to the schema of the specified collection.
    *
-   * @see <a href="https://solr.apache.org/guide/defining-fields.html">Defining Solr fields</a>
-   * @see <a href="https://solr.apache.org/guide/dynamic-fields.html">Solr dynamic fields</a>
+   * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining
+   *     Solr fields</a>
+   * @see <a
+   *     href="https://solr.apache.org/guide/solr/latest/indexing-guide/dynamic-fields.html">Solr
+   *     dynamic fields</a>
    */
   public static class AddDynamicField extends SingleUpdate {
     /**
@@ -473,8 +481,11 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
      *
      * @param dynamicFieldAttributes field type attributes that can be used to enrich the field
      *     definition.
-     * @see <a href="https://solr.apache.org/guide/defining-fields.html">Defining Solr fields</a>
-     * @see <a href="https://solr.apache.org/guide/dynamic-fields.html">Solr dynamic fields</a>
+     * @see <a href="https://solr.apache.org/guide/solr/latest/indexing-guide/fields.html">Defining
+     *     Solr fields</a>
+     * @see <a
+     *     href="https://solr.apache.org/guide/solr/latest/indexing-guide/dynamic-fields.html">Solr
+     *     dynamic fields</a>
      */
     public ReplaceDynamicField(Map<String, Object> dynamicFieldAttributes) {
       this(dynamicFieldAttributes, null);
@@ -614,7 +625,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
      *
      * @param source the source field name
      * @param dest the collection of the destination field names
-     * @see <a href="https://solr.apache.org/guide/copying-fields.html">Copying fields</a>
+     * @see <a
+     *     href="https://solr.apache.org/guide/solr/latest/indexing-guide/copy-fields.html">Copying
+     *     fields</a>
      */
     public AddCopyField(String source, List<String> dest) {
       this(source, dest, (SolrParams) null);
@@ -627,7 +640,9 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
      * @param dest the collection of the destination field names
      * @param maxChars the number of characters to be copied from the source to the dest. Specifying
      *     0 as value, means that all the source characters will be copied to the dest.
-     * @see <a href="https://solr.apache.org/guide/copying-fields.html">Copying fields</a>
+     * @see <a
+     *     href="https://solr.apache.org/guide/solr/latest/indexing-guide/copy-fields.html">Copying
+     *     fields</a>
      */
     public AddCopyField(String source, List<String> dest, Integer maxChars) {
       this(source, dest, maxChars, null);
@@ -743,7 +758,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
    * call either succeed or fail together.
    */
   public static class MultiUpdate extends Update {
-    private List<Update> updateSchemaRequests = new LinkedList<>();
+    private final List<Update> updateSchemaRequests = new ArrayList<>();
 
     public MultiUpdate(List<Update> updateSchemaRequests) {
       this(updateSchemaRequests, null);

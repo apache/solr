@@ -43,7 +43,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
 public class SolrCoreTest extends SolrTestCaseJ4 {
-  private static final String COLLECTION1 = "collection1";
 
   @Override
   public void setUp() throws Exception {
@@ -130,13 +129,15 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("/update/json/docs"), "solr.UpdateRequestHandler");
       ++ihCount;
+      assertEquals(pathToClassMap.get("/update/cbor"), "solr.UpdateRequestHandler");
+      ++ihCount;
       assertEquals(pathToClassMap.get("/analysis/document"), "solr.DocumentAnalysisRequestHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/analysis/field"), "solr.FieldAnalysisRequestHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/debug/dump"), "solr.DumpRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("update"), "solr.UpdateRequestHandlerApi");
+      assertEquals(pathToClassMap.get("update"), "solr.V2UpdateRequestHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/tasks/cancel"), "solr.QueryCancellationHandler");
       ++ihCount;
@@ -146,7 +147,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testClose() throws Exception {
+  public void testClose() {
     final CoreContainer cores = h.getCoreContainer();
     SolrCore core = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
 
@@ -159,17 +160,17 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals(core.getRequestHandlers().get(path), handler1);
     core.close();
     cores.shutdown();
-    assertTrue("Handler not closed", handler1.closed == true);
+    assertTrue("Handler not closed", handler1.closed);
   }
 
   @Test
-  public void testRefCount() throws Exception {
+  public void testRefCount() {
     SolrCore core = h.getCore();
-    assertTrue("Refcount != 1", core.getOpenCount() == 1);
+    assertEquals("Refcount != 1", 1, core.getOpenCount());
 
     final CoreContainer cores = h.getCoreContainer();
     SolrCore c1 = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
-    assertTrue("Refcount != 2", core.getOpenCount() == 2);
+    assertEquals("Refcount != 2", 2, core.getOpenCount());
 
     ClosingRequestHandler handler1 = new ClosingRequestHandler();
     handler1.inform(core);
@@ -182,26 +183,26 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     SolrCore c2 = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
     c1.close();
     assertTrue("Refcount < 1", core.getOpenCount() >= 1);
-    assertTrue("Handler is closed", handler1.closed == false);
+    assertFalse("Handler is closed", handler1.closed);
 
     c1 = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
     assertTrue("Refcount < 2", core.getOpenCount() >= 2);
-    assertTrue("Handler is closed", handler1.closed == false);
+    assertFalse("Handler is closed", handler1.closed);
 
     c2.close();
     assertTrue("Refcount < 1", core.getOpenCount() >= 1);
-    assertTrue("Handler is closed", handler1.closed == false);
+    assertFalse("Handler is closed", handler1.closed);
 
     c1.close();
     cores.shutdown();
-    assertTrue("Refcount != 0", core.getOpenCount() == 0);
+    assertEquals("Refcount != 0", 0, core.getOpenCount());
     assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
   }
 
   @Test
   public void testRefCountMT() throws Exception {
     SolrCore core = h.getCore();
-    assertTrue("Refcount != 1", core.getOpenCount() == 1);
+    assertEquals("Refcount != 1", 1, core.getOpenCount());
 
     final ClosingRequestHandler handler1 = new ClosingRequestHandler();
     handler1.inform(core);
@@ -240,7 +241,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
                   yieldInt(l);
                   assertTrue("Refcount > 17", core.getOpenCount() <= 17);
                   yieldInt(l);
-                  assertTrue("Handler is closed", handler1.closed == false);
+                  assertFalse("Handler is closed", handler1.closed);
                   yieldInt(l);
                   core.close();
                   core = null;
@@ -261,7 +262,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     }
 
     cores.shutdown();
-    assertTrue("Refcount != 0", core.getOpenCount() == 0);
+    assertEquals("Refcount != 0", 0, core.getOpenCount());
     assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
 
     service.shutdown();
@@ -269,7 +270,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInfoRegistry() throws Exception {
+  public void testInfoRegistry() {
     // TEst that SolrInfoMBeans are registered, including SearchComponents
     SolrCore core = h.getCore();
 
@@ -289,12 +290,11 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testConfiguration() throws Exception {
+  public void testConfiguration() {
     assertEquals(
         "wrong config for slowQueryThresholdMillis", 2000, solrConfig.slowQueryThresholdMillis);
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
-    assertEquals(
-        "wrong config for enableLazyFieldLoading", true, solrConfig.enableLazyFieldLoading);
+    assertTrue("wrong config for enableLazyFieldLoading", solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
   }
 
@@ -312,7 +312,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     // make up for the fact that opening a searcher in this empty core is very fast by opening new
     // searchers continuously to increase the likelihood for race.
     SolrCore core = h.getCore();
-    assertTrue("Refcount != 1", core.getOpenCount() == 1);
+    assertEquals("Refcount != 1", 1, core.getOpenCount());
     executor.execute(new NewSearcherRunnable(core));
 
     // Since we called getCore() vs getCoreInc() and don't own a refCount, the container should
@@ -376,7 +376,7 @@ class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware
 /** An empty handler for testing */
 class EmptyRequestHandler extends RequestHandlerBase {
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
     // nothing!
   }
 

@@ -214,53 +214,14 @@ public abstract class LTRScoringModel implements Accountable {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
+    if (this == obj) return true;
+    if (!(obj instanceof LTRScoringModel)) return false;
     final LTRScoringModel other = (LTRScoringModel) obj;
-    if (features == null) {
-      if (other.features != null) {
-        return false;
-      }
-    } else if (!features.equals(other.features)) {
-      return false;
-    }
-    if (norms == null) {
-      if (other.norms != null) {
-        return false;
-      }
-    } else if (!norms.equals(other.norms)) {
-      return false;
-    }
-    if (name == null) {
-      if (other.name != null) {
-        return false;
-      }
-    } else if (!name.equals(other.name)) {
-      return false;
-    }
-    if (params == null) {
-      if (other.params != null) {
-        return false;
-      }
-    } else if (!params.equals(other.params)) {
-      return false;
-    }
-    if (featureStoreName == null) {
-      if (other.featureStoreName != null) {
-        return false;
-      }
-    } else if (!featureStoreName.equals(other.featureStoreName)) {
-      return false;
-    }
-
-    return true;
+    return Objects.equals(features, other.features)
+        && Objects.equals(norms, other.norms)
+        && Objects.equals(name, other.name)
+        && Objects.equals(params, other.params)
+        && Objects.equals(featureStoreName, other.featureStoreName);
   }
 
   @Override

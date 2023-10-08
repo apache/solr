@@ -24,8 +24,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
@@ -43,7 +43,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
   }
 
   @After // unique core per test
-  public void coreDestroy() throws Exception {
+  public void coreDestroy() {
     deleteCore();
   }
 
@@ -88,7 +88,8 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
 
   public void testBackupBeforeFirstCommit() throws Exception {
 
-    // even w/o a user sending any data, the SolrCore initialiation logic should have automatically
+    // even without a user sending any data, the SolrCore initialization logic should have
+    // automatically
     // created an "empty" commit point that can be backed up...
     final IndexCommit empty = h.getCore().getDeletionPolicy().getLatestCommit();
     assertNotNull(empty);
@@ -96,7 +97,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     // white box sanity check that the commit point of the "reader" available from SolrIndexSearcher
     // matches the commit point that IDPW claims is the "latest"
     //
-    // this is important to ensure that backup/snapshot behavior is consistent with user expection
+    // this is important to ensure that backup/snapshot behavior is consistent with user expectation
     // when using typical commit + openSearcher
     assertEquals(empty, h.getCore().withSearcher(s -> s.getIndexReader().getIndexCommit()));
 
@@ -130,7 +131,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
           new File(backupDir, "snapshot.empty_backup1"), 0, initialEmptyIndexSegmentFileName);
     }
 
-    { // Empty (named) snapshot..
+    { // Empty (named) snapshot...
       SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody(
           req(
@@ -146,7 +147,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
 
     assertU(adoc("id", "1")); // uncommitted
 
-    { // second backup w/uncommited docs
+    { // second backup with uncommitted docs
       SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody(
           req(
@@ -166,7 +167,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
           new File(backupDir, "snapshot.empty_backup2"), 0, initialEmptyIndexSegmentFileName);
     }
 
-    { // Second empty (named) snapshot..
+    { // Second empty (named) snapshot...
       SolrQueryResponse resp = new SolrQueryResponse();
       admin.handleRequestBody(
           req(
@@ -372,7 +373,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
   /**
    * A simple sanity check that asserts the current weird behavior of
    * DirectoryReader.openIfChanged() and demos how 'softCommit' can cause the IndexReader in use by
-   * SolrIndexSearcher to missrepresent what commit is "current". So Backup code should only ever
+   * SolrIndexSearcher to misrepresent what commit is "current". So Backup code should only ever
    * "trust" the IndexCommit info available from the IndexDeletionPolicyWrapper
    *
    * @see <a href="https://issues.apache.org/jira/browse/LUCENE-9040">LUCENE-9040</a>
@@ -393,7 +394,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
                   // sanity check we are empty...
                   assertEquals(0L, (long) s.getIndexReader().numDocs());
 
-                  // sanity check this is the initial commit..
+                  // check this is the initial commit...
                   final IndexCommit commit = s.getIndexReader().getIndexCommit();
                   assertEquals(EXPECTED_GEN_OF_EMPTY_INDEX, commit.getGeneration());
                   return commit;
@@ -417,7 +418,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
                   final IndexCommit commit = s.getIndexReader().getIndexCommit();
                   // WTF: how/why does this reader still have the same commit generation as before?
                   assertEquals(
-                      "WTF: This Reader (claims) the same generation as our previous pre-softCommif (empty) reader",
+                      "WTF: This Reader (claims) the same generation as our previous pre-softCommit (empty) reader",
                       EXPECTED_GEN_OF_EMPTY_INDEX,
                       commit.getGeneration());
                   return commit;
@@ -438,7 +439,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
 
   /**
    * Simple check that the backup exists, is a valid index, and contains the expected number of
-   * docs. If expectedSegmentsFileName is non null then confirms that file exists in the bakup dir
+   * docs. If expectedSegmentsFileName is non-null then confirms that file exists in the backup dir
    * <em>and</em> that it is reported as the current segment file when opening a reader on that
    * backup.
    */
@@ -446,19 +447,19 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
       final File backup, final int numDocs, final String expectedSegmentsFileName)
       throws IOException {
     assertNotNull(backup);
-    assertTrue("Backup doesn't exist" + backup.toString(), backup.exists());
+    assertTrue("Backup doesn't exist" + backup, backup.exists());
     if (null != expectedSegmentsFileName) {
       assertTrue(
-          expectedSegmentsFileName + " doesn't exist in " + backup.toString(),
+          expectedSegmentsFileName + " doesn't exist in " + backup,
           new File(backup, expectedSegmentsFileName).exists());
     }
     try (Directory dir = FSDirectory.open(backup.toPath())) {
       TestUtil.checkIndex(dir, true, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
-        assertEquals("numDocs in " + backup.toString(), numDocs, r.numDocs());
+        assertEquals("numDocs in " + backup, numDocs, r.numDocs());
         if (null != expectedSegmentsFileName) {
           assertEquals(
-              "segmentsFile of IndexCommit for: " + backup.toString(),
+              "segmentsFile of IndexCommit for: " + backup,
               expectedSegmentsFileName,
               r.getIndexCommit().getSegmentsFileName());
         }

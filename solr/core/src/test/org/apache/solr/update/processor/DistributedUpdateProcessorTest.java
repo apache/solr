@@ -40,6 +40,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.TimedVersionBucket;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -65,7 +66,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void AfterClass() {
-    if (null != executor) { // may not have inited due to lack of mockito
+    if (null != executor) { // may not have been initialized due to lack of mockito
       executor.shutdown();
     }
     System.clearProperty("enable.update.log");
@@ -82,7 +83,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
       assertFalse(processor.shouldBufferUpdate(cmd, true, UpdateLog.State.APPLYING_BUFFERED));
 
       assertTrue(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.BUFFERING));
-      // this is not an buffer updates and it depend on other updates
+      // this is not a buffering update, and it depends on other updates
       cmd.prevVersion = 10;
       assertTrue(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.APPLYING_BUFFERED));
     }
@@ -105,11 +106,11 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         };
     int succeeded = runCommands(threads, 1000, req, versionAddFunc);
     // only one should succeed
-    assertThat(succeeded, is(1));
+    MatcherAssert.assertThat(succeeded, is(1));
 
     succeeded = runCommands(threads, -1, req, versionAddFunc);
     // all should succeed
-    assertThat(succeeded, is(threads));
+    MatcherAssert.assertThat(succeeded, is(threads));
   }
 
   @Test
@@ -130,11 +131,11 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
     int succeeded = runCommands(threads, 1000, req, versionDeleteFunc);
     // only one should succeed
-    assertThat(succeeded, is(1));
+    MatcherAssert.assertThat(succeeded, is(1));
 
     succeeded = runCommands(threads, -1, req, versionDeleteFunc);
     // all should succeed
-    assertThat(succeeded, is(threads));
+    MatcherAssert.assertThat(succeeded, is(threads));
   }
 
   /**

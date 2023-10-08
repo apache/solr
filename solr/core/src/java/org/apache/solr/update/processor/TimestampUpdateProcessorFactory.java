@@ -17,7 +17,7 @@
 package org.apache.solr.update.processor;
 
 import java.util.Date;
-import org.apache.solr.common.params.CommonParams; // javadoc
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;

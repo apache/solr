@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -124,9 +123,9 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
   private List<BoostEntry> initBoostEntries(InputStream is) throws IOException {
     List<BoostEntry> newBoostEntries = new ArrayList<>();
 
-    BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-    try {
-      String line = null;
+    try (BufferedReader reader =
+        new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+      String line;
       while ((line = reader.readLine()) != null) {
         // Remove comments
         line = line.replaceAll("\\s+#.*$", "");
@@ -149,11 +148,8 @@ public class RegexpBoostProcessor extends UpdateRequestProcessor {
               "Malformed config input line: {} (expected 2 fields, got {} fields).  Skipping entry.",
               line,
               fields.length);
-          continue;
         }
       }
-    } finally {
-      IOUtils.closeQuietly(reader);
     }
 
     return newBoostEntries;

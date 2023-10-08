@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -69,6 +68,7 @@ import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -84,6 +84,7 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
@@ -193,7 +194,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         }
       } else {
         for (String fq : fqs) {
-          if (StringUtils.isNotBlank(fq) && !fq.equals("*:*")) {
+          if (StrUtils.isNotBlank(fq) && !fq.equals("*:*")) {
             QParser fqp = QParser.getParser(fq, req);
             newFilters.add(fqp.getQuery());
           }
@@ -431,7 +432,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       newFilters.add(groupQuery);
     }
 
-    SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(null, newFilters);
+    SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(newFilters);
     if (pfilter.postFilter != null) {
       pfilter.postFilter.setLastDelegate(groupExpandCollector);
       collector = pfilter.postFilter;
@@ -479,8 +480,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
 
       for (ShardResponse srsp : sreq.responses) {
-        NamedList<Object> response = srsp.getSolrResponse().getResponse();
-        NamedList<?> ex = (NamedList<?>) response.get("expanded");
+        NamedList<?> ex =
+            (NamedList<?>)
+                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "expanded", false);
+        if (ex == null) {
+          continue;
+        }
         for (int i = 0; i < ex.size(); i++) {
           String name = ex.getName(i);
           SolrDocumentList val = (SolrDocumentList) ex.getVal(i);
@@ -552,6 +557,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
     }
 
+    @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
 
@@ -651,6 +657,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       this.collapsedSet = collapsedSet;
     }
 
+    @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
 

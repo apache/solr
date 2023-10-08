@@ -46,7 +46,7 @@ def update_changes(filename, new_version, init_changes, headers):
 def update_solrversion_class(new_version):
   filename = 'solr/core/src/java/org/apache/solr/util/SolrVersion.java'
   print('  changing version to %s...' % new_version.dot, end='', flush=True)
-  constant_prefix = 'private static final String LATEST_STRING = "(.*?)"'
+  constant_prefix = 'public static final String LATEST_STRING = "(.*?)"'
   matcher = re.compile(constant_prefix)
 
   def edit(buffer, match, line):
@@ -148,7 +148,7 @@ def main():
 
   print('\nAdding new version %s' % newconf.version)
   update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes(),
-                 ['Bug Fixes'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
+                 ['Bug Fixes', 'Dependency Upgrades'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Dependency Upgrades', 'Other Changes'])
 
   if newconf.is_latest_version:
     print('\nAdded version is latest version, updating...')

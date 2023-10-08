@@ -16,14 +16,13 @@
  */
 package org.apache.solr.core.backup;
 
-import static org.junit.Assert.*;
-
 import java.util.List;
 import java.util.Optional;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 /** Unit tests for {@link BackupFilePaths} */
-public class BackupFilePathsTest {
+public class BackupFilePathsTest extends SolrTestCase {
 
   @Test
   public void testGetBackupPropsName() {

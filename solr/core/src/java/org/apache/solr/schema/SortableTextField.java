@@ -25,7 +25,8 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
@@ -64,6 +65,7 @@ public class SortableTextField extends TextField {
 
   private int maxCharsForDocValues = DEFAULT_MAX_CHARS_FOR_DOC_VALUES;
 
+  @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     {
       final String maxS = args.remove("maxCharsForDocValues");

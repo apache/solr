@@ -1,5 +1,13 @@
-# This file can configure Muse PR static analysis. 
+# This file can configure Lift PR static analysis. 
 # Docs for adding, removing or changing checks can be found here:
-# https://docs.muse.dev/docs/repository-configuration/
+# https://help.sonatype.com/lift/configuring-lift
 
 jdkVersion = "11"
+disableTools = [ "refactor-first" ]
+ignoreRules = [ "INTERFACE_NOT_THREAD_SAFE" ]
+ignoreFiles = '''
+**/test/**
+**/*.min.js
+solr/webapp/web/libs/*.js
+'''
+build = "./gradlew jar"

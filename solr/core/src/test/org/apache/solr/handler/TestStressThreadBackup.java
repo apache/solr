@@ -19,9 +19,9 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -33,9 +33,9 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -72,12 +72,12 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private String coreName;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClass() {
     System.setProperty("solr.allowPaths", "*");
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     System.clearProperty("solr.allowPaths");
   }
 
@@ -125,7 +125,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   @Test
   public void testReplicationHandler() throws Exception {
-    // Create a custom BackupAPIImpl which uses ReplicatoinHandler for the backups
+    // Create a custom BackupAPIImpl which uses ReplicationHandler for the backups
     // but still defaults to CoreAdmin for making named snapshots (since that's what's documented)
     testSnapshotsAndBackupsDuringConcurrentCommitsAndOptimizes(
         new BackupAPIImpl() {
@@ -139,6 +139,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
            * Override default backup impl to hit ReplicationHandler, and then poll that same handler
            * until success
            */
+          @Override
           public void makeBackup(final String backupName, final String snapName) throws Exception {
             final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
             ModifiableSolrParams p =
@@ -158,7 +159,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         });
   }
 
-  @SuppressWarnings("AssertionFailureIgnored") // failure happens inside of a thread
+  @SuppressWarnings("AssertionFailureIgnored") // failure happens inside a thread
   public void testSnapshotsAndBackupsDuringConcurrentCommitsAndOptimizes(final BackupAPIImpl impl)
       throws Exception {
     final int numBackupIters = 20; // don't use 'atLeast', we don't want to blow up on nightly
@@ -170,6 +171,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     // possible to create a lot of index churn w/ segment merging
     final Thread heavyCommitting =
         new Thread() {
+          @Override
           public void run() {
             try {
               int docIdCounter = 0;
@@ -191,9 +193,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
                 log.info("Heavy Committing #{}: {}", docIdCounter, req);
                 final UpdateResponse rsp = req.process(coreClient);
                 assertEquals(
-                    "Dummy Doc#" + docIdCounter + " add status: " + rsp.toString(),
-                    0,
-                    rsp.getStatus());
+                    "Dummy Doc#" + docIdCounter + " add status: " + rsp, 0, rsp.getStatus());
               }
             } catch (Throwable t) {
               heavyCommitFailure.set(t);
@@ -203,13 +203,13 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
     heavyCommitting.start();
     try {
-      // now have the "main" test thread try to take a serious of backups/snapshots
+      // now have the "main" test thread try to take a series of backups/snapshots
       // while adding other "real" docs
 
-      final Queue<String> namedSnapshots = new LinkedList<>();
+      final Queue<String> namedSnapshots = new ArrayDeque<>();
 
       // NOTE #1: start at i=1 for 'id' & doc counting purposes...
-      // NOTE #2: abort quickly if the oher thread reports a heavyCommitFailure...
+      // NOTE #2: abort quickly if the other thread reports a heavyCommitFailure...
       for (int i = 1; (i <= numBackupIters && null == heavyCommitFailure.get()); i++) {
 
         // in each iteration '#i', the commit we create should have exactly 'i' documents in
@@ -221,7 +221,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         req.setParam(UpdateParams.OPEN_SEARCHER, "false"); // we don't care about searching
 
         final UpdateResponse rsp = req.process(coreClient);
-        assertEquals("Real Doc#" + i + " add status: " + rsp.toString(), 0, rsp.getStatus());
+        assertEquals("Real Doc#" + i + " add status: " + rsp, 0, rsp.getStatus());
 
         // create a backup of the 'current' index
         impl.makeBackup("backup_currentAt_" + i);
@@ -245,8 +245,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         // and how few iterations we have left
         if (3 < namedSnapshots.size()
             && random().nextInt(3 + numBackupIters - i) < random().nextInt(namedSnapshots.size())) {
-
-          assert 0 < namedSnapshots.size() : "Someone broke the conditionl";
           final String snapshotName = namedSnapshots.poll();
           final String backupName = "backup_as_of_" + snapshotName;
           log.info("Creating {} from {} in iter={}", backupName, snapshotName, i);
@@ -278,7 +276,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
       delAll.setParam(UpdateParams.OPTIMIZE, "true");
       delAll.setParam(UpdateParams.MAX_OPTIMIZE_SEGMENTS, "1"); // purge as many files as possible
       final UpdateResponse delRsp = delAll.process(coreClient);
-      assertEquals("dellAll status: " + delRsp.toString(), 0, delRsp.getStatus());
+      assertEquals("dellAll status: " + delRsp, 0, delRsp.getStatus());
     }
 
     { // Validate some backups at random...
@@ -298,7 +296,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   }
 
   /**
-   * Given a backup name, extrats the numberic suffix identifying how many "real" docs should be in
+   * Given a backup name, extracts the numeric suffix identifying how many "real" docs should be in
    * it
    *
    * @see #ENDS_WITH_INT_DIGITS
@@ -311,7 +309,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   /**
    * Validates a backup exists, passes check index, and contains a number of "real" documents that
-   * match it's name
+   * match its name
    *
    * @see #validateBackup(File)
    */
@@ -322,22 +320,20 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   /**
    * Validates a backup dir exists, passes check index, and contains a number of "real" documents
-   * that match it's name
-   *
-   * @see #getNumRealDocsFromBackupName
+   * that match its name
    */
   private void validateBackup(final File backup) throws IOException {
     log.info("Checking Validity of {}", backup);
     assertTrue(backup.toString() + ": isDir?", backup.isDirectory());
     final Matcher m = ENDS_WITH_INT_DIGITS.matcher(backup.getName());
-    assertTrue("Backup dir name does not end with int digits: " + backup.toString(), m.find());
+    assertTrue("Backup dir name does not end with int digits: " + backup, m.find());
     final int numRealDocsExpected = Integer.parseInt(m.group());
 
     try (Directory dir = FSDirectory.open(backup.toPath())) {
       TestUtil.checkIndex(dir, true, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals(
-            "num real docs in " + backup.toString(),
+            "num real docs in " + backup,
             numRealDocsExpected,
             r.docFreq(new Term("type_s", "real")));
       }

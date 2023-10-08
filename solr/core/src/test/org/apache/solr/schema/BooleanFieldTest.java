@@ -17,6 +17,7 @@
 
 package org.apache.solr.schema;
 
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,10 +25,10 @@ import org.junit.Test;
 public class BooleanFieldTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml", "schema15.xml");
+    initCore("solrconfig-tlog.xml", "schema15.xml");
   }
 
-  // Note, docValues-based boolean tests are tested elsewhere refering to more appropriate schemas
+  // Note, docValues-based boolean tests are tested elsewhere referring to more appropriate schemas
   @Test
   public void testBoolField() {
 
@@ -108,5 +109,16 @@ public class BooleanFieldTest extends SolrTestCaseJ4 {
         "//lst[@name='bindsto']/int[@name='true'][.='2']",
         "//lst[@name='bindstom']/int[@name='false'][.='2']",
         "//lst[@name='bindstom']/int[@name='true'][.='3']");
+
+    // SOLR-16360
+    assertU(adoc("id", "7", "bindsto", "false"));
+    assertU(commit());
+    // do atomic update
+    assertU(adoc(sdoc("id", "7", "bindsto", Map.of("set", "1"))));
+    assertQ(
+        req("qt", "/get", "id", "7"),
+        "count(//doc)=1",
+        "//doc/str[@name='id'][.='7']",
+        "//doc/bool[@name='bindsto'][.='true']");
   }
 }

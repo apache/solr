@@ -95,7 +95,7 @@ public class CommandOperation {
   }
 
   private Object getMapVal(String key) {
-    if ("".equals(key)) {
+    if (key != null && key.isEmpty()) {
       if (commandData instanceof Map) {
         addError("value of the command is an object should be primitive");
       }
@@ -223,7 +223,7 @@ public class CommandOperation {
     List<CommandOperation> operations = new ArrayList<>();
 
     final HashMap<Object, Object> map =
-        new HashMap<>(0) {
+        new HashMap<>() {
           @Override
           public Object put(Object key, Object value) {
             List<?> vals = null;

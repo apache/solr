@@ -22,9 +22,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
@@ -103,7 +103,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   ***/
 
   @Test
-  public void testIgnoredFields() throws Exception {
+  public void testIgnoredFields() {
     lrf.args.put(CommonParams.VERSION, "2.2");
     assertU("adding doc with ignored field", adoc("id", "42", "foo_ignored", "blah blah"));
     assertU("commit", commit());
@@ -118,7 +118,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSomeStuff() throws Exception {
+  public void testSomeStuff() {
     clearIndex();
 
     SolrCore core = h.getCore();
@@ -213,7 +213,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   /** verify that delete by query works with the QParser framework and pure negative queries */
-  public void testNonTrivialDeleteByQuery() throws Exception {
+  public void testNonTrivialDeleteByQuery() {
     clearIndex();
 
     // setup
@@ -291,11 +291,11 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testClientErrorOnMalformedDate() throws Exception {
+  public void testClientErrorOnMalformedDate() {
     final String BAD_VALUE = "NOT_A_DATE";
     ignoreException(BAD_VALUE);
 
-    final List<String> FIELDS = new LinkedList<>();
+    final List<String> FIELDS = new ArrayList<>();
     for (String type :
         new String[] {"tdt", "tdt1", "tdtdv", "tdtdv1", "dt_dv", "dt_dvo", "dt", "dt1", "dt_os"}) {
       FIELDS.add("malformed_" + type);
@@ -346,12 +346,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testClientErrorOnMalformedNumbers() throws Exception {
+  public void testClientErrorOnMalformedNumbers() {
 
     final String BAD_VALUE = "NOT_A_NUMBER";
     ignoreException(BAD_VALUE);
 
-    final List<String> FIELDS = new LinkedList<>();
+    final List<String> FIELDS = new ArrayList<>();
     for (String type :
         new String[] {
           "ti", "tf", "td", "tl",
@@ -439,7 +439,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   @Test
   public void testMultipleUpdatesPerAdd() {
     clearIndex();
-    // big freaking kludge since the response is currently not well formed.
+    // big freaking kludge since the response is currently not well-formed.
     String res =
         h.update(
             "<add><doc><field name=\"id\">1</field></doc><doc><field name=\"id\">2</field></doc></add>");
@@ -552,8 +552,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     f = ischema.getField("test_notv");
     luf = f.createField("test");
-    assertTrue(!f.storeTermVector());
-    assertTrue(!luf.fieldType().storeTermVectors());
+    assertFalse(f.storeTermVector());
+    assertFalse(luf.fieldType().storeTermVectors());
 
     f = ischema.getField("test_postv");
     luf = f.createField("test");
@@ -585,7 +585,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSolrParams() throws Exception {
+  public void testSolrParams() {
     NamedList<Object> nl = new NamedList<>();
     nl.add("i", 555);
     nl.add("s", "bbb");
@@ -619,8 +619,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(p.get("ss"), "SSS");
 
     assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
-    assertEquals(p.getBool("foo", true), true);
-    assertEquals(p.getBool("foo", false), false);
+    assertTrue(p.getBool("foo", true));
+    assertFalse(p.getBool("foo", false));
     assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
 
     NamedList<String> more = new NamedList<>();
@@ -764,8 +764,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     Document d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field in fl is not lazy
-    assertFalse(((Field) d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
-    assertFalse(((Field) d.getField("title")).getClass().getSimpleName().equals("LazyField"));
+    assertNotEquals("LazyField", ((Field) d.getField("test_hlt")).getClass().getSimpleName());
+    assertNotEquals("LazyField", ((Field) d.getField("title")).getClass().getSimpleName());
     req.close();
   }
 
@@ -798,9 +798,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertFalse(d1.getField("id") instanceof LazyDocument.LazyField);
     values1 = d1.getFields("test_hlt");
     assertEquals(4, values1.length);
-    for (int i = 0; i < values1.length; i++) {
-      assertTrue(values1[i] instanceof LazyDocument.LazyField);
-      LazyDocument.LazyField f = (LazyDocument.LazyField) values1[i];
+    for (IndexableField field : values1) {
+      assertTrue(field instanceof LazyDocument.LazyField);
+      LazyDocument.LazyField f = (LazyDocument.LazyField) field;
       assertFalse(f.hasBeenLoaded());
     }
     req.close();
@@ -814,7 +814,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     di = dl.iterator();
     Document d2 = req.getSearcher().doc(di.nextDoc());
     // ensure same doc, same lazy field now
-    assertTrue("Doc was not cached", d1 == d2);
+    assertSame("Doc was not cached", d1, d2);
     IndexableField[] values2 = d2.getFields("test_hlt");
     assertEquals(values1.length, values2.length);
     for (int i = 0; i < values1.length; i++) {
@@ -825,9 +825,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     }
 
     assertNotNull(values2[0].stringValue()); // actuallize one value
-    for (int i = 0; i < values2.length; i++) {
+    for (IndexableField indexableField : values2) {
       // now all values for this field should be loaded & cached
-      LazyDocument.LazyField f = (LazyDocument.LazyField) values2[i];
+      LazyDocument.LazyField f = (LazyDocument.LazyField) indexableField;
       assertTrue(f.hasBeenLoaded());
     }
 

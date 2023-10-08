@@ -31,7 +31,6 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -49,7 +48,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   private static SolrClient collection2;
   private static String shard1;
   private static String shard2;
-  private static File solrHome;
 
   private static File createSolrHome() throws Exception {
     File workDir = createTempDir().toFile();
@@ -61,20 +59,20 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertySolrDisableUrlAllowList("true");
-    solrHome = createSolrHome();
+    File solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
-    String url = jetty.getBaseUrl().toString();
+    String url = getBaseUrl();
 
     collection1 = getHttpSolrClient(url + "/collection1");
     collection2 = getHttpSolrClient(url + "/collection2");
 
-    String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
-    String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
+    String urlCollection1 = getBaseUrl() + "/" + "collection1";
+    String urlCollection2 = getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
 
     // create second core
-    try (HttpSolrClient nodeClient = getHttpSolrClient(url)) {
+    try (SolrClient nodeClient = getHttpSolrClient(url)) {
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("collection2");
       req.setConfigSet("collection1");
@@ -102,10 +100,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     if (null != collection2) {
       collection2.close();
       collection2 = null;
-    }
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
     }
     resetExceptionIgnores();
     systemClearPropertySolrDisableUrlAllowList();
@@ -200,7 +194,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       }
       q.setQuery(qs);
 
-      Set<String> shards = new HashSet<String>(Arrays.asList(shard1, shard2));
+      Set<String> shards = new HashSet<>(Arrays.asList(shard1, shard2));
       if (random().nextBoolean()) {
         shards.remove(shard1);
       } else if (random().nextBoolean()) {
@@ -208,7 +202,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       }
       q.set("shards", String.join(",", shards));
 
-      List<String> debug = new ArrayList<String>(10);
+      List<String> debug = new ArrayList<>(10);
 
       boolean all = false;
       final boolean timing = random().nextBoolean();
@@ -245,7 +239,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
         assertDebug(r, all || results, "explain");
         assertDebug(r, all || timing, "timing");
       } catch (AssertionError e) {
-        throw new AssertionError(q.toString() + ": " + e.getMessage(), e);
+        throw new AssertionError(q + ": " + e.getMessage(), e);
       }
     }
   }
@@ -372,7 +366,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     query.setQuery("id:1 OR id:2");
     query.setFilterQueries("id:[0 TO 10]", "id:[0 TO 5]");
     query.setRows(1);
-    query.setSort("id", SolrQuery.ORDER.asc); // thus only return id:1 since rows 1
+    query.setSort("id", SolrQuery.ORDER.asc); // thus, only return id:1 since rows 1
     query.set("debug", "true");
     query.set("distrib", "true");
     query.setFields("id");
@@ -466,7 +460,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     for (String element : elements) {
       String value = namedList.get(element);
       assertNotNull("Expected element '" + element + "' but was not found", value);
-      assertTrue("Expected element '" + element + "' but was empty", !value.isEmpty());
+      assertFalse("Expected element '" + element + "' but was empty", value.isEmpty());
     }
   }
 }

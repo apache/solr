@@ -23,8 +23,8 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
@@ -198,7 +198,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   public static class ParseResult {
     public String str;
     public byte[] bin;
-    public List<State> states = new LinkedList<>();
+    public List<State> states = new ArrayList<>();
   }
 
   /** Parse the input and return the stored part and the tokens with attributes. */
@@ -273,7 +273,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
 
   /** Token stream that works from a list of saved states. */
   private static class PreAnalyzedTokenizer extends Tokenizer {
-    private final List<AttributeSource.State> cachedStates = new LinkedList<>();
+    private final List<AttributeSource.State> cachedStates = new ArrayList<>();
     private Iterator<AttributeSource.State> it = null;
     private String stringValue = null;
     private byte[] binaryValue = null;

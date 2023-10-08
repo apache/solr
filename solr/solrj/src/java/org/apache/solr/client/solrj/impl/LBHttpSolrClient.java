@@ -17,8 +17,11 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -57,8 +60,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * </blockquote>
  *
  * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
- * a dedicated thread. This interval can be set using {@link #setAliveCheckInterval} , the default
- * is set to one minute.
+ * a dedicated thread. This interval can be set using {@link
+ * LBHttpSolrClient.Builder#setAliveCheckInterval(int)} , the default is set to one minute.
  *
  * <p><b>When to use this?</b><br>
  * This can be used as a software load balancer when you do not wish to setup an external load
@@ -76,9 +79,10 @@ public class LBHttpSolrClient extends LBSolrClient {
   private final boolean clientIsInternal;
   private final ConcurrentHashMap<String, HttpSolrClient> urlToClient = new ConcurrentHashMap<>();
   private final HttpSolrClient.Builder httpSolrClientBuilder;
+  private volatile Set<String> urlParamNames = new HashSet<>();
 
-  private Integer connectionTimeout;
-  private volatile Integer soTimeout;
+  final int connectionTimeoutMillis;
+  final int soTimeoutMillis;
 
   /** The provided httpClient should use a multi-threaded connection manager */
   protected LBHttpSolrClient(Builder builder) {
@@ -89,9 +93,10 @@ public class LBHttpSolrClient extends LBSolrClient {
         builder.httpClient == null
             ? constructClient(builder.baseSolrUrls.toArray(new String[builder.baseSolrUrls.size()]))
             : builder.httpClient;
-    this.connectionTimeout = builder.connectionTimeoutMillis;
-    this.soTimeout = builder.socketTimeoutMillis;
+    this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
+    this.soTimeoutMillis = builder.socketTimeoutMillis;
     this.parser = builder.responseParser;
+    this.aliveCheckIntervalMillis = builder.aliveCheckInterval;
     for (String baseUrl : builder.baseSolrUrls) {
       urlToClient.put(baseUrl, makeSolrClient(baseUrl));
     }
@@ -113,37 +118,37 @@ public class LBHttpSolrClient extends LBSolrClient {
     if (httpSolrClientBuilder != null) {
       synchronized (this) {
         httpSolrClientBuilder.withBaseSolrUrl(server).withHttpClient(httpClient);
-        if (connectionTimeout != null) {
-          httpSolrClientBuilder.withConnectionTimeout(connectionTimeout);
+        httpSolrClientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+        httpSolrClientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+
+        if (requestWriter != null) {
+          httpSolrClientBuilder.withRequestWriter(requestWriter);
         }
-        if (soTimeout != null) {
-          httpSolrClientBuilder.withSocketTimeout(soTimeout);
+        if (urlParamNames != null) {
+          httpSolrClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
         }
         client = httpSolrClientBuilder.build();
       }
     } else {
       final HttpSolrClient.Builder clientBuilder =
           new HttpSolrClient.Builder(server).withHttpClient(httpClient).withResponseParser(parser);
-      if (connectionTimeout != null) {
-        clientBuilder.withConnectionTimeout(connectionTimeout);
+      clientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+      clientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+      if (requestWriter != null) {
+        clientBuilder.withRequestWriter(requestWriter);
       }
-      if (soTimeout != null) {
-        clientBuilder.withSocketTimeout(soTimeout);
+      if (urlParamNames != null) {
+        clientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
       }
       client = clientBuilder.build();
     }
-    if (requestWriter != null) {
-      client.setRequestWriter(requestWriter);
-    }
-    if (queryParams != null) {
-      client.setQueryParams(queryParams);
-    }
+
     return client;
   }
 
   @Override
   protected SolrClient getClient(String baseUrl) {
-    HttpSolrClient client = urlToClient.get(baseUrl);
+    SolrClient client = urlToClient.get(baseUrl);
     if (client == null) {
       return makeSolrClient(baseUrl);
     } else {
@@ -172,8 +177,11 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   /** Constructs {@link LBHttpSolrClient} instances from provided configuration. */
   public static class Builder extends SolrClientBuilder<Builder> {
+
+    public static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
     protected final List<String> baseSolrUrls;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
+    private int aliveCheckInterval = CHECK_INTERVAL;
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();
@@ -249,6 +257,21 @@ public class LBHttpSolrClient extends LBSolrClient {
       for (String baseSolrUrl : solrUrls) {
         this.baseSolrUrls.add(baseSolrUrl);
       }
+      return this;
+    }
+
+    /**
+     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
+     * this to set that interval
+     *
+     * @param aliveCheckInterval time in milliseconds
+     */
+    public Builder setAliveCheckInterval(int aliveCheckInterval) {
+      if (aliveCheckInterval <= 0) {
+        throw new IllegalArgumentException(
+            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
+      }
+      this.aliveCheckInterval = aliveCheckInterval;
       return this;
     }
 

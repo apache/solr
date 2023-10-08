@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -84,7 +85,7 @@ public class ClassificationUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     ClassificationUpdateProcessorParams classificationParams =
         cFactoryToTest.getClassificationParams();
-    assertThat(classificationParams.getPredictedClassField(), is("classField1"));
+    MatcherAssert.assertThat(classificationParams.getPredictedClassField(), is("classField1"));
   }
 
   @Test

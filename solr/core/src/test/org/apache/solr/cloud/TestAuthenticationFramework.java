@@ -22,7 +22,6 @@ import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpRequestInterceptor;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -38,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Test of the MiniSolrCloudCluster functionality with authentication enabled. */
-@LuceneTestCase.Slow
 public class TestAuthenticationFramework extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -58,7 +56,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
     super.setUp();
   }
 
-  private void setupAuthenticationPlugin() throws Exception {
+  private void setupAuthenticationPlugin() {
     System.setProperty(
         "authenticationPlugin",
         "org.apache.solr.cloud.TestAuthenticationFramework$MockAuthenticationPlugin");
@@ -117,7 +115,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
           0, client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound());
 
       // modify/query collection
-      // not everyone is up to date just because we waited to make sure one was - pause a moment
+      // not everyone is up-to-date just because we waited to make sure one was - pause a moment
       Thread.sleep(100);
       new UpdateRequest().add("id", "1").commit(client, collectionName);
       QueryResponse rsp = client.query(collectionName, new SolrQuery("*:*"));
@@ -145,9 +143,8 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
         filterChain.doFilter(request, response);
         return true;
       }
-      HttpServletRequest httpRequest = request;
-      String username = httpRequest.getHeader("username");
-      String password = httpRequest.getHeader("password");
+      String username = request.getHeader("username");
+      String password = request.getHeader("password");
 
       log.info("Username: {}, password: {}", username, password);
       if (MockAuthenticationPlugin.expectedUsername.equals(username)

@@ -25,14 +25,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -44,7 +43,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -85,11 +86,11 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
-    // sanity check constants
+  public static void createMiniSolrCloudCluster() throws Exception {
+    // check constants
     assertTrue(
         "bad test constants: some suffixes will never be tested",
         (STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM) && (INT_FIELD_SUFFIXES.length < MAX_FIELD_NUM));
@@ -117,14 +118,12 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION_NAME).build();
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
-    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners())
       CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
-    }
 
     final int numDocs = atLeast(100);
     for (int id = 0; id < numDocs; id++) {
@@ -135,7 +134,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         for (int v = 0; v < numValsThisDoc; v++) {
           final String fieldValue = randFieldValue(fieldNum);
 
-          // for each fieldNum, there are actaully two fields: one string, and one integer
+          // for each fieldNum, there are actually two fields: one string, and one integer
           doc.addField(field(STR_FIELD_SUFFIXES, fieldNum), fieldValue);
           doc.addField(field(INT_FIELD_SUFFIXES, fieldNum), fieldValue);
         }
@@ -153,7 +152,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   /**
    * Given a (random) number, and a (static) array of possible suffixes returns a consistent field
-   * name that uses that number and one of hte specified suffixes in it's name.
+   * name that uses that number and one of the specified suffixes in its name.
    *
    * @see #STR_FIELD_SUFFIXES
    * @see #INT_FIELD_SUFFIXES
@@ -161,7 +160,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * @see #randFieldValue
    */
   private static String field(final String[] suffixes, final int fieldNum) {
-    assert fieldNum < MAX_FIELD_NUM;
+    assertTrue(fieldNum < MAX_FIELD_NUM);
 
     final String suffix = suffixes[fieldNum % suffixes.length];
     return "field_" + fieldNum + suffix;
@@ -189,19 +188,17 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
-    }
-    for (HttpSolrClient client : CLIENTS) {
-      client.close();
+  public static void afterClass() throws Exception {
+    IOUtils.closeQuietly(CLOUD_CLIENT);
+
+    for (SolrClient client : CLIENTS) {
+      IOUtils.closeQuietly(client);
     }
     CLIENTS.clear();
   }
 
   /** Sanity check that malformed requests produce errors */
-  public void testMalformedGivesError() throws Exception {
+  public void testMalformedGivesError() {
 
     ignoreException(".*'join' domain change.*");
 
@@ -288,18 +285,20 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     }
   }
 
-  public void testSanityCheckDomainMethods() throws Exception {
+  public void testSanityCheckDomainMethods() {
     {
       final JoinDomain empty = new JoinDomain(null, null, null);
-      assertEquals(null, empty.toJSONFacetParamValue());
+      assertNull(empty.toJSONFacetParamValue());
       final SolrParams out = empty.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
-      assertEquals(null, out.get("safe_key"));
+      assertNull(out.get("safe_key"));
       assertEquals("qqq", out.get("q"));
     }
     {
       final JoinDomain join = new JoinDomain("xxx", "yyy", null);
-      assertEquals("domain:{join:{from:xxx,to:yyy}}", join.toJSONFacetParamValue().toString());
+      assertEquals(
+          "domain:{join:{from:xxx,to:yyy}}",
+          Objects.requireNonNull(join.toJSONFacetParamValue()).toString());
       final SolrParams out = join.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
       assertEquals("qqq", out.get("safe_key"));
@@ -307,16 +306,19 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     }
     {
       final JoinDomain filter = new JoinDomain(null, null, "zzz");
-      assertEquals("domain:{filter:'zzz'}", filter.toJSONFacetParamValue().toString());
+      assertEquals(
+          "domain:{filter:'zzz'}",
+          Objects.requireNonNull(filter.toJSONFacetParamValue()).toString());
       final SolrParams out = filter.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
-      assertEquals(null, out.get("safe_key"));
+      assertNull(out.get("safe_key"));
       assertEquals("zzz AND qqq", out.get("q"));
     }
     {
       final JoinDomain both = new JoinDomain("xxx", "yyy", "zzz");
       assertEquals(
-          "domain:{join:{from:xxx,to:yyy},filter:'zzz'}", both.toJSONFacetParamValue().toString());
+          "domain:{join:{from:xxx,to:yyy},filter:'zzz'}",
+          Objects.requireNonNull(both.toJSONFacetParamValue()).toString());
       final SolrParams out = both.applyDomainToQuery("safe_key", params("q", "qqq"));
       assertNotNull(out);
       assertEquals("qqq", out.get("safe_key"));
@@ -325,9 +327,9 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   /**
-   * Test some small, hand crafted, but non-trivial queries that are easier to trace/debug then a
+   * Test some small, handcrafted, but non-trivial queries that are easier to trace/debug then a
    * pure random monstrosity. (ie: if something obvious gets broken, this test may fail faster and
-   * in a more obvious way then testRandom)
+   * in a more obvious way than testRandom)
    */
   public void testBespoke() throws Exception {
 
@@ -563,7 +565,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     // relatively small facets, so be it, but if we get a really big one early on, we can test as
     // much as possible, skip other iterations.
     //
-    // (deeply nested facets may contain more buckets then the max, but we won't *check* all of
+    // (deeply nested facets may contain more buckets than the max, but we won't *check* all of
     // them)
     final int maxBucketsAllowed = atLeast(2000);
     final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
@@ -587,7 +589,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       return "*:*";
     }
     final int numClauses = TestUtil.nextInt(random(), 3, 10);
-    List<String> clauses = new ArrayList<String>(numClauses);
+    List<String> clauses = new ArrayList<>(numClauses);
     for (int c = 0; c < numClauses; c++) {
       final int fieldNum = random().nextInt(MAX_FIELD_NUM);
       // keep queries simple, just use str fields - not point of test
@@ -703,7 +705,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     }
     assertTrue(
         "facets have unexpected keys left over: " + actualFacetResponse,
-        // should alwasy be a count, maybe a 'val' if we're a subfacet
+        // should always be a count, maybe a 'val' if we're a subfacet
         (actualFacetResponse.size() == expected.size() + 1)
             || (actualFacetResponse.size() == expected.size() + 2));
   }
@@ -730,7 +732,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
     public TermFacet(
         String field, JoinDomain domain, Integer limit, Integer overrequest, Boolean refine) {
-      assert null != field;
+      assertNotNull(field);
       this.field = field;
       this.domain = domain;
       this.limit = limit;
@@ -738,9 +740,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       this.refine = refine;
       if (isRefinementNeeded(limit, overrequest)) {
         assertEquals(
-            "Invalid refine param based on limit & overrequest: " + this.toString(),
-            Boolean.TRUE,
-            refine);
+            "Invalid refine param based on limit & overrequest: " + this, Boolean.TRUE, refine);
       }
     }
 
@@ -796,8 +796,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * value to use for testing them against in a solr request.
      */
     public static CharSequence toJSONFacetParamValue(Map<String, TermFacet> facets) {
-      assert null != facets;
-      assert 0 < facets.size();
+      assertNotNull(facets);
+      assertTrue(0 < facets.size());
       StringBuilder sb = new StringBuilder("{");
       for (String key : facets.keySet()) {
         sb.append(key).append(" : ").append(facets.get(key).toJSONFacetParamValue());
@@ -811,7 +811,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     /**
      * Factory method for generating some random (nested) facets.
      *
-     * <p>For simplicity, each facet will have a unique key name, regardless of it's depth under
+     * <p>For simplicity, each facet will have a unique key name, regardless of its depth under
      * other facets
      *
      * @see JoinDomain
@@ -859,16 +859,16 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
           return r.nextInt(UNIQUE_FIELD_VALS); // 20% ask for less them what's needed
         case 6:
           return r.nextInt(
-              Integer.MAX_VALUE); // 10%: completley random value, statisticaly more then enough
+              Integer.MAX_VALUE); // 10%: completely random value, statistically more than enough
         default:
           break;
       }
-      // else.... either leave param unspecified (or redundently specify the -1 default)
+      // else.... either leave param unspecified (or redundantly specify the -1 default)
       return r.nextBoolean() ? null : -1;
     }
 
     /**
-     * picks a random value for the "refine" param, that is garunteed to be suitable for the
+     * picks a random value for the "refine" param, that is guaranteed to be suitable for the
      * specified limit &amp; overrequest params.
      *
      * @return a value to specify in the request, or null to specify nothing (trigger default
@@ -893,7 +893,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
     /**
      * Deterministicly identifies if the specified limit &amp; overrequest params <b>require</b> a
-     * "refine:true" param be used in the the request, in order for the counts to be 100% accurate.
+     * "refine:true" param be used in the request, in order for the counts to be 100% accurate.
      *
      * @see #UNIQUE_FIELD_VALS
      */
@@ -918,7 +918,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * recursive helper method for building random facets
      *
      * @param keyCounter used to ensure every generated facet has a unique key name
-     * @param maxDepth max possible depth allowed for the recusion, a lower value may be used
+     * @param maxDepth max possible depth allowed for the recursion, a lower value may be used
      *     depending on how many facets are returned at the current level.
      */
     private static Map<String, TermFacet> buildRandomFacets(
@@ -928,7 +928,6 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       Map<String, TermFacet> results = new LinkedHashMap<>();
       for (int i = 0; i < numFacets; i++) {
         final JoinDomain domain = JoinDomain.buildRandomDomain();
-        assert null != domain;
         final Integer limit = randomLimitParam(random());
         final Integer overrequest = randomOverrequestParam(random());
         final TermFacet facet =
@@ -956,7 +955,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   private static final class JoinDomain {
     public final String from;
     public final String to;
-    public final String filter; // not bothering with more then 1 filter, not the point of the test
+    public final String filter; // not bothering with more than 1 filter, not the point of the test
 
     /**
      * @param from left side of join field name, null if domain involves no joining
@@ -964,7 +963,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * @param filter filter to apply to domain, null if domain involves no filtering
      */
     public JoinDomain(String from, String to, String filter) {
-      assert !((null == from) ^ (null == to)) : "if from is null, to must be null";
+      assertEquals("if from is null, to must be null", (null == from), (null == to));
       this.from = from;
       this.to = to;
       this.filter = filter;
@@ -980,7 +979,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       }
       StringBuilder sb = new StringBuilder("domain:{");
       if (null != from) {
-        assert null != to;
+        assertNotNull(to);
         sb.append("join:{from:").append(from).append(",to:").append(to).append("}");
         if (null != filter) {
           sb.append(",");
@@ -999,8 +998,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
      * facet
      */
     public SolrParams applyDomainToQuery(String safeKey, SolrParams in) {
-      assert null
-          == in.get(safeKey); // shouldn't be possible if every facet uses a unique key string
+      // shouldn't be possible if every facet uses a unique key string
+      assertNull(in.get(safeKey));
 
       String q = in.get("q");
       final ModifiableSolrParams out = new ModifiableSolrParams(in);
@@ -1032,7 +1031,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         if (noJoin) break;
         from = field(suffixes, random().nextInt(MAX_FIELD_NUM));
         to = field(suffixes, random().nextInt(MAX_FIELD_NUM));
-        // HACK: joined numeric point fields need docValues.. for now just skip _is fields if we are
+        // HACK: joined numeric point fields need docValues... for now just skip _is fields if we
+        // are
         // dealing with points.
         if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)
             && (from.endsWith("_is") || to.endsWith("_is"))) {
@@ -1061,7 +1061,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }

@@ -27,12 +27,11 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.apache.solr.hdfs.util.HdfsRecoverLeaseFileSystemUtils;
-import org.apache.solr.hdfs.util.HdfsRecoverLeaseFileSystemUtils.CallerInfo;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -66,11 +65,13 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -85,24 +86,14 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
     Path path = new Path(uri);
     Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     FileSystem fs1 = FileSystem.get(path.toUri(), conf);
-    Path testFile = new Path(uri.toString() + "/testfile");
+    Path testFile = new Path(uri + "/testfile");
     FSDataOutputStream out = fs1.create(testFile);
 
     out.write(5);
     out.hflush();
     out.close();
 
-    HdfsRecoverLeaseFileSystemUtils.recoverFileLease(
-        fs1,
-        testFile,
-        conf,
-        new CallerInfo() {
-
-          @Override
-          public boolean isCallerClosed() {
-            return false;
-          }
-        });
+    HdfsRecoverLeaseFileSystemUtils.recoverFileLease(fs1, testFile, conf, () -> false);
     assertEquals(
         0,
         HdfsRecoverLeaseFileSystemUtils.RECOVER_LEASE_SUCCESS_COUNT.get()
@@ -111,7 +102,7 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
     fs1.close();
 
     FileSystem fs2 = FileSystem.get(path.toUri(), conf);
-    Path testFile2 = new Path(uri.toString() + "/testfile2");
+    Path testFile2 = new Path(uri + "/testfile2");
     FSDataOutputStream out2 = fs2.create(testFile2);
 
     if (random().nextBoolean()) {
@@ -127,17 +118,7 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
 
     FileSystem fs3 = FileSystem.get(path.toUri(), conf);
 
-    HdfsRecoverLeaseFileSystemUtils.recoverFileLease(
-        fs3,
-        testFile2,
-        conf,
-        new CallerInfo() {
-
-          @Override
-          public boolean isCallerClosed() {
-            return false;
-          }
-        });
+    HdfsRecoverLeaseFileSystemUtils.recoverFileLease(fs3, testFile2, conf, () -> false);
     assertEquals(
         1,
         HdfsRecoverLeaseFileSystemUtils.RECOVER_LEASE_SUCCESS_COUNT.get()
@@ -148,6 +129,7 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("DoNotCall")
   public void testMultiThreaded() throws Exception {
     long startRecoverLeaseSuccessCount =
         HdfsRecoverLeaseFileSystemUtils.RECOVER_LEASE_SUCCESS_COUNT.get();
@@ -158,8 +140,8 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
 
     // n threads create files
     class WriterThread extends Thread {
-      private FileSystem fs;
-      private int id;
+      private final FileSystem fs;
+      private final int id;
 
       public WriterThread(int id) {
         this.id = id;
@@ -172,7 +154,7 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
 
       @Override
       public void run() {
-        Path testFile = new Path(uri.toString() + "/file-" + id);
+        Path testFile = new Path(uri + "/file-" + id);
         FSDataOutputStream out;
         try {
           out = fs.create(testFile);
@@ -199,8 +181,8 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
     }
 
     class RecoverThread extends Thread {
-      private FileSystem fs;
-      private int id;
+      private final FileSystem fs;
+      private final int id;
 
       public RecoverThread(int id) {
         this.id = id;
@@ -213,19 +195,9 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
 
       @Override
       public void run() {
-        Path testFile = new Path(uri.toString() + "/file-" + id);
+        Path testFile = new Path(uri + "/file-" + id);
         try {
-          HdfsRecoverLeaseFileSystemUtils.recoverFileLease(
-              fs,
-              testFile,
-              conf,
-              new CallerInfo() {
-
-                @Override
-                public boolean isCallerClosed() {
-                  return false;
-                }
-              });
+          HdfsRecoverLeaseFileSystemUtils.recoverFileLease(fs, testFile, conf, () -> false);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
@@ -236,13 +208,14 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
       }
     }
 
-    Set<WriterThread> writerThreads = new HashSet<WriterThread>();
-    Set<RecoverThread> recoverThreads = new HashSet<RecoverThread>();
+    Set<WriterThread> writerThreads = new HashSet<>();
+    Set<RecoverThread> recoverThreads = new HashSet<>();
 
     int threadCount = 3;
     for (int i = 0; i < threadCount; i++) {
       WriterThread wt = new WriterThread(i);
       writerThreads.add(wt);
+      // should be wt.start();
       wt.run();
     }
 
@@ -255,6 +228,7 @@ public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {
     for (WriterThread wt : writerThreads) {
       RecoverThread rt = new RecoverThread(wt.getFileId());
       recoverThreads.add(rt);
+      // should be rt.start();
       rt.run();
     }
 

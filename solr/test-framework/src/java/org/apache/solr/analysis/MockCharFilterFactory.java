@@ -19,7 +19,7 @@ package org.apache.solr.analysis;
 import java.io.Reader;
 import java.util.Map;
 import org.apache.lucene.analysis.CharFilterFactory;
-import org.apache.lucene.analysis.MockCharFilter;
+import org.apache.lucene.tests.analysis.MockCharFilter;
 
 /** Factory for {@link MockCharFilter} for testing purposes. */
 public class MockCharFilterFactory extends CharFilterFactory {

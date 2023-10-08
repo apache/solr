@@ -38,7 +38,7 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
     initCore("solrconfig-tlog.xml", "schema15.xml");
   }
 
-  public void testSortEquality() throws Exception {
+  public void testSortEquality() {
     assertEquals(
         new FacetRequest.FacetSort("count", FacetRequest.SortDirection.desc),
         FacetRequest.FacetSort.COUNT_DESC);
@@ -49,15 +49,15 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
         new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc),
         new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc));
     // negative assertions...
-    assertThat(
+    MatcherAssert.assertThat(
         new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc),
         not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc)));
-    assertThat(
+    MatcherAssert.assertThat(
         new FacetRequest.FacetSort("bar", FacetRequest.SortDirection.desc),
         not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc)));
   }
 
-  public void testEquality() throws IOException {
+  public void testEquality() {
     try (SolrQueryRequest req =
         req(
             "custom_req_param", "foo_i",

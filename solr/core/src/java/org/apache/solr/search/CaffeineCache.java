@@ -33,10 +33,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -44,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.IOFunction;
@@ -101,7 +98,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase
   private boolean cleanupThread;
   private boolean async;
 
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
 
@@ -191,6 +187,9 @@ public class CaffeineCache<K, V> extends SolrCacheBase
         -(RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
             + RamUsageEstimator.sizeOfObject(value, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
             + RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY));
+    if (async) {
+      ramBytes.add(-RAM_BYTES_PER_FUTURE);
+    }
   }
 
   @Override
@@ -289,10 +288,10 @@ public class CaffeineCache<K, V> extends SolrCacheBase
    */
   private void recordRamBytes(K key, V oldValue, V newValue) {
     ramBytes.add(
-        RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
-            + RamUsageEstimator.sizeOfObject(
-                newValue, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
+        RamUsageEstimator.sizeOfObject(newValue, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
     if (oldValue == null) {
+      ramBytes.add(
+          RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
       ramBytes.add(RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
       if (async) ramBytes.add(RAM_BYTES_PER_FUTURE);
     } else {
@@ -304,16 +303,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase
 
   @Override
   public V remove(K key) {
-    V existing = cache.asMap().remove(key);
-    if (existing != null) {
-      ramBytes.add(
-          -RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-      ramBytes.add(
-          -RamUsageEstimator.sizeOfObject(
-              existing, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
-      ramBytes.add(-RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
-    }
-    return existing;
+    // ramBytes adjustment happens via #onRemoval
+    return cache.asMap().remove(key);
   }
 
   @Override
@@ -388,6 +379,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     }
   }
 
+  protected void adjustMetrics(long hitsAdjust, long insertsAdjust, long lookupsAdjust) {
+    hits.add(-hitsAdjust);
+    inserts.add(-insertsAdjust);
+    lookups.add(-lookupsAdjust);
+  }
+
   @Override
   public void warm(SolrIndexSearcher searcher, SolrCache<K, V> old) {
     if (regenerator == null) {
@@ -413,7 +410,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
           break;
         }
       } catch (Exception e) {
-        SolrException.log(log, "Error during auto-warming of key:" + entry.getKey(), e);
+        log.error("Error during auto-warming of key: {}", entry.getKey(), e);
       }
     }
 

@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Map;
@@ -35,7 +36,7 @@ import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -80,7 +81,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testComparator() throws Exception {
+  public void testComparator() {
     SpellCheckComponent component =
         (SpellCheckComponent) h.getCore().getSearchComponent("spellcheck");
     assertNotNull(component);
@@ -114,9 +115,10 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
     String dictName = checker.init(spellchecker, core);
-    assertTrue(
+    assertEquals(
         dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
-        dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
+        SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
+        dictName);
     h.getCore()
         .withSearcher(
             searcher -> {
@@ -126,34 +128,33 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
               Collection<Token> tokens = queryConverter.convert("documemt");
               SpellingOptions spellOpts = new SpellingOptions(tokens, reader);
               SpellingResult result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result is null and it shouldn't be", result);
               // should be lowercased, b/c we are using a lowercasing analyzer
               Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("documemt is null and it shouldn't be", suggestions != null);
-              assertTrue(
-                  "documemt Size: " + suggestions.size() + " is not: " + 1,
-                  suggestions.size() == 1);
+              assertNotNull("documemt is null and it shouldn't be", suggestions);
+              assertEquals(
+                  "documemt Size: " + suggestions.size() + " is not: " + 1, 1, suggestions.size());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-              assertTrue(
-                  entry.getKey() + " is not equal to " + "document",
-                  entry.getKey().equals("document") == true);
-              assertTrue(
+              assertEquals(
+                  entry.getKey() + " is not equal to " + "document", "document", entry.getKey());
+              assertEquals(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
-                  entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+                  SpellingResult.NO_FREQUENCY_INFO,
+                  (int) entry.getValue());
 
               // test something not in the spell checker
               spellOpts.tokens = queryConverter.convert("super");
               result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result is null and it shouldn't be", result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("suggestions size should be 0", suggestions.size() == 0);
+              assertEquals("suggestions size should be 0", 0, suggestions.size());
 
               // test something that is spelled correctly
               spellOpts.tokens = queryConverter.convert("document");
               result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result is null and it shouldn't be", result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("suggestions is null and it shouldn't be", suggestions == null);
+              assertNull("suggestions is null and it shouldn't be", suggestions);
 
               // Has multiple possibilities, but the exact exists, so that should be returned
               spellOpts.tokens = queryConverter.convert("red");
@@ -161,7 +162,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
               result = checker.getSuggestions(spellOpts);
               assertNotNull(result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("suggestions is not null and it should be", suggestions == null);
+              assertNull("suggestions is not null and it should be", suggestions);
 
               // Try out something which should have multiple suggestions
               spellOpts.tokens = queryConverter.convert("bug");
@@ -169,25 +170,38 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
               assertNotNull(result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
               assertNotNull(suggestions);
-              assertTrue(
+              assertEquals(
                   "suggestions Size: " + suggestions.size() + " is not: " + 2,
-                  suggestions.size() == 2);
+                  2,
+                  suggestions.size());
 
               entry = suggestions.entrySet().iterator().next();
-              assertTrue(
+              assertNotEquals(
                   entry.getKey() + " is equal to " + "bug and it shouldn't be",
-                  entry.getKey().equals("bug") == false);
-              assertTrue(
+                  "bug",
+                  entry.getKey());
+              assertEquals(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
-                  entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+                  SpellingResult.NO_FREQUENCY_INFO,
+                  (int) entry.getValue());
 
               entry = suggestions.entrySet().iterator().next();
-              assertTrue(
+              assertNotEquals(
                   entry.getKey() + " is equal to " + "bug and it shouldn't be",
-                  entry.getKey().equals("bug") == false);
-              assertTrue(
+                  "bug",
+                  entry.getKey());
+              assertEquals(
                   entry.getValue() + " does not equal: " + SpellingResult.NO_FREQUENCY_INFO,
-                  entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+                  SpellingResult.NO_FREQUENCY_INFO,
+                  (int) entry.getValue());
+
+              // Check empty token due to spellcheck.q = ""
+              spellOpts.tokens = Collections.singletonList(new Token("", 0, 0));
+              result = checker.getSuggestions(spellOpts);
+              assertNotNull(result);
+              suggestions = result.get(spellOpts.tokens.iterator().next());
+              assertNotNull(suggestions);
+              assertTrue("suggestions should be empty", suggestions.isEmpty());
               return null;
             });
   }
@@ -205,9 +219,10 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
-    assertTrue(
+    assertEquals(
         dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
-        dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
+        SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
+        dictName);
     h.getCore()
         .withSearcher(
             searcher -> {
@@ -219,31 +234,29 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   new SpellingOptions(
                       tokens, reader, 1, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX, true, 0.5f, null);
               SpellingResult result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result is null and it shouldn't be", result);
               // should be lowercased, b/c we are using a lowercasing analyzer
               Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("documemt is null and it shouldn't be", suggestions != null);
-              assertTrue(
-                  "documemt Size: " + suggestions.size() + " is not: " + 1,
-                  suggestions.size() == 1);
+              assertNotNull("documemt is null and it shouldn't be", suggestions);
+              assertEquals(
+                  "documemt Size: " + suggestions.size() + " is not: " + 1, 1, suggestions.size());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-              assertTrue(
-                  entry.getKey() + " is not equal to " + "document",
-                  entry.getKey().equals("document") == true);
-              assertTrue(entry.getValue() + " does not equal: " + 2, entry.getValue() == 2);
+              assertEquals(
+                  entry.getKey() + " is not equal to " + "document", "document", entry.getKey());
+              assertEquals(entry.getValue() + " does not equal: " + 2, 2, (int) entry.getValue());
 
               // test something not in the spell checker
               spellOpts.tokens = queryConverter.convert("super");
               result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result is null and it shouldn't be", result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("suggestions size should be 0", suggestions.size() == 0);
+              assertEquals("suggestions size should be 0", 0, suggestions.size());
 
               spellOpts.tokens = queryConverter.convert("document");
               result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result is null and it shouldn't be", result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("suggestions is not null and it should be", suggestions == null);
+              assertNull("suggestions is not null and it should be", suggestions);
               return null;
             });
   }
@@ -269,17 +282,18 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
         AbstractLuceneSpellChecker.STRING_DISTANCE, JaroWinklerDistance.class.getName());
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
-    assertTrue(
+    assertEquals(
         dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
-        dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
+        SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
+        dictName);
     h.getCore()
         .withSearcher(
             searcher -> {
               checker.build(core, searcher);
               SpellChecker sc = checker.getSpellChecker();
-              assertTrue("sc is null and it shouldn't be", sc != null);
+              assertNotNull("sc is null and it shouldn't be", sc);
               StringDistance sd = sc.getStringDistance();
-              assertTrue("sd is null and it shouldn't be", sd != null);
+              assertNotNull("sd is null and it shouldn't be", sd);
               assertTrue(
                   "sd is not an instance of " + JaroWinklerDistance.class.getName(),
                   sd instanceof JaroWinklerDistance);
@@ -310,9 +324,9 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     File altIndexDir = new File(tmpDir, "alternateIdx" + new Date().getTime());
     Directory dir = newFSDirectory(altIndexDir.toPath());
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(new WhitespaceAnalyzer()));
-    for (int i = 0; i < ALT_DOCS.length; i++) {
+    for (String alt_doc : ALT_DOCS) {
       Document doc = new Document();
-      doc.add(new TextField("title", ALT_DOCS[i], Field.Store.YES));
+      doc.add(new TextField("title", alt_doc, Field.Store.YES));
       iw.addDocument(doc);
     }
     iw.forceMerge(1);
@@ -325,9 +339,10 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.SPELLCHECKER_ARG_NAME, spellchecker);
     SolrCore core = h.getCore();
     String dictName = checker.init(spellchecker, core);
-    assertTrue(
+    assertEquals(
         dictName + " is not equal to " + SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
-        dictName.equals(SolrSpellChecker.DEFAULT_DICTIONARY_NAME) == true);
+        SolrSpellChecker.DEFAULT_DICTIONARY_NAME,
+        dictName);
     h.getCore()
         .withSearcher(
             searcher -> {
@@ -339,30 +354,28 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
                   new SpellingOptions(
                       tokens, reader, 1, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX, true, 0.5f, null);
               SpellingResult result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result is null and it shouldn't be", result);
               // should be lowercased, b/c we are using a lowercasing analyzer
               Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("flesh is null and it shouldn't be", suggestions != null);
-              assertTrue(
-                  "flesh Size: " + suggestions.size() + " is not: " + 1, suggestions.size() == 1);
+              assertNotNull("flesh is null and it shouldn't be", suggestions);
+              assertEquals(
+                  "flesh Size: " + suggestions.size() + " is not: " + 1, 1, suggestions.size());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-              assertTrue(
-                  entry.getKey() + " is not equal to " + "flash",
-                  entry.getKey().equals("flash") == true);
-              assertTrue(entry.getValue() + " does not equal: " + 1, entry.getValue() == 1);
+              assertEquals(entry.getKey() + " is not equal to " + "flash", "flash", entry.getKey());
+              assertEquals(entry.getValue() + " does not equal: " + 1, 1, (int) entry.getValue());
 
               // test something not in the spell checker
               spellOpts.tokens = queryConverter.convert("super");
               result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result is null and it shouldn't be", result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("suggestions size should be 0", suggestions.size() == 0);
+              assertEquals("suggestions size should be 0", 0, suggestions.size());
 
               spellOpts.tokens = queryConverter.convert("Caroline");
               result = checker.getSuggestions(spellOpts);
-              assertTrue("result is null and it shouldn't be", result != null);
+              assertNotNull("result is null and it shouldn't be", result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
-              assertTrue("suggestions is not null and it should be", suggestions == null);
+              assertNull("suggestions is not null and it should be", suggestions);
               return null;
             });
   }

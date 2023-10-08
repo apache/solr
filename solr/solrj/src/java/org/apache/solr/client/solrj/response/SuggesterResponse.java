@@ -16,8 +16,8 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
@@ -39,7 +39,7 @@ public class SuggesterResponse {
       final NamedList<Object> outerValue = suggestInfo.getVal(i);
 
       SimpleOrderedMap<?> suggestionsNode = (SimpleOrderedMap<?>) outerValue.getVal(0);
-      List<Suggestion> suggestionList = new LinkedList<>();
+      List<Suggestion> suggestionList = new ArrayList<>();
       if (suggestionsNode != null) {
         @SuppressWarnings("unchecked")
         List<SimpleOrderedMap<?>> suggestionListToParse =
@@ -77,7 +77,7 @@ public class SuggesterResponse {
     Map<String, List<String>> suggestedTermsPerDictionary = new LinkedHashMap<>();
     for (Map.Entry<String, List<Suggestion>> entry : suggestionsPerDictionary.entrySet()) {
       List<Suggestion> suggestions = entry.getValue();
-      List<String> suggestionTerms = new LinkedList<String>();
+      List<String> suggestionTerms = new ArrayList<>();
       for (Suggestion s : suggestions) {
         suggestionTerms.add(s.getTerm());
       }

@@ -41,6 +41,9 @@ allprojects {
             // Exclude any generated stuff.
             exclude "src/generated"
 
+            // Don't recurse into local Lucene dev repo.
+            exclude "/lucene"
+
             // Don't check any of the subprojects - they have their own rat tasks.
             exclude subprojects.collect { it.projectDir.name }
 
@@ -55,6 +58,9 @@ allprojects {
             include "**/*.gradle"
             exclude ".gradle/**"
 
+            // Exclude Eclipse
+            exclude ".metadata"
+
             // Include selected patterns from any source folders. We could make this
             // relative to source sets but it seems to be of little value - all our source sets
             // live under 'src' anyway.
@@ -68,12 +74,8 @@ allprojects {
             exclude "src/**/*.csv"
 
             // TODO: SOLR-15601: Some of these should carry the license, perhaps?
-            exclude "**/README.md"
             exclude "**/*.html"
-            exclude "**/*.xml"
             exclude "**/*.json"
-            exclude "**/*.js"
-            exclude "**/*.py"
 
             // Conditionally apply module-specific patterns. We do it here instead
             // of reconfiguring each project because the provider can be made lazy
@@ -117,6 +119,20 @@ allprojects {
                     exclude "**/langdetect-profiles/*"
                     break
 
+                case ":solr:modules:ltr":
+                    // TODO: SOLR-15601: Some of these should carry the license, perhaps?
+                    exclude "**/*.py"
+                    break
+
+                case ":solr:modules:scripting":
+                    // TODO: SOLR-15601: Some of these should carry the license, perhaps?
+                    exclude "**/*.js"
+                    break
+
+                case ":solr:modules:s3-repository":
+                    exclude "src/test-files/s3.conf" // empty file
+                    break
+
                 case ":solr:documentation":
                     exclude "src/markdown/*.md"
                     break
@@ -132,6 +148,7 @@ allprojects {
                     exclude "src/test-files/**/*.conf"
                     exclude "src/test-files/**/external_eff"
                     exclude "src/test-files/**/*.incl"
+                    exclude "src/test-files/**/*-snippet-*.xml"
                     break
 
                 case ":solr:server":
@@ -145,7 +162,9 @@ allprojects {
                     break
 
                 case ":solr:solr-ref-guide":
-                    exclude "src/**"
+                    include "*.yml"
+                    include "**/*.adoc"
+                    exclude "ui-src/**"
                     exclude "node_modules/**"
                     break
 
@@ -260,10 +279,8 @@ class RatTask extends DefaultTask {
                 errors << "Unknown license: ${resource.@name}"
             }
         }
-        if (errors) {
-            throw new GradleException("Found " + errors.size() + " file(s) with errors:\n" +
-                    errors.collect{ msg -> "  - ${msg}" }.join("\n"))
-        }
+        def checkProp = "validation.rat.failOnError"
+        project.failOrWarn(checkProp, "Detected license header issues", errors)
     }
 
     @TaskAction

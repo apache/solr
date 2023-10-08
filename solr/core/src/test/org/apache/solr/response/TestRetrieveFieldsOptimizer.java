@@ -17,18 +17,14 @@
 
 package org.apache.solr.response;
 
-import static junit.framework.Assert.fail;
-import static org.apache.lucene.util.LuceneTestCase.random;
+import static org.apache.lucene.tests.util.LuceneTestCase.random;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_DV;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.ALL_FROM_STORED;
 import static org.apache.solr.search.SolrReturnFields.FIELD_SOURCES.MIXED_SOURCES;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Instant;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,7 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -62,15 +57,9 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   @BeforeClass
   public static void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
@@ -107,7 +96,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
   // TODO, how to generalize?
 
   @SuppressWarnings({"unchecked"})
-  private static void setupAllFields() throws IOException {
+  private static void setupAllFields() {
 
     IndexSchema schema = h.getCore().getLatestSchema();
 
@@ -129,23 +118,23 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "false"));
 
-      myName = type.toString() + storedAndDvSv;
+      myName = type + storedAndDvSv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "false"));
 
-      myName = type.toString() + notStoredDvSv;
+      myName = type + notStoredDvSv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "false"));
 
-      myName = type.toString() + storedNotDvMv;
+      myName = type + storedNotDvMv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "true"));
 
-      myName = type.toString() + storedAndDvMv;
+      myName = type + storedAndDvMv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "true"));
 
-      myName = type.toString() + notStoredDvMv;
+      myName = type + notStoredDvMv;
       typesHolder.addFieldType(schema, myName, type);
       fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "true"));
     }
@@ -159,7 +148,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
 
     h.getCore().setLatestSchema(schema);
 
-    // All that setup work and we're only going to add a very few docs!
+    // All that setup work, and we're only going to add a very few docs!
     for (int idx = 0; idx < 10; ++idx) {
       addDocWithAllFields(idx);
     }
@@ -258,7 +247,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
         toCheck = new ArrayList(fieldsHolder.allFields);
         break;
       default:
-        fail("Value passed to checkFetchSources unknown: " + source.toString());
+        fail("Value passed to checkFetchSources unknown: " + source);
     }
 
     // MultiValued fields are _always_ read from stored data.
@@ -313,7 +302,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
   // 1> we got all the values from the place we expected.
   // 2> all the values we expect are actually returned.
   //
-  // NOTE: multiValued fields are _NOT_ fetched from docValues by design so we don't have to worry
+  // NOTE: multiValued fields are _NOT_ fetched from docValues by design, so we don't have to worry
   // about set semantics
   //
   private void check(String flIn, SolrReturnFields.FIELD_SOURCES source) throws Exception {
@@ -420,21 +409,19 @@ class RetrieveFieldType {
   }
 
   static final Map<TEST_TYPE, String> solrClassMap =
-      Collections.unmodifiableMap(
-          Stream.of(
-                  new SimpleEntry<>(TEST_TYPE.TINT, "solr.TrieIntField"),
-                  new SimpleEntry<>(TEST_TYPE.TLONG, "solr.TrieLongField"),
-                  new SimpleEntry<>(TEST_TYPE.TFLOAT, "solr.TrieFloatField"),
-                  new SimpleEntry<>(TEST_TYPE.TDOUBLE, "solr.TrieDoubleField"),
-                  new SimpleEntry<>(TEST_TYPE.TDATE, "solr.TrieDateField"),
-                  new SimpleEntry<>(TEST_TYPE.PINT, "solr.IntPointField"),
-                  new SimpleEntry<>(TEST_TYPE.PLONG, "solr.LongPointField"),
-                  new SimpleEntry<>(TEST_TYPE.PFLOAT, "solr.FloatPointField"),
-                  new SimpleEntry<>(TEST_TYPE.PDOUBLE, "solr.DoublePointField"),
-                  new SimpleEntry<>(TEST_TYPE.PDATE, "solr.DatePointField"),
-                  new SimpleEntry<>(TEST_TYPE.STRING, "solr.StrField"),
-                  new SimpleEntry<>(TEST_TYPE.BOOL, "solr.BoolField"))
-              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+      Map.ofEntries(
+          Map.entry(TEST_TYPE.TINT, "solr.TrieIntField"),
+          Map.entry(TEST_TYPE.TLONG, "solr.TrieLongField"),
+          Map.entry(TEST_TYPE.TFLOAT, "solr.TrieFloatField"),
+          Map.entry(TEST_TYPE.TDOUBLE, "solr.TrieDoubleField"),
+          Map.entry(TEST_TYPE.TDATE, "solr.TrieDateField"),
+          Map.entry(TEST_TYPE.PINT, "solr.IntPointField"),
+          Map.entry(TEST_TYPE.PLONG, "solr.LongPointField"),
+          Map.entry(TEST_TYPE.PFLOAT, "solr.FloatPointField"),
+          Map.entry(TEST_TYPE.PDOUBLE, "solr.DoublePointField"),
+          Map.entry(TEST_TYPE.PDATE, "solr.DatePointField"),
+          Map.entry(TEST_TYPE.STRING, "solr.StrField"),
+          Map.entry(TEST_TYPE.BOOL, "solr.BoolField"));
 
   RetrieveFieldType(IndexSchema schema, String name, TEST_TYPE type) {
     this.name = name;
@@ -509,11 +496,6 @@ class RetrieveField {
   final RetrieveFieldType testFieldType;
 
   RetrieveField(IndexSchema schema, String name, String type, Map<String, String> opts) {
-
-    Map<String, String> fullOpts = new HashMap<>(opts);
-    fullOpts.put("name", name);
-    fullOpts.put("type", type);
-
     this.name = name;
     this.type = type;
     this.schemaField = schema.newField(name, type, opts);
@@ -524,7 +506,7 @@ class RetrieveField {
 
     FieldType fieldType = schemaField.getType();
 
-    // Why do mutliValued date fields get here as Strings whereas single-valued fields are Dates?
+    // Why do multiValued date fields get here as Strings whereas single-valued fields are Dates?
     // Why do BoolFields sometimes get here as "F" or "T"?
     if (val instanceof String) {
       if (fieldType instanceof TrieDateField || fieldType instanceof DatePointField) {
@@ -617,11 +599,11 @@ class RetrieveField {
         break;
 
       default:
-        fail("Found no case for field " + name + " type " + type);
+        SolrTestCaseJ4.fail("Found no case for field " + name + " type " + type);
         break;
     }
     // There are tricky cases with multiValued fields that are sometimes fetched from docValues that
-    // obey set semantics so be sure we include at least one duplicate in a multValued field
+    // obey set semantics so be sure we include at least one duplicate in a multiValued field
     // sometimes
     if (random().nextBoolean() && valsAsStrings.size() > 1) {
       valsAsStrings.add(valsAsStrings.get(random().nextInt(valsAsStrings.size())));
@@ -656,18 +638,18 @@ class RetrieveField {
     switch (testFieldType.getSolrTypeClass()) {
       case "solr.TrieIntField":
       case "solr.TrieLongField":
-        Collections.sort(valsAsStrings, Comparator.comparingInt(Integer::parseInt));
+        valsAsStrings.sort(Comparator.comparingInt(Integer::parseInt));
         break;
       case "solr.IntPointField":
       case "solr.LongPointField":
-        Collections.sort(valsAsStrings, Comparator.comparingLong(Long::parseLong));
+        valsAsStrings.sort(Comparator.comparingLong(Long::parseLong));
         break;
 
       case "solr.TrieFloatField":
       case "solr.FloatPointField":
       case "solr.TrieDoubleField":
       case "solr.DoublePointField":
-        Collections.sort(valsAsStrings, Comparator.comparingDouble(Double::parseDouble));
+        valsAsStrings.sort(Comparator.comparingDouble(Double::parseDouble));
         break;
 
       case "solr.TrieDateField":
@@ -678,7 +660,7 @@ class RetrieveField {
         break;
 
       default:
-        fail("Found no case for field " + name + " type " + type);
+        SolrTestCaseJ4.fail("Found no case for field " + name + " type " + type);
         break;
     }
   }

@@ -119,7 +119,7 @@ public class CommandHandler {
   private final QueryCommand queryCommand;
   private final List<Command<?>> commands;
   private final SolrIndexSearcher searcher;
-  private final boolean needDocset;
+  private final boolean needDocSet;
   private final boolean truncateGroups;
   private final boolean includeHitCount;
   private boolean partialResults = false;
@@ -131,13 +131,13 @@ public class CommandHandler {
       QueryCommand queryCommand,
       List<Command<?>> commands,
       SolrIndexSearcher searcher,
-      boolean needDocset,
+      boolean needDocSet,
       boolean truncateGroups,
       boolean includeHitCount) {
     this.queryCommand = queryCommand;
     this.commands = commands;
     this.searcher = searcher;
-    this.needDocset = needDocset;
+    this.needDocSet = needDocSet;
     this.truncateGroups = truncateGroups;
     this.includeHitCount = includeHitCount;
   }
@@ -149,13 +149,12 @@ public class CommandHandler {
       collectors.addAll(command.create());
     }
 
-    ProcessedFilter filter =
-        searcher.getProcessedFilter(queryCommand.getFilter(), queryCommand.getFilterList());
+    ProcessedFilter filter = searcher.getProcessedFilter(queryCommand.getFilterList());
     Query query = QueryUtils.makeQueryable(queryCommand.getQuery());
 
     if (truncateGroups) {
       docSet = computeGroupedDocSet(query, filter, collectors);
-    } else if (needDocset) {
+    } else if (needDocSet) {
       docSet = computeDocSet(query, filter, collectors);
     } else if (!collectors.isEmpty()) {
       searchWithTimeLimiter(

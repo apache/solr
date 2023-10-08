@@ -646,12 +646,14 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         final Comparator<Slot> comparator =
             null != indexOrderAcc
                 ? (new Comparator<Slot>() {
+                  @Override
                   public int compare(Slot x, Slot y) {
                     final int cmp = resortMul * countAcc.compare(x.slot, y.slot);
                     return cmp != 0 ? cmp : indexOrderAcc.compare(x.slot, y.slot);
                   }
                 })
                 : (new Comparator<Slot>() {
+                  @Override
                   public int compare(Slot x, Slot y) {
                     final int cmp = resortMul * countAcc.compare(x.slot, y.slot);
                     return cmp != 0 ? cmp : Integer.compare(x.slot, y.slot);
@@ -665,6 +667,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         Arrays.sort(
             slots,
             new Comparator<Slot>() {
+              @Override
               public int compare(Slot x, Slot y) {
                 return resortMul * indexOrderAcc.compare(x.slot, y.slot);
               }
@@ -714,12 +717,14 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     final Comparator<Slot> comparator =
         null != indexOrderAcc
             ? (new Comparator<Slot>() {
+              @Override
               public int compare(Slot x, Slot y) {
                 final int cmp = resortMul * acc.compare(x.resortSlotNum, y.resortSlotNum);
                 return cmp != 0 ? cmp : indexOrderAcc.compare(x.slot, y.slot);
               }
             })
             : (new Comparator<Slot>() {
+              @Override
               public int compare(Slot x, Slot y) {
                 final int cmp = resortMul * acc.compare(x.resortSlotNum, y.resortSlotNum);
                 return cmp != 0 ? cmp : Integer.compare(x.slot, y.slot);
@@ -733,7 +738,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   protected void processStats(
       SimpleOrderedMap<Object> bucket, Query bucketQ, DocSet docs, long docCount)
       throws IOException {
-    if (docCount == 0 && !freq.processEmpty || freq.getFacetStats().size() == 0) {
+    if ((docCount == 0 && !freq.processEmpty) || freq.getFacetStats().size() == 0) {
       bucket.add("count", docCount);
       return;
     }

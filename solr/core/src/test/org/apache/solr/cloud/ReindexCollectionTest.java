@@ -68,12 +68,12 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
   private DistribStateManager stateManager;
 
   @Before
-  public void doBefore() throws Exception {
+  public void doBefore() {
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     stateManager = cloudManager.getDistribStateManager();
     solrClient =
-        new CloudSolrClientBuilder(
+        new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(zkController.getZkServerAddress()), Optional.empty())
             .build();
   }
@@ -87,20 +87,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       fail("Unexpected exception checking state of " + collection + ": " + e);
       return null;
     }
-  }
-
-  private void waitForState(String collection, ReindexCollectionCmd.State expected)
-      throws Exception {
-    TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, cloudManager.getTimeSource());
-    ReindexCollectionCmd.State current = null;
-    while (!timeOut.hasTimedOut()) {
-      current = getState(collection);
-      if (expected == current) {
-        return;
-      }
-      timeOut.sleep(500);
-    }
-    throw new Exception("timeout waiting for state, current=" + current + ", expected=" + expected);
   }
 
   @After

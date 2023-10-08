@@ -16,13 +16,12 @@
  */
 package org.apache.solr.rest.schema;
 
-import java.io.IOException;
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
 public class TestDynamicFieldCollectionResource extends SolrRestletTestBase {
   @Test
-  public void testGetAllDynamicFields() throws Exception {
+  public void testGetAllDynamicFields() {
     assertQ(
         "/schema/dynamicfields?indent=on&wt=xml",
         "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[1] = '*_coordinate'",
@@ -31,7 +30,7 @@ public class TestDynamicFieldCollectionResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testGetTwoDynamicFields() throws IOException {
+  public void testGetTwoDynamicFields() {
     assertQ(
         "/schema/dynamicfields?indent=on&wt=xml&fl=*_i,*_s",
         "count(/response/arr[@name='dynamicFields']/lst/str[@name='name']) = 2",
@@ -40,7 +39,7 @@ public class TestDynamicFieldCollectionResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testNotFoundDynamicFields() throws IOException {
+  public void testNotFoundDynamicFields() {
     assertQ(
         "/schema/dynamicfields?indent=on&wt=xml&fl=*_not_in_there,this_one_isnt_either_*",
         "count(/response/arr[@name='dynamicFields']) = 1",

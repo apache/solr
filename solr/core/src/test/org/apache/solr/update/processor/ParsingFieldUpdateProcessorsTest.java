@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
-import org.hamcrest.core.IsInstanceOf;
 import org.junit.BeforeClass;
 
 /**
@@ -47,14 +46,6 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   private static final DateTimeFormatter isoDateOptionalTimeFormatter =
       DateTimeFormatter.ofPattern("yyyy-MM-dd['T'HH:mm[:ss[.SSS]]][z", Locale.ROOT)
           .withZone(ZoneOffset.UTC);
-
-  private static final IsInstanceOf IS_BOOLEAN = new IsInstanceOf(Boolean.class);
-  private static final IsInstanceOf IS_STRING = new IsInstanceOf(String.class);
-  private static final IsInstanceOf IS_DATE = new IsInstanceOf(Date.class);
-  private static final IsInstanceOf IS_FLOAT = new IsInstanceOf(Float.class);
-  private static final IsInstanceOf IS_DOUBLE = new IsInstanceOf(Double.class);
-  private static final IsInstanceOf IS_INTEGER = new IsInstanceOf(Integer.class);
-  private static final IsInstanceOf IS_LONG = new IsInstanceOf(Long.class);
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -67,7 +58,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     String dateString = "2010-11-12T13:14:15.168Z";
     SolrInputDocument d = processAdd("parse-date", doc(f("id", "9"), f("date_dt", dateString)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("date_dt"), IS_DATE);
+    assertTrue(d.getFieldValue("date_dt") instanceof Date);
     assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("date_dt")).toInstant());
     assertU(commit());
     assertQ(req("id:9"), "//date[@name='date_dt'][.='" + dateString + "']");
@@ -79,7 +70,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     String dateString = "2010-11-12T13:14:15.168Z";
     SolrInputDocument d = processAdd("parse-date", doc(f("id", "39"), f("date_tdt", dateString)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("date_tdt"), IS_DATE);
+    assertTrue(d.getFieldValue("date_tdt") instanceof Date);
     assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("date_tdt")).toInstant());
     assertU(commit());
     assertQ(req("id:39"), "//date[@name='date_tdt'][.='" + dateString + "']");
@@ -94,7 +85,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         processAdd(
             "parse-date-no-run-processor", doc(f("id", "18"), f("not_in_schema", dateString)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("not_in_schema"), IS_DATE);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
     assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("not_in_schema")).toInstant());
 
     d =
@@ -104,7 +95,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     for (Object val : d.getFieldValues("not_in_schema")) {
       // check that nothing was mutated, since not all field values are parseable as dates
-      assertThat(val, IS_STRING);
+      assertTrue(val instanceof String);
     }
 
     d =
@@ -114,7 +105,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     for (Object val : d.getFieldValues("not_in_schema")) {
       // check again that nothing was mutated, but with a valid date first this time
-      assertThat(val, IS_STRING);
+      assertTrue(val instanceof String);
     }
   }
 
@@ -135,8 +126,8 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
                 f("dateUTC_dt", dateStringUTC),
                 f("dateNoTimeZone_dt", dateStringNoTimeZone)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("dateUTC_dt"), IS_DATE);
-    assertThat(d.getFieldValue("dateNoTimeZone_dt"), IS_DATE);
+    assertTrue(d.getFieldValue("dateUTC_dt") instanceof Date);
+    assertTrue(d.getFieldValue("dateNoTimeZone_dt") instanceof Date);
     assertU(commit());
     assertQ(
         req("id:99"),
@@ -154,7 +145,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-date-explicit-not-in-schema-selector-no-run-processor",
             doc(f("id", "88"), f("not_in_schema", dateString)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("not_in_schema"), IS_DATE);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
     assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("not_in_schema")).toInstant());
   }
 
@@ -176,7 +167,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     }
 
     assertNotNull(d);
-    assertThat(d.getFieldValue("date_dt"), IS_DATE);
+    assertTrue(d.getFieldValue("date_dt") instanceof Date);
     assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("date_dt")).toInstant());
   }
 
@@ -189,7 +180,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "US-Pacific-parse-date-no-run-processor",
             doc(f("id", "288"), f("not_in_schema", dateString)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("not_in_schema"), IS_DATE);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
     assertEquals(
         Instant.parse("2010-08-09T07:00:00.000Z"),
         ((Date) d.getFieldValue("not_in_schema")).toInstant());
@@ -239,10 +230,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
               "parse-date-many-formats-no-run-processor",
               doc(f("id", id), f("dateUTC_dt", dateString)));
       assertNotNull(d);
-      assertThat(
+      assertTrue(
           "index: " + i + " date '" + dateString + "' is not mutated to a Date",
-          d.getFieldValue("dateUTC_dt"),
-          IS_DATE);
+          d.getFieldValue("dateUTC_dt") instanceof Date);
       assertEquals(
           "date '" + dateString + "' mismatched milliseconds",
           expectedInstant,
@@ -260,7 +250,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-french-date-UTC-defaultTimeZone-no-run-processor",
             doc(f("id", "88"), f("not_in_schema", frenchDateString)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("not_in_schema"), IS_DATE);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Date);
     assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("not_in_schema")).toInstant());
   }
 
@@ -272,7 +262,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     for (String dateString : dateStrings) {
       mixed.put(parse(isoDateOptionalTimeFormatter, dateString), dateString);
     }
-    Double extraDouble = 29.554d;
+    double extraDouble = 29.554d;
     mixed.put(extraDouble, extraDouble); // Double-typed field value
     SolrInputDocument d =
         processAdd(
@@ -281,10 +271,10 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundDouble = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (extraDouble == o) {
+      if (o.equals(extraDouble)) {
         foundDouble = true;
       } else {
-        assertThat(o, IS_STRING);
+        assertTrue(o instanceof String);
       }
       mixed.values().remove(o);
     }
@@ -303,9 +293,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         processAdd(
             "parse-int", doc(f("id", "113"), f("int1_i", intString1), f("int2_i", intString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("int1_i"), IS_INTEGER);
+    assertTrue(d.getFieldValue("int1_i") instanceof Integer);
     assertEquals(value, ((Integer) d.getFieldValue("int1_i")).intValue());
-    assertThat(d.getFieldValue("int2_i"), IS_INTEGER);
+    assertTrue(d.getFieldValue("int2_i") instanceof Integer);
     assertEquals(value, ((Integer) d.getFieldValue("int2_i")).intValue());
 
     assertU(commit());
@@ -331,9 +321,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-int-russian-no-run-processor",
             doc(f("id", "113"), f("int_i", intString1), f("not_in_schema", intString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("int_i"), IS_INTEGER);
+    assertTrue(d.getFieldValue("int_i") instanceof Integer);
     assertEquals(value, ((Integer) d.getFieldValue("int_i")).intValue());
-    assertThat(d.getFieldValue("not_in_schema"), IS_INTEGER);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Integer);
     assertEquals(value, ((Integer) d.getFieldValue("not_in_schema")).intValue());
   }
 
@@ -348,9 +338,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         processAdd(
             "parse-int", doc(f("id", "113"), f("int1_ti", intString1), f("int2_ti", intString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("int1_ti"), IS_INTEGER);
+    assertTrue(d.getFieldValue("int1_ti") instanceof Integer);
     assertEquals(value, ((Integer) d.getFieldValue("int1_ti")).intValue());
-    assertThat(d.getFieldValue("int2_ti"), IS_INTEGER);
+    assertTrue(d.getFieldValue("int2_ti") instanceof Integer);
     assertEquals(value, ((Integer) d.getFieldValue("int2_ti")).intValue());
 
     assertU(commit());
@@ -376,15 +366,15 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
                 f("not_in_schema1", longString1),
                 f("not_in_schema2", longString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("not_in_schema1"), IS_STRING);
-    assertThat(d.getFieldValue("not_in_schema2"), IS_STRING);
+    assertTrue(d.getFieldValue("not_in_schema1") instanceof String);
+    assertTrue(d.getFieldValue("not_in_schema2") instanceof String);
   }
 
   public void testFailedParseMixedInt() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     Map<Object, Object> mixed = new HashMap<>();
-    Float floatVal = 294423.0f;
+    float floatVal = 294423.0f;
     mixed.put(85, "85");
     mixed.put(floatVal, floatVal); // Float-typed field value
     mixed.put(-2894518, "-2,894,518");
@@ -395,10 +385,10 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundFloat = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (floatVal == o) {
+      if (o.equals(floatVal)) {
         foundFloat = true;
       } else {
-        assertThat(o, IS_STRING);
+        assertTrue(o instanceof String);
       }
       mixed.values().remove(o);
     }
@@ -418,9 +408,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-long",
             doc(f("id", "113"), f("long1_l", longString1), f("long2_l", longString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("long1_l"), IS_LONG);
+    assertTrue(d.getFieldValue("long1_l") instanceof Long);
     assertEquals(value, ((Long) d.getFieldValue("long1_l")).longValue());
-    assertThat(d.getFieldValue("long2_l"), IS_LONG);
+    assertTrue(d.getFieldValue("long2_l") instanceof Long);
     assertEquals(value, ((Long) d.getFieldValue("long2_l")).longValue());
 
     assertU(commit());
@@ -446,9 +436,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-long-russian-no-run-processor",
             doc(f("id", "113"), f("long_l", longString1), f("not_in_schema", longString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("long_l"), IS_LONG);
+    assertTrue(d.getFieldValue("long_l") instanceof Long);
     assertEquals(value, ((Long) d.getFieldValue("long_l")).longValue());
-    assertThat(d.getFieldValue("not_in_schema"), IS_LONG);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Long);
     assertEquals(value, ((Long) d.getFieldValue("not_in_schema")).longValue());
   }
 
@@ -464,9 +454,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-long",
             doc(f("id", "113"), f("long1_tl", longString1), f("long2_tl", longString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("long1_tl"), IS_LONG);
+    assertTrue(d.getFieldValue("long1_tl") instanceof Long);
     assertEquals(value, ((Long) d.getFieldValue("long1_tl")).longValue());
-    assertThat(d.getFieldValue("long2_tl"), IS_LONG);
+    assertTrue(d.getFieldValue("long2_tl") instanceof Long);
     assertEquals(value, ((Long) d.getFieldValue("long2_tl")).longValue());
 
     assertU(commit());
@@ -480,7 +470,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     Map<Object, Object> mixed = new HashMap<>();
-    Float floatVal = 294423.0f;
+    float floatVal = 294423.0f;
     mixed.put(85L, "85");
     mixed.put(floatVal, floatVal); // Float-typed field value
     mixed.put(-2894518L, "-2,894,518");
@@ -492,10 +482,10 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundFloat = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (floatVal == o) {
+      if (o.equals(floatVal)) {
         foundFloat = true;
       } else {
-        assertThat(o, IS_STRING);
+        assertTrue(o instanceof String);
       }
       mixed.values().remove(o);
     }
@@ -507,7 +497,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("float1_f")); // should match dynamic field "*_f"
     assertNotNull(schema.getFieldOrNull("float2_f")); // should match dynamic field "*_f"
-    float value = 10898.83491f;
+    float value = 10898.835f;
     String floatString1 = "10898.83491";
     String floatString2 = "10,898.83491";
     SolrInputDocument d =
@@ -515,9 +505,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-float",
             doc(f("id", "128"), f("float1_f", floatString1), f("float2_f", floatString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("float1_f"), IS_FLOAT);
+    assertTrue(d.getFieldValue("float1_f") instanceof Float);
     assertEquals(value, (Float) d.getFieldValue("float1_f"), EPSILON);
-    assertThat(d.getFieldValue("float2_f"), IS_FLOAT);
+    assertTrue(d.getFieldValue("float2_f") instanceof Float);
     assertEquals(value, (Float) d.getFieldValue("float2_f"), EPSILON);
 
     assertU(commit());
@@ -532,7 +522,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     final char groupChar = fr_FR.getGroupingSeparator();
     final char decimalChar = fr_FR.getDecimalSeparator();
 
-    float value = 10898.83491F;
+    float value = 10898.835F;
     String floatString1 = "10898" + decimalChar + "83491";
     String floatString2 = "10" + groupChar + "898" + decimalChar + "83491";
 
@@ -544,9 +534,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-float-french-no-run-processor",
             doc(f("id", "140"), f("float_f", floatString1), f("not_in_schema", floatString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("float_f"), IS_FLOAT);
+    assertTrue(d.getFieldValue("float_f") instanceof Float);
     assertEquals(value, (Float) d.getFieldValue("float_f"), EPSILON);
-    assertThat(d.getFieldValue("not_in_schema"), IS_FLOAT);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Float);
     assertEquals(value, (Float) d.getFieldValue("not_in_schema"), EPSILON);
   }
 
@@ -554,7 +544,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull("float1_tf")); // should match dynamic field "*_tf"
     assertNotNull(schema.getFieldOrNull("float2_tf")); // should match dynamic field "*_tf"
-    float value = 10898.83491f;
+    float value = 10898.835f;
     String floatString1 = "10898.83491";
     String floatString2 = "10,898.83491";
     SolrInputDocument d =
@@ -562,9 +552,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-float",
             doc(f("id", "728"), f("float1_tf", floatString1), f("float2_tf", floatString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("float1_tf"), IS_FLOAT);
+    assertTrue(d.getFieldValue("float1_tf") instanceof Float);
     assertEquals(value, (Float) d.getFieldValue("float1_tf"), EPSILON);
-    assertThat(d.getFieldValue("float2_tf"), IS_FLOAT);
+    assertTrue(d.getFieldValue("float2_tf") instanceof Float);
     assertEquals(value, (Float) d.getFieldValue("float2_tf"), EPSILON);
 
     assertU(commit());
@@ -581,14 +571,14 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     mixedFloats.put(85.0f, "85");
     mixedFloats.put(2894518.0f, "2,894,518");
     mixedFloats.put(2.94423E-9f, 2.94423E-9f); // Float-typed field value
-    mixedFloats.put(48794721.937f, "48,794,721.937");
+    mixedFloats.put(4.879472E+7f, "48,794,721.937");
     SolrInputDocument d =
         processAdd(
             "parse-float-no-run-processor",
             doc(f("id", "342"), f("float_tf", mixedFloats.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues("float_tf")) {
-      assertThat(o, IS_FLOAT);
+      assertTrue(o instanceof Float);
       mixedFloats.remove(o);
     }
     assertTrue(mixedFloats.isEmpty());
@@ -598,7 +588,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     Map<Object, Object> mixed = new HashMap<>();
-    Long longVal = 294423L;
+    long longVal = 294423L;
     mixed.put(85L, "85");
     mixed.put(longVal, longVal); // Float-typed field value
     mixed.put(-2894518L, "-2,894,518");
@@ -610,10 +600,10 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundLong = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (longVal == o) {
+      if (o.equals(longVal)) {
         foundLong = true;
       } else {
-        assertThat(o, IS_STRING);
+        assertTrue(o instanceof String);
       }
       mixed.values().remove(o);
     }
@@ -633,9 +623,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-double",
             doc(f("id", "128"), f("double1_d", doubleString1), f("double2_d", doubleString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("double1_d"), IS_DOUBLE);
+    assertTrue(d.getFieldValue("double1_d") instanceof Double);
     assertEquals(value, (Double) d.getFieldValue("double1_d"), EPSILON);
-    assertThat(d.getFieldValue("double2_d"), IS_DOUBLE);
+    assertTrue(d.getFieldValue("double2_d") instanceof Double);
     assertEquals(value, (Double) d.getFieldValue("double2_d"), EPSILON);
 
     assertU(commit());
@@ -662,9 +652,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-double-french-no-run-processor",
             doc(f("id", "140"), f("double_d", doubleString1), f("not_in_schema", doubleString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("double_d"), IS_DOUBLE);
+    assertTrue(d.getFieldValue("double_d") instanceof Double);
     assertEquals(value, (Double) d.getFieldValue("double_d"), EPSILON);
-    assertThat(d.getFieldValue("not_in_schema"), IS_DOUBLE);
+    assertTrue(d.getFieldValue("not_in_schema") instanceof Double);
     assertEquals(value, (Double) d.getFieldValue("not_in_schema"), EPSILON);
   }
 
@@ -680,9 +670,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
             "parse-double",
             doc(f("id", "728"), f("double1_td", doubleString1), f("double2_td", doubleString2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("double1_td"), IS_DOUBLE);
+    assertTrue(d.getFieldValue("double1_td") instanceof Double);
     assertEquals(value, (Double) d.getFieldValue("double1_td"), EPSILON);
-    assertThat(d.getFieldValue("double2_td"), IS_DOUBLE);
+    assertTrue(d.getFieldValue("double2_td") instanceof Double);
     assertEquals(value, (Double) d.getFieldValue("double2_td"), EPSILON);
 
     assertU(commit());
@@ -696,7 +686,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     Map<Object, Object> mixed = new HashMap<>();
-    Long longVal = 294423L;
+    long longVal = 294423L;
     mixed.put(85, "85.0");
     mixed.put(longVal, longVal); // Float-typed field value
     mixed.put(-2894.518, "-2,894.518");
@@ -708,10 +698,10 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundLong = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (longVal == o) {
+      if (o.equals(longVal)) {
         foundLong = true;
       } else {
-        assertThat(o, IS_STRING);
+        assertTrue(o instanceof String);
       }
       mixed.values().remove(o);
     }
@@ -729,9 +719,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         processAdd(
             "parse-boolean", doc(f("id", "141"), f("boolean1_b", value1), f("boolean2_b", value2)));
     assertNotNull(d);
-    assertThat(d.getFieldValue("boolean1_b"), IS_BOOLEAN);
+    assertTrue(d.getFieldValue("boolean1_b") instanceof Boolean);
     assertEquals(value1, d.getFieldValue("boolean1_b"));
-    assertThat(d.getFieldValue("boolean2_b"), IS_BOOLEAN);
+    assertTrue(d.getFieldValue("boolean2_b") instanceof Boolean);
     assertEquals(value2, d.getFieldValue("boolean2_b"));
 
     assertU(commit());
@@ -762,7 +752,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
 
     for (int i = 0; i < values.length; ++i) {
-      assertThat(d.getFieldValue(fieldNames[i]), IS_BOOLEAN);
+      assertTrue(d.getFieldValue(fieldNames[i]) instanceof Boolean);
       assertEquals(values[i], d.getFieldValue(fieldNames[i]));
     }
   }
@@ -782,7 +772,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
 
     for (int i = 0; i < values.length; ++i) {
-      assertThat(d.getFieldValue(fieldNames[i]), IS_BOOLEAN);
+      assertTrue(d.getFieldValue(fieldNames[i]) instanceof Boolean);
       assertEquals(values[i], d.getFieldValue(fieldNames[i]));
     }
 
@@ -796,7 +786,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
 
     for (int i = 0; i < values.length; ++i) {
-      assertThat(d.getFieldValue(fieldNames[i]), IS_STRING);
+      assertTrue(d.getFieldValue(fieldNames[i]) instanceof String);
     }
   }
 
@@ -804,7 +794,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
     Map<Object, Object> mixed = new HashMap<>();
-    Long longVal = 294423L;
+    long longVal = 294423L;
     mixed.put(true, "true");
     mixed.put(longVal, longVal); // Float-typed field value
     mixed.put(false, "false");
@@ -816,10 +806,10 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     boolean foundLong = false;
     for (Object o : d.getFieldValues("not_in_schema")) {
-      if (longVal == o) {
+      if (o.equals(longVal)) {
         foundLong = true;
       } else {
-        assertThat(o, IS_STRING);
+        assertTrue(o instanceof String);
       }
       mixed.values().remove(o);
     }
@@ -840,7 +830,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "341"), f(fieldName, booleans.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_BOOLEAN);
+      assertTrue(o instanceof Boolean);
       booleans.remove(o);
     }
     assertTrue(booleans.isEmpty());
@@ -852,7 +842,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "333"), f(fieldName, ints.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_INTEGER);
+      assertTrue(o instanceof Integer);
       ints.remove(o);
     }
     assertTrue(ints.isEmpty());
@@ -864,7 +854,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "342"), f(fieldName, longs.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_LONG);
+      assertTrue(o instanceof Long);
       longs.remove(o);
     }
     assertTrue(longs.isEmpty());
@@ -880,8 +870,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
       assertTrue(o instanceof float);
-      longs.remove(o);
+      floats.remove(o);
     }
+    assertTrue(floats.isEmpty());
     */
 
     Map<Double, String> doubles = new HashMap<>();
@@ -891,20 +882,21 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "342"), f(fieldName, doubles.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DOUBLE);
-      longs.remove(o);
+      assertTrue(o instanceof Double);
+      doubles.remove(o);
     }
+    assertTrue(doubles.isEmpty());
 
-    Map<Date, String> dates = new HashMap<>();
+    Map<Instant, String> dates = new HashMap<>();
     String[] dateStrings = {"2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z"};
     for (String dateString : dateStrings) {
-      dates.put(parse(isoDateOptionalTimeFormatter, dateString), dateString);
+      dates.put(parse(isoDateOptionalTimeFormatter, dateString).toInstant(), dateString);
     }
     d = processAdd(chain, doc(f("id", "343"), f(fieldName, dates.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DATE);
-      dates.remove(o);
+      assertTrue(o instanceof Date);
+      dates.remove(((Date) o).toInstant());
     }
     assertTrue(dates.isEmpty());
 
@@ -916,7 +908,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "344"), f(fieldName, mixedLongsAndDoubles.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DOUBLE);
+      assertTrue(o instanceof Double);
       mixedLongsAndDoubles.remove(o);
     }
     assertTrue(mixedLongsAndDoubles.isEmpty());
@@ -930,7 +922,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "345"), f(fieldName, mixed)));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_STRING);
+      assertTrue(o instanceof String);
     }
 
     Map<Double, Object> mixedDoubles = new LinkedHashMap<>(); // preserve order
@@ -941,7 +933,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "3391"), f(fieldName, mixedDoubles.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DOUBLE);
+      assertTrue(o instanceof Double);
       mixedDoubles.remove(o);
     }
     assertTrue(mixedDoubles.isEmpty());
@@ -954,7 +946,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "3392"), f(fieldName, mixedInts.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_INTEGER);
+      assertTrue(o instanceof Integer);
       mixedInts.remove(o);
     }
     assertTrue(mixedInts.isEmpty());
@@ -967,7 +959,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "3393"), f(fieldName, mixedLongs.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_LONG);
+      assertTrue(o instanceof Long);
       mixedLongs.remove(o);
     }
     assertTrue(mixedLongs.isEmpty());
@@ -980,23 +972,23 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     d = processAdd(chain, doc(f("id", "3394"), f(fieldName, mixedBooleans.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_BOOLEAN);
+      assertTrue(o instanceof Boolean);
       mixedBooleans.remove(o);
     }
     assertTrue(mixedBooleans.isEmpty());
 
-    Map<Date, Object> mixedDates = new HashMap<>();
+    Map<Instant, Object> mixedDates = new HashMap<>();
     dateStrings = new String[] {"2020-05-13T18:47", "1989-12-14", "1682-07-22T18:33:00.000Z"};
     for (String dateString : dateStrings) {
-      mixedDates.put(parse(isoDateOptionalTimeFormatter, dateString), dateString);
+      mixedDates.put(parse(isoDateOptionalTimeFormatter, dateString).toInstant(), dateString);
     }
     Date extraDate = parse(isoDateOptionalTimeFormatter, "2003-04-24");
-    mixedDates.put(extraDate, extraDate); // Date-typed field value
+    mixedDates.put(extraDate.toInstant(), extraDate); // Date-typed field value
     d = processAdd(chain, doc(f("id", "3395"), f(fieldName, mixedDates.values())));
     assertNotNull(d);
     for (Object o : d.getFieldValues(fieldName)) {
-      assertThat(o, IS_DATE);
-      mixedDates.remove(o);
+      assertTrue(o instanceof Date);
+      mixedDates.remove(((Date) o).toInstant());
     }
     assertTrue(mixedDates.isEmpty());
   }
@@ -1023,10 +1015,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
               "parse-date-patterns-default-config",
               doc(f("id", id), f("date_dt", notInFormatDateString)));
       assertNotNull(d);
-      assertThat(
+      assertTrue(
           "Date string: " + notInFormatDateString + " was not parsed as a date",
-          d.getFieldValue("date_dt"),
-          IS_DATE);
+          d.getFieldValue("date_dt") instanceof Date);
       assertEquals(
           notInFormatDateString,
           ((Date) d.getField("date_dt").getFirstValue()).toInstant().toString());
@@ -1054,10 +1045,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
               "parse-date-patterns-default-config",
               doc(f("id", id), f("date_dt", lenientDateString)));
       assertNotNull(d);
-      assertThat(
+      assertTrue(
           "Date string: " + lenientDateString + " was not parsed as a date",
-          d.getFieldValue("date_dt"),
-          IS_DATE);
+          d.getFieldValue("date_dt") instanceof Date);
       assertEquals(
           expectedString, ((Date) d.getField("date_dt").getFirstValue()).toInstant().toString());
       ++id;
@@ -1146,7 +1136,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testAsctimeLeniency() throws Exception {
-    // test double digit day
+    // test double-digit day
     assertParsedDate(
         "Fri Oct 07 13:14:15 2005",
         Date.from(inst20051007131415()),
@@ -1186,11 +1176,11 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(schema.getFieldOrNull("date_dt")); // should match "*_dt" dynamic field
     SolrInputDocument d = processAdd(chain, doc(f("id", "1"), f("date_dt", inputDateString)));
     assertNotNull(d);
-    assertThat(
+    assertTrue(
         "Date string: " + inputDateString + " was not parsed as a date",
-        d.getFieldValue("date_dt"),
-        IS_DATE);
-    assertEquals(expectedDate, d.getField("date_dt").getFirstValue());
+        d.getFieldValue("date_dt") instanceof Date);
+    assertEquals(
+        expectedDate.toInstant(), ((Date) d.getField("date_dt").getFirstValue()).toInstant());
   }
 
   private static Date parse(DateTimeFormatter dateTimeFormatter, String dateString) {

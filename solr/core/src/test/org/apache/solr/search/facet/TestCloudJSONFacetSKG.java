@@ -31,13 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -46,7 +43,9 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.noggit.JSONUtil;
@@ -76,7 +75,6 @@ import org.slf4j.LoggerFactory;
  * @see TestCloudJSONFacetJoinDomain
  * @see TestCloudJSONFacetSKGEquiv
  */
-@Slow
 public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -111,11 +109,11 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** One client per node */
-  private static final ArrayList<HttpSolrClient> CLIENTS = new ArrayList<>(5);
+  private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
-    // sanity check constants
+  public static void createMiniSolrCloudCluster() throws Exception {
+    // check constants
     assertTrue(
         "bad test constants: some suffixes will never be tested",
         (MULTI_STR_FIELD_SUFFIXES.length < MAX_FIELD_NUM)
@@ -146,8 +144,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION_NAME).build();
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
@@ -160,7 +157,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       SolrInputDocument doc = sdoc("id", "" + id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
         // NOTE: we ensure every doc has at least one value in each field that way, if a term is
-        // returned for a parent there there is guaranteed to be at least one one term in the child
+        // returned for a parent there is guaranteed to be at least one term in the child
         // facet as well.
         //
         // otherwise, we'd face the risk of a single shardX returning parentTermX as a top term for
@@ -199,7 +196,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   /**
    * Given a (random) number, and a (static) array of possible suffixes returns a consistent field
-   * name that uses that number and one of hte specified suffixes in it's name.
+   * name that uses that number and one of the specified suffixes in its name.
    *
    * @see #MULTI_STR_FIELD_SUFFIXES
    * @see #MULTI_INT_FIELD_SUFFIXES
@@ -207,16 +204,16 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
    * @see #randFieldValue
    */
   private static String field(final String[] suffixes, final int fieldNum) {
-    assert fieldNum < MAX_FIELD_NUM;
+    assertTrue(fieldNum < MAX_FIELD_NUM);
 
     final String suffix = suffixes[fieldNum % suffixes.length];
     return "field_" + fieldNum + suffix;
   }
-  /** Given a (random) number, returns a consistent field name for a multi valued string field */
+  /** Given a (random) number, returns a consistent field name for a multivalued string field */
   private static String multiStrField(final int fieldNum) {
     return field(MULTI_STR_FIELD_SUFFIXES, fieldNum);
   }
-  /** Given a (random) number, returns a consistent field name for a multi valued int field */
+  /** Given a (random) number, returns a consistent field name for a multivalued int field */
   private static String multiIntField(final int fieldNum) {
     return field(MULTI_INT_FIELD_SUFFIXES, fieldNum);
   }
@@ -243,21 +240,19 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
-    }
-    for (HttpSolrClient client : CLIENTS) {
-      client.close();
+  public static void afterClass() throws Exception {
+    IOUtils.closeQuietly(CLOUD_CLIENT);
+
+    for (SolrClient client : CLIENTS) {
+      IOUtils.closeQuietly(client);
     }
     CLIENTS.clear();
   }
 
   /**
-   * Test some small, hand crafted, but non-trivial queries that are easier to trace/debug then a
+   * Test some small, handcrafted, but non-trivial queries that are easier to trace/debug then a
    * pure random monstrosity. (ie: if something obvious gets broken, this test may fail faster and
-   * in a more obvious way then testRandom)
+   * in a more obvious way than testRandom)
    */
   public void testBespoke() throws Exception {
     { // trivial single level facet
@@ -284,7 +279,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       // to sanity check refinement of buckets missing from other shard in both cases
 
       // NOTE that these two queries & facets *should* effectively identical given that the
-      // very large limit value is big enough no shard will ever return that may terms,
+      // very large limit value is big enough no shard will ever return that many terms,
       // but the "limit=-1" case it actually triggers slightly different code paths
       // because it causes FacetField.returnsPartial() to be "true"
       for (int limit : new int[] {999999999, -1}) {
@@ -357,7 +352,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   private static String buildORQuery(String... clauses) {
-    assert 0 < clauses.length;
+    assertTrue(0 < clauses.length);
     return "(" + String.join(" OR ", clauses) + ")";
   }
 
@@ -436,7 +431,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       assertNotNull(facetKey + " key missing from: " + actualFacetResponse, results);
 
       if (null != results.get("allBuckets")) {
-        // if the response includes an allBuckets bucket, then there must not be an skg value
+        // if the response includes an allBuckets bucket, then there must not be a skg value
 
         // 'skg' key must not exist in th allBuckets bucket
         assertEquals(
@@ -504,7 +499,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   /**
-   * Verifies that the popularity &amp; relatedness values containined in a single SKG bucket match
+   * Verifies that the popularity &amp; relatedness values contained in a single SKG bucket match
    * the expected values based on the facet field &amp; bucket value, as well the existing
    * filterParams.
    *
@@ -521,7 +516,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     final String bucketQ = facet.field + ":" + fieldVal;
     @SuppressWarnings({"unchecked"})
     final NamedList<Object> skgBucket = (NamedList<Object>) bucket.get("skg");
-    assertNotNull(facetKey + "/bucket:" + bucket.toString(), skgBucket);
+    assertNotNull(facetKey + "/bucket:" + bucket, skgBucket);
 
     // TODO: make this more efficient?
     // ideally we'd do a single query w/4 facet.queries, one for each count
@@ -580,11 +575,11 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
     public final String field;
     /**
-     * @param field must be non null
-     * @param options can set any of options used in a term facet other then field or (sub) facets
+     * @param field must be non-null
+     * @param options can set any of options used in a term facet other than field or (sub) facets
      */
     public TermFacet(final String field, final Map<String, Object> options) {
-      assert null != field;
+      assertNotNull(field);
       this.field = field;
 
       jsonData.putAll(options);
@@ -626,8 +621,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      * value to use for testing them against in a solr request.
      */
     public static String toJSONFacetParamValue(final Map<String, TermFacet> facets) {
-      assert null != facets;
-      assert !facets.isEmpty();
+      assertNotNull(facets);
+      assertFalse(facets.isEmpty());
 
       // see class javadocs for why we always want processEmpty
       final Map<String, Object> jsonData = map("processEmpty", true);
@@ -703,8 +698,9 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         // never used a prefix on a numeric field
         return null;
       }
-      assert (facetField.contains("multi_s") || facetField.contains("solo_s"))
-          : "possible facet fields have changed, breaking test";
+      assertTrue(
+          "possible facet fields have changed, breaking test",
+          facetField.contains("multi_s") || facetField.contains("solo_s"));
 
       switch (r.nextInt(5)) {
         case 0:
@@ -724,9 +720,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      * picks a random value for the "prelim_sort" param, biased in favor of interesting test cases.
      *
      * @return a sort string (w/direction), or null to specify nothing (trigger default behavior)
-     * @see #randomSortParam
      */
-    public static String randomPrelimSortParam(final Random r, final String sort) {
+    public static String randomPrelimSortParam(final String sort) {
 
       if (null != sort && sort.startsWith("skg") && 1 == TestUtil.nextInt(random(), 0, 3)) {
         return "count desc";
@@ -807,11 +802,11 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
           return r.nextInt(UNIQUE_FIELD_VALS); // 20% ask for less them what's needed
         case 6:
           return r.nextInt(
-              Integer.MAX_VALUE); // 10%: completley random value, statisticaly more then enough
+              Integer.MAX_VALUE); // 10%: completely random value, statisticaly more than enough
         default:
           break;
       }
-      // else.... either leave param unspecified (or redundently specify the -1 default)
+      // else.... either leave param unspecified (or redundantly specify the -1 default)
       return r.nextBoolean() ? null : -1;
     }
 
@@ -825,7 +820,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      *
      * @return a Boolean, may be null
      */
-    public static Boolean randomAllBucketsParam(final Random r, final String sort) {
+    public static Boolean randomAllBucketsParam(final Random r) {
       switch (r.nextInt(4)) {
         case 0:
           return true;
@@ -843,7 +838,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      * recursive helper method for building random facets
      *
      * @param keyCounter used to ensure every generated facet has a unique key name
-     * @param maxDepth max possible depth allowed for the recusion, a lower value may be used
+     * @param maxDepth max possible depth allowed for the recursion, a lower value may be used
      *     depending on how many facets are returned at the current level.
      */
     private static Map<String, TermFacet> buildRandomFacets(
@@ -862,11 +857,11 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
                   facetField,
                   map(
                       "sort", sort,
-                      "prelim_sort", randomPrelimSortParam(random(), sort),
+                      "prelim_sort", randomPrelimSortParam(sort),
                       "limit", randomLimitParam(random(), sort),
                       "overrequest", randomOverrequestParam(random()),
                       "prefix", randomPrefixParam(random(), facetField),
-                      "allBuckets", randomAllBucketsParam(random(), sort),
+                      "allBuckets", randomAllBucketsParam(random()),
                       "perSeg", randomPerSegParam(random())));
 
           results.put("facet_" + keyCounter.incrementAndGet(), facet);
@@ -894,7 +889,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   /**
-   * Uses a random SolrClient to execture a request and returns only the numFound
+   * Uses a random SolrClient to execute a request and returns only the numFound
    *
    * @see #getRandClient
    */
@@ -903,7 +898,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
@@ -915,7 +910,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     for (int i = 0; i < pairs.length; i += 2) {
       final Object key = pairs[i];
       final Object val = pairs[i + 1];
-      if (null == key) throw new NullPointerException("arguemnt " + i);
+      if (null == key) throw new NullPointerException("argument " + i);
       if (null == val) continue;
 
       map.put(key.toString(), val);

@@ -73,13 +73,13 @@ public class FileFloatSource extends ValueSource {
    * @param field the source's SchemaField
    * @param keyField the field to use as a key
    * @param defVal the default value to use if a field has no entry in the external file
-   * @param datadir the directory in which to look for the external file
+   * @param dataDir the directory in which to look for the external file
    */
-  public FileFloatSource(SchemaField field, SchemaField keyField, float defVal, String datadir) {
+  public FileFloatSource(SchemaField field, SchemaField keyField, float defVal, String dataDir) {
     this.field = field;
     this.keyField = keyField;
     this.defVal = defVal;
-    this.dataDir = datadir;
+    this.dataDir = dataDir;
   }
 
   @Override
@@ -109,7 +109,7 @@ public class FileFloatSource extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (o.getClass() != FileFloatSource.class) return false;
+    if (!(o instanceof FileFloatSource)) return false;
     FileFloatSource other = (FileFloatSource) o;
     return this.field.getName().equals(other.field.getName())
         && this.keyField.getName().equals(other.keyField.getName())

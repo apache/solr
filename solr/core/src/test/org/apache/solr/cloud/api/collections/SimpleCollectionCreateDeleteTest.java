@@ -17,18 +17,24 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.OverseerCollectionConfigSetProcessor;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 
@@ -100,8 +106,34 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
           CollectionAdminRequest.createCollection(collectionName, 1, 1)
               .setCreateNodeSet(notOverseerNode);
       request = create.process(cloudClient).getResponse();
-      assertTrue("Collection creation should not have failed", request.get("success") != null);
+      assertNotNull("Collection creation should not have failed", request.get("success"));
     }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPropertiesOfReplica() throws Exception {
+    String collectionName = "testPropertiesOfReplica_coll";
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(collectionName, 2, 1);
+    NamedList<Object> request = create.process(cloudClient).getResponse();
+    assertNotNull(request.get("success"));
+    SolrZkClient.NodeData node =
+        getZkClient().getNode(DocCollection.getCollectionPath(collectionName), null, true);
+
+    DocCollection c =
+        ClusterState.createFromCollectionMap(
+                0, (Map<String, Object>) Utils.fromJSON(node.data), Collections.emptySet(), null)
+            .getCollection(collectionName);
+
+    Set<String> knownKeys =
+        Set.of("core", "leader", "node_name", "base_url", "state", "type", "force_set_state");
+    c.forEachReplica(
+        (s, replica) -> {
+          for (String k : replica.getProperties().keySet()) {
+            assertTrue(knownKeys.contains(k));
+          }
+        });
   }
 
   @Test
@@ -175,9 +207,9 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
       NamedList<Object> requestWithSharedConfig =
           createWithSharedConfig.process(cloudClient).getResponse();
-      assertTrue(
+      assertNotNull(
           "The collection with shared config set should have been created",
-          requestWithSharedConfig.get("success") != null);
+          requestWithSharedConfig.get("success"));
       assertTrue(
           "The new collection should exist after a successful creation",
           getZkClient()

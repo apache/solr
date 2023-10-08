@@ -57,80 +57,6 @@ expr=search(collection1,
        sort="a_f asc, a_i asc")
 ----
 
-== jdbc
-
-The `jdbc` function searches a JDBC datasource and emits a stream of tuples representing the JDBC result set.
-Each row in the result set is translated into a tuple and each tuple contains all the cell values for that row.
-
-=== jdbc Parameters
-
-* `connection`: (Mandatory) JDBC formatted connection string to whatever driver you are using.
-* `sql`: (Mandatory) query to pass off to the JDBC endpoint
-* `sort`: (Mandatory) The sort criteria indicating how the data coming out of the JDBC stream is sorted
-* `driver`: The name of the JDBC driver used for the connection.
-If provided then the driver class will attempt to be loaded into the JVM.
-If not provided then it is assumed that the driver is already loaded into the JVM.
-Some drivers require explicit loading so this option is provided.
-* `[driverProperty]`: One or more properties to pass to the JDBC driver during connection.
-The format is `propertyName="propertyValue"`.
-You can provide as many of these properties as you'd like and they will all be passed to the connection.
-
-=== Connections and Drivers
-
-Because some JDBC drivers require explicit loading the `driver` parameter can be used to provide the driver class name.
-If provided, then during stream construction the driver will be loaded.
-If the driver cannot be loaded because the class is not found on the classpath, then stream construction will fail.
-
-When the JDBC stream is opened it will validate that a driver can be found for the provided connection string.
-If a driver cannot be found (because it hasn't been loaded) then the open will fail.
-
-=== Datatypes
-
-Due to the inherent differences in datatypes across JDBC sources the following datatypes are supported.
-The table indicates what Java type will be used for a given JDBC type.
-Types marked as requiring conversion will go through a conversion for each value of that type.
-For performance reasons the cell data types are only considered when the stream is opened as this is when the converters are created.
-
-[width="100%",options="header",]
-|===
-|JDBC Type |Java Type |Requires Conversion
-|String |String |No
-|Short |Long |Yes
-|Integer |Long |Yes
-|Long |Long |No
-|Float |Double |Yes
-|Double |Double |No
-|Boolean |Boolean |No
-|===
-
-=== jdbc Syntax
-
-A basic `jdbc` expression:
-
-[source,text]
-----
-jdbc(
-    connection="jdbc:hsqldb:mem:.",
-    sql="select NAME, ADDRESS, EMAIL, AGE from PEOPLE where AGE > 25 order by AGE, NAME DESC",
-    sort="AGE asc, NAME desc",
-    driver="org.hsqldb.jdbcDriver"
-)
-----
-
-A `jdbc` expression that passes a property to the driver:
-
-[source,text]
-----
-// get_column_name is a property to pass to the hsqldb driver
-jdbc(
-    connection="jdbc:hsqldb:mem:.",
-    sql="select NAME as FIRST_NAME, ADDRESS, EMAIL, AGE from PEOPLE where AGE > 25 order by AGE, NAME DESC",
-    sort="AGE asc, NAME desc",
-    driver="org.hsqldb.jdbcDriver",
-    get_column_name="false"
-)
-----
-
 == drill
 
 The `drill` function is designed to support efficient high cardinality aggregation.
@@ -364,7 +290,7 @@ uses the More Like This query parser plugin.
 * `qf`: (Mandatory) The query field used to compare documents.
 * `k`: (Mandatory) The number of nearest neighbors to return.
 * `fl`: (Mandatory) The field list to return.
-* `mindf`: (Optional) The minimum number of occurrences in the corpus to be included in the search.
+* `mindf`: (Optional, default is 5) The minimum number of occurrences in the corpus to be included in the search.
 * `maxdf`: (Optional) The maximum number of occurrences in the corpus to be included in the search.
 * `minwl`: (Optional) The minimum world length of to be included in the search.
 * `maxwl`: (Optional) The maximum world length of to be included in the search.
@@ -384,8 +310,8 @@ knnSearch(collection1,
 
 == model
 
-The `model` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection.
-The `model` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format.
+The `api` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection.
+The `api` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format.
 After the model is retrieved it can be used by the xref:stream-decorator-reference.adoc#classify[classify function] to classify documents.
 
 A single model tuple is fetched and returned based on the *id* parameter.
@@ -394,14 +320,14 @@ If more then one iteration of the named model is stored in the index, the highes
 
 === Caching with model
 
-The `model` function has an internal LRU (least-recently-used) cache so models do not have to be retrieved with each invocation of the `model` function.
+The `api` function has an internal LRU (least-recently-used) cache so models do not have to be retrieved with each invocation of the `api` function.
 The time to cache for each model ID can be passed as a parameter to the function call.
 Retrieving a cached model does not reset the time for expiring the model ID in the cache.
 
 === Model Storage
 
 The storage format of the models in Solr is below.
-The `train` function outputs the format below so you only need to know schema details if you plan to use the `model` function with logistic regression models trained outside of Solr.
+The `train` function outputs the format below so you only need to know schema details if you plan to use the `api` function with logistic regression models trained outside of Solr.
 
 * `name_s` (Single value, String, Stored): The name of the model.
 * `iteration_i` (Single value, Integer, Stored): The iteration number of the model.

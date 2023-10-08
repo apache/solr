@@ -16,15 +16,14 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -42,39 +41,35 @@ public class TestBinaryField extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File homeDir = createTempDir().toFile();
+    Path homeDir = createTempDir();
 
-    File collDir = new File(homeDir, "collection1");
-    File dataDir = new File(collDir, "data");
-    File confDir = new File(collDir, "conf");
+    Path collDir = homeDir.resolve("collection1");
+    Path dataDir = collDir.resolve("data");
+    Path confDir = collDir.resolve("conf");
 
-    homeDir.mkdirs();
-    collDir.mkdirs();
-    dataDir.mkdirs();
-    confDir.mkdirs();
+    Files.createDirectories(homeDir);
+    Files.createDirectories(collDir);
+    Files.createDirectories(dataDir);
+    Files.createDirectories(confDir);
 
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
+    Files.copy(Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), homeDir.resolve("solr.xml"));
 
     String src_dir = TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(
-        new File(src_dir, "schema-binaryfield.xml"), new File(confDir, "schema.xml"));
-    FileUtils.copyFile(
-        new File(src_dir, "solrconfig-basic.xml"), new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(
-        new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
-        new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
+    Files.copy(Path.of(src_dir, "schema-binaryfield.xml"), confDir.resolve("schema.xml"));
+    Files.copy(Path.of(src_dir, "solrconfig-basic.xml"), confDir.resolve("solrconfig.xml"));
+    Files.copy(
+        Path.of(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
+        confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
     try (Writer w =
         new OutputStreamWriter(
-            Files.newOutputStream(collDir.toPath().resolve("core.properties")),
-            StandardCharsets.UTF_8)) {
+            Files.newOutputStream(collDir.resolve("core.properties")), StandardCharsets.UTF_8)) {
       Properties coreProps = new Properties();
       coreProps.put("name", "collection1");
       coreProps.store(w, "");
     }
 
-    createAndStartJetty(homeDir.getAbsolutePath());
+    createAndStartJetty(homeDir.toAbsolutePath().toString());
   }
 
   public void testSimple() throws Exception {

@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkController;
@@ -52,10 +53,14 @@ import org.mockito.stubbing.Answer;
 public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
   private static final class SuspendingZkClient extends SolrZkClient {
+    private static final int ZK_CLIENT_TIMEOUT = 30000;
     AtomicReference<Thread> slowpoke = new AtomicReference<>();
 
-    private SuspendingZkClient(String zkServerAddress, int zkClientTimeout) {
-      super(zkServerAddress, zkClientTimeout);
+    private SuspendingZkClient(String zkServerAddress) {
+      super(
+          new Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS));
     }
 
     boolean isSlowpoke() {
@@ -109,14 +114,14 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
     final String configsetName = "managed-config"; //
 
-    try (SolrZkClient client = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
+    try (SolrZkClient client = new SuspendingZkClient(zkServer.getZkHost())) {
       // we can pick any to load configs, I suppose, but here we check
       client.upConfig(configset("cloud-managed-upgrade"), configsetName);
     }
 
     ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool("threadpool");
 
-    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost(), 30000)) {
+    try (SolrZkClient raceJudge = new SuspendingZkClient(zkServer.getZkHost())) {
 
       ZkController zkController = createZkController(raceJudge);
 

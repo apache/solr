@@ -281,7 +281,8 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     expectThrows(
         TimeoutException.class,
         () -> {
-          client.waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS, (c) -> (false));
+          ZkStateReader.from(client)
+              .waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS, (c) -> (false));
         });
 
     waitFor(

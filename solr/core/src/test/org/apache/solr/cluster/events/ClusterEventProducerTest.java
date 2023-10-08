@@ -22,17 +22,14 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -43,6 +40,7 @@ import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
 import org.apache.solr.cluster.events.impl.DelegatingClusterEventProducer;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
@@ -52,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadLeakLingering(linger = 0)
-/** */
 @LogLevel("org.apache.solr.cluster.events=DEBUG")
 public class ClusterEventProducerTest extends SolrCloudTestCase {
   private AllEventsListener eventsListener;
@@ -66,6 +63,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     System.setProperty("enable.packages", "true");
@@ -229,7 +227,6 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     eventsListener.events.clear();
     eventsListener.setExpectedType(ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED);
     ClusterProperties clusterProperties = new ClusterProperties(cluster.getZkClient());
-    Map<String, Object> oldProps = new HashMap<>(clusterProperties.getClusterProperties());
     clusterProperties.setClusterProperty("ext.foo", "bar");
     eventsListener.waitForExpectedEvent(30);
     assertNotNull(
@@ -265,10 +262,9 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         ClusterEvent.EventType.CLUSTER_PROPERTIES_CHANGED,
         event.getType());
     propertiesChanged = (ClusterPropertiesChangedEvent) event;
-    assertEquals(
+    assertNull(
         "new properties should not have 'ext.foo' property: "
             + propertiesChanged.getNewClusterProperties(),
-        null,
         propertiesChanged.getNewClusterProperties().get("ext.foo"));
   }
 
@@ -307,7 +303,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
       if (log.isDebugEnabled()) {
         log.debug("starting {}", Integer.toHexString(hashCode()));
       }
@@ -328,7 +324,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
       if (log.isDebugEnabled()) {
         log.debug("closing {}", Integer.toHexString(hashCode()));
       }

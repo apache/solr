@@ -38,7 +38,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -51,6 +50,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -175,7 +175,7 @@ class RebalanceLeaders {
     req.getParams().required().check(COLLECTION_PROP);
 
     collectionName = req.getParams().get(COLLECTION_PROP);
-    if (StringUtils.isBlank(collectionName)) {
+    if (StrUtils.isBlank(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           String.format(

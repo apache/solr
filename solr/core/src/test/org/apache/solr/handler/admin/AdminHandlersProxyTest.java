@@ -20,11 +20,10 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.lucene.util.IOUtils;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -32,13 +31,12 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AdminHandlersProxyTest extends SolrCloudTestCase {
-  private CloseableHttpClient httpClient;
+  private HttpClient httpClient;
   private CloudSolrClient solrClient;
 
   @BeforeClass
@@ -51,16 +49,8 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClient = getCloudSolrClient(cluster);
-    solrClient.connect(1000, TimeUnit.MILLISECONDS);
-    httpClient = (CloseableHttpClient) solrClient.getHttpClient();
-  }
-
-  @After
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-    IOUtils.close(solrClient, httpClient);
+    solrClient = cluster.getSolrClient();
+    httpClient = ((CloudLegacySolrClient) solrClient).getHttpClient();
   }
 
   @Test

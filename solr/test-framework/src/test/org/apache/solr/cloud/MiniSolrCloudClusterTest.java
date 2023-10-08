@@ -24,12 +24,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -56,18 +56,21 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
       cluster =
           new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build()) {
             @Override
-            public JettySolrRunner startJettySolrRunner(
-                String name, String context, JettyConfig config) throws Exception {
+            public JettySolrRunner startJettySolrRunner(String name, JettyConfig config)
+                throws Exception {
               if (jettyIndex.incrementAndGet() != 2)
-                return super.startJettySolrRunner(name, context, config);
+                return super.startJettySolrRunner(name, config);
               throw new IOException("Fake exception on startup!");
             }
           };
       fail("Expected an exception to be thrown from MiniSolrCloudCluster");
     } catch (Exception e) {
-      assertEquals("Error starting up MiniSolrCloudCluster", e.getMessage());
+      assertEquals("Incorrect exception", "Error starting up MiniSolrCloudCluster", e.getMessage());
       assertEquals("Expected one suppressed exception", 1, e.getSuppressed().length);
-      assertEquals("Fake exception on startup!", e.getSuppressed()[0].getMessage());
+      assertEquals(
+          "Incorrect suppressed exception",
+          "Fake exception on startup!",
+          e.getSuppressed()[0].getMessage());
     } finally {
       if (cluster != null) cluster.shutdown();
     }
@@ -196,15 +199,15 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
       final MiniSolrCloudCluster x =
           new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build()) {
             @Override
-            public JettySolrRunner startJettySolrRunner(
-                String name, String hostContext, JettyConfig config) throws Exception {
+            public JettySolrRunner startJettySolrRunner(String name, JettyConfig config)
+                throws Exception {
               System.setProperty("zkHost", getZkServer().getZkAddress());
 
               final Properties nodeProps = new Properties();
               nodeProps.setProperty("test-from-sysprop", "yup");
 
               Path runnerPath = createTempDir(name);
-              JettyConfig newConfig = JettyConfig.builder(config).setContext("/blarfh").build();
+              JettyConfig newConfig = JettyConfig.builder(config).build();
               JettySolrRunner jetty =
                   new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
               return super.startJettySolrRunner(jetty);

@@ -23,19 +23,19 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * Confirm that the expected security headers are returned when making requests to solr, regardless
- * of wether the request is interanlly forwared to another node.
+ * of whether the request is internally forwarded to another node.
  */
-@org.apache.lucene.util.LuceneTestCase.AwaitsFix(
+@org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-14903")
 public class SecurityHeadersTest extends SolrCloudTestCase {
 

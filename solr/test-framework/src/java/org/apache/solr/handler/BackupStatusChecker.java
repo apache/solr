@@ -16,9 +16,9 @@
  */
 package org.apache.solr.handler;
 
-import static org.apache.lucene.util.LuceneTestCase.assertNotNull;
-import static org.apache.lucene.util.LuceneTestCase.assertNull;
-import static org.apache.lucene.util.LuceneTestCase.assertTrue;
+import static org.apache.lucene.tests.util.LuceneTestCase.assertNotNull;
+import static org.apache.lucene.tests.util.LuceneTestCase.assertNull;
+import static org.apache.lucene.tests.util.LuceneTestCase.assertTrue;
 import static org.apache.solr.SolrTestCaseJ4.params;
 
 import java.lang.invoke.MethodHandles;

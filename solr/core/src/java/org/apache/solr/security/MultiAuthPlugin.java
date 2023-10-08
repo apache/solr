@@ -29,14 +29,16 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.lucene.util.ResourceLoader;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.api.ModifyMultiPluginAuthConfigAPI;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
 
@@ -145,13 +147,13 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     Map<String, Object> schemeConfig = new HashMap<>(schemeMap);
 
     String scheme = (String) schemeConfig.remove(PROPERTY_SCHEME);
-    if (StringUtils.isEmpty(scheme)) {
+    if (StrUtils.isNullOrEmpty(scheme)) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "'scheme' is a required attribute: " + schemeMap);
     }
 
     String clazz = (String) schemeConfig.remove("class");
-    if (StringUtils.isEmpty(clazz)) {
+    if (StrUtils.isNullOrEmpty(clazz)) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "'class' is a required attribute: " + schemeMap);
     }
@@ -266,7 +268,8 @@ public class MultiAuthPlugin extends AuthenticationPlugin
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return Utils.getSpec("cluster.security.MultiPluginAuth.Commands").getSpec();
+    final List<Api> apis = AnnotatedApi.getApis(new ModifyMultiPluginAuthConfigAPI());
+    return apis.get(0).getSpec();
   }
 
   @Override

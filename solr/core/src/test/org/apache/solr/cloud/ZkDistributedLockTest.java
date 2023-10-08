@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionParams;
@@ -34,7 +35,7 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
   static final int TIMEOUT = 10000;
 
   /**
-   * Tests the obtention of a single read or write lock at a specific hierarchical level, for
+   * Tests the obtaining of a single read or write lock at a specific hierarchical level, for
    * distributed Collection API locking as well as distributed Config Set API locking.<br>
    * Tests the logic with a single thread, then tests multithreaded wait for lock acquire works.
    * Tests grouped to pay setup only once.
@@ -48,7 +49,11 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(createTempDir("zkData"));
     try {
       server.run();
-      try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .build()) {
         DistributedCollectionLockFactory collLockFactory =
             new ZkDistributedCollectionLockFactory(zkClient, "/lockTestCollectionRoot");
 
@@ -101,7 +106,7 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
         collRL4.isAcquired());
 
     // Collection is write locked by collWL3 and collRL4 read lock waiting behind. Now moving to
-    // request shard level locks. These are totally independent from the Collection level locks so
+    // request shard level locks. These are totally independent of the Collection level locks so
     // should see no impact.
     DistributedLock shardWL5 =
         factory.createLock(
@@ -173,7 +178,7 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     new Thread(
             () -> {
               writeLock.waitUntilAcquired();
-              // countDown() will not be called if waitUntilAcquired() threw exception of any kind
+              // countDown() will not be called if waitUntilAcquired() threw any kind of exception
               latch.countDown();
             })
         .start();
@@ -260,7 +265,7 @@ public class ZkDistributedLockTest extends SolrTestCaseJ4 {
     new Thread(
             () -> {
               configSetWL1.waitUntilAcquired();
-              // countDown() will not be called if waitUntilAcquired() threw exception of any kind
+              // countDown() will not be called if waitUntilAcquired() threw any kind of exception
               latch.countDown();
             })
         .start();

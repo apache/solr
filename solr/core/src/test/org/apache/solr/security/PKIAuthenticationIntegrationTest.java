@@ -24,12 +24,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -64,7 +65,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   @Test
   public void testPkiAuth() throws Exception {
-    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    HttpClient httpClient = ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String baseUrl = jetty.getBaseUrl().toString();
       verifySecurityStatus(
@@ -112,7 +113,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @After
-  public void distribTearDown() throws Exception {
+  public void distribTearDown() {
     MockAuthenticationPlugin.predicate = null;
     MockAuthorizationPlugin.predicate = null;
   }

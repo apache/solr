@@ -47,7 +47,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.carrot2.clustering.Cluster;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -162,7 +161,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
     // Echo clustering algorithm just returns document fields as cluster labels
     // so highlighted snippets should never be longer than full field content.
-    Assert.assertEquals(highlighted.size(), full.size());
+    assertEquals(highlighted.size(), full.size());
     for (int i = 0; i < highlighted.size(); i++) {
       List<String> labels1 = highlighted.get(i).getLabels();
       List<String> labels2 = full.get(i).getLabels();
@@ -209,7 +208,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
                   params.add(EngineParameters.PARAM_CONTEXT_COUNT, Integer.toString(80));
                 }));
 
-    Assert.assertEquals(shortSummaries.size(), longSummaries.size());
+    assertEquals(shortSummaries.size(), longSummaries.size());
     for (int i = 0; i < shortSummaries.size(); i++) {
       List<String> shortLabels = shortSummaries.get(i).getLabels();
       List<String> longLabels = longSummaries.get(i).getLabels();
@@ -294,8 +293,7 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
   }
 
   static void compareWhitespaceNormalized(String actual, String expected) {
-    Function<String, String> normalize =
-        v -> v.replaceAll("\r", "").replaceAll("[ \t]+", " ").trim();
+    Function<String, String> normalize = v -> v.replace("\r", "").replaceAll("[ \t]+", " ").trim();
 
     if (!normalize.apply(expected).equals(normalize.apply(actual))) {
       throw new AssertionError(

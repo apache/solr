@@ -77,7 +77,7 @@ These boost factors make matches in `fieldOne` much more significant than matche
 
 === mm (Minimum Should Match) Parameter
 
-When processing queries, Lucene/Solr recognizes three types of clauses: mandatory, prohibited, and "optional" (also known as "should" clauses).
+When processing queries, there are three types of clauses: mandatory, prohibited, and "optional" (also known as "should" clauses).
 By default, all words or phrases specified in the `q` parameter are treated as "optional" clauses unless they are preceded by a "+" or a "-".
 When dealing with these "optional" clauses, the `mm` parameter makes it possible to say that a certain minimum number of those clauses must match.
 The DisMax query parser offers great flexibility in how the minimum number can be specified.

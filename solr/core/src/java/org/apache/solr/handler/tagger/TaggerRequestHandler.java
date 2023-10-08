@@ -22,13 +22,11 @@
 
 package org.apache.solr.handler.tagger;
 
-import com.google.common.io.CharStreams;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -55,8 +53,10 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -203,7 +203,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
                   tags.add(tag);
                 }
 
-                Map<Object, List<Object>> docIdsListCache = new HashMap<>(2000);
+                Map<Object, List<Object>> docIdsListCache = CollectionUtil.newHashMap(2000);
 
                 ValueSourceAccessor uniqueKeyCache =
                     new ValueSourceAccessor(
@@ -263,7 +263,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
     @Override
     public String call() throws IOException {
       if (inputString == null) {
-        inputString = CharStreams.toString(inputReader);
+        inputString = StrUtils.stringFromReader(inputReader);
       }
       return inputString;
     }
@@ -324,7 +324,7 @@ public class TaggerRequestHandler extends RequestHandlerBase {
     final SolrIndexSearcher searcher = req.getSearcher();
     final Bits docBits;
     if (corpusFilterQueries != null && corpusFilterQueries.length > 0) {
-      List<Query> filterQueries = new ArrayList<Query>(corpusFilterQueries.length);
+      List<Query> filterQueries = new ArrayList<>(corpusFilterQueries.length);
       for (String corpusFilterQuery : corpusFilterQueries) {
         QParser qParser = QParser.getParser(corpusFilterQuery, null, req);
         try {

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.sql;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Date;
@@ -87,17 +86,16 @@ class SolrSchema extends AbstractSchema implements Closeable {
   protected Map<String, Table> getTableMap() {
     String zk = this.properties.getProperty("zk");
     CloudSolrClient cloudSolrClient = solrClientCache.getCloudSolrClient(zk);
-    ZkStateReader zkStateReader = ZkStateReader.from(cloudSolrClient);
-    ClusterState clusterState = zkStateReader.getClusterState();
+    ClusterState clusterState = cloudSolrClient.getClusterState();
 
-    final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
+    final Map<String, Table> builder = new HashMap<>();
 
     Set<String> collections = clusterState.getCollectionsMap().keySet();
     for (String collection : collections) {
       builder.put(collection, new SolrTable(this, collection));
     }
 
-    Aliases aliases = zkStateReader.getAliases();
+    Aliases aliases = ZkStateReader.from(cloudSolrClient).getAliases();
     for (String alias : aliases.getCollectionAliasListMap().keySet()) {
       // don't create duplicate entries
       if (!collections.contains(alias)) {
@@ -105,7 +103,7 @@ class SolrSchema extends AbstractSchema implements Closeable {
       }
     }
 
-    return builder.build();
+    return Map.copyOf(builder);
   }
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(final String collection) {

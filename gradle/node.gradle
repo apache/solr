@@ -25,7 +25,7 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide")]) {
 
     node {
         download = true
-        version = "16.13.2" // LTS
+        version = "16.15.1" // LTS
 
         // The directory where Node.js is unpacked (when download is true)
         workDir = file("${project.ext.rootNodeDir}/nodejs")

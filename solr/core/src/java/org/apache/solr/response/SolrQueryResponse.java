@@ -63,7 +63,7 @@ public class SolrQueryResponse {
   public static final String RESPONSE_HEADER_PARTIAL_RESULTS_KEY = "partialResults";
   public static final String RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY =
       "segmentTerminatedEarly";
-  private static final String RESPONSE_HEADER_KEY = "responseHeader";
+  public static final String RESPONSE_HEADER_KEY = "responseHeader";
   private static final String RESPONSE_KEY = "response";
 
   /**

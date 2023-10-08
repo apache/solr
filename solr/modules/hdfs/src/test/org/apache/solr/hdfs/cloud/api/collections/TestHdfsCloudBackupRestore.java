@@ -30,15 +30,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -46,6 +45,7 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.api.collections.AbstractCloudBackupRestoreTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
@@ -88,7 +88,6 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
           + "  <solrcloud>\n"
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-          + "    <str name=\"hostContext\">${hostContext:solr}</str>\n"
           + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
           + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
           + "    <int name=\"leaderVoteWait\">10000</int>\n"
@@ -195,6 +194,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     return null;
   }
 
+  @Override
   protected void testConfigBackupOnly(String configName, String collectionName) throws Exception {
     String backupName = "configonlybackup";
     CloudSolrClient solrClient = cluster.getSolrClient();

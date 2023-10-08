@@ -571,6 +571,310 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0");
   }
 
+  public void testRequireFieldMatchWithQueryFieldPattern() {
+    // without requiring of a field match
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text,text2,text3",
+            "hl.queryFieldPattern", "text,text2,text3",
+            "hl.requireFieldMatch", "false",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text2']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text2']/str='second <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> <em>document</em>'");
+    // with requiring of a field match
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text,text2,text3",
+            "hl.queryFieldPattern", "text,text2,text3",
+            "hl.requireFieldMatch", "true",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'",
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text2']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text2']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> document'");
+  }
+
+  public void testQueryFieldPatternIndexedNotStored() {
+
+    // highlighting on text3 uses all query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2_indexed_not_stored:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> <em>document</em>'");
+
+    // hl.queryFieldPattern==text,text2 uses only some of the query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2_indexed_not_stored:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text,text2",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier <em>document</em>'");
+
+    // hl.queryFieldPattern==text,text2_indexed_not_stored uses only some of the query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2_indexed_not_stored:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text,text2_indexed_not_stored",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='crappy <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> <em>document</em>'");
+
+    // hl.queryFieldPattern==text2* uses only some of the query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2_indexed_not_stored:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text2*",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> document'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> document'");
+  }
+
+  public void testQueryFieldPatternMinimal() {
+
+    // highlighting on text3 uses all query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> <em>document</em>'");
+
+    // hl.requireFieldMatch==true produces no highlights since text3 is not in the query
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.requireFieldMatch", "true",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "count(//lst[@name='highlighting']/lst[@name='101']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='102']/*)=0");
+
+    // hl.queryFieldPattern==text uses only some of the query terms
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text2:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='crappy <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier <em>document</em>'");
+  }
+
+  public void testQueryFieldPatternComprehensive() {
+
+    // searching on 'text' field and highlighting on 'text' field
+    assertQ(
+        req(
+            "q", "text:document",
+            "hl", "true",
+            "hl.fl", "text",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
+
+    // searching on three fields ('text', 'text2', 'text3') but highlighting only on one of them
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text2",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text2']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text2']/str='second <em>document</em>'");
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> <em>document</em>'");
+
+    // searching on three fields ('text', 'text2', 'text3') but highlighting only on one of them,
+    // requiring field match
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text",
+            "hl.requireFieldMatch", "true",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text2",
+            "hl.requireFieldMatch", "true",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "count(//lst[@name='highlighting']/lst[@name='101']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='102']/*)=0");
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.requireFieldMatch", "true",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "count(//lst[@name='highlighting']/lst[@name='101']/*)=0",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='<em>crappier</em> document'");
+
+    // searching on three fields ('text', 'text2', 'text3') but highlighting only on one of them
+    // field to match one of the three fields (not the one being highlighted on)
+
+    // highlight text matching text2
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text",
+            "hl.queryFieldPattern", "text2",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "count(//lst[@name='highlighting']/lst[@name='101']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='102']/*)=0");
+    // highlight text matching text3
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text",
+            "hl.queryFieldPattern", "text3",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "count(//lst[@name='highlighting']/lst[@name='101']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='102']/*)=0");
+
+    // highlight text2 matching text
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text2",
+            "hl.queryFieldPattern", "text",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text2']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text2']/str='second <em>document</em>'");
+    // highlight text2 matching text3
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text2",
+            "hl.queryFieldPattern", "text3",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "count(//lst[@name='highlighting']/lst[@name='101']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='102']/*)=0");
+
+    // highlight text3 matching text
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='crappy <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier <em>document</em>'");
+    // highlight text3 matching text2
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text2",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> document'",
+        "count(//lst[@name='highlighting']/lst[@name='102']/*)=0");
+
+    // searching on three fields ('text', 'text2', 'text3') but highlighting only on one of them
+    // field to match two of the three fields (not the one being highlighted on)
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text",
+            "hl.queryFieldPattern", "text2,text3",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "count(//lst[@name='highlighting']/lst[@name='101']/*)=0",
+        "count(//lst[@name='highlighting']/lst[@name='102']/*)=0");
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text2",
+            "hl.queryFieldPattern", "text,text3",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text2']/str='<em>document</em> one'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text2']/str='second <em>document</em>'");
+    assertQ(
+        req(
+            "q", "text:document OR text2:crappy OR text3:crappier",
+            "hl", "true",
+            "hl.fl", "text3",
+            "hl.queryFieldPattern", "text,text2",
+            "sort", "id asc"),
+        "count(//lst[@name='highlighting']/*)=2",
+        "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/str='<em>crappy</em> <em>document</em>'",
+        "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text3']/str='crappier <em>document</em>'");
+  }
+
   public void testWeightMatchesDisabled() {
     clearIndex();
     assertU(adoc("text", "alpha bravo charlie", "id", "101"));

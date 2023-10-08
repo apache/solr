@@ -17,12 +17,8 @@
 -->
 
 <solr>
+ <str name="hiddenSysProps">foo,bar,baz</str>
  <metrics>
-  <hiddenSysProps>
-    <str>foo</str>
-    <str>bar</str>
-    <str>baz</str>
-  </hiddenSysProps>
   <!-- this reporter doesn't specify 'group' or 'registry', it will be instantiated for any group. -->
   <reporter name="universal" class="org.apache.solr.metrics.reporters.MockMetricReporter">
     <str name="configurable">configured</str>

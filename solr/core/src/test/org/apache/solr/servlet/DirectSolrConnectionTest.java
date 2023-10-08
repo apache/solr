@@ -25,6 +25,7 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.enableStreamBody", "true");
     initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
   }
 
@@ -45,7 +46,7 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
     assertTrue(got.indexOf("<str name=\"echoParams\">explicit</str>") > 5);
 
     // It should throw an exception for unknown handler
-    expectThrows(Exception.class, () -> direct.request("/path to nonexistang thingy!!", null));
+    expectThrows(Exception.class, () -> direct.request("/path to nonexistent thingy!!", null));
   }
 
   // Check that a request gets back the echoParams call

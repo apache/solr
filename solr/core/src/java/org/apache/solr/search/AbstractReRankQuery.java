@@ -38,6 +38,21 @@ public abstract class AbstractReRankQuery extends RankQuery {
   protected final int reRankDocs;
   protected final Rescorer reRankQueryRescorer;
   protected Set<BytesRef> boostedPriority;
+  protected ReRankOperator reRankOperator;
+  protected ReRankScaler reRankScaler;
+
+  public AbstractReRankQuery(
+      Query mainQuery,
+      int reRankDocs,
+      Rescorer reRankQueryRescorer,
+      ReRankScaler reRankScaler,
+      ReRankOperator reRankOperator) {
+    this.mainQuery = mainQuery;
+    this.reRankDocs = reRankDocs;
+    this.reRankQueryRescorer = reRankQueryRescorer;
+    this.reRankScaler = reRankScaler;
+    this.reRankOperator = reRankOperator;
+  }
 
   public AbstractReRankQuery(Query mainQuery, int reRankDocs, Rescorer reRankQueryRescorer) {
     this.mainQuery = mainQuery;
@@ -45,6 +60,7 @@ public abstract class AbstractReRankQuery extends RankQuery {
     this.reRankQueryRescorer = reRankQueryRescorer;
   }
 
+  @Override
   public RankQuery wrap(Query _mainQuery) {
     if (_mainQuery != null) {
       this.mainQuery = _mainQuery;
@@ -52,10 +68,12 @@ public abstract class AbstractReRankQuery extends RankQuery {
     return this;
   }
 
+  @Override
   public MergeStrategy getMergeStrategy() {
     return null;
   }
 
+  @Override
   @SuppressWarnings({"unchecked"})
   public TopDocsCollector<ScoreDoc> getTopDocsCollector(
       int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
@@ -68,12 +86,20 @@ public abstract class AbstractReRankQuery extends RankQuery {
     }
 
     return new ReRankCollector(
-        reRankDocs, len, reRankQueryRescorer, cmd, searcher, boostedPriority);
+        reRankDocs,
+        len,
+        reRankQueryRescorer,
+        cmd,
+        searcher,
+        boostedPriority,
+        reRankScaler,
+        reRankOperator);
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query q = mainQuery.rewrite(reader);
-    if (q != mainQuery) {
+    if (!q.equals(mainQuery)) {
       return rewrite(q);
     }
     return super.rewrite(reader);
@@ -85,7 +111,8 @@ public abstract class AbstractReRankQuery extends RankQuery {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
     final Weight mainWeight = mainQuery.createWeight(searcher, scoreMode, boost);
-    return new ReRankWeight(mainQuery, reRankQueryRescorer, searcher, mainWeight);
+    return new ReRankWeight(
+        mainQuery, reRankQueryRescorer, searcher, mainWeight, reRankScaler, reRankOperator);
   }
 
   @Override

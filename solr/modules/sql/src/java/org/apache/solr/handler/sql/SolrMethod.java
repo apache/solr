@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.Types;
 
 /** Builtin methods in the Solr adapter. */
+@SuppressWarnings("ImmutableEnumChecker")
 enum SolrMethod {
   SOLR_QUERYABLE_QUERY(
       SolrTable.SolrQueryable.class,

@@ -75,7 +75,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (int i = 0; i < 10; i++) {
       List<CountsForEachShard> copy = new ArrayList<>(inputCounts);
       Collections.shuffle(copy, random());
-      Collections.sort(copy, CoreSorter.countsComparator);
+      copy.sort(CoreSorter.countsComparator);
       for (int j = 0; j < copy.size(); j++) {
         assertEquals(expectedCounts.get(j), copy.get(j));
       }
@@ -91,7 +91,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
 
     // compute nodes, some live, some down
     final int maxNodesOfAType =
-        perShardCounts.stream() // not too important how many we have, but lets have plenty
+        perShardCounts.stream() // not too important how many we have, but let's have plenty
             .mapToInt(c -> c.totalReplicasInLiveNodes + c.totalReplicasInDownNodes + c.myReplicas)
             .max()
             .getAsInt();
@@ -154,11 +154,11 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (Map.Entry<CountsForEachShard, List<CoreDescriptor>> entry : myCountsToDescs.entrySet()) {
       for (CoreDescriptor descriptor : entry.getValue()) {
         CountsForEachShard prev = myDescsToCounts.put(descriptor, entry.getKey());
-        assert prev == null; // sanity check
+        assertNull(prev); // sanity check
       }
     }
 
-    assert myCountsToDescs.size() == perShardCounts.size(); // just a sanity check
+    assertEquals(myCountsToDescs.size(), perShardCounts.size()); // just a sanity check
 
     CoreContainer mockCC = mock(CoreContainer.class);
     {
@@ -192,7 +192,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
       CountsForEachShard lastCounts = null;
       for (CoreDescriptor resultDesc : resultDescs) {
         CountsForEachShard counts = myDescsToCounts.get(resultDesc);
-        if (counts != lastCounts) {
+        if (!counts.equals(lastCounts)) {
           resultCounts.add(counts);
         }
         lastCounts = counts;

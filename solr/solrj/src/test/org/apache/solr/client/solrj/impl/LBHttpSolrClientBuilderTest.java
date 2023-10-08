@@ -17,11 +17,13 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 /** Unit tests for {@link Builder}. */
@@ -34,7 +36,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
   public void providesHttpClientToClient() {
     try (LBHttpSolrClient createdClient =
         new Builder().withBaseSolrUrl(ANY_BASE_SOLR_URL).withHttpClient(ANY_HTTP_CLIENT).build()) {
-      assertTrue(createdClient.getHttpClient().equals(ANY_HTTP_CLIENT));
+      assertEquals(createdClient.getHttpClient(), ANY_HTTP_CLIENT);
     }
   }
 
@@ -45,7 +47,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
             .withBaseSolrUrl(ANY_BASE_SOLR_URL)
             .withResponseParser(ANY_RESPONSE_PARSER)
             .build()) {
-      assertTrue(createdClient.getParser().equals(ANY_RESPONSE_PARSER));
+      assertEquals(createdClient.getParser(), ANY_RESPONSE_PARSER);
     }
   }
 
@@ -57,5 +59,22 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
 
       assertTrue(usedParser instanceof BinaryResponseParser);
     }
+  }
+
+  @Test
+  public void testUsesTimeoutProvidedByHttpClient() throws IOException {
+
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
+    clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, 12345);
+    clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 67890);
+    HttpClient httpClient = HttpClientUtil.createClient(clientParams);
+
+    try (LBHttpSolrClient createdClient =
+        new Builder().withBaseSolrUrl(ANY_BASE_SOLR_URL).withHttpClient(httpClient).build()) {
+      assertEquals(createdClient.getHttpClient(), httpClient);
+      assertEquals(67890, createdClient.connectionTimeoutMillis);
+      assertEquals(12345, createdClient.soTimeoutMillis);
+    }
+    HttpClientUtil.close(httpClient);
   }
 }

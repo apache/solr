@@ -16,9 +16,9 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.index.ForceMergePolicy;
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.index.ForceMergePolicy;
+import org.apache.lucene.tests.util.LuceneTestCase;
 
 /**
  * A {@link MergePolicy} with a no-arg constructor that proxies to a {@link ForceMergePolicy}

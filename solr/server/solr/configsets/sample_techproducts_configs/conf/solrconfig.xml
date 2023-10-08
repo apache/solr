@@ -18,7 +18,7 @@
 
 <!--
      For more details about configurations options that may appear in
-     this file, see https://solr.apache.org/guide/configuring-solrconfig-xml.html.
+     this file, see https://solr.apache.org/guide/solr/latest/configuration-guide/configuring-solrconfig-xml.html.
 -->
 <config>
   <!-- In all configuration below, a prefix of "solr." for class names
@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.0</luceneMatchVersion>
+  <luceneMatchVersion>9.8</luceneMatchVersion>
 
   <!-- <lib/> directives can be used to instruct Solr to load any Jars
        identified and use them to resolve any "plugins" specified in
@@ -69,8 +69,10 @@
        If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, a warning will be logged.
 
-       The examples below can be used to load some solr modules along
-       with their external dependencies.
+       The examples below can be used to load some Solr Modules along
+       with their external dependencies as an alternative to using a
+       startup parameter to define the modules to load globally.  For more info
+       see https://solr.apache.org/guide/solr/latest/configuration-guide/solr-modules.html.
     -->
   <lib dir="${solr.install.dir:../../../..}/modules/extraction/lib" regex=".*\.jar" />
 
@@ -284,7 +286,7 @@
          Instead of enabling autoCommit, consider using "commitWithin"
          when adding documents.
 
-         https://solr.apache.org/guide/indexing-with-update-handlers.html
+         https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-update-handlers.html
 
          maxDocs - Maximum number of documents to add since the last
                    commit before automatically triggering a new commit.
@@ -311,7 +313,7 @@
       -->
 
      <autoSoftCommit>
-       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
+       <maxTime>${solr.autoSoftCommit.maxTime:3000}</maxTime>
      </autoSoftCommit>
 
     <!-- Update Related Event Listeners
@@ -459,7 +461,7 @@
          when running solr to run with ltr enabled:
            -Dsolr.ltr.enabled=true
 
-         https://solr.apache.org/guide/learning-to-rank.html
+         https://solr.apache.org/guide/solr/latest/query-guide/learning-to-rank.html
       -->
     <cache enable="${solr.ltr.enabled:false}" name="QUERY_DOC_FV"
            class="solr.CaffeineCache"
@@ -577,49 +579,6 @@
 
   </query>
 
-  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     Circuit Breaker Section - This section consists of configurations for
-     circuit breakers
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-  <circuitBreaker>
-    <!-- Enable Circuit Breakers
-
-     Circuit breakers are designed to allow stability and predictable query
-     execution. They prevent operations that can take down the node and cause
-     noisy neighbour issues.
-
-     This flag is the uber control switch which controls the activation/deactivation of all circuit
-     breakers. At the moment, the only circuit breaker (max JVM circuit breaker) does not have its
-     own specific configuration. However, if a circuit breaker wishes to be independently configurable,
-     they are free to add their specific configuration but need to ensure that this flag is always
-     respected - this should have veto over all independent configuration flags.
-    -->
-    <!--
-   <useCircuitBreakers>true</useCircuitBreakers>
-    -->
-
-    <!-- Memory Circuit Breaker Threshold In Percentage
-
-     Specific configuration for max JVM heap usage circuit breaker. This configuration defines the
-     threshold percentage of maximum heap allocated beyond which queries will be rejected until the
-     current JVM usage goes below the threshold. The valid value for this range is 50-95.
-
-     Consider a scenario where the max heap allocated is 4 GB and memoryCircuitBreakerThresholdPct is
-     defined as 75. Threshold JVM usage will be 4 * 0.75 = 3 GB. Its generally a good idea to keep this value between 75 - 80% of maximum heap
-     allocated.
-
-     If, at any point, the current JVM heap usage goes above 3 GB, queries will be rejected until the heap usage goes below 3 GB again.
-     If you see queries getting rejected with 503 error code, check for "Circuit Breakers tripped"
-     in logs and the corresponding error message should tell you what transpired (if the failure
-     was caused by tripped circuit breakers).
-    -->
-    <!--
-   <memoryCircuitBreakerThresholdPct>100</memoryCircuitBreakerThresholdPct>
-    -->
-
-  </circuitBreaker>
-
-
   <!-- Request Dispatcher
 
        This section contains instructions for how the SolrDispatchFilter
@@ -632,12 +591,6 @@
          These settings indicate how Solr Requests may be parsed, and
          what restrictions may be placed on the ContentStreams from
          those requests
-
-         enableRemoteStreaming - enables use of the stream.file
-         and stream.url parameters for specifying remote streams.
-
-         enableStreamBody - This attribute controls whether streaming
-         content from the HTTP parameter stream.body is allowed.
 
          multipartUploadLimitInKB - specifies the max size (in KiB) of
          Multipart File Uploads that Solr will allow in a Request.
@@ -653,13 +606,8 @@
          key "httpRequest". It will not be used by any of the existing
          Solr components, but may be useful when developing custom
          plugins.
-
-         *** WARNING ***
-         Before enabling remote streaming, you should make sure your
-         system has authentication enabled.
        -->
-    <requestParsers enableRemoteStreaming="true"
-                    enableStreamBody="true"
+    <requestParsers
                     multipartUploadLimitInKB="-1"
                     formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
@@ -721,7 +669,7 @@
 
   <!-- Request Handlers
 
-       https://solr.apache.org/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
+       https://solr.apache.org/guide/solr/latest/configuration-guide/requesthandlers-searchcomponents.html
 
        Incoming queries will be dispatched to a specific handler by name based on the path specified in the request.
 
@@ -789,7 +737,7 @@
 
   <!-- Solr Cell Update Request Handler
 
-       https://solr.apache.org/guide/indexing-with-tika.html
+       https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-tika.html
 
     -->
   <requestHandler name="/update/extract"
@@ -808,7 +756,7 @@
 
   <!-- XSLT Update Request Handler
 
-       https://solr.apache.org/guide/indexing-with-update-handlers.html#using-xslt-to-transform-xml-index-updates
+       https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-update-handlers.html#using-xslt-to-transform-xml-index-updates
 
     -->
   <requestHandler name="/update/xslt"
@@ -822,7 +770,7 @@
         The spell check component can return a list of alternative spelling
         suggestions.
 
-        https://solr.apache.org/guide/spell-checking.html
+        https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html
      -->
   <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
 
@@ -916,7 +864,7 @@
        IN OTHER WORDS, THERE IS REALLY GOOD CHANCE THE SETUP BELOW IS
        NOT WHAT YOU WANT FOR YOUR PRODUCTION SYSTEM!
 
-       See https://solr.apache.org/guide/spell-checking.html for details
+       See https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html for details
        on the request parameters.
     -->
   <requestHandler name="/spell" class="solr.SearchHandler" startup="lazy">
@@ -947,7 +895,7 @@
        As with the rest of this solrconfig.xml file, the configuration of this component is purely
        an example that applies specifically to this configset and example documents.
 
-       See: https://solr.apache.org/guide/suggester.html
+       See: https://solr.apache.org/guide/solr/latest/query-guide/suggester.html
     -->
   <searchComponent name="suggest" class="solr.SuggestComponent">
     <lst name="suggester">
@@ -975,7 +923,7 @@
 
   <!-- Term Vector Component
 
-       https://solr.apache.org/guide/the-term-vector-component.html
+       https://solr.apache.org/guide/solr/latest/query-guide/term-vector-component.html
     -->
   <searchComponent name="tvComponent" class="solr.TermVectorComponent"/>
 
@@ -1001,7 +949,7 @@
        when running solr to run with clustering enabled:
        -Dsolr.clustering.enabled=true
 
-       https://solr.apache.org/guide/result-clustering.html
+       https://solr.apache.org/guide/solr/latest/query-guide/result-clustering.html
     -->
   <searchComponent name="clustering"
                    enable="${solr.clustering.enabled:false}"
@@ -1083,7 +1031,7 @@
 
   <!-- Query Elevation Component
 
-       https://solr.apache.org/guide/query-elevation-component.html
+       https://solr.apache.org/guide/solr/latest/query-guide/query-elevation-component.html
 
        a search component that enables you to configure the top
        results for a given query regardless of the normal lucene
@@ -1107,7 +1055,7 @@
 
   <!-- Highlighting Component
 
-       https://solr.apache.org/guide/highlighting.html
+       https://solr.apache.org/guide/solr/latest/query-guide/highlighting.html
     -->
   <searchComponent class="solr.HighlightComponent" name="highlight">
     <!-- note: the hl.method=unified highlighter is not configured here; it's completely configured
@@ -1214,7 +1162,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
   </searchComponent>
 
   <!-- Update Request Processors
-       https://solr.apache.org/guide/update-request-processors.html
+       https://solr.apache.org/guide/solr/latest/configuration-guide/update-request-processors.html
 
        Chains or individual Update Request Processor Factories can be declared and referenced
        to preprocess documents sent to Update Request Handlers.
@@ -1250,7 +1198,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
        making this example suitable for detecting languages form full-text
        rich documents injected via ExtractingRequestHandler.
 
-       See more about langId at https://solr.apache.org/guide/language-detection.html
+       See more about langId at https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html
     -->
     <!--
      <updateRequestProcessorChain name="langid">
@@ -1269,7 +1217,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
     This example hooks in an update processor implemented using JavaScript and demonstrates
     how to pass in custom parameters.
 
-    See more about script update processor at https://solr.apache.org/guide/script-update-processor.html
+    See more about script update processor at https://solr.apache.org/guide/solr/latest/configuration-guide/script-update-processor.html
   -->
   <!--
   <updateRequestProcessorChain name="script">
@@ -1285,7 +1233,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
 
   <!-- Response Writers
 
-       https://solr.apache.org/guide/response-writers.html
+       https://solr.apache.org/guide/solr/latest/query-guide/response-writers.html
 
        Request responses will be written using the writer specified by
        the 'wt' request parameter matching the name of a registered
@@ -1314,7 +1262,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
        in Solr's conf/xslt directory.  Changes to xslt files are checked
        every xsltCacheLifetimeSeconds.  This is part of the Scripting module.
 
-       See more about this response writer at https://solr.apache.org/guide/response-writers.html#xslt-response-writer
+       See more about this response writer at https://solr.apache.org/guide/solr/latest/query-guide/response-writers.html#xslt-response-writer
   -->
   <queryResponseWriter name="xslt"
                           startup="lazy"
@@ -1324,7 +1272,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
 
   <!-- Query Parsers
 
-       https://solr.apache.org/guide/query-syntax-and-parsing.html
+       https://solr.apache.org/guide/solr/latest/query-guide/query-syntax-and-parsers.html
 
        Multiple QParserPlugins can be registered by name, and then
        used in either the "defType" param for the QueryComponent (used
@@ -1337,7 +1285,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
 
   <!-- Function Parsers
 
-       https://solr.apache.org/guide/function-queries.html
+       https://solr.apache.org/guide/solr/latest/query-guide/function-queries.html
 
        Multiple ValueSourceParsers can be registered by name, and then
        used as function names when using the "func" QParser.
@@ -1354,14 +1302,14 @@ via parameters.  The below configuration supports hl.method=original and fastVec
         when running solr to run with ltr enabled:
           -Dsolr.ltr.enabled=true
 
-        https://solr.apache.org/guide/learning-to-rank.html
+        https://solr.apache.org/guide/solr/latest/query-guide/learning-to-rank.html
 
         Query parser is used to rerank top docs with a provided model
     -->
   <queryParser enable="${solr.ltr.enabled:false}" name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"/>
 
   <!-- Document Transformers
-       https://solr.apache.org/guide/document-transformers.html
+       https://solr.apache.org/guide/solr/latest/query-guide/document-transformers.html
     -->
   <!--
      Could be something like:
@@ -1395,7 +1343,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
       when running solr to run with ltr enabled:
         -Dsolr.ltr.enabled=true
 
-      https://solr.apache.org/guide/learning-to-rank.html
+      https://solr.apache.org/guide/solr/latest/query-guide/learning-to-rank.html
       -->
     <transformer enable="${solr.ltr.enabled:false}" name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
       <str name="fvCacheName">QUERY_DOC_FV</str>

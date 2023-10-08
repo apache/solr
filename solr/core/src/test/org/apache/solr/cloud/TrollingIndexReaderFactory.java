@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Date;
@@ -32,11 +33,14 @@ import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardIndexReaderFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static volatile Trap trap;
   private static final BlockingQueue<List<Object>> lastStacktraces =
@@ -56,7 +60,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
     public abstract boolean hasCaught();
 
     @Override
-    public final void close() throws IOException {
+    public final void close() {
       setTrap(null);
     }
 
@@ -109,7 +113,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
         new Predicate<StackTraceElement>() {
           @Override
           public boolean test(StackTraceElement trace) {
-            return trace.getClassName().indexOf(className) >= 0;
+            return trace.getClassName().contains(className);
           }
 
           @Override
@@ -124,7 +128,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
     return setTrap(
         new Trap() {
 
-          private boolean trigered;
+          private boolean triggered;
 
           @Override
           protected boolean shouldExit() {
@@ -133,7 +137,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
             StackTraceElement[] stackTrace = e.getStackTrace();
             for (StackTraceElement trace : stackTrace) {
               if (judge.test(trace)) {
-                trigered = true;
+                triggered = true;
                 recordStackTrace(stackTrace);
                 onCaught.run();
                 return true;
@@ -144,7 +148,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
 
           @Override
           public boolean hasCaught() {
-            return trigered;
+            return triggered;
           }
 
           @Override
@@ -165,7 +169,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
             return "" + count.get() + "th tick of " + boundary + " allowed";
           }
 
-          private boolean trigered;
+          private boolean triggered;
 
           @Override
           protected boolean shouldExit() {
@@ -177,34 +181,34 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
               Exception e = new Exception("stack sniffer");
               e.fillInStackTrace();
               recordStackTrace(e.getStackTrace());
-              trigered = true;
+              triggered = true;
             }
             return trigger;
           }
 
           @Override
           public boolean hasCaught() {
-            return trigered;
+            return triggered;
           }
         });
   }
 
   private static void recordStackTrace(StackTraceElement[] stackTrace) {
     // keep the last n limited traces.
-    // e.printStackTrace();
-    ArrayList<Object> stack = new ArrayList<Object>();
+    ArrayList<Object> stack = new ArrayList<>();
     stack.add(
         "" + (new Date().getTime() - startTime) + " (" + Thread.currentThread().getName() + ")");
     for (int l = 2; l < stackTrace.length && l < keepStackTraceLines; l++) {
       stack.add(stackTrace[l]);
     }
     lastStacktraces.add(stack);
-    // triming queue
+    // trimming queue
     while (lastStacktraces.size() > maxTraces) {
       try {
         lastStacktraces.poll(100, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e1) {
-        e1.printStackTrace();
+        Thread.currentThread().interrupt();
+        log.error("interrupted", e1);
       }
     }
   }

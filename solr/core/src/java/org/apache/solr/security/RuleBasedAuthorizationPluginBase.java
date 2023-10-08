@@ -25,6 +25,8 @@ import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,10 +34,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
+import org.apache.solr.handler.admin.api.ModifyRuleBasedAuthConfigAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,8 +120,25 @@ public abstract class RuleBasedAuthorizationPluginBase
     return flag.rsp;
   }
 
-  /** Retrieves permission names for a given set of roles */
-  public Set<String> getPermissionNamesForRoles(Set<String> roles) {
+  /**
+   * Retrieves permission names for a given set of roles.
+   *
+   * <p>There are two special role names that can be used in the roles list:
+   *
+   * <ul>
+   *   <li><code>null</code> meaning permission granted for all requests, even without a role
+   *   <li><code>"*"</code> meaning any role will grant the permission
+   * </ul>
+   *
+   * In order to obtain all permissions a user has based on the user's roles, you also need to
+   * include these two special roles to get the full list.
+   *
+   * @param roles a collection of role names.
+   */
+  public Set<String> getPermissionNamesForRoles(Collection<String> roles) {
+    if (roles == null) {
+      return Set.of();
+    }
     return roles.stream()
         .filter(roleToPermissionsMap::containsKey)
         .flatMap(r -> roleToPermissionsMap.get(r).stream())
@@ -335,11 +356,11 @@ public abstract class RuleBasedAuthorizationPluginBase
         perms.add(permission);
       }
     }
-    if (permission.role != null) {
-      for (String r : permission.role) {
-        Set<Permission> rm = roleToPermissionsMap.computeIfAbsent(r, k -> new HashSet<>());
-        rm.add(permission);
-      }
+    Collection<String> roles =
+        permission.role != null ? permission.role : Collections.singletonList(null);
+    for (String r : roles) {
+      Set<Permission> rm = roleToPermissionsMap.computeIfAbsent(r, k -> new HashSet<>());
+      rm.add(permission);
     }
   }
 
@@ -364,6 +385,7 @@ public abstract class RuleBasedAuthorizationPluginBase
   @Override
   public void close() throws IOException {}
 
+  @SuppressWarnings("ImmutableEnumChecker")
   enum MatchStatus {
     USER_REQUIRED(AuthorizationResponse.PROMPT),
     NO_PERMISSIONS_FOUND(AuthorizationResponse.OK),
@@ -397,6 +419,7 @@ public abstract class RuleBasedAuthorizationPluginBase
 
   @Override
   public ValidatingJsonMap getSpec() {
-    return Utils.getSpec("cluster.security.RuleBasedAuthorization").getSpec();
+    final List<Api> apis = AnnotatedApi.getApis(new ModifyRuleBasedAuthConfigAPI());
+    return apis.get(0).getSpec();
   }
 }

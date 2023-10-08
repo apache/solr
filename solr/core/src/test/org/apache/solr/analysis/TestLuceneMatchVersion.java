@@ -37,7 +37,7 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
   public static final Version DEFAULT_VERSION =
       SolrConfig.parseLuceneVersionString(System.getProperty("tests.luceneMatchVersion", "LATEST"));
 
-  public void testStandardTokenizerVersions() throws Exception {
+  public void testStandardTokenizerVersions() {
     assertEquals(DEFAULT_VERSION, solrConfig.luceneMatchVersion);
 
     final IndexSchema schema = h.getCore().getLatestSchema();

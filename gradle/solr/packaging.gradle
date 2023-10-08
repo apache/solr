@@ -36,7 +36,7 @@
 // I don't know how to untie these two cleanly.
 //
 
-configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules") || project.path.startsWith(":solr:prometheus-exporter") }) {
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules:") || project.path.startsWith(":solr:prometheus-exporter") }) {
   plugins.withType(JavaPlugin) {
     ext {
       packagingDir = file("${buildDir}/packaging")
@@ -58,7 +58,10 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
     dependencies {
       solrPlatformLibs project(":solr:core")
       solrPlatformLibs project(":solr:solrj")
-      solrPlatformLibs project(":solr:server")
+      solrPlatformLibs project(":solr:api")
+      solrPlatformLibs project(":solr:solrj-zookeeper")
+      // libExt has logging libs, which we don't want.  Lets users decide what they want.
+      solrPlatformLibs project(path: ":solr:server", configuration: 'libExt')
     }
 
     // An aggregate that configures lib and test-lib in a temporary location.
@@ -77,8 +80,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
             return true
           }
         }
-        // libExt has logging libs, which we don't want.  Lets users decide what they want.
-        return externalLibs - configurations.solrPlatformLibs - project(':solr:server').configurations.getByName('libExt')
+        return externalLibs - configurations.solrPlatformLibs
       }, {
         into "lib"
       })
@@ -111,10 +113,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
       into file("${projectDir}/test-lib")
     }
 
-    task resolve() {
-      dependsOn syncLib, syncTestLib
-    }
-
     // Module packaging currently depends on internal resolve.
     artifacts {
       packaging packagingDir, {
@@ -126,30 +124,10 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
 
 configure(project(":solr:example")) {
   evaluationDependsOn(":solr:example") // explicitly wait for other configs to be applied
-
-  task resolve(type: Copy) {
-    from(configurations.postJar, {
-      into "exampledocs/"
-    })
-
-    into projectDir
-  }
 }
 
 configure(project(":solr:server")) {
   evaluationDependsOn(":solr:server")
-
-  task resolve(type: Copy) {
-    dependsOn assemblePackaging
-
-    from({ packagingDir }, {
-      include "**/*.jar"
-      include "solr-webapp/webapp/**"
-      includeEmptyDirs false
-    })
-
-    into projectDir
-  }
 }
 
 configure(project(":solr:core")) {
@@ -160,32 +138,8 @@ configure(project(":solr:core")) {
       extendsFrom runtimeElements
     }
   }
-
-  task resolve(type: Sync) {
-    from({
-      def ownDeps = configurations.runtimeLibs.copyRecursive { dep ->
-        if (dep instanceof org.gradle.api.artifacts.ProjectDependency) {
-          return !dep.dependencyProject.path.startsWith(":solr")
-        } else {
-          return true
-        }
-      }
-      return ownDeps
-    }, {
-      exclude "lucene-*"
-    })
-
-    into "lib"
-  }
 }
 
 configure(project(":solr:solrj")) {
   evaluationDependsOn(":solr:solrj")
-
-  task resolve(type: Sync) {
-    from({ configurations.runtimeClasspath }, {
-    })
-
-    into "lib"
-  }
 }

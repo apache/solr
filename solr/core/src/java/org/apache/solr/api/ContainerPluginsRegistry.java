@@ -30,7 +30,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Phaser;
 import java.util.function.Supplier;
@@ -41,6 +47,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -49,7 +56,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
@@ -87,8 +94,6 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     refresh();
     Phaser localPhaser = phaser; // volatile read
     if (localPhaser != null) {
-      assert localPhaser.getRegisteredParties() == 1;
-      // we should be the only ones registered, so this will advance phase each time
       localPhaser.arrive();
     }
     return false;
@@ -171,7 +176,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       log.error("Could not read plugins data", e);
       return;
     }
-    Map<String, PluginMetaHolder> newState = new HashMap<>(pluginInfos.size());
+    Map<String, PluginMetaHolder> newState = CollectionUtil.newHashMap(pluginInfos.size());
     for (Map.Entry<String, Object> e : pluginInfos.entrySet()) {
       try {
         newState.put(e.getKey(), new PluginMetaHolder((Map<String, Object>) e.getValue()));
@@ -254,9 +259,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   }
 
   private static String getActualPath(ApiInfo apiInfo, String path) {
-    path = path.replaceAll("\\$path-prefix", apiInfo.info.pathPrefix);
-    path = path.replaceAll("\\$plugin-name", apiInfo.info.name);
-    return path;
+    return path.replace("$path-prefix", Objects.requireNonNullElse(apiInfo.info.pathPrefix, ""))
+        .replace("$plugin-name", apiInfo.info.name);
   }
 
   private static Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
@@ -295,7 +299,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     @JsonProperty(value = "package")
     public final String pkg;
 
-    private PackageLoader.Package.Version pkgVersion;
+    private SolrPackageLoader.SolrPackage.Version pkgVersion;
     private Class<?> klas;
     Object instance;
 
@@ -324,7 +328,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       PluginInfo.ClassName klassInfo = new PluginInfo.ClassName(info.klass);
       pkg = klassInfo.pkg;
       if (pkg != null) {
-        Optional<PackageLoader.Package.Version> ver =
+        Optional<SolrPackageLoader.SolrPackage.Version> ver =
             coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         if (ver.isEmpty()) {
           // may be we are a bit early. Do a refresh and try again
@@ -332,7 +336,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
           ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         }
         if (ver.isEmpty()) {
-          PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
+          SolrPackageLoader.SolrPackage p = coreContainer.getPackageLoader().getPackage(pkg);
           if (p == null) {
             errs.add("Invalid package " + klassInfo.pkg);
             return;
@@ -478,7 +482,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
 
   public static Map<String, Diff> compareMaps(Map<String, ?> a, Map<String, ?> b) {
     if (a.isEmpty() && b.isEmpty()) return null;
-    Map<String, Diff> result = new HashMap<>(Math.max(a.size(), b.size()));
+    Map<String, Diff> result = CollectionUtil.newHashMap(Math.max(a.size(), b.size()));
     a.forEach(
         (k, v) -> {
           Object newVal = b.get(k);

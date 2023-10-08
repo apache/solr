@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.tests.geo.GeoTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -146,7 +146,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBadScoreParam() throws Exception {
+  public void testBadScoreParam() {
     String fieldName = "bbox";
     assertQEx(
         "expect friendly error message",
@@ -222,8 +222,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         deltaCentimetersMax,
         0.0); // just so that we see it in black & white in the test
 
-    // max found by trial & error.  If we used 8 decimal places then we could get down to 1.04cm
-    // accuracy but then we lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
+    // max found by trial & error.  If we used 8 decimal places then we could get down to 1.04 cm
+    // accuracy, but then we lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
     assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.41);
     // Pt(x=105.29894270124083,y=-0.4371673760042398) to  Pt(x=105.2989428,y=-0.4371673) is 1.38568
   }
@@ -398,7 +398,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
       assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
       // When there are new segments, we accumulate another hit. This tests the cache was not blown
-      // away on commit. (i.e. the cache instance is new but it should've been regenerated from the
+      // away on commit. (i.e. the cache instance is new, but it should've been regenerated from the
       // old one). Checking equality for the first reader's cache key indicates whether the cache
       // should still be valid.
       Object leafKey2 = getFirstLeafReaderKey();

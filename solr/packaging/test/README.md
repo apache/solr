@@ -31,8 +31,9 @@ Individual test files can be selected by specifying the `--tests [test_file.bats
  The `--tests` option may be repeated to select multiple test files to run.
  Wildcarding or specifying individual test methods is currently not supported.
 
-Tests do not currently randomize ports or directories, so they cannot be run
- in parallel. They may also fail if you already have an external cluster up.
+Tests run Solr on a randomly assigned port number, so these tests should be able to run even if you have Solr
+running on the host already. To force tests to start Solr on a specific port, set the `bats.port` gradle
+property or system property, e.g. `./gradlew integrationTests -Pbats.port=8983`.
 
 ## Writing Tests
 
@@ -49,6 +50,8 @@ Test are defined as `@test "description of the test" { ... }`
 Some tests will start clusters or create collections,
  please take care to delete any resources that you create.
  They will not be cleaned for you automatically.
+ The example `test_bats.bats` shows how to properly do setup and teardown,
+ along with debug advice and explanations of some subtle traps to avoid.
 
 It is recommended that you install and run `shellcheck` to verify your test scripts and catch common mistakes before committing your changes.
 

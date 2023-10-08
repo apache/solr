@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CoreAdminParams.GET_RANGES;
 
@@ -28,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Terms;
@@ -36,10 +36,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonAdminParams;
@@ -51,28 +53,43 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.SplitIndexCommand;
+import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * CoreAdminOp implementation for shard splits. This request is enqueued when {@link SplitShardCmd}
+ * is processed. This operation handles two types of requests: 1. If {@link
+ * CommonAdminParams#SPLIT_BY_PREFIX} is true, the request to calculate document ranges for the
+ * sub-shards is processed here. 2. For any split request, the actual index split is processed here.
+ * This calls into {@link UpdateHandler#split(SplitIndexCommand)} to execute split.
+ */
 class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
+  public boolean isExpensive() {
+    return true;
+  }
+
+  @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
-
     String splitKey = params.get("split.key");
     String[] newCoreNames = params.getParams("targetCore");
     String cname = params.get(CoreAdminParams.CORE, "");
 
+    // if split request has splitByPrefix set to true, we will first make a request to SplitOp
+    // to calculate the prefix ranges, and do the actual split in a separate request
     if (params.getBool(GET_RANGES, false)) {
       handleGetRanges(it, cname);
       return;
     }
 
+    // if not using splitByPrefix, determine split partitions
     List<DocRouter.Range> ranges = null;
 
     String[] pathsArr = params.getParams(PATH);
@@ -98,6 +115,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
     }
 
+    // if not using splitByPrefix, ensure either path or targetCore specified
     if ((pathsArr == null || pathsArr.length == 0)
         && (newCoreNames == null || newCoreNames.length == 0)) {
       throw new SolrException(
@@ -124,7 +142,9 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
       DocRouter router = null;
       String routeFieldName = null;
+      // if in SolrCloud mode, get collection and shard names
       if (it.handler.coreContainer.isZooKeeperAware()) {
+        log.trace("SplitOp: Determine which router is associated with the shard for core");
         ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
         String collectionName =
             parentCore.getCoreDescriptor().getCloudDescriptor().getCollectionName();
@@ -136,7 +156,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
           DocRouter.Range currentRange = slice.getRange();
           ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
         }
-        Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
+        Object routerObj =
+            collection.get(CollectionStateProps.DOC_ROUTER); // for back-compat with Solr 4.4
         if (routerObj instanceof Map) {
           Map<?, ?> routerProps = (Map<?, ?>) routerObj;
           routeFieldName = (String) routerProps.get("field");
@@ -144,6 +165,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       }
 
       if (pathsArr == null) {
+        log.trace("SplitOp: Create array of paths for sub-shards of core");
         newCores = new ArrayList<>(partitions);
         for (String newCoreName : newCoreNames) {
           SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
@@ -188,6 +210,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       parentCore.getUpdateHandler().split(cmd);
 
       if (it.handler.coreContainer.isZooKeeperAware()) {
+        log.trace("SplitOp: Create cloud descriptors for sub-shards of core");
         for (SolrCore newcore : newCores) {
           // the index of the core changed from empty to have some data, its term must be not zero
           CloudDescriptor cd = newcore.getCoreDescriptor().getCloudDescriptor();
@@ -203,7 +226,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       // After the split has completed, someone (here?) should start the process of replaying the
       // buffered updates.
     } catch (Exception e) {
-      log.error("ERROR executing split:", e);
+      log.error("ERROR executing split: ", e);
       throw e;
     } finally {
       if (req != null) req.close();
@@ -245,11 +268,13 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         DocCollection collection = clusterState.getCollection(collectionName);
         String sliceName = parentCore.getCoreDescriptor().getCloudDescriptor().getShardId();
         Slice slice = collection.getSlice(sliceName);
-        DocRouter router =
-            collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+        CompositeIdRouter router =
+            (CompositeIdRouter)
+                (collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT);
         DocRouter.Range currentRange = slice.getRange();
 
-        Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
+        Object routerObj =
+            collection.get(CollectionStateProps.DOC_ROUTER); // for back-compat with Solr 4.4
         if (routerObj instanceof Map) {
           Map<?, ?> routerProps = (Map<?, ?>) routerObj;
           routeFieldName = (String) routerProps.get("field");
@@ -335,7 +360,10 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
    * Returns a list of range counts sorted by the range lower bound
    */
   static Collection<RangeCount> getHashHistogram(
-      SolrIndexSearcher searcher, String prefixField, DocRouter router, DocCollection collection)
+      SolrIndexSearcher searcher,
+      String prefixField,
+      CompositeIdRouter router,
+      DocCollection collection)
       throws IOException {
     RTimer timer = new RTimer();
     TreeMap<DocRouter.Range, RangeCount> counts = new TreeMap<>();
@@ -355,14 +383,18 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     while ((term = termsEnum.next()) != null) {
       numPrefixes++;
 
-      String termStr = term.utf8ToString();
-      int firstSep = termStr.indexOf(CompositeIdRouter.SEPARATOR);
       // truncate to first separator since we don't support multiple levels currently
       // NOTE: this does not currently work for tri-level composite ids since the number of bits
       // allocated to the first ID is 16 for a 2 part id and 8 for a 3 part id!
-      if (firstSep != termStr.length() - 1 && firstSep > 0) {
-        numTriLevel++;
-        termStr = termStr.substring(0, firstSep + 1);
+      String termStr;
+      int routeKeyLen = router.getRouteKeyWithSeparator(term.bytes, term.offset, term.length);
+      if (routeKeyLen == 0 || routeKeyLen == term.length) {
+        termStr = term.utf8ToString();
+      } else {
+        int prevLen = term.length;
+        term.length = routeKeyLen;
+        termStr = term.utf8ToString();
+        term.length = prevLen; // restore    (Question: must we do this?)
       }
 
       DocRouter.Range range = router.getSearchRangeSingle(termStr, null, collection);
@@ -399,7 +431,10 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
    * (i.e. the terms are full IDs, not just prefixes)
    */
   static Collection<RangeCount> getHashHistogramFromId(
-      SolrIndexSearcher searcher, String idField, DocRouter router, DocCollection collection)
+      SolrIndexSearcher searcher,
+      String idField,
+      CompositeIdRouter router,
+      DocCollection collection)
       throws IOException {
     RTimer timer = new RTimer();
 
@@ -414,9 +449,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     int numCollisions = 0;
     long sumBuckets = 0;
 
-    byte sep = (byte) CompositeIdRouter.SEPARATOR.charAt(0);
     TermsEnum termsEnum = terms.iterator();
-    BytesRef currPrefix = new BytesRef(); // prefix of the previous "id" term
+    BytesRef currPrefix = new BytesRef(); // prefix of the previous "id" term WITH SEPARATOR
     int bucketCount = 0; // count of the number of docs in the current bucket
 
     // We're going to iterate over all terms, so do the minimum amount of work per term.
@@ -426,7 +460,9 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       BytesRef term = termsEnum.next();
 
       // compare to current prefix bucket and see if this new term shares the same prefix
-      if (term != null && term.length >= currPrefix.length && currPrefix.length > 0) {
+      if (term != null && currPrefix.length > 0) {
+        // since currPrefix includes the trailing separator, we can assume startsWith is a
+        // sufficient test
         if (StringHelper.startsWith(term, currPrefix)) {
           bucketCount++; // use 1 since we are dealing with unique ids
           continue;
@@ -455,25 +491,16 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       // if the current term is null, we ran out of values
       if (term == null) break;
 
-      // find the new prefix (if any)
-
-      // resize if needed
-      if (currPrefix.length < term.length) {
-        currPrefix.bytes = new byte[term.length + 10];
-      }
-
-      // Copy the bytes up to and including the separator, and set the length if the separator is
-      // found. If there was no separator, then length remains 0 and it's the indicator that we have
-      // no prefix bucket
-      currPrefix.length = 0;
-      for (int i = 0; i < term.length; i++) {
-        byte b = term.bytes[i + term.offset];
-        currPrefix.bytes[i] = b;
-        if (b == sep) {
-          currPrefix.length = i + 1;
-          bucketCount++;
-          break;
+      // find the new prefix (if any), with trailing separator
+      currPrefix.length = router.getRouteKeyWithSeparator(term.bytes, term.offset, term.length);
+      if (currPrefix.length > 0) {
+        // resize if needed
+        if (currPrefix.length > currPrefix.bytes.length) {
+          currPrefix.bytes = new byte[currPrefix.length + 10];
         }
+        System.arraycopy(term.bytes, term.offset, currPrefix.bytes, 0, currPrefix.length);
+
+        bucketCount++;
       }
     }
 
@@ -578,7 +605,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
     // The middle should never be the last, since that means that we won't actually do a split.
     // Minimising the error (above) should already ensure this never happens.
-    assert middle != last;
+    assert !Objects.equals(middle, last);
 
     // Make sure to include the shard's current range in the new ranges so we don't create useless
     // empty shards.

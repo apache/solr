@@ -107,7 +107,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       // If the ParseDateField URP isn't ahead of the DUP, then the date won't be normalized in the
       // buffered tlog entry, and the doc won't be indexed on the replaying replica - a warning is
       // logged as follows:
-      // WARN [...] o.a.s.u.UpdateLog REYPLAY_ERR: IOException reading log
+      // WARN [...] o.a.s.u.UpdateLog REPLAY_ERR: IOException reading log
       //            org.apache.solr.common.SolrException: Invalid Date String:'2017-01-05'
       //              at org.apache.solr.util.DateMathParser.parseMath(DateMathParser.java:234)
       updateJ(
@@ -116,7 +116,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
 
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
 
-      assertTrue(rinfoFuture != null);
+      assertNotNull(rinfoFuture);
 
       assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
 

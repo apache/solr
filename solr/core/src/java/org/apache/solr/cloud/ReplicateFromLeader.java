@@ -80,10 +80,10 @@ public class ReplicateFromLeader {
       if (System.getProperty("jetty.testMode") != null) {
         pollIntervalStr = "00:00:01";
       }
-      if (uinfo.autoCommmitMaxTime != -1) {
-        pollIntervalStr = toPollIntervalStr(uinfo.autoCommmitMaxTime / 2);
-      } else if (uinfo.autoSoftCommmitMaxTime != -1) {
-        pollIntervalStr = toPollIntervalStr(uinfo.autoSoftCommmitMaxTime / 2);
+
+      String calculatedPollIntervalString = determinePollInterval(uinfo);
+      if (calculatedPollIntervalString != null) {
+        pollIntervalStr = calculatedPollIntervalString;
       }
       log.info("Will start replication from leader with poll interval: {}", pollIntervalStr);
 
@@ -153,6 +153,44 @@ public class ReplicateFromLeader {
       log.warn("Cannot get commit command version from index commit point ", e);
       return null;
     }
+  }
+
+  /**
+   * Determine the poll interval for replicas based on the auto soft/hard commit schedule
+   *
+   * @param uinfo the update handler info containing soft/hard commit configuration
+   * @return a poll interval string representing a cadence of polling frequency in the form of
+   *     hh:mm:ss
+   */
+  public static String determinePollInterval(SolrConfig.UpdateHandlerInfo uinfo) {
+    int hardCommitMaxTime = uinfo.autoCommmitMaxTime;
+    int softCommitMaxTime = uinfo.autoSoftCommmitMaxTime;
+    boolean hardCommitNewSearcher = uinfo.openSearcher;
+    String pollIntervalStr = null;
+    if (hardCommitMaxTime != -1) {
+      // configured hardCommit places a ceiling on the interval at which new segments will be
+      // available to replicate
+      if (softCommitMaxTime != -1
+          && (!hardCommitNewSearcher || softCommitMaxTime <= hardCommitMaxTime)) {
+        /*
+         * softCommit is configured.
+         * Usually if softCommit is configured, `hardCommitNewSearcher==false`,
+         * in which case you want to calculate poll interval wrt the max of hardCommitTime
+         * (when segments are available to replicate) and softCommitTime (when changes are visible).
+         * But in the unusual case that hardCommit _does_ open a new searcher and
+         * `hardCommitMaxTime < softCommitMaxTime`, then fallback to `else` clause,
+         * setting poll interval wrt `hardCommitMaxTime` alone.
+         */
+        pollIntervalStr = toPollIntervalStr(Math.max(hardCommitMaxTime, softCommitMaxTime) / 2);
+      } else {
+        pollIntervalStr = toPollIntervalStr(hardCommitMaxTime / 2);
+      }
+    } else if (softCommitMaxTime != -1) {
+      // visibility of changes places a ceiling on polling frequency
+      pollIntervalStr = toPollIntervalStr(softCommitMaxTime / 2);
+    }
+
+    return pollIntervalStr;
   }
 
   private static String toPollIntervalStr(int ms) {

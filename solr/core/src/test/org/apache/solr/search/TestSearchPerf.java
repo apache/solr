@@ -17,9 +17,19 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Random;
+import java.util.Set;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
@@ -32,6 +42,8 @@ import org.junit.BeforeClass;
 
 /** */
 public class TestSearchPerf extends SolrTestCaseJ4 {
+
+  private static final int ITERATIONS = 500;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -53,10 +65,8 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
   }
 
   Random r = new Random(0); // specific seed for reproducible perf testing
-  int nDocs;
 
   void createIndex(int nDocs) {
-    this.nDocs = nDocs;
     assertU(delQ("*:*"));
     for (int i = 0; i < nDocs; i++) {
       assertU(
@@ -153,31 +163,23 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     return ret;
   }
 
-  int doListGen(int iter, Query q, List<Query> filt, boolean cacheQuery, boolean cacheFilt)
-      throws Exception {
+  private long doListGen(Query q, List<Query> filt) throws Exception {
     SolrQueryRequest req = lrf.makeRequest();
 
     SolrIndexSearcher searcher = req.getSearcher();
 
     final RTimer timer = new RTimer();
 
-    int ret = 0;
-    for (int i = 0; i < iter; i++) {
+    long ret = 0;
+    for (int i = 0; i < ITERATIONS; i++) {
       DocList l =
-          searcher.getDocList(
-              q,
-              filt,
-              (Sort) null,
-              0,
-              10,
-              (cacheQuery ? 0 : SolrIndexSearcher.NO_CHECK_QCACHE)
-                  | (cacheFilt ? 0 : SolrIndexSearcher.NO_CHECK_FILTERCACHE));
+          searcher.getDocList(q, filt, (Sort) null, 0, 10, SolrIndexSearcher.NO_CHECK_QCACHE);
       ret += l.matches();
     }
 
     double elapsed = timer.getTime();
     System.out.println(
-        "ret=" + ret + " time=" + elapsed + " throughput=" + iter * 1000 / (elapsed + 1));
+        "ret=" + ret + " time=" + elapsed + " throughput=" + ITERATIONS * 1000 / (elapsed + 1));
 
     req.close();
     assertTrue(ret > 0); // make sure we did some work
@@ -248,8 +250,7 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
 
     createIndex2(indexSize, "foomany_s", "t10_100_ws");
 
-    // doListGen(100, q, filters, false, true);
-    doListGen(500, q, filters, false, true);
+    doListGen(q, filters);
 
     req.close();
   }

@@ -28,7 +28,7 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.PluginInfo;
@@ -62,13 +62,13 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   private String rootName;
 
   @BeforeClass
-  public static void init() throws Exception {
+  public static void init() {
     TEST_MBEAN_SERVER = MBeanServerFactory.createMBeanServer();
     PREFIX = getSimpleClassName() + "-";
   }
 
   @AfterClass
-  public static void shutdown() throws Exception {
+  public static void shutdown() {
     if (null != TEST_MBEAN_SERVER) {
       MBeanServerFactory.releaseMBeanServer(TEST_MBEAN_SERVER);
       TEST_MBEAN_SERVER = null;
@@ -142,7 +142,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   @After
   public void afterTest() throws Exception {
     if (null == metricManager) {
-      return; // test failed to init, nothing to cleanup
+      return; // test failed to init, nothing to clean up
     }
 
     metricManager.closeReporters(coreMetricManager.getRegistryName());
@@ -157,7 +157,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReportMetrics() throws Exception {
+  public void testReportMetrics() {
     Random random = random();
 
     Map<String, Counter> registered = new HashMap<>();
@@ -168,8 +168,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     for (int i = 0; i < iterations; ++i) {
       Map<String, Counter> metrics =
           SolrMetricTestUtils.getRandomMetricsWithReplacements(random, registered);
-      SolrMetricProducer producer =
-          SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+      SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
       coreMetricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
       // waitForListener();
@@ -192,8 +191,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     String scope = PREFIX + SolrMetricTestUtils.getRandomScope(random, true);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random, true);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random, true);
-    SolrMetricProducer producer =
-        SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+    SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     coreMetricManager.registerMetricProducer(scope, producer);
     Set<ObjectInstance> objects = TEST_MBEAN_SERVER.queryMBeans(null, null);
     assertEquals(
@@ -274,7 +272,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
         coreMetricManager.getTag());
 
     String root2 = PREFIX + TestUtil.randomSimpleString(random(), 5, 10);
-    assertFalse(root2.equals(root1));
+    assertNotEquals(root2, root1);
     PluginInfo pluginInfo2 = createReporterPluginInfo(root2, false);
     metricManager.loadReporter(
         coreMetricManager.getRegistryName(),
@@ -290,8 +288,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     String scope = PREFIX + SolrMetricTestUtils.getRandomScope(random(), true);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random(), true);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random(), true);
-    SolrMetricProducer producer =
-        SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+    SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     coreMetricManager.registerMetricProducer(scope, producer);
     Set<ObjectInstance> objects = TEST_MBEAN_SERVER.queryMBeans(null, null);
     assertEquals(

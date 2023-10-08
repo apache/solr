@@ -17,11 +17,11 @@
 package org.apache.solr.legacy;
 
 import java.io.IOException;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CannedTokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.tests.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.tests.analysis.CannedTokenStream;
+import org.apache.lucene.tests.analysis.Token;
 import org.apache.solr.legacy.LegacyNumericTokenStream.LegacyNumericTermAttribute;
 
 /** test tokenstream reuse by DefaultIndexingChain */
@@ -53,7 +53,6 @@ public class TestLegacyFieldReuse extends BaseTokenStreamTestCase {
 
     // pass another bogus stream (numeric, but different precision step!)
     legacyIntField = new LegacyIntField("foo", 42, Field.Store.NO);
-    assert 3 != LegacyNumericUtils.PRECISION_STEP_DEFAULT;
     bogus = new LegacyNumericTokenStream(3);
     ts = legacyIntField.tokenStream(null, bogus);
     assertNotSame(bogus, ts);

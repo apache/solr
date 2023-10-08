@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.core.CoreContainer;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,7 +49,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   private static float expectedLoadBalancerRequestsMaximumFraction = 1.0f;
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTests() {
     expectedLoadBalancerRequestsMinimumAbsolute = random().nextInt(3); // 0 .. 2
     expectedLoadBalancerRequestsMaximumFraction = (1 + random().nextInt(10)) / 10f; // 0.1 .. 1.0
     System.setProperty(
@@ -65,7 +66,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     System.clearProperty(LOAD_BALANCER_REQUESTS_MAX_FRACTION);
   }
 
-  public void testLoadBalancerRequestsMinMax() throws Exception {
+  public void testLoadBalancerRequestsMinMax() {
     final Path home = TEST_PATH();
     CoreContainer cc = null;
     ShardHandlerFactory factory = null;
@@ -124,7 +125,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void getShardsAllowList() throws Exception {
+  public void getShardsAllowList() {
     System.setProperty(TEST_URL_ALLOW_LIST, "http://abc:8983/,http://def:8984/,");
     CoreContainer cc = null;
     ShardHandlerFactory factory = null;
@@ -133,7 +134,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       cc = CoreContainer.createAndLoad(home, home.resolve("solr.xml"));
       factory = cc.getShardHandlerFactory();
       assertTrue(factory instanceof HttpShardHandlerFactory);
-      assertThat(
+      MatcherAssert.assertThat(
           cc.getAllowListUrlChecker().getHostAllowList(),
           equalTo(new HashSet<>(Arrays.asList("abc:8983", "def:8984"))));
     } finally {
@@ -144,14 +145,14 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLiveNodesToHostUrl() throws Exception {
+  public void testLiveNodesToHostUrl() {
     Set<String> liveNodes =
         new HashSet<>(Arrays.asList("1.2.3.4:8983_solr", "1.2.3.4:9000_", "1.2.3.4:9001_solr-2"));
     ClusterState cs = new ClusterState(liveNodes, new HashMap<>());
     Set<String> hostSet = cs.getHostAllowList();
-    assertThat(hostSet.size(), is(3));
-    assertThat(hostSet, hasItem("1.2.3.4:8983"));
-    assertThat(hostSet, hasItem("1.2.3.4:9000"));
-    assertThat(hostSet, hasItem("1.2.3.4:9001"));
+    MatcherAssert.assertThat(hostSet.size(), is(3));
+    MatcherAssert.assertThat(hostSet, hasItem("1.2.3.4:8983"));
+    MatcherAssert.assertThat(hostSet, hasItem("1.2.3.4:9000"));
+    MatcherAssert.assertThat(hostSet, hasItem("1.2.3.4:9001"));
   }
 }

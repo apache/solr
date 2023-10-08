@@ -17,8 +17,9 @@
 package org.apache.solr.spelling;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
@@ -70,16 +71,25 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
               SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
               assertFalse("suggestions shouldn't be empty", suggestions.isEmpty());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
               assertEquals("foo", entry.getKey());
-              assertFalse(
+              assertNotEquals(
                   entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO,
-                  entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+                  SpellingResult.NO_FREQUENCY_INFO,
+                  (int) entry.getValue());
 
               // check that 'super' is *not* corrected
               spellOpts.tokens = queryConverter.convert("super");
+              result = checker.getSuggestions(spellOpts);
+              assertNotNull("result shouldn't be null", result);
+              suggestions = result.get(spellOpts.tokens.iterator().next());
+              assertNotNull("suggestions shouldn't be null", suggestions);
+              assertTrue("suggestions should be empty", suggestions.isEmpty());
+
+              // Check empty token due to spellcheck.q = ""
+              spellOpts.tokens = Collections.singletonList(new Token("", 0, 0));
               result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
               suggestions = result.get(spellOpts.tokens.iterator().next());
@@ -90,7 +100,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOnlyMorePopularWithExtendedResults() throws Exception {
+  public void testOnlyMorePopularWithExtendedResults() {
     assertQ(
         req(
             "q",
@@ -138,7 +148,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
               SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
               SpellingResult result = checker.getSuggestions(spellOpts);
               assertNotNull("result shouldn't be null", result);
-              Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+              Map<String, Integer> suggestions = result.get(spellOpts.tokens.iterator().next());
               assertNotNull("suggestions shouldn't be null", suggestions);
 
               if (limitQueryLength) {

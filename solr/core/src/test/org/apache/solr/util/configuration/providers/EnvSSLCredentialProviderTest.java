@@ -19,21 +19,21 @@ package org.apache.solr.util.configuration.providers;
 
 import static org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider.DEFAULT_CREDENTIAL_KEY_MAP;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.configuration.SSLCredentialProvider;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /** */
-public class EnvSSLCredentialProviderTest {
+public class EnvSSLCredentialProviderTest extends SolrTestCase {
 
   @Test
-  public void testGetCredentials() throws Exception {
+  public void testGetCredentials() {
     int cnt = 0;
     Map<String, String> envvars =
-        ImmutableMap.of(
+        Map.of(
             EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, "pw" + ++cnt,
             EnvSSLCredentialProvider.EnvVars.SOLR_SSL_TRUST_STORE_PASSWORD, "pw" + ++cnt,
             EnvSSLCredentialProvider.EnvVars.SOLR_SSL_CLIENT_KEY_STORE_PASSWORD, "pw" + ++cnt,
@@ -44,12 +44,12 @@ public class EnvSSLCredentialProviderTest {
     for (Map.Entry<SSLCredentialProvider.CredentialType, String> set :
         DEFAULT_CREDENTIAL_KEY_MAP.entrySet()) {
       String expectedpw = "pw" + ++cnt;
-      assertThat(sut.getCredential(set.getKey()), is(expectedpw));
+      MatcherAssert.assertThat(sut.getCredential(set.getKey()), is(expectedpw));
     }
   }
 
   @Test
-  public void testGetCredentialsWithEnvVars() throws Exception {
+  public void testGetCredentialsWithEnvVars() {
     EnvSSLCredentialProvider sut = new EnvSSLCredentialProvider();
     // assuming not to fail
     sut.getCredential(SSLCredentialProvider.CredentialType.SSL_KEY_STORE_PASSWORD);

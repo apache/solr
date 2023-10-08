@@ -17,10 +17,11 @@
 package org.apache.solr.handler.component;
 
 import java.io.File;
-import java.util.*;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
@@ -39,7 +40,6 @@ import org.junit.Test;
 /**
  * @since solr 1.3
  */
-@Slow
 @SuppressTempFileChecks(
     bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
 public class SpellCheckComponentTest extends SolrTestCaseJ4 {
@@ -69,10 +69,9 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    super.tearDown();
     assertU(delQ("*:*"));
-    optimize();
     assertU((commit()));
+    super.tearDown();
   }
 
   @Test
@@ -290,6 +289,43 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testInvalidDictionary() {
+    assertQEx(
+        "Invalid specified dictionary should throw exception",
+        "Specified dictionaries do not exist: INVALID",
+        req(
+            "json.nl",
+            "map",
+            "qt",
+            rh,
+            SpellCheckComponent.COMPONENT_NAME,
+            "true",
+            "q",
+            "documemt",
+            SpellingParams.SPELLCHECK_DICT,
+            "INVALID"),
+        SolrException.ErrorCode.NOT_FOUND);
+
+    assertQEx(
+        "Invalid specified dictionary should throw exception",
+        "Specified dictionaries do not exist: INVALID2",
+        req(
+            "json.nl",
+            "map",
+            "qt",
+            rh,
+            SpellCheckComponent.COMPONENT_NAME,
+            "true",
+            "q",
+            "test",
+            SpellingParams.SPELLCHECK_Q,
+            "documemt",
+            SpellingParams.SPELLCHECK_DICT,
+            "INVALID2"),
+        SolrException.ErrorCode.NOT_FOUND);
+  }
+
+  @Test
   public void testCollate() throws Exception {
     assertJQ(
         req(
@@ -443,7 +479,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRelativeIndexDirLocation() throws Exception {
+  public void testRelativeIndexDirLocation() {
     SolrCore core = h.getCore();
     File indexDir = new File(core.getDataDir() + File.separator + "spellchecker1");
     assertTrue(indexDir.exists());
@@ -573,7 +609,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     // TODO:  how do we make this into a 1-liner using "assertQ()" ???
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertNotNull("speller is null and it shouldn't be", speller);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SpellCheckComponent.COMPONENT_NAME, "true");
@@ -591,8 +627,8 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     NamedList<?> values = rsp.getValues();
     NamedList<?> spellCheck = (NamedList<?>) values.get("spellcheck");
     NamedList<?> suggestions = (NamedList<?>) spellCheck.get("suggestions");
-    assertTrue(suggestions.get("suggestion") == null);
-    assertTrue((Boolean) spellCheck.get("correctlySpelled") == false);
+    assertNull(suggestions.get("suggestion"));
+    assertFalse((Boolean) spellCheck.get("correctlySpelled"));
 
     params.remove(SpellingParams.SPELLCHECK_DICT);
     params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
@@ -604,7 +640,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     values = rsp.getValues();
     spellCheck = (NamedList<?>) values.get("spellcheck");
     suggestions = (NamedList<?>) spellCheck.get("suggestions");
-    assertTrue(suggestions.get("suggestion") == null);
-    assertTrue((Boolean) spellCheck.get("correctlySpelled") == false);
+    assertNull(suggestions.get("suggestion"));
+    assertFalse((Boolean) spellCheck.get("correctlySpelled"));
   }
 }

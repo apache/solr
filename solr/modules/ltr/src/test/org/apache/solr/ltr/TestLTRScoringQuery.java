@@ -29,7 +29,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -41,6 +40,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
@@ -130,39 +130,38 @@ public class TestLTRScoringQuery extends SolrTestCase {
     final HashMap<String, String[]> externalFeatureInfo = new HashMap<>();
     externalFeatureInfo.put("queryIntent", new String[] {"company"});
     externalFeatureInfo.put("user_query", new String[] {"abc"});
-    final LTRScoringQuery m1 = new LTRScoringQuery(algorithm1, externalFeatureInfo, false, null);
+    final LTRScoringQuery m1 = new LTRScoringQuery(algorithm1, externalFeatureInfo, null);
 
     final HashMap<String, String[]> externalFeatureInfo2 = new HashMap<>();
     externalFeatureInfo2.put("user_query", new String[] {"abc"});
     externalFeatureInfo2.put("queryIntent", new String[] {"company"});
     int totalPoolThreads = 10, numThreadsPerRequest = 10;
     LTRThreadModule threadManager = new LTRThreadModule(totalPoolThreads, numThreadsPerRequest);
-    final LTRScoringQuery m2 =
-        new LTRScoringQuery(algorithm1, externalFeatureInfo2, false, threadManager);
+    final LTRScoringQuery m2 = new LTRScoringQuery(algorithm1, externalFeatureInfo2, threadManager);
 
     // Models with same algorithm and efis, just in different order should be the same
     assertEquals(m1, m2);
     assertEquals(m1.hashCode(), m2.hashCode());
 
     // Models with same algorithm, but different efi content should not match
-    assertFalse(m1.equals(m0));
-    assertFalse(m1.hashCode() == m0.hashCode());
+    assertNotEquals(m1, m0);
+    assertNotEquals(m1.hashCode(), m0.hashCode());
 
     final LTRScoringModel algorithm2 =
         TestLinearModel.createLinearModel(
             "testModelName2", features, norms, "testStoreName", allFeatures, modelParams);
     final LTRScoringQuery m3 = new LTRScoringQuery(algorithm2);
 
-    assertFalse(m1.equals(m3));
-    assertFalse(m1.hashCode() == m3.hashCode());
+    assertNotEquals(m1, m3);
+    assertNotEquals(m1.hashCode(), m3.hashCode());
 
     final LTRScoringModel algorithm3 =
         TestLinearModel.createLinearModel(
             "testModelName", features, norms, "testStoreName3", allFeatures, modelParams);
     final LTRScoringQuery m4 = new LTRScoringQuery(algorithm3);
 
-    assertFalse(m1.equals(m4));
-    assertFalse(m1.hashCode() == m4.hashCode());
+    assertNotEquals(m1, m4);
+    assertNotEquals(m1.hashCode(), m4.hashCode());
   }
 
   @Test

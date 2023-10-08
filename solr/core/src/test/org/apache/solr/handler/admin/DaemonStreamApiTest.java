@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
@@ -54,7 +53,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   private static final String DAEMON_OP = "DaemonOp";
 
   // We want 2-5 daemons. Choose one of them to start/stop/kill to catch any off-by-one or other
-  // bookeeping errors.
+  // bookkeeping errors.
   final int numDaemons = random().nextInt(3) + 2;
   String daemonOfInterest;
 
@@ -66,7 +65,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    cluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    cluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig());
 
     url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + CHECKPOINT_COLL;
 
@@ -223,7 +222,8 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
             + daemonName
             + "' did not become RUNNABLE, WAITING or TIMED_WAITING in 10 seconds");
   }
-  // There can be some delay while threads stabilize, so we need to loop. Evenutally, the statu of a
+  // There can be some delay while threads stabilize, so we need to loop. Eventually, the status of
+  // a
   // stopped thread should be "TERMINATED"
   private void checkStopped() throws InterruptedException, IOException {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -317,7 +317,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
       }
     }
     tupleStream.close();
-    Collections.sort(tuples, (o1, o2) -> (o1.getString("id").compareTo(o2.getString("id"))));
+    tuples.sort((o1, o2) -> (o1.getString("id").compareTo(o2.getString("id"))));
     return tuples;
   }
 

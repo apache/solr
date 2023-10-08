@@ -24,7 +24,7 @@ import org.apache.solr.handler.component.ShardHandlerFactory;
 /** Tests specifying a custom ShardHandlerFactory */
 public class TestShardHandlerFactory extends SolrTestCaseJ4 {
 
-  public void testXML() throws Exception {
+  public void testXML() {
     Path home = TEST_PATH();
     CoreContainer cc = CoreContainer.createAndLoad(home, home.resolve("solr-shardhandler.xml"));
     ShardHandlerFactory factory = cc.getShardHandlerFactory();

@@ -274,6 +274,12 @@ The output will include the status of the request and the new shard names, which
 For example, "shard1" will become "shard1_0" and "shard1_1".
 If the status is anything other than "success", an error message will explain why the request failed.
 
+=== Miscellaneous Configuration
+
+When splitting a shard, a free disk space check is performed on the local file system of the leader shard.
+This can be disabled through the `solr.shardSplit.checkDiskSpace.enabled` system property (i.e. `-Dsolr.shardSplit.checkDiskSpace.enabled=false`).
+It is already disabled by default for xref:solr-on-hdfs.adoc[HDFS].
+
 [[createshard]]
 == CREATESHARD: Create a Shard
 
@@ -318,9 +324,7 @@ http://localhost:8983/solr/admin/collections?action=CREATESHARD&shard=newShardNa
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
   {
-    "create":{
-      "shard":"newShardName"
-    }
+    "shard":"newShardName"
   }
 '
 ----
@@ -352,6 +356,8 @@ s|Required |Default: none
 +
 
 The name of the collection that includes the shard to be split.
+Provided as a query parameter in v1 requests, and as a path parameter for v2 requests.
+
 
 `shard`::
 +
@@ -467,13 +473,6 @@ http://localhost:8983/solr/admin/collections?action=DELETESHARD&shard=shard1&col
 ----
 curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1
 ----
-
-To run a DELETE asynchronously then append the `async` parameter:
-
-[source,bash]
-----
-curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1?async=aaaa
-----
 ====
 --
 
@@ -487,6 +486,7 @@ s|Required |Default: none
 |===
 +
 The name of the collection that includes the shard to be deleted.
+Provided as a query parameter or a path parameter in v1 and v2 requests, respectively.
 
 `shard`::
 +
@@ -496,6 +496,8 @@ s|Required |Default: none
 |===
 +
 The name of the shard to be deleted.
+Provided as a query parameter or a path parameter in v1 and v2 requests, respectively.
+
 
 `deleteInstanceDir`::
 +
@@ -526,6 +528,15 @@ Set this to `false` to prevent the data directory from being deleted.
 +
 By default Solr will delete the index of each replica that is deleted.
 Set this to `false` to prevent the index directory from being deleted.
+
+`followAliases`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+A flag that allows treating the collection parameter as an alias for the actual collection name to be resolved.
 
 `async`::
 +
@@ -580,11 +591,7 @@ http://localhost:8983/solr/admin/collections?action=FORCELEADER&collection=techp
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1 -H 'Content-Type: application/json' -d '
-  {
-    "force-leader":{}
-  }
-'
+curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/force-leader
 ----
 *Output*
 
@@ -624,3 +631,129 @@ This parameter is required.
 
 WARNING: This is an expert level command, and should be invoked only when regular leader election is not working.
 This may potentially lead to loss of data in the event that the new leader doesn't have certain updates, possibly recent ones, which were acknowledged by the old leader before going down.
+
+[[installsharddata]]
+== INSTALLSHARDDATA: Install/Import Data to Shard
+
+Under normal circumstances, data is added to Solr collections (and the shards that make them up) by xref:indexing-guide:indexing-with-update-handlers.adoc[indexing] documents.
+However some use-cases require constructing per-shard indices offline.
+Often this is done as a means of insulating query traffic from indexing load, or because the ETL pipeline in use is particularly complex.
+The INSTALLSHARDDATA API allows installation of these pre-constructed indices into individual shards within a collection.
+Installation copies the index files into all replicas within the shard, overwriting any preexisting data held by that shard.
+
+To install data into a shard, the collection owning that shard must first be put into "readOnly" mode, using the xref:deployment-guide:collection-management.adoc#modifycollection[MODIFYCOLLECTION API].
+Once in read-only mode, shard installation may be done either serially or in parallel.
+Data can be imported from any `repository` and `location` supported by Solr's pluggable xref:deployment-guide:backup-restore.adoc#backuprestore-storage-repositories[Backup Repository] abstraction.
+
+The specified `location` must contain all files that make up a core's `data/index` directory.
+Users are responsible for ensuring that the index installed to a shard is compatible with the schema and configuration for the collection hosting that shard.
+
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1installshard]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=INSTALLSHARDDATA&collection=techproducts&shard=shard1&repository=localfs&location=/mounts/myNFSDrive/tech/shard1/data/index
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 78
+  }
+}
+----
+====
+
+[example.tab-pane#v2installshard]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/install -H 'Content-Type: application/json' -d '
+  {
+    "repository": "localfs",
+    "location": "/mounts/myNFSDrive/tech/shard1/data/index"
+  }
+'
+----
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 125
+  }
+}
+----
+====
+--
+
+=== INSTALLSHARDDATA Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection.
+This parameter is required.
+Specified as a query parameter for v1 requests, and as a path segment for v2 requests.
+
+`shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the shard to install data to.
+This parameter is required.
+Specified as a query parameter for v1 requests, and as a path segment for v2 requests.
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+s|Required|Default: none
+|===
++
+The location within the specified backup repository to find the index files to install.
+Specified as a query parameter for v1 requests, and in the request body of v2 requests.
+
+`repository`::
++
+[%autowidth,frame=none]
+|===
+|Optional|Default: none
+|===
++
+The name of the backup repository to look for index files within
+Specified as a query parameter for v1 requests, and in the request body of v2 requests.
+Solr's default Backup Repository (if one is defined in solr.xml) will be used as a fallback if no repository parameter is provided.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].

@@ -25,7 +25,7 @@ It is structured to address a broad spectrum of needs, ranging from new develope
 It will be of use at any point in the application life cycle, for whenever you need authoritative information about Solr.
 
 The material as presented assumes that you are familiar with some basic search concepts and that you can read XML.
-It does not assume that you are a Java programmer, although knowledge of Java is helpful when working directly with Lucene or when developing custom extensions to a Lucene/Solr installation.
+It does not assume that you are a Java programmer, although knowledge of Java is helpful when working directly with Lucene or when developing custom extensions to a Solr installation.
 
 == Hosts and Port Examples
 

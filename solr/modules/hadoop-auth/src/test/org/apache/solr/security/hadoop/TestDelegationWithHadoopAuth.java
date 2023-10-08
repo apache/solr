@@ -20,14 +20,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -79,8 +80,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private String getDelegationToken(
-      final String renewer, final String user, HttpSolrClient solrClient) throws Exception {
+  private String getDelegationToken(final String renewer, final String user, SolrClient solrClient)
+      throws Exception {
     DelegationTokenRequest.Get get =
         new DelegationTokenRequest.Get(renewer) {
           @Override
@@ -95,7 +96,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   }
 
   private long renewDelegationToken(
-      final String token, final int expectedStatusCode, final String user, HttpSolrClient client)
+      final String token, final int expectedStatusCode, final String user, SolrClient client)
       throws Exception {
     DelegationTokenRequest.Renew renew =
         new DelegationTokenRequest.Renew(token) {
@@ -123,7 +124,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     }
   }
 
-  private void cancelDelegationToken(String token, int expectedStatusCode, HttpSolrClient client)
+  private void cancelDelegationToken(String token, int expectedStatusCode, SolrClient client)
       throws Exception {
     DelegationTokenRequest.Cancel cancel = new DelegationTokenRequest.Cancel(token);
     try {
@@ -174,13 +175,13 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
               .build();
     else
       delegationTokenClient =
-          new CloudSolrClient.Builder(
+          new CloudLegacySolrClient.Builder(
                   Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
               .withLBHttpSolrClientBuilder(
                   new LBHttpSolrClient.Builder()
                       .withResponseParser(client.getParser())
-                      .withSocketTimeout(30000)
-                      .withConnectionTimeout(15000)
+                      .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+                      .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
                       .withHttpSolrClientBuilder(
                           new HttpSolrClient.Builder().withKerberosDelegationToken(token)))
               .build();
@@ -354,12 +355,13 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
   @Test
   public void testZNodePaths() throws Exception {
     getDelegationToken(null, USER_1, primarySolrClient);
-    SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(), 1000);
-    try {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(1000, TimeUnit.MILLISECONDS)
+            .build()) {
       assertTrue(zkClient.exists("/security/zkdtsm"));
       assertTrue(zkClient.exists("/security/token"));
-    } finally {
-      zkClient.close();
     }
   }
 

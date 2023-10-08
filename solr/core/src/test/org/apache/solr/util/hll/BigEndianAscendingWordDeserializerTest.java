@@ -16,8 +16,7 @@
  */
 package org.apache.solr.util.hll;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
-
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.util.Random;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
@@ -120,7 +119,7 @@ public class BigEndianAscendingWordDeserializerTest extends SolrTestCase {
    */
   private static void runRandomTest(
       final int wordLength, final int bytePadding, final int wordCount) {
-    final long seed = randomLong();
+    final long seed = RandomizedTest.randomLong();
     final Random random = new Random(seed);
     final Random verificationRandom = new Random(seed);
 

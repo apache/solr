@@ -16,92 +16,99 @@
  */
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.tests.util.LuceneTestCase.BadApple;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ThreadLeakLingering(linger = 30)
+@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-16122")
 public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String SOLRXML = "<solr></solr>";
-  private static final int MAX_NODES = 16;
-  private static final int MIN_NODES = 4;
 
   @Test
   public void testLeaderElectionWithZkExpiry() throws Exception {
     Path zkDir = createTempDir("zkData");
     Path ccDir = createTempDir("testLeaderElectionWithZkExpiry-solr");
-    CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
+
     final ZkTestServer server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);
-    SolrZkClient zc = null;
     try {
       server.run();
 
       CloudConfig cloudConfig =
-          new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
+          new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984)
               .setLeaderConflictResolveWait(180000)
               .setLeaderVoteWait(180000)
               .build();
-      final ZkController zkController =
-          new ZkController(
-              cc, server.getZkAddress(), 15000, cloudConfig, () -> Collections.emptyList());
+
+      CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
       try {
-        Thread killer =
-            new Thread() {
-              @Override
-              public void run() {
-                long timeout =
-                    System.nanoTime() + TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
-                while (System.nanoTime() < timeout) {
+        ExecutorService threadExecutor =
+            ExecutorUtil.newMDCAwareSingleThreadExecutor(
+                new SolrNamedThreadFactory(this.getTestName()));
+        try (ZkController zkController =
+            new ZkController(
+                cc, server.getZkAddress(), 15000, cloudConfig, Collections::emptyList)) {
+          threadExecutor.submit(
+              () -> {
+                TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+                while (!timeout.hasTimedOut()) {
                   long sessionId = zkController.getZkClient().getZkSessionId();
                   server.expire(sessionId);
                   try {
-                    Thread.sleep(10);
+                    timeout.sleep(10);
                   } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     return;
                   }
                 }
+              });
+          try (SolrZkClient zc =
+              new SolrZkClient.Builder()
+                  .withUrl(server.getZkAddress())
+                  .withTimeout(LeaderElectionTest.TIMEOUT, TimeUnit.MILLISECONDS)
+                  .build()) {
+            boolean found = false;
+            TimeOut timeout = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+            while (!timeout.hasTimedOut()) {
+              try {
+                String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);
+                if (leaderNode != null && !leaderNode.trim().isEmpty()) {
+                  if (log.isInfoEnabled()) {
+                    log.info("Time={} Overseer leader is = {}", System.nanoTime(), leaderNode);
+                  }
+                  found = true;
+                  break;
+                }
+              } catch (KeeperException.NoNodeException nne) {
+                // ignore
               }
-            };
-        killer.start();
-        killer.join();
-        long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
-        zc = new SolrZkClient(server.getZkAddress(), LeaderElectionTest.TIMEOUT);
-        boolean found = false;
-        while (System.nanoTime() < timeout) {
-          try {
-            String leaderNode = OverseerCollectionConfigSetProcessor.getLeaderNode(zc);
-            if (leaderNode != null && !leaderNode.trim().isEmpty()) {
-              if (log.isInfoEnabled()) {
-                log.info("Time={} Overseer leader is = {}", System.nanoTime(), leaderNode);
-              }
-              found = true;
-              break;
             }
-          } catch (KeeperException.NoNodeException nne) {
-            // ignore
+            assertTrue(found);
           }
+        } finally {
+          ExecutorUtil.shutdownNowAndAwaitTermination(threadExecutor);
         }
-        assertTrue(found);
       } finally {
-        zkController.close();
+        cc.shutdown();
       }
     } finally {
-      cc.shutdown();
-      if (zc != null) zc.close();
       server.shutdown();
     }
   }

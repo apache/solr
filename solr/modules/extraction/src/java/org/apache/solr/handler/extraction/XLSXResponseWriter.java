@@ -282,7 +282,7 @@ class XLSXWriter extends TabularResponseWriter {
   @Override
   public void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
     assert !raw;
-    StringBuffer output = new StringBuffer();
+    StringBuilder output = new StringBuilder();
     while (val.hasNext()) {
       Object v = val.next();
       if (v instanceof IndexableField) {

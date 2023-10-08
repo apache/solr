@@ -16,14 +16,12 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -38,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class SkipExistingDocumentsProcessorFactoryTest {
+public class SkipExistingDocumentsProcessorFactoryTest extends SolrTestCaseJ4 {
 
   private BytesRef docId = new BytesRef();
 
@@ -342,7 +340,7 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.setIndexedId(docId);
     cmd.solrDoc = new SolrInputDocument();
-    cmd.solrDoc.addField("last_name", ImmutableMap.of("set", "Smith"));
+    cmd.solrDoc.addField("last_name", Map.of("set", "Smith"));
     assertTrue(AtomicUpdateDocumentMerger.isAtomicUpdate(cmd));
     return cmd;
   }

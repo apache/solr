@@ -65,7 +65,7 @@ public class TestInjection {
   private static final Pattern ENABLED_PERCENT =
       Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
 
-  private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.util.LuceneTestCase";
+  private static final String LUCENE_TEST_CASE_FQN = "org.apache.lucene.tests.util.LuceneTestCase";
 
   /**
    * If null, then we are not being run as part of a test, and all TestInjection events should be
@@ -141,7 +141,7 @@ public class TestInjection {
 
   public static volatile String wrongIndexFingerprint = null;
 
-  private static volatile Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
+  private static volatile Set<Timer> timers = Collections.synchronizedSet(new HashSet<>());
 
   private static volatile AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
@@ -248,7 +248,7 @@ public class TestInjection {
         int delay = rand.nextInt(randomDelayMaxInCoreCreationInSec);
         log.info("Inject random core creation delay of {}s", delay);
         try {
-          Thread.sleep(delay * 1000);
+          Thread.sleep(delay * 1000L);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }

@@ -84,14 +84,14 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRandomSplitRecommendations() throws Exception {
+  public void testRandomSplitRecommendations() {
     Random rand = random();
     for (int i = 0; i < 10000; i++) { // 1M takes ~ 1 sec
       doRandomSplitRecommendation(rand);
     }
   }
 
-  public void doRandomSplitRecommendation(Random rand) throws Exception {
+  public void doRandomSplitRecommendation(Random rand) {
     int low = 0;
     int high = 0;
 
@@ -172,7 +172,7 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
     assertEquals(12, results.iterator().next().max);
     verifyContiguous(results, curr);
 
-    // don't freak out if we encounter some ranges outside of the current defined shard range
+    // don't freak out if we encounter some ranges outside the current defined shard range
     // this can happen since document routing can be overridden.
     curr = new DocRouter.Range(-100, 101);
     counts = new ArrayList<>();
@@ -239,7 +239,7 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
 
     String prefixField = "id_prefix_s";
     String idField = "id";
-    DocRouter router = new CompositeIdRouter();
+    CompositeIdRouter router = new CompositeIdRouter();
 
     for (int i = 0; i < 100; i++) {
       SolrQueryRequest req = req("myquery");

@@ -482,7 +482,7 @@ public abstract class FieldType extends FieldProperties {
    * @return a Query instance to perform prefix search
    */
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
-    if ("".equals(termStr)) {
+    if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
     PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));

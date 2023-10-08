@@ -96,8 +96,8 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     nl.add(null, 42);
     rsp.add("nl", nl);
 
-    rsp.add("byte", Byte.valueOf((byte) -3));
-    rsp.add("short", Short.valueOf((short) -4));
+    rsp.add("byte", (byte) -3);
+    rsp.add("short", (short) -4);
     String expected = "{\"nl\":[[\"data1\",\"he\\u2028llo\\u2029!\"],[null,42]],byte:-3,short:-4}";
     w.write(buf, req, rsp);
     @SuppressWarnings({"rawtypes"})
@@ -210,7 +210,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
   }
   // common-case ascii
   static String str(Random r, int sz) {
-    StringBuffer sb = new StringBuffer(sz);
+    StringBuilder sb = new StringBuilder(sz);
     for (int i = 0; i < sz; i++) {
       sb.append('\n' + r.nextInt(128 - '\n'));
     }

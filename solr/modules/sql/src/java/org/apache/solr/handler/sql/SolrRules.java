@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -49,7 +51,7 @@ class SolrRules {
 
   static List<String> solrFieldNames(final RelDataType rowType) {
     return SqlValidatorUtil.uniquify(
-        new AbstractList<String>() {
+        new AbstractList<>() {
           @Override
           public String get(int index) {
             return rowType.getFieldList().get(index).getName();
@@ -102,8 +104,6 @@ class SolrRules {
    * Base class for planner rules that convert a relational expression to Solr calling convention.
    */
   abstract static class SolrConverterRule extends ConverterRule {
-    final Convention out = SolrRel.CONVENTION;
-
     SolrConverterRule(Class<? extends RelNode> clazz, String description) {
       this(clazz, relNode -> true, description);
     }
@@ -144,6 +144,7 @@ class SolrRules {
       super(LogicalFilter.class, SolrFilterRule::filter, "SolrFilterRule");
     }
 
+    @Override
     public RelNode convert(RelNode rel) {
       final LogicalFilter filter = (LogicalFilter) rel;
       final RelTraitSet traitSet = filter.getTraitSet().replace(out);
@@ -160,6 +161,7 @@ class SolrRules {
       super(LogicalProject.class, "SolrProjectRule");
     }
 
+    @Override
     public RelNode convert(RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
       final RelNode converted = convert(project.getInput(), out);

@@ -131,6 +131,6 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
     Long updateTime = (Long) updateStats.get("UPDATE./update.totalTime");
     Long termTime = (Long) termStats.get("QUERY./terms.totalTime");
 
-    assertFalse("RequestHandlers should not share statistics!", updateTime.equals(termTime));
+    assertNotEquals("RequestHandlers should not share statistics!", updateTime, termTime);
   }
 }

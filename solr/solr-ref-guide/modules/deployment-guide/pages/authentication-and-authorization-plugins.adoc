@@ -29,8 +29,8 @@ Solr includes some plugins out of the box, and additional plugins can be develop
 
 All authentication, authorization and audit logging plugins can work with Solr whether it is running as a cluster or a single-node installation.
 All related configuration, including users and permission rules, are stored in a file named `security.json`.
-When running Solr as a user-managed cluster or a single-node installation, this file must be in the `$SOLR_HOME` directory (usually `server/solr`).
-When using SolrCloud, this file must be located in ZooKeeper.
+When using SolrCloud, this file must be located at the chroot of the ZooKeeper structure.  If no chroot was given, then it must be at the root.
+When running Solr in standalone mode (without ZooKeeper), this file must be in the `$SOLR_HOME` directory. When manually running Solr from an extracted archive, this will most likely be `server/solr`. If the service installer script is used, its default location will be `/var/solr/data`, which can be changed with options given to the service installer.
 
 == Configuring security.json
 
@@ -207,6 +207,7 @@ Solr has a built-in `PKIAuthenticationPlugin` (described below) that is always a
 Each Authentication plugin may also decide to secure inter-node requests on its own.
 They may do this through the so-called `HttpClientBuilder` mechanism, or they may alternatively choose on a per-request basis whether to delegate to PKI or not by overriding a `interceptInternodeRequest()` method from the base class, where any HTTP headers can be set.
 
+[#pkiauthenticationplugin]
 === PKIAuthenticationPlugin
 
 The `PKIAuthenticationPlugin` provides a built-in authentication mechanism where each Solr node is a super user and is fully trusted by other Solr nodes through the use of Public Key Infrastructure (PKI).

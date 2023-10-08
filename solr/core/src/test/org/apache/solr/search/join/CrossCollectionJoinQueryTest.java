@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -32,6 +31,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -101,7 +101,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
       }
     }
 
-    // some extra docs in each collection (not counded in NUM_PRODUCTS) that should drop out of the
+    // some extra docs in each collection (not counted in NUM_PRODUCTS) that should drop out of the
     // joins because they don't have the join key
     productDocs.add(
         new SolrInputDocument(
@@ -282,7 +282,7 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
                 "{!join method=crossCollection solrUrl=\"%s\" fromIndex=products from=product_id_i to=product_id_i}size_s:M",
                 "http://bogus.example.com:8983/solr"),
             true);
-        fail("The query invovling bogus.example.com should not succeed");
+        fail("The query involving bogus.example.com should not succeed");
       } catch (Exception e) {
         // should get here.
         String message = e.getMessage();

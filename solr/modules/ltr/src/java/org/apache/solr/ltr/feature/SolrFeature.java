@@ -205,7 +205,7 @@ public class SolrFeature extends Feature {
 
     private LocalSolrQueryRequest makeRequest(
         SolrCore core, String solrQuery, List<String> fqs, String df) {
-      final NamedList<String> returnList = new NamedList<String>();
+      final NamedList<String> returnList = new NamedList<>();
       if ((solrQuery != null) && !solrQuery.isEmpty()) {
         returnList.add(CommonParams.Q, solrQuery);
       }

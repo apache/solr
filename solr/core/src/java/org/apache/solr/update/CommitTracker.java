@@ -24,7 +24,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
@@ -279,7 +278,7 @@ public final class CommitTracker implements Runnable {
 
       core.getUpdateHandler().commit(command);
     } catch (Exception e) {
-      SolrException.log(log, "auto commit error...", e);
+      log.error("auto commit error...", e);
     } finally {
       MDCLoggingContext.clear();
     }

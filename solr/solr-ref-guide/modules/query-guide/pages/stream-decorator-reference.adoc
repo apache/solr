@@ -428,7 +428,7 @@ classify(model(modelCollection,
              field="text_t")
 ----
 
-In the example above the `classify expression` is retrieving the model using the `model` function.
+In the example above the `classify expression` is retrieving the model using the `api` function.
 It is then classifying tuples returned by the `search` function.
 The `text_t` field is used for the text classification and the analyzer for the `text_t` field in the Solr schema is used to analyze the text and extract the features.
 
@@ -571,7 +571,7 @@ This command will stop a specific daemon function and remove it from memory.
 
 === Continuous Pull Streaming
 
-The {solr-javadocs}/solrj/org/apache/solr/client/solrj/io/stream/DaemonStream.html[DaemonStream] java class (part of the SolrJ libraries) can also be embedded in a java application to provide continuous pull streaming.
+The {solr-javadocs}/solrj-streaming/org/apache/solr/client/solrj/io/stream/DaemonStream.html[DaemonStream] java class (part of the SolrJ libraries) can also be embedded in a java application to provide continuous pull streaming.
 Sample code:
 
 [source,java]
@@ -645,7 +645,7 @@ This is similar to the `<<update,update()>>` function described below.
 
 [source,text]
 ----
- delete(collection1
+ delete(collection1,
         batchSize=500,
         search(collection1,
                q=old_data:true,
@@ -689,6 +689,35 @@ eval(expr)
 In the example above the `eval` expression reads the first tuple from the underlying expression.
 It then compiles and
 executes the string streaming expression in the `expr_s` field.
+
+Example:
+
+[source,text]
+----
+eval(select(
+  echo("tuple(answer=42)"),
+  echo as expr_s
+))
+----
+
+Output:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "answer": "42"
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
 
 == executor
 

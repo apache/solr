@@ -52,7 +52,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
   @Test
   public void testRetry() throws Exception {
     String collectionName = "testRetry";
-    try (CloudHttp2SolrClient solrClient =
+    try (CloudSolrClient solrClient =
         new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build()) {
@@ -76,7 +76,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       TestInjection.failUpdateRequests = "true:100";
       try {
         expectThrows(
-            BaseCloudSolrClient.RouteException.class,
+            CloudSolrClient.RouteException.class,
             "Expected an exception on the client when failure is injected during updates",
             () -> {
               solrClient.add(collectionName, new SolrInputDocument("id", "2"));

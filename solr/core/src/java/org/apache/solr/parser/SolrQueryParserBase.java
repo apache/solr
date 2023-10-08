@@ -18,16 +18,15 @@ package org.apache.solr.parser;
 
 import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
 
-import com.google.common.base.Strings;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
@@ -60,6 +59,7 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.analysis.ReversedWildcardFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.parser.QueryParser.Operator;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.schema.FieldType;
@@ -291,7 +291,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   /** Handles the default field if null is passed */
   public String getField(String fieldName) {
     explicitField = fieldName;
-    return !Strings.isNullOrEmpty(fieldName) ? fieldName : this.defaultField;
+    return StrUtils.isNotNullOrEmpty(fieldName) ? fieldName : this.defaultField;
   }
 
   /**
@@ -608,7 +608,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     switch (synonymQueryStyle) {
       case PICK_BEST:
         {
-          List<Query> sidePathSynonymQueries = new LinkedList<>();
+          List<Query> sidePathSynonymQueries = new ArrayList<>();
           sidePathQueriesIterator.forEachRemaining(sidePathSynonymQueries::add);
           return new DisjunctionMaxQuery(sidePathSynonymQueries, 0.0f);
         }
@@ -624,23 +624,24 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   @Override
-  protected Query newSynonymQuery(TermAndBoost[] terms) {
+  protected Query newSynonymQuery(String field, TermAndBoost[] terms) {
     switch (synonymQueryStyle) {
       case PICK_BEST:
-        List<Query> currPosnClauses = new ArrayList<Query>(terms.length);
+        List<Query> currPosnClauses = new ArrayList<>(terms.length);
         for (TermAndBoost term : terms) {
-          currPosnClauses.add(newTermQuery(term.term, term.boost));
+          currPosnClauses.add(newTermQuery(new Term(field, term.term), term.boost));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
       case AS_DISTINCT_TERMS:
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (TermAndBoost term : terms) {
-          builder.add(newTermQuery(term.term, term.boost), BooleanClause.Occur.SHOULD);
+          builder.add(
+              newTermQuery(new Term(field, term.term), term.boost), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:
-        return super.newSynonymQuery(terms);
+        return super.newSynonymQuery(field, terms);
       default:
         throw new AssertionError(
             "unrecognized synonymQueryStyle passed when creating newSynonymQuery");
@@ -730,7 +731,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           RawQuery rawq = (RawQuery) subq;
 
           // only look up fmap and type info on a field change
-          if (sfield != rawq.sfield) {
+          if (!Objects.equals(sfield, rawq.sfield)) {
             sfield = rawq.sfield;
             fieldValues = fmap.get(sfield);
             // If this field isn't indexed, or if it is indexed and we want to use TermsQuery, then
@@ -1024,7 +1025,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   }
 
   private void checkNullField(String field) throws SolrException {
-    if (Strings.isNullOrEmpty(field) && Strings.isNullOrEmpty(defaultField)) {
+    if (StrUtils.isNullOrEmpty(field) && StrUtils.isNullOrEmpty(defaultField)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "no field name specified in query and no default specified via 'df' param");

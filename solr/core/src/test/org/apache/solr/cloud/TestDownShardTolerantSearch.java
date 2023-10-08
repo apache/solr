@@ -18,26 +18,22 @@ package org.apache.solr.cloud;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Test which asserts that shards.tolerant=true works even if one shard is down and also asserts
  * that a meaningful exception is thrown when shards.tolerant=false See SOLR-7566
  */
 public class TestDownShardTolerantSearch extends SolrCloudTestCase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -58,8 +54,8 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
     QueryResponse response =
         cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1));
-    assertThat(response.getStatus(), is(0));
-    assertThat(response.getResults().getNumFound(), is(100L));
+    MatcherAssert.assertThat(response.getStatus(), is(0));
+    MatcherAssert.assertThat(response.getResults().getNumFound(), is(100L));
 
     JettySolrRunner stoppedServer = cluster.stopJettySolrRunner(0);
 
@@ -71,7 +67,7 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
             .query(
                 "tolerant",
                 new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, true));
-    assertThat(response.getStatus(), is(0));
+    MatcherAssert.assertThat(response.getStatus(), is(0));
     assertTrue(response.getResults().getNumFound() > 0);
 
     SolrServerException e =

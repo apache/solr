@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -129,7 +129,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
         int kindOfUpdate = random().nextInt(100);
         if (docIdToVal.size() < 10) kindOfUpdate = 0;
         if (kindOfUpdate <= 50) {
-          // add a new document update, may by duplicate with the current one
+          // add a new document update, may be a duplicate with the current one
           int val = random().nextInt(1000);
           int docId = random().nextInt(10000);
           addAndGetVersion(sdoc("id", String.valueOf(docId), "val_i_dvo", val), null);
@@ -246,10 +246,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.REPLAYING.ordinal(), state.getValue().intValue());
       @SuppressWarnings({"unchecked"})
       Gauge<Integer> replayingLogs = (Gauge<Integer>) metrics.get("TLOG.replay.remaining.logs");
-      assertTrue(replayingLogs.getValue().intValue() > 0);
+      assertTrue(replayingLogs.getValue() > 0);
       @SuppressWarnings({"unchecked"})
       Gauge<Long> replayingDocs = (Gauge<Long>) metrics.get("TLOG.replay.remaining.bytes");
-      assertTrue(replayingDocs.getValue().longValue() > 0);
+      assertTrue(replayingDocs.getValue() > 0);
       Meter replayDocs = (Meter) metrics.get("TLOG.replay.ops");
       long initialOps = replayDocs.getCount();
 
@@ -293,7 +293,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("q", "*:*"), "/response/numFound==5");
       assertJQ(req("q", "id:A2"), "/response/numFound==0");
 
-      // no updates, so insure that recovery does not run
+      // no updates, so ensure that recovery does not run
       h.close();
       int permits = logReplay.availablePermits();
       createCore();
@@ -306,7 +306,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           "/response/numFound==1"); // assert that in-place update is retained
       Thread.sleep(100);
       assertEquals(
-          permits, logReplay.availablePermits()); // no updates, so insure that recovery didn't run
+          permits, logReplay.availablePermits()); // no updates, so ensure that recovery didn't run
 
       assertEquals(
           UpdateLog.State.ACTIVE, h.getCore().getUpdateHandler().getUpdateLog().getState());
@@ -349,13 +349,13 @@ public class TestRecovery extends SolrTestCaseJ4 {
       updateJ(jsonAdd(sdoc("id", "B1")), params()); // should be deleted by subsequent DBQ in tlog
       updateJ(
           jsonAdd(sdoc("id", "B2")),
-          params()); // should be deleted by DBQ that arives during tlog replay
+          params()); // should be deleted by DBQ that arrives during tlog replay
       updateJ(jsonDelQ("id:B1 OR id:B3 OR id:B6"), params());
       updateJ(
           jsonAdd(sdoc("id", "B3")), params()); // should *NOT* be deleted by previous DBQ in tlog
       updateJ(
           jsonAdd(sdoc("id", "B4")),
-          params()); // should be deleted by DBQ that arives during tlog replay
+          params()); // should be deleted by DBQ that arrives during tlog replay
       updateJ(jsonAdd(sdoc("id", "B5")), params());
 
       // sanity check no updates have been applied yet (just in tlog)
@@ -384,7 +384,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // wait until recovery has finished
       assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
 
-      // verify only the expected docs are found, even with out of order DBQ and DBQ that arived
+      // verify only the expected docs are found, even with out-of-order DBQ and DBQ that arrived
       // during recovery
       assertJQ(
           req("q", "*:*", "fl", "id", "sort", "id asc"),
@@ -653,7 +653,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
 
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture == null);
+      assertNull(rinfoFuture);
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
       ulog.bufferUpdates();
@@ -717,15 +717,15 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // updates should be buffered, so we should not see any results yet.
       assertJQ(req("q", "*:*"), "/response/numFound==0");
 
-      // real-time get should also not show anything (this could change in the future,
+      // real-time get should also not show anything (this could change in the future),
       // but it's currently used for validating version numbers too, so it would
       // be bad for updates to be visible if we're just buffering.
       assertJQ(req("qt", "/get", "id", "B3"), "=={'doc':null}");
 
-      assertEquals(6, bufferedOps.getValue().intValue() - initialOps);
+      assertEquals(6, bufferedOps.getValue() - initialOps);
 
       rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture != null);
+      assertNotNull(rinfoFuture);
 
       assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
 
@@ -761,7 +761,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
               DISTRIB_UPDATE_PARAM,
               FROM_LEADER,
               "_version_",
-              v940_del)); // this update should not take affect
+              v940_del)); // this update should not take effect
       updateJ(
           jsonAdd(sdoc("id", "B6", "_version_", v1060)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
       updateJ(
@@ -769,7 +769,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       updateJ(
           jsonAdd(sdoc("id", "B8", "_version_", v1080)), params(DISTRIB_UPDATE_PARAM, FROM_LEADER));
 
-      // test that delete by query is at least buffered along with everything else so it will delete
+      // test that delete by query is at least buffered along with everything else, so it will
+      // delete
       // the currently buffered id:8 (even if it doesn't currently support versioning)
       updateJ(
           "{\"delete\": { \"query\":\"id:B2 OR id:B8\" }}",
@@ -784,7 +785,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       logReplay.drainPermits();
       rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture != null);
+      assertNotNull(rinfoFuture);
       assertEquals(UpdateLog.State.APPLYING_BUFFERED, ulog.getState());
 
       // apply a single update
@@ -879,7 +880,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
-      assertTrue(rinfoFuture == null);
+      assertNull(rinfoFuture);
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
       ulog.bufferUpdates();
@@ -1157,9 +1158,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    // if we try the optimistic concurrency again, the tlog lookup maps should be clear
+    // if we try the optimistic concurrency again, the tlog lookup maps should be clear,
     // and we should go to the index to check the version.  This indirectly tests that
-    // the update log was informed of the reload.  See SOLR-4858
+    // the update log was informed of the reload operation.  See SOLR-4858
 
     version = addAndGetVersion(sdoc("id", "reload1", "_version_", Long.toString(version)), null);
 
@@ -1171,7 +1172,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     version = addAndGetVersion(sdoc("id", "reload1", "_version_", Long.toString(version)), null);
 
     // if the update log was not informed of the new update handler, then the old core will
-    // incorrectly be used for some of the operations above and opened searchers will never be
+    // incorrectly be used for some operations above and opened searchers will never be
     // closed.  This used to cause the test framework to fail because of unclosed directory checks.
     // SolrCore.openNewSearcher was modified to throw an error if the core is closed, resulting in a
     // faster fail.
@@ -1294,7 +1295,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     assertU(commit());
     long D1Version2 = getVer(req("q", "id:D1"));
 
-    assert (D1Version2 > D1Version1);
+    assertTrue(D1Version2 > D1Version1);
 
     assertJQ(
         req("qt", "/get", "getVersions", "2"),
@@ -1351,6 +1352,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("JdkObsolete")
   private void addDocs(int nDocs, int start, LinkedList<Long> versions) throws Exception {
     for (int i = 0; i < nDocs; i++) {
       versions.addFirst(addAndGetVersion(sdoc("id", Integer.toString(start + nDocs)), null));
@@ -1358,6 +1360,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("JdkObsolete")
   public void testRemoveOldLogs() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;
@@ -1565,7 +1568,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("q", "*:*"), "/response/numFound==3");
 
       //
-      // Now test that the bad log file doesn't mess up retrieving latest versions
+      // Now test that the bad log file doesn't mess up retrieving the latest versions
       //
 
       String v104 = getNextVersion();
@@ -1630,7 +1633,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("q", "*:*"), "/response/numFound==0");
 
       //
-      // Now test that the bad log file doesn't mess up retrieving latest versions
+      // Now test that the bad log file doesn't mess up retrieving the latest versions
       //
       String v104 = getNextVersion();
       String v105 = getNextVersion();
@@ -1653,7 +1656,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertJQ(req("q", "*:*"), "/response/numFound==3");
 
-      // This messes up some other tests (on windows) if we don't remove the bad log.
+      // This test messes up some other tests (on Windows) if we don't remove the bad log.
       // This *should* hopefully just be because the tests are too fragile and not because of real
       // bugs - but it should be investigated further.
       deleteLogs();
@@ -1726,7 +1729,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           content);
 
       // WARNING... assumes format of .00000n where n is less than 9
-      long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf(".") + 1));
+      long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf('.') + 1));
       String fname2 =
           String.format(
               Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, logNumber + 1);
@@ -1862,7 +1865,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("q", "id:A5"), "/response/numFound==0");
       assertJQ(req("q", "id:A10"), "/response/numFound==1");
 
-      // no updates, so insure that recovery does not run
+      // no updates, so ensure that recovery does not run
       h.close();
       int permits = logReplay.availablePermits();
       createCore();
@@ -1880,7 +1883,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("q", "id:A10"), "/response/numFound==1");
       Thread.sleep(100);
       assertEquals(
-          permits, logReplay.availablePermits()); // no updates, so insure that recovery didn't run
+          permits, logReplay.availablePermits()); // no updates, so ensure that recovery didn't run
 
       assertEquals(
           UpdateLog.State.ACTIVE, h.getCore().getUpdateHandler().getUpdateLog().getState());
@@ -1929,7 +1932,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(0, ulog.getLogList(logDir).length);
     } finally {
-      // make sure we create the core again, even if the assert fails so it won't mess
+      // make sure we create the core again, even if the assert operation fails, so it won't mess
       // up the next test.
       createCore();
       assertJQ(req("q", "*:*"), "/response/numFound=="); // ensure it works
@@ -1966,7 +1969,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   static class VersionProvider {
-    private static long version = 0;
+    private static long version = 1;
 
     static String getNextVersion() {
       return Long.toString(version++);

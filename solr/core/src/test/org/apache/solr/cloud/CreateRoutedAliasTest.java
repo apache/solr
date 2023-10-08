@@ -20,9 +20,11 @@ package org.apache.solr.cloud;
 import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -34,10 +36,11 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -71,18 +74,13 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   private CloudSolrClient solrClient;
 
   @Before
-  public void doBefore() throws Exception {
-    solrClient = getCloudSolrClient(cluster);
+  public void doBefore() {
+    solrClient = cluster.getSolrClient();
   }
 
   @After
   public void doAfter() throws Exception {
     cluster.deleteAllCollections(); // deletes aliases too
-
-    if (null != solrClient) {
-      solrClient.close();
-      solrClient = null;
-    }
   }
 
   // This is a fairly complete test where we set many options and see that it both affected the
@@ -96,45 +94,41 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     // TODO fix Solr test infra so that this /____v2/ becomes /api/
-    HttpPost post = new HttpPost(baseUrl + "/____v2/c");
-    post.setEntity(
-        new StringEntity(
-            "{\n"
-                + "  \"create-alias\" : {\n"
-                + "    \"name\": \""
-                + aliasName
-                + "\",\n"
-                + "    \"router\" : {\n"
-                + "      \"name\": \"time\",\n"
-                + "      \"field\": \"evt_dt\",\n"
-                + "      \"start\":\"NOW/DAY\",\n"
-                + // small window for test failure once a day.
-                "      \"interval\":\"+2HOUR\",\n"
-                + "      \"maxFutureMs\":\"14400000\"\n"
-                + "    },\n"
-                +
-                // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
-                // since intended for distrib
-                "    \"create-collection\" : {\n"
-                + "      \"router\": {\n"
-                + "        \"name\":\"implicit\",\n"
-                + "        \"field\":\"foo_s\"\n"
-                + "      },\n"
-                + "      \"shards\":\"foo,bar\",\n"
-                + "      \"config\":\"_default\",\n"
-                + "      \"tlogReplicas\":1,\n"
-                + "      \"pullReplicas\":1,\n"
-                + "      \"nodeSet\": '"
-                + createNode
-                + "',\n"
-                + "      \"properties\" : {\n"
-                + "        \"foobar\":\"bazbam\",\n"
-                + "        \"foobar2\":\"bazbam2\"\n"
-                + "      }\n"
-                + "    }\n"
-                + "  }\n"
-                + "}",
-            ContentType.APPLICATION_JSON));
+    final String aliasJson =
+        "{\n"
+            + "    \"name\": \""
+            + aliasName
+            + "\",\n"
+            + "    \"routers\" : [{\n"
+            + "      \"type\": \"time\",\n"
+            + "      \"field\": \"evt_dt\",\n"
+            + "      \"start\":\"NOW/DAY\",\n"
+            // small window for test failure once a day.
+            + "      \"interval\":\"+2HOUR\",\n"
+            + "      \"maxFutureMs\":\"14400000\"\n"
+            + "    }],\n"
+            // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
+            // since intended for distributed search
+            + "    \"create-collection\" : {\n"
+            + "      \"router\": {\n"
+            + "        \"name\":\"implicit\",\n"
+            + "        \"field\":\"foo_s\"\n"
+            + "      },\n"
+            + "      \"shardNames\": [\"foo\", \"bar\"],\n"
+            + "      \"config\":\"_default\",\n"
+            + "      \"tlogReplicas\":1,\n"
+            + "      \"pullReplicas\":1,\n"
+            + "      \"nodeSet\": [\""
+            + createNode
+            + "\"],\n"
+            + "      \"properties\" : {\n"
+            + "        \"foobar\":\"bazbam\",\n"
+            + "        \"foobar2\":\"bazbam2\"\n"
+            + "      }\n"
+            + "    }\n"
+            + "  }\n";
+    HttpPost post = new HttpPost(baseUrl + "/____v2/aliases");
+    post.setEntity(new StringEntity(aliasJson, ContentType.APPLICATION_JSON));
     assertSuccess(post);
 
     Date startDate = DateMathParser.parseMath(new Date(), "NOW/DAY");
@@ -188,25 +182,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   @Test
   public void testV1() throws Exception {
     final String aliasName = getSaferTestName();
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     Instant start = Instant.now().truncatedTo(ChronoUnit.HOURS); // mostly make sure no millis
-    HttpGet get =
-        new HttpGet(
-            baseUrl
-                + "/admin/collections?action=CREATEALIAS"
-                + "&wt=xml"
-                + "&name="
-                + aliasName
-                + "&router.field=evt_dt"
-                + "&router.name=time"
-                + "&router.start="
-                + start
-                + "&router.interval=%2B30MINUTE"
-                + "&create-collection.collection.configName=_default"
-                + "&create-collection.router.field=foo_s"
-                + "&create-collection.numShards=1"
-                + "&create-collection.replicationFactor=2");
-    assertSuccess(get);
+    createTRAv1(aliasName, start);
 
     String initialCollectionName =
         TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, start);
@@ -230,23 +207,119 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     assertNotNull(meta);
     assertEquals("evt_dt", meta.get("router.field"));
     assertEquals("_default", meta.get("create-collection.collection.configName"));
-    assertEquals(null, meta.get("start"));
+    assertNull(meta.get("start"));
+  }
+
+  @Test
+  public void testUpdateRoutedAliasDoesNotChangeCollectionList() throws Exception {
+
+    final String aliasName = getSaferTestName();
+    Instant start = Instant.now().truncatedTo(ChronoUnit.HOURS); // mostly make sure no millis
+    createTRAv1(aliasName, start);
+
+    String initialCollectionName =
+        TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, start);
+    assertCollectionExists(initialCollectionName);
+
+    // Note that this is convenient for the test because it implies a different collection name, but
+    // doing this is an advanced operation, typically preceded by manual collection creations and
+    // manual tweaking of the collection list. This is here merely to test that we don't blow away
+    // the existing (possibly tweaked) list. DO NOT use this as an example of normal operations.
+    Instant earlierStart = start.minus(Duration.ofMinutes(3));
+    createTRAv1(aliasName, earlierStart);
+    assertCollectionExists(initialCollectionName);
+
+    // Test Alias metadata
+    Aliases aliases = cluster.getZkStateReader().getAliases();
+    Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap();
+    String alias = collectionAliasMap.get(aliasName);
+    assertNotNull(alias);
+    Map<String, String> meta = aliases.getCollectionAliasProperties(aliasName);
+    assertNotNull(meta);
+    assertEquals("evt_dt", meta.get("router.field"));
+    assertEquals("_default", meta.get("create-collection.collection.configName"));
+
+    // This should be equal to the new start value
+    assertEquals(earlierStart.toString(), meta.get("router.start"));
+    List<String> collectionList = aliases.resolveAliases(aliasName);
+    assertEquals(1, collectionList.size());
+    assertTrue(collectionList.contains(initialCollectionName));
+  }
+
+  public void testCantAddRoutingToNonRouted() throws Exception {
+    String aliasName = getSaferTestName() + "Alias";
+    createCollection();
+    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+    HttpGet get =
+        new HttpGet(
+            baseUrl
+                + "/admin/collections?action=CREATEALIAS"
+                + "&wt=xml"
+                + "&name="
+                + aliasName
+                + "&collections="
+                + getSaferTestName());
+    assertSuccess(get);
+
+    HttpGet get2 =
+        new HttpGet(
+            baseUrl
+                + "/admin/collections?action=CREATEALIAS"
+                + "&wt=json"
+                + "&name="
+                + aliasName
+                + "&router.field=evt_dt"
+                + "&router.name=time"
+                + "&router.start=2018-01-15T00:00:00Z"
+                + "&router.interval=%2B30MINUTE"
+                + "&create-collection.collection.configName=_default"
+                + "&create-collection.numShards=1");
+    assertFailure(get2, "Cannot add routing parameters to existing non-routed Alias");
+  }
+
+  private void createCollection() throws SolrServerException, IOException {
+    final CollectionAdminResponse response =
+        CollectionAdminRequest.createCollection(getSaferTestName(), "_default", 1, 1)
+            .process(solrClient);
+    if (response.getStatus() != 0) {
+      fail("failed to create collection " + getSaferTestName());
+    }
+  }
+
+  private void createTRAv1(String aliasName, Instant start) throws IOException {
+    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+    HttpGet get =
+        new HttpGet(
+            baseUrl
+                + "/admin/collections?action=CREATEALIAS"
+                + "&wt=xml"
+                + "&name="
+                + aliasName
+                + "&router.field=evt_dt"
+                + "&router.name=time"
+                + "&router.start="
+                + start
+                + "&router.interval=%2B30MINUTE"
+                + "&create-collection.collection.configName=_default"
+                + "&create-collection.router.field=foo_s"
+                + "&create-collection.numShards=1"
+                + "&create-collection.replicationFactor=2");
+    assertSuccess(get);
   }
 
   // TZ should not affect the first collection name if absolute date given for start
   @Test
   public void testTimezoneAbsoluteDate() throws Exception {
     final String aliasName = getSaferTestName();
-    try (SolrClient client = getCloudSolrClient(cluster)) {
-      CollectionAdminRequest.createTimeRoutedAlias(
-              aliasName,
-              "2018-01-15T00:00:00Z",
-              "+30MINUTE",
-              "evt_dt",
-              CollectionAdminRequest.createCollection("_ignored_", "_default", 1, 1))
-          .setTimeZone(TimeZone.getTimeZone("GMT-10"))
-          .process(client);
-    }
+
+    CollectionAdminRequest.createTimeRoutedAlias(
+            aliasName,
+            "2018-01-15T00:00:00Z",
+            "+30MINUTE",
+            "evt_dt",
+            CollectionAdminRequest.createCollection("_ignored_", "_default", 1, 1))
+        .setTimeZone(TimeZone.getTimeZone("GMT-10"))
+        .process(solrClient);
 
     assertCollectionExists(aliasName + TIME.getSeparatorPrefix() + "2018-01-15");
   }
@@ -418,7 +491,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertSuccess(HttpUriRequest msg) throws IOException {
-    CloseableHttpClient httpClient = (CloseableHttpClient) solrClient.getHttpClient();
+    CloseableHttpClient httpClient =
+        (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       if (200 != response.getStatusLine().getStatusCode()) {
         System.err.println(EntityUtils.toString(response.getEntity()));
@@ -428,7 +502,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   }
 
   private void assertFailure(HttpUriRequest msg, String expectedErrorSubstring) throws IOException {
-    CloseableHttpClient httpClient = (CloseableHttpClient) solrClient.getHttpClient();
+    CloseableHttpClient httpClient =
+        (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
     try (CloseableHttpResponse response = httpClient.execute(msg)) {
       assertEquals(400, response.getStatusLine().getStatusCode());
       String entity = EntityUtils.toString(response.getEntity());
@@ -438,7 +513,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     }
   }
 
-  private void assertCollectionExists(String name) throws IOException, SolrServerException {
+  private void assertCollectionExists(String name) {
     solrClient.getClusterStateProvider().connect(); // TODO get rid of this
     //  https://issues.apache.org/jira/browse/SOLR-9784?focusedCommentId=16332729
 

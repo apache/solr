@@ -82,6 +82,10 @@ public class ManagedFeatureStore extends ManagedResource
     super(resourceId, loader, storageIO);
   }
 
+  public Map<String, FeatureStore> getStores() {
+    return stores;
+  }
+
   public synchronized FeatureStore getFeatureStore(String name) {
     if (name == null) {
       name = FeatureStore.DEFAULT_FEATURE_STORE_NAME;
@@ -160,18 +164,19 @@ public class ManagedFeatureStore extends ManagedResource
     if (childId == null) {
       response.add(FEATURE_STORE_JSON_FIELD, stores.keySet());
     } else {
-      final FeatureStore store = getFeatureStore(childId);
-      if (store == null) {
+      // check for non-existent feature store name
+      if (!stores.containsKey(childId)) {
         throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "missing feature store [" + childId + "]");
+            SolrException.ErrorCode.BAD_REQUEST, "Missing feature store: " + childId);
       }
+      final FeatureStore store = getFeatureStore(childId);
       response.add(FEATURES_JSON_FIELD, featuresAsManagedResources(store));
     }
   }
 
   private static List<Object> featuresAsManagedResources(FeatureStore store) {
     final List<Feature> storedFeatures = store.getFeatures();
-    final List<Object> features = new ArrayList<Object>(storedFeatures.size());
+    final List<Object> features = new ArrayList<>(storedFeatures.size());
     for (final Feature f : storedFeatures) {
       final LinkedHashMap<String, Object> m = toFeatureMap(f);
       m.put(FEATURE_STORE_NAME_KEY, store.getName());

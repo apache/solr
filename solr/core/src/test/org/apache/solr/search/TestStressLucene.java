@@ -27,17 +27,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.junit.Test;
 
 public class TestStressLucene extends TestRTGBase {
@@ -89,7 +89,8 @@ public class TestStressLucene extends TestRTGBase {
     final FieldType ft2 = new FieldType();
     ft2.setStored(true);
 
-    // model how solr does locking - only allow one thread to do a hard commit at once, and only one
+    // model how solr handles locking - only allow one thread to do a hard commit at once, and only
+    // one
     // thread to do a soft commit, but
     // a hard commit in progress does not stop a soft commit.
     final Lock hardCommitLock = syncCommits ? new ReentrantLock() : null;
@@ -172,8 +173,8 @@ public class TestStressLucene extends TestRTGBase {
                       verbose("reopen result", newReader);
 
                       synchronized (globalLock) {
-                        assert newReader.getRefCount() > 0;
-                        assert reader.getRefCount() > 0;
+                        assertTrue(newReader.getRefCount() > 0);
+                        assertTrue(reader.getRefCount() > 0);
 
                         // install the new reader if it's newest (and check the current version
                         // since another reader may have already been installed)

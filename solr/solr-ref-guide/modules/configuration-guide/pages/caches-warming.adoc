@@ -246,9 +246,10 @@ This can boost performance if the most common queries only need a small subset o
 
 === <useFilterForSortedQuery> Element
 
-This parameter configures Solr to use a filter to satisfy a search.
-If the requested sort does not include "score", the `filterCache` will be checked for a filter matching the query.
-For most situations, this is only useful if the same search is requested often with different sort options and none of them ever use "score".
+This setting only affects queries where the requested sort does not include "score" (or for which score is irrelevant -- e.g., no docs requested, query outputs a constant score).
+In such cases, configuring this element to `true` causes the `filterCache` to be consulted for a filter matching the main query.
+This can be useful if the same search is issued repeatedly with different sort options or different pagination via `offset` or `cursorMark` (again, provided that "score" is not included or not relevant to the requested sort).
+If enabling this option, ensure that the `filterCache` has sufficient capacity to support expected use patterns.
 
 [source,xml]
 ----
@@ -341,3 +342,61 @@ A key best practice is to modify these defaults before taking your application t
 
 There is no point in auto-warming your Searcher with the query string "static firstSearcher warming in solrconfig.xml" if that is not relevant to your search application.
 ====
+
+### Managing warming queries with the Config API
+
+Warming queries may be managed using the xref:config-api.adoc[Config API] using commands such as the below.
+
+Multiple sets with different `name` attributes may be provided and any changes will take place immediately without a restart being necessary.
+
+#### adding warming query sets
+
+To add a set of warming queries, use the `add-listener` command. (You may wish to provide `firstSearcher` queries too with a separate command and `name`.)
+
+[source,json]
+----
+{
+  "add-listener": {
+    "name": "my-warming-queries",
+    "event": "newSearcher",
+    "class": "solr.QuerySenderListener",
+    "queries": [
+      { "q": "solr", "sort": "price asc" }
+    ]
+  }
+}
+----
+
+#### updating query sets
+
+To update a set, use the `update-listener` command. Note that the whole set will be replaced.
+
+[source,json]
+----
+{
+  "update-listener": {
+    "name": "my-warming-queries",
+    "event": "newSearcher",
+    "class": "solr.QuerySenderListener",
+    "queries": [
+      { "q": "solr", "sort": "price asc" },
+      { "q": "rocks", "sort": "weight asc" }
+    ]
+  }
+}
+----
+
+If warming queries are defined in `solrconfig.xml` they may be overridden using the Config API if a `name` attribute is added to each `<listener>` element.
+
+#### removing query sets
+
+To delete a set of queries, use `delete-listener`:
+
+[source,json]
+----
+{
+  "delete-listener": "my-warming-queries"
+}
+----
+
+Note that for warming query sets originally defined in `solrconfig.xml`, using the `delete-listener` command will revert to the `solrconfig.xml` set rather than removing the warming queries.

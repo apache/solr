@@ -16,10 +16,10 @@
  */
 package org.apache.solr.security.hadoop;
 
-import static org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME;
-import static org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME;
-import static org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME;
-import static org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME;
 
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -104,7 +104,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
 
       // Now test all ZK tree.
       String zkHost = cluster.getSolrClient().getClusterStateProvider().getQuorumHosts();
-      String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : null;
+      String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf('/')) : null;
       walkZkTree(keeper, zkChroot, "/");
     }
   }

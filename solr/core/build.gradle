@@ -31,6 +31,8 @@ dependencies {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
 
+  implementation 'io.swagger.core.v3:swagger-annotations'
+
   // Export these dependencies so that they're imported transitively by
   // other modules.
 
@@ -42,40 +44,33 @@ dependencies {
   // We export logging api with dependencies, which is useful for all modules
   api 'org.slf4j:slf4j-api'
 
+  api project(':solr:api')
   api project(':solr:solrj')
-  api project(':solr:server')
+  api project(':solr:solrj-zookeeper')
+  api project(':solr:solrj-streaming')
 
-  permitUnusedDeclared project(':solr:server')
 
-  // --- start of server/build.grade declared dependencies ---
-
-  // Note: server/build.gradle declares these dependencies yet
-  // we only want them to show up in server/lib when packaged
-  // and NOT in server/solr-webapp/webapp/WEB-INF/lib. So any
-  // "api" dependency in server/build.gradle that is needed in
-  // core/build.gradle needs to be defined as "compileOnlyApi"
-  // below.
-
-  compileOnlyApi 'io.dropwizard.metrics:metrics-core'
-  compileOnlyApi ('io.dropwizard.metrics:metrics-graphite', {
+  api 'io.dropwizard.metrics:metrics-core'
+  implementation ('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
-  compileOnlyApi 'io.dropwizard.metrics:metrics-jmx'
-  compileOnlyApi 'io.dropwizard.metrics:metrics-jvm'
+  implementation 'io.dropwizard.metrics:metrics-jmx'
+  implementation 'io.dropwizard.metrics:metrics-jvm'
 
-  compileOnlyApi 'org.eclipse.jetty:jetty-alpn-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-http'
-  compileOnlyApi 'org.eclipse.jetty:jetty-io'
-  compileOnlyApi 'org.eclipse.jetty:jetty-rewrite'
-  compileOnlyApi 'org.eclipse.jetty:jetty-server'
-  compileOnlyApi 'org.eclipse.jetty:jetty-servlet'
-  compileOnlyApi 'org.eclipse.jetty:jetty-util'
-
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-common'
-  compileOnlyApi 'org.eclipse.jetty.http2:http2-server'
-
-  compileOnlyApi 'javax.servlet:javax.servlet-api'
-  // --- end of server/build.gradle declared dependencies ---
+  implementation('org.glassfish.jersey.containers:jersey-container-jetty-http', {
+    exclude group: "org.eclipse.jetty", module: "jetty-continuation"
+  })
+  permitUnusedDeclared 'org.glassfish.jersey.containers:jersey-container-jetty-http'
+  implementation 'org.glassfish.jersey.inject:jersey-hk2'
+  permitUnusedDeclared 'org.glassfish.jersey.inject:jersey-hk2'
+  implementation 'org.glassfish.jersey.media:jersey-media-json-jackson'
+  permitUnusedDeclared 'org.glassfish.jersey.media:jersey-media-json-jackson'
+  implementation 'org.glassfish.jersey.core:jersey-common'
+  implementation 'org.glassfish.jersey.core:jersey-server'
+  implementation 'org.glassfish.hk2:hk2-api'
+  implementation 'org.glassfish.hk2.external:jakarta.inject'
+  implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
+  implementation 'jakarta.annotation:jakarta.annotation-api'
 
   // Non-API below; although there are exceptions
 
@@ -84,6 +79,8 @@ dependencies {
   runtimeOnly "org.apache.lucene:lucene-analysis-phonetic"
   runtimeOnly "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-codecs"
+  implementation "org.apache.lucene:lucene-backward-codecs"
+  permitUnusedDeclared "org.apache.lucene:lucene-backward-codecs"
   implementation "org.apache.lucene:lucene-classification"
   implementation "org.apache.lucene:lucene-expressions"
   implementation "org.apache.lucene:lucene-grouping"
@@ -91,9 +88,9 @@ dependencies {
   implementation "org.apache.lucene:lucene-join"
   implementation "org.apache.lucene:lucene-misc"
   implementation "org.apache.lucene:lucene-queryparser"
-  implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
+
 
   // Collections & lang utilities
   implementation 'com.google.guava:guava'
@@ -101,7 +98,6 @@ dependencies {
   implementation 'org.apache.commons:commons-math3'
   implementation 'commons-io:commons-io'
   implementation 'com.carrotsearch:hppc'
-  implementation 'org.apache.commons:commons-collections4'
 
   implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
 
@@ -115,26 +111,27 @@ dependencies {
   implementation 'com.fasterxml.jackson.core:jackson-core'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
+  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
 
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
 
   implementation 'org.eclipse.jetty:jetty-client'
+  implementation 'org.eclipse.jetty:jetty-http'
+  implementation 'org.eclipse.jetty:jetty-io'
+  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   // ZooKeeper
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
-    exclude group: "log4j", module: "log4j"
-    exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
-  implementation ('org.apache.zookeeper:zookeeper-jute') {
+  implementation('org.apache.zookeeper:zookeeper-jute') {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
+  testImplementation 'org.apache.zookeeper:zookeeper::tests'
+
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
-
-  // For Package Manager
-  implementation 'com.github.zafarkhaja:java-semver'
 
   implementation('com.jayway.jsonpath:json-path', {
     exclude group: "net.minidev", module: "json-smart"
@@ -144,22 +141,25 @@ dependencies {
   implementation 'com.tdunning:t-digest'
 
   // Distributed Tracing
-  api 'io.opentracing:opentracing-api' // Tracer is exposed on some methods
-  implementation 'io.opentracing:opentracing-noop'
-  implementation 'io.opentracing:opentracing-util'
-  testImplementation 'io.opentracing:opentracing-mock'
+  api 'io.opentelemetry:opentelemetry-api' // Tracer is exposed on some methods
+  implementation 'io.opentelemetry:opentelemetry-context'
 
   implementation 'org.apache.commons:commons-exec'
 
-  implementation 'org.apache.commons:commons-text'
-
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.apache.logging.log4j:log4j-core'
-  implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
+  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
 
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
+  // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
+  compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
+  compileOnly 'org.osgi:osgi.annotation'
+
+  compileOnly 'com.github.stephenc.jcip:jcip-annotations'
+
+  // -- Test Dependencies
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
 
@@ -172,11 +172,22 @@ dependencies {
 
   testImplementation 'org.apache.lucene:lucene-test-framework'
 
+  testImplementation 'org.eclipse.jetty:jetty-server'
+  testImplementation 'org.eclipse.jetty:jetty-servlet'
+
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
   testImplementation 'org.hamcrest:hamcrest'
 
+  testImplementation 'org.glassfish.jersey.test-framework:jersey-test-framework-core'
+  testImplementation 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
+  permitTestUnusedDeclared 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
+
+
   testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
 }

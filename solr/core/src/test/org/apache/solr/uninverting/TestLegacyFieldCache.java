@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,11 +38,12 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.legacy.LegacyDoubleField;
@@ -143,9 +143,10 @@ public class TestLegacyFieldCache extends SolrTestCase {
     assertTrue(
         "docsWithField(theLong) must be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertTrue(
+    assertEquals(
         "docsWithField(theLong) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length() == NUM_DOCS);
+        docsWithField.length(),
+        NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertTrue(docsWithField.get(i));
     }
@@ -158,9 +159,10 @@ public class TestLegacyFieldCache extends SolrTestCase {
     assertFalse(
         "docsWithField(sparse) must not be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertTrue(
+    assertEquals(
         "docsWithField(sparse) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length() == NUM_DOCS);
+        docsWithField.length(),
+        NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertEquals(i % 2 == 0, docsWithField.get(i));
     }
@@ -330,7 +332,7 @@ public class TestLegacyFieldCache extends SolrTestCase {
     dir.close();
   }
 
-  public void testNonexistantFields() throws Exception {
+  public void testNonexistentFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();

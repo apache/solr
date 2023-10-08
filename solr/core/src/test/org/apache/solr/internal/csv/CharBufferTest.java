@@ -16,10 +16,9 @@
  */
 package org.apache.solr.internal.csv;
 
-import junit.framework.TestCase;
 import org.apache.solr.SolrTestCaseJ4;
 
-public class CharBufferTest extends TestCase {
+public class CharBufferTest extends SolrTestCaseJ4 {
   public void testCreate() {
     CharBuffer cb = new CharBuffer();
     assertEquals(0, cb.length());
@@ -63,9 +62,9 @@ public class CharBufferTest extends TestCase {
     }
   }
 
-  public void testAppendStringBuffer() {
+  public void testAppendStringBuilder() {
     CharBuffer cb = new CharBuffer(1);
-    StringBuffer abcd = new StringBuffer("abcd");
+    StringBuilder abcd = new StringBuilder("abcd");
     String expected = "";
     for (int i = 0; i < 10; i++) {
       cb.append(abcd);
@@ -105,7 +104,7 @@ public class CharBufferTest extends TestCase {
   // -- the following test cases have been adapted from the HttpComponents project
   // -- written by Oleg Kalnichevski
 
-  public void testSimpleAppend() throws Exception {
+  public void testSimpleAppend() {
     CharBuffer buffer = new CharBuffer(16);
     assertEquals(16, buffer.capacity());
     assertEquals(0, buffer.length());
@@ -132,14 +131,14 @@ public class CharBufferTest extends TestCase {
     assertEquals(0, buffer.length());
   }
 
-  public void testAppendString2() throws Exception {
+  public void testAppendString2() {
     CharBuffer buffer = new CharBuffer(8);
     buffer.append("stuff");
     buffer.append(" and more stuff");
     assertEquals("stuff and more stuff", buffer.toString());
   }
 
-  public void testAppendNull() throws Exception {
+  public void testAppendNull() {
     CharBuffer buffer = new CharBuffer(8);
 
     buffer.append((StringBuffer) null);
@@ -155,7 +154,7 @@ public class CharBufferTest extends TestCase {
     assertEquals("", buffer.toString());
   }
 
-  public void testAppendCharArrayBuffer() throws Exception {
+  public void testAppendCharArrayBuffer() {
     CharBuffer buffer1 = new CharBuffer(8);
     buffer1.append(" and more stuff");
     CharBuffer buffer2 = new CharBuffer(8);
@@ -164,7 +163,7 @@ public class CharBufferTest extends TestCase {
     assertEquals("stuff and more stuff", buffer2.toString());
   }
 
-  public void testAppendSingleChar() throws Exception {
+  public void testAppendSingleChar() {
     CharBuffer buffer = new CharBuffer(4);
     buffer.append('1');
     buffer.append('2');
@@ -175,7 +174,7 @@ public class CharBufferTest extends TestCase {
     assertEquals("123456", buffer.toString());
   }
 
-  public void testProvideCapacity() throws Exception {
+  public void testProvideCapacity() {
     CharBuffer buffer = new CharBuffer(4);
     buffer.provideCapacity(2);
     assertEquals(4, buffer.capacity());

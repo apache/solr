@@ -18,9 +18,10 @@
 package org.apache.solr.client.solrj.impl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableSet;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.Collections;
@@ -78,22 +79,29 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
     LBHttpSolrClient mockLbclient = getMockLbHttpSolrClient(responses);
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
-    try (CloudSolrClient cloudClient =
-        new CloudSolrClientBuilder(getStateProvider(livenodes, refs))
-            .withLBHttpSolrClient(mockLbclient)
-            .build()) {
-      livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+    try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
+        CloudSolrClient cloudClient =
+            new RandomizingCloudSolrClientBuilder(clusterStateProvider)
+                .withLBHttpSolrClient(mockLbclient)
+                .build()) {
+      livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       ClusterState cs =
-          ClusterState.createFromJson(1, coll1State.getBytes(UTF_8), Collections.emptySet());
+          ClusterState.createFromJson(1, coll1State.getBytes(UTF_8), Collections.emptySet(), null);
       refs.put(collName, new Ref(collName));
       colls.put(collName, cs.getCollectionOrNull(collName));
       responses.put(
           "request",
           o -> {
             int i = lbhttpRequestCount.incrementAndGet();
-            if (i == 1) return new ConnectException("TEST");
-            if (i == 2) return new SocketException("TEST");
-            if (i == 3) return new NoHttpResponseException("TEST");
+            if (i == 1) {
+              return new ConnectException("TEST");
+            }
+            if (i == 2) {
+              return new SocketException("TEST");
+            }
+            if (i == 3) {
+              return new NoHttpResponseException("TEST");
+            }
             return okResponse;
           });
       UpdateRequest update = new UpdateRequest().add("id", "123", "desc", "Something 0");

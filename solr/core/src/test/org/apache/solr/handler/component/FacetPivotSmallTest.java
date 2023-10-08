@@ -42,7 +42,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
   }
 
   /** we don't support comma's in the "stats" local param ... yet: SOLR-6663 */
-  public void testStatsTagHasComma() throws Exception {
+  public void testStatsTagHasComma() {
 
     if (random().nextBoolean()) {
       // behavior should be same either way
@@ -68,7 +68,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
   }
 
   /** if bogus stats are requested, the pivots should still work */
-  public void testBogusStatsTag() throws Exception {
+  public void testBogusStatsTag() {
     index();
 
     assertQ(
@@ -79,7 +79,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
         "count(//arr[@name='place_t,company_t']/lst[str[@name='value'][.='dublin']]/lst[@name='stats'])=0");
   }
 
-  public void testPivotFacetUnsorted() throws Exception {
+  public void testPivotFacetUnsorted() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -210,7 +210,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
             + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=1]");
   }
 
-  public void testPivotFacetStatsUnsortedTagged() throws Exception {
+  public void testPivotFacetStatsUnsortedTagged() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -266,7 +266,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
         "count(" + krakowFujitsuStats + "/*)=8");
   }
 
-  public void testPivotFacetSortedCount() throws Exception {
+  public void testPivotFacetSortedCount() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -402,7 +402,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
             + "[str[@name='value'][.='cork']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=1]");
   }
 
-  public void testPivotFacetLimit() throws Exception {
+  public void testPivotFacetLimit() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -439,7 +439,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
             + "[str[@name='value'][.='london']]/arr[@name='pivot']/lst[2]/int[@name='count'][.=3]");
   }
 
-  public void testPivotIndividualFacetLimit() throws Exception {
+  public void testPivotIndividualFacetLimit() {
     index();
 
     final ModifiableSolrParams params = new ModifiableSolrParams();
@@ -476,7 +476,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
             + "[str[@name='value'][.='dublin']]/arr[@name='pivot']/lst[4]/int[@name='count'][.=2]");
   }
 
-  public void testPivotFacetMissing() throws Exception {
+  public void testPivotFacetMissing() {
     // Test facet.missing=true with diff sorts
     index();
     indexMissing();
@@ -559,7 +559,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
         facetPivotPrefix + "[1]/arr[@name='pivot']/lst[1][not(arr[@name='pivot'])]");
   }
 
-  public void testPivotFacetIndexSortMincountAndLimit() throws Exception {
+  public void testPivotFacetIndexSortMincountAndLimit() {
     // sort=index + mincount + limit
     index();
     indexMissing();
@@ -604,7 +604,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testPivotFacetIndexSortMincountLimitAndOffset() throws Exception {
+  public void testPivotFacetIndexSortMincountLimitAndOffset() {
     // sort=index + mincount + limit + offset
     index();
     indexMissing();
@@ -649,7 +649,7 @@ public class FacetPivotSmallTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testPivotFacetIndexSortMincountLimitAndOffsetPermutations() throws Exception {
+  public void testPivotFacetIndexSortMincountLimitAndOffsetPermutations() {
     // sort=index + mincount + limit + offset (more permutations)
     index();
     indexMissing();

@@ -19,11 +19,13 @@ package org.apache.solr;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -42,34 +44,35 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static SolrClient collection2;
   private static String shard1;
   private static String shard2;
-  private static File solrHome;
 
   private static File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
-    setupJettyTestHome(workDir, "collection1");
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"),
-        new File(workDir, "/collection1/conf/solrconfig.xml"));
-    FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
-    return workDir;
+    Path workDir = createTempDir();
+    setupJettyTestHome(workDir.toFile(), "collection1");
+    Files.copy(
+        Path.of(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"),
+        workDir.resolve("collection1").resolve("conf").resolve("solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+    FileUtils.copyDirectory(
+        workDir.resolve("collection1").toFile(), workDir.resolve("collection2").toFile());
+    return workDir.toFile();
   }
 
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertySolrDisableUrlAllowList("true");
-    solrHome = createSolrHome();
+    File solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
-    String url = jetty.getBaseUrl().toString();
+    String url = getBaseUrl();
     collection1 = getHttpSolrClient(url + "/collection1");
     collection2 = getHttpSolrClient(url + "/collection2");
 
-    String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
-    String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
+    String urlCollection1 = getBaseUrl() + "/" + "collection1";
+    String urlCollection2 = getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
 
     // create second core
-    try (HttpSolrClient nodeClient = getHttpSolrClient(url)) {
+    try (SolrClient nodeClient = getHttpSolrClient(url)) {
       CoreAdminRequest.Create req = new CoreAdminRequest.Create();
       req.setCoreName("collection2");
       req.setConfigSet("collection1");
@@ -105,10 +108,6 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     if (null != collection2) {
       collection2.close();
       collection2 = null;
-    }
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
     }
     resetExceptionIgnores();
     systemClearPropertySolrDisableUrlAllowList();

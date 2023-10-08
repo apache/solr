@@ -24,8 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipException;
 import javax.net.ssl.HostnameVerifier;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
@@ -34,9 +32,10 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
-import org.apache.lucene.util.TestRuleRestoreSystemProperties;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -89,13 +88,19 @@ public class HttpClientUtilTest extends SolrTestCase {
         "socketFactory is not an SSLConnectionSocketFactory: " + socketFactory.getClass(),
         socketFactory instanceof SSLConnectionSocketFactory);
     SSLConnectionSocketFactory sslSocketFactory = (SSLConnectionSocketFactory) socketFactory;
+    Object hostnameVerifier = getHostnameVerifier(sslSocketFactory);
+    assertNotNull("sslSocketFactory has null hostnameVerifier", hostnameVerifier);
+    assertEquals(
+        "sslSocketFactory does not have expected hostnameVerifier impl",
+        expected,
+        hostnameVerifier.getClass());
+  }
+
+  @SuppressForbidden(reason = "Uses commons-lang3 FieldUtils.readField to get hostnameVerifier")
+  private Object getHostnameVerifier(SSLConnectionSocketFactory sslSocketFactory) {
     try {
-      Object hostnameVerifier = FieldUtils.readField(sslSocketFactory, "hostnameVerifier", true);
-      assertNotNull("sslSocketFactory has null hostnameVerifier", hostnameVerifier);
-      assertEquals(
-          "sslSocketFactory does not have expected hostnameVerifier impl",
-          expected,
-          hostnameVerifier.getClass());
+      return org.apache.commons.lang3.reflect.FieldUtils.readField(
+          sslSocketFactory, "hostnameVerifier", true);
     } catch (IllegalAccessException e) {
       throw new AssertionError("Unexpected access error reading hostnameVerifier field", e);
     }
@@ -119,17 +124,17 @@ public class HttpClientUtilTest extends SolrTestCase {
     assertEquals(Boolean.FALSE, HttpClientUtil.toBooleanObject("FALSE"));
     assertEquals(Boolean.FALSE, HttpClientUtil.toBooleanObject("fALSE"));
 
-    assertEquals(null, HttpClientUtil.toBooleanObject("t"));
-    assertEquals(null, HttpClientUtil.toBooleanObject("f"));
-    assertEquals(null, HttpClientUtil.toBooleanObject("foo"));
-    assertEquals(null, HttpClientUtil.toBooleanObject(null));
+    assertNull(HttpClientUtil.toBooleanObject("t"));
+    assertNull(HttpClientUtil.toBooleanObject("f"));
+    assertNull(HttpClientUtil.toBooleanObject("foo"));
+    assertNull(HttpClientUtil.toBooleanObject(null));
   }
 
   @Test
   public void testNonRepeatableMalformedGzipEntityAutoClosed() throws IOException {
     HttpEntity baseEntity =
         new InputStreamEntity(
-            IOUtils.toInputStream("this is not compressed", StandardCharsets.UTF_8));
+            new ByteArrayInputStream("this is not compressed".getBytes(StandardCharsets.UTF_8)));
     HttpClientUtil.GzipDecompressingEntity gzipDecompressingEntity =
         new HttpClientUtil.GzipDecompressingEntity(baseEntity);
     Throwable error =
@@ -180,7 +185,7 @@ public class HttpClientUtilTest extends SolrTestCase {
     String testString = "this is compressed";
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(baos)) {
-      IOUtils.write(testString, gzipOutputStream, StandardCharsets.UTF_8);
+      gzipOutputStream.write(testString.getBytes(StandardCharsets.UTF_8));
     }
     // Use an ByteArrayEntity because it is repeatable
     HttpEntity baseEntity = new ByteArrayEntity(baos.toByteArray());
@@ -190,13 +195,13 @@ public class HttpClientUtilTest extends SolrTestCase {
       assertEquals(
           "Entity incorrect after decompression",
           testString,
-          IOUtils.toString(stream, StandardCharsets.UTF_8));
+          new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
     try (InputStream stream = gzipDecompressingEntity.getContent()) {
       assertEquals(
           "Entity incorrect after decompression after repeating",
           testString,
-          IOUtils.toString(stream, StandardCharsets.UTF_8));
+          new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
   }
 
@@ -205,7 +210,7 @@ public class HttpClientUtilTest extends SolrTestCase {
     String testString = "this is compressed";
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(baos)) {
-      IOUtils.write(testString, gzipOutputStream, StandardCharsets.UTF_8);
+      gzipOutputStream.write(testString.getBytes(StandardCharsets.UTF_8));
     }
     // Use an InputStreamEntity because it is non-repeatable
     HttpEntity baseEntity = new InputStreamEntity(new ByteArrayInputStream(baos.toByteArray()));
@@ -215,7 +220,7 @@ public class HttpClientUtilTest extends SolrTestCase {
       assertEquals(
           "Entity incorrect after decompression",
           testString,
-          IOUtils.toString(stream, StandardCharsets.UTF_8));
+          new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
     try (InputStream stream = gzipDecompressingEntity.getContent()) {
       expectThrows(

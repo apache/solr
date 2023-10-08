@@ -18,78 +18,81 @@
 package org.apache.solr.prometheus.scraper;
 
 import io.prometheus.client.Collector;
-import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.prometheus.PrometheusExporterTestBase;
 import org.apache.solr.prometheus.collector.MetricSamples;
 import org.apache.solr.prometheus.exporter.MetricsConfiguration;
+import org.apache.solr.prometheus.exporter.PrometheusExporterSettings;
+import org.apache.solr.prometheus.exporter.SolrClientFactory;
+import org.apache.solr.prometheus.exporter.SolrScrapeConfiguration;
 import org.apache.solr.prometheus.utils.Helpers;
-import org.apache.solr.util.RestTestBase;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public class SolrStandaloneScraperTest extends RestTestBase {
+public class SolrStandaloneScraperTest extends SolrTestCaseJ4 {
+
+  @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
 
   private static MetricsConfiguration configuration;
   private static SolrStandaloneScraper solrScraper;
   private static ExecutorService executor;
-  private static HttpSolrClient solrClient;
+  private static Http2SolrClient solrClient;
 
   @BeforeClass
   public static void setupBeforeClass() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    tmpSolrHome.deleteOnExit();
+    solrRule.startSolr(LuceneTestCase.createTempDir());
 
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    Path configSet = LuceneTestCase.createTempDir();
+    createConf(configSet);
+    solrRule.newCollection().withConfigSet(configSet.toString()).create();
 
-    initCore("solrconfig.xml", "managed-schema");
-
-    createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(), "solrconfig.xml", "managed-schema", "/solr", true, null);
-
+    PrometheusExporterSettings settings = PrometheusExporterSettings.builder().build();
+    SolrScrapeConfiguration scrapeConfiguration =
+        SolrScrapeConfiguration.standalone(solrRule.getBaseUrl());
+    solrClient =
+        new SolrClientFactory(settings, scrapeConfiguration)
+            .createStandaloneSolrClient(solrRule.getBaseUrl());
     executor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             25, new SolrNamedThreadFactory("solr-cloud-scraper-tests"));
     configuration =
         Helpers.loadConfiguration("conf/prometheus-solr-exporter-scraper-test-config.xml");
-
-    solrClient = getHttpSolrClient(restTestHarness.getAdminURL());
-    solrScraper = new SolrStandaloneScraper(solrClient, executor);
-
-    NoOpResponseParser responseParser = new NoOpResponseParser();
-    responseParser.setWriterType("json");
-
-    solrClient.setParser(responseParser);
+    solrScraper = new SolrStandaloneScraper(solrClient, executor, "test");
 
     Helpers.indexAllDocs(solrClient);
   }
 
+  public static void createConf(Path configSet) throws IOException {
+    Path subHome = configSet.resolve("conf");
+    Files.createDirectories(subHome);
+
+    Path top = SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf");
+    Files.copy(top.resolve("managed-schema.xml"), subHome.resolve("schema.xml"));
+    Files.copy(top.resolve("solrconfig.xml"), subHome.resolve("solrconfig.xml"));
+
+    Files.copy(top.resolve("stopwords.txt"), subHome.resolve("stopwords.txt"));
+    Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
+  }
+
   @AfterClass
-  public static void cleanUp() throws Exception {
+  public static void cleanup() throws Exception {
+    // scraper also closes the client
     IOUtils.closeQuietly(solrScraper);
-    IOUtils.closeQuietly(solrClient);
-    cleanUpHarness();
-    if (null != executor) {
-      executor.shutdownNow();
-      executor = null;
-    }
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
-    solrScraper = null;
-    solrClient = null;
+    ExecutorUtil.shutdownNowAndAwaitTermination(executor);
   }
 
   @Test
@@ -113,10 +116,8 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     assertEquals("solr_ping", samples.name);
     assertEquals(1, samples.samples.size());
     assertEquals(1.0, samples.samples.get(0).value, 0.001);
-    assertEquals(Collections.singletonList("base_url"), samples.samples.get(0).labelNames);
-    assertEquals(
-        Collections.singletonList(restTestHarness.getAdminURL()),
-        samples.samples.get(0).labelValues);
+    assertEquals(List.of("base_url", "cluster_id"), samples.samples.get(0).labelNames);
+    assertEquals(List.of(solrRule.getBaseUrl(), "test"), samples.samples.get(0).labelValues);
   }
 
   @Test
@@ -135,12 +136,14 @@ public class SolrStandaloneScraperTest extends RestTestBase {
     assertEquals(1, metricsByHost.size());
 
     List<Collector.MetricFamilySamples> replicaSamples =
-        metricsByHost.get(restTestHarness.getAdminURL()).asList();
+        metricsByHost.get(solrRule.getBaseUrl()).asList();
 
     assertEquals(1, replicaSamples.size());
 
-    assertEquals(1, replicaSamples.size());
     assertEquals("solr_metrics_jvm_buffers", replicaSamples.get(0).name);
+
+    assertEquals("cluster_id", replicaSamples.get(0).samples.get(0).labelNames.get(2));
+    assertEquals("test", replicaSamples.get(0).samples.get(0).labelValues.get(2));
   }
 
   @Test

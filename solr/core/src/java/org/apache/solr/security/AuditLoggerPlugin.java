@@ -42,9 +42,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.AuditEvent.EventType;
+import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -348,7 +350,8 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       waitForQueueToDrain(30);
       closed = true;
       log.info("Shutting down async Auditlogger background thread(s)");
-      executorService.shutdownNow();
+      ExecutorUtil.shutdownNowAndAwaitTermination(executorService);
+      executorService = null;
       try {
         SolrInfoBean.super.close();
       } catch (Exception e) {
@@ -364,8 +367,8 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    */
   protected void waitForQueueToDrain(int timeoutSeconds) {
     if (async && executorService != null) {
-      int timeSlept = 0;
-      while ((!queue.isEmpty() || auditsInFlight.get() > 0) && timeSlept < timeoutSeconds) {
+      TimeOut timeOut = new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      while ((!queue.isEmpty() || auditsInFlight.get() > 0) && !timeOut.hasTimedOut()) {
         try {
           if (log.isInfoEnabled()) {
             log.info(
@@ -373,16 +376,17 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
                 queue.size(),
                 auditsInFlight.get());
           }
-          Thread.sleep(1000);
-          timeSlept++;
+          timeOut.sleep(1000);
         } catch (InterruptedException ignored) {
+          // Preserve interrupt status
+          Thread.currentThread().interrupt();
         }
       }
     }
   }
 
   /** Set of rules for when audit logging should be muted. */
-  private class MuteRules {
+  private static class MuteRules {
     private List<List<MuteRule>> rules;
 
     MuteRules(Object o) {

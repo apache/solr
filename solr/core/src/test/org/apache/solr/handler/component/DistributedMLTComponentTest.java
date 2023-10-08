@@ -18,8 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -38,7 +37,6 @@ import org.junit.Test;
  * @since solr 4.1
  * @see org.apache.solr.handler.component.MoreLikeThisComponent
  */
-@Slow
 public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
 
   private String requestHandlerName;
@@ -93,7 +91,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
         id,
         "9",
         "lowerfilt",
-        "The quick red fox jumped over the lazy big and large brown dogs.",
+        "The quick red:fox jumped over the lazy big and large brown dogs.",
         "lowerfilt1",
         "x");
     index(id, "10", "lowerfilt", "blue", "lowerfilt1", "x");
@@ -102,7 +100,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
         id,
         "13",
         "lowerfilt",
-        "The quote red fox jumped over the lazy brown dogs.",
+        "The quote RED)FOX jumped over the lazy brown dogs.",
         "lowerfilt1",
         "y");
     index(
@@ -192,7 +190,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     // we care only about the mlt results
     handle.put("response", SKIP);
 
-    // currently distrib mlt is sorting by score (even though it's not really comparable across
+    // currently, distrib mlt is sorting by score (even though it's not really comparable across
     // shards) so it may not match the sort of single shard mlt
     handle.put("17", UNORDERED);
 
@@ -234,12 +232,12 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     handle.put("13", UNORDERED);
     handle.put("7", UNORDERED);
 
-    // keep in mind that MLT params influence stats that are calulated
+    // keep in mind that MLT params influence stats that are calculated
     // per shard - because of this, depending on params, distrib and single
     // shard queries will not match.
 
     // because distrib and single node do not currently sort exactly the same,
-    // we ask for an mlt.count of 20 to ensure both include all results
+    // we ask for a mlt.count of 20 to ensure both include all results
 
     query(
         "q",
@@ -391,5 +389,29 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
       Long actual = ((SolrDocumentList) entry.getValue()).getNumFound();
       assertEquals("MLT mismatch for id=" + key, expected, actual);
     }
+    // test boost mlt.qf
+    query(
+        "q",
+        "lowerfilt:moon",
+        "fl",
+        id,
+        MoreLikeThisParams.MIN_TERM_FREQ,
+        2,
+        MoreLikeThisParams.MIN_DOC_FREQ,
+        1,
+        "sort",
+        "id_i1 desc",
+        "mlt",
+        "true",
+        "mlt.fl",
+        "lowerfilt1,lowerfilt",
+        "mlt.qf",
+        "lowerfilt1^1.2 lowerfilt^3.4",
+        "qt",
+        requestHandlerName,
+        "shards.qt",
+        requestHandlerName,
+        "mlt.count",
+        "20");
   }
 }

@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.math3.primes.Primes;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -49,7 +48,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -78,7 +76,6 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
   protected long committedModelClock;
   protected int clientIndexUsedForCommit;
   protected volatile int lastId;
-  protected final String field = "val_l";
 
   private void initModel(int ndocs) {
     for (int i = 0; i < ndocs; i++) {
@@ -248,9 +245,10 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                           info.version,
                           returnedVersion);
                     } catch (RuntimeException e) {
-                      if (e.getMessage() != null && e.getMessage().contains("version conflict")
-                          || e.getMessage() != null && e.getMessage().contains("Conflict")) {
-                        // Its okay for a leader to reject a concurrent request
+                      if (e.getMessage() != null
+                          && (e.getMessage().contains("version conflict")
+                              || e.getMessage().contains("Conflict"))) {
+                        // It's okay for a leader to reject a concurrent request
                         log.warn("Conflict during {}, rejected id={}, {}", delType, id, e);
                         returnedVersion = null;
                       } else {
@@ -262,8 +260,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                     synchronized (model) {
                       DocInfo currInfo = model.get(id);
                       if (null != returnedVersion
-                          && (Math.abs(returnedVersion.longValue()) > Math.abs(currInfo.version))) {
-                        model.put(id, new DocInfo(returnedVersion.longValue(), 0, 0));
+                          && (Math.abs(returnedVersion) > Math.abs(currInfo.version))) {
+                        model.put(id, new DocInfo(returnedVersion, 0, 0));
                       }
                     }
 
@@ -303,9 +301,10 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                             returnedVersion);
 
                       } catch (RuntimeException e) {
-                        if (e.getMessage() != null && e.getMessage().contains("version conflict")
-                            || e.getMessage() != null && e.getMessage().contains("Conflict")) {
-                          // Its okay for a leader to reject a concurrent request
+                        if (e.getMessage() != null
+                            && (e.getMessage().contains("version conflict")
+                                || e.getMessage().contains("Conflict"))) {
+                          // It's okay for a leader to reject a concurrent request
                           log.warn("Conflict during full update, rejected id={}, {}", id, e);
                           returnedVersion = null;
                         } else {
@@ -334,9 +333,10 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                             val2,
                             returnedVersion);
                       } catch (RuntimeException e) {
-                        if (e.getMessage() != null && e.getMessage().contains("version conflict")
-                            || e.getMessage() != null && e.getMessage().contains("Conflict")) {
-                          // Its okay for a leader to reject a concurrent request
+                        if (e.getMessage() != null
+                            && (e.getMessage().contains("version conflict")
+                                || e.getMessage().contains("Conflict"))) {
+                          // It's okay for a leader to reject a concurrent request
                           log.warn("Conflict during partial update, rejected id={}, {}", id, e);
                         } else if (e.getMessage() != null
                             && e.getMessage().contains("Document not found for update.")
@@ -356,8 +356,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                     synchronized (model) {
                       DocInfo currInfo = model.get(id);
                       if (null != returnedVersion
-                          && (Math.abs(returnedVersion.longValue()) > Math.abs(currInfo.version))) {
-                        model.put(id, new DocInfo(returnedVersion.longValue(), nextVal1, nextVal2));
+                          && (Math.abs(returnedVersion) > Math.abs(currInfo.version))) {
+                        model.put(id, new DocInfo(returnedVersion, nextVal1, nextVal2));
                       }
                     }
                   }
@@ -423,7 +423,8 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
                   QueryResponse response = clients.get(clientId).query(params);
                   if (response.getResults().size() == 0) {
-                    // there's no info we can get back with a delete, so not much we can check
+                    // there's no info we can get back from a delete operation, so not much we
+                    // can check
                     // without further synchronization
                   } else if (response.getResults().size() == 1) {
                     final SolrDocument actual = response.getResults().get(0);
@@ -433,9 +434,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
                     final Long foundVersion = (Long) actual.getFieldValue("_version_");
                     assertNotNull(msg, foundVersion);
-                    assertTrue(
-                        msg + "... solr doc has non-positive version???",
-                        0 < foundVersion.longValue());
+                    assertTrue(msg + "... solr doc has non-positive version???", 0 < foundVersion);
                     final Integer intVal = (Integer) actual.getFieldValue("val1_i_dvo");
                     assertNotNull(msg, intVal);
 
@@ -446,15 +445,15 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                         msg
                             + " ...solr returned older version then model. "
                             + "should not be possible given the order of operations in writer threads",
-                        Math.abs(expected.version) <= foundVersion.longValue());
+                        Math.abs(expected.version) <= foundVersion);
 
-                    if (foundVersion.longValue() == expected.version) {
+                    if (foundVersion == expected.version) {
                       assertEquals(msg, expected.intFieldValue, intVal.intValue());
                       assertEquals(msg, expected.longFieldValue, longVal.longValue());
                     }
 
                     // Some things we can assert about any Doc returned from solr,
-                    // even if it's newer then our (expected) model information...
+                    // even if it's newer than our (expected) model information...
 
                     assertTrue(
                         msg + " ...how did a doc in solr get a non positive intVal?", 0 < intVal);
@@ -462,23 +461,25 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                         msg + " ...how did a doc in solr get a non positive longVal?", 0 < longVal);
                     assertEquals(
                         msg
-                            + " ...intVal and longVal in solr doc are internally (modulo) inconsistent w/eachother",
+                            + " ...intVal and longVal in solr doc are internally (modulo) inconsistent with each other",
                         0,
                         (longVal % intVal));
 
-                    // NOTE: when foundVersion is greater then the version read from the model, it's
+                    // NOTE: when foundVersion is greater than the version read from the model, it's
                     // not possible to make any assertions about the field values in solr relative
                     // to the field values in the model -- ie: we can *NOT* assert
                     // expected.longFieldVal <= doc.longVal
                     //
                     // it's tempting to think that this would be possible if we changed our model to
-                    // preserve the "old" valuess when doing a delete, but that's still no garuntee
-                    // because of how oportunistic concurrency works with negative versions:  When
+                    // preserve the "old" values when running a delete operation, but that's still
+                    // no guarantee
+                    // because of how opportunistic concurrency works with negative versions:  When
                     // adding a doc, we can assert that it must not exist with version<0, but we
-                    // can't assert that the *reason* it doesn't exist was because of a delete with
-                    // the specific version of "-42". So a wrtier thread might (1) prep to add a doc
+                    // can't assert that the *reason* it doesn't exist was because running a delete
+                    // operation with
+                    // the specific version of "-42". So a writer thread might (1) prep to add a doc
                     // for the first time with "intValue=1,_version_=-1", and that add may succeed
-                    // and (2) return some version X which is put in the model.  but inbetween #1
+                    // and (2) return some version X which is put in the model.  But in between #1
                     // and #2 other threads may have added & deleted the doc repeatedly, updating
                     // the model with intValue=7,_version_=-42, and a reader thread might meanwhile
                     // read from the model before #2 and expect intValue=5, but get intValue=1 from
@@ -487,7 +488,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
                   } else {
                     fail(
                         String.format(
-                            Locale.ENGLISH, "There were more than one result: {}", response));
+                            Locale.ENGLISH, "There were more than one result: %s", response));
                   }
                 }
               } catch (Throwable e) {
@@ -540,13 +541,13 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     {
       // do a final search and compare every result with the model because commits don't provide any
       // sort of concrete versioning (or optimistic concurrency constraints) there's no way to
-      // garuntee that our committedModel matches what was in Solr at the time of the last commit.
+      // guarantee that our committedModel matches what was in Solr at the time of the last commit.
       // It's possible other threads made additional writes to solr before the commit was processed,
-      // but after the committedModel variable was assigned it's new value. what we can do however,
+      // but after the committedModel variable was assigned its new value. what we can do however,
       // is commit all completed updates, and *then* compare solr search results against the (new)
       // committed model....
 
-      // NOTE: this does an automatic commit for us & ensures replicas are up to date
+      // NOTE: this does an automatic commit for us & ensures replicas are up-to-date
       waitForThingsToLevelOut(30, TimeUnit.SECONDS);
       committedModel = new HashMap<>(model);
 
@@ -583,7 +584,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
           assertEquals(msg, expected.version, actual.getFieldValue("_version_"));
           assertTrue(msg + " doc exists in solr, but version is negative???", 0 < expected.version);
 
-          // also sanity check the model (which we already know matches the doc)
+          // check the model (which we already know matches the doc)
           assertEquals(
               "Inconsistent (modulo) values in model for id " + id + "=" + expected,
               0,
@@ -602,7 +603,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
     public DocInfo(long version, int val1, long val2) {
       // must either be real positive version, or negative deleted version/indicator
-      assert version != 0;
+      assertNotEquals(0, version);
       this.version = version;
       this.intFieldValue = val1;
       this.longFieldValue = val2;
@@ -681,10 +682,11 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
     Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
     leader = shard1.getLeader();
 
-    for (int i = 0; i < clients.size(); i++) {
+    for (SolrClient client : clients) {
       String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-      if (((HttpSolrClient) clients.get(i)).getBaseURL().startsWith(leaderBaseUrl))
-        return clients.get(i);
+      if (((HttpSolrClient) client).getBaseURL().startsWith(leaderBaseUrl)) {
+        return client;
+      }
     }
 
     return null;

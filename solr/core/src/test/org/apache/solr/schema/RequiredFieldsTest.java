@@ -45,10 +45,10 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
     assertTrue(uniqueKey.isRequired());
     assertTrue(schema.getRequiredFields().contains(uniqueKey));
 
-    // we specified one required field, but all devault valued fields are also required
+    // we specified one required field, but all default valued fields are also required
     Collection<SchemaField> requiredFields = schema.getRequiredFields();
     int numDefaultFields = schema.getFieldsWithDefaultValue().size();
-    assertEquals(numDefaultFields + 1 + 1, requiredFields.size()); // also the uniqueKey
+    assertEquals(numDefaultFields + 1 + 1, requiredFields.size()); // also, the uniqueKey
   }
 
   @Test
@@ -68,7 +68,7 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
             "info"));
     assertU(commit());
 
-    // Check it it is in the index
+    // Check if it is in the index
     assertQ("should find one", req("id:529"), "//result[@numFound=1]");
 
     // Add another document without the required subject field, which
@@ -150,12 +150,12 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
             + "</add>");
     assertU(commit());
 
-    // Since the missing field had a devault value,
+    // Since the missing field had a default value,
     // All three should have made it into the index
     assertQ("should find three", req("name:nosubject"), "//result[@numFound=3]");
 
     // Add three documents at once, with the middle with a bad field definition,
-    // to establish the baselinie behavior for errors in a multi-ad submission
+    // to establish the baseline behavior for errors in a multi-ad submission
     assertFailedU(
         "adding 3 documents, with 2nd one with undefined field",
         "<add>"

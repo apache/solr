@@ -17,7 +17,6 @@
 
 package org.apache.solr.core.backup.repository;
 
-import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -77,12 +76,14 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public URI resolve(URI baseUri, String... pathComponents) {
-    Preconditions.checkArgument(pathComponents.length > 0);
+    if (pathComponents.length <= 0) {
+      throw new IllegalArgumentException("pathComponents.length must be greater than 0.");
+    }
 
     Path result = Path.of(baseUri);
-    for (int i = 0; i < pathComponents.length; i++) {
+    for (String pathComponent : pathComponents) {
       try {
-        result = result.resolve(pathComponents[i]);
+        result = result.resolve(pathComponent);
       } catch (Exception e) {
         // unlikely to happen
         throw new RuntimeException(e);
@@ -159,16 +160,15 @@ public class LocalFileSystemRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) throws IOException {
     if (files.isEmpty()) return;
 
     try (FSDirectory dir = new NIOFSDirectory(Path.of(path), NoLockFactory.INSTANCE)) {
       for (String file : files) {
         try {
           dir.deleteFile(file);
-        } catch (NoSuchFileException e) {
-          if (!ignoreNoSuchFileException) throw e;
+        } catch (NoSuchFileException ignore) {
+
         }
       }
     }

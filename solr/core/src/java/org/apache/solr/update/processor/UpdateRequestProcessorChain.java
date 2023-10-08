@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -256,7 +255,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
 
   public static UpdateRequestProcessorChain constructChain(
       UpdateRequestProcessorChain defaultUrp, ProcessorInfo processorInfo, SolrCore core) {
-    LinkedList<UpdateRequestProcessorFactory> urps = new LinkedList<>(defaultUrp.chain);
+    List<UpdateRequestProcessorFactory> urps = new ArrayList<>(defaultUrp.chain);
     List<UpdateRequestProcessorFactory> p = getReqProcessors(processorInfo.processor, core);
     List<UpdateRequestProcessorFactory> post = getReqProcessors(processorInfo.postProcessor, core);
     // processor are tried to be inserted before LogUpdateprocessor+DistributedUpdateProcessor
@@ -275,7 +274,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized 
   }
 
   private static void insertBefore(
-      LinkedList<UpdateRequestProcessorFactory> urps,
+      List<UpdateRequestProcessorFactory> urps,
       List<UpdateRequestProcessorFactory> newFactories,
       Class<?> klas,
       int idx) {

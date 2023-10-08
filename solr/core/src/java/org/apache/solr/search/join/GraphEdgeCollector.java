@@ -17,14 +17,12 @@
 package org.apache.solr.search.join;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.TreeSet;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Query;
@@ -78,6 +76,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     return numHits;
   }
 
+  @Override
   public void collect(int segDoc) throws IOException {
     int doc = segDoc + base;
     if (skipSet != null && skipSet.exists(doc)) {
@@ -170,15 +169,15 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
           AutomatonQuery autnQuery = new AutomatonQuery(new Term(matchField.getName()), autn);
           q = autnQuery;
         } else {
-          List<BytesRef> termList = new ArrayList<>(collectorTerms.size());
+          BytesRef[] termList = new BytesRef[collectorTerms.size()];
           for (int i = 0; i < collectorTerms.size(); i++) {
             BytesRef ref = new BytesRef();
             collectorTerms.get(i, ref);
-            termList.add(ref);
+            termList[i] = ref;
           }
           q =
               (matchField.hasDocValues() && !matchField.indexed())
-                  ? new DocValuesTermsQuery(matchField.getName(), termList)
+                  ? SortedDocValuesField.newSlowSetQuery(matchField.getName(), termList)
                   : new TermInSetQuery(matchField.getName(), termList);
         }
 
@@ -189,7 +188,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
     /** Build an automaton to represent the frontier query */
     private Automaton buildAutomaton(BytesRefHash termBytesHash) {
       // need top pass a sorted set of terms to the autn builder (maybe a better way to avoid this?)
-      final TreeSet<BytesRef> terms = new TreeSet<BytesRef>();
+      final TreeSet<BytesRef> terms = new TreeSet<>();
       for (int i = 0; i < termBytesHash.size(); i++) {
         BytesRef ref = new BytesRef();
         termBytesHash.get(i, ref);

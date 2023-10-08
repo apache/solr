@@ -45,24 +45,29 @@ class LimitStream extends TupleStream {
     this.count = 0;
   }
 
+  @Override
   public void open() throws IOException {
     this.stream.open();
   }
 
+  @Override
   public void close() throws IOException {
     this.stream.close();
   }
 
+  @Override
   public List<TupleStream> children() {
     List<TupleStream> children = new ArrayList<>();
     children.add(stream);
     return children;
   }
 
+  @Override
   public StreamComparator getStreamSort() {
     return stream.getStreamSort();
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     stream.setStreamContext(context);
   }
@@ -78,6 +83,7 @@ class LimitStream extends TupleStream {
         .withExpressionType(Explanation.ExpressionType.STREAM_DECORATOR);
   }
 
+  @Override
   public Tuple read() throws IOException {
 
     if (count == 0 && offset > 0) {

@@ -17,9 +17,10 @@
 
 package org.apache.solr.client.solrj.response;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.DelegationTokenRequest;
@@ -35,15 +36,16 @@ public class TestDelegationTokenResponse extends SolrTestCase {
       throws Exception {
     ResponseParser parser = request.getResponseParser();
     response.setResponse(
-        parser.processResponse(IOUtils.toInputStream(responseBody, "UTF-8"), "UTF-8"));
+        parser.processResponse(
+            new ByteArrayInputStream(responseBody.getBytes(StandardCharsets.UTF_8)), "UTF-8"));
   }
 
   private String getNestedMapJson(String outerKey, String innerKey, Object innerValue) {
     CharArr out = new CharArr();
     JSONWriter w = new JSONWriter(out, 2);
-    Map<String, Object> innerMap = new HashMap<String, Object>();
+    Map<String, Object> innerMap = new HashMap<>();
     innerMap.put(innerKey, innerValue);
-    Map<String, Map<String, Object>> outerMap = new HashMap<String, Map<String, Object>>();
+    Map<String, Map<String, Object>> outerMap = new HashMap<>();
     outerMap.put(outerKey, innerMap);
     w.write(outerMap);
     return out.toString();
@@ -52,7 +54,7 @@ public class TestDelegationTokenResponse extends SolrTestCase {
   private String getMapJson(String key, Object value) {
     CharArr out = new CharArr();
     JSONWriter w = new JSONWriter(out, 2);
-    Map<String, Object> map = new HashMap<String, Object>();
+    Map<String, Object> map = new HashMap<>();
     map.put(key, value);
     w.write(map);
     return out.toString();

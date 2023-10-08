@@ -9,11 +9,11 @@ This document discusses how developers can group features into Plugins, Modules 
 
 A plugin is a low level class that implements a certain Lucene or Solr interface, such as
 `QParserPlugin`, `AuthPlugin`, `UpdateRequestProcessor`, `QueryResponseWriter` etc.
-See ref guide page https://solr.apache.org/guide/solr-plugins.html[Solr Plugins] for details.
+See ref guide page https://solr.apache.org/guide/solr/latest/configuration-guide/solr-plugins.html[Solr Plugins] for details.
 
 === Module
 
-Solr modules are addon Solr plugins that are not part of solr-core, but officially maintained
+Solr Modules are addon Solr plugins that are not part of solr-core, but officially maintained
 by the Solr project. They provide well-defined features such as the "extracting" module which lets
 users index rich text documents with Apache Tika. Modules were earlier known as "contribs".
 
@@ -25,7 +25,7 @@ A single module can contain multiple Plugins.
 === Package
 
 A Package is a module or a 3rd party plugin for Solr provisioned with a `manifest.json`
-to enable discovering and loading through https://solr.apache.org/guide/package-manager.html[Solr's package manager]. Packages are loaded from a "package repository" which is
+to enable discovering and loading through https://solr.apache.org/guide/solr/latest/configuration-guide/package-manager.html[Solr's package manager]. Packages are loaded from a "package repository" which is
 simply a json file on a HTTP server.
 
 Packages can be maintained by 3rd party devs and hosted on
@@ -136,4 +136,4 @@ compatible with any 9.x version of Solr. It is dangerous to assume compatibility
 using e.g. `9.1`, which will be compatible with all bugfix 9.1 releases.
 
 For details about how the package management internals work, please see
-https://solr.apache.org/guide/8_11/package-manager-internals.html[Package Manager Internals] chapter of the reference guide.
+https://solr.apache.org/guide/solr/latest/configuration-guide/package-manager-internals.html[Package Manager Internals] chapter of the reference guide.

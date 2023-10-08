@@ -70,7 +70,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     Map<Long, IndexCommit> commits = delPolicy.getCommits();
     IndexCommit latest = delPolicy.getLatestCommit();
     for (Long gen : commits.keySet()) {
-      if (commits.get(gen) == latest) continue;
+      if (commits.get(gen).equals(latest)) continue;
       assertEquals(1, commits.get(gen).getSegmentCount());
     }
   }
@@ -100,7 +100,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
         ((SolrDeletionPolicy) (delPolicy.getWrappedDeletionPolicy()))
             .getMaxCommitAge()
             .replaceAll("[a-zA-Z]", "")
-            .replaceAll("-", "");
+            .replace("-", "");
     long age = Long.parseLong(agestr);
     Thread.sleep(age);
 
@@ -109,6 +109,6 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     assertQ("return all docs", req("id:[0 TO 6]"), "*[count(//doc)=6]");
 
     commits = delPolicy.getCommits();
-    assertTrue(!commits.containsKey(ic.getGeneration()));
+    assertFalse(commits.containsKey(ic.getGeneration()));
   }
 }

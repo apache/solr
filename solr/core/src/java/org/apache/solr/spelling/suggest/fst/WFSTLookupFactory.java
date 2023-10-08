@@ -17,7 +17,7 @@
 package org.apache.solr.spelling.suggest.fst;
 
 import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.fst.*;
+import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.LookupFactory;

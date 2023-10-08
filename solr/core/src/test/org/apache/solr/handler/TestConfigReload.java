@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -123,7 +124,12 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
     HttpGet get = new HttpGet(uri);
     HttpEntity entity = null;
     try {
-      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
+      entity =
+          ((CloudLegacySolrClient) cloudClient)
+              .getLbClient()
+              .getHttpClient()
+              .execute(get)
+              .getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
       return (LinkedHashMapWriter)
           Utils.MAPWRITEROBJBUILDER.apply(Utils.getJSONParser(new StringReader(response))).getVal();

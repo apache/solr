@@ -59,7 +59,7 @@ public class RAMDirectoryFactoryTest extends SolrTestCase {
     Directory dir =
         factory.get("/fake/path", DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
     assertNotNull(
-        "RAMDirectoryFactory should create RefCntRamDirectory even if the path doen't lead "
+        "RAMDirectoryFactory should create RefCntRamDirectory even if the path doesn't lead "
             + "to index directory on the file system",
         dir);
     factory.release(dir);

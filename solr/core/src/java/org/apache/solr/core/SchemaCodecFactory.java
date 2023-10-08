@@ -16,16 +16,21 @@
  */
 package org.apache.solr.core;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Locale;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.KnnVectorsFormat;
+import org.apache.lucene.codecs.KnnVectorsReader;
+import org.apache.lucene.codecs.KnnVectorsWriter;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene90.Lucene90Codec;
-import org.apache.lucene.codecs.lucene90.Lucene90Codec.Mode;
-import org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat;
+import org.apache.lucene.codecs.lucene95.Lucene95Codec;
+import org.apache.lucene.codecs.lucene95.Lucene95Codec.Mode;
+import org.apache.lucene.codecs.lucene95.Lucene95HnswVectorsFormat;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -92,7 +97,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
       log.debug("Using default compressionMode: {}", compressionMode);
     }
     codec =
-        new Lucene90Codec(compressionMode) {
+        new Lucene95Codec(compressionMode) {
           @Override
           public PostingsFormat getPostingsFormatForField(String field) {
             final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
@@ -123,18 +128,20 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
             FieldType fieldType = (schemaField == null ? null : schemaField.getType());
             if (fieldType instanceof DenseVectorField) {
               DenseVectorField vectorType = (DenseVectorField) fieldType;
-              String knnVectorFormatName = vectorType.getCodecFormat();
-              if (knnVectorFormatName != null) {
-                if (knnVectorFormatName.equals(Lucene90HnswVectorsFormat.class.getSimpleName())) {
-                  int maxConn = vectorType.getHnswMaxConn();
-                  int beamWidth = vectorType.getHnswBeamWidth();
-                  return new Lucene90HnswVectorsFormat(maxConn, beamWidth);
-                } else {
-                  return KnnVectorsFormat.forName(knnVectorFormatName);
-                }
+              String knnAlgorithm = vectorType.getKnnAlgorithm();
+              if (DenseVectorField.HNSW_ALGORITHM.equals(knnAlgorithm)) {
+                int maxConn = vectorType.getHnswMaxConn();
+                int beamWidth = vectorType.getHnswBeamWidth();
+                var delegate = new Lucene95HnswVectorsFormat(maxConn, beamWidth);
+                return new SolrDelegatingKnnVectorsFormat(delegate, vectorType.getDimension());
+              } else {
+                throw new SolrException(
+                    ErrorCode.SERVER_ERROR, knnAlgorithm + " KNN algorithm is not supported");
               }
             }
-            return super.getKnnVectorsFormatForField(field);
+
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR, "wrong field type for KNN vectors: " + fieldType);
           }
         };
   }
@@ -143,5 +150,35 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
   public Codec getCodec() {
     assert core != null : "inform must be called first";
     return codec;
+  }
+
+  /**
+   * This class exists because Lucene95HnswVectorsFormat's getMaxDimensions method is final and we
+   * need to workaround that constraint to allow more than the default number of dimensions
+   */
+  private static final class SolrDelegatingKnnVectorsFormat extends KnnVectorsFormat {
+    private final KnnVectorsFormat delegate;
+    private final int maxDimensions;
+
+    public SolrDelegatingKnnVectorsFormat(KnnVectorsFormat delegate, int maxDimensions) {
+      super(delegate.getName());
+      this.delegate = delegate;
+      this.maxDimensions = maxDimensions;
+    }
+
+    @Override
+    public KnnVectorsWriter fieldsWriter(SegmentWriteState state) throws IOException {
+      return delegate.fieldsWriter(state);
+    }
+
+    @Override
+    public KnnVectorsReader fieldsReader(SegmentReadState state) throws IOException {
+      return delegate.fieldsReader(state);
+    }
+
+    @Override
+    public int getMaxDimensions(String fieldName) {
+      return maxDimensions;
+    }
   }
 }

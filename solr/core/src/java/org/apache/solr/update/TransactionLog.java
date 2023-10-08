@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
@@ -295,7 +296,7 @@ public class TransactionLog implements Closeable {
 
     synchronized (this) {
       globalStringList = (List<String>) header.get("strings");
-      globalStringMap = new HashMap<>(globalStringList.size());
+      globalStringMap = CollectionUtil.newHashMap(globalStringList.size());
       for (int i = 0; i < globalStringList.size(); i++) {
         globalStringMap.put(globalStringList.get(i), i + 1);
       }
@@ -594,6 +595,7 @@ public class TransactionLog implements Closeable {
     }
   }
 
+  @Override
   public void close() {
     try {
       if (debug) {
@@ -798,7 +800,7 @@ public class TransactionLog implements Closeable {
     }
   }
 
-  public abstract class ReverseReader {
+  public abstract static class ReverseReader {
 
     /**
      * Returns the next object from the log, or null if none available.
@@ -859,6 +861,7 @@ public class TransactionLog implements Closeable {
      * @return The log record, or null if EOF
      * @throws IOException If there is a low-level I/O error.
      */
+    @Override
     public Object next() throws IOException {
       if (prevPos <= 0) return null;
 
@@ -899,10 +902,12 @@ public class TransactionLog implements Closeable {
     }
 
     /* returns the position in the log file of the last record returned by next() */
+    @Override
     public long position() {
       return prevPos + 4; // skip the length
     }
 
+    @Override
     public void close() {
       decref();
     }

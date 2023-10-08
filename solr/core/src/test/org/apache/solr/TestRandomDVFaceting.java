@@ -22,8 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IntPointField;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
  * and compares the docvalues facet results to the indexed facet results as if it were just another
  * faceting method.
  */
-@Slow
 @SolrTestCaseJ4.SuppressPointFields(
     bugUrl = "Test explicitly compares Trie to Points, randomization defeats the point")
 @SolrTestCaseJ4.SuppressSSL
@@ -49,23 +47,20 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    // This tests explicitly compares Trie DV with non-DV Trie with DV Points
+    // This tests explicitly compares Trie DV with non-DV Trie with DV Points,
     // so we don't want randomized DocValues on all Trie fields
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "false");
 
     initCore("solrconfig-basic.xml", "schema-docValuesFaceting.xml");
 
-    assertEquals(
+    assertFalse(
         "DocValues: Schema assumptions are broken",
-        false,
         h.getCore().getLatestSchema().getField("foo_i").hasDocValues());
-    assertEquals(
+    assertTrue(
         "DocValues: Schema assumptions are broken",
-        true,
         h.getCore().getLatestSchema().getField("foo_i_dv").hasDocValues());
-    assertEquals(
+    assertTrue(
         "DocValues: Schema assumptions are broken",
-        true,
         h.getCore().getLatestSchema().getField("foo_i_p").hasDocValues());
 
     assertEquals(
@@ -206,7 +201,6 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
       SchemaField sf = req.getSchema().getField(ftype.fname);
       boolean multiValued = sf.getType().multiValuedFieldCache();
-      boolean indexed = sf.indexed();
       boolean numeric = sf.getType().getNumberType() != null;
 
       int offset = 0;
@@ -288,17 +282,17 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
         responses.add(strResponse);
       }
-      // If there is a PointField option for this test, also test it
+      // If there is a PointField option for this test, also test it.
       // Don't check points if facet.mincount=0
       if (h.getCore().getLatestSchema().getFieldOrNull(facet_field + "_p") != null
           && params.get("facet.mincount") != null
-          && params.getInt("facet.mincount").intValue() > 0) {
+          && params.getInt("facet.mincount") > 0) {
         params.set("facet.field", "{!key=" + facet_field + "}" + facet_field + "_p");
         String strResponse = h.query(req(params));
         responses.add(strResponse);
       }
 
-      /**
+      /*
        * String strResponse = h.query(req(params)); Object realResponse =
        * ObjectBuilder.fromJSON(strResponse);
        */

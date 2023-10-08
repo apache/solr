@@ -34,6 +34,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,8 +67,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
         .withProperty("schema", "schema.xml")
         .process(cluster.getSolrClient());
 
-    client = cluster.getSolrClient();
-    client.setDefaultCollection("collection1");
+    client = cluster.basicSolrClientBuilder().withDefaultCollection("collection1").build();
 
     ZkStateReader zkStateReader = ZkStateReader.from(client);
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
@@ -130,8 +130,8 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
-    client = null;
+  public static void cleanUpAfterClass() {
+    IOUtils.closeQuietly(client);
   }
 
   @Test
@@ -177,11 +177,11 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
                 fl)
             : new SolrQuery( // same bjq as a subordinate clause
                 "q",
-                "+type_s:parent " + parentFilter + " +{!v=$parentcaluse}",
-                "parentcaluse",
+                "+type_s:parent " + parentFilter + " +{!v=$parentclause}",
+                "parentclause",
                 "{!parent which=type_s:parent v='" + (childFilter).replace("+", "") + "'}",
                 "sort",
-                sortClause.replace("val_s1", "childfield(val_s1,$parentcaluse)"),
+                sortClause.replace("val_s1", "childfield(val_s1,$parentclause)"),
                 "rows",
                 "" + maxDocs,
                 "fl",

@@ -17,7 +17,12 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -49,7 +54,7 @@ public class RequestHandlerUtils {
       SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force)
       throws IOException {
     if (params == null) {
-      params = new MapSolrParams(new HashMap<String, String>());
+      params = new MapSolrParams(new HashMap<>());
     }
 
     boolean optimize = params.getBool(UpdateParams.OPTIMIZE, false);
@@ -110,7 +115,7 @@ public class RequestHandlerUtils {
       SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force)
       throws IOException {
     if (params == null) {
-      params = new MapSolrParams(new HashMap<String, String>());
+      params = new MapSolrParams(new HashMap<>());
     }
 
     boolean rollback = params.getBool(UpdateParams.ROLLBACK, false);
@@ -129,9 +134,7 @@ public class RequestHandlerUtils {
   public static void setWt(SolrQueryRequest req, String wt) {
     SolrParams params = req.getParams();
     if (params.get(CommonParams.WT) != null) return; // wt is set by user
-    Map<String, String> map = new HashMap<>(1);
-    map.put(CommonParams.WT, wt);
-    map.put("indent", "true");
+    Map<String, String> map = Map.of(CommonParams.WT, wt, "indent", "true");
     req.setParams(SolrParams.wrapDefaults(params, new MapSolrParams(map)));
   }
 }

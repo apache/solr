@@ -34,6 +34,7 @@ import java.util.Set;
  */
 public interface PermissionNameProvider {
   // 'null' means the permission applies to system-level, while '*' means any collection
+  @SuppressWarnings("ImmutableEnumChecker")
   enum Name {
     COLL_EDIT_PERM("collection-admin-edit", null),
     COLL_READ_PERM("collection-admin-read", null),

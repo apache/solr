@@ -16,17 +16,25 @@
  */
 package org.apache.solr.handler.sql;
 
-import com.google.common.collect.Lists;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.calcite.adapter.enumerable.*;
+import java.util.stream.Collectors;
+import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.adapter.enumerable.JavaRowFormat;
+import org.apache.calcite.adapter.enumerable.PhysType;
+import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.apache.calcite.plan.*;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterImpl;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -51,6 +59,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     return super.computeSelfCost(planner, mq).multiplyBy(.1);
   }
 
+  @Override
   public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
     // Generates a call to "query" with the appropriate fields
     final BlockBuilder list = new BlockBuilder();
@@ -155,6 +164,6 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
    * ConstantExpression("y")}".
    */
   private static <T> List<Expression> constantList(List<T> values) {
-    return Lists.transform(values, Expressions::constant);
+    return values.stream().map(Expressions::constant).collect(Collectors.toUnmodifiableList());
   }
 }

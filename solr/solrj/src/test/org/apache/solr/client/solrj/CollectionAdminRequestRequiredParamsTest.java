@@ -17,9 +17,14 @@
 package org.apache.solr.client.solrj;
 
 import static org.apache.solr.common.params.CollectionAdminParams.FLUSH;
-import static org.apache.solr.common.params.CoreAdminParams.*;
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
+import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.REQUESTID;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 
-import com.google.common.collect.Sets;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import org.apache.solr.SolrTestCase;
@@ -234,19 +239,20 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
   }
 
   private void assertContainsParams(SolrParams solrParams, String... requiredParams) {
-    final Set<String> requiredParamsSet = Sets.newHashSet(requiredParams);
-    final Set<String> solrParamsSet = Sets.newHashSet();
+    final Set<String> requiredParamsSet = Set.of(requiredParams);
+    final Set<String> solrParamsSet = new HashSet<>();
     for (Iterator<String> iter = solrParams.getParameterNamesIterator(); iter.hasNext(); ) {
       solrParamsSet.add(iter.next());
     }
     assertTrue(
         "required params missing: required=" + requiredParamsSet + ", params=" + solrParamsSet,
         solrParamsSet.containsAll(requiredParamsSet));
-    assertTrue(
+    assertEquals(
         "extra parameters included in request: required="
             + requiredParamsSet
             + ", params="
             + solrParams,
-        Sets.difference(solrParamsSet, requiredParamsSet).isEmpty());
+        solrParamsSet,
+        requiredParamsSet);
   }
 }

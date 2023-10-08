@@ -21,7 +21,7 @@ import static org.hamcrest.core.StringContains.containsString;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrException;
@@ -30,6 +30,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.DocSet;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,6 +51,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
   @BeforeClass
   public static void beforeTests() throws Exception {
     systemSetPropertySolrDisableUrlAllowList("true");
+    System.setProperty("solr.enableStreamBody", "true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
@@ -101,7 +103,8 @@ public class TestJsonRequest extends SolrTestCaseHS {
     SolrException ex =
         expectThrows(SolrException.class, () -> client.testJQ(params("q", "*:*", "json", "5")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertThat(ex.getMessage(), containsString("Expected JSON Object but got Long=5"));
+    MatcherAssert.assertThat(
+        ex.getMessage(), containsString("Expected JSON Object but got Long=5"));
 
     // this is to verify other json params are not affected
     client.testJQ(params("q", "cat_s:A", "json.limit", "1"), "response/numFound==2");
@@ -560,7 +563,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
             () -> {
               client.testJQ(params("json", "{query:{'lucene':'foo_s:ignore_exception'}}"));
             });
-    assertThat(e.getMessage(), containsString("foo_s"));
+    MatcherAssert.assertThat(e.getMessage(), containsString("foo_s"));
 
     // test failure on unknown parameter
     e =
@@ -571,7 +574,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
                   params("json", "{query:'cat_s:A', foobar_ignore_exception:5}"),
                   "response/numFound==2");
             });
-    assertThat(e.getMessage(), containsString("foobar"));
+    MatcherAssert.assertThat(e.getMessage(), containsString("foobar"));
 
     resetExceptionIgnores();
   }

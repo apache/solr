@@ -22,12 +22,13 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.FastStreamingDocsCallback;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -36,7 +37,7 @@ import org.apache.solr.common.util.FastJavaBinDecoder.Tag;
 public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
   public void testTagRead() throws Exception {
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    Utils.BAOS baos = new Utils.BAOS();
     FastOutputStream faos = FastOutputStream.wrap(baos);
 
     try (JavaBinCodec codec = new JavaBinCodec(faos, null)) {
@@ -59,7 +60,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
       assertEquals(100, scodec.readSmallInt(scodec.dis));
       tag = scodec.getTag();
       assertEquals(Tag._STR, tag);
-      assertEquals("Hello!", scodec.readStr(fis));
+      assertEquals("Hello!", scodec.readStr(fis).toString());
     }
   }
 
@@ -73,7 +74,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSONString(sampleObj);
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    Utils.BAOS baos = new Utils.BAOS();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(m, baos);
     }
@@ -112,7 +113,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
                               rootMap.computeIfAbsent(e_.name(), o -> new LinkedHashMap<>()),
                               e1 -> {
                                 Map<CharSequence, String> m1 = (Map<CharSequence, String>) e1.ctx();
-                                if ("k1".equals(e1.name())) {
+                                if ("k1".contentEquals(e1.name())) {
                                   m1.put(e1.name(), e1.val().toString());
                                 }
                                 // eat up k2
@@ -129,7 +130,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
   }
 
   public void testFastJavabinStreamingDecoder() throws IOException {
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    Utils.BAOS baos = new Utils.BAOS();
     try (InputStream is = getClass().getResourceAsStream("/solrj/javabin_sample.bin")) {
       is.transferTo(baos);
     }
@@ -174,11 +175,13 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
               @Override
               public void field(DataEntry field, Object docObj) {
                 Pojo pojo = (Pojo) docObj;
-                if ("id".equals(field.name())) {
+                if ("id".contentEquals(field.name())) {
                   pojo.id = ((Utf8CharSequence) field.val()).clone();
-                } else if (field.type() == DataEntry.Type.BOOL && "inStock".equals(field.name())) {
+                } else if (field.type() == DataEntry.Type.BOOL
+                    && "inStock".contentEquals(field.name())) {
                   pojo.inStock = field.boolVal();
-                } else if (field.type() == DataEntry.Type.FLOAT && "price".equals(field.name())) {
+                } else if (field.type() == DataEntry.Type.FLOAT
+                    && "price".contentEquals(field.name())) {
                   pojo.price = field.floatVal();
                 }
               }
@@ -212,7 +215,7 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
     SimpleOrderedMap<SolrDocumentList> orderedMap = new SimpleOrderedMap<>();
     orderedMap.add("response", sdocs);
 
-    BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+    Utils.BAOS baos = new Utils.BAOS();
     try (JavaBinCodec jbc = new JavaBinCodec()) {
       jbc.marshal(orderedMap, baos);
     }
@@ -227,10 +230,12 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
       final List<Pojo> children = new ArrayList<>();
 
       public void compare(SolrDocument d) {
-        assertEquals(id, d.getFieldValue("id"));
-        assertEquals(subject, d.getFieldValue("subject"));
-        assertEquals(cat, d.getFieldValue("cat"));
-        assertEquals(d.getChildDocumentCount(), children.size());
+        assertEquals(String.valueOf(id), String.valueOf(d.getFieldValue("id")));
+        assertEquals(String.valueOf(subject), String.valueOf(d.getFieldValue("subject")));
+        assertEquals(String.valueOf(cat), String.valueOf(d.getFieldValue("cat")));
+        assertEquals(
+            Objects.requireNonNullElse(d.getChildDocuments(), Collections.emptyList()).size(),
+            children.size());
         @SuppressWarnings({"unchecked"})
         List<Long> l = (List<Long>) d.getFieldValue("longs");
         if (l != null) {
@@ -268,14 +273,14 @@ public class TestFastJavabinDecoder extends SolrTestCaseJ4 {
               @Override
               public void field(DataEntry field, Object docObj) {
                 Pojo pojo = (Pojo) docObj;
-                if (field.name().equals("id")) {
+                if ("id".contentEquals(field.name())) {
                   pojo.id = field.strValue();
-                } else if (field.name().equals("subject")) {
+                } else if ("subject".contentEquals(field.name())) {
                   pojo.subject = field.strValue();
-                } else if (field.name().equals("cat")) {
+                } else if ("cat".contentEquals(field.name())) {
                   pojo.cat = field.strValue();
                 } else if (field.type() == DataEntry.Type.ENTRY_ITER
-                    && "longs".equals(field.name())) {
+                    && "longs".contentEquals(field.name())) {
                   if (useListener[0]) {
                     field.listenContainer(pojo.longs = new long[field.length()], READLONGS);
                   } else {

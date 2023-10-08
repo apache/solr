@@ -47,7 +47,7 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
 
     AnalysisResponseBase.TokenInfo tokenInfo = response.buildTokenInfo(tokenNL);
     assertEquals("JUMPING", tokenInfo.getText());
-    assertEquals(null, tokenInfo.getRawText());
+    assertNull(tokenInfo.getRawText());
     assertEquals("word", tokenInfo.getType());
     assertEquals(0, tokenInfo.getStart());
     assertEquals(7, tokenInfo.getEnd());

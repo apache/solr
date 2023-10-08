@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -39,20 +38,19 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -114,7 +112,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       int rows,
       Collection<String> fieldNames) {
     List<Doc> docList = new ArrayList<>(fullModel.values());
-    Collections.sort(docList, sort);
+    docList.sort(sort);
     @SuppressWarnings({"rawtypes"})
     List sortedDocs = new ArrayList(rows);
     for (Doc doc : docList) {
@@ -178,7 +176,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
-      SolrException.log(log, "REQUEST FAILED for params: " + args.toQueryString(), e2);
+      log.error("REQUEST FAILED for params: {}", args.toQueryString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }
   }
@@ -235,7 +233,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
 
     if ("json".equals(wt)) {
-      query.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      query.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> rsp = client.request(query);
       return Utils.toJSONString(rsp);
     } else {
@@ -512,7 +510,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         JettyConfig jettyConfig =
             JettyConfig.builder()
                 .stopAtShutdown(true)
-                .setContext("/solr")
                 .setPort(port)
                 .withSSLConfig(sslConfig.buildServerSSLConfig())
                 .build();

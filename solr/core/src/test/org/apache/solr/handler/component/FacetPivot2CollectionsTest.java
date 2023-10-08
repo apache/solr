@@ -16,13 +16,13 @@
  */
 package org.apache.solr.handler.component;
 
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -402,10 +402,10 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
     while (words-- > 0) {
       String word = "";
       if (addNonAlphaChars && (words % 3 == 0)) {
-        word = RandomStringUtils.random(random.nextInt(3), "\\p{Digit}\\p{Punct}");
+        word = RandomStrings.randomAsciiAlphanumOfLength(random, random.nextInt(3));
         System.out.println("generated non-alpha string:" + word);
       } else {
-        word = RandomStringUtils.randomAlphabetic(1, 10);
+        word = RandomStrings.randomAsciiLettersOfLengthBetween(random, 1, 10);
       }
       builder.append(word).append(" ");
     }

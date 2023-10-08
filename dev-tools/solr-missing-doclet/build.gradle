@@ -20,7 +20,7 @@ plugins {
 }
 
 version = "1.0.0-SNAPSHOT"
-group = "org.apache.lucene.tools"
+group = "org.apache.solr.tools"
 description = 'Doclet-based javadoc validation'
 
 sourceCompatibility = JavaVersion.VERSION_11

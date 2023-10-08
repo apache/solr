@@ -23,7 +23,7 @@ import java.net.URISyntaxException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.IOUtils;
@@ -72,7 +72,8 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
     IOUtils.closeQuietly(fs);
     fs = null;
     try {
-      deleteCore();
+      // Make sure to clean up test resources before shutting down HDFS
+      SolrTestCaseJ4.teardownTestCases();
     } finally {
       try {
         HdfsTestUtil.teardownClass(dfsCluster);
@@ -80,8 +81,6 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
         dfsCluster = null;
         hdfsUri = null;
         System.clearProperty("solr.ulog.dir");
-        System.clearProperty("test.build.data");
-        System.clearProperty("test.cache.data");
       }
     }
   }
@@ -103,6 +102,7 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
 
     Thread thread =
         new Thread() {
+          @Override
           public void run() {
             int cnt = 0;
             while (true) {
@@ -121,6 +121,7 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
 
     Thread thread2 =
         new Thread() {
+          @Override
           public void run() {
             int cnt = 0;
             while (true) {

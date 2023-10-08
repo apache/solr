@@ -16,7 +16,6 @@
  */
 package org.apache.solr.response;
 
-import java.io.IOException;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
@@ -37,7 +36,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     assertU(delQ("*:*"));
     assertU(commit());
   }
@@ -102,7 +101,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
 
     /** This transformer simply concatenates the values of multiple fields */
     @Override
-    public void transform(SolrDocument doc, int docid) throws IOException {
+    public void transform(SolrDocument doc, int docid) {
       str.setLength(0);
       for (String s : extra) {
         String v = getAsString(s, doc);

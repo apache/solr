@@ -18,10 +18,8 @@ package org.apache.solr.uninverting;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -29,7 +27,9 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.LegacyLongField;
@@ -100,7 +100,7 @@ public class TestNumericTerms64 extends SolrTestCase {
       field4.setLongValue(val);
       field2.setLongValue(val);
 
-      val = l - (noDocs / 2);
+      val = (long) l - (noDocs / 2);
       writer.addDocument(doc);
     }
     Map<String, Type> map = new HashMap<>();
@@ -130,7 +130,7 @@ public class TestNumericTerms64 extends SolrTestCase {
   private void testSorting(int precisionStep) throws Exception {
     String field = "field" + precisionStep;
     // 10 random tests, the index order is ascending,
-    // so using a reverse sort field should retun descending documents
+    // so using a reverse sort field should return descending documents
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
       long lower = (long) (random().nextDouble() * noDocs * distance) + startOffset;

@@ -31,6 +31,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 
@@ -45,7 +46,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     clearIndex();
     assertU(commit());
   }
@@ -65,7 +66,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
             params("qt", "/elevate", "elevateIds", "42"))) {
 
       try (SolrQueryRequest req = req()) {
-        // non-block based collapse sitautions, regardless of nullPolicy...
+        // non-block based collapse situations, regardless of nullPolicy...
         for (String np :
             Arrays.asList(
                 "",
@@ -74,19 +75,19 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 " nullPolicy=collapse",
                 // when policy is 'collapse' hint should be ignored...
                 " nullPolicy=collapse hint=block")) {
-          assertThat(
+          MatcherAssert.assertThat(
               parseAndBuildCollector("{!collapse field=foo_s1" + np + "}", req),
               instanceOf(CollapsingQParserPlugin.OrdScoreCollector.class));
-          assertThat(
+          MatcherAssert.assertThat(
               parseAndBuildCollector("{!collapse field=foo_i" + np + "}", req),
               instanceOf(CollapsingQParserPlugin.IntScoreCollector.class));
           for (String selector : fieldValueSelectors) {
-            assertThat(
+            MatcherAssert.assertThat(
                 parseAndBuildCollector("{!collapse field=foo_s1 " + selector + np + "}", req),
                 instanceOf(CollapsingQParserPlugin.OrdFieldValueCollector.class));
           }
           for (String selector : fieldValueSelectors) {
-            assertThat(
+            MatcherAssert.assertThat(
                 parseAndBuildCollector("{!collapse field=foo_i " + selector + np + "}", req),
                 instanceOf(CollapsingQParserPlugin.IntFieldValueCollector.class));
           }
@@ -94,15 +95,15 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
           // anything with cscore() is (currently) off limits regardless of null policy or hint...
           for (String selector : Arrays.asList(" min=sum(42,cscore())", " max=cscore()")) {
             for (String hint : Arrays.asList("", " hint=block")) {
-              assertThat(
+              MatcherAssert.assertThat(
                   parseAndBuildCollector(
                       "{!collapse field=_root_" + selector + np + hint + "}", req),
                   instanceOf(CollapsingQParserPlugin.OrdFieldValueCollector.class));
-              assertThat(
+              MatcherAssert.assertThat(
                   parseAndBuildCollector(
                       "{!collapse field=foo_s1" + selector + np + hint + "}", req),
                   instanceOf(CollapsingQParserPlugin.OrdFieldValueCollector.class));
-              assertThat(
+              MatcherAssert.assertThat(
                   parseAndBuildCollector(
                       "{!collapse field=foo_i" + selector + np + hint + "}", req),
                   instanceOf(CollapsingQParserPlugin.IntFieldValueCollector.class));
@@ -112,29 +113,29 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
 
         // block based collectors as long as nullPolicy isn't collapse...
         for (String np : Arrays.asList("", " nullPolicy=ignore", " nullPolicy=expand")) {
-          assertThat(
+          MatcherAssert.assertThat(
               parseAndBuildCollector(
                   "{!collapse field=_root_" + np + "}", req), // implicit block collection on _root_
               instanceOf(CollapsingQParserPlugin.BlockOrdScoreCollector.class));
-          assertThat(
+          MatcherAssert.assertThat(
               parseAndBuildCollector(
                   "{!collapse field=_root_ hint=top_fc" + np + "}",
                   req), // top_fc shouldn't stop implicit block collection
               instanceOf(CollapsingQParserPlugin.BlockOrdScoreCollector.class));
-          assertThat(
+          MatcherAssert.assertThat(
               parseAndBuildCollector("{!collapse field=foo_s1 hint=block" + np + "}", req),
               instanceOf(CollapsingQParserPlugin.BlockOrdScoreCollector.class));
-          assertThat(
+          MatcherAssert.assertThat(
               parseAndBuildCollector("{!collapse field=foo_i hint=block" + np + "}", req),
               instanceOf(CollapsingQParserPlugin.BlockIntScoreCollector.class));
           for (String selector : fieldValueSelectors) {
-            assertThat(
+            MatcherAssert.assertThat(
                 parseAndBuildCollector(
                     "{!collapse field=foo_s1 hint=block " + selector + np + "}", req),
                 instanceOf(CollapsingQParserPlugin.BlockOrdSortSpecCollector.class));
           }
           for (String selector : fieldValueSelectors) {
-            assertThat(
+            MatcherAssert.assertThat(
                 parseAndBuildCollector(
                     "{!collapse field=foo_i hint=block " + selector + np + "}", req),
                 instanceOf(CollapsingQParserPlugin.BlockIntSortSpecCollector.class));
@@ -163,7 +164,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     }
   }
 
-  public void testEmptyIndex() throws Exception {
+  public void testEmptyIndex() {
     // some simple sanity checks that collapse queries against empty indexes don't match any docs
     // (or throw any errors)
 
@@ -234,7 +235,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
   /**
    * @see #testEmptyIndex
    */
-  private void doTestEmptyIndex() throws Exception {
+  private void doTestEmptyIndex() {
     for (String opt :
         Arrays.asList( // no block collapse logic used (sanity checks)
             "field=block_s1",
@@ -289,7 +290,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     }
   }
 
-  public void testSimple() throws Exception {
+  public void testSimple() {
 
     { // convert our docs to update commands, along with some commits, in a shuffled order and
       // process all of them...
@@ -540,7 +541,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
           }
 
           // queries are relevancy based, and score is used in collapse local param sort -- but not
-          // in top fl/sort (ie: help prove we setup 'needScores' correctly for collapse, even
+          // in top fl/sort (ie: help prove we set up 'needScores' correctly for collapse, even
           // though top level query doesn't care)
           for (String selector :
               Arrays.asList(
@@ -548,7 +549,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                   " sort='score desc'",
                   // unused tie breaker after score
                   " sort='score desc, sum(num_i,42) desc'",
-                  // force score to be a tie breaker
+                  // force score to be a tiebreaker
                   " sort='sum(1.5,2.5) asc, score desc'")) {
             assertQ(
                 req(
@@ -563,7 +564,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 );
             // same query, but boosting multiple skus from p3
             // NOTE: this causes each boosted doc to be returned, but top level sort is not score,
-            // so QEC doesn't hijak order
+            // so QEC doesn't hijack order
             assertQ(
                 req(
                     "q", "*:* txt_t:XX",
@@ -603,7 +604,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     } // sort
   }
 
-  public void testNullPolicyExpand() throws Exception {
+  public void testNullPolicyExpand() {
 
     { // convert our docs + some docs w/o collapse fields, along with some commits, to update
       // commands in a shuffled order and process all of them...
@@ -756,7 +757,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               "//result/doc[7]/str[@name='id'][.='z100']");
           // same query, but boosting multiple docs
           // NOTE: this causes each boosted doc to be returned, but top level sort is not score, so
-          // QEC doesn't hijak order
+          // QEC doesn't hijack order
           assertQ(
               req(
                   "q", "num_i:* txt_t:XX",
@@ -830,7 +831,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               "//result/doc[7][str[@name='id'][.='p3s3'] and float[@name='score'][.=1276.0]]");
           // same query, but boosting multiple docs
           // NOTE: this causes each boosted doc to be returned, but top level sort is not score, so
-          // QEC doesn't hijak order
+          // QEC doesn't hijack order
           assertQ(
               req(
                   "q", "{!func}sum(42, num_i)",
@@ -870,7 +871,8 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
         }
 
         // queries are relevancy based, and score is used in collapse local param sort -- but not in
-        // top fl/sort (ie: help prove we setup 'needScores' correctly for collapse, even though top
+        // top fl/sort (ie: help prove we set up 'needScores' correctly for collapse, even though
+        // top
         // level query doesn't care)
         for (String selector :
             Arrays.asList(
@@ -878,7 +880,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
                 " sort='score desc'",
                 // unused tie breaker after score
                 " sort='score desc, sum(num_i,42) desc'",
-                // force score to be a tie breaker
+                // force score to be a tiebreaker
                 " sort='sum(1.5,2.5) asc, score desc'")) {
 
           assertQ(
@@ -898,7 +900,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
               );
           // same query, but boosting multiple docs
           // NOTE: this causes each boosted doc to be returned, but top level sort is not score, so
-          // QEC doesn't hijak order
+          // QEC doesn't hijack order
           assertQ(
               req(
                   "q", "*:* txt_t:XX",
@@ -948,10 +950,10 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
    * to ExpandComponent of some side effect state that CollapseQParser should produce.
    *
    * <p>We don't bother testing _root_ field collapsing in this test, since it contains different
-   * field values then our other collapse fields. (and the other tests should adequeately prove that
-   * the block hueristics for _root_ collapsing work)
+   * field values then our other collapse fields. (and the other tests should adequately prove that
+   * the block heuristics for _root_ collapsing work)
    */
-  public void testBlockCollapseWithExpandComponent() throws Exception {
+  public void testBlockCollapseWithExpandComponent() {
 
     { // convert our docs + some docs w/o collapse fields, along with some commits, to update
       // commands in a shuffled order and process all of them...
@@ -1062,7 +1064,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
   }
 
   /** returns a (new) list of the block based documents used in our test methods */
-  protected static final List<SolrInputDocument> makeBlockDocs() {
+  protected static List<SolrInputDocument> makeBlockDocs() {
     // NOTE: block_i and block_s1 will contain identical content so these need to be "numbers"...
     // The specific numbers shouldn't matter (and we explicitly test '0' to confirm legacy
     // bug/behavior
@@ -1133,7 +1135,7 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     // as num_i value increases, the asc_* fields increase
     // as num_i value increases, the desc_* fields decrease
     if (doc.getFieldNames().contains("num_i")) {
-      final int val = ((Integer) doc.getFieldValue("num_i")).intValue();
+      final int val = (Integer) doc.getFieldValue("num_i");
       for (String suffix : SELECTOR_FIELD_SUFFIXES) {
         doc.setField("asc" + suffix, val);
         doc.setField("desc" + suffix, 0 - val);

@@ -21,8 +21,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.cloud.AbstractChaosMonkeySafeLeaderTestBase;
 import org.apache.solr.hdfs.HdfsDirectoryFactory;
@@ -30,7 +29,6 @@ import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-@Slow
 @Nightly
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -75,6 +73,7 @@ public class HdfsChaosMonkeySafeLeaderTest extends AbstractChaosMonkeySafeLeader
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
 
+  @Override
   protected String getDirectoryFactory() {
     return HdfsDirectoryFactory.class.getCanonicalName();
   }

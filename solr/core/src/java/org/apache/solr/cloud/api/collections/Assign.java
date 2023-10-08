@@ -21,7 +21,19 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
@@ -29,6 +41,9 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
+import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -50,6 +65,8 @@ import org.slf4j.LoggerFactory;
 
 public class Assign {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String SYSTEM_COLL_PREFIX = ".sys.";
+  public static final String PLACEMENTPLUGIN_DEFAULT_SYSPROP = "solr.placementplugin.default";
 
   public static String getCounterNodePath(String collection) {
     return ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/counter";
@@ -165,8 +182,7 @@ public class Assign {
       map.put(shardId, cnt);
     }
 
-    Collections.sort(
-        shardIdNames,
+    shardIdNames.sort(
         (String o1, String o2) -> {
           Integer one = map.get(o1);
           Integer two = map.get(o2);
@@ -436,6 +452,21 @@ public class Assign {
         throws AssignmentException, IOException, InterruptedException;
 
     /**
+     * Balance replicas across nodes.
+     *
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param nodes to compute replica balancing across.
+     * @param maxBalanceSkew to ensure strictness of replica balancing.
+     * @return Map from Replica to the Node where that Replica should be moved.
+     * @throws AssignmentException when balance request cannot produce any valid assignments.
+     */
+    default Map<Replica, String> computeReplicaBalancing(
+        SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
+        throws AssignmentException, IOException, InterruptedException {
+      return Collections.emptyMap();
+    }
+
+    /**
      * Verify that deleting a collection doesn't violate the replica assignment constraints.
      *
      * @param solrCloudManager current instance of {@link SolrCloudManager}.
@@ -550,8 +581,37 @@ public class Assign {
         coreContainer.getPlacementPluginFactory().createPluginInstance();
     if (placementPlugin == null) {
       // Otherwise use the default
-      // TODO: Replace this with a better options, such as the AffinityPlacementFactory
-      placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
+      String defaultPluginId = System.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
+      if (defaultPluginId != null) {
+        switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
+          case "simple":
+            placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
+            break;
+          case "affinity":
+            placementPlugin = (new AffinityPlacementFactory()).createPluginInstance();
+            break;
+          case "minimizecores":
+            placementPlugin = (new MinimizeCoresPlacementFactory()).createPluginInstance();
+            break;
+          case "random":
+            placementPlugin = (new RandomPlacementFactory()).createPluginInstance();
+            break;
+          default:
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Invalid value for system property '"
+                    + PLACEMENTPLUGIN_DEFAULT_SYSPROP
+                    + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
+        }
+        log.info(
+            "Default replica placement plugin set in {} to {}",
+            PLACEMENTPLUGIN_DEFAULT_SYSPROP,
+            defaultPluginId);
+      } else {
+        // TODO: Consider making the ootb default AffinityPlacementFactory, see
+        // https://issues.apache.org/jira/browse/SOLR-16492
+        placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
+      }
     }
     return new PlacementPluginAssignStrategy(placementPlugin);
   }

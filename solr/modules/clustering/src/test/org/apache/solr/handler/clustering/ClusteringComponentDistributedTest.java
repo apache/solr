@@ -27,7 +27,6 @@ import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -105,7 +104,7 @@ public class ClusteringComponentDistributedTest extends BaseDistributedSearchTes
     QueryResponse response = query(true, params);
 
     ClusteringResponse clusteringResponse = response.getClusteringResponse();
-    Assert.assertNotNull(clusteringResponse);
+    assertNotNull(clusteringResponse);
 
     return clusteringResponse.getClusters();
   }

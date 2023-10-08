@@ -29,10 +29,9 @@ import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -47,9 +46,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
@@ -63,7 +63,6 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.SimplePostTool.BAOS;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -190,11 +189,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       boolean hasDownedShard = false; // means one or more shards is down
       boolean replicaInRecovery = false;
 
-      Map<String, Object> shards = (Map<String, Object>) collectionState.get(DocCollection.SHARDS);
+      Map<String, Object> shards =
+          (Map<String, Object>) collectionState.get(CollectionStateProps.SHARDS);
       for (Object o : shards.values()) {
         boolean hasActive = false;
         Map<String, Object> shard = (Map<String, Object>) o;
-        Map<String, Object> replicas = (Map<String, Object>) shard.get(Slice.REPLICAS);
+        Map<String, Object> replicas = (Map<String, Object>) shard.get(SliceStateProps.REPLICAS);
         for (Object value : replicas.values()) {
           Map<String, Object> replicaState = (Map<String, Object>) value;
           Replica.State coreState =
@@ -247,6 +247,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           + (filter != null ? filter : "");
     }
 
+    @Override
     public String toString() {
       return getPagingHeader();
     }
@@ -285,7 +286,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         if (fromZk != null) cachedCollections.addAll(fromZk);
 
         // sort the final merged set of collections
-        Collections.sort(cachedCollections, this);
+        cachedCollections.sort(this);
       }
 
       return cachedCollections;
@@ -357,9 +358,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
-    Map<String, String> map = new HashMap<>(1);
-    map.put(WT, "raw");
-    map.put(OMIT_HEADER, "true");
+    Map<String, String> map = Map.of(WT, "raw", OMIT_HEADER, "true");
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {
@@ -440,7 +439,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     String keeperAddr; // the address we're connected to
 
-    final BAOS baos = new BAOS();
+    final Utils.BAOS baos = new Utils.BAOS();
     final Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
     SolrZkClient zkClient;
 
@@ -530,11 +529,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           if (dc != null) {
             // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the
             // state to render correctly for the UI?
-            @SuppressWarnings("unchecked")
-            Map<String, Object> collectionState =
-                dc.isPerReplicaState()
-                    ? (Map<String, Object>) Utils.fromJSONString(Utils.toJSONString(dc))
-                    : dc.getProperties();
+            Map<String, Object> collectionState = dc.toMap(new LinkedHashMap<>());
             if (applyStatusFilter) {
               // verify this collection matches the filtered state
               if (page.matchesStatusFilter(collectionState, liveNodes)) {

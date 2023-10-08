@@ -22,7 +22,6 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.Test;
 
-/** Created by caomanhdat on 6/3/16. */
 public class TestCustomStream extends AbstractFullDistribZkTestBase {
 
   @Test

@@ -28,6 +28,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.SpellCheckMergeData;
 import org.apache.solr.search.SolrIndexSearcher;
 
@@ -109,6 +111,11 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
       results[i] = checkers.get(i).getSuggestions(options);
     }
     return mergeCheckers(results, options.count);
+  }
+
+  @Override
+  public void modifyRequest(ResponseBuilder rb, ShardRequest sreq) {
+    checkers.forEach(c -> c.modifyRequest(rb, sreq));
   }
 
   @Override

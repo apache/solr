@@ -68,8 +68,32 @@ s|Required |Default: none
 +
 Specifies the field from which to retrieve terms.
 This parameter is required if `terms=true`.
+This parameter can be specified multiple times to retrieve terms for different fields.
 +
 Example: `terms.fl=title`
++
+Example: `terms.fl=title&terms=true&terms.fl=name&terms.list=cable,sony`
+
+[source,xml]
+----
+<response>
+   <lst name="responseHeader">
+      <bool name="zkConnected">true</bool>
+      <int name="status">0</int>
+      <int name="QTime">4</int>
+   </lst>
+   <lst name="terms">
+      <lst name="name">
+         <int name="cable">8661</int>
+         <int name="sony">21</int>
+      </lst>
+      <lst name="title">
+         <int name="cable">11387</int>
+         <int name="sony">3921</int>
+      </lst>
+   </lst>
+</response>
+----
 
 `terms.list`::
 +

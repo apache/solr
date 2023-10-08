@@ -37,7 +37,7 @@ public class BadComponentTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void deleteCoreThatFailedToInit() throws Exception {
+  public void deleteCoreThatFailedToInit() {
     deleteCore();
   }
 }

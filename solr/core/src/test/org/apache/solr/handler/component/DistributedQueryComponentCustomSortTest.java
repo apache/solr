@@ -19,7 +19,7 @@ package org.apache.solr.handler.component;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.response.SolrQueryResponse;

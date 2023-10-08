@@ -135,6 +135,10 @@ solrAdminApp.config([
         templateUrl: 'partials/documents.html',
         controller: 'DocumentsController'
       }).
+      when('/:core/paramsets', {
+        templateUrl: 'partials/paramsets.html',
+        controller: 'ParamSetsController'
+      }).
       when('/:core/files', {
         templateUrl: 'partials/files.html',
         controller: 'FilesController'
@@ -520,6 +524,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
       $scope.usersPermissions = data.security.permissions;
+      $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
 
       $scope.isSchemaDesignerEnabled = $scope.isPermitted([
         permissions.CONFIG_EDIT_PERM,
@@ -584,6 +589,10 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
     $scope.currentUser = sessionStorage.getItem("auth.username");
+    $scope.http401 = sessionStorage.getItem("http401");
+  };
+
+  $scope.showHideMenu = function() {
     $scope.http401 = sessionStorage.getItem("http401");
   };
 

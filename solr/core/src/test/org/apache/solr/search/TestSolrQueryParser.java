@@ -36,6 +36,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PointInSetQuery;
@@ -57,6 +58,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -75,7 +77,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   private static final List<String> HAS_NAN_FIELDS = new ArrayList<String>(12);
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     HAS_VAL_FIELDS.clear();
     HAS_NAN_FIELDS.clear();
   }
@@ -111,7 +113,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             doc.addField(nanField, "NaN");
             HAS_NAN_FIELDS.add(nanField);
 
-            // Add a NaN & non-NaN value for multivalue fields, these should match :* and :[* TO *]
+            // Add a NaN & non-NaN value for multivalued fields, these should match :* and :[* TO *]
             // equivalently
             if (s.startsWith("s")) {
               String bothField = "both_val_" + t + s;
@@ -150,11 +152,11 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         41,
         HAS_VAL_FIELDS.size());
     for (String f : HAS_VAL_FIELDS) {
-      // for all of these fields, these 2 syntaxes should be functionally equivilent
+      // for all of these fields, these 2 query forms should be functionally equivalent
       // in matching the one doc that contains these fields
       for (String q : Arrays.asList(f + ":*", f + ":[* TO *]")) {
         assertJQ(req("q", q), "/response/numFound==1", "/response/docs/[0]/id=='999'");
-        // the same syntaxes should be valid even if no doc has the field...
+        // the same syntax should be valid even if no doc has the field...
         assertJQ(req("q", "bogus___" + q), "/response/numFound==0");
       }
     }
@@ -171,7 +173,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       assertJQ(req("q", f + ":[* TO *]"), "/response/numFound==0");
       assertJQ(req("q", f + ":[-Infinity TO Infinity]"), "/response/numFound==0");
       for (String q : Arrays.asList(f + ":*", f + ":[* TO *]", f + ":[-Infinity TO Infinity]")) {
-        // the same syntaxes should be valid even if no doc has the field...
+        // the same syntax should be valid even if no doc has the field...
         assertJQ(req("q", "bogus___" + q), "/response/numFound==0");
       }
     }
@@ -373,7 +375,24 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setParams(params);
       q = qParser.getQuery();
       if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-        assertEquals(20, ((PointInSetQuery) q).getPackedPoints().size());
+        if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
+          assertTrue(req.getCore().getLatestSchema().getField("foo_ti").hasDocValues());
+          assertEquals(
+              "Expecting IndexOrDocValuesQuery when type is IntPointField AND docValues are enabled",
+              IndexOrDocValuesQuery.class,
+              q.getClass());
+          assertEquals(
+              20,
+              ((PointInSetQuery) ((IndexOrDocValuesQuery) q).getIndexQuery())
+                  .getPackedPoints()
+                  .size());
+        } else {
+          assertFalse(req.getCore().getLatestSchema().getField("foo_ti").hasDocValues());
+          assertEquals(
+              "Expecting PointInSetQuery when type is IntPointField AND docValues are disabled",
+              20,
+              ((PointInSetQuery) q).getPackedPoints().size());
+        }
       } else {
         assertEquals(20, ((TermInSetQuery) q).getTermData().size());
       }
@@ -384,8 +403,15 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);
       q = qParser.getQuery();
-      assertTrue(q instanceof PointInSetQuery);
-      assertEquals(20, ((PointInSetQuery) q).getPackedPoints().size());
+
+      assertTrue(req.getCore().getLatestSchema().getField("foo_pi").hasDocValues());
+      assertEquals(
+          "Expecting IndexOrDocValuesQuery when type is IntPointField AND docValues are enabled",
+          IndexOrDocValuesQuery.class,
+          q.getClass());
+      assertEquals(
+          20,
+          ((PointInSetQuery) ((IndexOrDocValuesQuery) q).getIndexQuery()).getPackedPoints().size());
 
       // a filter() clause inside a relevancy query should be able to use a TermsQuery
       qParser =
@@ -456,7 +482,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             SolrException.class,
             "expected SolrException",
             () -> assertJQ(req("q", too_long), "/response/numFound==6"));
-    assertThat(e.getMessage(), containsString(expectedMsg));
+    MatcherAssert.assertThat(e.getMessage(), containsString(expectedMsg));
 
     // but should still work as a filter query since TermsQuery can be used...
     assertJQ(req("q", "*:*", "fq", too_long), "/response/numFound==6");
@@ -477,7 +503,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     sb.append(")");
 
     // this should trip the lucene level global BooleanQuery.getMaxClauseCount() limit,
-    // causing a parsing error, before Solr even get's a chance to enforce it's lower level limit
+    // causing a parsing error, before Solr even gets a chance to enforce its lower level limit
     final String way_too_long = sb.toString();
 
     final String expectedMsg = "too many boolean clauses";
@@ -487,7 +513,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
             SolrException.class,
             "expected SolrException",
             () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
-    assertThat(e.getMessage(), containsString(expectedMsg));
+    MatcherAssert.assertThat(e.getMessage(), containsString(expectedMsg));
 
     assertNotNull(e.getCause());
     assertEquals(SyntaxError.class, e.getCause().getClass());
@@ -1153,7 +1179,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testSynonymQueryStyle() throws Exception {
     String field = "t_pick_best_foo";
     Query q = QParser.getParser("tabby", req(params("df", field))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         disjunctionOf(
             termQuery(field, "cat"),
@@ -1163,7 +1189,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     field = "t_as_distinct_foo";
     q = QParser.getParser("tabby", req(params("df", field))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             termQuery(field, "cat"),
@@ -1179,7 +1205,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     field = "t_pick_best_foo";
     q = QParser.getParser("jeans", req(params("df", field, "sow", "false"))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q, booleanQuery(disjunctionOf(termQuery(field, "jean"), phraseQuery(field, "denim pant"))));
   }
 
@@ -1188,7 +1214,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // tiger, tigre|0.9
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("tiger", req(params("df", field))).getQuery();
-    assertThat(q, disjunctionOf(termQuery(field, "tiger"), boosted(field, "tigre", 0.9f)));
+    MatcherAssert.assertThat(
+        q, disjunctionOf(termQuery(field, "tiger"), boosted(field, "tigre", 0.9f)));
 
     field = "t_as_distinct_boosted_foo";
     q = QParser.getParser("tiger", req(params("df", "t_as_distinct_boosted_foo"))).getQuery();
@@ -1204,12 +1231,12 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // lynx => lince|0.8, lynx_canadensis|0.9
     field = "t_pick_best_boosted_foo";
     q = QParser.getParser("lynx", req(params("df", field))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q, disjunctionOf(boosted(field, "lince", 0.8f), boosted(field, "lynx_canadensis", 0.9f)));
 
     field = "t_as_distinct_boosted_foo";
     q = QParser.getParser("lynx", req(params("df", field))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q, booleanQuery(boosted(field, "lince", 0.8f), boosted(field, "lynx_canadensis", 0.9f)));
 
     field = "t_as_same_term_boosted_foo";
@@ -1224,7 +1251,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("leopard", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1245,7 +1272,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     // lion => panthera leo|0.9, simba leo|0.8, kimba|0.75
     q = QParser.getParser("lion", req(params("df", "t_pick_best_boosted_foo"))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1270,7 +1297,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // lynx => lince|0.8, lynx_canadensis|0.9
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("tiger lynx", req(params("df", field))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf(boosted(field, "lince", 0.8f), boosted(field, "lynx_canadensis", 0.9f)),
@@ -1295,7 +1322,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // lion => panthera leo|0.9, simba leo|0.8, kimba|0.75
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("leopard lion", req(params("df", field))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1332,7 +1359,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     Query q =
         QParser.getParser("panthera pardus story", req(params("df", field, "sow", "false")))
             .getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             termQuery(field, "story"),
@@ -1389,7 +1416,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     String field = "t_pick_best_boosted_foo";
     Query q =
         QParser.getParser("panthera blytheae", req(params("df", field, "sow", "false"))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1420,7 +1447,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     String field = "t_pick_best_boosted_foo";
     Query q =
         QParser.getParser("snow leopard", req(params("df", field, "sow", "false"))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf( // TODO why does this generate a single clause Boolean?
@@ -1450,7 +1477,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         QParser.getParser(
                 "panthera onca", req(params("df", "t_pick_best_boosted_foo", "sow", "false")))
             .getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1483,7 +1510,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     Query q =
         QParser.getParser("panthera pardus tiger", req(params("df", field, "sow", "false")))
             .getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf(boosted(field, "leopard", 0.6f), phraseQuery(field, "panthera pardus")),
@@ -1516,7 +1543,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     Query q =
         QParser.getParser("snow leopard panthera onca", req(params("df", field, "sow", "false")))
             .getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf(
@@ -1559,7 +1586,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
                 true,
                 req(params("sow", "false", "qf", field + "^10")))
             .getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             booleanQuery(
@@ -1649,7 +1676,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // leopard, big cat|0.8, bagheera|0.9, panthera pardus|0.85
     String field = "t_pick_best_boosted_foo";
     Query q = QParser.getParser("leopard", req(params("df", field))).getQuery();
-    assertThat(
+    MatcherAssert.assertThat(
         q,
         booleanQuery(
             disjunctionOf(

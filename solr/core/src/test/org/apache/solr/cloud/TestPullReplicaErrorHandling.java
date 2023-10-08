@@ -32,8 +32,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -44,6 +42,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -95,7 +94,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void tearDownCluster() throws Exception {
+  public static void tearDownCluster() {
     if (null != proxies) {
       for (SocketProxy proxy : proxies.values()) {
         proxy.close();
@@ -111,7 +110,6 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     super.setUp();
     collectionName = suggestedCollectionName();
     expectThrows(SolrException.class, () -> getCollectionState(collectionName));
-    cluster.getSolrClient().setDefaultCollection(collectionName);
     cluster.waitForAllNodes(30);
   }
 
@@ -140,7 +138,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       proxy.close();
       for (int i = 1; i <= 10; i++) {
         addDocs(10 + i);
-        try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+        try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
           assertNumDocs(10 + i, leaderClient);
         }
       }
@@ -149,7 +147,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
           expectThrows(
               SolrServerException.class,
               () -> {
-                try (HttpSolrClient pullReplicaClient =
+                try (SolrClient pullReplicaClient =
                     getHttpSolrClient(
                         s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
                   pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
@@ -175,7 +173,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
       proxy.reopen();
     }
 
-    try (HttpSolrClient pullReplicaClient =
+    try (SolrClient pullReplicaClient =
         getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       assertNumDocs(20, pullReplicaClient);
     }
@@ -192,17 +190,17 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     SocketProxy proxy = getProxyForReplica(s.getLeader());
     try {
       // wait for replication
-      try (HttpSolrClient pullReplicaClient =
+      try (SolrClient pullReplicaClient =
           getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
         assertNumDocs(10, pullReplicaClient);
       }
       proxy.close();
       expectThrows(SolrException.class, () -> addDocs(1));
-      try (HttpSolrClient pullReplicaClient =
+      try (SolrClient pullReplicaClient =
           getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
         assertNumDocs(10, pullReplicaClient);
       }
-      assertNumDocs(10, cluster.getSolrClient());
+      assertNumDocs(10, cluster.getSolrClient(collectionName));
     } finally {
       log.info("Opening leader node");
       proxy.reopen();
@@ -210,12 +208,12 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     //     Back to normal
     //    Even if the leader is back to normal, the replica can get broken pipe for some time when
     // trying to connect to it. The commit
-    //    can fail if it's sent to the replica and it forwards it to the leader, and since it uses
+    //    can fail if it's sent to the replica, and it forwards it to the leader, and since it uses
     // CUSC the error is hidden! That breaks
     //    the last part of this test.
     //    addDocs(20);
     //    assertNumDocs(20, cluster.getSolrClient(), 300);
-    //    try (HttpSolrClient pullReplicaClient =
+    //    try (SolrClient pullReplicaClient =
     // getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
     //      assertNumDocs(20, pullReplicaClient);
     //    }
@@ -228,7 +226,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient pullReplicaClient =
+    try (SolrClient pullReplicaClient =
         getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       assertNumDocs(10, pullReplicaClient);
     }
@@ -239,7 +237,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     waitForState("Expecting node to be disconnected", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(40);
     waitForState("Expecting node to be reconnected", collectionName, activeReplicaCount(1, 0, 1));
-    try (HttpSolrClient pullReplicaClient =
+    try (SolrClient pullReplicaClient =
         getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       assertNumDocs(40, pullReplicaClient);
     }
@@ -272,6 +270,8 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     long numFound = -1;
     while (!t.hasTimedOut()) {
       Thread.sleep(200);
+      // if client is an HttpSolrClient, then the collection is in the path
+      // otherwise with a CloudSolrClient then it's the defaultCollection
       numFound = client.query(new SolrQuery("*:*")).getResults().getNumFound();
       if (numFound == numDocs) {
         return;

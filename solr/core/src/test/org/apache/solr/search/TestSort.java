@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,9 +51,9 @@ import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
@@ -97,7 +96,7 @@ public class TestSort extends SolrTestCaseJ4 {
     }
   }
 
-  public void testRandomFieldNameSorts() throws Exception {
+  public void testRandomFieldNameSorts() {
     SolrQueryRequest req = lrf.makeRequest("q", "*:*");
 
     final int iters = atLeast(5000);
@@ -175,7 +174,7 @@ public class TestSort extends SolrTestCaseJ4 {
               "sorts["
                   + j
                   + "] resulted in a '"
-                  + type.toString()
+                  + type
                   + "', either sort parsing code is broken, or func/query "
                   + "semantics have gotten broader and munging in this test "
                   + "needs improved: "
@@ -187,7 +186,7 @@ public class TestSort extends SolrTestCaseJ4 {
               names[j],
               sorts[j].getField());
           assertEquals(
-              "fields[" + j + "] (" + type.toString() + ") had unexpected name in: " + input,
+              "fields[" + j + "] (" + type + ") had unexpected name in: " + input,
               names[j],
               fields.get(j).getName());
         }
@@ -315,13 +314,14 @@ public class TestSort extends SolrTestCaseJ4 {
         Sort sort = new Sort(sfields.toArray(new SortField[sfields.size()]));
 
         final String nullRep =
-            luceneSort || sortMissingFirst && !reverse || sortMissingLast && reverse ? "" : "zzz";
+            luceneSort || (sortMissingFirst && !reverse) || (sortMissingLast && reverse)
+                ? ""
+                : "zzz";
         final String nullRep2 =
-            luceneSort2 || sortMissingFirst2 && !reverse2 || sortMissingLast2 && reverse2
+            luceneSort2 || (sortMissingFirst2 && !reverse2) || (sortMissingLast2 && reverse2)
                 ? ""
                 : "zzz";
 
-        boolean scoreInOrder = r.nextBoolean();
         final TopFieldCollector topCollector =
             TopFieldCollector.create(sort, top, Integer.MAX_VALUE);
 
@@ -345,8 +345,7 @@ public class TestSort extends SolrTestCaseJ4 {
 
         searcher.search(query, myCollector);
 
-        Collections.sort(
-            collectedDocs,
+        collectedDocs.sort(
             (o1, o2) -> {
               String v1 = o1.val == null ? nullRep : o1.val;
               String v2 = o2.val == null ? nullRep : o2.val;

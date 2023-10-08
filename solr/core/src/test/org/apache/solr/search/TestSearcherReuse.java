@@ -42,11 +42,11 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
   private static final String confPath = collection + "/conf";
 
   /**
-   * We're using a Managed schema so we can confirm that opening a new searcher after a schema
+   * We're using a Managed schema, so we can confirm that opening a new searcher after a schema
    * modification results in getting a new searcher with the new schema linked to it.
    */
   @BeforeClass
-  private static void setupTempDirAndCoreWithManagedSchema() throws Exception {
+  public static void setupTempDirAndCoreWithManagedSchema() throws Exception {
     solrHome = createTempDir().toFile();
     solrHome = solrHome.getAbsoluteFile();
 
@@ -69,7 +69,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() {
     solrHome = null;
   }
 
@@ -81,7 +81,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  public void test() throws Exception {
+  public void test() {
 
     // seed some docs & segments
     int numDocs = atLeast(1);
@@ -225,8 +225,8 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
 
   /**
    * Given an existing searcher, creates a new SolrRequest, and verifies that the searcher in that
-   * request is <b>not</b> the same as the previous searcher -- cleaningly closing the new
-   * SolrRequest either way.
+   * request is <b>not</b> the same as the previous searcher -- cleaning closes the new SolrRequest
+   * either way.
    */
   public static void assertSearcherHasChanged(SolrIndexSearcher previous) {
     SolrQueryRequest req = req("*:*");
@@ -240,8 +240,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
 
   /**
    * Given an existing searcher, creates a new SolrRequest, and verifies that the searcher in that
-   * request is the same as the expected searcher -- cleaningly closing the new SolrRequest either
-   * way.
+   * request is the same as the expected searcher -- cleaning closes the new SolrRequest either way.
    */
   public static void assertSearcherHasNotChanged(SolrIndexSearcher expected) {
     SolrQueryRequest req = req("*:*");

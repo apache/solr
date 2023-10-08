@@ -31,7 +31,7 @@ import org.junit.Test;
 public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
   @After
-  public void afterMethod() throws Exception {
+  public void afterMethod() {
     deleteCore();
   }
 

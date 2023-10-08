@@ -57,6 +57,7 @@ public class NodeMutator {
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
       String collectionName = entry.getKey();
       DocCollection docCollection = entry.getValue();
+      if (docCollection.isPerReplicaState()) continue;
 
       Optional<ZkWriteCommand> zkWriteCommand =
           computeCollectionUpdate(nodeName, collectionName, docCollection, zkClient);
@@ -121,7 +122,7 @@ public class NodeMutator {
         PerReplicaStates prs =
             client == null
                 ? docCollection.getPerReplicaStates()
-                : PerReplicaStates.fetch(
+                : PerReplicaStatesOps.fetch(
                     docCollection.getZNode(), client, docCollection.getPerReplicaStates());
 
         return Optional.of(

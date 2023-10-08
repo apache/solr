@@ -20,6 +20,7 @@ import static org.apache.solr.search.neural.KnnQParser.DEFAULT_TOP_K;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -33,11 +34,12 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   String IDField = "id";
   String vectorField = "vector";
   String vectorField2 = "vector2";
+  String vectorFieldByteEncoding = "vector_byte_encoding";
 
   @Before
   public void prepareIndex() throws Exception {
     /* vectorDimension="4" similarityFunction="cosine" */
-    initCore("solrconfig-basic.xml", "schema-densevector.xml");
+    initCore("solrconfig_codec.xml", "schema-densevector.xml");
 
     List<SolrInputDocument> docsToIndex = this.prepareDocs();
     for (SolrInputDocument doc : docsToIndex) {
@@ -83,7 +85,6 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     docs.get(9)
         .addField(
             vectorField, Arrays.asList(1.8f, 2.5f, 3.7f, 4.9f)); // cosine distance vector1= 0.997
-
     docs.get(10)
         .addField(vectorField2, Arrays.asList(1f, 2f, 3f, 4f)); // cosine distance vector2= 1
     docs.get(11)
@@ -94,11 +95,20 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         .addField(
             vectorField2, Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)); // cosine distance vector2= 0.998
 
+    docs.get(0).addField(vectorFieldByteEncoding, Arrays.asList(1, 2, 3, 4));
+    docs.get(1).addField(vectorFieldByteEncoding, Arrays.asList(2, 2, 1, 4));
+    docs.get(2).addField(vectorFieldByteEncoding, Arrays.asList(1, 2, 1, 2));
+    docs.get(3).addField(vectorFieldByteEncoding, Arrays.asList(7, 2, 1, 3));
+    docs.get(4).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
+    docs.get(5).addField(vectorFieldByteEncoding, Arrays.asList(19, 2, 4, 4));
+    docs.get(6).addField(vectorFieldByteEncoding, Arrays.asList(18, 2, 4, 4));
+    docs.get(7).addField(vectorFieldByteEncoding, Arrays.asList(8, 3, 2, 4));
+
     return docs;
   }
 
   @After
-  public void cleanUp() throws Exception {
+  public void cleanUp() {
     clearIndex();
     deleteCore();
   }
@@ -206,6 +216,142 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void highDimensionFloatVectorField_shouldSearchOnThatField() {
+    int highDimension = 2048;
+    List<SolrInputDocument> docsToIndex = this.prepareHighDimensionFloatVectorsDocs(highDimension);
+    for (SolrInputDocument doc : docsToIndex) {
+      assertU(adoc(doc));
+    }
+    assertU(commit());
+
+    float[] highDimensionalityQueryVector = new float[highDimension];
+    for (int i = 0; i < highDimension; i++) {
+      highDimensionalityQueryVector[i] = i;
+    }
+    String vectorToSearch = Arrays.toString(highDimensionalityQueryVector);
+
+    assertQ(
+        req(CommonParams.Q, "{!knn f=2048_float_vector topK=1}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='1']");
+  }
+
+  @Test
+  public void highDimensionByteVectorField_shouldSearchOnThatField() {
+    int highDimension = 2048;
+    List<SolrInputDocument> docsToIndex = this.prepareHighDimensionByteVectorsDocs(highDimension);
+    for (SolrInputDocument doc : docsToIndex) {
+      assertU(adoc(doc));
+    }
+    assertU(commit());
+
+    byte[] highDimensionalityQueryVector = new byte[highDimension];
+    for (int i = 0; i < highDimension; i++) {
+      highDimensionalityQueryVector[i] = (byte) (i % 127);
+    }
+    String vectorToSearch = Arrays.toString(highDimensionalityQueryVector);
+
+    assertQ(
+        req(CommonParams.Q, "{!knn f=2048_byte_vector topK=1}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='1']");
+  }
+
+  private List<SolrInputDocument> prepareHighDimensionFloatVectorsDocs(int highDimension) {
+    int docsCount = 13;
+    String field = "2048_float_vector";
+    List<SolrInputDocument> docs = new ArrayList<>(docsCount);
+
+    for (int i = 1; i < docsCount + 1; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField(IDField, i);
+      docs.add(doc);
+    }
+
+    for (int i = 0; i < docsCount; i++) {
+      List<Integer> highDimensionalityVector = new ArrayList<>();
+      for (int j = i * highDimension; j < highDimension; j++) {
+        highDimensionalityVector.add(j);
+      }
+      docs.get(i).addField(field, highDimensionalityVector);
+    }
+    Collections.reverse(docs);
+    return docs;
+  }
+
+  private List<SolrInputDocument> prepareHighDimensionByteVectorsDocs(int highDimension) {
+    int docsCount = 13;
+    String field = "2048_byte_vector";
+    List<SolrInputDocument> docs = new ArrayList<>(docsCount);
+
+    for (int i = 1; i < docsCount + 1; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField(IDField, i);
+      docs.add(doc);
+    }
+
+    for (int i = 0; i < docsCount; i++) {
+      List<Integer> highDimensionalityVector = new ArrayList<>();
+      for (int j = i * highDimension; j < highDimension; j++) {
+        highDimensionalityVector.add(j % 127);
+      }
+      docs.get(i).addField(field, highDimensionalityVector);
+    }
+    Collections.reverse(docs);
+    return docs;
+  }
+
+  @Test
+  public void vectorByteEncodingField_shouldSearchOnThatField() {
+    String vectorToSearch = "[2, 2, 1, 3]";
+
+    assertQ(
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='3']");
+
+    vectorToSearch = "[8, 3, 2, 4]";
+
+    assertQ(
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=2}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+  }
+
+  @Test
+  public void vectorByteEncodingField_shouldRaiseExceptionIfQueryUsesFloatVectors() {
+    String vectorToSearch = "[8.3, 4.3, 2.1, 4.1]";
+
+    assertQEx(
+        "incorrect vector element: '8.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        "incorrect vector element: '8.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=10}" + vectorToSearch, "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void
+      vectorByteEncodingField_shouldRaiseExceptionWhenQueryContainsValuesOutsideByteValueRange() {
+    String vectorToSearch = "[1, -129, 3, 5]";
+
+    assertQEx(
+        "incorrect vector element: ' -129'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        "incorrect vector element: ' -129'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=10}" + vectorToSearch, "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    vectorToSearch = "[1, 3, 156, 5]";
+
+    assertQEx(
+        "incorrect vector element: ' 156'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        "incorrect vector element: ' 156'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=10}" + vectorToSearch, "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
   public void missingVectorToSearch_shouldThrowException() {
     assertQEx(
         "missing vector to search should throw Exception",
@@ -289,7 +435,40 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void knnQueryWithFilterQuery_shouldIntersectResults() {
+  public void knnQueryUsedInFilter_shouldFilterResultsBeforeTheQueryExecution() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    assertQ(
+        req(
+            CommonParams.Q,
+            "id:(3 4 9 2)",
+            "fq",
+            "{!knn f=vector topK=4}" + vectorToSearch,
+            "fl",
+            "id"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+  }
+
+  @Test
+  public void knnQueryUsedInFilters_shouldFilterResultsBeforeTheQueryExecution() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    assertQ(
+        req(
+            CommonParams.Q,
+            "id:(3 4 9 2)",
+            "fq",
+            "{!knn f=vector topK=4}" + vectorToSearch,
+            "fq",
+            "id:(4 20)",
+            "fl",
+            "id"),
+        "//result[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='4']");
+  }
+
+  @Test
+  public void knnQueryWithFilterQuery_shouldPerformKnnSearchInPreFilteredResults() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQ(
@@ -304,42 +483,77 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='2']",
         "//result/doc[3]/str[@name='id'][.='7']");
-    /*
-     * This behavior is counter-intuitive.
-     * You would expect the query to apply to only the results filtered by the filter query.
-     * So you ideally would like to see the following ranked list as a result: [4,2,3,9].
-     * To get this please use the knn query parser as a reranker, example in a following test.
-     * This is how filter queries work(it's just intersection of the bitsets coming from each query and filter query):
-     * Ranked List from q=[1,4,2,10] <intersects> Set from fq={3,4,9,2} = [4,2]
-     * */
+
     assertQ(
         req(
             CommonParams.Q,
             "{!knn f=vector topK=4}" + vectorToSearch,
             "fq",
             "id:(3 4 9 2)",
+            "fl",
+            "id"),
+        "//result[@numFound='4']",
+        "//result/doc[1]/str[@name='id'][.='4']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='3']",
+        "//result/doc[4]/str[@name='id'][.='9']");
+  }
+
+  @Test
+  public void knnQueryWithCostlyFq_shouldPerformKnnSearchWithPostFilter() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=10}" + vectorToSearch,
+            "fq",
+            "{!frange cache=false l=0.99}$q",
+            "fl",
+            "*,score"),
+        "//result[@numFound='5']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='4']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[4]/str[@name='id'][.='10']",
+        "//result/doc[5]/str[@name='id'][.='3']");
+  }
+
+  @Test
+  public void knnQueryWithFilterQueries_shouldPerformKnnSearchWithPreFiltersAndPostFilters() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=4}" + vectorToSearch,
+            "fq",
+            "id:(3 4 9 2)",
+            "fq",
+            "{!frange cache=false l=0.99}$q",
             "fl",
             "id"),
         "//result[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='2']");
-    /* The ranking is now different as default solr score is used for the main query */
-    assertQ(
-        req(
-            CommonParams.Q,
-            "id:(3 4 9 2)",
-            "fq",
-            "{!knn f=vector topK=4}" + vectorToSearch,
-            "fl",
-            "id"),
-        "//result[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.='2']",
-        "//result/doc[2]/str[@name='id'][.='4']");
   }
 
-  /*
-   * See {@link org.apache.solr.search.ReRankQParserPlugin.ReRankQueryRescorer.combine} for more details.
-   * */
+  @Test
+  public void knnQueryWithNegativeFilterQuery_shouldPerformKnnSearchInPreFilteredResults() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    assertQ(
+        req(CommonParams.Q, "{!knn f=vector topK=4}" + vectorToSearch, "fq", "-id:4", "fl", "id"),
+        "//result[@numFound='4']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='10']",
+        "//result/doc[4]/str[@name='id'][.='3']");
+  }
+
+  /**
+   * See {@link org.apache.solr.search.ReRankQParserPlugin.ReRankQueryRescorer#combine(float,
+   * boolean, float)}} for more details.
+   */
   @Test
   public void knnQueryAsRerank_shouldAddSimilarityFunctionScore() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";

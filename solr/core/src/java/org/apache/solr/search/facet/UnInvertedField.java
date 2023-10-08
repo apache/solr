@@ -89,7 +89,7 @@ public class UnInvertedField extends DocTermOrds {
     int termNum;
 
     long memSize() {
-      return 8
+      return 8L
           + // obj header
           8
           + 8
@@ -174,11 +174,11 @@ public class UnInvertedField extends DocTermOrds {
     if (memsz != 0) return memsz;
     long sz = super.ramBytesUsed();
     sz += 8 * 8 + 32; // local fields
-    sz += bigTerms.size() * 64;
+    sz += bigTerms.size() * 64L;
     for (TopTerm tt : bigTerms.values()) {
       sz += tt.memSize();
     }
-    if (maxTermCounts != null) sz += maxTermCounts.length * 4;
+    if (maxTermCounts != null) sz += maxTermCounts.length * 4L;
     memsz = sz;
     return sz;
   }

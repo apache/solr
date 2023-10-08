@@ -34,7 +34,7 @@ public class ClusteringResponse {
 
   @SuppressWarnings("unchecked")
   public ClusteringResponse(List<NamedList<Object>> clusterInfo) {
-    clusters = new ArrayList<Cluster>();
+    clusters = new ArrayList<>();
     for (NamedList<Object> clusterNode : clusterInfo) {
       List<String> labelList, docIdList;
       List<Cluster> subclusters = Collections.emptyList();

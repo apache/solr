@@ -23,6 +23,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 /** Unit tests for {@link Builder}. */
@@ -39,7 +40,7 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
   @Test
   public void testProvidesBaseSolrUrlToClient() throws IOException {
     try (HttpSolrClient createdClient = new HttpSolrClient.Builder(ANY_BASE_SOLR_URL).build()) {
-      assertTrue(createdClient.getBaseURL().equals(ANY_BASE_SOLR_URL));
+      assertEquals(ANY_BASE_SOLR_URL, createdClient.getBaseURL());
     }
   }
 
@@ -47,15 +48,31 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
   public void testProvidesHttpClientToClient() throws IOException {
     try (HttpSolrClient createdClient =
         new Builder(ANY_BASE_SOLR_URL).withHttpClient(ANY_HTTP_CLIENT).build()) {
-      assertTrue(createdClient.getHttpClient().equals(ANY_HTTP_CLIENT));
+      assertEquals(createdClient.getHttpClient(), ANY_HTTP_CLIENT);
     }
+  }
+
+  @Test
+  public void testUsesTimeoutProvidedByHttpClient() throws IOException {
+
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
+    clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, 12345);
+    clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 67890);
+    HttpClient httpClient = HttpClientUtil.createClient(clientParams);
+    try (HttpSolrClient createdClient =
+        new Builder(ANY_BASE_SOLR_URL).withHttpClient(httpClient).build()) {
+      assertEquals(createdClient.getHttpClient(), httpClient);
+      assertEquals(67890, createdClient.getConnectionTimeout());
+      assertEquals(12345, createdClient.getSocketTimeout());
+    }
+    HttpClientUtil.close(httpClient);
   }
 
   @Test
   public void testProvidesResponseParserToClient() throws IOException {
     try (HttpSolrClient createdClient =
         new Builder(ANY_BASE_SOLR_URL).withResponseParser(ANY_RESPONSE_PARSER).build()) {
-      assertTrue(createdClient.getParser().equals(ANY_RESPONSE_PARSER));
+      assertEquals(createdClient.getParser(), ANY_RESPONSE_PARSER);
     }
   }
 

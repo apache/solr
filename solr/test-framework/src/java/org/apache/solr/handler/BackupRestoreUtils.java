@@ -25,8 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -110,13 +109,9 @@ public class BackupRestoreUtils extends SolrTestCase {
   }
 
   static void executeHttpRequest(String requestUrl) throws IOException {
-    InputStream stream = null;
-    try {
-      URL url = new URL(requestUrl);
-      stream = url.openStream();
-      stream.close();
-    } finally {
-      IOUtils.closeQuietly(stream);
+    URL url = new URL(requestUrl);
+    try (InputStream stream = url.openStream()) {
+      assert stream != null;
     }
   }
 }

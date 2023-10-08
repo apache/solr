@@ -24,23 +24,14 @@
 configure(rootProject) {
   ext {
     published = [
+        ":solr:api",
         ":solr:core",
-        ":solr:server",
         ":solr:solrj",
-        ":solr:modules:analysis-extras",
-        ":solr:modules:analytics",
-        ":solr:modules:clustering",
-        ":solr:modules:extraction",
-        ":solr:modules:gcs-repository",
-        ":solr:modules:jaegertracer-configurator",
-        ":solr:modules:jwt-auth",
-        ":solr:modules:langid",
-        ":solr:modules:ltr",
-        ":solr:modules:s3-repository",
-        ":solr:modules:scripting",
+        ":solr:solrj-streaming",
+        ":solr:solrj-zookeeper",
         ":solr:prometheus-exporter",
         ":solr:test-framework",
-    ]
+    ] + project(":solr:modules").getChildProjects().values().path
 
     apacheNexusSnapshots = "https://repository.apache.org/content/repositories/snapshots"
   }
@@ -183,6 +174,9 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
       }
 
       signing {
+        if (project(":solr:distribution").ext.useGpgForSigning) {
+          useGpgCmd()
+        }
         required { !version.endsWith("SNAPSHOT") }
         sign publishing.publications.jars
       }

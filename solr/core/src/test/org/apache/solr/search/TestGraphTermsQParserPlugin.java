@@ -17,14 +17,14 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// We want codecs that support DocValues, and ones supporting blank/empty values.
+// We want codecs that support DocValues, and those supporting blank/empty values.
 @SuppressCodecs({"Appending", "Lucene3x", "Lucene40", "Lucene41", "Lucene42"})
 public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
 
@@ -44,7 +44,7 @@ public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testQueries() throws Exception {
+  public void testQueries() {
 
     String group = "group_s";
 

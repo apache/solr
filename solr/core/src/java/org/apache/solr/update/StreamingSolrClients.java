@@ -25,11 +25,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.update.SolrCmdDistributor.Error;
+import org.apache.solr.update.SolrCmdDistributor.SolrError;
 import org.eclipse.jetty.client.api.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +40,13 @@ public class StreamingSolrClients {
 
   private final int runnerCount = Integer.getInteger("solr.cloud.replication.runners", 1);
   // should be less than solr.jetty.http.idleTimeout
-  private final int pollQueueTime = Integer.getInteger("solr.cloud.client.pollQueueTime", 10000);
+  private final int pollQueueTimeMillis =
+      Integer.getInteger("solr.cloud.client.pollQueueTime", 10000);
 
   private Http2SolrClient httpClient;
 
   private Map<String, ConcurrentUpdateHttp2SolrClient> solrClients = new HashMap<>();
-  private List<Error> errors = Collections.synchronizedList(new ArrayList<Error>());
+  private List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
 
   private ExecutorService updateExecutor;
 
@@ -53,7 +55,7 @@ public class StreamingSolrClients {
     this.httpClient = updateShardHandler.getUpdateOnlyHttpClient();
   }
 
-  public List<Error> getErrors() {
+  public List<SolrError> getErrors() {
     return errors;
   }
 
@@ -74,8 +76,10 @@ public class StreamingSolrClients {
               .withThreadCount(runnerCount)
               .withExecutorService(updateExecutor)
               .alwaysStreamDeletes()
+              .setPollQueueTime(
+                  pollQueueTimeMillis, TimeUnit.MILLISECONDS) // minimize connections created
               .build();
-      client.setPollQueueTime(pollQueueTime); // minimize connections created
+
       solrClients.put(url, client);
     }
 
@@ -116,7 +120,7 @@ public class StreamingSolrClients {
 class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2SolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCmdDistributor.Req req;
-  private final List<Error> errors;
+  private final List<SolrError> errors;
 
   public ErrorReportingConcurrentUpdateSolrClient(Builder builder) {
     super(builder);
@@ -127,7 +131,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
   @Override
   public void handleError(Throwable ex) {
     log.error("Error when calling {} to {}", req, req.node.getUrl(), ex);
-    Error error = new Error();
+    SolrError error = new SolrError();
     error.e = (Exception) ex;
     if (ex instanceof SolrException) {
       error.statusCode = ((SolrException) ex).code();
@@ -147,18 +151,19 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
 
   static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
     protected SolrCmdDistributor.Req req;
-    protected List<Error> errors;
+    protected List<SolrError> errors;
 
     public Builder(
         String baseSolrUrl,
         Http2SolrClient client,
         SolrCmdDistributor.Req req,
-        List<Error> errors) {
+        List<SolrError> errors) {
       super(baseSolrUrl, client);
       this.req = req;
       this.errors = errors;
     }
 
+    @Override
     public ErrorReportingConcurrentUpdateSolrClient build() {
       return new ErrorReportingConcurrentUpdateSolrClient(this);
     }

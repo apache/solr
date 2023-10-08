@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -56,10 +57,10 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     ulog = null;
   }
 
-  @Test
   /**
    * @see org.apache.solr.update.UpdateLog#applyPartialUpdates
    */
+  @Test
   public void testApplyPartialUpdatesOnMultipleInPlaceUpdatesInSequence() {
     // Add a full update, two in-place updates and verify applying partial updates is working
     ulogAdd(
@@ -181,8 +182,9 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
                       + returnVal);
             });
     assertEquals(ex.toString(), SolrException.ErrorCode.INVALID_STATE.code, ex.code());
-    assertThat(ex.getMessage(), containsString("should've been either ADD or UPDATE_INPLACE"));
-    assertThat(ex.getMessage(), containsString("looking for id=1"));
+    MatcherAssert.assertThat(
+        ex.getMessage(), containsString("should've been either ADD or UPDATE_INPLACE"));
+    MatcherAssert.assertThat(ex.getMessage(), containsString("looking for id=1"));
   }
 
   @Test
@@ -230,10 +232,10 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
   /**
    * Simulate a delete on a given updateLog
    *
-   * @param ulog The UpdateLog to apply a delete against
+   * @param ulog The UpdateLog to apply a delete operation against
    * @param id of document to be deleted
    * @param version Version to use on the DeleteUpdateCommand
-   * @param dbq if true, an <code>id:$id</code> DBQ will used, instead of delete by id
+   * @param dbq if true, an <code>id:$id</code> DBQ will be used, instead of delete by id
    */
   private static void ulogDelete(UpdateLog ulog, String id, long version, boolean dbq) {
     try (SolrQueryRequest req = req()) {
@@ -250,7 +252,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Simulate an add on a given updateLog.
+   * Simulate an add operation on a given updateLog.
    *
    * <p>This method, when prevVersion is passed in (i.e. for in-place update), represents an
    * AddUpdateCommand that has undergone the merge process and inc/set operations have now been
@@ -259,7 +261,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
    * <p>NOTE: For test simplicity, the Solr input document must include the <code>_version_</code>
    * field.
    *
-   * @param ulog The UpdateLog to apply a delete against
+   * @param ulog The UpdateLog to apply a delete operation against
    * @param prevVersion If non-null, then this AddUpdateCommand represents an in-place update.
    * @param sdoc The document to use for the add.
    * @see #buildAddUpdateCommand

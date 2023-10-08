@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
@@ -69,14 +71,9 @@ public abstract class SolrHighlighter {
         fields = defaultFields;
       }
     } else {
-      Set<String> expandedFields = new LinkedHashSet<String>();
-      Collection<String> storedHighlightFieldNames =
-          request.getSearcher().getDocFetcher().getStoredHighlightFieldNames();
-      for (String field : fields) {
-        expandWildcardsInHighlightFields(
-            expandedFields, storedHighlightFieldNames, SolrPluginUtils.split(field));
-      }
-      fields = expandedFields.toArray(new String[] {});
+      fields =
+          expandWildcardsInFields(
+              () -> request.getSearcher().getDocFetcher().getStoredHighlightFieldNames(), fields);
     }
 
     // Trim them now in case they haven't been yet.  Not needed for all code-paths above but do it
@@ -91,21 +88,29 @@ public abstract class SolrHighlighter {
     return (arr == null || arr.length == 0 || arr[0] == null || arr[0].trim().length() == 0);
   }
 
-  private static void expandWildcardsInHighlightFields(
-      Set<String> expandedFields, Collection<String> storedHighlightFieldNames, String... fields) {
-    for (String field : fields) {
-      if (field.contains("*")) {
-        // create a Java regular expression from the wildcard string
-        String fieldRegex = field.replaceAll("\\*", ".*");
-        for (String storedFieldName : storedHighlightFieldNames) {
-          if (storedFieldName.matches(fieldRegex)) {
-            expandedFields.add(storedFieldName);
+  protected static String[] expandWildcardsInFields(
+      Supplier<Collection<String>> availableFieldNamesSupplier, String... inFields) {
+    Set<String> expandedFields = new LinkedHashSet<>();
+    Collection<String> availableFieldNames = null;
+    for (String inField : inFields) {
+      for (String field : SolrPluginUtils.split(inField)) {
+        if (field.contains("*")) {
+          // create a Java regular expression from the wildcard string
+          Pattern fieldRegex = Pattern.compile(field.replace("*", ".*"));
+          if (availableFieldNames == null) {
+            availableFieldNames = availableFieldNamesSupplier.get();
           }
+          for (String availableFieldName : availableFieldNames) {
+            if (fieldRegex.matcher(availableFieldName).matches()) {
+              expandedFields.add(availableFieldName);
+            }
+          }
+        } else {
+          expandedFields.add(field);
         }
-      } else {
-        expandedFields.add(field);
       }
     }
+    return expandedFields.toArray(new String[] {});
   }
 
   /**

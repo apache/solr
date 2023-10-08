@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search.grouping.distributed.responseprocessor;
 
-import org.apache.lucene.search.FieldDoc;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -25,6 +24,7 @@ import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
+import org.apache.solr.util.SolrResponseUtil;
 
 /** Concrete implementation for processing the stored field values from shard responses. */
 public class StoredFieldsShardResponseProcessor implements ShardResponseProcessor {
@@ -33,20 +33,25 @@ public class StoredFieldsShardResponseProcessor implements ShardResponseProcesso
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
     ShardResponse srsp = shardRequest.responses.get(0);
-    SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
     String uniqueIdFieldName = rb.req.getSchema().getUniqueKeyField().getName();
 
     if (rb.rsp.getReturnFields().getFieldRenames().get(uniqueIdFieldName) != null) {
       // if id was renamed we need to use the new name
       uniqueIdFieldName = rb.rsp.getReturnFields().getFieldRenames().get(uniqueIdFieldName);
     }
+
+    SolrDocumentList docs =
+        (SolrDocumentList)
+            SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false);
+    if (docs == null) {
+      return;
+    }
     for (SolrDocument doc : docs) {
       Object id = doc.getFieldValue(uniqueIdFieldName).toString();
       ShardDoc shardDoc = rb.resultIds.get(id);
-      FieldDoc fieldDoc = (FieldDoc) shardDoc;
       if (shardDoc != null) {
-        if (returnScores && !Float.isNaN(fieldDoc.score)) {
-          doc.setField("score", fieldDoc.score);
+        if (returnScores && !Float.isNaN(shardDoc.score)) {
+          doc.setField("score", shardDoc.score);
         }
         rb.retrievedDocuments.put(id, doc);
       }

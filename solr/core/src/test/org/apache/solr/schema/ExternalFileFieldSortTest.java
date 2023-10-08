@@ -16,9 +16,9 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
 import java.io.IOException;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
@@ -28,8 +28,7 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   static void updateExternalFile() throws IOException {
     final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
     String filename = "external_eff";
-    FileUtils.copyFile(
-        new File(testHome + "/" + filename), new File(h.getCore().getDataDir() + "/" + filename));
+    Files.copy(Path.of(testHome, filename), Path.of(h.getCore().getDataDir(), filename));
   }
 
   private void addDocuments() {
@@ -57,7 +56,7 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPointKeyFieldType() throws Exception {
+  public void testPointKeyFieldType() {
     // This one should fail though, no "node" parameter specified
     SolrException e =
         expectThrows(

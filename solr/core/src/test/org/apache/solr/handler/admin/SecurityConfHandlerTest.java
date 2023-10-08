@@ -153,7 +153,7 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, permissions.size());
 
     for (Map permission : permissions) {
-      assertFalse("some-permission".equals(permission.get("name")));
+      assertNotEquals("some-permission", permission.get("name"));
     }
     // -ve test security edit is a well-known permission, only role attribute should be provided
     command =
@@ -199,10 +199,6 @@ public class SecurityConfHandlerTest extends SolrTestCaseJ4 {
       basicAuthPlugin.init(Map.of("credentials", Map.of("ignore", "me")));
 
       rulesBasedAuthorizationPlugin.init(new HashMap<>());
-    }
-
-    public Map<String, SecurityConfig> getM() {
-      return m;
     }
 
     @Override

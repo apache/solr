@@ -29,9 +29,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -43,6 +41,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
@@ -51,7 +50,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
 public class TestRebalanceLeaders extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String COLLECTION_NAME = "TestColl";
@@ -81,7 +79,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   @Before
-  public void removeAllProperties() throws KeeperException, InterruptedException {
+  public void removeAllProperties() {
     forceUpdateCollectionStatus();
     DocCollection docCollection =
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
@@ -110,11 +108,11 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // the property on other replicas _in that slice_.
   //
   // NOTE: There were significant problems because at one point the code implicitly defined
-  // shardUnique=true for the special property preferredLeader. That was removed at one point so
+  // shardUnique=true for the special property preferredLeader. That was removed at one point, so
   // we're explicitly testing that as well.
   @Test
   public void testSetArbitraryPropertySliceUnique()
-      throws IOException, SolrServerException, InterruptedException, KeeperException {
+      throws IOException, SolrServerException, InterruptedException {
     // Check both special (preferredLeader) and something arbitrary.
     doTestSetArbitraryPropertySliceUnique("foo" + random().nextInt(1_000_000));
     removeAllProperties();
@@ -122,12 +120,12 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // Test that automatically distributing a slice unique property un-sets that property if it's in
-  // any other replica on that slice. This is different than the test above. The test above sets
+  // any other replica on that slice. This is different from the test above. The test above sets
   // individual properties on individual nodes. This one relies on Solr to pick which replicas to
   // set the property on
   @Test
   public void testBalancePropertySliceUnique()
-      throws KeeperException, InterruptedException, IOException, SolrServerException {
+      throws InterruptedException, IOException, SolrServerException {
     // Check both cases of "special" property preferred(Ll)eader
     doTestBalancePropertySliceUnique("foo" + random().nextInt(1_000_000));
     removeAllProperties();
@@ -135,8 +133,9 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // We've moved on from a property being tested, we need to check if rebalancing the leaders
-  // actually chantges the leader appropriately.
+  // actually changes the leader appropriately.
   @Test
+  @Nightly
   public void testRebalanceLeaders() throws Exception {
 
     // First let's unbalance the preferredLeader property, do all the leaders get reassigned
@@ -157,11 +156,11 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     checkPreferredsAreLeaders();
   }
 
-  // Insure that the property is set on only one replica per slice when changing a unique property
+  // Ensure that the property is set on only one replica per slice when changing a unique property
   // on an individual
   // replica.
   private void doTestSetArbitraryPropertySliceUnique(String propIn)
-      throws InterruptedException, KeeperException, IOException, SolrServerException {
+      throws InterruptedException, IOException, SolrServerException {
     final String prop = (random().nextBoolean()) ? propIn : propIn.toUpperCase(Locale.ROOT);
     // First set the property in some replica in some slice
     forceUpdateCollectionStatus();
@@ -184,7 +183,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
       Slice modSlice;
       DocCollection modColl = null; // keeps IDE happy
 
-      // insure that no other replica in that slice has the property when we return.
+      // ensure that no other replica in that slice has the property when we return.
       while (timeout.hasTimedOut() == false) {
         forceUpdateCollectionStatus();
         modColl = cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
@@ -217,14 +216,14 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     }
   }
 
-  // Fail if we the replicas with the preferredLeader property are _not_ also the leaders.
+  // Fail if we have replicas with the preferredLeader property are _not_ also the leaders.
   private void checkPreferredsAreLeaders() throws InterruptedException, KeeperException {
     // Make sure that the shard unique are where you expect.
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
 
     while (timeout.hasTimedOut() == false) {
       if (checkPreferredsAreLeaders(false)) {
-        // Ok, all preferreds are leaders. Just for Let's also get the election queue and guarantee
+        // Ok, all preferred's are leaders. Just for Let's also get the election queue and guarantee
         // that every live replica is in the queue and none are repeated.
         checkElectionQueues();
         return;
@@ -233,7 +232,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     }
 
     log.error(
-        "Leaders are not all preferres {}",
+        "Leaders are not all preferred {}",
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME));
     // Show the errors
     checkPreferredsAreLeaders(true);
@@ -301,8 +300,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // Just an encapsulation for checkPreferredsAreLeaders to make returning easier.
   // the doAsserts var is to actually print the problem and fail the test if the condition is not
   // met.
-  private boolean checkPreferredsAreLeaders(boolean doAsserts)
-      throws KeeperException, InterruptedException {
+  private boolean checkPreferredsAreLeaders(boolean doAsserts) {
     forceUpdateCollectionStatus();
     DocCollection docCollection =
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
@@ -322,8 +320,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // Arbitrarily send the rebalance command either with the SolrJ interface or with an HTTP request.
-  private void sendRebalanceCommand()
-      throws SolrServerException, InterruptedException, IOException {
+  private void sendRebalanceCommand() throws SolrServerException, IOException {
     if (random().nextBoolean()) {
       rebalanceLeaderUsingSolrJAPI();
     } else {
@@ -335,7 +332,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // re-assigned with the
   // BALANCESHARDUNIQUE command.
   private void doTestBalancePropertySliceUnique(String propIn)
-      throws InterruptedException, IOException, KeeperException, SolrServerException {
+      throws InterruptedException, IOException, SolrServerException {
     final String prop = (random().nextBoolean()) ? propIn : propIn.toUpperCase(Locale.ROOT);
 
     // Concentrate the properties on as few replicas a possible
@@ -351,8 +348,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     verifyPropCorrectlyDistributed(prop);
   }
 
-  private void verifyPropCorrectlyDistributed(String prop)
-      throws KeeperException, InterruptedException {
+  private void verifyPropCorrectlyDistributed(String prop) {
 
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
 
@@ -381,8 +377,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
   // Used when we concentrate the leader on a few nodes.
   private void verifyPropDistributedAsExpected(
-      Map<String, String> expectedShardReplicaMap, String prop)
-      throws InterruptedException, KeeperException {
+      Map<String, String> expectedShardReplicaMap, String prop) throws InterruptedException {
     // Make sure that the shard unique are where you expect.
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
 
@@ -415,8 +410,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // Just check that the property is distributed as expectecd. This does _not_ rebalance the leaders
-  private void rebalancePropAndCheck(String prop)
-      throws IOException, SolrServerException, InterruptedException, KeeperException {
+  private void rebalancePropAndCheck(String prop) throws IOException, SolrServerException {
 
     if (random().nextBoolean()) {
       rebalancePropUsingSolrJAPI(prop);
@@ -425,8 +419,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     }
   }
 
-  private void rebalanceLeaderUsingSolrJAPI()
-      throws IOException, SolrServerException, InterruptedException {
+  private void rebalanceLeaderUsingSolrJAPI() throws IOException, SolrServerException {
     CollectionAdminResponse resp =
         CollectionAdminRequest.rebalanceLeaders(COLLECTION_NAME).process(cluster.getSolrClient());
     assertTrue(
@@ -448,8 +441,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     assertEquals("Call to rebalanceLeaders failed ", 0, resp.getStatus());
   }
 
-  private void rebalancePropUsingSolrJAPI(String prop)
-      throws IOException, SolrServerException, InterruptedException {
+  private void rebalancePropUsingSolrJAPI(String prop) throws IOException, SolrServerException {
     // Don't set the value, that should be done automatically.
     CollectionAdminResponse resp;
 
@@ -506,7 +498,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     params.set("replica", rep.getName());
     params.set("property", prop);
     params.set("property.value", "true");
-    // Test to insure that implicit shardUnique is added for preferredLeader.
+    // Test to ensure that implicit shardUnique is added for preferredLeader.
     if (prop.toLowerCase(Locale.ROOT).equals("preferredleader") == false) {
       params.set("shardUnique", "true");
     }
@@ -553,8 +545,8 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         (n, c) -> c.getReplica(rep.getName()).getProperty(prop) == null);
   }
 
-  // Intentionally un-balance the property to insure that BALANCESHARDUNIQUE does its job. There was
-  // an odd case where rebalancing didn't work very well if the Solr nodes were stopped and
+  // Intentionally un-balance the property to ensure that BALANCESHARDUNIQUE does its job. There was
+  // an odd case where re-balancing didn't work very well if the Solr nodes were stopped and
   // restarted that worked perfectly when if the nodes were _not_ restarted in the test. So we have
   // to test that too.
   private void concentratePropByRestartingJettys() throws Exception {
@@ -562,7 +554,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     List<JettySolrRunner> jettys = new ArrayList<>(cluster.getJettySolrRunners());
     Collections.shuffle(jettys, random());
     jettys.remove(random().nextInt(jettys.size()));
-    // Now we have a list of jettys, and there is one missing. Stop all of the remaining jettys,
+    // Now we have a list of jettys, and there is one missing. Stop all the remaining jettys,
     // then start them again to concentrate the leaders. It's not necessary that all shards have a
     // leader.
 
@@ -606,14 +598,13 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // while banging my nead against a wall, I put a lot of force refresh statements in. Want to leave
   // them in but have this be a no-op so if we start to get failures, we can re-enable with minimal
   // effort.
-  private void forceUpdateCollectionStatus() throws KeeperException, InterruptedException {
+  private void forceUpdateCollectionStatus() {
     // cluster.getSolrClient().getZkStateReader().forceUpdateCollection(COLLECTION_NAME);
   }
 
-  // Since we have to restart jettys, we don't want to try rebalancing etc. until we're sure all
-  // jettys that should be up are up and all replicas are active.
-  private void checkReplicasInactive(List<JettySolrRunner> downJettys)
-      throws KeeperException, InterruptedException {
+  // Since we have to restart jettys, we don't want to try re-balancing etc. until we're sure all
+  // jettys that should be up are and all replicas are active.
+  private void checkReplicasInactive(List<JettySolrRunner> downJettys) throws InterruptedException {
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     DocCollection docCollection = null;
     Set<String> liveNodes = null;
@@ -654,7 +645,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
 
   // We need to wait around until all replicas are active before expecting rebalancing or
   // distributing shard-unique properties to work.
-  private void checkAllReplicasActive() throws KeeperException, InterruptedException {
+  private void checkAllReplicasActive() throws InterruptedException {
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (timeout.hasTimedOut() == false) {
       forceUpdateCollectionStatus();
@@ -680,7 +671,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   // use a simple heuristic to put as many replicas with the property on as few nodes as possible.
   // The point is that then we can execute BALANCESHARDUNIQUE and be sure it worked correctly
   private void concentrateProp(String prop)
-      throws KeeperException, InterruptedException, IOException, SolrServerException {
+      throws InterruptedException, IOException, SolrServerException {
     // find all the live nodes for each slice, assign the leader to the first replica that is in the
     // lowest position on live_nodes
     List<String> liveNodes =
@@ -702,9 +693,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         }
       }
       if (livePos == Integer.MAX_VALUE) {
-        fail(
-            "Invalid state! We should have a replica to add the property to! "
-                + docCollection.toString());
+        fail("Invalid state! We should have a replica to add the property to! " + docCollection);
       }
 
       uniquePropMap.put(slice.getName(), changedRep.getName());
@@ -715,14 +704,13 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // make sure that the property in question is unique per shard.
-  private Map<String, String> verifyPropUniquePerShard(String prop)
-      throws InterruptedException, KeeperException {
+  private Map<String, String> verifyPropUniquePerShard(String prop) throws InterruptedException {
     Map<String, String> uniquePropMaps = new TreeMap<>();
 
     TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     while (timeout.hasTimedOut() == false) {
       uniquePropMaps.clear();
-      if (checkdUniquePropPerShard(uniquePropMaps, prop)) {
+      if (checkUniquePropPerShard(uniquePropMaps, prop)) {
         return uniquePropMaps;
       }
       TimeUnit.MILLISECONDS.sleep(10);
@@ -736,21 +724,20 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
   }
 
   // return true if every shard has exactly one replica with the unique property set to "true"
-  private boolean checkdUniquePropPerShard(Map<String, String> uniques, String prop)
-      throws KeeperException, InterruptedException {
+  private boolean checkUniquePropPerShard(Map<String, String> uniques, String prop) {
     forceUpdateCollectionStatus();
     DocCollection docCollection =
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION_NAME);
 
     for (Slice slice : docCollection.getSlices()) {
-      int propfCount = 0;
+      int propCount = 0;
       for (Replica rep : slice.getReplicas()) {
         if (rep.getBool("property." + prop.toLowerCase(Locale.ROOT), false)) {
-          propfCount++;
+          propCount++;
           uniques.put(slice.getName(), rep.getName());
         }
       }
-      if (1 != propfCount) {
+      if (1 != propCount) {
         return false;
       }
     }

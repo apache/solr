@@ -30,7 +30,7 @@ public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // record current value prior to core initialization
+    // record current value prior to core initialization,
     // so we can verify the correct number of instances later
     // NOTE: this won't work properly if concurrent tests run
     // in the same VM
@@ -40,8 +40,6 @@ public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
   }
 
   public void testListenerCreationCounts() {
-    SolrCore core = h.getCore();
-
     assertEquals(
         "Unexpected number of listeners created",
         EXPECTED_MOCK_LISTENER_INSTANCES,

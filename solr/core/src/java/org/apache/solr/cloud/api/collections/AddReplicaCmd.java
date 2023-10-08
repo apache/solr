@@ -19,7 +19,12 @@ package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SKIP_CREATE_REPLICA_IN_CLUSTER_STATE;
-import static org.apache.solr.common.cloud.ZkStateReader.*;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -38,7 +43,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -58,6 +62,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.ShardHandler;
@@ -249,7 +254,6 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       boolean skipCreateReplicaInClusterState,
       CreateReplica createReplica)
       throws InterruptedException, KeeperException {
-    ZkStateReader zkStateReader = ccc.getZkStateReader();
     if (!skipCreateReplicaInClusterState) {
       ZkNodeProps props =
           new ZkNodeProps(
@@ -266,7 +270,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
               ZkStateReader.NODE_NAME_PROP,
               createReplica.node,
               ZkStateReader.BASE_URL_PROP,
-              zkStateReader.getBaseUrlForNodeName(createReplica.node),
+              ccc.getZkStateReader().getBaseUrlForNodeName(createReplica.node),
               ZkStateReader.REPLICA_TYPE,
               createReplica.replicaType.name());
       if (createReplica.coreNodeName != null) {
@@ -281,7 +285,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getZkStateReader());
       } else {
         try {
-          ccc.offerStateUpdate(Utils.toJSON(props));
+          ccc.offerStateUpdate(props);
         } catch (Exception e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
@@ -358,7 +362,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     String coreNodeName = message.getStr(CoreAdminParams.CORE_NODE_NAME);
     Replica.Type replicaType = replicaPosition.type;
 
-    if (StringUtils.isBlank(coreName)) {
+    if (StrUtils.isBlank(coreName)) {
       coreName = message.getStr(CoreAdminParams.PROPERTY_PREFIX + CoreAdminParams.NAME);
     }
 

@@ -40,7 +40,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.slf4j.Logger;
@@ -70,7 +70,7 @@ public class CatStream extends TupleStream implements Expressible {
     }
     final String filepathsWithoutSurroundingQuotes =
         stripSurroundingQuotesIfTheyExist(commaDelimitedFilepaths);
-    if (StringUtils.isEmpty(filepathsWithoutSurroundingQuotes)) {
+    if (StrUtils.isNullOrEmpty(filepathsWithoutSurroundingQuotes)) {
       throw new IllegalArgumentException("No filepaths provided to stream");
     }
 
@@ -255,7 +255,7 @@ public class CatStream extends TupleStream implements Expressible {
   // A pair of paths for a particular file to stream:
   // - absolute path for reading,
   // - display path to avoid leaking Solr node fs details in tuples (relative to chroot)
-  public class CrawlFile {
+  public static class CrawlFile {
     private final String displayPath;
     private final Path absolutePath;
 

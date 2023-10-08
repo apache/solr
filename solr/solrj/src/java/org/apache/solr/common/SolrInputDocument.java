@@ -38,6 +38,11 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   private final Map<String, SolrInputField> _fields;
   private List<SolrInputDocument> _childDocuments;
 
+  // Required by reflection based libraries for (de)serialization
+  public SolrInputDocument() {
+    _fields = new LinkedHashMap<>();
+  }
+
   public SolrInputDocument(String... fields) {
     _fields = new LinkedHashMap<>();
     assert fields.length % 2 == 0;
@@ -90,6 +95,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
    * @param value Value of the field, should be of same class type as defined by "type" attribute of
    *     the corresponding field in schema.xml.
    */
+  @Override
   public void addField(String name, Object value) {
     SolrInputField field = _fields.get(name);
     if (field == null || field.value == null) {
@@ -144,6 +150,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
    * @param name name of the field to set
    * @param value value of the field
    */
+  @Override
   public void setField(String name, Object value) {
     SolrInputField field = new SolrInputField(name);
     _fields.put(name, field);
@@ -266,6 +273,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     _childDocuments.add(child);
   }
 
+  @Override
   public void addChildDocuments(Collection<SolrInputDocument> children) {
     for (SolrInputDocument child : children) {
       addChildDocument(child);
@@ -300,10 +308,12 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   }
 
   /** Returns the list of child documents, or null if none. */
+  @Override
   public List<SolrInputDocument> getChildDocuments() {
     return _childDocuments;
   }
 
+  @Override
   public boolean hasChildDocuments() {
     boolean isEmpty = (_childDocuments == null || _childDocuments.isEmpty());
     return !isEmpty;

@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
@@ -48,14 +47,15 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.junit.AfterClass;
@@ -176,9 +176,10 @@ public class TestFieldCache extends SolrTestCase {
     assertTrue(
         "docsWithField(theLong) must be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertTrue(
+    assertEquals(
         "docsWithField(theLong) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length() == NUM_DOCS);
+        docsWithField.length(),
+        NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertTrue(docsWithField.get(i));
     }
@@ -191,9 +192,10 @@ public class TestFieldCache extends SolrTestCase {
     assertFalse(
         "docsWithField(sparse) must not be class Bits.MatchAllBits",
         docsWithField instanceof Bits.MatchAllBits);
-    assertTrue(
+    assertEquals(
         "docsWithField(sparse) Size: " + docsWithField.length() + " is not: " + NUM_DOCS,
-        docsWithField.length() == NUM_DOCS);
+        docsWithField.length(),
+        NUM_DOCS);
     for (int i = 0; i < docsWithField.length(); i++) {
       assertEquals(i % 2 == 0, docsWithField.get(i));
     }
@@ -263,7 +265,7 @@ public class TestFieldCache extends SolrTestCase {
     SortedSetDocValues termOrds =
         cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField", null);
     int numEntries = cache.getCacheEntries().length;
-    // ask for it again, and check that we didnt create any additional entries:
+    // ask for it again, and check that we didn't create any additional entries:
     termOrds = cache.getDocTermOrds(reader, "theRandomUnicodeMultiValuedField", null);
     assertEquals(numEntries, cache.getCacheEntries().length);
 
@@ -279,7 +281,7 @@ public class TestFieldCache extends SolrTestCase {
           assertEquals(i, termOrds.nextDoc());
         }
         long ord = termOrds.nextOrd();
-        assert ord != SortedSetDocValues.NO_MORE_ORDS;
+        assertNotEquals(ord, SortedSetDocValues.NO_MORE_ORDS);
         BytesRef scratch = termOrds.lookupOrd(ord);
         assertEquals(v, scratch);
       }
@@ -290,7 +292,7 @@ public class TestFieldCache extends SolrTestCase {
 
     // test bad field
     termOrds = cache.getDocTermOrds(reader, "bogusfield", null);
-    assertTrue(termOrds.getValueCount() == 0);
+    assertEquals(0, termOrds.getValueCount());
 
     FieldCache.DEFAULT.purgeByCacheKey(reader.getCoreCacheHelper().getKey());
   }
@@ -577,7 +579,7 @@ public class TestFieldCache extends SolrTestCase {
     dir.close();
   }
 
-  public void testNonexistantFields() throws Exception {
+  public void testNonexistentFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();

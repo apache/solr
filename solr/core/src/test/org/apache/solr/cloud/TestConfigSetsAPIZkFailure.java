@@ -18,19 +18,19 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.ZkConfigSetService.CONFIGS_ZKNODE;
 
-import com.google.common.collect.ImmutableMap;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.jute.InputArchive;
 import org.apache.jute.OutputArchive;
 import org.apache.jute.Record;
@@ -63,7 +63,7 @@ import org.junit.Test;
 
 /**
  * Test the ConfigSets API under ZK failure. In particular, if create fails, ensure proper cleanup
- * occurs so we aren't left with a partially created ConfigSet.
+ * occurs, so we aren't left with a partially created ConfigSet.
  */
 public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
   private MiniSolrCloudCluster solrCluster;
@@ -86,7 +86,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
             1,
             testDir,
             MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML,
-            buildJettyConfig("/solr"),
+            buildJettyConfig(),
             zkTestServer,
             true);
   }
@@ -112,15 +112,15 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     final ConfigSetService configSetService =
         solrCluster.getOpenOverseer().getCoreContainer().getConfigSetService();
 
-    final Map<String, String> oldProps = ImmutableMap.of("immutable", "true");
+    final Map<String, String> oldProps = Map.of("immutable", "true");
     setupBaseConfigSet(BASE_CONFIGSET_NAME, oldProps);
 
     SolrZkClient zkClient =
-        new SolrZkClient(
-            solrCluster.getZkServer().getZkAddress(),
-            AbstractZkTestCase.TIMEOUT,
-            AbstractZkTestCase.TIMEOUT,
-            null);
+        new SolrZkClient.Builder()
+            .withUrl(solrCluster.getZkServer().getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     try {
 
       assertFalse(configSetService.checkConfigExists(CONFIGSET_NAME));
@@ -141,17 +141,17 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps)
       throws Exception {
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    final File tmpConfigDir = createTempDir().toFile();
-    tmpConfigDir.deleteOnExit();
-    FileUtils.copyDirectory(configDir, tmpConfigDir);
+    final Path configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf");
+    final Path tmpConfigDir = createTempDir();
+    tmpConfigDir.toFile().deleteOnExit();
+    PathUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
-      FileUtils.write(
-          new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
+      Files.writeString(
+          tmpConfigDir.resolve(ConfigSetProperties.DEFAULT_FILENAME),
           getConfigSetProps(oldProps),
           StandardCharsets.UTF_8);
     }
-    solrCluster.uploadConfigSet(tmpConfigDir.toPath(), baseConfigSetName);
+    solrCluster.uploadConfigSet(tmpConfigDir, baseConfigSetName);
     solrCluster
         .getZkClient()
         .setData(
@@ -178,7 +178,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
       // we know we are doing a copy when we are getting data from the base config set and
       // the new config set (partially) exists
       String zkAddress = zkTestServer.getZkAddress();
-      String chroot = zkAddress.substring(zkAddress.lastIndexOf("/"));
+      String chroot = zkAddress.substring(zkAddress.lastIndexOf('/'));
       if (path.startsWith(chroot + CONFIGS_ZKNODE + "/" + BASE_CONFIGSET_NAME)
           && !path.contains(ConfigSetProperties.DEFAULT_FILENAME)) {
         List<String> children = null;

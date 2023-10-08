@@ -16,13 +16,11 @@
  */
 package org.apache.solr.util.hll;
 
-import static org.junit.Assert.*;
-
-import java.util.Arrays;
+import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 /** Tests {@link NumberUtil} */
-public class NumberUtilTest {
+public class NumberUtilTest extends SolrTestCase {
 
   static final byte[] ALL_PRINTABLE_ASCII_CHARS =
       new byte[] {
@@ -70,65 +68,62 @@ public class NumberUtilTest {
   @Test
   public void testLog2() {
     final double log2Result = NumberUtil.log2(2d);
-    assertTrue(log2Result == 1);
+    assertEquals(1, log2Result, 0.0);
   }
 
   /** Test {@link NumberUtil#toHex(byte[], int, int)} */
   @Test
   public void TestToHex() {
-    assertTrue(
-        ALL_PRINTABLE_ASCII_CHARS_IN_HEX.equals(
-            NumberUtil.toHex(ALL_PRINTABLE_ASCII_CHARS, 0, ALL_PRINTABLE_ASCII_CHARS.length)));
+    assertEquals(
+        ALL_PRINTABLE_ASCII_CHARS_IN_HEX,
+        NumberUtil.toHex(ALL_PRINTABLE_ASCII_CHARS, 0, ALL_PRINTABLE_ASCII_CHARS.length));
   }
 
   /** Test {@link NumberUtil#toHex(byte[], int, int)} */
   @Test
   public void TestToHexWithOffset() {
-    assertTrue(
-        ALL_MAJ_LETTERS_ASCII_CHARS_IN_HEX.equals(
-            NumberUtil.toHex(ALL_WORD_CHARAC_ASCII_CHARS, 10, ALL_PRINTABLE_ASCII_CHARS.length)));
+    assertEquals(
+        ALL_MAJ_LETTERS_ASCII_CHARS_IN_HEX,
+        NumberUtil.toHex(ALL_WORD_CHARAC_ASCII_CHARS, 10, ALL_PRINTABLE_ASCII_CHARS.length));
   }
 
   /** Test {@link NumberUtil#toHex(byte[], int, int)} */
   @Test
   public void TestToHexWithCountt() {
-    assertTrue(
-        ALL_NUMBER_ASCII_CHARS_IN_HEX.equals(NumberUtil.toHex(ALL_WORD_CHARAC_ASCII_CHARS, 0, 10)));
+    assertEquals(
+        ALL_NUMBER_ASCII_CHARS_IN_HEX, NumberUtil.toHex(ALL_WORD_CHARAC_ASCII_CHARS, 0, 10));
   }
 
   /** Test {@link NumberUtil#fromHex(String, int, int)} */
   @Test
   public void TestFromHex() {
-    assertTrue(
-        Arrays.equals(
-            NumberUtil.fromHex(
-                ALL_NUMBER_ASCII_CHARS_IN_HEX
-                    + ALL_MAJ_LETTERS_ASCII_CHARS_IN_HEX
-                    + ALL_LOW_LETTERS_ASCII_CHARS_IN_HEX,
-                0,
-                ALL_WORD_CHARAC_ASCII_CHARS.length * 2),
-            ALL_WORD_CHARAC_ASCII_CHARS));
+    assertArrayEquals(
+        NumberUtil.fromHex(
+            ALL_NUMBER_ASCII_CHARS_IN_HEX
+                + ALL_MAJ_LETTERS_ASCII_CHARS_IN_HEX
+                + ALL_LOW_LETTERS_ASCII_CHARS_IN_HEX,
+            0,
+            ALL_WORD_CHARAC_ASCII_CHARS.length * 2),
+        ALL_WORD_CHARAC_ASCII_CHARS);
   }
 
   /** Test {@link NumberUtil#fromHex(String, int, int)} */
   @Test
   public void TestFromHexWithOffset() {
-    assertTrue(
-        Arrays.equals(
-            NumberUtil.fromHex(
-                ALL_NUMBER_ASCII_CHARS_IN_HEX + ALL_MAJ_LETTERS_ASCII_CHARS_IN_HEX,
-                20,
-                ALL_LETTER_ASCII_CHARS.length * 2),
-            ALL_LETTER_ASCII_CHARS));
+    assertArrayEquals(
+        NumberUtil.fromHex(
+            ALL_NUMBER_ASCII_CHARS_IN_HEX + ALL_MAJ_LETTERS_ASCII_CHARS_IN_HEX,
+            20,
+            ALL_LETTER_ASCII_CHARS.length * 2),
+        ALL_LETTER_ASCII_CHARS);
   }
 
   /** Test {@link NumberUtil#fromHex(String, int, int)} */
   @Test
   public void TestFromHexWithCount() {
-    assertTrue(
-        Arrays.equals(
-            NumberUtil.fromHex(
-                ALL_NUMBER_ASCII_CHARS_IN_HEX + ALL_MAJ_LETTERS_ASCII_CHARS_IN_HEX, 0, 20),
-            ALL_NUMBER_CHARAC_ASCII_CHARS));
+    assertArrayEquals(
+        NumberUtil.fromHex(
+            ALL_NUMBER_ASCII_CHARS_IN_HEX + ALL_MAJ_LETTERS_ASCII_CHARS_IN_HEX, 0, 20),
+        ALL_NUMBER_CHARAC_ASCII_CHARS);
   }
 }

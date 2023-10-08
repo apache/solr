@@ -19,11 +19,11 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import org.apache.solr.cli.PackageTool;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.util.PackageTool;
-import org.apache.solr.util.SolrCLI;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -59,7 +59,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .addConfig(
-            "conf2", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+            "conf3", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     repositoryServer =
@@ -69,8 +69,13 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   @AfterClass
   public static void teardown() throws Exception {
-    repositoryServer.stop();
-    System.clearProperty("enable.packages");
+    try {
+      if (repositoryServer != null) {
+        repositoryServer.stop();
+      }
+    } finally {
+      System.clearProperty("enable.packages");
+    }
   }
 
   @Test
@@ -98,7 +103,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
 
     CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection("def", "conf2", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("def", "conf3", 1, 1).process(cluster.getSolrClient());
 
     String rhPath = "/mypath2";
 
@@ -210,10 +215,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   }
 
   private void run(PackageTool tool, String[] args) throws Exception {
-    int res =
-        tool.runTool(
-            SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
     assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);
   }
 

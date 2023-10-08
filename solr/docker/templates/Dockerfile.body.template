@@ -26,20 +26,14 @@
 #-#
 #-#
 
-# add symlink to /opt/solr, remove what we don't want.
-# Remove the Dockerfile because it might not represent the dockerfile that was used to generate the image.
-RUN set -ex; \
-  (cd /opt; ln -s solr-*/ solr); \
-  rm -Rf /opt/solr/docs /opt/solr/docker/Dockerfile;
-
-LABEL maintainer="The Apache Solr Project"
-LABEL url="https://solr.apache.org"
-LABEL repository="https://github.com/apache/solr"
-
-RUN set -ex; \
-    apt-get update; \
-    apt-get -y install acl dirmngr lsof procps wget netcat gosu tini jattach; \
-    rm -rf /var/lib/apt/lists/*;
+LABEL org.opencontainers.image.title="Apache Solr"
+LABEL org.opencontainers.image.description="Apache Solr is the popular, blazing-fast, open source search platform built on Apache Lucene."
+LABEL org.opencontainers.image.authors="The Apache Solr Project"
+LABEL org.opencontainers.image.url="https://solr.apache.org"
+LABEL org.opencontainers.image.source="https://github.com/apache/solr"
+LABEL org.opencontainers.image.documentation="https://solr.apache.org/guide/"
+LABEL org.opencontainers.image.version="${SOLR_VERSION}"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 ENV SOLR_USER="solr" \
     SOLR_UID="8983" \
@@ -51,11 +45,18 @@ ENV SOLR_USER="solr" \
     SOLR_PID_DIR=/var/solr \
     SOLR_LOGS_DIR=/var/solr/logs \
     LOG4J_PROPS=/var/solr/log4j2.xml \
-    SOLR_JETTY_HOST="0.0.0.0"
+    SOLR_JETTY_HOST="0.0.0.0" \
+    SOLR_ZK_EMBEDDED_HOST="0.0.0.0"
 
 RUN set -ex; \
   groupadd -r --gid "$SOLR_GID" "$SOLR_GROUP"; \
   useradd -r --uid "$SOLR_UID" --gid "$SOLR_GID" "$SOLR_USER"
+
+# add symlink to /opt/solr, remove what we don't want.
+# Remove the Dockerfile because it might not represent the dockerfile that was used to generate the image.
+RUN set -ex; \
+  (cd /opt; ln -s solr-*/ solr); \
+  rm -Rf /opt/solr/docs /opt/solr/docker/Dockerfile;
 
 RUN set -ex; \
   mkdir -p /opt/solr/server/solr/lib /docker-entrypoint-initdb.d; \
@@ -65,13 +66,18 @@ RUN set -ex; \
   chmod 0664 /etc/default/solr.in.sh; \
   mkdir -p -m0770 /var/solr; \
   chown -R "$SOLR_USER:0" /var/solr; \
-  ln -s /opt/solr/modules /opt/solr/contrib; \
-  ln -s /opt/solr/prometheus-exporter /opt/solr/modules/prometheus-exporter;
+  test ! -e /opt/solr/modules || ln -s /opt/solr/modules /opt/solr/contrib; \
+  test ! -e /opt/solr/prometheus-exporter || ln -s /opt/solr/prometheus-exporter /opt/solr/modules/prometheus-exporter;
+
+RUN set -ex; \
+    apt-get update; \
+    apt-get -y --no-install-recommends install acl lsof procps wget netcat gosu tini jattach; \
+    rm -rf /var/lib/apt/lists/*;
 
 VOLUME /var/solr
 EXPOSE 8983
 WORKDIR /opt/solr
-USER $SOLR_USER
+USER $SOLR_UID
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["solr-foreground"]

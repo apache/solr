@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.io.IOException;
 import org.apache.lucene.store.Directory;
@@ -30,20 +29,14 @@ import org.apache.solr.core.MockFSDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     useFactory(FailingDirectoryFactory.class.getName());
     initCore("solrconfig.xml", "schema.xml");
   }
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   private static String WRAPPED_FAILING_MSG = "Error handling 'mergeindexes' action";
   private static String FAILING_CAUSE_MSG =

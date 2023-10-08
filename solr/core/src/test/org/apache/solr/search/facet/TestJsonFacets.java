@@ -28,7 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.client.solrj.SolrClient;
@@ -108,15 +108,24 @@ public class TestJsonFacets extends SolrTestCaseHS {
   private static final FacetField.FacetMethod TEST_ONLY_ONE_FACET_METHOD =
       null; // FacetField.FacetMethod.DEFAULT_METHOD;
 
+  @SuppressWarnings("MathAbsoluteNegative")
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     if (null != TEST_ONLY_ONE_FACET_METHOD) {
-      return Arrays.<Object[]>asList(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
-    }
+      return Collections.singleton(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
+    } else if (TEST_NIGHTLY) {
+      // wrap each enum val in an Object[] and return as Iterable
+      return () ->
+          Arrays.stream(FacetField.FacetMethod.values()).map(it -> new Object[] {it}).iterator();
+    } else {
+      // pick a single random method and test it
+      FacetField.FacetMethod[] methods = FacetField.FacetMethod.values();
 
-    // wrap each enum val in an Object[] and return as Iterable
-    return () ->
-        Arrays.stream(FacetField.FacetMethod.values()).map(it -> new Object[] {it}).iterator();
+      // can't use LuceneTestCase.random() because we're not in the runner context yet
+      String seed = System.getProperty("tests.seed", "");
+      return Collections.singleton(
+          new Object[] {methods[Math.abs(seed.hashCode()) % methods.length]});
+    }
   }
 
   public TestJsonFacets(FacetField.FacetMethod defMethod) {
@@ -210,8 +219,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     for (int i = 0; i < honda_model_counts.length - 1; i++) {
       idx.add(i);
     }
-    Collections.sort(
-        idx,
+    idx.sort(
         (o1, o2) -> {
           int cmp = honda_model_counts[o2] - honda_model_counts[o1];
           return cmp == 0 ? o1 - o2 : cmp;
@@ -355,7 +363,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
         "facets/f=={buckets:[{ val:999, count:2, x:180.0, z:42 }]}");
   }
 
-  public void testBehaviorEquivilenceOfUninvertibleFalse() throws Exception {
+  public void testBehaviorEquivalenceOfUninvertibleFalse() throws Exception {
     Client client = Client.localClient();
     indexSimple(client);
 
@@ -381,7 +389,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           && !f.contains("multi")) {
         // DVHASH is (currently) weird...
         //
-        // it's ignored for multi valued fields -- but for single valued fields, it explicitly
+        // it's ignored for multivalued fields -- but for single valued fields, it explicitly
         // checks the *FieldInfos* on the reader to see if the DocVals type is ok.
         //
         // Which means that unlike most other facet method:xxx options, it fails hard if you try to
@@ -401,7 +409,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // regardless of the facet method (parameterized via default at test class level)
     // faceting on an "uninvertible=false docValues=true" field should work,
     //
-    // it should behave equivilently to it's copyField source...
+    // it should behave equivalently to its copyField source...
     for (String f :
         Arrays.asList(
             "where_s", "where_s_multi_not_uninvert_dv", "where_s_single_not_uninvert_dv")) {
@@ -421,7 +429,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // faceting on an "uninvertible=false docValues=false" field should be possible
     // when using method:enum w/sort:index
     //
-    // it should behave equivilent to it's copyField source...
+    // it should behave equivalent to its copyField source...
     for (String f :
         Arrays.asList("where_s", "where_s_multi_not_uninvert", "where_s_single_not_uninvert")) {
       assertJQ(
@@ -445,7 +453,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     { // simple 'query' domain
 
-      // the facet buckets for all of the requests below should be identical
+      // the facet buckets for all the requests below should be identical
       // only the numFound & top level facet count should differ
       final String expectedFacets =
           "facets/w=={ buckets:[" + "  { val:'NJ', count:2}, " + "  { val:'NY', count:1} ] }";
@@ -498,7 +506,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     { // a nested explicit query domain
 
-      // for all of the "top" buckets, the subfacet should have identical sub-buckets
+      // for all the "top" buckets, the subfacet should have identical sub-buckets
       final String expectedSubBuckets = "{ buckets:[ { val:'B', count:3}, { val:'A', count:2} ] }";
       assertJQ(
           req(
@@ -579,7 +587,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "prelim_sort:'count desc', sort:'y desc'",
             "prelim_sort:'count desc', sort:'z desc'",
             "prelim_sort:'count desc', sort:'skg desc'")) {
-      // the relatedness score of each of our cat_s values is (conviniently) also alphabetical
+      // the relatedness score of each of our cat_s values is (conveniently) also alphabetical
       // order, (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
       //
       // So all of these re/sort options should produce identical output (since the num buckets is <
@@ -587,9 +595,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
       // - Testing "index" sort allows the randomized use of "stream" processor as default to be
       // tested.
       // - Testing (re)sorts on other stats sanity checks code paths where relatedness() is a
-      // "defered" Agg
+      // "deferred" Agg
       for (String limit : Arrays.asList(", ", ", limit:5, ", ", limit:-1, ")) {
-        // results shouldn't change regardless of our limit param"
+        // results shouldn't change regardless of our limit param
         assertJQ(
             req(
                 "q",
@@ -617,7 +625,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                 + "             background_popularity: 0.33333, },"
                 + "   }, "
                 + "   { val:'B', count:3, y:-3.0, z:-5, "
-                + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+                + "     skg : { relatedness: 0.0, " // perfectly average and uncorrelated
                 // + "             foreground_count: 1, "
                 // + "             foreground_size: 2, "
                 // + "             background_count: 3, "
@@ -645,7 +653,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                     + "      facet: { skg: 'relatedness($fore,$back)', y:'sum(num_i)', z:'min(num_i)' } } }"),
             "facets=={count:5, x:{ buckets:["
                 + "   { val:'B', count:3, y:-3.0, z:-5, "
-                + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+                + "     skg : { relatedness: 0.0, " // perfectly average and uncorrelated
                 // + "             foreground_count: 1, "
                 // + "             foreground_size: 2, "
                 // + "             background_count: 3, "
@@ -674,7 +682,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
       // - Testing (re)sorts on other stats sanity checks code paths where relatedness() is a
       // "deferred" Agg
       for (String limit : Arrays.asList(", ", ", limit:5, ", ", limit:-1, ")) {
-        // results shouldn't change regardless of our limit param"
+        // results shouldn't change regardless of our limit param
         assertJQ(
             req(
                 "q",
@@ -823,7 +831,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             + "                       background_popularity: 0.33333, "
             + "            } }, "
             + "            {  val:'NJ', count: 2, "
-            + "               skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+            + "               skg : { relatedness: 0.0, " // perfectly average and uncorrelated
             // + "                       foreground_count: 1, "
             // + "                       foreground_size: 2, "
             // + "                       background_count: 3, "
@@ -843,7 +851,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             + "             background_popularity: 0.33333 },"
             + "     y : { buckets:["
             + "            {  val:'NJ', count: 1, "
-            + "               skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+            + "               skg : { relatedness: 0.0, " // perfectly average and uncorrelated
             // + "                       foreground_count: 0, "
             // + "                       foreground_size: 0, "
             // + "                       background_count: 3, "
@@ -852,7 +860,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             + "                       background_popularity: 0.5, "
             + "            } }, "
             + "            {  val:'NY', count: 1, "
-            + "               skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+            + "               skg : { relatedness: 0.0, " // perfectly average and uncorrelated
             // + "                       foreground_count: 0, "
             // + "                       foreground_size: 0, "
             // + "                       background_count: 2, "
@@ -1014,14 +1022,14 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "prelim_sort:'count desc', sort:'y desc'",
             "prelim_sort:'count desc', sort:'z desc'",
             "prelim_sort:'count desc', sort:'skg desc'")) {
-      // the relatedness score of each of our cat_s values is (conviniently) also alphabetical
+      // the relatedness score of each of our cat_s values is (conveniently) also alphabetical
       // order, (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
       //
       // So all of these re/sort options should produce identical output
       // - Testing "index" sort allows the randomized use of "stream" processor as default to be
       // tested.
       // - Testing (re)sorts on other stats sanity checks code paths where relatedness() is a
-      // "defered" Agg
+      // "deferred" Agg
 
       for (String sweep : Arrays.asList("true", "false")) {
         //  results should be the same even if we disable sweeping...
@@ -1055,7 +1063,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                 + "             background_popularity: 0.33333, },"
                 + "   }, "
                 + "   { val:'B', count:3, y:-3.0, z:-5, "
-                + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+                + "     skg : { relatedness: 0.0, " // perfectly average and uncorrelated
                 + "             foreground_popularity: 0.16667,"
                 + "             background_popularity: 0.5 },"
                 + "   } ] } } ");
@@ -1437,7 +1445,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   List<String> getAlternatives(String field) {
-    int idx = field.lastIndexOf("_");
+    int idx = field.lastIndexOf('_');
     if (idx <= 0 || idx >= field.length()) return Collections.singletonList(field);
     String suffix = field.substring(idx);
     String[] alternativeSuffixes = suffixMap.get(suffix);
@@ -1762,8 +1770,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     client.deleteByQuery("*:*", null);
 
-    Client iclient = client;
-
     /* This code was not needed yet, but may be needed if we want to force empty shard results more often.
     // create a new indexing client that doesn't use one shard to better test for empty or non-existent results
     if (!client.local()) {
@@ -1802,10 +1808,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "true",
             sparse_s,
             "one");
-    iclient.add(doc, null);
-    iclient.add(doc, null);
-    iclient.add(doc, null); // a couple of deleted docs
-    iclient.add(
+    client.add(doc, null);
+    client.add(doc, null);
+    client.add(doc, null); // a couple of deleted docs
+    client.add(
         sdoc(
             "id",
             "2",
@@ -1840,9 +1846,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
             Z_num_l,
             "0"),
         null);
-    iclient.add(sdoc("id", "3"), null);
-    iclient.commit();
-    iclient.add(
+    client.add(sdoc("id", "3"), null);
+    client.commit();
+    client.add(
         sdoc(
             "id",
             "4",
@@ -1875,7 +1881,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             Z_num_l,
             Long.MIN_VALUE),
         null);
-    iclient.add(
+    client.add(
         sdoc(
             "id",
             "5",
@@ -1900,8 +1906,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             multi_ss,
             "a"),
         null);
-    iclient.commit();
-    iclient.add(
+    client.commit();
+    client.add(
         sdoc(
             "id",
             "6",
@@ -1930,7 +1936,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             Z_num_l,
             Long.MAX_VALUE),
         null);
-    iclient.commit();
+    client.commit();
     client.commit();
 
     // test for presence of debugging info
@@ -2046,9 +2052,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             + ", f2:{  'buckets':[{ val:'B', count:3, n1:-3.0}, { val:'A', count:2, n1:6.0 }]} }");
 
     // test trivial re-sorting by stats
-    // (there are other more indepth tests of this in doTestPrelimSorting, but this let's us sanity
-    // check
-    // small responses with multiple templatized params of diff real types)
+    // (there are other more in depth tests of this in doTestPrelimSorting, but this lets us check
+    // small responses with multiple templated params of diff real types)
     client.testJQ(
         params(
             p,
@@ -3571,7 +3576,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           "facets=={ 'count':6, " + "f1:{  buckets:[{ val:batman, count:1, x:1}]}" + " } ");
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
-      assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
+      assertEquals(0, DebugAgg.Acc.resets.get() - resets);
       // all slots should be done in a single shot. there may be more than 5 due to special slots or
       // hashing.
       assertTrue(DebugAgg.Acc.last.numSlots >= 5);
@@ -3589,7 +3594,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           "facets==");
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
-      assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
+      assertEquals(0, DebugAgg.Acc.resets.get() - resets);
       // all slots should be done in a single shot. there may be more than 5 due to special slots or
       // hashing.
       assertTrue(DebugAgg.Acc.last.numSlots >= 5);
@@ -3608,7 +3613,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
           "facets==");
 
       assertEquals(1, DebugAgg.Acc.creates.get() - creates);
-      assertTrue(DebugAgg.Acc.resets.get() - resets == 0);
+      assertEquals(0, DebugAgg.Acc.resets.get() - resets);
       // all slots should be done in a single shot. there may be more than 5 due to special slots or
       // hashing.
       assertTrue(DebugAgg.Acc.last.numSlots >= 5);
@@ -3743,7 +3748,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
    */
   public void doTestPrelimSortingDistrib(final boolean extraAgg, final boolean extraSubFacet)
       throws Exception {
-    // we only use 2 shards, but we also want to to sanity check code paths if one (additional)
+    // we only use 2 shards, but we also want to check code paths if one (additional)
     // shard is empty
     final int totalShards = random().nextBoolean() ? 2 : 3;
 
@@ -3787,8 +3792,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // carefully craft two balanced shards (assuming we have at least two) and leave any other
     // shards empty to help check the code paths of some shards returning no buckets.
     //
-    // if we are in a single node sitaution, these clients will be the same, and we'll have the same
-    // total docs in our collection, but the numShardsWithData will be diff
+    // if we are in a single node situation, these clients will be the same, and we'll have the same
+    // total docs in our collection, but the numShardsWithData will be different
     // (which will affect some assertions)
     final SolrClient shardA = clients.get(0);
     final SolrClient shardB = clients.get(clients.size() - 1);
@@ -4079,7 +4084,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
           // the only difference from a white box perspective, is when/if we are
           // optimized to use the sort SlotAcc during collection instead of the prelim_sort
-          // SlotAcc..
+          // SlotAcc...
           // (ie: sub facet preventing single pass (re)sort in single node mode)
           if (((0 < limit || extraSubFacet) && snippet.contains("prelim_sort"))
               && !(indexSortDebugAggFudge && snippet.contains("index asc"))) {
@@ -4103,7 +4108,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // complex, typically better to just ignore the prelim_sort, but we're testing it for
     // completeness (and because you *might* want to prelim_sort by some function, for the purpose
     // of "sampling" the top results and then (re)sorting by count/index)
-    for (String numSort : Arrays.asList("count", "x")) { // equivilent ordering
+    for (String numSort : Arrays.asList("count", "x")) { // equivalent ordering
       client.testJQ(
           params(
               "q",
@@ -4191,7 +4196,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
               + "}");
       // since these behave differently, defer DebugAgg counter checks until all are done...
     }
-    // These 3 permutations defer the compuation of x as docsets,
+    // These 3 permutations defer the computation of x as docsets,
     // so it's 3 x (10 buckets on each shard) (but 0 direct docs)
     //      prelim_sort:count, sort:index
     //      prelim_sort:index, sort:x
@@ -4204,7 +4209,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     //      prelim_sort:x,     sort:index
     // ...but the (2) prelim_sort:index streaming situations above will also cause all the docs in
     // the first
-    // 10+1 buckets to be collected (enum checks limit+1 to know if there are "more"...
+    // 10+1 buckets to be collected (enum checks limit+1) to know if there are "more"...
     assertEqualsAndReset(
         420
             + (indexSortDebugAggFudge
@@ -4247,19 +4252,19 @@ public class TestJsonFacets extends SolrTestCaseHS {
             + "  },"
             + "}");
     // the prelim_sort should prevent 'sum(bar_i)' from being computed for every doc
-    // only the choosen buckets should be collected (as a set) once per node...
+    // only the chosen buckets should be collected (as a set) once per node...
     assertEqualsAndReset(0, DebugAgg.Acc.collectDocs);
     // 5 bucket, on each shard
     assertEqualsAndReset(numShardsWithData * 5, DebugAgg.Acc.collectDocSets);
 
-    { // sanity check how defered stats are handled
+    { // check how deferred stats are handled
 
       // here we'll prelim_sort & sort on things that are both "not x" and using the debug()
-      // counters (wrapping x) to assert that 'x' is correctly defered and only collected for the
+      // counters (wrapping x) to assert that 'x' is correctly deferred and only collected for the
       // final top buckets
       final List<String> sorts = new ArrayList<String>(Arrays.asList("index asc", "count asc"));
       if (extraAgg) {
-        sorts.add("y asc"); // same for every bucket, but index order tie breaker should kick in
+        sorts.add("y asc"); // same for every bucket, but index order tiebreaker should kick in
       }
       for (String s : sorts) {
         client.testJQ(
@@ -4294,7 +4299,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                 + "x:40.0},"
                 + "] } }");
         // Neither prelim_sort nor sort should need 'sum(bar_i)' to be computed for every doc
-        // only the choosen buckets should be collected (as a set) once per node...
+        // only the chosen buckets should be collected (as a set) once per node...
         assertEqualsAndReset(0, DebugAgg.Acc.collectDocs);
         // 5 bucket, on each shard
         assertEqualsAndReset(numShardsWithData * 5, DebugAgg.Acc.collectDocSets);
@@ -5021,7 +5026,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   /** test code to ensure TDigest is working as we expect. */
-  public void XtestTDigest() throws Exception {
+  public void XtestTDigest() {
     AVLTreeDigest t1 = new AVLTreeDigest(100);
     t1.add(10, 1);
     t1.add(90, 1);
@@ -5076,13 +5081,13 @@ public class TestJsonFacets extends SolrTestCaseHS {
     hll.addRaw(987654321);
   }
 
-  /** atomicly resets the acctual AtomicLong value matches the expected and resets it to 0 */
-  private static final void assertEqualsAndReset(String msg, long expected, AtomicLong actual) {
+  /** atomically resets the actual AtomicLong value matches the expected and resets it to 0 */
+  private static void assertEqualsAndReset(String msg, long expected, AtomicLong actual) {
     final long current = actual.getAndSet(0);
     assertEquals(msg, expected, current);
   }
-  /** atomicly resets the acctual AtomicLong value matches the expected and resets it to 0 */
-  private static final void assertEqualsAndReset(long expected, AtomicLong actual) {
+  /** atomically resets the actual AtomicLong value matches the expected and resets it to 0 */
+  private static void assertEqualsAndReset(long expected, AtomicLong actual) {
     final long current = actual.getAndSet(0);
     assertEquals(expected, current);
   }

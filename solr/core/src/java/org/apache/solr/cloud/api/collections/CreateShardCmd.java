@@ -37,7 +37,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +99,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     } else {
       // message contains extCollectionName that might be an alias. Unclear (to me) how this works
       // in that case.
-      ccc.offerStateUpdate(Utils.toJSON(message));
+      ccc.offerStateUpdate(message);
     }
 
     // wait for a while until we see the shard and update the local view of the cluster state

@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -38,7 +39,7 @@ import org.junit.Test;
 
 public class DistributedQueueTest extends SolrTestCaseJ4 {
 
-  private static final Charset UTF8 = Charset.forName("UTF-8");
+  private static final Charset UTF8 = StandardCharsets.UTF_8;
 
   protected ZkTestServer zkServer;
   protected SolrZkClient zkClient;
@@ -315,6 +316,7 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
       this.waitBeforeOfferMs = waitBeforeOfferMs;
     }
 
+    @Override
     public void run() {
       try {
         Thread.sleep(waitBeforeOfferMs);
@@ -350,7 +352,11 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(createTempDir("zkData"));
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     assertTrue(zkClient.isConnected());
   }
 

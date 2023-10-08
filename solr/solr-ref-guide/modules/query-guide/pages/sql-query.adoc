@@ -21,10 +21,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Solr SQL module brings the power of SQL querying to Solr. The SQL module needs to be xref:configuration-guide:solr-modules.adoc[installed] to use.
-
-The SQL interface seamlessly combines SQL with Solr's full-text search capabilities.
+The Solr SQL Module brings the power of SQL querying to Solr by seamlessly combining
+SQL with Solr's full-text search capabilities.
 Both MapReduce style and JSON Facet API aggregations are supported, which means that SQL querying can be used to support both *high query volume* and *high cardinality* use cases.
+
+== Module
+
+This is provided via the `sql` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == SQL Architecture
 

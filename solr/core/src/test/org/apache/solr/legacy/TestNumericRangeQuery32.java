@@ -16,24 +16,24 @@
  */
 package org.apache.solr.legacy;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.search.QueryUtils;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -396,7 +396,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     q = LegacyNumericRangeQuery.newFloatRange("float", Float.NaN, Float.NaN, true, true);
     topDocs = s.search(q, 10);
     assertEquals(
-        "Score doc count", TestLegacyNumericUtils.FLOAT_NANs.length, topDocs.scoreDocs.length);
+        "Score doc count", TestLegacyNumericUtils.FLOAT_NANs.size(), topDocs.scoreDocs.length);
 
     r.close();
     dir.close();
@@ -407,8 +407,8 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     // 10 random tests
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
-      int lower = (int) (random().nextDouble() * noDocs - noDocs / 2);
-      int upper = (int) (random().nextDouble() * noDocs - noDocs / 2);
+      int lower = (int) (random().nextDouble() * noDocs - noDocs / 2.0);
+      int upper = (int) (random().nextDouble() * noDocs - noDocs / 2.0);
       if (lower > upper) {
         int a = lower;
         lower = upper;
@@ -507,7 +507,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
   }
 
   @Test
-  public void testEqualsAndHash() throws Exception {
+  public void testEqualsAndHash() {
     QueryUtils.checkHashEquals(LegacyNumericRangeQuery.newIntRange("test1", 4, 10, 20, true, true));
     QueryUtils.checkHashEquals(
         LegacyNumericRangeQuery.newIntRange("test2", 4, 10, 20, false, true));
@@ -543,7 +543,7 @@ public class TestNumericRangeQuery32 extends SolrTestCase {
     // only test equality:
     Query q1 = LegacyNumericRangeQuery.newIntRange("test14", 4, 10, 20, true, true);
     Query q2 = LegacyNumericRangeQuery.newLongRange("test14", 4, 10L, 20L, true, true);
-    assertFalse(q1.equals(q2));
-    assertFalse(q2.equals(q1));
+    assertNotEquals(q1, q2);
+    assertNotEquals(q2, q1);
   }
 }

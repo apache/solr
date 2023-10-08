@@ -28,7 +28,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
@@ -199,8 +199,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     StringBuilder sb = new StringBuilder();
     NamedList<?> args = info.initArgs;
     this.scheme = getParameter(args, INIT_URL_SCHEME, null, sb);
-    if (StringUtils.endsWith(this.scheme, "://")) {
-      this.scheme = StringUtils.removeEnd(this.scheme, "://");
+    if (this.scheme != null && this.scheme.endsWith("://")) {
+      this.scheme = this.scheme.replace("://", "");
     }
 
     String strategy =
@@ -281,13 +281,13 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
     this.defaultClient =
         new Http2SolrClient.Builder()
-            .connectionTimeout(connectionTimeout)
-            .idleTimeout(soTimeout)
+            .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
+            .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
-            .maxConnectionsPerHost(maxConnectionsPerHost)
+            .withMaxConnectionsPerHost(maxConnectionsPerHost)
             .build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient(defaultClient);
+    this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
@@ -296,7 +296,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
 
   @Override
   public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {
-    clientBuilderPlugin.setup(defaultClient);
+    if (clientBuilderPlugin != null) {
+      clientBuilderPlugin.setup(defaultClient);
+    }
   }
 
   protected <T> T getParameter(
@@ -386,14 +388,18 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     }
   }
 
+  public SolrClient getClient() {
+    return defaultClient;
+  }
+
   /**
    * Rebuilds the URL replacing the URL scheme of the passed URL with the configured scheme
    * replacement.If no scheme was configured, the passed URL's scheme is left alone.
    */
   private String buildUrl(String url) {
     if (!URLUtil.hasScheme(url)) {
-      return StringUtils.defaultIfEmpty(scheme, DEFAULT_SCHEME) + "://" + url;
-    } else if (StringUtils.isNotEmpty(scheme)) {
+      return (StrUtils.isNullOrEmpty(scheme) ? DEFAULT_SCHEME : scheme) + "://" + url;
+    } else if (StrUtils.isNotNullOrEmpty(scheme)) {
       return scheme + "://" + URLUtil.removeScheme(url);
     }
 

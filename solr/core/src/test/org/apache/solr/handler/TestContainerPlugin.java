@@ -30,8 +30,8 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Command;
@@ -39,28 +39,31 @@ import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
+import org.apache.solr.pkg.PackageAPI;
+import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.ErrorLogMuter;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,7 +71,43 @@ import org.junit.Test;
 public class TestContainerPlugin extends SolrCloudTestCase {
   private Phaser phaser;
 
+  private CountingListener listener;
+
   private boolean forceV2;
+
+  /**
+   * A package listener that will count how many times it has been triggered. Useful to wait for
+   * changes accross multiple cores.
+   *
+   * <p>Use by calling {@link #reset()} before the API calls, and then {@link #waitFor(int)} to
+   * block until <code>num</code> cores have been notified.
+   */
+  static class CountingListener implements PackageListeners.Listener {
+    private Semaphore changeCalled = new Semaphore(0);
+
+    @Override
+    public String packageName() {
+      return null; // will fire on all package changes
+    }
+
+    @Override
+    public Map<String, PackageAPI.PkgVersion> packageDetails() {
+      return null; // only used to print meta information
+    }
+
+    @Override
+    public void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx) {
+      changeCalled.release();
+    }
+
+    public void reset() {
+      changeCalled.drainPermits();
+    }
+
+    public boolean waitFor(int num) throws InterruptedException {
+      return changeCalled.tryAcquire(num, 10, TimeUnit.SECONDS);
+    }
+  }
 
   @Before
   public void setup() throws Exception {
@@ -77,8 +116,27 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     forceV2 = random().nextBoolean();
 
     int nodes = TEST_NIGHTLY ? 4 : 2;
-    cluster = configureCluster(nodes).withJettyConfig(jetty -> jetty.enableV2(true)).configure();
-    cluster.getOpenOverseer().getCoreContainer().getContainerPluginsRegistry().setPhaser(phaser);
+    cluster =
+        configureCluster(nodes)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .configure();
+
+    String coll = getSaferTestName();
+    CollectionAdminRequest.createCollection(coll, "conf1", 1, nodes)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(coll, 1, nodes); // 1 replica per node
+
+    listener = new CountingListener();
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      CoreContainer cc = jetty.getCoreContainer();
+      cc.getContainerPluginsRegistry().setPhaser(phaser);
+      cc.getCores()
+          .forEach(
+              c -> {
+                c.getPackageListeners().addListener(listener);
+              });
+    }
   }
 
   @After
@@ -87,6 +145,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     System.clearProperty("enable.packages");
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testApi() throws Exception {
     int version = phaser.getPhase();
@@ -152,22 +211,20 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    try (ErrorLogMuter errors = ErrorLogMuter.substring("/my-random-prefix/their/plugin")) {
-      RemoteExecutionException e =
-          assertThrows(
-              RemoteExecutionException.class,
-              () -> getPlugin("/my-random-prefix/their/plugin").call());
-      assertEquals(404, e.code());
-      assertThat(
-          e.getMetaData().findRecursive("error", "msg").toString(),
-          containsString("no core retrieved"));
-      // V2HttpCall will separately log the path and stack trace, probably could be fixed
-      assertEquals(2, errors.getCount());
-    }
+    RemoteExecutionException e =
+        assertThrows(
+            RemoteExecutionException.class,
+            () -> getPlugin("/my-random-prefix/their/plugin").call());
+    assertEquals(404, e.code());
+    final String msg = (String) ((Map<String, Object>) (e.getMetaData().get("error"))).get("msg");
+    MatcherAssert.assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
+    CConfig c6Cfg = new CConfig();
+    c6Cfg.strVal = "added";
     plugin.name = "clusterSingleton";
     plugin.klass = C6.class.getName();
+    plugin.config = c6Cfg;
     addPlugin.process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
@@ -178,6 +235,16 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     assertTrue("ccProvided", C6.ccProvided);
     assertTrue("startCalled", C6.startCalled);
     assertFalse("stopCalled", C6.stopCalled);
+
+    // update the clusterSingleton config
+    c6Cfg.strVal = "updated";
+    postPlugin(singletonMap("update", plugin)).process(cluster.getSolrClient());
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
+
+    assertTrue("stopCalled", C6.stopCalled);
+
+    // Clear stopCalled, it will be verified again when the Overseer Jetty is killed
+    C6.stopCalled = false;
 
     assertEquals(CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC()));
     assertEquals(CConfig.class, ContainerPluginsRegistry.getConfigClass(new CC1()));
@@ -241,7 +308,8 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // We have two versions of the plugin in 2 different jar files. they are already uploaded to
     // the package store
-    Package.AddVersion add = new Package.AddVersion();
+    listener.reset();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "mypkg";
     add.files = singletonList(FILE1);
@@ -252,9 +320,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             .withPayload(singletonMap("add", add))
             .build();
     addPkgVersionReq.process(cluster.getSolrClient());
+    assertTrue(
+        "core package listeners did not notify",
+        listener.waitFor(cluster.getJettySolrRunners().size()));
 
     waitForAllNodesToSync(
-        cluster,
         "/cluster/package",
         Map.of(
             ":result:packages:mypkg[0]:version",
@@ -262,7 +332,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
             ":result:packages:mypkg[0]:files[0]",
             FILE1));
 
-    // Now lets create a plugin using v1 jar file
+    // Now let's create a plugin using v1 jar file
     PluginMeta plugin = new PluginMeta();
     plugin.name = "myplugin";
     plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
@@ -337,7 +407,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     @JsonProperty public Boolean boolVal;
   }
 
-  public static class C6 implements ClusterSingleton {
+  public static class C6 implements ClusterSingleton, ConfigurablePlugin<CConfig> {
     static boolean startCalled = false;
     static boolean stopCalled = false;
     static boolean ccProvided = false;
@@ -356,7 +426,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start() {
       state = State.STARTING;
       startCalled = true;
       state = State.RUNNING;
@@ -373,6 +443,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       stopCalled = true;
       state = State.STOPPED;
     }
+
+    @Override
+    public void configure(CConfig cfg) {}
   }
 
   public static class C5 implements ResourceLoaderAware {
@@ -380,12 +453,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     private SolrResourceLoader resourceLoader;
 
     @Override
-    public void inform(ResourceLoader loader) throws IOException {
+    public void inform(ResourceLoader loader) {
       this.resourceLoader = (SolrResourceLoader) loader;
-      try {
-        InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class");
+      try (InputStream is = resourceLoader.openResource("org/apache/solr/handler/MyPlugin.class")) {
         byte[] buf = new byte[1024 * 5];
-        int sz = IOUtils.read(is, buf);
+        int sz = is.read(buf);
         classData = ByteBuffer.wrap(buf, 0, sz);
       } catch (IOException e) {
         // do not do anything
@@ -405,7 +477,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       method = GET,
       path = "/plugin/my/plugin",
       permission = PermissionNameProvider.Name.COLL_READ_PERM)
-  public class C2 {}
+  public static class C2 {}
 
   @EndPoint(
       method = GET,
@@ -439,7 +511,10 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   private Callable<V2Response> getPlugin(String path) {
     V2Request req = new V2Request.Builder(path).forceV2(forceV2).GET().build();
-    return () -> req.process(cluster.getSolrClient());
+    return () -> {
+      V2Response rsp = req.process(cluster.getSolrClient());
+      return rsp;
+    };
   }
 
   private V2Request postPlugin(Object payload) {
@@ -450,26 +525,21 @@ public class TestContainerPlugin extends SolrCloudTestCase {
         .build();
   }
 
-  public static void waitForAllNodesToSync(
-      MiniSolrCloudCluster cluster, String path, Map<String, Object> expected) throws Exception {
+  public void waitForAllNodesToSync(String path, Map<String, Object> expected) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + path + "?wt=javabin";
-      // Allow multiple retries here because we need multiple nodes to update
-      // and our single phaser only ensures that one of them has reached expected state
-      TestDistribPackageStore.assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
+      TestDistribPackageStore.assertResponseValues(1, new Fetcher(url, jettySolrRunner), expected);
     }
   }
 
-  private void expectError(V2Request req, String expectErrorMsg)
-      throws IOException, SolrServerException {
+  private void expectError(V2Request req, String expectErrorMsg) {
     String errPath = "/error/details[0]/errorMessages[0]";
     expectError(req, cluster.getSolrClient(), errPath, expectErrorMsg);
   }
 
   private static void expectError(
-      V2Request req, SolrClient client, String errPath, String expectErrorMsg)
-      throws IOException, SolrServerException {
+      V2Request req, SolrClient client, String errPath, String expectErrorMsg) {
     RemoteExecutionException e =
         expectThrows(RemoteExecutionException.class, () -> req.process(client));
     String msg = e.getMetaData()._getStr(errPath, "");

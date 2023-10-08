@@ -62,6 +62,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       super(qstr, localParams, params, req);
     }
 
+    @Override
     public Query parse() {
 
       String fs = params.get("feature");
@@ -108,6 +109,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       this.trainingParams = trainingParams;
     }
 
+    @Override
     public DelegatingCollector getAnalyticsCollector(
         ResponseBuilder rbsp, IndexSearcher indexSearcher) {
       return new TextLogisticRegressionCollector(rbsp, indexSearcher, trainingParams);
@@ -141,12 +143,14 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       docsSet = new SparseFixedBitSet(searcher.getIndexReader().numDocs());
     }
 
+    @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       leafReader = context.reader();
       leafOutcomeValue = leafReader.getNumericDocValues(trainingParams.outcome);
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       int outcome;
       if (leafOutcomeValue.advanceExact(doc)) {
@@ -162,8 +166,9 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       docsSet.set(context.docBase + doc);
     }
 
+    @Override
     @SuppressWarnings({"unchecked"})
-    public void finish() throws IOException {
+    public void complete() throws IOException {
 
       Map<Integer, double[]> docVectors = new HashMap<>();
       Terms terms =
@@ -225,7 +230,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       analytics.add("feature", trainingParams.feature);
       analytics.add("positiveLabel", trainingParams.positiveLabel);
       if (this.delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) this.delegate).finish();
+        ((DelegatingCollector) this.delegate).complete();
       }
     }
 

@@ -17,7 +17,9 @@
 
 package org.apache.solr.scripting.xslt;
 
-import static org.apache.solr.scripting.xslt.XSLTConstants.*;
+import static org.apache.solr.scripting.xslt.XSLTConstants.TR;
+import static org.apache.solr.scripting.xslt.XSLTConstants.XSLT_CACHE_DEFAULT;
+import static org.apache.solr.scripting.xslt.XSLTConstants.XSLT_CACHE_PARAM;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Map;

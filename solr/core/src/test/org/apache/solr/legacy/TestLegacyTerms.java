@@ -20,10 +20,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiTerms;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.SolrTestCase;
 
@@ -149,38 +149,47 @@ public class TestLegacyTerms extends SolrTestCase {
   /** A complete empty Terms instance that has no terms in it and supports no optional statistics */
   private static Terms EMPTY_TERMS =
       new Terms() {
+        @Override
         public TermsEnum iterator() {
           return TermsEnum.EMPTY;
         }
 
+        @Override
         public long size() {
           return -1;
         }
 
+        @Override
         public long getSumTotalTermFreq() {
           return 0;
         }
 
+        @Override
         public long getSumDocFreq() {
           return 0;
         }
 
+        @Override
         public int getDocCount() {
           return 0;
         }
 
+        @Override
         public boolean hasFreqs() {
           return false;
         }
 
+        @Override
         public boolean hasOffsets() {
           return false;
         }
 
+        @Override
         public boolean hasPositions() {
           return false;
         }
 
+        @Override
         public boolean hasPayloads() {
           return false;
         }

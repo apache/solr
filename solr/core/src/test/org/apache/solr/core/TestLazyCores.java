@@ -16,10 +16,12 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
@@ -53,7 +54,7 @@ import org.junit.Test;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
-  /** Transient core cache max size defined in the test solr.xml */
+  /** Transient core cache max size defined in the test solr-transientCores.xml */
   private static final int TRANSIENT_CORE_CACHE_MAX_SIZE = 4;
 
   private File solrHomeDirectory;
@@ -81,7 +82,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       new ReadOnlyCoresLocator() {
         @Override
         public List<CoreDescriptor> discover(CoreContainer cc) {
-          return ImmutableList.of(
+          return List.of(
               makeCoreDescriptor(cc, "collection1", "false", "true"),
               makeCoreDescriptor(cc, "collection2", "true", "true"),
               makeCoreDescriptor(cc, "collection3", "on", "false"),
@@ -97,7 +98,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private CoreContainer init() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
 
-    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
+    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr-transientCores.xml");
     for (int idx = 1; idx < 10; ++idx) {
       copyMinConf(new File(solrHomeDirectory, "collection" + idx));
     }
@@ -108,7 +109,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private CoreContainer initEmpty() throws IOException {
     solrHomeDirectory = createTempDir().toFile();
-    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
+    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr-transientCores.xml");
     NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory.toPath(), null);
     return createCoreContainer(
         cfg,
@@ -215,7 +216,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       checkSearch(core4);
 
-      // Now just insure that the normal searching on "collection1" finds _0_ on the same query that
+      // Now just ensure that the normal searching on "collection1" finds _0_ on the same query that
       // found _2_ above. Use of makeReq above and req below is tricky, very tricky.
       SolrCore collection1 = cc.getCore("collection1");
       assertQ(
@@ -385,8 +386,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  private void tryCreateFail(CoreAdminHandler admin, String name, String dataDir, String... errs)
-      throws Exception {
+  private void tryCreateFail(CoreAdminHandler admin, String name, String dataDir, String... errs) {
     SolrException thrown =
         expectThrows(
             SolrException.class,
@@ -572,9 +572,9 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   // Test that transient cores
   // 1> produce errors as appropriate when the config or schema files are foo'd
-  // 2> "self heal". That is, if the problem is corrected can the core be reloaded and used?
+  // 2> "self-heal". That is, if the problem is corrected can the core be reloaded and used?
   // 3> that OK cores can be searched even when some cores failed to load.
-  // 4> that having no solr.xml entry for transient chache handler correctly uses the default.
+  // 4> that having no solr.xml entry for transient cache handler correctly uses the default.
   @Test
   public void testBadConfigsGenerateErrors() throws Exception {
     final CoreContainer cc =
@@ -617,7 +617,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       copyGoodConf("badSchema1", "schema-tiny.xml", "schema.xml");
       copyGoodConf("badSchema2", "schema-tiny.xml", "schema.xml");
 
-      // Reload the cores and insure that
+      // Reload the cores and ensure that
       // 1> they pick up the new configs
       // 2> they don't fail again b/c they still have entries in loadFailure in core container.
       cc.reload("badConfig1");
@@ -677,14 +677,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private void writeCustomConfig(String coreName, String config, String schema, String rand_snip)
       throws IOException {
 
-    File coreRoot = new File(solrHomeDirectory, coreName);
-    File subHome = new File(coreRoot, "conf");
-    if (!coreRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", coreRoot.mkdirs());
-    }
+    Path coreRoot = solrHomeDirectory.toPath().resolve(coreName);
+    Path subHome = coreRoot.resolve("conf");
+    Files.createDirectories(subHome);
     // Write the file for core discovery
-    FileUtils.writeStringToFile(
-        new File(coreRoot, "core.properties"),
+    Files.writeString(
+        coreRoot.resolve("core.properties"),
         "name="
             + coreName
             + System.getProperty("line.separator")
@@ -693,18 +691,17 @@ public class TestLazyCores extends SolrTestCaseJ4 {
             + "loadOnStartup=true",
         StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(
-        new File(subHome, "solrconfig.snippet.randomindexconfig.xml"),
+    Files.writeString(
+        subHome.resolve("solrconfig.snippet.randomindexconfig.xml"),
         rand_snip,
         StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(
-        new File(subHome, "solrconfig.xml"), config, StandardCharsets.UTF_8);
+    Files.writeString(subHome.resolve("solrconfig.xml"), config, StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(new File(subHome, "schema.xml"), schema, StandardCharsets.UTF_8);
+    Files.writeString(subHome.resolve("schema.xml"), schema, StandardCharsets.UTF_8);
   }
 
-  // Write out the cores' config files, both bad schema files, bad config files as well as some good
+  // Write out the cores' config files, both bad schema files, bad config files and some good
   // cores.
   private CoreContainer initGoodAndBad(
       List<String> goodCores, List<String> badSchemaCores, List<String> badConfigCores)
@@ -722,13 +719,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
     // Collect the files that we'll write to the config directories.
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    String min_schema =
-        FileUtils.readFileToString(new File(top, "schema-tiny.xml"), StandardCharsets.UTF_8);
+    String min_schema = Files.readString(Path.of(top, "schema-tiny.xml"), StandardCharsets.UTF_8);
     String min_config =
-        FileUtils.readFileToString(new File(top, "solrconfig-minimal.xml"), StandardCharsets.UTF_8);
+        Files.readString(Path.of(top, "solrconfig-minimal.xml"), StandardCharsets.UTF_8);
     String rand_snip =
-        FileUtils.readFileToString(
-            new File(top, "solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
+        Files.readString(
+            Path.of(top, "solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
 
     // Now purposely mess up the config files, introducing stupid syntax errors.
     String bad_config = min_config.replace("<requestHandler", "<reqsthalr");
@@ -747,16 +743,17 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory.toPath(), "<solr/>");
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
-    return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
+    return createCoreContainer(config, new CorePropertiesLocator(config));
   }
 
   // We want to see that the core "heals itself" if an un-corrupted file is written to the
   // directory.
   private void copyGoodConf(String coreName, String srcName, String dstName) throws IOException {
-    File coreRoot = new File(solrHomeDirectory, coreName);
-    File subHome = new File(coreRoot, "conf");
+    Path coreRoot = solrHomeDirectory.toPath().resolve(coreName);
+    Path subHome = coreRoot.resolve("conf");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, srcName), new File(subHome, dstName));
+    Files.copy(
+        Path.of(top, srcName), subHome.resolve(dstName), StandardCopyOption.REPLACE_EXISTING);
   }
 
   // If ok==true, we shouldn't be seeing any failure cases.
@@ -778,7 +775,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
     if (ok) {
       if (failures.size() != 0) {
-        fail("Should have cleared the error, but there are failues " + failures.toString());
+        fail("Should have cleared the error, but there are failures " + failures);
       }
     } else {
       if (failures.size() == 0) {
@@ -898,7 +895,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     return new LocalSolrQueryRequest(core, params(paramPairs));
   }
 
-  private static final String makePath(String... args) {
+  private static String makePath(String... args) {
     return String.join(File.separator, args);
   }
 
@@ -965,7 +962,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  // Insure that when a core is evicted from the transient cache, any uncommitted docs are
+  // Ensure that when a core is evicted from the transient cache, any uncommitted docs are
   // preserved. Note, this needs FS-based indexes to persist! Cores 2, 3, 6, 7, 8, 9 are transient
   @Test
   public void testNoCommit() throws Exception {
@@ -996,8 +993,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       int notLoadedCoreCount = 0;
       List<SolrCore> openCores = new ArrayList<>();
       for (String coreName : transientCoreNames) {
-        // The point of this test is to insure that when cores are evicted and re-opened
-        // that the docs are there, so insure that the core we're testing is gone, gone, gone.
+        // The point of this test is to ensure that when cores are evicted and re-opened
+        // that the docs are there, so ensure that the core we're testing is gone, gone, gone.
         if (!loadedCoreNames.contains(coreName)) {
           notLoadedCoreCount++;
           checkCoresNotLoaded(cc, coreName);

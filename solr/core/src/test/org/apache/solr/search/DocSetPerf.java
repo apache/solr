@@ -123,10 +123,10 @@ public class DocSetPerf {
         int idx2 = rand.nextInt(numSets);
         DocSet a = null, b = null;
 
-        if (type == "B") {
+        if (type.equals("B")) {
           a = bset[idx1];
           b = bset[idx2];
-        } else if (type == "M") {
+        } else if (type.equals("M")) {
           if (idx1 < idx2) {
             a = bset[idx1];
           } else {
@@ -134,12 +134,12 @@ public class DocSetPerf {
           }
         }
 
-        if (oper == "intersect") {
+        if (oper.equals("intersect")) {
           DocSet res = a.intersection(b);
           ret += res.ramBytesUsed();
-        } else if (oper == "intersectSize") {
+        } else if (oper.equals("intersectSize")) {
           ret += a.intersectionSize(b);
-        } else if (oper == "intersectAndSize") {
+        } else if (oper.equals("intersectAndSize")) {
           DocSet res = a.intersection(b);
           ret += res.size();
         }

@@ -395,6 +395,59 @@ F8V7067-APL-KIT,"electronics,connector",Belkin Mobile Power Cord for iPod w/ Doc
 MA147LL/A,"electronics,music",Apple 60 GB iPod with Video Playback Black,10,399.0,0.2446348
 ----
 
+== CBOR Response Writer
+
+Solr supports CBOR response format which is more compact and fast. Use the `wt=cbor` parameter to get responses in CBOR.
+
+If your client does not support the STRINGREF feature of CBOR, use `wt=cbor&str_ref=false`
+
+=== Example Python program
+
+save the following program as `cbor_query.py`
+
+[,python]
+----
+import cbor2
+import json
+import requests
+
+// replace 'coll1' with your own collection name. And use appropriate query params
+url = "http://localhost:8983/solr/coll1/select?q=*:*&wt=cbor"
+
+# Make the HTTP request
+response = requests.get(url, headers={"Accept": "application/cbor"})
+
+# Check the response status
+if response.status_code == requests.codes.ok:
+    # Decode the CBOR response payload
+    cbor_data = response.content
+    json_data = cbor2.loads(cbor_data)
+
+    # Dump the JSON data to a file
+    with open("response.json", "w") as file:
+        json.dump(json_data, file, indent=4)
+    print("CBOR response payload dumped to response.json")
+else:
+    print("HTTP request failed with status code:", response.status_code)
+
+----
+[]
+
+
+==== Running the program
+
+1. Install Python
+
+2. Install the dependencies
+
+ pip install requests cbor2
+
+3. Run the program
+
+ python3 cbor_query.py
+
+
+
 == Smile Response Writer
 
 The Smile format is a JSON-compatible binary format, described in detail here: https://en.wikipedia.org/wiki/Smile_%28data_interchange_format%29[https://en.wikipedia.org/wiki/Smile_(data_interchange_format)]

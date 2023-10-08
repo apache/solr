@@ -322,6 +322,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       return metric.getSnapshot().getValues();
     }
 
+    @Override
     public long getSnapshotSize() {
       return metric.getSnapshot().size();
     }

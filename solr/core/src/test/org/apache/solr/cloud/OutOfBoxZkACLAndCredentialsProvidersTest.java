@@ -18,9 +18,11 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -38,7 +40,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Charset DATA_ENCODING = Charset.forName("UTF-8");
+  private static final Charset DATA_ENCODING = StandardCharsets.UTF_8;
 
   protected ZkTestServer zkServer;
 
@@ -50,7 +52,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 
@@ -69,11 +71,19 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
     System.setProperty("zkHost", zkServer.getZkAddress());
 
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkClient.makePath("/solr", false);
     zkClient.close();
 
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkClient.create(
         "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     zkClient.makePath(
@@ -106,9 +116,13 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOutOfBoxSolrZkClient() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     try {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     } finally {
       zkClient.close();
@@ -117,9 +131,13 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testOpenACLUnsafeAllover() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     try {
-      List<String> verifiedList = new ArrayList<String>();
+      List<String> verifiedList = new ArrayList<>();
       assertOpenACLUnsafeAllover(zkClient, "/", verifiedList);
       assertTrue(verifiedList.contains("/solr"));
       assertTrue(verifiedList.contains("/solr/unprotectedCreateNode"));
@@ -142,7 +160,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
       // Treat this node specially, from the ZK docs:
       // The dynamic configuration is stored in a special znode ZooDefs.CONFIG_NODE =
       // /zookeeper/config.
-      // This node by default is read only for all users, except super user and
+      // This node by default is read only for all users, except superuser and
       // users that's explicitly configured for write access.
       assertEquals(
           "Path " + path + " does not have READ_ACL_UNSAFE", ZooDefs.Ids.READ_ACL_UNSAFE, acls);

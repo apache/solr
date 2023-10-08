@@ -23,7 +23,7 @@
 
 
  For more information, on how to customize this file, please see
- https://solr.apache.org/guide/fields-and-schema-design.html
+ https://solr.apache.org/guide/solr/latest/indexing-guide/schema-elements.html
 
  PERFORMANCE NOTE: this schema includes many optional features and should not
  be used for benchmarking.  To improve performance one could
@@ -269,7 +269,7 @@
          matching across fields.
 
          For more info on customizing your analyzer chain, please see
-         https://solr.apache.org/guide/understanding-analyzers-tokenizers-and-filters.html#understanding-analyzers-tokenizers-and-filters
+         https://solr.apache.org/guide/solr/latest/indexing-guide/document-analysis.html#using-analyzers-tokenizers-and-filters
      -->
 
     <!-- One can also specify an existing Analyzer class that has a
@@ -536,7 +536,7 @@
 
     <!-- A geospatial field type that supports multiValued and polygon shapes.
       For more information about this and other spatial fields see:
-      https://solr.apache.org/guide/spatial-search.html
+      https://solr.apache.org/guide/solr/latest/query-guide/spatial-search.html
     -->
     <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
                geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />
@@ -1022,7 +1022,7 @@
     <!-- Similarity is the scoring routine for each document vs. a query.
        A custom Similarity or SimilarityFactory may be specified here, but
        the default is fine for most applications.
-       For more info: https://solr.apache.org/guide/schema-elements.html#similarity
+       For more info: https://solr.apache.org/guide/solr/latest/indexing-guide/schema-elements.html#similarity
     -->
     <!--
      <similarity class="com.example.solr.CustomSimilarityFactory">

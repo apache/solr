@@ -30,7 +30,7 @@ public class TestFieldSortValues extends SolrTestCaseJ4 {
     initCore("solrconfig-minimal.xml", "schema-field-sort-values.xml");
   }
 
-  public void testCustomComparator() throws Exception {
+  public void testCustomComparator() {
     clearIndex();
     assertU(adoc(sdoc("id", "1", "payload", "2")));
     assertU(adoc(sdoc("id", "2", "payload", "3")));

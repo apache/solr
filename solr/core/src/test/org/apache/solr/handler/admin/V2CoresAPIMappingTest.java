@@ -20,35 +20,33 @@ package org.apache.solr.handler.admin;
 import static org.apache.solr.common.params.CollectionAdminParams.NUM_SHARDS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.*;
+import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
+import static org.apache.solr.common.params.CoreAdminParams.CONFIG;
+import static org.apache.solr.common.params.CoreAdminParams.CONFIGSET;
+import static org.apache.solr.common.params.CoreAdminParams.CORE;
+import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.INDEX_INFO;
+import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.LOAD_ON_STARTUP;
+import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.NEW_COLLECTION;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
+import static org.apache.solr.common.params.CoreAdminParams.ROLES;
+import static org.apache.solr.common.params.CoreAdminParams.SCHEMA;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD;
+import static org.apache.solr.common.params.CoreAdminParams.TRANSIENT;
+import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 
-import com.google.common.collect.Maps;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 /**
  * Unit tests for the /cores APIs.
@@ -58,25 +56,24 @@ import org.mockito.ArgumentCaptor;
  * provided. This is done to exercise conversion of all parameters, even if particular combinations
  * are never expected in the same request.
  */
-public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
-  private ApiBag apiBag;
-  private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
-  private CoreAdminHandler mockCoreAdminHandler;
+public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
 
-  @BeforeClass
-  public static void ensureWorkingMockito() {
-    assumeWorkingMockito();
+  @Override
+  public void populateApiBag() {
+    final CoreAdminHandler handler = getRequestHandler();
+    apiBag.registerObject(new CreateCoreAPI(handler));
+    apiBag.registerObject(new SingleCoreStatusAPI(handler));
+    apiBag.registerObject(new AllCoresStatusAPI(handler));
   }
 
-  @Before
-  public void setUpMocks() {
-    mockCoreAdminHandler = mock(CoreAdminHandler.class);
-    queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
+  @Override
+  public CoreAdminHandler createUnderlyingRequestHandler() {
+    return createMock(CoreAdminHandler.class);
+  }
 
-    apiBag = new ApiBag(false);
-    apiBag.registerObject(new CreateCoreAPI(mockCoreAdminHandler));
-    apiBag.registerObject(new SingleCoreStatusAPI(mockCoreAdminHandler));
-    apiBag.registerObject(new AllCoresStatusAPI(mockCoreAdminHandler));
+  @Override
+  public boolean isCoreSpecific() {
+    return false;
   }
 
   @Test
@@ -114,8 +111,8 @@ public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals("some-schema-file-name", v1Params.get(SCHEMA));
     assertEquals("some-config-file-name", v1Params.get(CONFIG));
     assertEquals("someConfigSetName", v1Params.get(CONFIGSET));
-    assertEquals(true, v1Params.getPrimitiveBool(LOAD_ON_STARTUP));
-    assertEquals(true, v1Params.getPrimitiveBool(TRANSIENT));
+    assertTrue(v1Params.getPrimitiveBool(LOAD_ON_STARTUP));
+    assertTrue(v1Params.getPrimitiveBool(TRANSIENT));
     assertEquals("someShardName", v1Params.get(SHARD));
     assertEquals("someCollectionName", v1Params.get(COLLECTION));
     assertEquals("TLOG", v1Params.get(REPLICA_TYPE));
@@ -124,7 +121,7 @@ public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals("role1,role2", v1Params.get(ROLES));
     assertEquals("val1", v1Params.get("property.prop1"));
     assertEquals("val2", v1Params.get("property.prop2"));
-    assertEquals(true, v1Params.getPrimitiveBool(NEW_COLLECTION));
+    assertTrue(v1Params.getPrimitiveBool(NEW_COLLECTION));
     assertEquals("requestTrackingId", v1Params.get(ASYNC));
   }
 
@@ -136,7 +133,7 @@ public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
 
     assertEquals(STATUS.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
     assertEquals("someCore", v1Params.get(CORE));
-    assertEquals(true, v1Params.getPrimitiveBool(INDEX_INFO));
+    assertTrue(v1Params.getPrimitiveBool(INDEX_INFO));
   }
 
   @Test
@@ -146,64 +143,6 @@ public class V2CoresAPIMappingTest extends SolrTestCaseJ4 {
 
     assertEquals(STATUS.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
     assertNull("Expected 'core' parameter to be null", v1Params.get(CORE));
-    assertEquals(true, v1Params.getPrimitiveBool(INDEX_INFO));
-  }
-
-  private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody)
-      throws Exception {
-    final HashMap<String, String> parts = new HashMap<>();
-    final Api api = apiBag.lookup(path, method, parts);
-    final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, Maps.newHashMap()) {
-          @Override
-          public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
-            return ApiBag.getCommandOperations(
-                new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
-          }
-
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return parts;
-          }
-
-          @Override
-          public String getHttpMethod() {
-            return method;
-          }
-        };
-
-    api.call(req, rsp);
-    verify(mockCoreAdminHandler).handleRequestBody(queryRequestCaptor.capture(), any());
-    return queryRequestCaptor.getValue().getParams();
-  }
-
-  private SolrParams captureConvertedV1Params(
-      String path, String method, Map<String, String[]> queryParams) throws Exception {
-    final HashMap<String, String> parts = new HashMap<>();
-    final Api api = apiBag.lookup(path, method, parts);
-    final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, queryParams) {
-          @Override
-          public List<CommandOperation> getCommands(boolean validateInput) {
-            return Collections.emptyList();
-          }
-
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return parts;
-          }
-
-          @Override
-          public String getHttpMethod() {
-            return method;
-          }
-        };
-
-    api.call(req, rsp);
-    verify(mockCoreAdminHandler).handleRequestBody(queryRequestCaptor.capture(), any());
-    return queryRequestCaptor.getValue().getParams();
+    assertTrue(v1Params.getPrimitiveBool(INDEX_INFO));
   }
 }

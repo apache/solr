@@ -20,7 +20,6 @@ import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_M
 
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -138,19 +137,20 @@ public class UpdateShardHandler implements SolrInfoBean {
         HttpClientUtil.createClient(
             clientParams, defaultConnectionManager, false, httpRequestExecutor);
 
+    Set<String> urlParamNames =
+        Set.of(
+            DistributedUpdateProcessor.DISTRIB_FROM,
+            DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
     Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
       updateOnlyClientBuilder
-          .connectionTimeout(cfg.getDistributedConnectionTimeout())
-          .idleTimeout(cfg.getDistributedSocketTimeout())
-          .maxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
+          .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
+          .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
+          .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
+    updateOnlyClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
     updateOnlyClient = updateOnlyClientBuilder.build();
     updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
-    Set<String> queryParams = new HashSet<>(2);
-    queryParams.add(DistributedUpdateProcessor.DISTRIB_FROM);
-    queryParams.add(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
-    updateOnlyClient.setQueryParams(queryParams);
 
     ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
@@ -284,6 +284,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     return recoveryExecutor;
   }
 
+  @Override
   public void close() {
     try {
       // do not interrupt, do not interrupt

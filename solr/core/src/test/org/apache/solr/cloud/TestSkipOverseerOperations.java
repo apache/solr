@@ -25,11 +25,11 @@ import java.util.SortedSet;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.LiveNodesPredicate;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,6 +51,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     shutdownCluster();
@@ -143,7 +144,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     // Longer term question...
 
     if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      assertEquals(getNumLeaderOpeations(resp), getNumLeaderOpeations(resp2));
+      assertEquals(getNumLeaderOperations(resp), getNumLeaderOperations(resp2));
     }
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
@@ -222,20 +223,20 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     // See comment in testSkipLeaderOperations() above why this assert is skipped
     if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       // 2 for recovering state, 4 for active state
-      assertEquals(getNumStateOpeations(resp) + 6, getNumStateOpeations(resp2));
+      assertEquals(getNumStateOperations(resp) + 6, getNumStateOperations(resp2));
     }
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }
 
   /**
    * Returns the value corresponding to stat: "overseer_operations", "leader", "requests" This stat
-   * (see {@link org.apache.solr.cloud.api.collections.OverseerStatusCmd} is updated when the
+   * (see {@link org.apache.solr.cloud.api.collections.OverseerStatusCmd}) is updated when the
    * cluster state updater processes a message of type {@link
    * org.apache.solr.cloud.overseer.OverseerAction#LEADER} to set a shard leader
    *
    * <p>The update happens in org.apache.solr.cloud.Overseer.ClusterStateUpdater.processQueueItem()
    */
-  private int getNumLeaderOpeations(CollectionAdminResponse resp) {
+  private int getNumLeaderOperations(CollectionAdminResponse resp) {
     return (int) resp.getResponse().findRecursive("overseer_operations", "leader", "requests");
   }
 
@@ -243,7 +244,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
    * "state" stats are when Overseer processes a {@link
    * org.apache.solr.cloud.overseer.OverseerAction#STATE} message that sets replica properties
    */
-  private int getNumStateOpeations(CollectionAdminResponse resp) {
+  private int getNumStateOperations(CollectionAdminResponse resp) {
     return (int) resp.getResponse().findRecursive("overseer_operations", "state", "requests");
   }
 

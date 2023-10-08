@@ -24,9 +24,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -59,8 +58,8 @@ import org.slf4j.LoggerFactory;
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
-@SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
-@Slow
+@SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
+@LuceneTestCase.Nightly
 public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static long docsSeed; // see indexDocs()
@@ -81,7 +80,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void teardownClass() throws Exception {
+  public static void teardownClass() {
     System.clearProperty("test.build.data");
     System.clearProperty("test.cache.data");
     System.clearProperty("solr.allowPaths");
@@ -208,7 +207,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
               .setLocation(backupLocation);
       //      if (replicaFailures) {
-      //        // In this case one of the Solr servers would be down. Hence we need to increase
+      //        // In this case one of the Solr servers would be down. Hence, we need to increase
       //        // max_shards_per_node property for restore command to succeed.
       //        restore.setMaxShardsPerNode(2);
       //      }
@@ -258,7 +257,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
                   CollectionAdminRequest.deleteReplica(
                       collectionName, replicaToDelete.getShardId(), r.getName());
               delReplica.process(solrClient);
-              // The replica deletion will cleanup the snapshot meta-data.
+              // The replica deletion will clean up the snapshot meta-data.
               snapshotByCoreName.remove(r.getCoreName());
               break;
             }
@@ -343,25 +342,23 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     return result;
   }
 
+  @SuppressWarnings("unchecked")
   private Collection<SnapshotMetaData> listCoreSnapshots(SolrClient adminClient, String coreName)
       throws Exception {
     ListSnapshots req = new ListSnapshots();
     req.setCoreName(coreName);
     NamedList<?> resp = adminClient.request(req);
-    assertTrue(resp.get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof NamedList);
-    NamedList<?> apiResult = (NamedList<?>) resp.get(SolrSnapshotManager.SNAPSHOTS_INFO);
+    assertTrue(resp.get(SolrSnapshotManager.SNAPSHOTS_INFO) instanceof Map);
+    Map<String, Object> apiResult =
+        (Map<String, Object>) resp.get(SolrSnapshotManager.SNAPSHOTS_INFO);
 
     List<SnapshotMetaData> result = new ArrayList<>(apiResult.size());
-    for (int i = 0; i < apiResult.size(); i++) {
-      String commitName = apiResult.getName(i);
-      String indexDirPath =
-          (String)
-              ((NamedList<?>) apiResult.get(commitName)).get(SolrSnapshotManager.INDEX_DIR_PATH);
-      long genNumber =
-          Long.parseLong(
-              (String)
-                  ((NamedList<?>) apiResult.get(commitName))
-                      .get(SolrSnapshotManager.GENERATION_NUM));
+    for (Map.Entry<String, Object> entry : apiResult.entrySet()) {
+      final String commitName = entry.getKey();
+      final String indexDirPath =
+          (String) ((Map<String, Object>) entry.getValue()).get(SolrSnapshotManager.INDEX_DIR_PATH);
+      final long genNumber =
+          (Long) ((Map<String, Object>) entry.getValue()).get(SolrSnapshotManager.GENERATION_NUM);
       result.add(new SnapshotMetaData(commitName, indexDirPath, genNumber));
     }
     return result;

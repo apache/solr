@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +55,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     assertTrue(l.get(0) instanceof TemplateUpdateProcessorFactory);
   }
 
-  public void testConfiguration() throws Exception {
+  public void testConfiguration() {
     SolrCore core = h.getCore();
 
     // make sure it loaded the factories
@@ -63,7 +64,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     // Make sure it got 3 items (4 configured, 1 is enable=false)
     assertEquals("wrong number of (enabled) factories in chain", 3, chained.getProcessors().size());
 
-    // first one should be log, and it should be configured properly
+    // first one should be logged, and it should be configured properly
     UpdateRequestProcessorFactory first = chained.getProcessors().get(0);
     assertEquals(
         "wrong factory at front of chain", LogUpdateProcessorFactory.class, first.getClass());
@@ -85,14 +86,15 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     assertEquals("{name={n8=88, n9=99}}", link.args.toString());
   }
 
-  public void testUpdateDistribChainSkipping() throws Exception {
+  public void testUpdateDistribChainSkipping() throws IOException {
 
     // a key part of this test is verifying that LogUpdateProcessor is found in all chains because
     // it is a @RunAlways processor -- but in order for that to work, we have to sanity check that
     // the log level is at least "INFO" otherwise the factory won't even produce a processor and all
     // our assertions are for nought.  (see LogUpdateProcessorFactory.getInstance)
     //
-    // TODO: maybe create a new mock Processor w/ @RunAlways annot if folks feel requiring INFO is
+    // TODO: maybe create a new mock Processor w/ @RunAlways annotation if folks feel requiring INFO
+    // is
     // evil.
     assertTrue(
         "Tests must be run with INFO level logging "
@@ -112,7 +114,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
       // either explicitly, or because of injection
       assertEquals(
-          name + " factory chain length: " + chain.toString(),
+          name + " factory chain length: " + chain,
           EXPECTED_CHAIN_LENGTH,
           chain.getProcessors().size());
 
@@ -130,12 +132,12 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
         expectedProcLen++; // NestedUpdate sneaks in via RunUpdate's Factory.
       }
 
-      assertEquals(name + " procs size: " + procs.toString(), expectedProcLen, procs.size());
+      assertEquals(name + " procs size: " + procs, expectedProcLen, procs.size());
 
       // Custom comes first in all three of our chains
       assertTrue(
-          name + " first processor isn't a CustomUpdateRequestProcessor: " + procs.toString(),
-          ( // compare them both just because i'm going insane and the more checks the better
+          name + " first processor isn't a CustomUpdateRequestProcessor: " + procs,
+          ( // compare them both just because I'm going insane and the more checks the better
           proc instanceof CustomUpdateRequestProcessor
               && procs.get(0) instanceof CustomUpdateRequestProcessor));
 
@@ -144,8 +146,8 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
       assertNotNull(name + " second proc is null", procs.get(1));
 
       assertTrue(
-          name + " second proc isn't LogUpdateProcessor: " + procs.toString(),
-          ( // compare them both just because i'm going insane and the more checks the better
+          name + " second proc isn't LogUpdateProcessor: " + procs,
+          ( // compare them both just because I'm going insane and the more checks the better
           proc.next instanceof LogUpdateProcessorFactory.LogUpdateProcessor
               && procs.get(1) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
 
@@ -162,14 +164,14 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
       assertTrue(
           name
               + " (distrib) first proc should be LogUpdateProcessor because of @RunAlways: "
-              + procs.toString(),
-          ( // compare them both just because i'm going insane and the more checks the better
+              + procs,
+          ( // compare them both just because I'm going insane and the more checks the better
           proc instanceof LogUpdateProcessorFactory.LogUpdateProcessor
               && procs.get(0) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
 
       // for these 3 (distrib) chains, the last proc should always be RunUpdateProcessor
       assertTrue(
-          name + " (distrib) last processor isn't a RunUpdateProcessor: " + procs.toString(),
+          name + " (distrib) last processor isn't a RunUpdateProcessor: " + procs,
           procs.get(procs.size() - 1) instanceof RunUpdateProcessorFactory.RunUpdateProcessor);
 
       // either 1 proc was droped in distrib mode, or 1 for the "implicit" chain
@@ -186,9 +188,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
         expectedProcLen++; // NestedUpdate sneaks in via RunUpdate's Factory.
       }
       assertEquals(
-          name + " (distrib) chain has wrong length: " + procs.toString(),
-          expectedProcLen,
-          procs.size());
+          name + " (distrib) chain has wrong length: " + procs, expectedProcLen, procs.size());
     }
   }
 

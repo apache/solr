@@ -20,6 +20,7 @@ import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -105,7 +106,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     Timer.Context time = stats.time(dir + "_remove_event");
     try {
       String path = event.getId();
-      String responsePath = dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf("-") + 1);
+      String responsePath = dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf('-') + 1);
 
       try {
         zookeeper.setData(responsePath, event.getBytes());
@@ -243,7 +244,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
   void createRequestNode(byte[] data, String watchID) throws KeeperException, InterruptedException {
     createData(
-        dir + "/" + PREFIX + watchID.substring(watchID.lastIndexOf("-") + 1),
+        dir + "/" + PREFIX + watchID.substring(watchID.lastIndexOf('-') + 1),
         data,
         CreateMode.PERSISTENT);
   }
@@ -317,13 +318,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof QueueEvent)) return false;
       QueueEvent other = (QueueEvent) obj;
-      if (id == null) {
-        if (other.id != null) return false;
-      } else if (!id.equals(other.id)) return false;
-      return true;
+      return Objects.equals(id, other.id);
     }
 
     private WatchedEvent event = null;

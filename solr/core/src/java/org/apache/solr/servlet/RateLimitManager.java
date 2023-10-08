@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.http.HttpServletRequest;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
@@ -43,10 +43,12 @@ import org.slf4j.LoggerFactory;
  * RequestRateLimiter implementation. RateLimitManager is responsible for the orchestration but not
  * the specifics of how the rate limiting is being done for a specific request type.
  */
-@SolrThreadSafe
+@ThreadSafe
 public class RateLimitManager implements ClusterPropertiesListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String ERROR_MESSAGE =
+      "Too many requests for this request type. Please try after some time or increase the quota for this request type";
   public static final int DEFAULT_CONCURRENT_REQUESTS =
       (Runtime.getRuntime().availableProcessors()) * 3;
   public static final long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;

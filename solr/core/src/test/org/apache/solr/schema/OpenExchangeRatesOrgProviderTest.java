@@ -47,7 +47,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInit() throws Exception {
+  public void testInit() {
     oerp.init(mockParams);
     // don't inform, we don't want to hit any of these URLs
 
@@ -107,6 +107,6 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
   @Test(expected = SolrException.class)
   public void testNoInit() {
     oerp.getExchangeRate("ABC", "DEF");
-    assertTrue("Should have thrown exception if not initialized", false);
+    fail("Should have thrown exception if not initialized");
   }
 }

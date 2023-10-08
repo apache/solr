@@ -73,6 +73,7 @@ public abstract class AllValuesOrNoneFieldMutatingUpdateProcessor
    */
   protected abstract Object mutateValue(final Object srcVal);
 
+  @Override
   protected final SolrInputField mutate(final SolrInputField srcField) {
     Collection<Object> vals = srcField.getValues();
     if (vals == null || vals.isEmpty()) return srcField;

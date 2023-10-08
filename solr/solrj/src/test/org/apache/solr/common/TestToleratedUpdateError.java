@@ -17,7 +17,7 @@
 package org.apache.solr.common;
 
 import java.util.EnumSet;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.ToleratedUpdateError.CmdType;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -30,15 +30,15 @@ public class TestToleratedUpdateError extends SolrTestCase {
 
   public void testBasics() {
 
-    assertFalse(
-        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error"))
-            .equals(new ToleratedUpdateError(CmdType.ADD, "doc2", "some error")));
-    assertFalse(
-        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error"))
-            .equals(new ToleratedUpdateError(CmdType.ADD, "doc1", "some errorxx")));
-    assertFalse(
-        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error"))
-            .equals(new ToleratedUpdateError(CmdType.DELID, "doc1", "some error")));
+    assertNotEquals(
+        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error")),
+        new ToleratedUpdateError(CmdType.ADD, "doc2", "some error"));
+    assertNotEquals(
+        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error")),
+        new ToleratedUpdateError(CmdType.ADD, "doc1", "some errorxx"));
+    assertNotEquals(
+        (new ToleratedUpdateError(CmdType.ADD, "doc1", "some error")),
+        new ToleratedUpdateError(CmdType.DELID, "doc1", "some error"));
   }
 
   public void testParseMetadataErrorHandling() {
@@ -85,7 +85,7 @@ public class TestToleratedUpdateError extends SolrTestCase {
     // randomized
     int numIters = atLeast(5000);
     for (int i = 0; i < numIters; i++) {
-      valid = new SimpleOrderedMap<String>();
+      valid = new SimpleOrderedMap<>();
       valid.add("type", ALL_TYPES[TestUtil.nextInt(random(), 0, ALL_TYPES.length - 1)].toString());
       valid.add("id", TestUtil.randomUnicodeString(random()));
       valid.add("message", TestUtil.randomUnicodeString(random()));
@@ -172,6 +172,7 @@ public class TestToleratedUpdateError extends SolrTestCase {
 
   private static final Coppier MAP_COPPIER =
       new Coppier() {
+        @Override
         public ToleratedUpdateError copy(ToleratedUpdateError in) {
           return ToleratedUpdateError.parseMap(in.getSimpleMap());
         }
@@ -179,6 +180,7 @@ public class TestToleratedUpdateError extends SolrTestCase {
 
   private static final Coppier METADATA_COPPIER =
       new Coppier() {
+        @Override
         public ToleratedUpdateError copy(ToleratedUpdateError in) {
           return ToleratedUpdateError.parseMetadataIfToleratedUpdateError(
               in.getMetadataKey(), in.getMetadataValue());

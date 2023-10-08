@@ -21,7 +21,13 @@ import com.tdunning.math.stats.AVLTreeDigest;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -31,7 +37,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.StatsField.Stat;
-import org.apache.solr.schema.*;
+import org.apache.solr.schema.AbstractEnumField;
+import org.apache.solr.schema.DatePointField;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.PointField;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
+import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 
@@ -350,6 +363,7 @@ public class StatsValuesFactory {
       return res;
     }
 
+    @Override
     public void setNextReader(LeafReaderContext ctx) throws IOException {
       if (valueSource == null) {
         // first time we've collected local values, get the right ValueSource
@@ -604,6 +618,7 @@ public class StatsValuesFactory {
       }
     }
 
+    @Override
     protected void updateMinMax(EnumFieldValue min, EnumFieldValue max) {
       if (computeMin) { // nested if to encourage JIT to optimize aware final var?
         if (null != min) {

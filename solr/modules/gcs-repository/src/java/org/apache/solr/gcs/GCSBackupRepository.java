@@ -38,10 +38,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -206,7 +204,7 @@ public class GCSBackupRepository implements BackupRepository {
     final String blobName = appendTrailingSeparatorIfNecessary(path.toString());
 
     final String pathStr = blobName;
-    final LinkedList<String> result = new LinkedList<>();
+    final List<String> result = new ArrayList<>();
     storage
         .list(
             bucketName,
@@ -324,8 +322,7 @@ public class GCSBackupRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) {
     if (files.isEmpty()) {
       return;
     }
@@ -334,14 +331,7 @@ public class GCSBackupRepository implements BackupRepository {
         files.stream()
             .map(file -> BlobId.of(bucketName, prefix + file))
             .collect(Collectors.toList());
-    List<Boolean> result = storage.delete(blobDeletes);
-    if (!ignoreNoSuchFileException) {
-      int failedDelete = result.indexOf(Boolean.FALSE);
-      if (failedDelete != -1) {
-        throw new NoSuchFileException(
-            "File " + blobDeletes.get(failedDelete).getName() + " was not found");
-      }
-    }
+    storage.delete(blobDeletes);
   }
 
   @Override

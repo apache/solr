@@ -45,11 +45,11 @@ task echoCp {
 
 dependencies {
   implementation project(':solr:test-framework')
-  implementation project(':solr:core')
   implementation project(':solr:solrj')
+  implementation project(':solr:solrj-streaming')
 
   implementation 'org.apache.lucene:lucene-core'
-
+  implementation 'org.apache.httpcomponents:httpclient'
   implementation 'commons-io:commons-io'
   implementation 'io.dropwizard.metrics:metrics-core'
   implementation 'org.apache.commons:commons-math3'
@@ -57,6 +57,6 @@ dependencies {
   implementation 'org.quicktheories:quicktheories'
   implementation 'org.openjdk.jmh:jmh-core'
   implementation 'org.slf4j:slf4j-api'
+  runtimeOnly 'com.lmax:disruptor'
   annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess'
-  implementation 'org.slf4j:slf4j-api'
 }

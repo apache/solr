@@ -134,7 +134,6 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     shardRequestTracker.processResponses(shardRequestResults, shardHandler, false, null);
     @SuppressWarnings("unchecked")
     NamedList<Object> success = (NamedList<Object>) shardRequestResults.get("success");
-    List<CoreSnapshotMetaData> replicas = new ArrayList<>();
     if (success != null) {
       for (int i = 0; i < success.size(); i++) {
         NamedList<?> resp = (NamedList<?>) success.getVal(i);
@@ -182,7 +181,7 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
       // level meta-data.
       SolrSnapshotManager.deleteCollectionLevelSnapshot(zkClient, collectionName, commitName);
       log.info(
-          "Deleted Zookeeper snapshot metdata for collection={} with commitName={}",
+          "Deleted Zookeeper snapshot metadata for collection={} with commitName={}",
           collectionName,
           commitName);
       log.info(

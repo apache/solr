@@ -27,7 +27,6 @@ import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.ROOT_FIELD_NAME;
 import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
 
-import com.google.common.collect.Sets;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +45,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,6 +67,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
@@ -146,7 +145,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     httpPost.setHeader("Content-Type", "text/plain");
     httpPost.setEntity(new ByteArrayEntity(fieldText.getBytes(StandardCharsets.UTF_8)));
     try {
-      HttpResponse resp = cloudClient().getHttpClient().execute(httpPost);
+      HttpResponse resp = ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpPost);
       int statusCode = resp.getStatusLine().getStatusCode();
       if (statusCode != HttpStatus.SC_OK) {
         throw new SolrException(
@@ -168,7 +167,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   List<String> listCollectionsForConfig(String configSet) {
-    final List<String> collections = new LinkedList<>();
+    final List<String> collections = new ArrayList<>();
     Map<String, ClusterState.CollectionRef> states =
         zkStateReader().getClusterState().getCollectionStates();
     for (Map.Entry<String, ClusterState.CollectionRef> e : states.entrySet()) {
@@ -539,7 +538,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     HttpGet httpGet = new HttpGet(uri);
     try {
-      HttpResponse entity = cloudClient().getHttpClient().execute(httpGet);
+      HttpResponse entity =
+          ((CloudLegacySolrClient) cloudClient()).getHttpClient().execute(httpGet);
       int statusCode = entity.getStatusLine().getStatusCode();
       if (statusCode == HttpStatus.SC_OK) {
         byte[] bytes = DefaultSampleDocumentsLoader.streamAsBytes(entity.getEntity().getContent());
@@ -581,7 +581,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     try {
       httpPost.setHeader("Content-Type", "application/octet-stream");
       httpPost.setEntity(new ByteArrayEntity(bytes));
-      HttpResponse resp = cloudClient.getHttpClient().execute(httpPost);
+      HttpResponse resp = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpPost);
       int statusCode = resp.getStatusLine().getStatusCode();
       if (statusCode != HttpStatus.SC_OK) {
         throw new SolrException(
@@ -668,7 +668,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   ManagedIndexSchema deleteNestedDocsFieldsIfNeeded(ManagedIndexSchema schema, boolean persist) {
-    List<String> toDelete = new LinkedList<>();
+    List<String> toDelete = new ArrayList<>();
     if (schema.hasExplicitField(ROOT_FIELD_NAME)) {
       toDelete.add(ROOT_FIELD_NAME);
     }
@@ -685,14 +685,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   }
 
   SolrConfig loadSolrConfig(String configSet) {
-    SolrResourceLoader resourceLoader = cc.getResourceLoader();
-    ZkSolrResourceLoader zkLoader =
-        new ZkSolrResourceLoader(
-            resourceLoader.getInstancePath(),
-            configSet,
-            resourceLoader.getClassLoader(),
-            cc.getZkController());
-    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, true, null);
+    ZkSolrResourceLoader zkLoader = zkLoaderForConfigSet(configSet);
+    boolean trusted = isConfigSetTrusted(configSet);
+
+    return SolrConfig.readFromResourceLoader(zkLoader, SOLR_CONFIG_XML, trusted, null);
   }
 
   ManagedIndexSchema loadLatestSchema(String configSet) {
@@ -805,7 +801,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           schema.getCopyFieldsList(fieldName).stream()
               .map(cf -> cf.getDestination().getName())
               .collect(Collectors.toSet());
-      Set<String> add = Sets.difference(desired, existing);
+      Set<String> add =
+          desired.stream()
+              .filter(e -> !existing.contains(e))
+              .collect(Collectors.toUnmodifiableSet());
       if (!add.isEmpty()) {
         SchemaRequest.AddCopyField addAction =
             new SchemaRequest.AddCopyField(fieldName, new ArrayList<>(add));
@@ -817,7 +816,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
         updated = true;
       } // no additions ...
 
-      Set<String> del = Sets.difference(existing, desired);
+      Set<String> del =
+          existing.stream()
+              .filter(e -> !desired.contains(e))
+              .collect(Collectors.toUnmodifiableSet());
       if (!del.isEmpty()) {
         SchemaRequest.DeleteCopyField delAction =
             new SchemaRequest.DeleteCopyField(fieldName, new ArrayList<>(del));
@@ -1214,5 +1216,34 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       PathUtils.deleteDirectory(tmpDirectory);
     }
     return baos.toByteArray();
+  }
+
+  public boolean isConfigSetTrusted(String configSetName) {
+    try {
+      return cc.getConfigSetService().isConfigSetTrusted(configSetName);
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not load conf " + configSetName + ": " + e.getMessage(),
+          e);
+    }
+  }
+
+  public void removeConfigSetTrust(String configSetName) {
+    try {
+      Map<String, Object> metadata = Collections.singletonMap("trusted", false);
+      cc.getConfigSetService().setConfigMetadata(configSetName, metadata);
+    } catch (IOException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Could not remove trusted flag for configSet " + configSetName + ": " + e.getMessage(),
+          e);
+    }
+  }
+
+  protected ZkSolrResourceLoader zkLoaderForConfigSet(final String configSet) {
+    SolrResourceLoader loader = cc.getResourceLoader();
+    return new ZkSolrResourceLoader(
+        loader.getInstancePath(), configSet, loader.getClassLoader(), cc.getZkController());
   }
 }

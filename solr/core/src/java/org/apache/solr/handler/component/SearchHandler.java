@@ -28,15 +28,14 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -47,16 +46,18 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
@@ -68,7 +69,7 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -86,8 +87,26 @@ public class SearchHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** A counter to ensure that no RID is equal, even if they fall in the same millisecond */
+  /**
+   * A counter to ensure that no RID is equal, even if they fall in the same millisecond
+   *
+   * @deprecated this was replaced by the auto-generated trace ids
+   */
+  @Deprecated(since = "9.4")
   private static final AtomicLong ridCounter = new AtomicLong();
+
+  /**
+   * An opt-out flag to prevent the addition of {@link CommonParams#REQUEST_ID} tracing on
+   * distributed queries
+   *
+   * <p>Defaults to 'false' if not specified.
+   *
+   * @see CommonParams#DISABLE_REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
+   */
+  @Deprecated(since = "9.4")
+  private static final boolean DISABLE_REQUEST_ID_DEFAULT =
+      Boolean.getBoolean("solr.disableRequestId");
 
   private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
   private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
@@ -138,7 +157,7 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   @Override
-  protected HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
+  public HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
     return req.getParams().getBool(ShardParams.IS_SHARD, false) ? this.metricsShard : this.metrics;
   }
 
@@ -201,7 +220,7 @@ public class SearchHandler extends RequestHandlerBase
                 }
 
                 @Override
-                public void changed(PackageLoader.Package pkg, Ctx ctx) {
+                public void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx) {
                   // we could optimize this by listening to only relevant packages,
                   // but it is not worth optimizing as these are lightweight objects
                   components = null;
@@ -273,18 +292,23 @@ public class SearchHandler extends RequestHandlerBase
     return result;
   }
 
+  private boolean isDistrib(SolrQueryRequest req) {
+    boolean isZkAware = req.getCoreContainer().isZooKeeperAware();
+    boolean isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
+    if (!isDistrib) {
+      // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
+      // search is distributed.
+      final String shards = req.getParams().get(ShardParams.SHARDS);
+      isDistrib = ((shards != null) && (shards.indexOf('/') > 0));
+    }
+    return isDistrib;
+  }
+
   public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCoreContainer();
     boolean isZkAware = cc.isZooKeeperAware();
-    rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
-    if (!rb.isDistrib) {
-      // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
-      // search is distributed.
-      final String shards = req.getParams().get(ShardParams.SHARDS);
-      rb.isDistrib = ((shards != null) && (shards.indexOf('/') > 0));
-    }
 
     if (rb.isDistrib) {
       shardHandler = shardHandlerFactory.getShardHandler();
@@ -325,6 +349,50 @@ public class SearchHandler extends RequestHandlerBase
     return new ResponseBuilder(req, rsp, components);
   }
 
+  /**
+   * Check if {@link SolrRequestType#QUERY} circuit breakers are tripped. Override this method in
+   * sub classes that do not want to check circuit breakers.
+   *
+   * @return true if circuit breakers are tripped, false otherwise.
+   */
+  protected boolean checkCircuitBreakers(
+      SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb) {
+    if (isInternalShardRequest(req)) {
+      if (log.isTraceEnabled()) {
+        log.trace("Internal request, skipping circuit breaker check");
+      }
+      return false;
+    }
+    final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
+
+    final CircuitBreakerRegistry circuitBreakerRegistry = req.getCore().getCircuitBreakerRegistry();
+    if (circuitBreakerRegistry.isEnabled(SolrRequestType.QUERY)) {
+      List<CircuitBreaker> trippedCircuitBreakers;
+
+      if (timer != null) {
+        RTimerTree subt = timer.sub("circuitbreaker");
+        rb.setTimer(subt);
+
+        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
+
+        rb.getTimer().stop();
+      } else {
+        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
+      }
+
+      if (trippedCircuitBreakers != null) {
+        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
+        rsp.add(STATUS, FAILURE);
+        rsp.setException(
+            new SolrException(
+                CircuitBreaker.getErrorCode(trippedCircuitBreakers),
+                "Circuit Breakers tripped " + errorMessage));
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
@@ -339,6 +407,7 @@ public class SearchHandler extends RequestHandlerBase
       rb.requestInfo.setResponseBuilder(rb);
     }
 
+    rb.isDistrib = isDistrib(req);
     tagRequestWithRequestId(rb);
 
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
@@ -349,30 +418,8 @@ public class SearchHandler extends RequestHandlerBase
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    final CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-    if (circuitBreakerManager.isEnabled()) {
-      List<CircuitBreaker> trippedCircuitBreakers;
-
-      if (timer != null) {
-        RTimerTree subt = timer.sub("circuitbreaker");
-        rb.setTimer(subt);
-
-        trippedCircuitBreakers = circuitBreakerManager.checkTripped();
-
-        rb.getTimer().stop();
-      } else {
-        trippedCircuitBreakers = circuitBreakerManager.checkTripped();
-      }
-
-      if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerManager.toErrorMessage(trippedCircuitBreakers);
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(
-            new SolrException(
-                SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-                "Circuit Breakers tripped " + errorMessage));
-        return;
-      }
+    if (checkCircuitBreakers(req, rsp, rb)) {
+      return; // Circuit breaker tripped, return immediately
     }
 
     // creates a ShardHandler object only if it's needed
@@ -462,7 +509,7 @@ public class SearchHandler extends RequestHandlerBase
       // a distributed request
 
       if (rb.outgoing == null) {
-        rb.outgoing = new LinkedList<>();
+        rb.outgoing = new ArrayList<>();
       }
       rb.finished = new ArrayList<>();
 
@@ -493,14 +540,7 @@ public class SearchHandler extends RequestHandlerBase
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
-              params.remove(ShardParams.SHARDS); // not a top-level request
-              params.set(DISTRIB, "false"); // not a top-level request
-              params.remove("indent");
-              params.remove(CommonParams.HEADER_ECHO_PARAMS);
-              params.set(ShardParams.IS_SHARD, true); // a sub (shard) request
-              params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
-              params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
-              params.set(CommonParams.OMIT_HEADER, false);
+              params.setShardAttributesToParams(sreq.purpose);
 
               // Distributed request -- need to send queryID as a part of the distributed request
               params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
@@ -574,8 +614,8 @@ public class SearchHandler extends RequestHandlerBase
     if (!rb.isDistrib
         && req.getParams().getBool(ShardParams.SHARDS_INFO, false)
         && rb.shortCircuitedURL != null) {
-      NamedList<Object> shardInfo = new SimpleOrderedMap<Object>();
-      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<Object>();
+      NamedList<Object> shardInfo = new SimpleOrderedMap<>();
+      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
       if (rsp.getException() != null) {
         Throwable cause = rsp.getException();
         if (cause instanceof SolrServerException) {
@@ -586,9 +626,11 @@ public class SearchHandler extends RequestHandlerBase
           }
         }
         nl.add("error", cause.toString());
-        StringWriter trace = new StringWriter();
-        cause.printStackTrace(new PrintWriter(trace));
-        nl.add("trace", trace.toString());
+        if (!core.getCoreContainer().hideStackTrace()) {
+          StringWriter trace = new StringWriter();
+          cause.printStackTrace(new PrintWriter(trace));
+          nl.add("trace", trace.toString());
+        }
       } else if (rb.getResults() != null) {
         nl.add("numFound", rb.getResults().docList.matches());
         nl.add(
@@ -609,7 +651,7 @@ public class SearchHandler extends RequestHandlerBase
 
   private void tagRequestWithRequestId(ResponseBuilder rb) {
     final boolean ridTaggingDisabled =
-        rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, false);
+        rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, DISABLE_REQUEST_ID_DEFAULT);
     if (!ridTaggingDisabled) {
       String rid = getOrGenerateRequestId(rb.req);
 
@@ -623,7 +665,7 @@ public class SearchHandler extends RequestHandlerBase
       // - ERRORs that may be logged during response writing
       MDC.put(CommonParams.REQUEST_ID, rid);
 
-      if (StringUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
+      if (StrUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
         ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
         params.add(CommonParams.REQUEST_ID, rid); // add rid to the request so that shards see it
         rb.req.setParams(params);
@@ -648,7 +690,14 @@ public class SearchHandler extends RequestHandlerBase
    */
   public static String getOrGenerateRequestId(SolrQueryRequest req) {
     String rid = req.getParams().get(CommonParams.REQUEST_ID);
-    return StringUtils.isNotBlank(rid) ? rid : generateRid(req);
+    if (StrUtils.isNotBlank(rid)) {
+      return rid;
+    }
+    String traceId = MDCLoggingContext.getTraceId();
+    if (StrUtils.isNotBlank(traceId)) {
+      return traceId;
+    }
+    return generateRid(req);
   }
 
   private static String generateRid(SolrQueryRequest req) {

@@ -415,7 +415,7 @@ NOTE: The example below works with TF-IDF _term vectors_.
 The section xref:term-vectors.adoc[] offers a full explanation of this features.
 
 In the example the `search` function returns documents where the `review_t` field matches the phrase "star wars".
-The `select` function is run over the result set and applies the `analyze` function which uses the Lucene/Solr analyzer attached to the schema field `text_bigrams` to re-analyze the `review_t` field.
+The `select` function is run over the result set and applies the `analyze` function which uses the analyzer attached to the schema field `text_bigrams` to re-analyze the `review_t` field.
 This analyzer returns bigrams which are then annotated to documents in a field called `terms`.
 
 The `termVectors` function then creates TD-IDF term vectors from the bigrams stored in the `terms` field.

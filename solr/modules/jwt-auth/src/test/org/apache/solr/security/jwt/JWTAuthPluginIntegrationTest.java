@@ -46,7 +46,6 @@ import no.nav.security.mock.oauth2.OAuth2Config;
 import no.nav.security.mock.oauth2.http.MockWebServerWrapper;
 import no.nav.security.mock.oauth2.token.DefaultOAuth2TokenCallback;
 import okhttp3.mockwebserver.MockWebServer;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -87,7 +86,6 @@ import org.junit.Test;
  */
 @SolrTestCaseJ4.SuppressSSL
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
-  private final String COLLECTION = "jwtColl";
 
   private static String mockOAuthToken;
   private static Path pemFilePath;
@@ -144,7 +142,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  public void mockOAuth2ServerWrongPEMInTruststore() throws Exception {
+  public void mockOAuth2ServerWrongPEMInTruststore() {
     // JWTAuthPlugin throws SSLHandshakeException when fetching JWK, so this trips cluster init
     assertThrows(Exception.class, () -> configureClusterMockOauth(2, wrongPemFilePath, 2000));
   }
@@ -163,6 +161,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals(
         "{\n"
+            + "  \"tokenEndpoint\":\"http://acmepaymentscorp/oauth/oauth20/token\",\n"
+            + "  \"authorization_flow\":\"code_pkce\",\n"
             + "  \"scope\":\"solr:admin\",\n"
             + "  \"redirect_uris\":[],\n"
             + "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"
@@ -185,6 +185,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals(
         "{\n"
+            + "  \"tokenEndpoint\":\"http://acmepaymentscorp/oauth/oauth20/token\",\n"
+            + "  \"authorization_flow\":\"code_pkce\",\n"
             + "  \"scope\":\"solr:admin\",\n"
             + "  \"redirect_uris\":[],\n"
             + "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"
@@ -206,6 +208,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     CloseableHttpClient cl = HttpClientUtil.createClient(null);
 
+    String COLLECTION = "jwtColl";
     createCollection(cluster, COLLECTION);
 
     // Missing token
@@ -459,7 +462,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
-    String response = IOUtils.toString(r.getEntity().getContent(), StandardCharsets.UTF_8);
+    String response = new String(r.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
     assertEquals(
         "Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
@@ -489,7 +492,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
             .replace(".localdomain", ""); // Use only 'localhost' to match our SSL cert
     String pemCert =
         CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
-            .replaceAll("\n", "\\\\n"); // Use literal \n to play well with JSON
+            .replace("\\n", "\\\\n"); // Use literal \n to play well with JSON
     return "{\n"
         + "  \"authentication\" : {\n"
         + "    \"class\": \"solr.JWTAuthPlugin\",\n"
@@ -521,8 +524,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
           TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       trustManagerFactory.init(keystore);
 
-      MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper();
-      MockWebServer mockWebServer = mockWebServerWrapper.getMockWebServer();
+      MockWebServer mockWebServer;
+      try (MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper()) {
+        mockWebServer = mockWebServerWrapper.getMockWebServer();
+      }
       SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
       sslContext.init(
           keyManagerFactory.getKeyManagers(), /*trustManagerFactory.getTrustManagers()*/

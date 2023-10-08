@@ -31,13 +31,10 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -53,6 +50,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.handler.component.StatsComponentTest.StatSetCombinations;
 import org.apache.solr.handler.component.StatsField.Stat;
@@ -71,7 +69,6 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.3
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9061")
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
@@ -544,13 +541,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     setDistributedParams(minParams);
     QueryResponse minResp = queryServer(minParams);
 
-    ModifiableSolrParams eParams = new ModifiableSolrParams();
-    eParams.set("q", tdate_b + ":[* TO *]");
-    eParams.set("rows", 1000);
-    eParams.set("fl", tdate_b);
-    setDistributedParams(eParams);
-    QueryResponse eResp = queryServer(eParams);
-
     // Check that exactly the right numbers of counts came through
     assertEquals(
         "Should be exactly 2 range facets returned after minCounts taken into account ",
@@ -878,8 +868,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         assertTrue(
             "Ran out of actual keys as of : " + i + "->" + expectedKey, actualKeys.hasNext());
         assertEquals(expectedKey, actualKeys.next());
-        assertEquals(
-            "percentiles are off: " + p.toString(), expectedVals[i], p.get(expectedKey), 1.0D);
+        assertEquals("percentiles are off: " + p, expectedVals[i], p.get(expectedKey), 1.0D);
       }
 
       //
@@ -1155,7 +1144,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             Double val = (Double) svals.get(s);
             assertFalse("stat shouldn't be NaN: " + s, val.isNaN());
             assertFalse("stat shouldn't be Inf: " + s, val.isInfinite());
-            assertFalse("stat shouldn't be 0: " + s, val.equals(0.0D));
+            assertNotEquals("stat shouldn't be 0: " + s, 0.0D, val, 0.0);
           } else {
             // count or missing
             assertTrue(
@@ -1165,7 +1154,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                 "stat should be a Long: " + s + " -> " + svals.get(s).getClass(),
                 svals.get(s) instanceof Long);
             Long val = (Long) svals.get(s);
-            assertFalse("stat shouldn't be 0: " + s, val.equals(0L));
+            assertNotEquals("stat shouldn't be 0: " + s, 0L, (long) val);
           }
         }
       }
@@ -1297,7 +1286,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
       // things we explicit expect because we asked for them
       // NOTE: min is expected to be null even though requested because of no values
-      assertEquals("wrong min", null, s.getMin());
+      assertNull("wrong min", s.getMin());
       assertTrue("mean should be NaN", ((Double) s.getMean()).isNaN());
       assertEquals("wrong stddev", 0.0D, s.getStddev(), 0.0D);
 
@@ -1568,7 +1557,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     rsp = queryServer(q);
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
     String shards = getShardsString();
-    int cnt = StringUtils.countMatches(shards, ",") + 1;
+    int cnt = shards.length() - shards.replace(",", "").length() + 1;
 
     assertNotNull("missing shard info", sinfo);
     assertEquals(
@@ -1852,9 +1841,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             + counts.size(),
         counts.size(),
         pairs.length / 2);
-    assertTrue(
+    assertEquals(
         "Variable len param must be an even number, it was: " + pairs.length,
-        (pairs.length % 2) == 0);
+        0,
+        (pairs.length % 2));
     for (int pairs_idx = 0, counts_idx = 0;
         pairs_idx < pairs.length;
         pairs_idx += 2, counts_idx++) {
@@ -1886,9 +1876,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             + counts.size(),
         counts.size(),
         pairs.length / 2);
-    assertTrue(
+    assertEquals(
         "Variable len param must be an even number, it was: " + pairs.length,
-        (pairs.length % 2) == 0);
+        0,
+        (pairs.length % 2));
     for (int pairs_idx = 0, counts_idx = 0;
         pairs_idx < pairs.length;
         pairs_idx += 2, counts_idx++) {
@@ -1936,7 +1927,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     }
     QueryResponse rsp = queryRandomUpServer(params, upClients);
 
-    comparePartialResponses(rsp, controlRsp, upShards);
+    comparePartialResponses(rsp, upShards);
 
     if (stress > 0) {
       log.info("starting stress...");
@@ -1956,7 +1947,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                   try {
                     QueryResponse rsp = client.query(new ModifiableSolrParams(params));
                     if (verifyStress) {
-                      comparePartialResponses(rsp, controlRsp, upShards);
+                      comparePartialResponses(rsp, upShards);
                     }
                   } catch (SolrServerException | IOException e) {
                     throw new RuntimeException(e);
@@ -1988,12 +1979,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       client = upClients.get(which);
     }
 
-    QueryResponse rsp = client.query(params);
-    return rsp;
+    return client.query(params);
   }
 
-  protected void comparePartialResponses(
-      QueryResponse rsp, QueryResponse controlRsp, List<String> upShards) {
+  protected void comparePartialResponses(QueryResponse rsp, List<String> upShards) {
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
 
     assertNotNull("missing shard info", sinfo);
@@ -2006,8 +1995,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       String shard = entry.getKey();
       NamedList<?> info = (NamedList<?>) entry.getValue();
       boolean found = false;
-      for (int i = 0; i < shardsArr.length; i++) {
-        String s = shardsArr[i];
+      for (String s : shardsArr) {
         if (shard.contains(s)) {
           found = true;
           // make sure that it responded if it's up and the landing node didn't error before sending
@@ -2026,14 +2014,12 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                       + " header set if a shard is down",
                   Boolean.TRUE,
                   rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-              assertTrue(
-                  "Expected to find error in the down shard info: " + info.toString(),
-                  info.get("error") != null);
+              assertNotNull(
+                  "Expected to find error in the down shard info: " + info, info.get("error"));
             } else {
-              assertTrue(
-                  "Expected timeAllowedError or to find shardAddress in the up shard info: "
-                      + info.toString(),
-                  info.get("shardAddress") != null);
+              assertNotNull(
+                  "Expected timeAllowedError or to find shardAddress in the up shard info: " + info,
+                  info.get("shardAddress"));
             }
           } else {
             assertEquals(
@@ -2043,9 +2029,9 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
                     + rsp,
                 Boolean.TRUE,
                 rsp.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-            assertTrue(
+            assertNotNull(
                 "Expected to find error in the down shard info: " + info.toString(),
-                info.get("error") != null);
+                info.get("error"));
           }
         }
       }
@@ -2063,7 +2049,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         control.getHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
 
-  private void validateCommonQueryParameters() throws Exception {
+  private void validateCommonQueryParameters() {
     ignoreException("parameter cannot be negative");
 
     SolrException e1 =

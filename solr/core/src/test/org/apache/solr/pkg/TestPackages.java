@@ -21,7 +21,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
-import static org.apache.solr.filestore.TestDistribPackageStore.*;
+import static org.apache.solr.filestore.TestDistribPackageStore.checkAllNodesForFile;
+import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
+import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -43,11 +45,14 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.*;
-import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -62,6 +67,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -71,7 +77,6 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
@@ -88,7 +93,7 @@ public class TestPackages extends SolrCloudTestCase {
     System.setProperty("enable.packages", "true");
     configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
-        .addConfig("conf", configset("conf2"))
+        .addConfig("conf", configset("conf3"))
         .addConfig("conf1", configset("schema-package"))
         .configure();
   }
@@ -123,7 +128,7 @@ public class TestPackages extends SolrCloudTestCase {
         FILE1,
         "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "mypkg";
     add.files = Arrays.asList(new String[] {FILE1});
@@ -204,7 +209,7 @@ public class TestPackages extends SolrCloudTestCase {
         EXPR1,
         "ZOT11arAiPmPZYOHzqodiNnxO9pRyRozWZEBX8XGjU1/HJptFnZK+DI7eXnUtbNaMcbXE2Ze8hh4M/eGyhY8BQ==");
 
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "mypkg";
     add.files = Arrays.asList(new String[] {FILE1, URP1, EXPR1});
@@ -393,7 +398,7 @@ public class TestPackages extends SolrCloudTestCase {
 
     assertEquals("Version 2", result.getResults().get(0).getFieldValue("TestVersionedURP.Ver_s"));
 
-    Package.DelVersion delVersion = new Package.DelVersion();
+    PackagePayload.DelVersion delVersion = new PackagePayload.DelVersion();
     delVersion.pkg = "mypkg";
     delVersion.version = "1.0";
     V2Request delete =
@@ -571,7 +576,7 @@ public class TestPackages extends SolrCloudTestCase {
     String FILE2 = "/mypkg/v.0.12/jar_b.jar";
     String FILE3 = "/mypkg/v.0.13/jar_a.jar";
 
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "0.12";
     add.pkg = "test_pkg";
     add.files = List.of(FILE1, FILE2);
@@ -582,7 +587,7 @@ public class TestPackages extends SolrCloudTestCase {
             .withPayload(Collections.singletonMap("add", add))
             .build();
 
-    // the files is not yet there. The command should fail with error saying "No such file"
+    // the files are not yet there. The command should fail with error saying "No such file"
     expectError(req, cluster.getSolrClient(), errPath, "No such file:");
 
     // post the jar file. No signature is sent
@@ -593,7 +598,7 @@ public class TestPackages extends SolrCloudTestCase {
     // now we upload the keys
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
     uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
-    // and upload the same file with a different name but it has proper signature
+    // and upload the same file with a different name, but it has proper signature
     postFileAndWait(
         cluster,
         "runtimecode/runtimelibs.jar.bin",
@@ -646,7 +651,7 @@ public class TestPackages extends SolrCloudTestCase {
         Map.of(":packages:test_pkg[1]:version", "0.13", ":packages:test_pkg[1]:files[0]", FILE3));
 
     // Now we will just delete one version
-    Package.DelVersion delVersion = new Package.DelVersion();
+    PackagePayload.DelVersion delVersion = new PackagePayload.DelVersion();
     delVersion.version = "0.1"; // this version does not exist
     delVersion.pkg = "test_pkg";
     req =
@@ -721,7 +726,7 @@ public class TestPackages extends SolrCloudTestCase {
     static boolean informCalled = false;
 
     @Override
-    public void inform(ResourceLoader loader) throws IOException {
+    public void inform(ResourceLoader loader) {
       informCalled = true;
     }
 
@@ -753,7 +758,7 @@ public class TestPackages extends SolrCloudTestCase {
         FILE2,
         "gI6vYUDmSXSXmpNEeK1cwqrp4qTeVQgizGQkd8A4Prx2K8k7c5QlXbcs4lxFAAbbdXz9F4esBqTCiLMjVDHJ5Q==");
 
-    Package.AddVersion add = new Package.AddVersion();
+    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
     add.version = "1.0";
     add.pkg = "schemapkg";
     add.files = Arrays.asList(FILE1, FILE2);
@@ -794,7 +799,7 @@ public class TestPackages extends SolrCloudTestCase {
             ":fieldType:_packageinfo_:version",
             "1.0"));
 
-    add = new Package.AddVersion();
+    add = new PackagePayload.AddVersion();
     add.version = "2.0";
     add.pkg = "schemapkg";
     add.files = Arrays.asList(FILE1);
@@ -897,14 +902,13 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
-    SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
+    Utils.BAOS bos = new Utils.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
       for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
-        ByteBuffer b =
-            SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+        ByteBuffer b = Utils.toByteArray(c.getClassLoader().getResourceAsStream(path));
         zipOut.putNextEntry(entry);
         zipOut.write(b.array(), b.arrayOffset(), b.limit());
         zipOut.closeEntry();

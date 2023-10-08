@@ -31,7 +31,7 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import org.apache.hadoop.minikdc.MiniKdc;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.LogLevel;
 import org.junit.Test;

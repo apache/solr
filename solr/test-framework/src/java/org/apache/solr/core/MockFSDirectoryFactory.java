@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.store.MockDirectoryWrapper;
+import org.apache.lucene.tests.util.LuceneTestCase;
 
 /** Opens a directory with {@link LuceneTestCase#newFSDirectory(Path)} */
 public class MockFSDirectoryFactory extends StandardDirectoryFactory {

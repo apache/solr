@@ -26,12 +26,9 @@ import org.apache.solr.search.ValueSourceParser;
 
 /** Mock ValueSource parser that doesn't do much of anything */
 public class DummyValueSourceParser extends ValueSourceParser {
-  private NamedList<?> args;
 
   @Override
-  public void init(NamedList<?> args) {
-    this.args = args;
-  }
+  public void init(NamedList<?> args) {}
 
   @Override
   public ValueSource parse(FunctionQParser fp) throws SyntaxError {

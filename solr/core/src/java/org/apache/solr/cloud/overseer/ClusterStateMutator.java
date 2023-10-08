@@ -31,13 +31,16 @@ import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,8 +95,8 @@ public class ClusterStateMutator {
       for (int i = 0; i < shardNames.size(); i++) {
         String sliceName = shardNames.get(i);
 
-        Map<String, Object> sliceProps = new LinkedHashMap<>(1);
-        sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
+        Map<String, Object> sliceProps = CollectionUtil.newLinkedHashMap(1);
+        sliceProps.put(SliceStateProps.RANGE, ranges == null ? null : ranges.get(i));
 
         slices.put(sliceName, new Slice(sliceName, null, sliceProps, cName));
       }
@@ -109,7 +112,7 @@ public class ClusterStateMutator {
       }
       if (val != null) collectionProps.put(e.getKey(), val);
     }
-    collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
+    collectionProps.put(CollectionStateProps.DOC_ROUTER, routerSpec);
 
     if (message.getStr("fromApi") == null) {
       collectionProps.put("autoCreated", "true");
@@ -123,7 +126,9 @@ public class ClusterStateMutator {
     }
 
     assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
-    DocCollection newCollection = new DocCollection(cName, slices, collectionProps, router, -1);
+    DocCollection newCollection =
+        DocCollection.create(
+            cName, slices, collectionProps, router, -1, stateManager.getPrsSupplier(cName));
 
     return new ZkWriteCommand(cName, newCollection);
   }

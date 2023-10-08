@@ -17,19 +17,17 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import com.google.common.collect.Maps;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -52,8 +50,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for the v2 to v1 mapping for Solr's /node/ APIs */
-public class V2NodeAPIMappingTest {
+/** Unit tests for the v2 to v1 mapping for /node/ APIs. */
+public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   private ApiBag apiBag;
   private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
   private CoreAdminHandler mockCoresHandler;
@@ -70,7 +68,7 @@ public class V2NodeAPIMappingTest {
   }
 
   @Before
-  public void setupApiBag() throws Exception {
+  public void setupApiBag() {
     mockCoresHandler = mock(CoreAdminHandler.class);
     infoHandler = mock(InfoHandler.class);
     mockSystemInfoHandler = mock(SystemInfoHandler.class);
@@ -133,24 +131,6 @@ public class V2NodeAPIMappingTest {
   }
 
   @Test
-  public void testInvokeClassApiAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedCoreV1Params(
-            "/node",
-            "POST",
-            "{"
-                + "\"invoke\": {"
-                + "\"classes\": [\"someClassName\", \"someOtherClassName\"]"
-                + "}}");
-
-    assertEquals("invoke", v1Params.get(ACTION));
-    assertEquals(2, v1Params.getParams("class").length);
-    final List<String> classes = Arrays.asList(v1Params.getParams("class"));
-    assertTrue(classes.contains("someClassName"));
-    assertTrue(classes.contains("someOtherClassName"));
-  }
-
-  @Test
   public void testSystemPropsApiAllProperties() throws Exception {
     final ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add("name", "specificPropertyName");
@@ -169,22 +149,6 @@ public class V2NodeAPIMappingTest {
 
     // All parameters are passed through to v1 API as-is
     assertEquals("anyParamValue", v1Params.get("anyParamName"));
-  }
-
-  @Test
-  public void testLogLevelsApiAllProperties() throws Exception {
-    final ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add("since", "12345678");
-    solrParams.add("threshold", "someThresholdValue");
-    solrParams.add("test", "someTestValue");
-    solrParams.add("set", "SomeClassName");
-    final SolrParams v1Params = captureConvertedLoggingV1Params("/node/logging", "GET", solrParams);
-
-    // All parameters are passed through to v1 API as-is.
-    assertEquals("12345678", v1Params.get("since"));
-    assertEquals("someThresholdValue", v1Params.get("threshold"));
-    assertEquals("someTestValue", v1Params.get("test"));
-    assertEquals("SomeClassName", v1Params.get("set"));
   }
 
   @Test
@@ -221,11 +185,6 @@ public class V2NodeAPIMappingTest {
     return doCaptureParams(path, method, inputParams, null, mockSystemInfoHandler);
   }
 
-  private SolrParams captureConvertedLoggingV1Params(
-      String path, String method, SolrParams inputParams) throws Exception {
-    return doCaptureParams(path, method, inputParams, null, mockLoggingHandler);
-  }
-
   private SolrParams captureConvertedPropertiesV1Params(
       String path, String method, SolrParams inputParams) throws Exception {
     return doCaptureParams(path, method, inputParams, null, mockPropertiesHandler);
@@ -249,7 +208,7 @@ public class V2NodeAPIMappingTest {
       RequestHandlerBase mockHandler)
       throws Exception {
     final HashMap<String, String> parts = new HashMap<>();
-    final Map<String, String[]> inputParamsMap = Maps.newHashMap();
+    final Map<String, String[]> inputParamsMap = new HashMap<>();
     inputParams.stream()
         .forEach(
             e -> {
@@ -286,10 +245,8 @@ public class V2NodeAPIMappingTest {
       ApiBag apiBag, CoreAdminHandler coreHandler, InfoHandler infoHandler) {
     apiBag.registerObject(new OverseerOperationAPI(coreHandler));
     apiBag.registerObject(new RejoinLeaderElectionAPI(coreHandler));
-    apiBag.registerObject(new InvokeClassAPI(coreHandler));
     apiBag.registerObject(new NodePropertiesAPI(infoHandler.getPropertiesHandler()));
     apiBag.registerObject(new NodeThreadsAPI(infoHandler.getThreadDumpHandler()));
-    apiBag.registerObject(new NodeLoggingAPI(infoHandler.getLoggingHandler()));
     apiBag.registerObject(new NodeSystemInfoAPI(infoHandler.getSystemInfoHandler()));
     apiBag.registerObject(new NodeHealthAPI(infoHandler.getHealthCheckHandler()));
   }

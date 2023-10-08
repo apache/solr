@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockFactory; // javadocs
+import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -37,24 +37,28 @@ import org.slf4j.LoggerFactory;
  *   <li>unmap -- See {@link MMapDirectory#setUseUnmap(boolean)}
  *   <li>preload -- See {@link MMapDirectory#setPreload(boolean)}
  *   <li>maxChunkSize -- The Max chunk size. See {@link MMapDirectory#MMapDirectory(Path,
- *       LockFactory, int)}
+ *       LockFactory, long)}
  * </ul>
  */
 public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  boolean unmapHack;
   boolean preload;
-  private int maxChunk;
+  private long maxChunk;
 
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
     SolrParams params = args.toSolrParams();
-    maxChunk = params.getInt("maxChunkSize", MMapDirectory.DEFAULT_MAX_CHUNK_SIZE);
+    maxChunk = params.getLong("maxChunkSize", MMapDirectory.DEFAULT_MAX_CHUNK_SIZE);
     if (maxChunk <= 0) {
       throw new IllegalArgumentException("maxChunk must be greater than 0");
     }
-    unmapHack = params.getBool("unmap", true);
+    if (params.get("unmap") != null) {
+      log.warn(
+          "It is no longer possible to configure unmapping of index files on DirectoryFactory level in solrconfig.xml.");
+      log.warn(
+          "To disable unmapping, pass -Dorg.apache.lucene.store.MMapDirectory.enableUnmapHack=false on Solr's command line.");
+    }
     preload = params.getBool("preload", false); // default turn-off
   }
 
@@ -62,11 +66,6 @@ public class MMapDirectoryFactory extends StandardDirectoryFactory {
   protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
       throws IOException {
     MMapDirectory mapDirectory = new MMapDirectory(Path.of(path), lockFactory, maxChunk);
-    try {
-      mapDirectory.setUseUnmap(unmapHack);
-    } catch (IllegalArgumentException e) {
-      log.warn("Unmap not supported on this JVM, continuing on without setting unmap", e);
-    }
     mapDirectory.setPreload(preload);
     return mapDirectory;
   }

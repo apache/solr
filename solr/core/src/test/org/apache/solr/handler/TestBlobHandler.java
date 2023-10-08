@@ -34,8 +34,8 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -43,8 +43,8 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
-import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
@@ -57,7 +57,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   @Test
   public void doBlobHandlerTest() throws Exception {
 
-    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl(jettys.get(0)))) {
       CollectionAdminResponse response1;
       CollectionAdminRequest.Create createCollectionRequest =
           CollectionAdminRequest.createCollection(".system", 1, 2);
@@ -100,8 +100,12 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
     map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
     assertEquals("" + bytarr.length, map._getStr("response/docs[0]/size", null));
 
-    compareInputAndOutput(baseUrl + "/.system/blob/test?wt=filestream", bytarr2, cloudClient);
-    compareInputAndOutput(baseUrl + "/.system/blob/test/1?wt=filestream", bytarr, cloudClient);
+    compareInputAndOutput(
+        baseUrl + "/.system/blob/test?wt=filestream", bytarr2, (CloudLegacySolrClient) cloudClient);
+    compareInputAndOutput(
+        baseUrl + "/.system/blob/test/1?wt=filestream",
+        bytarr,
+        (CloudLegacySolrClient) cloudClient);
   }
 
   static void checkBlobPostMd5(String baseUrl, CloudSolrClient cloudClient) throws Exception {
@@ -157,14 +161,14 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
             i, count, timer.getTime(), map.toString()));
   }
 
-  static void compareInputAndOutput(String url, byte[] bytarr, CloudSolrClient cloudClient)
+  static void compareInputAndOutput(String url, byte[] bytarr, CloudLegacySolrClient cloudClient)
       throws IOException {
 
     HttpClient httpClient = cloudClient.getLbClient().getHttpClient();
 
     HttpGet httpGet = new HttpGet(url);
     HttpResponse entity = httpClient.execute(httpGet);
-    ByteBuffer b = SimplePostTool.inputStreamToByteArray(entity.getEntity().getContent());
+    ByteBuffer b = Utils.toByteArray(entity.getEntity().getContent());
     try {
       assertEquals(b.limit(), bytarr.length);
       for (int i = 0; i < bytarr.length; i++) {
@@ -185,7 +189,12 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       httpPost = new HttpPost(baseUrl + "/.system/blob/" + blobName);
       httpPost.setHeader("Content-Type", "application/octet-stream");
       httpPost.setEntity(new ByteArrayEntity(bytarr.array(), bytarr.arrayOffset(), bytarr.limit()));
-      entity = cloudClient.getLbClient().getHttpClient().execute(httpPost).getEntity();
+      entity =
+          ((CloudLegacySolrClient) cloudClient)
+              .getLbClient()
+              .getHttpClient()
+              .execute(httpPost)
+              .getEntity();
       try {
         response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
         Map<?, ?> m = (Map<?, ?>) fromJSONString(response);

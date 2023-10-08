@@ -78,7 +78,7 @@ public class BackupRepositoryFactory {
     BackupRepository result = loader.newInstance(repo.className, BackupRepository.class);
     if ("trackingBackupRepository".equals(name)) {
       // newInstance can be called by multiple threads, synchronization prevents simultaneous
-      // multi-threaded 'adds' from corrupting the namedlist
+      // multithreaded 'adds' from corrupting the NamedList
       synchronized (repo.initArgs) {
         if (repo.initArgs.get("factory") == null) {
           repo.initArgs.add("factory", this);
@@ -95,7 +95,6 @@ public class BackupRepositoryFactory {
     if (defaultBackupRepoPlugin != null) {
       return newInstance(loader, defaultBackupRepoPlugin.name);
     }
-
     LocalFileSystemRepository repo = new LocalFileSystemRepository();
     repo.init(new NamedList<>());
     return repo;

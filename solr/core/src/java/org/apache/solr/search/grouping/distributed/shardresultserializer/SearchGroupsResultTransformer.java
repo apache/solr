@@ -17,13 +17,17 @@
 package org.apache.solr.search.grouping.distributed.shardresultserializer;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -105,7 +109,8 @@ public class SearchGroupsResultTransformer
   @Override
   public Map<String, SearchGroupsFieldCommandResult> transformToNative(
       NamedList<NamedList<?>> shardResponse, Sort groupSort, Sort withinGroupSort, String shard) {
-    final Map<String, SearchGroupsFieldCommandResult> result = new HashMap<>(shardResponse.size());
+    final Map<String, SearchGroupsFieldCommandResult> result =
+        CollectionUtil.newHashMap(shardResponse.size());
     for (Map.Entry<String, NamedList<?>> command : shardResponse) {
       List<SearchGroup<BytesRef>> searchGroups = new ArrayList<>();
       NamedList<?> topGroupsAndGroupCount = command.getValue();

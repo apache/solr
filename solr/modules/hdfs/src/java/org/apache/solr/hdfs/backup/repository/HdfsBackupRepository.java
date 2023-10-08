@@ -17,13 +17,11 @@
 
 package org.apache.solr.hdfs.backup.repository;
 
-import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.Objects;
 import org.apache.hadoop.conf.Configuration;
@@ -104,6 +102,7 @@ public class HdfsBackupRepository implements BackupRepository {
     }
   }
 
+  @Override
   public void close() throws IOException {
     if (this.fileSystem != null) {
       this.fileSystem.close();
@@ -138,7 +137,9 @@ public class HdfsBackupRepository implements BackupRepository {
 
   @Override
   public URI resolve(URI baseUri, String... pathComponents) {
-    Preconditions.checkArgument(baseUri.isAbsolute());
+    if (!baseUri.isAbsolute()) {
+      throw new IllegalArgumentException("baseUri must be absolute");
+    }
 
     Path result = new Path(baseUri);
     for (String path : pathComponents) {
@@ -215,16 +216,12 @@ public class HdfsBackupRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) throws IOException {
     if (files.isEmpty()) return;
 
     for (String file : files) {
       Path filePath = new Path(new Path(path), file);
-      boolean success = fileSystem.delete(filePath, false);
-      if (!ignoreNoSuchFileException && !success) {
-        throw new NoSuchFileException(filePath.toString());
-      }
+      fileSystem.delete(filePath, false);
     }
   }
 }

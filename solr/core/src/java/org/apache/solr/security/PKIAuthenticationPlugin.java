@@ -103,6 +103,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     return interceptorRegistered;
   }
 
+  // TODO We only use PublicKeyHandler here to gain access to the underlying keypair; let's nuke the
+  // indirection and
+  //  just pass in the SolrNodeKeyPair instance directly
   public PKIAuthenticationPlugin(
       CoreContainer cores, String nodeName, PublicKeyHandler publicKeyHandler) {
     this.publicKeyHandler = publicKeyHandler;
@@ -176,7 +179,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
 
     final Principal principal =
-        "$".equals(headerData.userName) ? SU : new BasicUserPrincipal(headerData.userName);
+        "$".equals(headerData.userName)
+            ? CLUSTER_MEMBER_NODE
+            : new BasicUserPrincipal(headerData.userName);
 
     numAuthenticated.inc();
     filterChain.doFilter(wrapWithPrincipal(request, principal), response);
@@ -224,17 +229,17 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
     String data = header.substring(0, sigStart);
     byte[] sig = Base64.getDecoder().decode(header.substring(sigStart + 1));
-    PKIHeaderData rv = validateSignature(data, sig, key);
+    PKIHeaderData rv = validateSignature(data, sig, key, false);
     if (rv == null) {
       log.warn("Failed to verify signature, trying after refreshing the key ");
       key = getRemotePublicKey(nodeName);
-      rv = validateSignature(data, sig, key);
+      rv = validateSignature(data, sig, key, true);
     }
 
     return rv;
   }
 
-  private PKIHeaderData validateSignature(String data, byte[] sig, PublicKey key) {
+  private PKIHeaderData validateSignature(String data, byte[] sig, PublicKey key, boolean isRetry) {
     try {
       if (CryptoKeys.verifySha256(data.getBytes(UTF_8), sig, key)) {
         int timestampStart = data.lastIndexOf(' ');
@@ -253,7 +258,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
         return null;
       }
     } catch (InvalidKeyException | SignatureException e) {
-      log.error("Signature validation failed, likely key error");
+      if (isRetry) {
+        log.error("Signature validation on retry failed, likely key error");
+      } else {
+        log.info("Signature validation failed first attempt, likely key error");
+      }
       return null;
     }
   }
@@ -266,23 +275,27 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       log.debug("public key obtained {} ", key);
     }
 
-    PKIHeaderData header = parseCipher(cipherBase64, key);
+    PKIHeaderData header = parseCipher(cipherBase64, key, false);
     if (header == null) {
       log.warn("Failed to decrypt header, trying after refreshing the key ");
       key = getRemotePublicKey(nodeName);
-      return parseCipher(cipherBase64, key);
+      return parseCipher(cipherBase64, key, true);
     } else {
       return header;
     }
   }
 
   @VisibleForTesting
-  static PKIHeaderData parseCipher(String cipher, PublicKey key) {
+  static PKIHeaderData parseCipher(String cipher, PublicKey key, boolean isRetry) {
     byte[] bytes;
     try {
       bytes = CryptoKeys.decryptRSA(Base64.getDecoder().decode(cipher), key);
     } catch (Exception e) {
-      log.error("Decryption failed , key must be wrong", e);
+      if (isRetry) {
+        log.error("Decryption failed on retry, key must be wrong", e);
+      } else {
+        log.info("Decryption failed on first attempt, will retry", e);
+      }
       return null;
     }
     String s = new String(bytes, UTF_8).trim();
@@ -355,6 +368,8 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   public void setup(Http2SolrClient client) {
     final HttpListenerFactory.RequestResponseListener listener =
         new HttpListenerFactory.RequestResponseListener() {
+          private static final String CACHED_REQUEST_USER_KEY = "cachedRequestUser";
+
           @Override
           public void onQueued(Request request) {
             log.trace("onQueued: {}", request);
@@ -366,11 +381,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
               if (log.isDebugEnabled()) {
                 log.debug("{} secures this internode request", this.getClass().getSimpleName());
               }
-              if ("v1".equals(System.getProperty(SEND_VERSION))) {
-                generateToken().ifPresent(s -> request.header(HEADER, s));
-              } else {
-                generateTokenV2().ifPresent(s -> request.header(HEADER_V2, s));
-              }
+
+              // The onBegin hook below (potentially) runs in a separate Jetty thread than was
+              // used to submit the request.  While we're still in the submitting thread, fetch
+              // the user information from the SolrRequestInfo thread local and cache it on the
+              // Request so it can be accessed accurately in onBegin
+              cachePreFetchedUserOnJettyRequest(request);
             } else {
               if (log.isDebugEnabled()) {
                 log.debug(
@@ -378,6 +394,31 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
                     cores.getAuthenticationPlugin().getClass().getSimpleName());
               }
             }
+          }
+
+          @Override
+          public void onBegin(Request request) {
+            log.trace("onBegin: {}", request);
+
+            final Optional<String> preFetchedUser = getUserFromJettyRequest(request);
+            if ("v1".equals(System.getProperty(SEND_VERSION))) {
+              preFetchedUser
+                  .map(PKIAuthenticationPlugin.this::generateToken)
+                  .ifPresent(token -> request.header(HEADER, token));
+            } else {
+              preFetchedUser
+                  .map(PKIAuthenticationPlugin.this::generateTokenV2)
+                  .ifPresent(token -> request.header(HEADER_V2, token));
+            }
+          }
+
+          private void cachePreFetchedUserOnJettyRequest(Request request) {
+            getUser().ifPresent(user -> request.attribute(CACHED_REQUEST_USER_KEY, user));
+          }
+
+          private Optional<String> getUserFromJettyRequest(Request request) {
+            return Optional.ofNullable(
+                (String) request.getAttributes().get(CACHED_REQUEST_USER_KEY));
           }
         };
     client.addListenerFactory(() -> listener);
@@ -391,7 +432,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   public boolean needsAuthorization(HttpServletRequest req) {
-    return req.getUserPrincipal() != SU;
+    return req.getUserPrincipal() != CLUSTER_MEMBER_NODE;
   }
 
   private class HttpHeaderClientInterceptor implements HttpRequestInterceptor {
@@ -419,7 +460,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
   }
 
-  private String getUser() {
+  private Optional<String> getUser() {
     SolrRequestInfo reqInfo = getRequestInfo();
     if (reqInfo != null && !reqInfo.useServerToken()) {
       Principal principal = reqInfo.getUserPrincipal();
@@ -427,57 +468,51 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
         log.debug("generateToken: principal is null");
         // this had a request but not authenticated
         // so we don't not need to set a principal
-        return null;
+        return Optional.empty();
       } else {
         assert principal.getName() != null;
-        return principal.getName();
+        return Optional.of(principal.getName());
       }
     } else {
       if (!isSolrThread()) {
         // if this is not running inside a Solr threadpool (as in testcases)
         // then no need to add any header
         log.debug("generateToken: not a solr (server) thread");
-        return null;
+        return Optional.empty();
       }
       // this request seems to be originated from Solr itself
-      return "$"; // special name to denote the user is the node itself
+      return Optional.of(NODE_IS_USER); // special name to denote the user is the node itself
     }
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
-  private Optional<String> generateToken() {
-    String usr = getUser();
-    if (usr == null) {
-      return Optional.empty();
-    }
-
+  private String generateToken(String usr) {
+    assert usr != null;
     String s = usr + " " + System.currentTimeMillis();
     byte[] payload = s.getBytes(UTF_8);
-    byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
+    byte[] payloadCipher = publicKeyHandler.getKeyPair().encrypt(ByteBuffer.wrap(payload));
     String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     log.trace("generateToken: usr={} token={}", usr, base64Cipher);
-    return Optional.of(myNodeName + " " + base64Cipher);
+    return myNodeName + " " + base64Cipher;
   }
 
-  private Optional<String> generateTokenV2() {
-    String user = getUser();
-    if (user == null) {
-      return Optional.empty();
-    }
-
+  private String generateTokenV2(String user) {
+    assert user != null;
     String s = myNodeName + " " + user + " " + Instant.now().toEpochMilli();
 
     byte[] payload = s.getBytes(UTF_8);
-    byte[] signature = publicKeyHandler.keyPair.signSha256(payload);
+    byte[] signature = publicKeyHandler.getKeyPair().signSha256(payload);
     String base64Signature = Base64.getEncoder().encodeToString(signature);
-    return Optional.of(s + " " + base64Signature);
+    return s + " " + base64Signature;
   }
 
   void setHeader(HttpRequest httpRequest) {
     if ("v1".equals(System.getProperty(SEND_VERSION))) {
-      generateToken().ifPresent(s -> httpRequest.setHeader(HEADER, s));
+      getUser().map(this::generateToken).ifPresent(token -> httpRequest.setHeader(HEADER, token));
     } else {
-      generateTokenV2().ifPresent(s -> httpRequest.setHeader(HEADER_V2, s));
+      getUser()
+          .map(this::generateTokenV2)
+          .ifPresent(token -> httpRequest.setHeader(HEADER_V2, token));
     }
   }
 
@@ -497,12 +532,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
   @VisibleForTesting
   public String getPublicKey() {
-    return publicKeyHandler.getPublicKey();
+    return publicKeyHandler.getKeyPair().getPublicKeyStr();
   }
 
   public static final String HEADER = "SolrAuth";
   public static final String HEADER_V2 = "SolrAuthV2";
   public static final String NODE_IS_USER = "$";
   // special principal to denote the cluster member
-  private static final Principal SU = new BasicUserPrincipal("$");
+  public static final Principal CLUSTER_MEMBER_NODE = new BasicUserPrincipal("$");
 }

@@ -23,12 +23,17 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.xml.parsers.ParserConfigurationException;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.ObjectCache;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
@@ -44,6 +49,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /** Base class for factories for IndexSchema implementations */
+@NotThreadSafe
 public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -89,16 +95,14 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
   public IndexSchema create(
       String resourceName, SolrConfig config, ConfigSetService configSetService) {
     SolrResourceLoader loader = config.getResourceLoader();
-    InputStream schemaInputStream = null;
 
     if (null == resourceName) {
       resourceName = IndexSchema.DEFAULT_SCHEMA_FILE;
     }
     try {
-      schemaInputStream = loader.openResource(resourceName);
       return new IndexSchema(
           resourceName,
-          getConfigResource(configSetService, schemaInputStream, loader, resourceName),
+          getConfigResource(configSetService, null, loader, resourceName),
           config.luceneMatchVersion,
           loader,
           config.getSubstituteProperties());
@@ -111,43 +115,80 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public static ConfigSetService.ConfigResource getConfigResource(
       ConfigSetService configSetService,
       InputStream schemaInputStream,
       SolrResourceLoader loader,
-      String name)
-      throws IOException {
-    if (configSetService instanceof ZkConfigSetService
-        && schemaInputStream instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-      ZkSolrResourceLoader.ZkByteArrayInputStream is =
-          (ZkSolrResourceLoader.ZkByteArrayInputStream) schemaInputStream;
-      Map<String, VersionedConfig> configCache =
-          (Map<String, VersionedConfig>)
-              ((ZkConfigSetService) configSetService)
-                  .getSolrCloudManager()
-                  .getObjectCache()
-                  .computeIfAbsent(
-                      ConfigSetService.ConfigResource.class.getName(),
-                      s -> new ConcurrentHashMap<>());
-      VersionedConfig cached = configCache.get(is.fileName);
-      if (cached != null) {
-        if (cached.version != is.getStat().getVersion()) {
-          configCache.remove(is.fileName); // this is stale. remove from cache
-        } else {
-          return () -> cached.data;
-        }
-      }
-      return () -> {
-        ConfigNode data =
-            getParsedSchema(
-                schemaInputStream, loader, name); // either missing or stale. create a new one
-        configCache.put(is.fileName, new VersionedConfig(is.getStat().getVersion(), data));
-        return data;
-      };
+      String name) {
+    return () ->
+        getFromCache(
+                name,
+                loader,
+                () -> {
+                  if (!(configSetService instanceof ZkConfigSetService)) return null;
+                  return ((ZkConfigSetService) configSetService)
+                      .getSolrCloudManager()
+                      .getObjectCache();
+                },
+                () -> loadConfig(schemaInputStream, loader, name))
+            .data;
+  }
+
+  private static VersionedConfig loadConfig(
+      InputStream schemaInputStream, SolrResourceLoader loader, String name) {
+    try (InputStream is =
+        (schemaInputStream == null ? loader.openResource(name) : schemaInputStream)) {
+      ConfigNode node = getParsedSchema(is, loader, name);
+      int version =
+          is instanceof ZkSolrResourceLoader.ZkByteArrayInputStream
+              ? ((ZkSolrResourceLoader.ZkByteArrayInputStream) is).getStat().getVersion()
+              : 0;
+      return new VersionedConfig(version, node);
+    } catch (Exception e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error fetching schema", e);
     }
-    // this is not cacheable as it does not come from ZK
-    return () -> getParsedSchema(schemaInputStream, loader, name);
+  }
+
+  // for testing purposes
+  public static volatile Consumer<String> CACHE_MISS_LISTENER = null;
+
+  @SuppressWarnings("unchecked")
+  public static VersionedConfig getFromCache(
+      String name,
+      SolrResourceLoader loader,
+      Supplier<ObjectCache> objectCacheSupplier,
+      Supplier<VersionedConfig> c) {
+    Consumer<String> listener = CACHE_MISS_LISTENER;
+    Supplier<VersionedConfig> cfgLoader =
+        listener == null
+            ? c
+            : () -> {
+              listener.accept(name);
+              return c.get();
+            };
+
+    if (loader instanceof ZkSolrResourceLoader) {
+      ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+      ObjectCache objectCache = objectCacheSupplier.get();
+      if (objectCache == null) return cfgLoader.get();
+      Map<String, VersionedConfig> confCache =
+          (Map<String, VersionedConfig>)
+              objectCache.computeIfAbsent(
+                  ConfigSetService.ConfigResource.class.getName(), k -> new ConcurrentHashMap<>());
+      Pair<String, Integer> res = zkLoader.getZkResourceInfo(name);
+      if (res == null) return cfgLoader.get();
+      VersionedConfig result = null;
+      result = confCache.computeIfAbsent(res.first(), k -> cfgLoader.get());
+      if (result.version == res.second()) {
+        return result;
+      } else {
+        confCache.remove(res.first());
+        return confCache.computeIfAbsent(res.first(), k -> cfgLoader.get());
+      }
+    } else {
+      // it's a file system loader, no caching necessary
+      return cfgLoader.get();
+    }
   }
 
   public static ConfigNode getParsedSchema(InputStream is, SolrResourceLoader loader, String name)

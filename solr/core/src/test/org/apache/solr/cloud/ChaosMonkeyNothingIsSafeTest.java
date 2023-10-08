@@ -16,13 +16,11 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 
 /*
  * Implementation moved to AbstractChaosMonkeyNothingIsSafeTestBase.java as it is also
  * used by the HDFS contrib tests.
  */
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class ChaosMonkeyNothingIsSafeTest extends AbstractChaosMonkeyNothingIsSafeTestBase {}

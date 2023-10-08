@@ -19,8 +19,7 @@ package org.apache.solr.security.hadoop;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.lang.invoke.MethodHandles;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -42,7 +41,6 @@ import org.slf4j.LoggerFactory;
       QuickPatchThreadsFilter.class,
       BadZookeeperThreadsFilter.class // Zookeeper login leaks TGT renewal threads
     })
-@LuceneTestCase.Slow
 @ThreadLeakLingering(linger = 10000) // minikdc has some lingering threads
 public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

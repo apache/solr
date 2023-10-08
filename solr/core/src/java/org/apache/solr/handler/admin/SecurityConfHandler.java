@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -29,6 +28,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
@@ -41,6 +42,10 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.handler.admin.api.GetAuthenticationConfigAPI;
+import org.apache.solr.handler.admin.api.GetAuthorizationConfigAPI;
+import org.apache.solr.handler.admin.api.ModifyNoAuthPluginSecurityConfigAPI;
+import org.apache.solr.handler.admin.api.ModifyNoAuthzPluginSecurityConfigAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -48,6 +53,7 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,6 +149,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
 
         if (persistConf(securityConfig)) {
           securityConfEdited();
+          updateTraceOps(req, configEditablePlugin.getClass().getSimpleName(), commandsCopy);
           return;
         }
       }
@@ -150,6 +157,11 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
     }
     throw new SolrException(
         SERVER_ERROR, "Failed to persist security config after 3 attempts. Giving up");
+  }
+
+  private void updateTraceOps(SolrQueryRequest req, String clazz, List<CommandOperation> commands) {
+    TraceUtils.setOperations(
+        req, clazz, commands.stream().map(c -> c.name).collect(Collectors.toUnmodifiableList()));
   }
 
   /** Hook where you can do stuff after a config has been edited. Defaults to NOP */
@@ -262,6 +274,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
       return setData(Utils.fromJSON(securityJsonInputStream));
     }
 
+    @Override
     public String toString() {
       return "SecurityConfig: version=" + version + ", data=" + Utils.toJSONString(data);
     }
@@ -277,20 +290,27 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
       synchronized (this) {
         if (apis == null) {
           Collection<Api> apis = new ArrayList<>();
-          final SpecProvider authcCommands =
-              Utils.getSpec("cluster.security.authentication.Commands");
-          final SpecProvider authzCommands =
-              Utils.getSpec("cluster.security.authorization.Commands");
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authentication")));
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authorization")));
+          // GET Apis are the same regardless of which plugins are registered
+          apis.addAll(AnnotatedApi.getApis(new GetAuthenticationConfigAPI(this)));
+          apis.addAll(AnnotatedApi.getApis(new GetAuthorizationConfigAPI(this)));
+
+          // POST Apis come from the specific authc/z plugin registered (with a fallback used if
+          // the plugin isn't a SpecProvider).
+          final Api defaultAuthcApi =
+              AnnotatedApi.getApis(new ModifyNoAuthPluginSecurityConfigAPI(this)).get(0);
+          final Api defaultAuthzApi =
+              AnnotatedApi.getApis(new ModifyNoAuthzPluginSecurityConfigAPI(this)).get(0);
+
           SpecProvider authcSpecProvider =
               () -> {
                 AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
                 return authcPlugin != null && authcPlugin instanceof SpecProvider
                     ? ((SpecProvider) authcPlugin).getSpec()
-                    : authcCommands.getSpec();
+                    : defaultAuthcApi.getSpec();
               };
 
+          // TODO Can we remove this extra ReqHandlerToApi wrapping - nothing but the schema from
+          // the POST authc/authz is getting used.
           apis.add(
               new ReqHandlerToApi(this, authcSpecProvider) {
                 @Override
@@ -309,7 +329,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
                 AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
                 return authzPlugin != null && authzPlugin instanceof SpecProvider
                     ? ((SpecProvider) authzPlugin).getSpec()
-                    : authzCommands.getSpec();
+                    : defaultAuthzApi.getSpec();
               };
           apis.add(
               new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
@@ -324,7 +344,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
                 }
               });
 
-          this.apis = ImmutableList.copyOf(apis);
+          this.apis = List.copyOf(apis);
         }
       }
     }

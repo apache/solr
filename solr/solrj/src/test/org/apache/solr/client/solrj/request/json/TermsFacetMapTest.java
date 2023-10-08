@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.request.json;
 import static org.hamcrest.core.StringContains.containsString;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class TermsFacetMapTest extends SolrTestCaseJ4 {
@@ -46,7 +47,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
               final TermsFacetMap termsFacet =
                   new TermsFacetMap(ANY_FIELD_NAME).setBucketOffset(-1);
             });
-    assertThat(thrown.getMessage(), containsString("must be non-negative"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-negative"));
   }
 
   @Test
@@ -69,7 +70,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setSort(null);
             });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -86,7 +87,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setOverRequest(-2);
             });
-    assertThat(thrown.getMessage(), containsString("must be >= -1"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be >= -1"));
   }
 
   @Test
@@ -110,7 +111,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setOverRefine(-2);
             });
-    assertThat(thrown.getMessage(), containsString("must be >= -1"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be >= -1"));
   }
 
   @Test
@@ -127,7 +128,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
             () -> {
               final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME).setMinCount(-1);
             });
-    assertThat(thrown.getMessage(), containsString("must be a non-negative integer"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be a non-negative integer"));
   }
 
   @Test
@@ -160,7 +161,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
               final TermsFacetMap termsFacet =
                   new TermsFacetMap(ANY_FIELD_NAME).setTermPrefix(null);
             });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test
@@ -178,7 +179,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
               final TermsFacetMap termsFacet =
                   new TermsFacetMap(ANY_FIELD_NAME).setFacetMethod(null);
             });
-    assertThat(thrown.getMessage(), containsString("must be non-null"));
+    MatcherAssert.assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 
   @Test

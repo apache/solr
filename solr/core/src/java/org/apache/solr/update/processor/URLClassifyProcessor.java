@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Locale;
+import java.util.Objects;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -250,7 +251,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
     if (url.getQuery() != null) {
       return false;
     } else {
-      return landingPageSuffix(url) != "";
+      return !Objects.equals(landingPageSuffix(url), "");
     }
   }
 

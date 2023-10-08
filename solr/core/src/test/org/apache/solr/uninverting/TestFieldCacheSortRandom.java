@@ -37,7 +37,6 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -52,10 +51,11 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
@@ -114,7 +114,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
         if (type == SortField.Type.STRING) {
           doc.add(new StringField("stringdv", s, Field.Store.NO));
         } else {
-          assert type == SortField.Type.STRING_VAL;
+          assertSame(type, SortField.Type.STRING_VAL);
           doc.add(new BinaryDocValuesField("stringdv", new BytesRef(s)));
         }
         docValues.add(new BytesRef(s));
@@ -196,8 +196,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       }
 
       // Compute expected results:
-      Collections.sort(
-          f.matchValues,
+      f.matchValues.sort(
           new Comparator<BytesRef>() {
             @Override
             public int compare(BytesRef a, BytesRef b) {
@@ -296,8 +295,7 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
-        throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {

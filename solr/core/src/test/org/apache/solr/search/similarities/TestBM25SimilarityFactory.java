@@ -28,12 +28,12 @@ public class TestBM25SimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** bm25 with default parameters */
-  public void test() throws Exception {
+  public void test() {
     assertEquals(BM25Similarity.class, getSimilarity("text").getClass());
   }
 
   /** bm25 with parameters */
-  public void testParameters() throws Exception {
+  public void testParameters() {
     Similarity sim = getSimilarity("text_params");
     assertEquals(BM25Similarity.class, sim.getClass());
     BM25Similarity bm25 = (BM25Similarity) sim;

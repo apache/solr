@@ -22,14 +22,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -39,13 +38,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class TestSortableTextField extends SolrTestCaseJ4 {
 
   protected static final String BIG_CONST =
-      StringUtils.repeat("x", SortableTextField.DEFAULT_MAX_CHARS_FOR_DOC_VALUES);
+      "x".repeat(SortableTextField.DEFAULT_MAX_CHARS_FOR_DOC_VALUES);
 
   @BeforeClass
   public static void create() throws Exception {
@@ -76,7 +76,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
           sf.hasDocValues());
     }
 
-    { // this field should *NOT* have docValues .. should behave like a plain old TextField
+    { // this field should *NOT* have docValues... should behave like a plain old TextField
       SchemaField sf = h.getCore().getLatestSchema().getField("whitespace_nodv_stxt");
       assertFalse(
           "field " + sf.getName() + " should not have docvalues - schema got changed?",
@@ -85,11 +85,11 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void cleanup() throws Exception {
+  public void cleanup() {
     clearIndex();
   }
 
-  public void testSimple() throws Exception {
+  public void testSimple() {
     assertU(
         adoc("id", "1", "whitespace_stxt", "how now brown cow ?", "whitespace_f_stxt", "aaa bbb"));
     assertU(
@@ -173,7 +173,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.=4]");
   }
 
-  public void testSimpleSearchAndFacets() throws Exception {
+  public void testSimpleSearchAndFacets() {
     assertU(adoc("id", "1", "whitespace_stxt", "how now brown cow ?"));
     assertU(adoc("id", "2", "whitespace_stxt", "how now brown cow ?"));
     assertU(adoc("id", "3", "whitespace_stxt", "holy cow !"));
@@ -278,7 +278,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     }
   }
 
-  public void testWhiteboxCreateFields() throws Exception {
+  public void testWhiteboxCreateFields() {
     List<IndexableField> values = null;
 
     // common case...
@@ -291,23 +291,23 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
             "whitespace_l_stxt")) {
       values = createIndexableFields(field);
       assertEquals(field, 2, values.size());
-      assertThat(field, values.get(0), instanceOf(Field.class));
-      assertThat(field, values.get(1), instanceOf(SortedDocValuesField.class));
+      MatcherAssert.assertThat(field, values.get(0), instanceOf(Field.class));
+      MatcherAssert.assertThat(field, values.get(1), instanceOf(SortedDocValuesField.class));
     }
 
     // special cases...
     values = createIndexableFields("whitespace_nois_stxt");
     assertEquals(1, values.size());
-    assertThat(values.get(0), instanceOf(SortedDocValuesField.class));
+    MatcherAssert.assertThat(values.get(0), instanceOf(SortedDocValuesField.class));
     //
     values = createIndexableFields("whitespace_nodv_stxt");
     assertEquals(1, values.size());
-    assertThat(values.get(0), instanceOf(Field.class));
+    MatcherAssert.assertThat(values.get(0), instanceOf(Field.class));
     //
     values = createIndexableFields("whitespace_m_stxt");
     assertEquals(2, values.size());
-    assertThat(values.get(0), instanceOf(Field.class));
-    assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));
+    MatcherAssert.assertThat(values.get(0), instanceOf(Field.class));
+    MatcherAssert.assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));
   }
 
   private List<IndexableField> createIndexableFields(String fieldName) {
@@ -315,7 +315,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     return sf.getType().createFields(sf, "dummy value");
   }
 
-  public void testMaxCharsSort() throws Exception {
+  public void testMaxCharsSort() {
     assertU(adoc("id", "1", "whitespace_stxt", "aaa bbb ccc ddd"));
     assertU(adoc("id", "2", "whitespace_stxt", "aaa bbb xxx yyy"));
     assertU(adoc("id", "3", "whitespace_stxt", "aaa bbb ccc xxx"));
@@ -348,7 +348,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       }
     }
 
-    // sorting on a maxChars limited fields should force tie breaker
+    // sorting on a maxChars limited fields should force tiebreaker
     for (String dir : Arrays.asList("asc", "desc")) {
       // for max3, dir shouldn't matter - should always tie..
       assertQ(
@@ -401,7 +401,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     assertU(adoc("id", "5", "whitespace_stxt", BIG_CONST + " aaa zzz"));
     assertU(adoc("id", "6", "whitespace_stxt", BIG_CONST + " bbb zzz "));
     assertU(commit());
-    // for these fields, the tie breaker should be the only thing that matters, regardless of
+    // for these fields, the tiebreaker should be the only thing that matters, regardless of
     // direction...
     for (String sortF : Arrays.asList("whitespace_stxt", "whitespace_nois_stxt")) {
       for (String dir : Arrays.asList("asc", "desc")) {
@@ -420,7 +420,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   }
 
   /** test how various permutations of useDocValuesAsStored and maxCharsForDocValues interact */
-  public void testUseDocValuesAsStored() throws Exception {
+  public void testUseDocValuesAsStored() {
     ignoreException("when useDocValuesAsStored=true \\(length=");
 
     // first things first...
@@ -429,16 +429,14 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     for (String n : Arrays.asList("keyword_stxt", "whitespace_max0_stxt", "whitespace_max6_stxt")) {
       {
         FieldType ft = h.getCore().getLatestSchema().getFieldTypeByName(n);
-        assertEquals(
+        assertFalse(
             "type " + ft.getTypeName() + " should not default to useDocValuesAsStored",
-            false,
             ft.useDocValuesAsStored());
       }
       {
         SchemaField sf = h.getCore().getLatestSchema().getField(n);
-        assertEquals(
+        assertFalse(
             "field " + sf.getName() + " should not default to useDocValuesAsStored",
-            false,
             sf.useDocValuesAsStored());
       }
     }
@@ -450,9 +448,8 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       if (entry.getKey().endsWith("_has_usedvs")) {
         num_types_found++;
         FieldType ft = entry.getValue();
-        assertEquals(
+        assertTrue(
             "type " + ft.getTypeName() + " has unexpected useDocValuesAsStored value",
-            true,
             ft.useDocValuesAsStored());
       }
     }
@@ -510,14 +507,14 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
                 ex.getMessage().contains(expect));
           }
         } else {
-          // otherwise (useDocValuesAsStored==false *OR* maxCharsForDocValues=0) any value
-          // should be fine when adding a doc and we should be able to search for it later...
+          // otherwise, (useDocValuesAsStored==false *OR* maxCharsForDocValues=0) any value
+          // should be fine when adding a doc, and we should be able to search for it later...
           final String val = docid + " apple pear orange " + BIG_CONST;
           assertU(adoc("id", docid, name, val));
           String doc_xpath = "//result/doc[str[@name='id'][.='" + docid + "']]";
 
           if (usedvs) {
-            // ...and if it *does* usedvs, then we should defnitely see our value when searching...
+            // ...and if it *does* usedvs, then we should definitely see our value when searching...
             doc_xpath = doc_xpath + "[str[@name='" + name + "'][.='" + val + "']]";
           } else {
             // ...but if not, then we should definitely not see any value for our field...
@@ -539,8 +536,8 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   }
 
   /**
-   * tests that a SortableTextField using KeywordTokenzier (w/docValues) behaves exactly the same as
-   * StrFields that it's copied to for quering and sorting
+   * tests that a SortableTextField using KeywordTokenizer (with docValues) behaves exactly the same
+   * as StrFields that it's copied to for querying and sorting
    */
   public void testRandomStrEquivalentBehavior() throws Exception {
     final List<String> test_fields =

@@ -44,7 +44,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBasicInterface() throws Exception {
+  public void testBasicInterface() {
     // make sure the basics are in place
     assertQ(
         req("q", "*:*", CommonParams.DEBUG_QUERY, "true"),
@@ -69,7 +69,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   // Test the ability to specify which pieces to include
 
   @Test
-  public void testPerItemInterface() throws Exception {
+  public void testPerItemInterface() {
     // Same as debugQuery = true
     assertQ(
         req("q", "*:*", "debug", "true"),
@@ -241,7 +241,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   // judgement when modifying these tests.
   //
   @Test
-  public void testQueryToString() throws Exception {
+  public void testQueryToString() {
 
     // test that both boosts are represented in a double-boost scenario
     assertQ(

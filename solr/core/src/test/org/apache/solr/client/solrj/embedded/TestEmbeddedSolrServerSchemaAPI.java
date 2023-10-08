@@ -55,7 +55,7 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
     Path coreDir = tmpHome.resolve(DEFAULT_TEST_CORENAME);
     copyMinConf(coreDir.toFile(), null, "solrconfig-managed-schema.xml");
     initCore(
-        "solrconfig.xml" /*it's renamed to to*/, "schema.xml", tmpHome.toAbsolutePath().toString());
+        "solrconfig.xml" /*it's renamed to*/, "schema.xml", tmpHome.toAbsolutePath().toString());
 
     server = new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_TEST_CORENAME);
   }
@@ -78,7 +78,7 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @Test
   public void testSchemaAddFieldAndVerifyExistence() throws Exception {
-    assumeTrue("it needs to ammend schema", Boolean.getBoolean("managed.schema.mutable"));
+    assumeTrue("it needs to amend schema", Boolean.getBoolean("managed.schema.mutable"));
     SchemaResponse.UpdateResponse addFieldResponse =
         new SchemaRequest.AddField(fieldAttributes).process(server);
 

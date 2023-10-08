@@ -17,12 +17,12 @@
 package org.apache.solr.handler.admin;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -55,31 +55,30 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     admin = null; // Release it or the test harness complains.
     solrHomeDirectory = null;
   }
 
-  private static void setupCore(String coreName, boolean blivet) throws IOException {
-    File instDir = new File(solrHomeDirectory, coreName);
-    File subHome = new File(instDir, "conf");
-    assertTrue("Failed to make subdirectory ", subHome.mkdirs());
+  private static void setupCore(String coreName) throws IOException {
+    Path instDir = solrHomeDirectory.toPath().resolve(coreName);
+    Path subHome = instDir.resolve("conf");
+    Files.createDirectories(subHome);
 
     // Be sure we pick up sysvars when we create this
     String srcDir = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(srcDir, "schema-tiny.xml"), new File(subHome, "schema_ren.xml"));
-    FileUtils.copyFile(
-        new File(srcDir, "solrconfig-minimal.xml"), new File(subHome, "solrconfig_ren.xml"));
+    Files.copy(Path.of(srcDir, "schema-tiny.xml"), subHome.resolve("schema_ren.xml"));
+    Files.copy(Path.of(srcDir, "solrconfig-minimal.xml"), subHome.resolve("solrconfig_ren.xml"));
 
-    FileUtils.copyFile(
-        new File(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
-        new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
+    Files.copy(
+        Path.of(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
+        subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
   }
 
   @Test
   public void testCreateSavesSysProps() throws Exception {
 
-    setupCore(coreSysProps, true);
+    setupCore(coreSysProps);
 
     // create a new core (using CoreAdminHandler) w/ properties
     // Just to be sure it's NOT written to the core.properties file
@@ -112,32 +111,32 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     // verify props are in persisted file
 
     Properties props = new Properties();
-    File propFile =
-        new File(solrHomeDirectory, coreSysProps + "/" + CorePropertiesLocator.PROPERTIES_FILENAME);
-    FileInputStream is = new FileInputStream(propFile);
-    try {
-      props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
-    } finally {
-      org.apache.commons.io.IOUtils.closeQuietly(is);
+    Path propFile =
+        solrHomeDirectory
+            .toPath()
+            .resolve(coreSysProps)
+            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
+    try (Reader r = Files.newBufferedReader(propFile, StandardCharsets.UTF_8)) {
+      props.load(r);
     }
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.NAME),
         coreSysProps);
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.CONFIG),
         "${CONFIG_TEST}");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.SCHEMA),
         "${SCHEMA_TEST}");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.DATA_DIR),
         "${DATA_TEST}");
 
@@ -164,7 +163,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @Test
   public void testCannotCreateTwoCoresWithSameInstanceDir() throws Exception {
 
-    setupCore(coreDuplicate, true);
+    setupCore(coreDuplicate);
 
     File workDir = new File(solrHomeDirectory, coreDuplicate);
     File data = new File(workDir, "data");
@@ -215,7 +214,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @Test
   public void testInstanceDirAsPropertyParam() throws Exception {
 
-    setupCore("testInstanceDirAsPropertyParam-XYZ", true);
+    setupCore("testInstanceDirAsPropertyParam-XYZ");
 
     // make sure workDir is different even if core name is used as instanceDir
     File workDir = new File(solrHomeDirectory, "testInstanceDirAsPropertyParam-XYZ");
@@ -263,7 +262,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @Test
   public void testCreateSavesRegProps() throws Exception {
 
-    setupCore(coreNormal, true);
+    setupCore(coreNormal);
 
     // create a new core (using CoreAdminHandler) w/ properties
     // Just to be sure it's NOT written to the core.properties file
@@ -290,32 +289,32 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
     // verify props are in persisted file
     Properties props = new Properties();
-    File propFile =
-        new File(solrHomeDirectory, coreNormal + "/" + CorePropertiesLocator.PROPERTIES_FILENAME);
-    FileInputStream is = new FileInputStream(propFile);
-    try {
-      props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
-    } finally {
-      org.apache.commons.io.IOUtils.closeQuietly(is);
+    Path propFile =
+        solrHomeDirectory
+            .toPath()
+            .resolve(coreNormal)
+            .resolve(CorePropertiesLocator.PROPERTIES_FILENAME);
+    try (Reader r = Files.newBufferedReader(propFile, StandardCharsets.UTF_8)) {
+      props.load(r);
     }
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.NAME),
         coreNormal);
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.CONFIG),
         "solrconfig_ren.xml");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.SCHEMA),
         "schema_ren.xml");
 
     assertEquals(
-        "Unexpected value preserved in properties file " + propFile.getAbsolutePath(),
+        "Unexpected value preserved in properties file " + propFile.toAbsolutePath(),
         props.getProperty(CoreAdminParams.DATA_DIR),
         data.getAbsolutePath());
 

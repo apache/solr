@@ -16,13 +16,17 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.SynchronousQueue;
@@ -30,6 +34,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -83,6 +88,24 @@ public class ExecutorUtil {
     void clean(AtomicReference<Object> ctx);
   }
 
+  public static boolean isShutdown(ExecutorService pool) {
+    try {
+      return pool.isShutdown();
+    } catch (IllegalStateException e) {
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
+  public static boolean isTerminated(ExecutorService pool) {
+    try {
+      return pool.isTerminated();
+    } catch (IllegalStateException e) {
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
     pool.shutdown(); // Disable new tasks from being submitted
@@ -96,15 +119,27 @@ public class ExecutorUtil {
   }
 
   public static void awaitTermination(ExecutorService pool) {
-    boolean shutdown = false;
-    while (!shutdown) {
-      try {
-        // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
-      } catch (InterruptedException ie) {
-        // Preserve interrupt status
-        Thread.currentThread().interrupt();
+    awaitTermination(pool, 60, TimeUnit.SECONDS);
+  }
+
+  // Used in testing to not have to wait the full 60 seconds.
+  static void awaitTermination(ExecutorService pool, long timeout, TimeUnit unit) {
+    try {
+      // Wait a while for existing tasks to terminate.
+      if (!pool.awaitTermination(timeout, unit)) {
+        // We want to force shutdown any remaining threads.
+        pool.shutdownNow();
+        // Wait again for forced threads to stop.
+        if (!pool.awaitTermination(timeout, unit)) {
+          log.error("Threads from pool {} did not forcefully stop.", pool);
+          throw new RuntimeException("Timeout waiting for pool " + pool + " to shutdown.");
+        }
       }
+    } catch (InterruptedException ie) {
+      // (Re-)Cancel if current thread also interrupted
+      pool.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
     }
   }
 
@@ -298,5 +333,49 @@ public class ExecutorUtil {
   public static void setServerThreadFlag(Boolean flag) {
     if (flag == null) isServerPool.remove();
     else isServerPool.set(flag);
+  }
+
+  /**
+   * Takes an executor and a list of Callables and executes them returning the results as a list.
+   * The method waits for the return of every task even if one of them throws an exception. If any
+   * exception happens it will be thrown, wrapped into an IOException, and other following
+   * exceptions will be added as `addSuppressed` to the original exception
+   *
+   * @param <T> the response type
+   * @param service executor
+   * @param tasks the list of callables to be executed
+   * @return results list
+   * @throws IOException in case any exceptions happened
+   */
+  public static <T> Collection<T> submitAllAndAwaitAggregatingExceptions(
+      ExecutorService service, List<? extends Callable<T>> tasks) throws IOException {
+    List<T> results = new ArrayList<>(tasks.size());
+    IOException parentException = null;
+
+    // Could alternatively use service.invokeAll, but this way we can start looping over futures
+    // before all are done
+    List<Future<T>> futures =
+        tasks.stream().map(service::submit).collect(Collectors.toUnmodifiableList());
+    for (Future<T> f : futures) {
+      try {
+        results.add(f.get());
+      } catch (ExecutionException e) {
+        if (parentException == null) {
+          parentException = new IOException(e.getCause());
+        } else {
+          parentException.addSuppressed(e.getCause());
+        }
+      } catch (Exception e) {
+        if (parentException == null) {
+          parentException = new IOException(e);
+        } else {
+          parentException.addSuppressed(e);
+        }
+      }
+    }
+    if (parentException != null) {
+      throw parentException;
+    }
+    return results;
   }
 }

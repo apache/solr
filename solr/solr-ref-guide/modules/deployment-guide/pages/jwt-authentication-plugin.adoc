@@ -23,8 +23,7 @@ The typical use case is to integrate Solr with an https://en.wikipedia.org/wiki/
 
 == Module
 
-This is provided via a xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be added to the classpath before use. Since this is a node-level
-plugin it must go in `sharedLib`, see xref:configuration-guide:configuring-solr-xml.adoc[] for details.
+This is provided via the `jwt-auth` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == Enable JWT Authentication
 
@@ -60,12 +59,12 @@ requireExp           ; Fails requests that lacks an `exp` (expiry time) claim   
 algAllowlist         ; JSON array with algorithms to accept: `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `none  ; Default is to allow all algorithms
 jwkCacheDur          ; Duration of JWK cache in seconds                        ; `3600` (1 hour)
 principalClaim       ; What claim id to pull principal from                    ; `sub`
-rolesClaim           ; What claim id to pull user roles from. The claim must then either contain a space separated list of roles or a JSON array. The roles can then be used to define fine-grained access in an Authorization plugin       ; By default the scopes from `scope` claim are passed on as user roles
+rolesClaim           ; What claim id to pull user roles from. Both top-level claim and nested claim is supported. Use `someClaim.child` syntax to address a claim `child` nested within the `someClaim` object. The claim must then either contain a space separated list of roles or a JSON array. The roles can then be used to define fine-grained access in an Authorization plugin       ; By default the scopes from `scope` claim are passed on as user roles
 claimsMatch          ; JSON object of claims (key) that must match a regular expression (value). Example: `{ "foo" : "A|B" }` will require the `foo` claim to be either "A" or "B". ;
 adminUiScope         ; Define what scope is requested when logging in from Admin UI ; If not defined, the first scope from `scope` parameter is used
 redirectUris         ; Valid location(s) for redirect after external authentication. Takes a string or array of strings. Must be the base URL of Solr, e.g., https://solr1.example.com:8983/solr/ and must match the list of redirect URIs registered with the Identity Provider beforehand. ; Defaults to empty list, i.e., any node is assumed to be a valid redirect target.
 trustedCerts         ; One or more X.509 SSL certificates in plaintext PEM or PKCS#7 formats, that should be trusted when talking to IdPs. Newlines must be replaced with `\n`. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
-trustedCertsFile     ; Path to a file of type PEM, DER or PKCS#7, containing one or more X.509 SSL certificates that should be trusted when talking to IdPs. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
+trustedCertsFile     ; Path to a file of type PEM, DER or PKCS#7, containing one or more X.509 SSL certificates that should be trusted when talking to IdPs. Can also be an array of file paths. See paragraph <<Trusting the IdP server>> for more about its usage. ; Defaults to Java truststore
 issuers              ; List of issuers (Identity providers) to  support. See section <<issuer-configuration,Issuer configuration>> for configuration syntax ;
 |===
 
@@ -86,6 +85,8 @@ jwk                  ; As an alternative to `jwksUrl` you may provide a static J
 iss                  ; Unique issuer id as configured on the IdP. Incoming tokens must have a matching `iss` claim. Also used to resolve issuer when multiple issuers configured.      ; Auto configured if `wellKnownUrl` is provided
 aud                  ; Validates that the `aud` (audience) claim equals this string      ; Uses `clientId` if configured
 authorizationEndpoint; The URL for the Id Provider's authorization endpoint ; Auto configured if `wellKnownUrl` is provided
+tokenEndpoint; The URL for the Id Provider's token endpoint ; Auto configured if `wellKnownUrl` is provided
+authorizationFlow; Specifies the OAuth 2.0 flow to be used. Supported flows are 'implicit' and 'code_pkce' (for authorization code with 'Proof Key for Code Exchange'). Note: 'implicit' is deprecated and it is highly recommended to use 'code_pkce' instead. ; implicit
 |===
 
 TIP: For backwards compatibility, all the configuration keys for the primary issuer may be configured as top-level keys, except `name`.
@@ -194,7 +195,7 @@ This is both more secure and also lets you trust self-signed certificates.
 It also has the benefit of working even if Solr is not started in SSL mode.
 
 Please configure either the `trustedCerts` or `trustedCertsFile` option.
-Configuring both will cause an error.
+Configuring both will cause an error. If `trustedCertsFile` is an array of strings, Solr will parse certificates from all files.
 
 === Multiple Authentication Schemes
 

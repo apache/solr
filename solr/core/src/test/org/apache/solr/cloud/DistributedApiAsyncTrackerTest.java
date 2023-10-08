@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -35,7 +36,11 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
 
     zkServer = new ZkTestServer(createTempDir("zookeeperDir"));
     zkServer.run();
-    zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
   }
 
   @Override
@@ -100,15 +105,18 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
     DistributedApiAsyncTracker permanentDaat2 =
         new DistributedApiAsyncTracker(zkClient, TRACKER_ROOT);
 
-    final String asycPermanent = "permanentAsync";
+    final String asyncPermanent = "permanentAsync";
     final String asyncTransient = "transientAsync";
 
     assertTrue(
-        "Could not create async task " + asycPermanent,
-        permanentDaat.createNewAsyncJobTracker(asycPermanent));
+        "Could not create async task " + asyncPermanent,
+        permanentDaat.createNewAsyncJobTracker(asyncPermanent));
 
     try (SolrZkClient transientZkClient =
-        new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       DistributedApiAsyncTracker transientDaat =
           new DistributedApiAsyncTracker(transientZkClient, TRACKER_ROOT);
       assertTrue(
@@ -116,17 +124,17 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
           transientDaat.createNewAsyncJobTracker(asyncTransient));
 
       assertEquals(
-          "permanentDaat can't see " + asycPermanent,
+          "permanentDaat can't see " + asyncPermanent,
           RequestStatusState.SUBMITTED,
-          permanentDaat.getAsyncTaskRequestStatus(asycPermanent).first());
+          permanentDaat.getAsyncTaskRequestStatus(asyncPermanent).first());
       assertEquals(
-          "permanentDaat2 can't see " + asycPermanent,
+          "permanentDaat2 can't see " + asyncPermanent,
           RequestStatusState.SUBMITTED,
-          permanentDaat2.getAsyncTaskRequestStatus(asycPermanent).first());
+          permanentDaat2.getAsyncTaskRequestStatus(asyncPermanent).first());
       assertEquals(
-          "transientDaat can't see " + asycPermanent,
+          "transientDaat can't see " + asyncPermanent,
           RequestStatusState.SUBMITTED,
-          transientDaat.getAsyncTaskRequestStatus(asycPermanent).first());
+          transientDaat.getAsyncTaskRequestStatus(asyncPermanent).first());
       assertEquals(
           "permanentDaat can't see " + asyncTransient,
           RequestStatusState.SUBMITTED,
@@ -141,15 +149,15 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
           transientDaat.getAsyncTaskRequestStatus(asyncTransient).first());
     }
 
-    // transientDaat connection closed, doesn't change a thing for asycPermanent...
+    // transientDaat connection closed, doesn't change a thing for asyncPermanent...
     assertEquals(
-        "permanentDaat can't see " + asycPermanent,
+        "permanentDaat can't see " + asyncPermanent,
         RequestStatusState.SUBMITTED,
-        permanentDaat.getAsyncTaskRequestStatus(asycPermanent).first());
+        permanentDaat.getAsyncTaskRequestStatus(asyncPermanent).first());
     assertEquals(
-        "permanentDaat2 can't see " + asycPermanent,
+        "permanentDaat2 can't see " + asyncPermanent,
         RequestStatusState.SUBMITTED,
-        permanentDaat2.getAsyncTaskRequestStatus(asycPermanent).first());
+        permanentDaat2.getAsyncTaskRequestStatus(asyncPermanent).first());
 
     // ...but asyncTransient is now failed.
     assertEquals(
@@ -170,7 +178,10 @@ public class DistributedApiAsyncTrackerTest extends SolrTestCaseJ4 {
     final String asyncId = "theId";
 
     try (SolrZkClient transientZkClient =
-        new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
       DistributedApiAsyncTracker transientDaat =
           new DistributedApiAsyncTracker(transientZkClient, TRACKER_ROOT);
       assertTrue(

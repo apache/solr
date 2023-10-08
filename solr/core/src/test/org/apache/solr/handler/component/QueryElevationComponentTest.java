@@ -21,21 +21,24 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
@@ -43,22 +46,19 @@ import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.WrappedQuery;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class QueryElevationComponentTest extends SolrTestCaseJ4 {
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
@@ -89,11 +89,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   private void init(String schema) throws Exception {
-    init("solrconfig-elevate.xml", schema);
-  }
-
-  private void init(String config, String schema) throws Exception {
-    initCore(config, schema);
+    initCore("solrconfig-elevate.xml", schema);
     clearIndex();
     assertU(commit());
   }
@@ -137,6 +133,520 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='false']",
           "//result/doc[3]/bool[@name='[elevated]'][.='false']");
+    } finally {
+      delete();
+    }
+  }
+
+  /**
+   * Tests the behavior of elevation when the fq parameter is present: elevated documents are
+   * subject to filters unless specific filters have been tagged for exclusion.
+   */
+  @Test
+  public void testFq() throws Exception {
+    try {
+      init("schema11.xml");
+      clearIndex();
+      assertU(commit());
+      assertU(adoc("id", "1", "text", "XXXX", "str_s", "a"));
+      assertU(adoc("id", "2", "text", "YYYY", "str_s", "b"));
+      assertU(adoc("id", "3", "text", "QQQQ", "str_s", "c"));
+      assertU(adoc("id", "4", "text", "MMMM", "str_s", "d"));
+      assertU(commit());
+
+      // elevated docs 1, 2, and 3 are returned even though our query "ZZZZ" doesn't match them
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+
+      // the elevation component respects the fq parameter; if we add fq=str_s:b the results will
+      // exclude docs 1 and 3 even though those docs are elevated
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:b"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // if we tag the filter without also specifying the tag for exclusion,
+      // we should see the same behavior as above; the filter still takes effect on the elevated
+      // docs
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test3"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // if we tag the filter without also specifying the tag for exclusion, we should see the same
+      // behavior as above; the filter still takes effect on the elevated docs
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, ","),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // if we specify at least one of the filter's tags for exclusion, the filter is broadened to
+      // include the elvated docs; we should see docs 1 and 3 returned even though they don't match
+      // the original filter
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test0,test2,test4"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+
+      // redundant tags don't cause problems; nor does tagging something that's not a filter (in
+      // this case, the main query); nor does including empty values in the list of tags to exclude
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "{!tag=test0}ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1,test1,test2,test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test0,test0,test2,test2,test4,test4,,,"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+
+      // we can exclude some filters while leaving others in place
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1}id:10",
+              CommonParams.FQ, "{!tag=test2}str_s:b",
+              CommonParams.FQ, "{!tag=test3}id:11",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test3"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // when filters are marked as cache=false, tag exclusion works the same as before
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1 cache=false}id:10",
+              CommonParams.FQ, "{!tag=test2 cache=false}str_s:b",
+              CommonParams.FQ, "{!tag=test3 cache=false}id:11",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test3"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // we can apply the same tag to two different filters
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1}id:10",
+              CommonParams.FQ, "{!tag=test2}str_s:b",
+              CommonParams.FQ, "{!tag=test1}id:11",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test3"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // we can use filter() syntax inside fq's that are tagged for exclusion
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1}+filter(id:10) +filter(id:11)",
+              CommonParams.FQ, "{!tag=test2}filter(str_s:b)",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // the next few assertions confirm that filter exclusion only applies to elevated documents;
+      // if we search for MMMM we should get one match; no documents are elevated for this query
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "MMMM",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='4']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='false']");
+
+      // if we add fq=str_s:b, our one document that matches MMMM will be filtered out
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "MMMM",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:b"),
+          "//*[@numFound='0']");
+
+      // if we tag the filter and exclude it, we should see the same behavior as before; filters are
+      // only bypassed for elevated documents; our MMMM document is not elevated so it is still
+      // subject to the filter
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "MMMM",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!tag=test1}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
+          "//*[@numFound='0']");
+
+      // the next few assertions confirm that collapsing works as expected when filters are
+      // excluded; first, confirm that when collapsing, all elevated docs are visible by default
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+
+      // when collapsing, an added filter has the expected effect
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
+              CommonParams.FQ, "str_s:b"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='2']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+
+      // when collapsing, filters can still be tagged and excluded so that they don't affect
+      // elevated documents
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!collapse field=str_s sort='score desc'}",
+              CommonParams.FQ, "{!tag=test1}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+
+      // if a collapse filter itself is tagged for exclusion, this is considered an error and the
+      // user should be informed
+      assertQEx(
+          "tagging a collapse filter for exclusion should lead to a BAD_REQUEST",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!collapse tag=test1 field=str_s sort='score desc'}",
+              CommonParams.FQ, "{!tag=test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test2"),
+          SolrException.ErrorCode.BAD_REQUEST);
+
+      // if a function range query is provided as a filter, it can be tagged for exclusion;
+      // FunctionRangeQuery is special because it implements the PostFilter interface and
+      // we want to be sure that while CollapsingPostFilter leads to an error, other PostFilters
+      // can still be used; here we set cache=false and cost=200 to trigger the post-filtering
+      // behavior
+      assertQ(
+          "",
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "{!frange tag=test1 l=100 cache=false cost=200}5.0",
+              CommonParams.FQ, "{!tag=test2}str_s:b",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1,test2"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='2']",
+          "//result/doc[3]/str[@name='id'][.='3']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='true']");
+
+    } finally {
+      delete();
+    }
+  }
+
+  /**
+   * Tests that QueryElevationComponent's prepare() method transforms filters as expected. By
+   * default, filters are left unchanged. However, if a filter is tagged for exclusion it is
+   * transformed into a BooleanQuery containing the original filter and an "include query" that
+   * matches the elevated documents. The original filter will be wrapped in a FilterQuery if the
+   * original filter was cacheable and not already a FilterQuery.
+   */
+  @Test
+  public void testFqWithCacheAndCostLocalParams() throws Exception {
+    try {
+      init("schema11.xml");
+      SearchComponent queryComponent =
+          h.getCore().getSearchComponent(QueryComponent.COMPONENT_NAME);
+      QueryElevationComponent elevationComponent =
+          (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
+
+      // first, we establish the baseline behavior that occurs when executing a query that is NOT
+      // elevated; when a filter like "str_s:A" has no local params, it will generate a TermQuery;
+      // when a filter uses the "cache" and/or "cost" local params, it will generate a WrappedQuery
+      // which contains a TermQuery and which has its cache and cost set according to the param
+      // values
+      try (SolrQueryRequest request =
+          req(
+              CommonParams.Q, "ZZZZ1",
+              CommonParams.QT, "/elevate",
+              CommonParams.DF, "text",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:A",
+              CommonParams.FQ, "{!cache=false cost=100}str_s:B",
+              CommonParams.FQ, "{!cache=true}str_s:C",
+              CommonParams.FQ, "{!tag=test1 cache=false cost=200}str_s:D",
+              CommonParams.FQ, "{!tag=test1 cache=true}str_s:E",
+              CommonParams.FQ, "{!tag=test1}str_s:F",
+              CommonParams.FQ, "{!tag=test1}filter(str_s:G)",
+              CommonParams.FQ, "{!tag=test1 cache=true cost=10}filter(str_s:H)",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1")) {
+
+        // create a ResponseBuilder with our query and pass it through the prepare() methods of the
+        // QueryComponent and the QueryElevationComponent
+        ResponseBuilder rb =
+            new ResponseBuilder(request, new SolrQueryResponse(), new ArrayList<>());
+        queryComponent.prepare(rb);
+        elevationComponent.prepare(rb);
+
+        assertNull(elevationComponent.getElevation(rb));
+
+        Query[] filters = rb.getFilters().toArray(new Query[0]);
+        assertEquals(8, filters.length);
+
+        // str_s:A
+        assertTrue(filters[0] instanceof TermQuery);
+
+        // {!cache=false cost=100}str_s:B
+        assertTrue(filters[1] instanceof WrappedQuery);
+        assertFalse(((WrappedQuery) filters[1]).getCache());
+        assertEquals(100, ((WrappedQuery) filters[1]).getCost());
+        assertTrue(((WrappedQuery) filters[1]).getWrappedQuery() instanceof TermQuery);
+
+        // {!cache=true}str_s:C
+        assertTrue(filters[2] instanceof WrappedQuery);
+        assertTrue(((WrappedQuery) filters[2]).getCache());
+        assertTrue(((WrappedQuery) filters[2]).getWrappedQuery() instanceof TermQuery);
+
+        // {!tag=test1 cache=false cost=200}str_s:D
+        assertTrue(filters[3] instanceof WrappedQuery);
+        assertFalse(((WrappedQuery) filters[3]).getCache());
+        assertEquals(200, ((WrappedQuery) filters[3]).getCost());
+        assertTrue(((WrappedQuery) filters[3]).getWrappedQuery() instanceof TermQuery);
+
+        // {!tag=test1 cache=true}str_s:E
+        assertTrue(filters[4] instanceof WrappedQuery);
+        assertTrue(((WrappedQuery) filters[4]).getCache());
+        assertTrue(((WrappedQuery) filters[4]).getWrappedQuery() instanceof TermQuery);
+
+        // {!tag=test1}str_s:F
+        assertTrue(filters[5] instanceof TermQuery);
+
+        // {!tag=test1}filter(str_s:G)
+        assertTrue(filters[6] instanceof FilterQuery);
+
+        // {!tag=test1 cache=false}filter(str_s:H)
+        assertTrue(filters[7] instanceof FilterQuery);
+      }
+
+      // now establish that when a query IS elevated, non-excluded filters behave the same as shown
+      // above; however, excluded filters always generate a non-caching WrappedQuery that contains a
+      // BooleanQuery; the first clause of the BooleanQuery will be the original filter, if the
+      // original filter had cache=false or was a FilterQuery e.g. defined using filter() syntax; if
+      // the original filter was cacheable, the first clause will be FilterQuery containing the
+      // original filter; if the original filter _was_ a FilterQuery it is not wrapped in another
+      // one
+      try (SolrQueryRequest request =
+          req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CommonParams.DF, "text",
+              CommonParams.FL, "id, score, [elevated]",
+              CommonParams.FQ, "str_s:A",
+              CommonParams.FQ, "{!cache=false cost=100}str_s:B",
+              CommonParams.FQ, "{!cache=true}str_s:C",
+              CommonParams.FQ, "{!tag=test1 cache=false cost=200}str_s:D",
+              CommonParams.FQ, "{!tag=test1 cache=true}str_s:E",
+              CommonParams.FQ, "{!tag=test1}str_s:F",
+              CommonParams.FQ, "{!tag=test1}filter(str_s:G)",
+              CommonParams.FQ, "{!tag=test1 cache=false}filter(str_s:H)",
+              QueryElevationParams.ELEVATE_EXCLUDE_TAGS, "test1")) {
+
+        ResponseBuilder rb =
+            new ResponseBuilder(request, new SolrQueryResponse(), new ArrayList<>());
+        queryComponent.prepare(rb);
+        elevationComponent.prepare(rb);
+
+        assertEquals(3, elevationComponent.getElevation(rb).elevatedIds.size());
+
+        Query[] filters = rb.getFilters().toArray(new Query[0]);
+        assertEquals(8, filters.length);
+
+        // str_s:A
+        assertTrue(filters[0] instanceof TermQuery);
+
+        // {!cache=false cost=100}str_s:B
+        assertTrue(filters[1] instanceof WrappedQuery);
+        assertFalse(((WrappedQuery) filters[1]).getCache());
+        assertEquals(100, ((WrappedQuery) filters[1]).getCost());
+        assertTrue(((WrappedQuery) filters[1]).getWrappedQuery() instanceof TermQuery);
+
+        // {!cache=true}str_s:C
+        assertTrue(filters[2] instanceof WrappedQuery);
+        assertTrue(((WrappedQuery) filters[2]).getCache());
+        assertTrue(((WrappedQuery) filters[2]).getWrappedQuery() instanceof TermQuery);
+
+        // {!tag=test1 cache=false cost=200}str_s:D
+        {
+          // at the outermost level, we have a WrappedQuery that doesn't cache
+          assertTrue(filters[3] instanceof WrappedQuery);
+          assertFalse(((WrappedQuery) filters[3]).getCache());
+          assertEquals(200, ((WrappedQuery) filters[3]).getCost());
+          // inside the WrappedQuery, there's a BooleanQuery with two clauses
+          BooleanQuery booleanQuery = (BooleanQuery) ((WrappedQuery) filters[3]).getWrappedQuery();
+          assertEquals(2, booleanQuery.clauses().size());
+          // the first clause is the original query, which is a WrappedQuery because the cache=false
+          // local param was provided; the WrappedQuery doesn't cache; it contains a TermQuery
+          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          assertTrue(firstClause instanceof WrappedQuery);
+          assertFalse(((WrappedQuery) firstClause).getCache());
+          assertTrue(((WrappedQuery) firstClause).getWrappedQuery() instanceof TermQuery);
+        }
+
+        // {!tag=test1 cache=true}str_s:E
+        {
+          // at the outermost level, we have a WrappedQuery that doesn't cache
+          assertTrue(filters[4] instanceof WrappedQuery);
+          assertFalse(((WrappedQuery) filters[4]).getCache());
+          // inside the WrappedQuery, there's a BooleanQuery with two clauses
+          BooleanQuery booleanQuery = (BooleanQuery) ((WrappedQuery) filters[4]).getWrappedQuery();
+          assertEquals(2, booleanQuery.clauses().size());
+          // the first clause is a FilterQuery that contains the original query
+          // (ElevateComponent introduces this FilterQuery to make sure the original query consults
+          // the cache)
+          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          assertTrue(firstClause instanceof FilterQuery);
+          FilterQuery filterQuery = (FilterQuery) firstClause;
+          // the first clause is the original query, which is a WrappedQuery because the cache=false
+          // local param was provided; the WrappedQuery is set to cache; it contains a TermQuery
+          assertTrue(filterQuery.getQuery() instanceof WrappedQuery);
+          assertTrue(((WrappedQuery) filterQuery.getQuery()).getCache());
+          assertTrue(
+              ((WrappedQuery) filterQuery.getQuery()).getWrappedQuery() instanceof TermQuery);
+        }
+
+        // {!tag=test1}str_s:F
+        {
+          // at the outermost level, we have a WrappedQuery that doesn't cache
+          assertTrue(filters[5] instanceof WrappedQuery);
+          assertFalse(((WrappedQuery) filters[5]).getCache());
+          // inside the WrappedQuery there's a BooleanQuery with two clauses
+          BooleanQuery booleanQuery = (BooleanQuery) ((WrappedQuery) filters[5]).getWrappedQuery();
+          assertEquals(2, booleanQuery.clauses().size());
+          // the first clause is a FilterQuery that contains the original query
+          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          assertTrue(firstClause instanceof FilterQuery);
+          FilterQuery filterQuery = (FilterQuery) firstClause;
+          // the original query is a TermQuery
+          assertTrue(filterQuery.getQuery() instanceof TermQuery);
+        }
+
+        // {!tag=test1}filter(str_s:G)
+        {
+          // at the outermost level, we have a WrappedQuery that doesn't cache
+          assertTrue(filters[6] instanceof WrappedQuery);
+          assertFalse(((WrappedQuery) filters[6]).getCache());
+          // inside the WrappedQuery there's a BooleanQuery with two clauses
+          BooleanQuery booleanQuery = (BooleanQuery) ((WrappedQuery) filters[6]).getWrappedQuery();
+          assertEquals(2, booleanQuery.clauses().size());
+          // the first clause is the original query, which is a FilterQuery containing a TermQuery
+          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          assertTrue(firstClause instanceof FilterQuery);
+          FilterQuery filterQuery = (FilterQuery) firstClause;
+          assertTrue(filterQuery.getQuery() instanceof TermQuery);
+        }
+
+        // {!tag=test1 cache=false}filter(str_s:H)
+        {
+          // at the outermost level, we have a WrappedQuery that doesn't cache
+          assertTrue(filters[7] instanceof WrappedQuery);
+          assertFalse(((WrappedQuery) filters[7]).getCache());
+          // inside the WrappedQuery there's a BooleanQuery with two clauses
+          BooleanQuery booleanQuery = (BooleanQuery) ((WrappedQuery) filters[7]).getWrappedQuery();
+          assertEquals(2, booleanQuery.clauses().size());
+          // the first clause is the original query, which is a FilterQuery containing a TermQuery
+          Query firstClause = booleanQuery.clauses().get(0).getQuery();
+          assertTrue(firstClause instanceof FilterQuery);
+          FilterQuery filterQuery = (FilterQuery) firstClause;
+          assertTrue(filterQuery.getQuery() instanceof TermQuery);
+        }
+      }
     } finally {
       delete();
     }
@@ -749,18 +1259,18 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   // write an elevation config file to boost some docs
   private void writeElevationConfigFile(File file, String query, String... ids) throws Exception {
-    PrintWriter out =
-        new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
-    out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
-    out.println("<elevate>");
-    out.println("<query text=\"" + query + "\">");
-    for (String id : ids) {
-      out.println(" <doc id=\"" + id + "\"/>");
+    try (PrintWriter out =
+        new PrintWriter(Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8))) {
+      out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
+      out.println("<elevate>");
+      out.println("<query text=\"" + query + "\">");
+      for (String id : ids) {
+        out.println(" <doc id=\"" + id + "\"/>");
+      }
+      out.println("</query>");
+      out.println("</elevate>");
+      out.flush();
     }
-    out.println("</query>");
-    out.println("</elevate>");
-    out.flush();
-    out.close();
 
     if (log.isInfoEnabled()) {
       log.info("OUT: {}", file.getAbsolutePath());

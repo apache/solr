@@ -206,7 +206,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
                         cmd.getReq(),
                         new SolrQueryResponse(),
                         createDistributedUpdateProcessor(
-                            cmd.getReq(), rsp, createRunUpdateProcessor(cmd.getReq(), rsp, null)))
+                            cmd.getReq(), rsp, createRunUpdateProcessor(cmd.getReq(), rsp)))
                     .processAdd(cmd);
               } catch (IOException e) {
               }
@@ -230,7 +230,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     assertQ(
         "Check the total number of docs",
-        req("q", "cat:(" + queryString.toString() + ")"),
+        req("q", "cat:(" + queryString + ")"),
         "//result[@numFound=1]");
 
     assertQ(
@@ -238,8 +238,8 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   }
 
   private UpdateRequestProcessor createRunUpdateProcessor(
-      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return new RunUpdateProcessorFactory().getInstance(req, rsp, next);
+      SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+    return new RunUpdateProcessorFactory().getInstance(req, rsp, null);
   }
 
   private String generateRandomString() {

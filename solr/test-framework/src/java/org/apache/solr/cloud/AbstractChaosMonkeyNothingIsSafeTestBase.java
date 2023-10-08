@@ -21,7 +21,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -29,6 +31,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
     extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
@@ -69,10 +72,12 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
 
   private final boolean runFullThrottle;
 
+  @Override
   public String[] getFieldNames() {
     return fieldNames;
   }
 
+  @Override
   public RandVal[] getRandValues() {
     return randVals;
   }
@@ -127,10 +132,9 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
   }
 
   protected CloudSolrClient createCloudClient(String defaultCollection, int socketTimeout) {
-    CloudSolrClient client =
-        getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, socketTimeout);
-    if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
-    return client;
+
+    return getCloudSolrClient(
+        zkServer.getZkAddress(), defaultCollection, random().nextBoolean(), 30000, socketTimeout);
   }
 
   @Test
@@ -179,7 +183,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
       if (runFullThrottle) {
         ftIndexThread =
             new FullThrottleStoppableIndexingThread(
-                cloudClient.getHttpClient(),
+                ((CloudLegacySolrClient) cloudClient).getHttpClient(),
                 controlClient,
                 cloudClient,
                 clients,
@@ -310,7 +314,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
   }
 
   private Set<String> getAddFails(List<StoppableIndexingThread> threads) {
-    Set<String> addFails = new HashSet<String>();
+    Set<String> addFails = new HashSet<>();
     for (StoppableIndexingThread thread : threads) {
       addFails.addAll(thread.getAddFails());
     }
@@ -318,7 +322,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
   }
 
   private Set<String> getDeleteFails(List<StoppableIndexingThread> threads) {
-    Set<String> deleteFails = new HashSet<String>();
+    Set<String> deleteFails = new HashSet<>();
     for (StoppableIndexingThread thread : threads) {
       deleteFails.addAll(thread.getDeleteFails());
     }

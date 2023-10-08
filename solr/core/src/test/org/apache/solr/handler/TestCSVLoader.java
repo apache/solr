@@ -17,11 +17,10 @@
 package org.apache.solr.handler;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
@@ -69,13 +68,8 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     }
   }
 
-  void makeFile(String contents) {
-    try (Writer out =
-        new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
-      out.write(contents);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+  void makeFile(String contents) throws IOException {
+    Files.writeString(Path.of(filename), contents, StandardCharsets.UTF_8);
   }
 
   void cleanup() {
@@ -158,7 +152,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     assertQ(req("id:100"), "//arr[@name='str_s']/str[.='quoted']");
     assertQ(req("id:101"), "count(//str[@name='str_s'])=0");
     // 102 is a quoted zero length field ,"", as opposed to ,,
-    // but we can't distinguish this case (and it's debateable
+    // but we can't distinguish this case (and it's debatable
     // if we should).  Does CSV have a way to specify missing
     // from zero-length?
     assertQ(req("id:102"), "count(//str[@name='str_s'])=0");

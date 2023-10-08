@@ -170,17 +170,19 @@ public final class ToleratedUpdateError {
    * @see #parseMap
    */
   public SimpleOrderedMap<String> getSimpleMap() {
-    SimpleOrderedMap<String> entry = new SimpleOrderedMap<String>();
+    SimpleOrderedMap<String> entry = new SimpleOrderedMap<>();
     entry.add("type", type.toString());
     entry.add(ID, id);
     entry.add("message", message);
     return entry;
   }
 
+  @Override
   public String toString() {
     return getMetadataKey() + "=>" + getMetadataValue();
   }
 
+  @Override
   public int hashCode() {
     int h = this.getClass().hashCode();
     h = h * 31 + type.hashCode();
@@ -189,6 +191,7 @@ public final class ToleratedUpdateError {
     return h;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o instanceof ToleratedUpdateError) {
       ToleratedUpdateError that = (ToleratedUpdateError) o;

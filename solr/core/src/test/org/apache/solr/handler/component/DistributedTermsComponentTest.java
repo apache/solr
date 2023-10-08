@@ -27,9 +27,9 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -181,12 +181,13 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     // query("qt", "/terms",  "terms.fl", "foo_date_p", "terms.ttf", "true");
   }
 
+  @Override
   protected QueryResponse query(Object... q) throws Exception {
     if (Stream.of(q).noneMatch(s -> s.equals("terms.list"))) {
       // SOLR-9243 doesn't support max/min count
       for (int i = 0; i < q.length; i += 2) {
-        if (q[i].equals("terms.sort") && q[i + 1].equals("index") || rarely()) {
-          List<Object> params = new ArrayList<Object>(Arrays.asList(q));
+        if ((q[i].equals("terms.sort") && q[i + 1].equals("index")) || rarely()) {
+          List<Object> params = new ArrayList<>(Arrays.asList(q));
           if (usually()) {
             params.add("terms.mincount");
             params.add(random().nextInt(4) - 1);
@@ -250,9 +251,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
   private ResponseParser[] getResponseParsers() {
     // can't use junit parameters as this would also require RunWith
     return new ResponseParser[] {
-      new BinaryResponseParser(),
-      new DelegationTokenResponse.JsonMapResponseParser(),
-      new XMLResponseParser()
+      new BinaryResponseParser(), new JsonMapResponseParser(), new XMLResponseParser()
     };
   }
 }

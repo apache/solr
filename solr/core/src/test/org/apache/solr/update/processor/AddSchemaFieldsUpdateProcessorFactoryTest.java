@@ -39,16 +39,13 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
       "solrconfig-add-schema-fields-update-processor-chains.xml";
   private static final String SCHEMA_XML = "schema-add-schema-fields-update-processor.xml";
 
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
-
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+  public void initManagedSchemaCore() throws Exception {
+    File tmpSolrHome = createTempDir().toFile();
+    File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, SOLRCONFIG_XML), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, SCHEMA_XML), tmpConfDir);
@@ -67,8 +64,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     doc.addField("id", "1");
     doc.addField(fieldName, null);
 
-    SolrInputDocument finalDoc = doc;
-    expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", finalDoc));
+    expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", doc));
 
     expectThrows(
         AssertionError.class,
@@ -99,8 +95,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("pfloats", schema.getFieldType(fieldName).getTypeName());
     assertU(commit());
-    assertQ(
-        req("id:2"), "//arr[@name='" + fieldName + "']/float[.='" + floatValue.toString() + "']");
+    assertQ(req("id:2"), "//arr[@name='" + fieldName + "']/float[.='" + floatValue + "']");
   }
 
   public void testSingleFieldMixedFieldTypesRoundTrip() throws Exception {
@@ -118,8 +113,8 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:3"),
-        "//arr[@name='" + fieldName + "']/double[.='" + fieldValue1.toString() + "']",
-        "//arr[@name='" + fieldName + "']/double[.='" + fieldValue2.toString() + "']");
+        "//arr[@name='" + fieldName + "']/double[.='" + fieldValue1 + "']",
+        "//arr[@name='" + fieldName + "']/double[.='" + fieldValue2 + "']");
   }
 
   public void testSingleFieldDefaultFieldTypeRoundTrip() throws Exception {
@@ -141,9 +136,9 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:4"),
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue1.toString() + "']",
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue2.toString() + "']",
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue3.toString() + "']");
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue1 + "']",
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue2 + "']",
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue3 + "']");
   }
 
   public void testSingleFieldDefaultTypeMappingRoundTrip() throws Exception {
@@ -166,9 +161,9 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:4"),
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue1.toString() + "']",
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue2.toString() + "']",
-        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue3.toString() + "']");
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue1 + "']",
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue2 + "']",
+        "//arr[@name='" + fieldName + "']/str[.='" + fieldValue3 + "']");
   }
 
   public void testMultipleFieldsRoundTrip() throws Exception {
@@ -198,11 +193,11 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:5"),
-        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1.toString() + "']",
-        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value2.toString() + "']",
+        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1 + "']",
+        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value2 + "']",
         "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value3.doubleValue() + "']",
-        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value1.toString() + "']",
-        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value2.toString() + "']");
+        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value1 + "']",
+        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value2 + "']");
   }
 
   public void testParseAndAddMultipleFieldsRoundTrip() throws Exception {
@@ -226,14 +221,11 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     String field2String2 = "1,234,567,890,123,456,789";
     Long field2Value2 = 1234567890123456789L;
     String field3String1 = "blah-blah";
-    String field3Value1 = field3String1;
     String field3String2 = "-5.28E-3";
-    Double field3Value2 = -5.28E-3;
     String field4String1 = "1999-04-17 17:42";
     DateTimeFormatter dateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT).withZone(ZoneOffset.UTC);
     LocalDateTime dateTime = LocalDateTime.parse(field4String1, dateTimeFormatter);
-    Date field4Value1 = Date.from(dateTime.atZone(ZoneOffset.UTC).toInstant());
     DateTimeFormatter dateTimeFormatter2 =
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.ROOT).withZone(ZoneOffset.UTC);
     String field4Value1String = dateTime.format(dateTimeFormatter2) + "Z";
@@ -260,11 +252,11 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertU(commit());
     assertQ(
         req("id:6"),
-        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1.toString() + "']",
-        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value2.toString() + "']",
+        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value1 + "']",
+        "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value2 + "']",
         "//arr[@name='" + fieldName1 + "']/double[.='" + field1Value3.doubleValue() + "']",
-        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value1.toString() + "']",
-        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value2.toString() + "']",
+        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value1 + "']",
+        "//arr[@name='" + fieldName2 + "']/long[.='" + field2Value2 + "']",
         "//arr[@name='" + fieldName3 + "']/str[.='" + field3String1 + "']",
         "//arr[@name='" + fieldName3 + "']/str[.='" + field3String2 + "']",
         "//arr[@name='" + fieldName4 + "']/date[.='" + field4Value1String + "']");
@@ -350,7 +342,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
   }
 
   @After
-  private void deleteCoreAndTempSolrHomeDirectory() throws Exception {
+  public void deleteCoreAndTempSolrHomeDirectory() {
     deleteCore();
   }
 }

@@ -23,13 +23,13 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.api.ACLProvider;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.AbstractVMParamsZkACLAndCredentialsProvidersTestBase;
+import org.apache.solr.cloud.AbstractDigestZkACLAndCredentialsProvidersTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
@@ -93,8 +93,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
     try (SolrZkClient zkClient =
         new SolrZkClientWithACLs(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      ZooKeeperSaslClient saslClient =
-          zkClient.getSolrZooKeeper().getConnection().zooKeeperSaslClient;
+      ZooKeeperSaslClient saslClient = zkClient.getZooKeeper().getSaslClient();
       assumeFalse("Could not set up ZK with SASL", saslClient.isFailed());
       zkClient.makePath("/solr", false);
     } catch (KeeperException e) {
@@ -158,7 +157,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient =
         new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     } finally {
       zkClient.close();
@@ -169,7 +168,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     System.setProperty("zookeeper.sasl.client", "false");
     zkClient = new SolrZkClientNoACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
     } finally {
       zkClient.close();
@@ -181,7 +180,10 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   private static class SolrZkClientWithACLs extends SolrZkClient {
 
     public SolrZkClientWithACLs(String zkServerAddress, int zkClientTimeout) {
-      super(zkServerAddress, zkClientTimeout);
+      super(
+          new Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -194,7 +196,10 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   private static class SolrZkClientNoACLs extends SolrZkClient {
 
     public SolrZkClientNoACLs(String zkServerAddress, int zkClientTimeout) {
-      super(zkServerAddress, zkClientTimeout);
+      super(
+          new Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Override

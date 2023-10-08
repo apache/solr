@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.tests.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
@@ -101,8 +101,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testQueryLuceneAllDocsWithField() throws Exception {
-    // for all "primative" types except for doubles/floats, 'foo:*' should be functionally
-    // equivilent to "foo:[* TO *]" whatever implementation/optimizations exist for one syntax,
+    // for all "primitive" types except for doubles/floats, 'foo:*' should be functionally
+    // equivalent to "foo:[* TO *]" whatever implementation/optimizations exist for one syntax,
     // should exist for the other syntax as well (regardless of docValues, multivalued, etc...)
     for (String field :
         Arrays.asList(
@@ -508,7 +508,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
             "myField", "foo_i",
             "myInner", "product(4,foo_i)");
     try {
-      // NOTE: unlike most queries, frange defaultsto cost==100
+      // NOTE: unlike most queries, frange defaults to cost==100
       assertQueryEquals(
           "frange",
           req,
@@ -655,7 +655,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           QParser.getParser("{!parent which=foo_s:parent}", req).getQuery());
     }
 
-    // sanity check multiple ways of specifing _nest_path_ prefixes
+    // check multiple ways of specifying _nest_path_ prefixes
     final String parent_path = "/aa/bb";
     try (SolrQueryRequest req =
         req(
@@ -672,7 +672,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
 
           // using 'inline' prefix query syntax...
           //
-          // '/' has to be escaped other wise it will be treated as a regex query...
+          // '/' has to be escaped otherwise it will be treated as a regex query...
           // ...and when used inside the 'which' param it has to be escaped *AGAIN* because of
           // the "quoted" localparam evaluation layer...
           // (and of course '\' escaping is the java syntax as well, we have to double it)
@@ -759,7 +759,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
             "2",
             "useAutn",
             "false");
-    // make sure all param subsitution works for all args to graph query.
+    // make sure all param substitution works for all args to graph query.
     assertQueryEquals(
         "graph", req, "{!graph from=node_s to=edge_s}*:*", "{!graph from=$from to=$to}*:*");
 
@@ -906,6 +906,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("vector(5,4, field(foo_i))", "vector(5, 4, foo_i)");
     assertFuncEquals("vector(foo_i,4)", "vector(foo_i, 4)");
     assertFuncEquals("vector(foo_i,sum(4,bar_i))", "vector(foo_i, sum(4,bar_i))");
+  }
+
+  public void testFuncKnnVector() throws Exception {
+    assertFuncEquals(
+        "vectorSimilarity(FLOAT32,COSINE,[1,2,3],[4,5,6])",
+        "vectorSimilarity(FLOAT32, COSINE, [1, 2, 3], [4, 5, 6])");
+
+    assertFuncEquals(
+        "vectorSimilarity(BYTE, EUCLIDEAN, bar_i, [4,5,6])",
+        "vectorSimilarity(BYTE, EUCLIDEAN, field(bar_i), [4, 5,  6])");
   }
 
   public void testFuncQuery() throws Exception {
@@ -1064,6 +1074,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "exists(field('field_t'))",
           "exists(field($myField))");
       assertFuncEquals(req, "exists(query($myQ))", "exists(query({!lucene v=$myQ}))");
+    } finally {
+      req.close();
+    }
+  }
+
+  public void testFuncIsnan() throws Exception {
+    SolrQueryRequest req = req("num", "12.3456", "zero", "0");
+    try {
+      assertFuncEquals(req, "isnan(12.3456)", "isnan(12.3456)", "isnan($num)");
+      assertFuncEquals(req, "isnan(div(0,0))", "isnan(div($zero,$zero))");
     } finally {
       req.close();
     }
@@ -1294,6 +1314,33 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryMLTContent() throws Exception {
+    assertU(adoc("id", "1", "lowerfilt", "sample data", "standardfilt", "sample data"));
+    assertU(commit());
+    try {
+      assertQueryEquals(
+          "mlt_content",
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data",
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0 v='sample data'}",
+          "{!qf=lowerfilt mindf=0 mintf=0}sample data");
+      SolrQueryRequest req = req(new String[] {"df", "text"});
+      try {
+        QueryUtils.checkUnequal(
+            QParser.getParser("{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data", req)
+                .getQuery(),
+            QParser.getParser(
+                    "{!mlt_content qf=lowerfilt qf=standardfilt mindf=0 mintf=0}sample data", req)
+                .getQuery());
+      } finally {
+        req.close();
+      }
+
+    } finally {
+      delQ("*:*");
+      assertU(commit());
+    }
+  }
+
   public void testQueryKNN() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "0");
@@ -1351,13 +1398,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       SolrRequestInfo.clearRequestInfo();
     }
 
-    for (int i = 0; i < queries.length; i++) {
-      QueryUtils.check(queries[i]);
+    for (Query query1 : queries) {
+      QueryUtils.check(query1);
       // yes starting j=0 is redundent, we're making sure every query
       // is equal to itself, and that the quality checks work regardless
       // of which caller/callee is used.
-      for (int j = 0; j < queries.length; j++) {
-        QueryUtils.checkEqual(queries[i], queries[j]);
+      for (Query query2 : queries) {
+        QueryUtils.checkEqual(query1, query2);
       }
     }
   }
@@ -1440,7 +1487,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testPayloadScoreQuery() throws Exception {
+  public void testPayloadScoreQuery() {
     // There was a bug with PayloadScoreQuery's .equals() method that said two queries were equal
     // with different includeSpanScore settings
 
@@ -1454,7 +1501,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                 "{!payload_score f=foo_dpf v=query func=min includeSpanScore=true}"));
   }
 
-  public void testPayloadCheckQuery() throws Exception {
+  public void testPayloadCheckQuery() {
     expectThrows(
         AssertionError.class,
         "queries should not have been equal",

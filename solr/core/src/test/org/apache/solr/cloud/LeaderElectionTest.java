@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -29,9 +28,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.curator.test.KillSession;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -43,13 +39,12 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.apache.zookeeper.TestableZooKeeper;
+import org.apache.zookeeper.ZooKeeper;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -62,12 +57,6 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   private volatile boolean stopStress = false;
 
-  @BeforeClass
-  public static void beforeClass() {}
-
-  @AfterClass
-  public static void afterClass() {}
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -77,14 +66,18 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     server.setTheTickTime(1000);
     server.run();
 
-    zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(server.getZkAddress())
+            .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer, Thread>());
     zkClient.makePath("/collections/collection1");
     zkClient.makePath("/collections/collection2");
   }
 
-  class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
+  static class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
     private long runLeaderDelay = 0;
 
     public TestLeaderElectionContext(
@@ -101,7 +94,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     @Override
     void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-        throws KeeperException, InterruptedException, IOException {
+        throws KeeperException, InterruptedException {
       super.runLeaderProcess(weAreReplacement, pauseBeforeStartMs);
       if (runLeaderDelay > 0) {
         log.info("Sleeping for {}ms to simulate leadership takeover delay", runLeaderDelay);
@@ -117,7 +110,13 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     LeaderElector elector;
 
     public ElectorSetup(OnReconnect onReconnect) {
-      zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, TIMEOUT, onReconnect);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withReconnectListener(onReconnect)
+              .build();
       zkStateReader = new ZkStateReader(zkClient);
       elector = new LeaderElector(zkClient);
       zkController = MockSolrSource.makeSimpleMock(null, zkStateReader, zkClient);
@@ -141,12 +140,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private volatile boolean electionDone = false;
     private final ZkNodeProps props;
 
-    public ClientThread(String shard, int nodeNumber) throws Exception {
+    public ClientThread(String shard, int nodeNumber) {
       this(null, shard, nodeNumber, 0);
     }
 
-    public ClientThread(ElectorSetup es, String shard, int nodeNumber, long runLeaderDelay)
-        throws Exception {
+    public ClientThread(ElectorSetup es, String shard, int nodeNumber, long runLeaderDelay) {
       super("Thread-" + shard + nodeNumber);
       this.shard = shard;
       this.nodeName = shard + nodeNumber + ":80_solr";
@@ -174,7 +172,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       }
     }
 
-    private void setupOnConnect() throws InterruptedException, KeeperException, IOException {
+    private void setupOnConnect() throws InterruptedException, KeeperException {
       assertNotNull(es);
       TestLeaderElectionContext context =
           new TestLeaderElectionContext(
@@ -261,8 +259,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     Thread.sleep(1000);
 
     String urlScheme = zkStateReader.getClusterProperty(URL_SCHEME, "http");
-    String url1 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr/1", urlScheme) + "/";
-    String url2 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr/2", urlScheme) + "/";
+    String url1 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/1/";
+    String url2 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/2/";
 
     assertEquals("original leader was not registered", url1, getLeaderUrl("collection2", "slice1"));
 
@@ -471,7 +469,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     if (at != -1) {
       leaderUrl = leaderUrl.substring(at + 3);
     }
-    return Integer.parseInt(leaderUrl.replaceAll("/", ""));
+    return Integer.parseInt(leaderUrl.replace("/", ""));
   }
 
   @Test
@@ -533,34 +531,29 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         };
 
     Thread connLossThread =
-        new Thread() {
-          @Override
-          public void run() {
-
-            while (!stopStress) {
-              try {
-                Thread.sleep(50);
-                int j;
-                j = random().nextInt(threads.size());
+        new Thread(
+            () -> {
+              while (!stopStress) {
                 try {
-                  if (random().nextBoolean()) {
-                    long sessionId = threads.get(j).es.zkClient.getZkSessionId();
-                    if (sessionId >= 0) {
-                      KillSession.kill(threads.get(j).es.zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
-                      server.expire(sessionId);
+                  Thread.sleep(50);
+                  int j;
+                  j = random().nextInt(threads.size());
+                  try {
+                    ZooKeeper zk = threads.get(j).es.zkClient.getZooKeeper();
+                    assertTrue(zk instanceof TestableZooKeeper);
+                    ((TestableZooKeeper) zk).testableConnloss();
+                    if (random().nextBoolean()) {
+                      server.expire(zk.getSessionId());
                     }
+                  } catch (Exception e) {
+                    log.error("error expiring session", e);
                   }
+                  Thread.sleep(500);
                 } catch (Exception e) {
-                  e.printStackTrace();
+                  log.error("error expiring session", e);
                 }
-                Thread.sleep(500);
-
-              } catch (Exception e) {
-
               }
-            }
-          }
-        };
+            });
 
     try {
       scheduleThread.start();
@@ -590,9 +583,14 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         thread.close();
       }
 
-      for (Thread thread : threads) {
-        thread.join();
-      }
+    // cleanup any threads still running
+    for (ClientThread thread : threads) {
+      thread.es.zkClient.getZooKeeper().close();
+      thread.close();
+    }
+
+    for (Thread thread : threads) {
+      thread.join();
     }
   }
 
@@ -602,9 +600,5 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     zkStateReader.close();
     server.shutdown();
     super.tearDown();
-  }
-
-  private void printLayout() throws Exception {
-    zkClient.printLayoutToStream(System.out);
   }
 }

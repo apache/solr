@@ -16,7 +16,8 @@
  */
 package org.apache.solr.handler;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
@@ -24,6 +25,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.loader.JsonLoader;
@@ -163,7 +165,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInvalidJsonProducesBadRequestSolrException() throws Exception {
+  public void testInvalidJsonProducesBadRequestSolrException() {
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     JsonLoader loader = new JsonLoader();
@@ -213,7 +215,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     // list
     checkFieldValueOrdering((pre + "'f':[45,67,89]" + post).replace('\'', '"'));
-    // dup fieldname keys
+    // duplicate field name keys
     checkFieldValueOrdering((pre + "'f':45,'f':67,'f':89" + post).replace('\'', '"'));
   }
 
@@ -302,25 +304,6 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertTrue(obj.containsKey("f3"));
 
     // TODO new test method
-    doc = "[{'id':'1'},{'id':'2'}]".replace('\'', '"');
-    req = req("srcField", "_src_");
-    req.getContext().put("path", "/update/json/docs");
-    rsp = new SolrQueryResponse();
-    p = new BufferingRequestProcessor(null);
-    loader = new JsonLoader();
-    loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
-    assertEquals(2, p.addCommands.size());
-
-    content = (String) p.addCommands.get(0).solrDoc.getFieldValue("_src_");
-    assertNotNull(content);
-    obj = (Map) Utils.fromJSONString(content);
-    assertEquals("1", obj.get("id"));
-    content = (String) p.addCommands.get(1).solrDoc.getFieldValue("_src_");
-    assertNotNull(content);
-    obj = (Map) Utils.fromJSONString(content);
-    assertEquals("2", obj.get("id"));
-
-    // TODO new test method
     String json = "{a:{" + "b:[{c:c1, e:e1},{c:c2, e :e2, d:{p:q}}]," + "x:y" + "}}";
     req = req("split", "/|/a/b");
     req.getContext().put("path", "/update/json/docs");
@@ -337,6 +320,115 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
             + "a.x=y"
             + "])",
         p.addCommands.get(0).solrDoc.toString());
+  }
+
+  public void testSrcAndUniqueDocs() throws Exception {
+    BufferingRequestProcessor p;
+    JsonLoader loader;
+    SolrQueryRequest req;
+    SolrQueryResponse rsp;
+    String doc;
+    String content;
+    Map<?, ?> src;
+    doc = "[{'id':'1','a':'b'},{'id':'2','c':'d'}]".replace('\'', '"');
+    boolean idOnly = random().nextBoolean();
+    boolean srcField = random().nextBoolean();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    if (idOnly) {
+      params.set("mapUniqueKeyOnly", "true");
+      params.set("df", "_catch_all");
+    }
+    if (srcField) {
+      params.set("srcField", "_src_");
+    }
+    req = req(params);
+    req.getContext().put("path", "/update/json/docs");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
+    assertEquals(2, p.addCommands.size());
+
+    {
+      final SolrInputDocument doc1 = p.addCommands.get(0).solrDoc;
+      if (srcField) {
+        content = (String) doc1.getFieldValue("_src_");
+        assertNotNull(content);
+        src = (Map) Utils.fromJSONString(content);
+        assertEquals("1", src.get("id"));
+        assertEquals("b", src.get("a"));
+      } else {
+        assertFalse(doc1.containsKey("_src_"));
+      }
+      assertEquals("1", doc1.getFieldValue("id"));
+      if (idOnly) {
+        assertEquals(Arrays.asList("1", "b"), new ArrayList<>(doc1.getFieldValues("_catch_all")));
+        assertFalse(doc1.containsKey("a"));
+      } else {
+        assertEquals("b", doc1.getFieldValue("a"));
+        assertFalse(doc1.containsKey("_catch_all"));
+      }
+    }
+    {
+      final SolrInputDocument doc2 = p.addCommands.get(1).solrDoc;
+      if (srcField) {
+        content = (String) doc2.getFieldValue("_src_");
+        assertNotNull(content);
+        src = (Map) Utils.fromJSONString(content);
+        assertEquals("2", src.get("id"));
+        assertEquals("d", src.get("c"));
+      } else {
+        assertFalse(doc2.containsKey("_src_"));
+      }
+      assertEquals("2", doc2.getFieldValue("id"));
+      if (idOnly) {
+        assertEquals(Arrays.asList("2", "d"), new ArrayList<>(doc2.getFieldValues("_catch_all")));
+        assertFalse(doc2.containsKey("c"));
+      } else {
+        assertEquals("d", doc2.getFieldValue("c"));
+        assertFalse(doc2.containsKey("_catch_all"));
+      }
+    }
+  }
+
+  public void testEchoDocs() throws Exception {
+    BufferingRequestProcessor p;
+    JsonLoader loader;
+    SolrQueryRequest req;
+    SolrQueryResponse rsp;
+    String doc;
+
+    doc = "[{'id':'1'},{'id':'2'}]".replace('\'', '"');
+    boolean src = random().nextBoolean();
+    req = src ? req("srcField", "_src_", "echo", "true") : req("echo", "true");
+    req.getContext().put("path", "/update/json/docs");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
+    assertEquals(0, p.addCommands.size());
+    @SuppressWarnings("unchecked")
+    final List<Map<String, String>> docs = (List<Map<String, String>>) rsp.getValues().get("docs");
+    assertNotNull(docs);
+    assertEquals(2, docs.size());
+    {
+      Map<String, String> doc1 = docs.get(0);
+      assertEquals("1", doc1.get("id"));
+      if (src) {
+        assertEquals("{\"id\":\"1\"}", doc1.get("_src_"));
+      } else {
+        assertFalse(doc1.containsKey("_src_"));
+      }
+    }
+    {
+      Map<String, String> doc2 = docs.get(1);
+      assertEquals("2", doc2.get("id"));
+      if (src) {
+        assertEquals("{\"id\":\"2\"}", doc2.get("_src_"));
+      } else {
+        assertFalse(doc2.containsKey("_src_"));
+      }
+    }
   }
 
   private static final String PARENT_TWO_CHILDREN_JSON =
@@ -395,7 +487,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrQueryRequest req;
     SolrQueryResponse rsp;
     BufferingRequestProcessor p;
-    JsonLoader loader; // multichild test case
+    JsonLoader loader; // multiple children test case
     final boolean array = random().nextBoolean();
     StringBuilder b = new StringBuilder();
     if (array) {
@@ -453,7 +545,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   private static void assertOnlyValue(String expected, SolrInputDocument doc, String field) {
-    assertEquals(Collections.singletonList(expected), doc.getFieldValues(field));
+    assertEquals(List.of(expected), List.copyOf(doc.getFieldValues(field)));
   }
 
   public void testAtomicUpdateFieldValue() throws Exception {
@@ -468,7 +560,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(add.commitWithin, -1);
-    assertEquals(add.overwrite, true);
+    assertTrue(add.overwrite);
     assertEquals("SolrInputDocument(fields: [id=1, val_s={add=foo}])", add.solrDoc.toString());
 
     req.close();
@@ -639,7 +731,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAddBigIntegerValueToTrieField() throws Exception {
+  public void testAddBigIntegerValueToTrieField() {
     // Adding a BigInteger to a long field should fail
     // BigInteger.longValue() returns only the low-order 64 bits.
 
@@ -685,7 +777,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         "/response/docs/[0]=={'big_decimal_tf':[1.0E38]}");
   }
 
-  // The delete syntax was both extended for simplification in 4.0
+  // The delete operation syntax was extended for simplification in 4.0
   @Test
   public void testDeleteSyntax() throws Exception {
     String str =
@@ -707,47 +799,47 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(9, p.deleteCommands.size());
     DeleteUpdateCommand delete = p.deleteCommands.get(0);
     assertEquals(delete.id, "10");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(1);
     assertEquals(delete.id, "20");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(2);
     assertEquals(delete.id, "30");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(3);
     assertEquals(delete.id, "40");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.commitWithin, -1);
 
     delete = p.deleteCommands.get(4);
     assertEquals(delete.id, "50");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.getVersion(), 12345L);
 
     delete = p.deleteCommands.get(5);
     assertEquals(delete.id, "60");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.getVersion(), 67890L);
 
     delete = p.deleteCommands.get(6);
     assertEquals(delete.id, "70");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.getVersion(), 77777L);
 
     delete = p.deleteCommands.get(7);
-    assertEquals(delete.id, null);
+    assertNull(delete.id);
     assertEquals(delete.query, "id:80");
     assertEquals(delete.getVersion(), 88888L);
 
     delete = p.deleteCommands.get(8);
     assertEquals(delete.id, "90");
-    assertEquals(delete.query, null);
+    assertNull(delete.query);
     assertEquals(delete.getRoute(), "shard1");
     assertEquals(delete.getVersion(), 88888L);
 
@@ -816,7 +908,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   @Test
   public void testChildDocWithoutId() throws Exception {
     final String json = DUP_KEYS_ANON_CHILD_DOCS_JSON.replace("\"id\": \"3\",\n", "");
-    assert !json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON);
+    assertFalse(json.equals(DUP_KEYS_ANON_CHILD_DOCS_JSON));
     checkTwoAnonymousChildDocs(json, false);
   }
 
@@ -825,7 +917,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
   private void checkTwoAnonymousChildDocs(String rawJsonStr, boolean anonChildDocs)
       throws Exception {
     if (!anonChildDocs) {
-      rawJsonStr = rawJsonStr.replaceAll("_childDocuments_", "childLabel");
+      rawJsonStr = rawJsonStr.replace("_childDocuments_", "childLabel");
     }
     SolrQueryRequest req = req("commit", "true");
     SolrQueryResponse rsp = new SolrQueryResponse();

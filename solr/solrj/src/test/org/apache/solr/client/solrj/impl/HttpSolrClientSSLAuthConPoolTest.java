@@ -26,10 +26,10 @@ public class HttpSolrClientSSLAuthConPoolTest extends HttpSolrClientConPoolTest 
 
   @BeforeClass
   public static void checkUrls() throws Exception {
-    URL[] urls = new URL[] {jetty.getBaseUrl(), yetty.getBaseUrl()};
+    URL[] urls = new URL[] {getJetty().getBaseUrl(), secondJetty.getJetty().getBaseUrl()};
     for (URL u : urls) {
       assertEquals("expect https urls ", "https", u.getProtocol());
     }
-    assertFalse("expect different urls " + Arrays.toString(urls), urls[0].equals(urls[1]));
+    assertNotEquals("expect different urls " + Arrays.toString(urls), urls[0], urls[1]);
   }
 }

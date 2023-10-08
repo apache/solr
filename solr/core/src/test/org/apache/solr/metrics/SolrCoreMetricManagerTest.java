@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.PluginInfo;
@@ -64,8 +64,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     String scope = SolrMetricTestUtils.getRandomScope(random);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random);
-    SolrMetricProducer producer =
-        SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+    SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     try {
       coreMetricManager.registerMetricProducer(scope, producer);
       assertNotNull(scope);
@@ -94,8 +93,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
       if (metrics.isEmpty()) {
         continue;
       }
-      SolrMetricProducer producer =
-          SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+      SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
       coreMetricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
       assertRegistered(scope, registered, coreMetricManager);
@@ -172,7 +170,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNonCloudRegistryName() throws Exception {
+  public void testNonCloudRegistryName() {
     String registryName = h.getCore().getCoreMetricManager().getRegistryName();
     String leaderRegistryName = h.getCore().getCoreMetricManager().getLeaderRegistryName();
     assertNotNull(registryName);

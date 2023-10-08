@@ -84,7 +84,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
    * [{"name":"a","type":"int","value":1}, {"name":"bar","type":"str","value":"foo"},
    * {"name":null,"type":"float","value":3.4}]
    */
-  class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
+  static class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
     protected boolean writeTypeAndValueKey = false;
     private final boolean writeNullName;
 

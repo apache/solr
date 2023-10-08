@@ -41,7 +41,7 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
     initCore(solrConfigFileName, "schema.xml");
   }
 
-  public void testBuilder() throws Exception {
+  public void testBuilder() {
     final RecoveryStrategy.Builder recoveryStrategyBuilder =
         h.getCore().getSolrCoreState().getRecoveryStrategyBuilder();
     assertNotNull("recoveryStrategyBuilder is null", recoveryStrategyBuilder);
@@ -66,7 +66,7 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
         recoveryStrategyBuilder.getClass().getName());
   }
 
-  public void testAlmostAllMethodsAreFinal() throws Exception {
+  public void testAlmostAllMethodsAreFinal() {
     for (Method m : RecoveryStrategy.class.getDeclaredMethods()) {
       if (Modifier.isStatic(m.getModifiers()) || Modifier.isPrivate(m.getModifiers())) continue;
       final String methodName = m.getName();

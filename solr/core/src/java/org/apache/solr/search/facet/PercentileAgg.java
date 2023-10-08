@@ -145,6 +145,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       digests = new AVLTreeDigest[numSlots];
     }
 
+    @Override
     public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext)
         throws IOException {
       if (!values.exists(doc)) return;

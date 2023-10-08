@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -42,7 +43,7 @@ final class OverseerElectionContext extends ElectionContext {
     this.overseer = overseer;
     this.zkClient = zkClient;
     try {
-      zkClient.ensureExists(Overseer.OVERSEER_ELECT);
+      ZkMaintenanceUtils.ensureExists(Overseer.OVERSEER_ELECT, zkClient);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
@@ -58,7 +59,7 @@ final class OverseerElectionContext extends ElectionContext {
       return;
     }
     log.info("I am going to be the leader {}", id);
-    final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf("/") + 1);
+    final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf('/') + 1);
     ZkNodeProps myProps = new ZkNodeProps(ID, id);
 
     zkClient.makePath(leaderPath, Utils.toJSON(myProps), CreateMode.EPHEMERAL);

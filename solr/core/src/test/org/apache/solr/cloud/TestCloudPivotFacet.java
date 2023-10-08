@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -71,7 +71,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // because floating point addition can depende on the order of operations, we ignore
+  // because floating point addition can depend on the order of operations, we ignore
   // any stats that can be lossy -- the purpose of testing stats here is just to sanity check
   // that the basic hooks between pivot faceting and stats.field work, and these let us do that
   private static final String USE_STATS = "count=true missing=true min=true max=true";
@@ -100,7 +100,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   @BeforeClass
   public static void initUseFieldRandomizedFactor() {
     useFieldRandomizedFactor = TestUtil.nextInt(random(), 2, 30);
-    log.info("init'ing useFieldRandomizedFactor = {}", useFieldRandomizedFactor);
+    log.info("initializing useFieldRandomizedFactor = {}", useFieldRandomizedFactor);
   }
 
   @Test
@@ -170,7 +170,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       ModifiableSolrParams pivotP = params(FACET, "true");
 
       // put our FACET_PIVOT params in a set in case we just happen to pick the same one twice
-      LinkedHashSet<String> pivotParamValues = new LinkedHashSet<String>();
+      LinkedHashSet<String> pivotParamValues = new LinkedHashSet<>();
       pivotParamValues.add(buildPivotParamValue(buildRandomPivot(fieldNames)));
 
       if (random().nextBoolean()) {
@@ -222,7 +222,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
           pivotP.add(FACET_OVERREQUEST_COUNT, "" + TestUtil.nextInt(random(), 0, 5));
         }
         if (random().nextBoolean()) {
-          // sometimes give a ratio less then 1, code should be smart enough to deal
+          // sometimes give a ratio less than 1, code should be smart enough to deal
           float ratio = 0.5F + random().nextFloat();
           // sometimes go negative
           if (random().nextBoolean()) {
@@ -241,8 +241,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * facet values in the response, treating each one as a filter query to assert the pivot counts
    * are correct.
    */
-  private void assertPivotCountsAreCorrect(SolrParams baseParams, SolrParams pivotParams)
-      throws SolrServerException {
+  private void assertPivotCountsAreCorrect(SolrParams baseParams, SolrParams pivotParams) {
 
     SolrParams initParams = SolrParams.wrapAppended(pivotParams, baseParams);
 
@@ -293,7 +292,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * on those constraints. Returns the recursive depth reached (for sanity checking)
    */
   private int assertPivotCountsAreCorrect(
-      String pivotName, SolrParams baseParams, PivotField constraint) throws SolrServerException {
+      String pivotName, SolrParams baseParams, PivotField constraint) {
 
     SolrParams p = SolrParams.wrapAppended(baseParams, params("fq", buildFilter(constraint)));
     List<PivotField> subPivots = null;
@@ -360,9 +359,9 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       if (actualStats == null) {
         // handle case for not found stats (using stats query)
         //
-        // these has to be a special case check due to the legacy behavior of "top level"
+        // This has to be a special case check due to the legacy behavior of "top level"
         // StatsComponent results being "null" (and not even included in the
-        // getFieldStatsInfo() Map due to specila SolrJ logic)
+        // getFieldStatsInfo() Map due to special SolrJ logic)
 
         log.info("Requested stats missing in verification query, pivot stats: {}", pivotStats);
         assertEquals("Special Count", 0L, pivotStats.getCount().longValue());
@@ -370,8 +369,6 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
       } else {
         // regular stats, compare everything...
-
-        assert actualStats != null;
         try {
           String msg = " of " + statsKey;
 
@@ -405,7 +402,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   }
 
   /**
-   * Verify that the PivotFields we're lookin at doesn't violate any of the expected behaviors based
+   * Verify that the PivotFields we're looking at don't violate any of the expected behaviors based
    * on the <code>TRACE_*</code> params found in the base params
    */
   private void assertTraceOk(
@@ -673,7 +670,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
    * @see #useFieldRandomizedFactor
    */
   private static boolean useField() {
-    assert 0 < useFieldRandomizedFactor;
+    assertTrue(0 < useFieldRandomizedFactor);
     return 0 != TestUtil.nextInt(random(), 0, useFieldRandomizedFactor);
   }
 

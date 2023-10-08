@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -36,6 +36,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -65,7 +66,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           core.getSearchComponent(MoreLikeThisComponent.COMPONENT_NAME),
           handler.getComponents().get(0));
     } catch (IOException e) {
-      fail("IOExcepiton closing SearchHandler");
+      fail("IOException closing SearchHandler");
     }
 
     // Build an explicit list that includes the debug comp.
@@ -124,7 +125,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testZkConnected() throws Exception {
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
+        new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -156,7 +157,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       Replica replica = getRandomEntry(slice.getReplicas());
       JettySolrRunner jetty = miniCluster.getReplicaJetty(replica);
       // Use the replica's core URL to avoid ZK communication
-      try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+      try (SolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
         jetty.getCoreContainer().getZkController().getZkClient().close();
         rsp = req.process(client);
         assertFalse(rsp.getResponseHeader().getBooleanArg("zkConnected"));
@@ -169,7 +170,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testRequireZkConnected() throws Exception {
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
+        new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -203,11 +204,11 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       Replica disconnectedReplica = getRandomEntry(disconnectedSlice.getReplicas());
       JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
       // Use the replica's core URL to avoid ZK communication
-      try (HttpSolrClient httpSolrClient =
+      try (SolrClient solrClient =
           new HttpSolrClient.Builder(disconnectedReplica.getCoreUrl()).build()) {
         ignoreException("ZooKeeper is not connected");
         disconnectedJetty.getCoreContainer().getZkController().getZkClient().close();
-        req.process(httpSolrClient);
+        req.process(solrClient);
         fail(
             "An exception should be thrown when ZooKeeper is not connected and shards.tolerant=requireZkConnected");
       } catch (Exception e) {
@@ -221,7 +222,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testRequireZkConnectedDistrib() throws Exception {
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(2, createTempDir(), buildJettyConfig("/solr"));
+        new MiniSolrCloudCluster(2, createTempDir(), buildJettyConfig());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -260,24 +261,24 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
         connectedSlice = getRandomEntry(slices);
       }
       Replica connectedReplica = connectedSlice.getReplicas().iterator().next();
-      try (HttpSolrClient httpSolrClient =
+      try (SolrClient solrClient =
           new HttpSolrClient.Builder(connectedReplica.getCoreUrl()).build()) {
         ignoreException("ZooKeeper is not connected");
-        ignoreException("no servers hosting shard:");
+        ignoreException("no active servers hosting shard:");
         JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
         disconnectedJetty.getCoreContainer().getZkController().getZkClient().close();
-        req.process(httpSolrClient);
+        req.process(solrClient);
         fail(
             "An exception should be thrown when ZooKeeper is not connected and shards.tolerant=requireZkConnected");
       } catch (Exception e) {
         assertTrue(
             "Unrecognized exception message: " + e,
-            e.getMessage().contains("no servers hosting shard:")
+            e.getMessage().contains("no active servers hosting shard:")
                 || e.getMessage().contains("ZooKeeper is not connected"));
       }
     } finally {
       miniCluster.shutdown();
-      unIgnoreException("no servers hosting shard:");
+      unIgnoreException("no active servers hosting shard:");
       unIgnoreException("ZooKeeper is not connected");
     }
   }

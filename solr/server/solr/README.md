@@ -62,7 +62,7 @@ example/solr/collection1/core.properties
 
 For more information about core discovery, please see:
 
-https://solr.apache.org/guide/core-discovery.html
+https://solr.apache.org/guide/solr/latest/configuration-guide/core-discovery.html
 
 ### A Shared 'lib' Directory
 

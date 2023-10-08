@@ -17,49 +17,55 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Arrays;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-public class TestUpdateRequest {
-
-  @Rule public ExpectedException exception = ExpectedException.none();
-
-  @Before
-  public void expectException() {
-    exception.expect(NullPointerException.class);
-    exception.expectMessage("Cannot add a null SolrInputDocument");
-  }
+public class TestUpdateRequest extends SolrTestCase {
 
   @Test
   public void testCannotAddNullSolrInputDocument() {
     UpdateRequest req = new UpdateRequest();
-    req.add((SolrInputDocument) null);
+
+    NullPointerException thrown =
+        assertThrows(NullPointerException.class, () -> req.add((SolrInputDocument) null));
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 
   @Test
   public void testCannotAddNullDocumentWithOverwrite() {
     UpdateRequest req = new UpdateRequest();
-    req.add(null, true);
+
+    NullPointerException thrown =
+        assertThrows(NullPointerException.class, () -> req.add(null, true));
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 
   @Test
   public void testCannotAddNullDocumentWithCommitWithin() {
     UpdateRequest req = new UpdateRequest();
-    req.add(null, 1);
+
+    NullPointerException thrown = assertThrows(NullPointerException.class, () -> req.add(null, 1));
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 
   @Test
   public void testCannotAddNullDocumentWithParameters() {
     UpdateRequest req = new UpdateRequest();
-    req.add(null, 1, true);
+
+    NullPointerException thrown =
+        assertThrows(NullPointerException.class, () -> req.add(null, 1, true));
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 
   @Test
   public void testCannotAddNullDocumentAsPartOfList() {
     UpdateRequest req = new UpdateRequest();
-    req.add(Arrays.asList(new SolrInputDocument(), new SolrInputDocument(), null));
+
+    NullPointerException thrown =
+        assertThrows(
+            NullPointerException.class,
+            () -> req.add(Arrays.asList(new SolrInputDocument(), new SolrInputDocument(), null)));
+    assertEquals("Cannot add a null SolrInputDocument", thrown.getMessage());
   }
 }

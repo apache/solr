@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Date;
@@ -58,7 +57,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
 
     // we need a consistent segmentation because reopen test validation
-    // dependso n merges not happening when it doesn't expect
+    // depends on merges not happening when it doesn't expect
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
     initCore("solrconfig.xml", "schema.xml");
@@ -148,8 +147,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
         "nothing changed, searcher should be the same", sr3.getSearcher(), sr4.getSearcher());
     assertEquals(
         "nothing changed, searcher should not have been re-registered",
-        sr3SearcherRegAt,
-        g.getValue());
+        sr3SearcherRegAt.toInstant(),
+        g.getValue().toInstant());
     IndexReader r4 = sr4.getSearcher().getRawReader();
 
     // force an index change so the registered searcher won't be the one we are testing (and
@@ -174,12 +173,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     IndexReaderContext rCtx6 = sr6.getSearcher().getTopReaderContext();
     assertEquals(
         1, rCtx6.leaves().get(0).reader().numDocs()); // only a single doc left in the first segment
-    assertTrue(
-        !rCtx5
-            .leaves()
-            .get(0)
-            .reader()
-            .equals(rCtx6.leaves().get(0).reader())); // readers now different
+    assertNotEquals(
+        rCtx5.leaves().get(0).reader(), rCtx6.leaves().get(0).reader()); // readers now different
 
     sr5.close();
     sr6.close();
@@ -247,7 +242,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           cores.create(
               "core1",
               cd.getInstanceDir(),
-              ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"),
+              Map.of("config", "solrconfig-searcher-listeners1.xml"),
               false);
 
       // validate that the new core was created with the correct solrconfig
@@ -307,7 +302,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           cores.create(
               "core1",
               cd.getInstanceDir(),
-              ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"),
+              Map.of("config", "solrconfig-searcher-listeners1.xml"),
               false);
       coreCreated = true;
 
@@ -318,6 +313,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
       Thread t =
           new Thread() {
+            @Override
             public void run() {
               try {
                 doQuery(newCore);
@@ -347,7 +343,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           break;
         }
         if (i == 1000) {
-          fail("Query didn't succeed after 10 secoonds");
+          fail("Query didn't succeed after 10 seconds");
         }
         Thread.sleep(10);
       }
@@ -379,7 +375,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           cores.create(
               "core1",
               cd.getInstanceDir(),
-              ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"),
+              Map.of("config", "solrconfig-searcher-listeners1.xml"),
               false);
       coreCreated = true;
 
@@ -390,6 +386,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
       Thread t =
           new Thread() {
+            @Override
             public void run() {
               try {
                 doQuery(newCore);
@@ -408,7 +405,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           break;
         }
         if (i == 1000) {
-          fail("Query didn't succeed after 10 secoonds");
+          fail("Query didn't succeed after 10 seconds");
         }
         Thread.sleep(10);
       }
@@ -437,10 +434,10 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     static boolean registerSlowSearcherListener = false;
 
     @Override
-    public void prepare(ResponseBuilder rb) throws IOException {}
+    public void prepare(ResponseBuilder rb) {}
 
     @Override
-    public void process(ResponseBuilder rb) throws IOException {}
+    public void process(ResponseBuilder rb) {}
 
     @Override
     public String getDescription() {
@@ -495,8 +492,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
       try {
-        assert currentSearcher == null
-            : "SlowSearcherListener should only be used as FirstSearcherListener";
+        assertNull(
+            "SlowSearcherListener should only be used as FirstSearcherListener", currentSearcher);
         // simulate a slow searcher listener
         latch.await(10, TimeUnit.SECONDS);
       } catch (InterruptedException e) {

@@ -19,6 +19,7 @@ package org.apache.solr.query;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -121,10 +122,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
     return (this.flags == other.flags)
         && (this.field.equals(other.field))
-        && (this.lower == other.lower
-            || (this.lower != null && other.lower != null && this.lower.equals(other.lower)))
-        && (this.upper == other.upper
-            || (this.upper != null && other.upper != null && this.upper.equals(other.upper)));
+        && (Objects.equals(this.lower, other.lower))
+        && (Objects.equals(this.upper, other.upper));
   }
 
   @Override
@@ -281,7 +280,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
       if (upper != null) {
         int cmp = curr.compareTo(upper);
-        if (cmp < 0 || cmp == 0 && includeUpper()) {
+        if (cmp < 0 || (cmp == 0 && includeUpper())) {
           return curr;
         } else {
           curr = null;

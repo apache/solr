@@ -22,24 +22,25 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.hll.HLL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9062")
-@LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
+// @LogLevel("org.eclipse.jetty.client.HttpConnection=DEBUG")
 public class TestDistributedStatsComponentCardinality extends BaseDistributedSearchTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -49,7 +50,6 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
   static final long BIG_PRIME = 982451653L;
 
   static final int MIN_NUM_DOCS = 10000;
-  static final int MAX_NUM_DOCS = MIN_NUM_DOCS * 2;
 
   static final List<String> STAT_FIELDS =
       Collections.unmodifiableList(Arrays.asList("int_i", "long_l", "string_s"));
@@ -77,27 +77,32 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     log.info("Building an index of {} docs", NUM_DOCS);
 
     // we want a big spread in the long values we use, decrement by BIG_PRIME as we index
-    long longValue = MAX_LONG;
+    final AtomicLong longValue = new AtomicLong(MAX_LONG);
 
-    for (int i = 1; i <= NUM_DOCS; i++) {
-      // with these values, we know that every doc indexed has a unique value in all of the
-      // fields we will compute cardinality against.
-      // which means the number of docs matching a query is the true cardinality for each field
+    Iterator<SolrInputDocument> docs =
+        IntStream.rangeClosed(1, NUM_DOCS)
+            .mapToObj(
+                i -> {
+                  long currentLong = longValue.getAndAccumulate(BIG_PRIME, (x, y) -> x - y);
 
-      final String strValue = "s" + longValue;
-      indexDoc(
-          sdoc(
-              "id", "" + i,
-              "int_i", "" + i,
-              "int_i_prehashed_l", "" + HASHER.hashInt(i).asLong(),
-              "long_l", "" + longValue,
-              "long_l_prehashed_l", "" + HASHER.hashLong(longValue).asLong(),
-              "string_s", strValue,
-              "string_s_prehashed_l",
-                  "" + HASHER.hashString(strValue, StandardCharsets.UTF_8).asLong()));
+                  final String strValue = "s" + currentLong;
 
-      longValue -= BIG_PRIME;
-    }
+                  // with these values, we know that every doc indexed has a unique value in all
+                  // the fields we will compute cardinality against. which means the number of docs
+                  // matching a query is the true cardinality for each field
+                  return sdoc(
+                      "id", Integer.toString(i),
+                      "int_i", Integer.toString(i),
+                      "int_i_prehashed_l", Long.toString(HASHER.hashInt(i).asLong()),
+                      "long_l", Long.toString(currentLong),
+                      "long_l_prehashed_l", Long.toString(HASHER.hashLong(currentLong).asLong()),
+                      "string_s", strValue,
+                      "string_s_prehashed_l",
+                          Long.toString(
+                              HASHER.hashString(strValue, StandardCharsets.UTF_8).asLong()));
+                })
+            .iterator();
+    indexDocs(docs);
 
     commit();
   }
@@ -132,12 +137,12 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
     for (int i = 0; i < NUM_QUERIES; i++) {
 
       // testing shows that on random data, at the size we're dealing with,
-      // MINIMUM_LOG2M_PARAM is just too absurdly small to give anything remotely close the
-      // the theoretically expected relative error.
+      // MINIMUM_LOG2M_PARAM is just too absurdly small to give anything remotely close to the
+      // theoretically expected relative error.
       //
-      // So we have to use a slightly higher lower bound on what log2m values we randomly test
+      // So we have to use a higher lower bound on what log2m values we randomly test
       final int log2m =
-          TestUtil.nextInt(random(), 2 + HLL.MINIMUM_LOG2M_PARAM, HLL.MAXIMUM_LOG2M_PARAM);
+          TestUtil.nextInt(random(), 13 + HLL.MINIMUM_LOG2M_PARAM, HLL.MAXIMUM_LOG2M_PARAM);
 
       // use max regwidth to try and prevent hash collisions from introducing problems
       final int regwidth = HLL.MAXIMUM_REGWIDTH_PARAM;
@@ -152,37 +157,36 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       Map<String, FieldStatsInfo> stats = rsp.getFieldStatsInfo();
 
-      if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-        log.warn(
-            "SOLR-10918: can't relying on exact match with pre-hashed values when using points");
-      } else {
-        for (String f : STAT_FIELDS) {
-          // regardless of log2m and regwidth, the estimated cardinality of the
-          // hashed vs prehashed values should be exactly the same for each field
+      for (String f : STAT_FIELDS) {
+        // regardless of log2m and regwidth, the estimated cardinality of the
+        // hashed vs prehashed values should be exactly the same for each field
 
-          assertEquals(
-              f + ": hashed vs prehashed, real=" + numMatches + ", p=" + p,
-              stats.get(f).getCardinality().longValue(),
-              stats.get(f + "_prehashed_l").getCardinality().longValue());
-        }
+        assertEquals(
+            f + ": hashed vs prehashed, real=" + numMatches + ", p=" + p,
+            stats.get(f).getCardinality().longValue(),
+            stats.get(f + "_prehashed_l").getCardinality().longValue());
       }
 
       for (String f : STAT_FIELDS) {
         // check the relative error of the estimate returned against the known truth
-
         final double relErr = expectedRelativeError(log2m);
-        final long estimate = stats.get(f).getCardinality().longValue();
+        final long estimate = stats.get(f).getCardinality();
+        final double actualError = ((double) Math.abs(numMatches - estimate) / numMatches);
         assertTrue(
             f
-                + ": relativeErr="
+                + ": log2m="
+                + log2m
+                + ", relativeErr="
                 + relErr
+                + ", actualError="
+                + actualError
                 + ", estimate="
                 + estimate
                 + ", real="
                 + numMatches
                 + ", p="
                 + p,
-            (Math.abs(numMatches - estimate) / numMatches) < relErr);
+            actualError < relErr);
       }
     }
 
@@ -195,11 +199,11 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       // WTF? - https://github.com/aggregateknowledge/java-hll/issues/15
       //
-      // aparently we can't rely on estimates always being more accurate with higher log2m values?
+      // apparently we can't rely on estimates always being more accurate with higher log2m values?
       // so for now, just try testing accuracy values that differ by at least 0.5
       //
       // (that should give us a significant enough log2m diff that the "highAccuracy" is always
-      // more accurate -- if, not then the entire premise of the float value is fundementally bogus)
+      // more accurate -- if, not then the entire premise of the float value is fundamentally bogus)
       //
       final double lowAccuracy = random().nextDouble() / 2;
       // final double highAccuracy = Math.min(1.0D, lowAccuracy + (random().nextDouble() / 2));
@@ -213,8 +217,8 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
       // can't use STAT_FIELDS here ...
       //
-      // hueristic differences for regwidth on 32 bit values mean we get differences
-      // between estimates for the normal field vs the prehashed (long) field
+      // heuristic differences for regwidth on 32 bit values mean we get differences
+      // between estimates for the normal field vs the prehashed (long) field,
       //
       // so we settle for only testing things where the regwidth is consistent
       // w/the prehashed long...
@@ -258,10 +262,10 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
 
   /** Returns the (max) expected relative error according ot the HLL algorithm docs */
   private static double expectedRelativeError(final int log2m) {
-    final long m = 1 << log2m;
+    final long m = 1L << log2m;
     // theoretical error is 1.04D * sqrt(m)
     // fudge slightly to account for variance in random data
-    return 1.1D / Math.sqrt(m);
+    return 1.10D * (1.04D / Math.sqrt((double) m));
   }
 
   /**

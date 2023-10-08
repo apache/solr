@@ -66,6 +66,7 @@ public enum FieldFlag {
     return display;
   }
 
+  @Override
   public String toString() {
     return abbreviation + " - " + display;
   }

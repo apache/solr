@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,8 +29,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
@@ -42,16 +40,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   private static final Pattern trieFields = Pattern.compile(".*_t.");
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final String FOO_STRING_FIELD = "foo_s1";
-  public static final String SMALL_STRING_FIELD = "small_s1";
-  public static final String SMALL_INT_FIELD = "small_i";
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -69,8 +62,6 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"rawtypes"})
   Map<Comparable, Doc> model = null;
-
-  boolean validateResponses = true;
 
   void init() {
     Random rand = random();
@@ -105,12 +96,12 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
 
     // TODO: doubles, multi-floats, ints with precisionStep>0, booleans
     types.add(new FldType("small_tf", ZERO_ONE, new FVal(-4, 5)));
-    assert trieFields.matcher("small_tf").matches();
-    assert !trieFields.matcher("small_f").matches();
+    assertTrue(trieFields.matcher("small_tf").matches());
+    assertFalse(trieFields.matcher("small_f").matches());
 
     types.add(new FldType("foo_ti", ZERO_ONE, new IRange(-2, indexSize)));
-    assert trieFields.matcher("foo_ti").matches();
-    assert !trieFields.matcher("foo_i").matches();
+    assertTrue(trieFields.matcher("foo_ti").matches());
+    assertFalse(trieFields.matcher("foo_i").matches());
 
     types.add(
         new FldType(
@@ -293,7 +284,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
             final boolean trieField = trieFields.matcher(ftype.fname).matches();
             if ((notEnum || trieField) && exists) {
               assertQEx(
-                  "facet.exists only when enum or ommitted",
+                  "facet.exists only when enum or omitted",
                   "facet.exists",
                   req(params),
                   ErrorCode.BAD_REQUEST);
@@ -314,12 +305,12 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
           responses.add(strResponse);
 
           if (responses.size() > 1) {
-            validateResponse(responses.get(0), strResponse, params, method, methods);
+            validateResponse(responses.get(0), strResponse, params, methods);
           }
         }
       }
 
-      /**
+      /*
        * String strResponse = h.query(req(params)); Object realResponse =
        * ObjectBuilder.fromJSON(strResponse);
        */
@@ -329,15 +320,11 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
 
   private void validateResponse(
-      String expected,
-      String actual,
-      ModifiableSolrParams params,
-      String method,
-      List<String> methods)
+      String expected, String actual, ModifiableSolrParams params, List<String> methods)
       throws Exception {
     if (params.getBool("facet.exists", false)) {
       if (isSortByCount(params)) { // it's challenged with facet.sort=count
-        // that requires to recalculate expactation
+        // that requires to recalculate expectation
         expected = getExpectationForSortByCount(params, methods);
       } else { // facet.sort=index
         expected = capFacetCountsTo1(expected);
@@ -371,7 +358,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
         e -> {
           List<Object> facetSortedByIndex = (List<Object>) e.getValue();
           Map<Integer, List<Object>> stratas =
-              new HashMap<Integer, List<Object>>() {
+              new HashMap<>() {
                 @Override // poor man multimap, I won't do that anymore, I swear.
                 public List<Object> get(Object key) {
                   if (!containsKey(key)) {
@@ -386,7 +373,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
             Object label = iterator.next();
             Long count = (Long) iterator.next();
             final Integer strata;
-            if (label == null) { // missing (here "stratas" seems like overengineering )
+            if (label == null) { // missing (here "stratas" seems like over engineering )
               strata = null;
             } else {
               if (count > 0) {
@@ -466,7 +453,7 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
     "facet_heatmaps":{}}}
    * */
   @SuppressWarnings({"rawtypes", "unchecked"})
-  private String capFacetCountsTo1(String expected) throws IOException {
+  private String capFacetCountsTo1(String expected) {
     return transformFacetFields(
         expected,
         e -> {
@@ -482,8 +469,8 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  private String transformFacetFields(String expected, Consumer<Map.Entry<Object, Object>> consumer)
-      throws IOException {
+  private String transformFacetFields(
+      String expected, Consumer<Map.Entry<Object, Object>> consumer) {
     Object json = Utils.fromJSONString(expected);
     @SuppressWarnings({"rawtypes"})
     Map facet_fields = getFacetFieldMap(json);
@@ -500,7 +487,6 @@ public class TestRandomFaceting extends SolrTestCaseJ4 {
   @SuppressWarnings({"rawtypes"})
   private Map getFacetFieldMap(Object json) {
     Object facet_counts = ((Map) json).get("facet_counts");
-    Map facet_fields = (Map) ((Map) facet_counts).get("facet_fields");
-    return facet_fields;
+    return (Map) ((Map) facet_counts).get("facet_fields");
   }
 }

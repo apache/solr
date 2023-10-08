@@ -19,6 +19,7 @@ package org.apache.solr.legacy;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -28,7 +29,7 @@ import org.apache.solr.SolrTestCase;
 
 public class TestLegacyNumericUtils extends SolrTestCase {
 
-  public void testLongConversionAndOrdering() throws Exception {
+  public void testLongConversionAndOrdering() {
     // generate a series of encoded longs, each numerical one bigger than the one before
     BytesRefBuilder last = new BytesRefBuilder();
     BytesRefBuilder act = new BytesRefBuilder();
@@ -51,7 +52,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public void testIntConversionAndOrdering() throws Exception {
+  public void testIntConversionAndOrdering() {
     // generate a series of encoded ints, each numerical one bigger than the one before
     BytesRefBuilder act = new BytesRefBuilder();
     BytesRefBuilder last = new BytesRefBuilder();
@@ -74,7 +75,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public void testLongSpecialValues() throws Exception {
+  public void testLongSpecialValues() {
     long[] vals =
         new long[] {
           Long.MIN_VALUE,
@@ -124,20 +125,20 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     // check the prefix encoding, lower precision should have the difference to original value equal
     // to the lower removed bits
     final BytesRefBuilder ref = new BytesRefBuilder();
-    for (int i = 0; i < vals.length; i++) {
+    for (long val : vals) {
       for (int j = 0; j < 64; j++) {
-        LegacyNumericUtils.longToPrefixCoded(vals[i], j, ref);
+        LegacyNumericUtils.longToPrefixCoded(val, j, ref);
         long prefixVal = LegacyNumericUtils.prefixCodedToLong(ref.get());
         long mask = (1L << j) - 1L;
         assertEquals(
-            "difference between prefix val and original value for " + vals[i] + " with shift=" + j,
-            vals[i] & mask,
-            vals[i] - prefixVal);
+            "difference between prefix val and original value for " + val + " with shift=" + j,
+            val & mask,
+            val - prefixVal);
       }
     }
   }
 
-  public void testIntSpecialValues() throws Exception {
+  public void testIntSpecialValues() {
     int[] vals =
         new int[] {
           Integer.MIN_VALUE,
@@ -187,20 +188,20 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     // check the prefix encoding, lower precision should have the difference to original value equal
     // to the lower removed bits
     final BytesRefBuilder ref = new BytesRefBuilder();
-    for (int i = 0; i < vals.length; i++) {
+    for (int val : vals) {
       for (int j = 0; j < 32; j++) {
-        LegacyNumericUtils.intToPrefixCoded(vals[i], j, ref);
+        LegacyNumericUtils.intToPrefixCoded(val, j, ref);
         int prefixVal = LegacyNumericUtils.prefixCodedToInt(ref.get());
         int mask = (1 << j) - 1;
         assertEquals(
-            "difference between prefix val and original value for " + vals[i] + " with shift=" + j,
-            vals[i] & mask,
-            vals[i] - prefixVal);
+            "difference between prefix val and original value for " + val + " with shift=" + j,
+            val & mask,
+            val - prefixVal);
       }
     }
   }
 
-  public void testDoubles() throws Exception {
+  public void testDoubles() {
     double[] vals =
         new double[] {
           Double.NEGATIVE_INFINITY,
@@ -224,9 +225,10 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     // check forward and back conversion
     for (int i = 0; i < vals.length; i++) {
       longVals[i] = NumericUtils.doubleToSortableLong(vals[i]);
-      assertTrue(
+      assertEquals(
           "forward and back conversion should generate same double",
-          Double.compare(vals[i], NumericUtils.sortableLongToDouble(longVals[i])) == 0);
+          0,
+          Double.compare(vals[i], NumericUtils.sortableLongToDouble(longVals[i])));
     }
 
     // check sort order (prefixVals should be ascending)
@@ -235,13 +237,13 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public static final double[] DOUBLE_NANs = {
-    Double.NaN,
-    Double.longBitsToDouble(0x7ff0000000000001L),
-    Double.longBitsToDouble(0x7fffffffffffffffL),
-    Double.longBitsToDouble(0xfff0000000000001L),
-    Double.longBitsToDouble(0xffffffffffffffffL)
-  };
+  public static final List<Double> DOUBLE_NANs =
+      List.of(
+          Double.NaN,
+          Double.longBitsToDouble(0x7ff0000000000001L),
+          Double.longBitsToDouble(0x7fffffffffffffffL),
+          Double.longBitsToDouble(0xfff0000000000001L),
+          Double.longBitsToDouble(0xffffffffffffffffL));
 
   public void testSortableDoubleNaN() {
     final long plusInf = NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY);
@@ -259,12 +261,12 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public void testFloats() throws Exception {
+  public void testFloats() {
     float[] vals =
         new float[] {
           Float.NEGATIVE_INFINITY,
           -2.3E25f,
-          -1.0E15f,
+          -9.9999999E+14f,
           -1.0f,
           -1.0E-1f,
           -1.0E-2f,
@@ -273,7 +275,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
           1.0E-2f,
           1.0E-1f,
           1.0f,
-          1.0E15f,
+          9.9999999E+14f,
           2.3E25f,
           Float.POSITIVE_INFINITY,
           Float.NaN
@@ -283,9 +285,10 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     // check forward and back conversion
     for (int i = 0; i < vals.length; i++) {
       intVals[i] = NumericUtils.floatToSortableInt(vals[i]);
-      assertTrue(
+      assertEquals(
           "forward and back conversion should generate same double",
-          Float.compare(vals[i], NumericUtils.sortableIntToFloat(intVals[i])) == 0);
+          0,
+          Float.compare(vals[i], NumericUtils.sortableIntToFloat(intVals[i])));
     }
 
     // check sort order (prefixVals should be ascending)
@@ -294,13 +297,13 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  public static final float[] FLOAT_NANs = {
-    Float.NaN,
-    Float.intBitsToFloat(0x7f800001),
-    Float.intBitsToFloat(0x7fffffff),
-    Float.intBitsToFloat(0xff800001),
-    Float.intBitsToFloat(0xffffffff)
-  };
+  public static final List<Float> FLOAT_NANs =
+      List.of(
+          Float.NaN,
+          Float.intBitsToFloat(0x7f800001),
+          Float.intBitsToFloat(0x7fffffff),
+          Float.intBitsToFloat(0xff800001),
+          Float.intBitsToFloat(0xffffffff));
 
   public void testSortableFloatNaN() {
     final int plusInf = NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY);
@@ -318,7 +321,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     }
   }
 
-  // INFO: Tests for trieCodeLong()/trieCodeInt() not needed because implicitely tested by range
+  // INFO: Tests for trieCodeLong()/trieCodeInt() not needed because implicitly tested by range
   // filter tests
 
   /** Note: The neededBounds Iterable must be unsigned (easier understanding what's happening) */
@@ -365,12 +368,13 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     if (useBitSet) {
       // after flipping all bits in the range, the cardinality should be zero
       bits.flip(0, upper - lower + 1);
-      assertEquals("The sub-range concenated should match the whole range", 0, bits.cardinality());
+      assertEquals(
+          "The sub-range concatenated should match the whole range", 0, bits.cardinality());
     }
   }
 
   /** LUCENE-2541: LegacyNumericRangeQuery errors with endpoints near long min and max values */
-  public void testLongExtremeValues() throws Exception {
+  public void testLongExtremeValues() {
     // upper end extremes
     assertLongRangeSplit(
         Long.MAX_VALUE,
@@ -494,14 +498,14 @@ public class TestLegacyNumericUtils extends SolrTestCase {
         Arrays.asList(0, 4));
   }
 
-  public void testRandomSplit() throws Exception {
+  public void testRandomSplit() {
     long num = (long) atLeast(10);
     for (long i = 0; i < num; i++) {
       executeOneRandomSplit(random());
     }
   }
 
-  private void executeOneRandomSplit(final Random random) throws Exception {
+  private void executeOneRandomSplit(final Random random) {
     long lower = randomLong(random);
     long len = random.nextInt(16384 * 1024); // not too large bitsets, else OOME!
     while (lower + len < lower) { // overflow
@@ -538,7 +542,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     return val;
   }
 
-  public void testSplitLongRange() throws Exception {
+  public void testSplitLongRange() {
     // a hard-coded "standard" range
     assertLongRangeSplit(
         -5000L,
@@ -576,7 +580,8 @@ public class TestLegacyNumericUtils extends SolrTestCase {
             0x80000000000000L, 0x80000000000003L),
         Arrays.asList(4, 8));
 
-    // the full long range should only consist of a lowest precision range; no bitset testing here,
+    // the full long range should only consist of the lowest precision range; no bitset testing
+    // here,
     // as too much memory needed :-)
     assertLongRangeSplit(
         Long.MIN_VALUE, Long.MAX_VALUE, 8, false, Arrays.asList(0x00L, 0xffL), Arrays.asList(56));
@@ -593,7 +598,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     assertLongRangeSplit(
         Long.MIN_VALUE, Long.MAX_VALUE, 1, false, Arrays.asList(0x0L, 0x1L), Arrays.asList(63));
 
-    // a inverse range should produce no sub-ranges
+    // the inverse range should produce no sub-ranges
     assertLongRangeSplit(
         9500L, -5000L, 4, false, Collections.<Long>emptyList(), Collections.<Integer>emptyList());
 
@@ -651,11 +656,12 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     if (useBitSet) {
       // after flipping all bits in the range, the cardinality should be zero
       bits.flip(0, upper - lower + 1);
-      assertEquals("The sub-range concenated should match the whole range", 0, bits.cardinality());
+      assertEquals(
+          "The sub-range concatenated should match the whole range", 0, bits.cardinality());
     }
   }
 
-  public void testSplitIntRange() throws Exception {
+  public void testSplitIntRange() {
     // a hard-coded "standard" range
     assertIntRangeSplit(
         -5000,
@@ -688,7 +694,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
             0x800000, 0x800003),
         Arrays.asList(4, 8));
 
-    // the full int range should only consist of a lowest precision range; no bitset testing here,
+    // the full int range should only consist of the lowest precision range; no bitset testing here,
     // as too much memory needed :-)
     assertIntRangeSplit(
         Integer.MIN_VALUE,
@@ -710,7 +716,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     assertIntRangeSplit(
         Integer.MIN_VALUE, Integer.MAX_VALUE, 1, false, Arrays.asList(0x0, 0x1), Arrays.asList(31));
 
-    // a inverse range should produce no sub-ranges
+    // the inverse range should produce no sub-ranges
     assertIntRangeSplit(
         9500, -5000, 4, false, Collections.<Integer>emptyList(), Collections.<Integer>emptyList());
 

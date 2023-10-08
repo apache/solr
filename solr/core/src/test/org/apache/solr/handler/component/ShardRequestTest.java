@@ -22,7 +22,7 @@ import org.junit.Test;
 public class ShardRequestTest extends SolrTestCase {
 
   @Test
-  public void testDefaultPurposeIsZero() throws Exception {
+  public void testDefaultPurposeIsZero() {
     final ShardRequest sr = new ShardRequest();
     assertEquals(0, sr.purpose);
   }
@@ -34,18 +34,18 @@ public class ShardRequestTest extends SolrTestCase {
    * impacted by that.
    */
   @Test
-  public void testPurposePrivateIsOne() throws Exception {
+  public void testPurposePrivateIsOne() {
     assertEquals(1, ShardRequest.PURPOSE_PRIVATE);
   }
 
   @Test
-  public void testToStringWithDefaultPurpose() throws Exception {
+  public void testToStringWithDefaultPurpose() {
     final ShardRequest sr = new ShardRequest();
     assertEquals("ShardRequest:{params=null, purpose=0, nResponses =0}", sr.toString());
   }
 
   @Test
-  public void testToStringWithPurposePrivate() throws Exception {
+  public void testToStringWithPurposePrivate() {
     final ShardRequest sr = new ShardRequest();
     sr.purpose = ShardRequest.PURPOSE_PRIVATE;
     assertEquals("ShardRequest:{params=null, purpose=1, nResponses =0}", sr.toString());

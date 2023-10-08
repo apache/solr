@@ -54,8 +54,8 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.SolrCmdDistributor;
-import org.apache.solr.update.SolrCmdDistributor.Error;
 import org.apache.solr.update.SolrCmdDistributor.Node;
+import org.apache.solr.update.SolrCmdDistributor.SolrError;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
@@ -151,8 +151,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   /** Number of times requests from leaders to followers can be retried */
   protected final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 
-  protected UpdateCommand updateCommand; // the current command this processor is working on.
-
   protected final Replica.Type replicaType;
 
   public DistributedUpdateProcessor(
@@ -196,7 +194,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         UpdateParams.OPTIMIZE,
         UpdateParams.MAX_OPTIMIZE_SEGMENTS,
         UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE,
-        ShardParams._ROUTE_);
+        ShardParams._ROUTE_,
+        CommonParams.FAIL_ON_VERSION_CONFLICTS);
 
     // this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
@@ -330,7 +329,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    boolean leaderLogic =
+        leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, isLeader, versionOnUpdate);
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
@@ -798,6 +798,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     SolrInputDocument mergedDoc;
     if (oldRootDocWithChildren == null) {
       if (versionOnUpdate > 0 || !rootDocIdString.equals(cmd.getSelfOrNestedDocIdStr())) {
+        if (cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true)
+            == false) {
+          return false;
+        }
         // could just let the optimistic locking throw the error
         throw new SolrException(
             ErrorCode.CONFLICT, "Document not found for update.  id=" + rootDocIdString);
@@ -818,8 +822,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
 
     assert TestInjection.injectFailUpdateRequests();
-
-    updateCommand = cmd;
 
     if (!cmd.isDeleteById()) {
       doDeleteByQuery(cmd);
@@ -963,16 +965,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
-
-    if (!leaderLogic && versionOnUpdate == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
-    }
+    boolean leaderLogic =
+        leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, isLeader, versionOnUpdate);
 
     vinfo.blockUpdates();
     try {
 
-      doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync);
+      doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync, leaderLogic);
 
       // since we don't know which documents were deleted, the easiest thing to do is to invalidate
       // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the
@@ -994,10 +993,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void doLocalDeleteByQuery(
-      DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync)
+      DeleteUpdateCommand cmd,
+      long versionOnUpdate,
+      boolean isReplayOrPeersync,
+      boolean leaderLogic)
       throws IOException {
     if (versionsStored) {
-      final boolean leaderLogic = isLeader & !isReplayOrPeersync;
       if (leaderLogic) {
         long version = vinfo.getNewClock();
         cmd.setVersion(-version);
@@ -1029,7 +1030,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // internal helper method to setup request by processors who use this class.
   // NOTE: not called by this class!
   void setupRequest(UpdateCommand cmd) {
-    updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
   }
 
@@ -1068,12 +1068,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    boolean leaderLogic =
+        leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, isLeader, versionOnUpdate);
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
-
-    if (!leaderLogic && versionOnUpdate == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
-    }
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
 
@@ -1201,12 +1198,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
+  private static boolean leaderLogicWithVersionIntegrityCheck(
+      boolean isReplayOrPeersync, boolean isLeader, long versionOnUpdate) {
+    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    if (!leaderLogic && versionOnUpdate == 0) {
+      throw new SolrException(ErrorCode.INVALID_STATE, "missing _version_ on update from leader");
+    }
+    return leaderLogic;
+  }
+
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
 
     assert TestInjection.injectFailUpdateRequests();
-
-    updateCommand = cmd;
 
     // replica type can only be NRT in standalone mode
     // NRT replicas will always commit
@@ -1269,15 +1273,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   public static final class DistributedUpdatesAsyncException extends SolrException {
-    public final List<Error> errors;
+    public final List<SolrError> errors;
 
-    public DistributedUpdatesAsyncException(List<Error> errors) {
+    public DistributedUpdatesAsyncException(List<SolrError> errors) {
       super(buildCode(errors), buildMsg(errors), null);
       this.errors = errors;
 
       // create a merged copy of the metadata from all wrapped exceptions
-      NamedList<String> metadata = new NamedList<String>();
-      for (Error error : errors) {
+      NamedList<String> metadata = new NamedList<>();
+      for (SolrError error : errors) {
         if (error.e instanceof SolrException) {
           SolrException e = (SolrException) error.e;
           NamedList<String> eMeta = e.getMetadata();
@@ -1292,13 +1296,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     /** Helper method for constructor */
-    private static int buildCode(List<Error> errors) {
+    private static int buildCode(List<SolrError> errors) {
       assert null != errors;
       assert 0 < errors.size();
 
       int minCode = Integer.MAX_VALUE;
       int maxCode = Integer.MIN_VALUE;
-      for (Error error : errors) {
+      for (SolrError error : errors) {
         log.trace("REMOTE ERROR: {}", error);
         minCode = Math.min(error.statusCode, minCode);
         maxCode = Math.max(error.statusCode, maxCode);
@@ -1315,7 +1319,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     /** Helper method for constructor */
-    private static String buildMsg(List<Error> errors) {
+    private static String buildMsg(List<SolrError> errors) {
       assert null != errors;
       assert 0 < errors.size();
 
@@ -1324,7 +1328,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       } else {
         StringBuilder buf =
             new StringBuilder(errors.size() + " Async exceptions during distributed update: ");
-        for (Error error : errors) {
+        for (SolrError error : errors) {
           buf.append("\n");
           buf.append(error.e.getMessage());
         }
@@ -1375,6 +1379,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       this.achievedRf = Math.min(this.achievedRf, rf);
     }
 
+    @Override
     public String toString() {
       StringBuilder sb =
           new StringBuilder("RollupRequestReplicationTracker")
@@ -1420,6 +1425,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder("LeaderRequestReplicationTracker");
       sb.append(", achievedRf=").append(getAchievedRf()).append(" for shard ").append(myShardId);

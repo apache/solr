@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -82,7 +81,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
       designateJettys.add(cloudJettys.get(n));
     }
 
-    waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates, MAX_WAIT_TIME);
+    waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates);
 
     zkStateReader.getZkClient().printLayoutToStream(System.out);
 
@@ -95,13 +94,10 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
         chaosMonkey.stopJetty(cloudJetty);
         zkStateReader.updateLiveNodes();
         boolean liveDesignates =
-            CollectionUtils.intersection(zkStateReader.getClusterState().getLiveNodes(), designates)
-                    .size()
-                > 0;
+            zkStateReader.getClusterState().getLiveNodes().stream().anyMatch(designates::contains);
         if (liveDesignates) {
           boolean success =
-              waitUntilOverseerDesignateIsLeader(
-                  zkStateReader.getZkClient(), designates, MAX_WAIT_TIME);
+              waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates);
           if (!success) {
             leader =
                 OverseerCollectionConfigSetProcessor.getLeaderNode(zkStateReader.getZkClient());
@@ -115,8 +111,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
         }
         cloudJetty.jetty.start();
         boolean success =
-            waitUntilOverseerDesignateIsLeader(
-                zkStateReader.getZkClient(), designates, MAX_WAIT_TIME);
+            waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates);
         if (!success) {
           leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkStateReader.getZkClient());
           if (leader == null)
@@ -129,9 +124,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
 
         zkStateReader.updateLiveNodes();
         sawLiveDesignate =
-            CollectionUtils.intersection(zkStateReader.getClusterState().getLiveNodes(), designates)
-                    .size()
-                > 0;
+            zkStateReader.getClusterState().getLiveNodes().stream().anyMatch(designates::contains);
       }
     }
 
@@ -145,11 +138,11 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   }
 
   static boolean waitUntilOverseerDesignateIsLeader(
-      SolrZkClient testZkClient, List<String> overseerDesignates, long timeoutInNanos)
+      SolrZkClient testZkClient, List<String> overseerDesignates)
       throws KeeperException, InterruptedException {
     long now = System.nanoTime();
     // the maximum amount of time we're willing to wait to see the designate as leader
-    long maxTimeout = now + timeoutInNanos;
+    long maxTimeout = now + RollingRestartTest.MAX_WAIT_TIME;
     long timeout = now + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     boolean firstTime = true;
     int stableCheckTimeout = 2000;

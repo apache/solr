@@ -33,7 +33,7 @@
             {
             name : "solr_ping",
             type : "GAUGE",
-            help : "See following URL: https://solr.apache.org/guide/ping.html",
+            help : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html",
             label_names : [],
             label_values : [],
             value : $value
@@ -57,7 +57,7 @@
             {
             name : "solr_collections_live_nodes",
             type : "GAUGE",
-            help : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
+            help : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-node-management.html#clusterstatus",
             label_names : [],
             label_values : [],
             value : $value
@@ -79,7 +79,7 @@
             {
             name : "solr_collections_shard_leader",
             type : "GAUGE",
-            help : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
+            help : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-node-management.html#clusterstatus",
             label_names : ["collection", "shard", "replica", "core", "type"],
             label_values : [$collection, $shard, $replica, $core, $type],
             value : $value
@@ -121,7 +121,7 @@
             {
             name : "solr_metrics_jvm_buffers",
             type : "GAUGE",
-            help : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
+            help : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
             label_names : ["pool"],
             label_values : [$pool],
             value : $value

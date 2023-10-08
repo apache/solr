@@ -16,24 +16,24 @@
  */
 package org.apache.solr.legacy;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.index.RandomIndexWriter;
+import org.apache.lucene.tests.search.QueryUtils;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -130,7 +130,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
       field2.setLongValue(val);
       fieldNoTrie.setLongValue(val);
 
-      val = l - (noDocs / 2);
+      val = (long) l - (noDocs / 2);
       ascfield8.setLongValue(val);
       ascfield6.setLongValue(val);
       ascfield4.setLongValue(val);
@@ -419,7 +419,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     q = LegacyNumericRangeQuery.newDoubleRange("double", Double.NaN, Double.NaN, true, true);
     topDocs = s.search(q, 10);
     assertEquals(
-        "Score doc count", TestLegacyNumericUtils.DOUBLE_NANs.length, topDocs.scoreDocs.length);
+        "Score doc count", TestLegacyNumericUtils.DOUBLE_NANs.size(), topDocs.scoreDocs.length);
 
     r.close();
     dir.close();
@@ -430,8 +430,8 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     // 10 random tests
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
-      long lower = (long) (random().nextDouble() * noDocs - noDocs / 2);
-      long upper = (long) (random().nextDouble() * noDocs - noDocs / 2);
+      long lower = (long) (random().nextDouble() * noDocs - noDocs / 2.0);
+      long upper = (long) (random().nextDouble() * noDocs - noDocs / 2.0);
       if (lower > upper) {
         long a = lower;
         lower = upper;
@@ -540,7 +540,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   }
 
   @Test
-  public void testEqualsAndHash() throws Exception {
+  public void testEqualsAndHash() {
     QueryUtils.checkHashEquals(
         LegacyNumericRangeQuery.newLongRange("test1", 4, 10L, 20L, true, true));
     QueryUtils.checkHashEquals(

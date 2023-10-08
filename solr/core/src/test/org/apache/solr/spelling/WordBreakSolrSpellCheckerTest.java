@@ -19,8 +19,8 @@ package org.apache.solr.spelling;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
+import org.apache.lucene.tests.analysis.MockAnalyzer;
+import org.apache.lucene.tests.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -78,7 +78,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
       SpellingResult result = checker.getSuggestions(spellOpts);
       searcher.decref();
       assertTrue(result != null && result.getSuggestions() != null);
-      assertTrue(result.getSuggestions().size() == 5);
+      assertEquals(5, result.getSuggestions().size());
     }
 
     Collection<Token> tokens = qc.convert("paintable pine apple good ness");
@@ -87,70 +87,70 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
     searcher.decref();
 
     assertTrue(result != null && result.getSuggestions() != null);
-    assertTrue(result.getSuggestions().size() == 9);
+    assertEquals(9, result.getSuggestions().size());
 
     for (Map.Entry<Token, LinkedHashMap<String, Integer>> s : result.getSuggestions().entrySet()) {
       Token orig = s.getKey();
       String[] corr = s.getValue().keySet().toArray(new String[0]);
       if (orig.toString().equals("paintable")) {
-        assertTrue(orig.startOffset() == 0);
-        assertTrue(orig.endOffset() == 9);
-        assertTrue(orig.length() == 9);
-        assertTrue(corr.length == 3);
-        assertTrue(corr[0].equals("paint able")); // 1 op ; max doc freq=5
-        assertTrue(corr[1].equals("pain table")); // 1 op ; max doc freq=2
-        assertTrue(corr[2].equals("pa in table")); // 2 ops
+        assertEquals(0, orig.startOffset());
+        assertEquals(9, orig.endOffset());
+        assertEquals(9, orig.length());
+        assertEquals(3, corr.length);
+        assertEquals("paint able", corr[0]); // 1 op ; max doc freq=5
+        assertEquals("pain table", corr[1]); // 1 op ; max doc freq=2
+        assertEquals("pa in table", corr[2]); // 2 ops
       } else if (orig.toString().equals("pine apple")) {
-        assertTrue(orig.startOffset() == 10);
-        assertTrue(orig.endOffset() == 20);
-        assertTrue(orig.length() == 10);
-        assertTrue(corr.length == 1);
-        assertTrue(corr[0].equals("pineapple"));
+        assertEquals(10, orig.startOffset());
+        assertEquals(20, orig.endOffset());
+        assertEquals(10, orig.length());
+        assertEquals(1, corr.length);
+        assertEquals("pineapple", corr[0]);
       } else if (orig.toString().equals("paintable pine")) {
-        assertTrue(orig.startOffset() == 0);
-        assertTrue(orig.endOffset() == 14);
-        assertTrue(orig.length() == 14);
-        assertTrue(corr.length == 1);
-        assertTrue(corr[0].equals("paintablepine"));
+        assertEquals(0, orig.startOffset());
+        assertEquals(14, orig.endOffset());
+        assertEquals(14, orig.length());
+        assertEquals(1, corr.length);
+        assertEquals("paintablepine", corr[0]);
       } else if (orig.toString().equals("good ness")) {
-        assertTrue(orig.startOffset() == 21);
-        assertTrue(orig.endOffset() == 30);
-        assertTrue(orig.length() == 9);
-        assertTrue(corr.length == 1);
-        assertTrue(corr[0].equals("goodness"));
+        assertEquals(21, orig.startOffset());
+        assertEquals(30, orig.endOffset());
+        assertEquals(9, orig.length());
+        assertEquals(1, corr.length);
+        assertEquals("goodness", corr[0]);
       } else if (orig.toString().equals("pine apple good ness")) {
-        assertTrue(orig.startOffset() == 10);
-        assertTrue(orig.endOffset() == 30);
-        assertTrue(orig.length() == 20);
-        assertTrue(corr.length == 1);
-        assertTrue(corr[0].equals("pineapplegoodness"));
+        assertEquals(10, orig.startOffset());
+        assertEquals(30, orig.endOffset());
+        assertEquals(20, orig.length());
+        assertEquals(1, corr.length);
+        assertEquals("pineapplegoodness", corr[0]);
       } else if (orig.toString().equals("pine")) {
-        assertTrue(orig.startOffset() == 10);
-        assertTrue(orig.endOffset() == 14);
-        assertTrue(orig.length() == 4);
-        assertTrue(corr.length == 1);
-        assertTrue(corr[0].equals("pi ne"));
+        assertEquals(10, orig.startOffset());
+        assertEquals(14, orig.endOffset());
+        assertEquals(4, orig.length());
+        assertEquals(1, corr.length);
+        assertEquals("pi ne", corr[0]);
       } else if (orig.toString().equals("pine")) {
-        assertTrue(orig.startOffset() == 10);
-        assertTrue(orig.endOffset() == 14);
-        assertTrue(orig.length() == 4);
-        assertTrue(corr.length == 1);
-        assertTrue(corr[0].equals("pi ne"));
+        assertEquals(10, orig.startOffset());
+        assertEquals(14, orig.endOffset());
+        assertEquals(4, orig.length());
+        assertEquals(1, corr.length);
+        assertEquals("pi ne", corr[0]);
       } else if (orig.toString().equals("apple")) {
-        assertTrue(orig.startOffset() == 15);
-        assertTrue(orig.endOffset() == 20);
-        assertTrue(orig.length() == 5);
-        assertTrue(corr.length == 0);
+        assertEquals(15, orig.startOffset());
+        assertEquals(20, orig.endOffset());
+        assertEquals(5, orig.length());
+        assertEquals(0, corr.length);
       } else if (orig.toString().equals("good")) {
-        assertTrue(orig.startOffset() == 21);
-        assertTrue(orig.endOffset() == 25);
-        assertTrue(orig.length() == 4);
-        assertTrue(corr.length == 0);
+        assertEquals(21, orig.startOffset());
+        assertEquals(25, orig.endOffset());
+        assertEquals(4, orig.length());
+        assertEquals(0, corr.length);
       } else if (orig.toString().equals("ness")) {
-        assertTrue(orig.startOffset() == 26);
-        assertTrue(orig.endOffset() == 30);
-        assertTrue(orig.length() == 4);
-        assertTrue(corr.length == 0);
+        assertEquals(26, orig.startOffset());
+        assertEquals(30, orig.endOffset());
+        assertEquals(4, orig.length());
+        assertEquals(0, corr.length);
       } else {
         fail("Unexpected original result: " + orig);
       }
@@ -158,7 +158,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInConjunction() throws Exception {
+  public void testInConjunction() {
     assertQ(
         req(
             "q",
@@ -230,7 +230,7 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCollate() throws Exception {
+  public void testCollate() {
     assertQ(
         req(
             "q",

@@ -90,25 +90,19 @@ public class CloudUtil {
             try {
               PathUtils.deleteDirectory(desc.getInstanceDir());
             } catch (IOException e) {
-              SolrException.log(
-                  log,
-                  "Failed to delete instance dir for core:"
-                      + desc.getName()
-                      + " dir:"
-                      + desc.getInstanceDir());
+              log.error(
+                  "Failed to delete instance dir for core: {} dir: {}",
+                  desc.getName(),
+                  desc.getInstanceDir(),
+                  e);
             }
-            log.error(
-                "{}",
-                new SolrException(
-                    ErrorCode.SERVER_ERROR,
-                    "Will not load SolrCore "
-                        + desc.getName()
-                        + " because it has been replaced due to failover.")); // nowarn
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
+            String msg =
                 "Will not load SolrCore "
                     + desc.getName()
-                    + " because it has been replaced due to failover.");
+                    + " because it has been replaced due to failover.";
+            SolrException e = new SolrException(ErrorCode.SERVER_ERROR, msg);
+            log.error(msg, e);
+            throw e;
           }
         }
       }

@@ -23,11 +23,16 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
@@ -46,8 +51,8 @@ import org.slf4j.MDC;
  * but this class may be used for updates because the server will forward them to the appropriate
  * leader.
  *
- * <p>It offers automatic failover when a server goes down and it detects when the server comes back
- * up.
+ * <p>It offers automatic failover when a server goes down, and it detects when the server comes
+ * back up.
  *
  * <p>Load balancing is done using a simple round-robin on the list of servers.
  *
@@ -65,11 +70,12 @@ import org.slf4j.MDC;
  * </blockquote>
  *
  * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
- * a dedicated thread. This interval can be set using {@link #setAliveCheckInterval} , the default
- * is set to one minute.
+ * a dedicated thread. This interval can be set using {@link
+ * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)} , the default is set to one
+ * minute.
  *
  * <p><b>When to use this?</b><br>
- * This can be used as a software load balancer when you do not wish to setup an external load
+ * This can be used as a software load balancer when you do not wish to set up an external load
  * balancer. Alternatives to this code are to use a dedicated hardware load balancer or using Apache
  * httpd with mod_proxy_balancer as a load balancer. See <a
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
@@ -78,16 +84,30 @@ import org.slf4j.MDC;
  * @since solr 8.0
  */
 public class LBHttp2SolrClient extends LBSolrClient {
-  private Http2SolrClient httpClient;
+  private final Http2SolrClient solrClient;
 
-  public LBHttp2SolrClient(Http2SolrClient httpClient, String... baseSolrUrls) {
-    super(Arrays.asList(baseSolrUrls));
-    this.httpClient = httpClient;
+  private LBHttp2SolrClient(Http2SolrClient solrClient, List<String> baseSolrUrls) {
+    super(baseSolrUrls);
+    this.solrClient = solrClient;
   }
 
   @Override
   protected SolrClient getClient(String baseUrl) {
-    return httpClient;
+    return solrClient;
+  }
+
+  @Override
+  public ResponseParser getParser() {
+    return solrClient.getParser();
+  }
+
+  @Override
+  public RequestWriter getRequestWriter() {
+    return solrClient.getRequestWriter();
+  }
+
+  public Set<String> getUrlParamNames() {
+    return solrClient.getUrlParamNames();
   }
 
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
@@ -230,5 +250,40 @@ public class LBHttp2SolrClient extends LBSolrClient {
                 }
               }
             });
+  }
+
+  public static class Builder {
+
+    private final Http2SolrClient http2SolrClient;
+    private final String[] baseSolrUrls;
+    private long aliveCheckIntervalMillis =
+        TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
+
+    public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
+      this.http2SolrClient = http2Client;
+      this.baseSolrUrls = baseSolrUrls;
+    }
+
+    /**
+     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
+     * this to set that interval
+     *
+     * @param aliveCheckInterval how often to ping for aliveness
+     */
+    public LBHttp2SolrClient.Builder setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
+      if (aliveCheckInterval <= 0) {
+        throw new IllegalArgumentException(
+            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
+      }
+      this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
+      return this;
+    }
+
+    public LBHttp2SolrClient build() {
+      LBHttp2SolrClient solrClient =
+          new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
+      solrClient.aliveCheckIntervalMillis = this.aliveCheckIntervalMillis;
+      return solrClient;
+    }
   }
 }

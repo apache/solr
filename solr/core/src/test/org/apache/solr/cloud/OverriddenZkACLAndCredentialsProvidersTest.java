@@ -16,25 +16,30 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.VMParamsZkCredentialsInjector.DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME;
+import static org.apache.solr.common.cloud.ZkCredentialsInjector.ZkCredential.Perms;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
+import org.apache.solr.common.cloud.DigestZkACLProvider;
+import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
-import org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider;
+import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkACLProvider;
+import org.apache.solr.common.cloud.ZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.data.ACL;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -57,7 +62,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 
@@ -136,9 +141,10 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoCredentialsSolrZkClientFactoryUsingCompletelyNewProviders() throws Exception {
-    try (SolrZkClient zkClient = new SolrZkClientFactoryUsingCompletelyNewProviders(null, null, null, null)
-        .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+    try(SolrZkClient zkClient =
+        new SolrZkClientFactoryUsingCompletelyNewProviders(null, null, null, null)
+            .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -146,20 +152,22 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Test
   public void testWrongCredentialsSolrZkClientFactoryUsingCompletelyNewProviders()
       throws Exception {
-    try (SolrZkClient zkClient = new SolrZkClientFactoryUsingCompletelyNewProviders(
-        "connectAndAllACLUsername", "connectAndAllACLPasswordWrong", null, null)
-        .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+    try(SolrZkClient zkClient =
+        new SolrZkClientFactoryUsingCompletelyNewProviders(
+                "connectAndAllACLUsername", "connectAndAllACLPasswordWrong", null, null)
+            .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
 
   @Test
   public void testAllCredentialsSolrZkClientFactoryUsingCompletelyNewProviders() throws Exception {
-    try (SolrZkClient zkClient = new SolrZkClientFactoryUsingCompletelyNewProviders(
-        "connectAndAllACLUsername", "connectAndAllACLPassword", null, null)
-        .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+    try(SolrZkClient zkClient =
+        new SolrZkClientFactoryUsingCompletelyNewProviders(
+                "connectAndAllACLUsername", "connectAndAllACLPassword", null, null)
+            .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     }
   }
@@ -167,10 +175,11 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @Test
   public void testReadonlyCredentialsSolrZkClientFactoryUsingCompletelyNewProviders()
       throws Exception {
-    try (SolrZkClient zkClient = new SolrZkClientFactoryUsingCompletelyNewProviders(
-        "readonlyACLUsername", "readonlyACLPassword", null, null)
-        .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+    try(SolrZkClient zkClient =
+        new SolrZkClientFactoryUsingCompletelyNewProviders(
+                "readonlyACLUsername", "readonlyACLPassword", null, null)
+            .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
     }
   }
@@ -181,9 +190,12 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
           throws Exception {
     useNoCredentials();
 
-    try (SolrZkClient zkClient = new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
-        zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+    try(SolrZkClient zkClient =
+        new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
+            new SolrZkClient.Builder()
+                .withUrl(zkServer.getZkAddress())
+                .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -194,9 +206,12 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
           throws Exception {
     useWrongCredentials();
 
-    try (SolrZkClient zkClient = new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
-        zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+    try(SolrZkClient zkClient =
+        new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
+            new SolrZkClient.Builder()
+                .withUrl(zkServer.getZkAddress())
+                .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -207,9 +222,12 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
           throws Exception {
     useAllCredentials();
 
-    try (SolrZkClient zkClient = new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
-        zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+    try(SolrZkClient zkClient =
+        new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
+            new SolrZkClient.Builder()
+                .withUrl(zkServer.getZkAddress())
+                .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) { 
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     }
   }
@@ -220,9 +238,12 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
           throws Exception {
     useReadonlyCredentials();
 
-    try (SolrZkClient zkClient = new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
-        zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      VMParamsZkACLAndCredentialsProvidersTest.doTest(
+    try(SolrZkClient zkClient =
+        new SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
+            new SolrZkClient.Builder()
+                .withUrl(zkServer.getZkAddress())
+                .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
     }
   }
@@ -233,6 +254,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     final String digestPassword;
     final String digestReadonlyUsername;
     final String digestReadonlyPassword;
+    private final ZkCredentialsInjector zkCredentialsInjector;
 
     public SolrZkClientFactoryUsingCompletelyNewProviders(
         final String digestUsername,
@@ -243,6 +265,18 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
       this.digestPassword = digestPassword;
       this.digestReadonlyUsername = digestReadonlyUsername;
       this.digestReadonlyPassword = digestReadonlyPassword;
+      zkCredentialsInjector =
+          () -> {
+            List<ZkCredentialsInjector.ZkCredential> zkCredentials = new ArrayList<>(2);
+            ZkCredentialsInjector.ZkCredential allCreds =
+                new ZkCredentialsInjector.ZkCredential(digestUsername, digestPassword, Perms.ALL);
+            ZkCredentialsInjector.ZkCredential readCreds =
+                new ZkCredentialsInjector.ZkCredential(
+                    digestReadonlyUsername, digestReadonlyPassword, Perms.READ);
+            zkCredentials.add(allCreds);
+            zkCredentials.add(readCreds);
+            return zkCredentials;
+          };
     }
 
     public SolrZkClient getSolrZkClient(String zkServerAddress, int zkClientTimeout) {
@@ -262,31 +296,13 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
       }
       return new SolrZkClient(zkServerAddress, zkClientTimeout, new DefaultZkCredentialsProvider(authInfos), null) {
         @Override
-        public ZkACLProvider createACLProvider() {
-          return new VMParamsAllAndReadonlyDigestZkACLProvider() {
-            @Override
-            protected List<ACL> createNonSecurityACLsToAdd() {
-              return createACLsToAdd(
-                  true,
-                  digestUsername,
-                  digestPassword,
-                  digestReadonlyUsername,
-                  digestReadonlyPassword);
-            }
+        protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
+          return new DigestZkCredentialsProvider(zkCredentialsInjector);
+        }
 
-            /**
-             * @return Set of ACLs to return security-related znodes
-             */
-            @Override
-            protected List<ACL> createSecurityACLsToAdd() {
-              return createACLsToAdd(
-                  false,
-                  digestUsername,
-                  digestPassword,
-                  digestReadonlyUsername,
-                  digestReadonlyPassword);
-            }
-          };
+        @Override
+        public ZkACLProvider createZkACLProvider() {
+          return new DigestZkACLProvider(zkCredentialsInjector);
         }
       };
     }
@@ -295,37 +311,31 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   private static class SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames
       extends SolrZkClient {
 
+    private static final VMParamsZkCredentialsInjector vmParamsZkCredentialsInjector =
+        new VMParamsZkCredentialsInjector(
+            "alternative" + DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
+            "alternative" + DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME,
+            "alternative" + DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
+            "alternative" + DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
+
     public SolrZkClientUsingVMParamsProvidersButWithDifferentVMParamsNames(
-        String zkServerAddress, int zkClientTimeout) {
-      super(zkServerAddress, zkClientTimeout);
+        SolrZkClient.Builder builder) {
+      super(builder);
+    }
+
+    @Override
+    protected ZkCredentialsInjector createZkCredentialsInjector() {
+      return vmParamsZkCredentialsInjector;
     }
 
     @Override
     protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
-      return new VMParamsSingleSetCredentialsDigestZkCredentialsProvider(
-          "alternative"
-              + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                  .DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
-          "alternative"
-              + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                  .DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME);
+      return new DigestZkCredentialsProvider(vmParamsZkCredentialsInjector);
     }
 
     @Override
-    public ZkACLProvider createACLProvider() {
-      return new VMParamsAllAndReadonlyDigestZkACLProvider(
-          "alternative"
-              + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                  .DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
-          "alternative"
-              + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                  .DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME,
-          "alternative"
-              + VMParamsAllAndReadonlyDigestZkACLProvider
-                  .DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
-          "alternative"
-              + VMParamsAllAndReadonlyDigestZkACLProvider
-                  .DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
+    public ZkACLProvider createZkACLProvider() {
+      return new DigestZkACLProvider(vmParamsZkCredentialsInjector);
     }
   }
 
@@ -337,86 +347,44 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     clearSecuritySystemProperties();
 
     System.setProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
-        "connectAndAllACLUsername");
+        "alternative" + DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "connectAndAllACLUsername");
     System.setProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME,
-        "connectAndAllACLPasswordWrong");
+        "alternative" + DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, "connectAndAllACLPasswordWrong");
   }
 
   public void useAllCredentials() {
     clearSecuritySystemProperties();
 
     System.setProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
-        "connectAndAllACLUsername");
+        "alternative" + DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "connectAndAllACLUsername");
     System.setProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME,
-        "connectAndAllACLPassword");
+        "alternative" + DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, "connectAndAllACLPassword");
   }
 
   public void useReadonlyCredentials() {
     clearSecuritySystemProperties();
 
     System.setProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
-        "readonlyACLUsername");
+        "alternative" + DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "readonlyACLUsername");
     System.setProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME,
-        "readonlyACLPassword");
+        "alternative" + DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, "readonlyACLPassword");
   }
 
   public void setSecuritySystemProperties() {
     System.setProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME,
-        "connectAndAllACLUsername");
+        "alternative" + DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, "connectAndAllACLUsername");
     System.setProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME,
-        "connectAndAllACLPassword");
+        "alternative" + DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME, "connectAndAllACLPassword");
     System.setProperty(
-        "alternative"
-            + VMParamsAllAndReadonlyDigestZkACLProvider
-                .DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
-        "readonlyACLUsername");
+        "alternative" + DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "readonlyACLUsername");
     System.setProperty(
-        "alternative"
-            + VMParamsAllAndReadonlyDigestZkACLProvider
-                .DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
-        "readonlyACLPassword");
+        "alternative" + DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "readonlyACLPassword");
   }
 
   public void clearSecuritySystemProperties() {
-    System.clearProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME);
-    System.clearProperty(
-        "alternative"
-            + VMParamsSingleSetCredentialsDigestZkCredentialsProvider
-                .DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME);
-    System.clearProperty(
-        "alternative"
-            + VMParamsAllAndReadonlyDigestZkACLProvider
-                .DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME);
-    System.clearProperty(
-        "alternative"
-            + VMParamsAllAndReadonlyDigestZkACLProvider
-                .DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
+    System.clearProperty("alternative" + DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME);
+    System.clearProperty("alternative" + DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME);
+    System.clearProperty("alternative" + DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME);
+    System.clearProperty("alternative" + DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
   }
 }

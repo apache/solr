@@ -18,8 +18,14 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Vector;
-import org.apache.solr.core.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -41,9 +47,12 @@ public abstract class UpdateHandler implements SolrInfoBean {
   protected final SchemaField idField;
   protected final FieldType idFieldType;
 
-  protected Vector<SolrEventListener> commitCallbacks = new Vector<>();
-  protected Vector<SolrEventListener> softCommitCallbacks = new Vector<>();
-  protected Vector<SolrEventListener> optimizeCallbacks = new Vector<>();
+  protected List<SolrEventListener> commitCallbacks =
+      Collections.synchronizedList(new ArrayList<>());
+  protected List<SolrEventListener> softCommitCallbacks =
+      Collections.synchronizedList(new ArrayList<>());
+  protected List<SolrEventListener> optimizeCallbacks =
+      Collections.synchronizedList(new ArrayList<>());
 
   protected final UpdateLog ulog;
 

@@ -23,6 +23,14 @@ solrAdminApp.controller('CollectionsController',
 
           $scope.rootUrl = Constants.ROOT_URL + "#/~collections/" + $routeParams.collection;
 
+          Zookeeper.liveNodes({}, function(data) {
+            $scope.availableNodeSet = [];
+            var children = data.tree[0].children;
+            for (var child in children) {
+              $scope.availableNodeSet.push(children[child].text);
+            }
+          });
+
           Collections.status(function (data) {
               $scope.collections = [];
               for (var name in data.cluster.collections) {
@@ -104,6 +112,9 @@ solrAdminApp.controller('CollectionsController',
           routerName: "compositeId",
           numShards: 1,
           configName: "",
+          nrtReplicas: 0,
+          tlogReplicas: 0,
+          pullReplicas: 0,
           replicationFactor: 1
         };
       };
@@ -146,17 +157,27 @@ solrAdminApp.controller('CollectionsController',
           $scope.addMessage = "Please provide a core name";
         } else if (false) { //@todo detect whether core exists
           $scope.AddMessage = "A core with that name already exists";
+        } else if ( $scope.newCollection.pullReplicas > 0 && ($scope.newCollection.nrtReplicas + $scope.newCollection.tlogReplicas == 0))
+        {
+          $scope.addMessage = "A collection can't be made up of just PULL replicas";
         } else {
             var coll = $scope.newCollection;
             var params = {
-                name: coll.name,
-                "router.name": coll.routerName,
-                numShards: coll.numShards,
-                "collection.configName": coll.configName,
-                replicationFactor: coll.replicationFactor
+              name: coll.name,
+              "router.name": coll.routerName,
+              numShards: coll.numShards,
+              "collection.configName": coll.configName
             };
             if (coll.shards) params.shards = coll.shards;
             if (coll.routerField) params["router.field"] = coll.routerField;
+            if (coll.createNodeSet) params.createNodeSet = coll.createNodeSet.join(",");
+            if ($scope.replicaTypesChosen()) {
+              params["nrtReplicas"] = coll.nrtReplicas;
+              params["tlogReplicas"] = coll.tlogReplicas;
+              params["pullReplicas"] = coll.pullReplicas;
+            } else {
+              params["replicationFactor"] = coll.replicationFactor;
+            }
             Collections.add(params, function(data) {
               $scope.cancelAddCollection();
               $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
@@ -274,16 +295,12 @@ solrAdminApp.controller('CollectionsController',
           replica.show = !replica.show;
       }
 
+      $scope.replicaTypesChosen = function () {
+          if ($scope.newCollection) {
+            return ( $scope.newCollection.nrtReplicas + $scope.newCollection.tlogReplicas + $scope.newCollection.pullReplicas > 0 );
+          }
+      }
+
       $scope.refresh();
     }
 );
-
-var flatten = function(data) {
-    var list = [];
-    for (var name in data) {
-       var entry = data[name];
-        entry.name = name;
-        list.push(entry);
-    }
-    return list;
-}

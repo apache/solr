@@ -69,17 +69,6 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
   private volatile Map<String, Object> cachedValue;
 
   /**
-   * Create an instance that reports values to a Map.
-   *
-   * @param mapInitializer function to populate the Map result.
-   * @deprecated use {@link #MetricsMap(MapWriter)} instead.
-   */
-  @Deprecated(since = "8.7")
-  public MetricsMap(BiConsumer<Boolean, Map<String, Object>> mapInitializer) {
-    this.mapInitializer = mapInitializer;
-  }
-
-  /**
    * Create an instance that reports values to a MapWriter.
    *
    * @param initializer function to populate the MapWriter result.
@@ -103,6 +92,7 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
     return map;
   }
 
+  @Override
   public String toString() {
     return getValue().toString();
   }

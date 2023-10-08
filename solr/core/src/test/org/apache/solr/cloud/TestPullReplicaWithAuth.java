@@ -28,13 +28,12 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -50,7 +49,6 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
   private static final String USER = "solr";
@@ -90,7 +88,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     return req;
   }
 
-  private QueryResponse queryWithBasicAuth(HttpSolrClient client, SolrQuery q)
+  private QueryResponse queryWithBasicAuth(SolrClient client, SolrQuery q)
       throws IOException, SolrServerException {
     return withBasicAuth(new QueryRequest(q)).process(client);
   }
@@ -119,7 +117,7 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       ureq.commit(solrClient, collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
         assertEquals(
             numDocs,
             queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
@@ -129,11 +127,11 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", USER, PASS);
 
       for (Replica r : pullReplicas) {
-        try (HttpSolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
+        try (SolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
           QueryResponse statsResponse =
               queryWithBasicAuth(
                   pullReplicaClient, new SolrQuery("qt", "/admin/plugins", "stats", "true"));
-          // adds is a gauge, which is null for PULL replicas
+          // the 'adds' metric is a gauge, which is null for PULL replicas
           assertNull(
               "Replicas shouldn't process the add document request: " + statsResponse,
               getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.adds"));

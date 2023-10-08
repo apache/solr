@@ -26,8 +26,6 @@ import org.junit.BeforeClass;
  * org.apache.lucene.analysis.core.WhitespaceTokenizerFactory}
  */
 public class TestMaxTokenLenTokenizer extends SolrTestCaseJ4 {
-  /* field names are used in accordance with the solrconfig and schema supplied */
-  private static final String ID = "id";
 
   @BeforeClass
   public static void beforeClass() throws Exception {

@@ -72,7 +72,7 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
 
     qrw = h.getCore().getResponseWriters().getRegistry().get("xml");
     assertTrue("Should not be a lazy class", qrw.isLoaded());
-    assertTrue("Should not be a lazy class", qrw.getClass() == PluginBag.PluginHolder.class);
+    assertSame("Should not be a lazy class", qrw.getClass(), PluginBag.PluginHolder.class);
   }
 
   ////////////////////////////////////////////////////////////////////////////

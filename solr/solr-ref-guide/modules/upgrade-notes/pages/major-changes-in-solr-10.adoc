@@ -1,0 +1,51 @@
+= Major Changes in Solr 10
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr 10.0 is a major new release of Solr.
+
+This page highlights the most important changes including new features and changes in default behavior as well as previously deprecated features that have now been removed.
+
+== Solr 10 Upgrade Planning
+
+Before starting an upgrade to this version of Solr, please take the time to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
+
+// TODO add similar text that previous releases have at this spot.
+
+=== SolrJ
+
+Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
+
+=== Backup / Restore
+
+If an in-place upgrade is occurring, it's best to ensure that no Collection backups are being restored _while_ this happens.
+It's possible for a restored collection to not accept future indexing.
+
+=== Deprecation removals
+
+* The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.
+
+* `OpenTracing` libraries were removed and replaced with `OpenTelemetry` libraries. Any Java agents providing `OpenTracing` tracers will no longer work. Telemetry tags `http.status_code` and `http.method` have been deprecated, newer version of the tags have been added to the span data: `http.response.status_code`, `http.request.method`.
+
+* The `analytics` module, which was deprecated in 9.2, is removed.
+
+* The sysProp `-Dsolr.redaction.system.pattern`, which allows users to provide a pattern to match sysProps that should be redacted for sensitive information,
+has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` instead.
+
+* The `<hiddenSysProps>` solr.xml element under `<metrics>` has been removed. Instead use the `<hiddenSysProps>` tag under `<solr>`, which accepts a comma-separated string.
+Please see `-Dsolr.redaction.system.pattern`, which allows users to provide a pattern to match sysProps that should be redacted for sensitive information,
+has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` instead.

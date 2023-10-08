@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -47,7 +48,16 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -83,8 +93,6 @@ public class CollectionHandlingUtils {
   public static final String CREATE_NODE_SET_EMPTY = "EMPTY";
   public static final String CREATE_NODE_SET = CollectionAdminParams.CREATE_NODE_SET_PARAM;
 
-  public static final String ROUTER = "router";
-
   public static final String SHARDS_PROP = "shards";
 
   public static final String REQUESTID = "requestid";
@@ -101,17 +109,17 @@ public class CollectionHandlingUtils {
   public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS =
       Collections.unmodifiableMap(
           Utils.makeMap(
-              ROUTER,
+              CollectionStateProps.DOC_ROUTER,
               DocRouter.DEFAULT_NAME,
-              ZkStateReader.REPLICATION_FACTOR,
+              CollectionStateProps.REPLICATION_FACTOR,
               "1",
-              ZkStateReader.NRT_REPLICAS,
+              CollectionStateProps.NRT_REPLICAS,
               "1",
-              ZkStateReader.TLOG_REPLICAS,
+              CollectionStateProps.TLOG_REPLICAS,
               "0",
-              DocCollection.PER_REPLICA_STATE,
+              CollectionStateProps.PER_REPLICA_STATE,
               null,
-              ZkStateReader.PULL_REPLICAS,
+              CollectionStateProps.PULL_REPLICAS,
               "0"));
 
   public static final Random RANDOM;
@@ -176,7 +184,7 @@ public class CollectionHandlingUtils {
               ccc.getSolrCloudManager(),
               ccc.getZkStateReader());
     } else {
-      ccc.offerStateUpdate(Utils.toJSON(m));
+      ccc.offerStateUpdate(m);
     }
   }
 
@@ -228,10 +236,10 @@ public class CollectionHandlingUtils {
 
   static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
 
-    try (HttpSolrClient client =
+    try (SolrClient client =
         new HttpSolrClient.Builder(url)
-            .withConnectionTimeout(30000)
-            .withSocketTimeout(120000)
+            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
             .build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
@@ -520,18 +528,19 @@ public class CollectionHandlingUtils {
               try {
                 Thread.sleep(1000);
               } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
               }
               break;
             }
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
-                "Invalid status request for requestId: "
+                "Invalid status request for requestId: '"
                     + requestId
-                    + ""
+                    + "' - '"
                     + srsp.getSolrResponse().getResponse().get("STATUS")
-                    + "retried "
+                    + "'. Retried "
                     + counter
-                    + "times");
+                    + " times");
           } else {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,

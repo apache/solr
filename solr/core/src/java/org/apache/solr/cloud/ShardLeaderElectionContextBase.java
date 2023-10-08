@@ -17,9 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.curator.framework.api.transaction.CuratorOp;
@@ -28,7 +26,14 @@ import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -80,7 +85,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     // only if /collections/{collection} exists already do we succeed in creating this path
     log.info("make sure parent is created {}", parent);
     try {
-      zkClient.ensureExists(parent, null, CreateMode.PERSISTENT, 2);
+      ZkMaintenanceUtils.ensureExists(parent, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
     } catch (KeeperException e) {
       throw new RuntimeException(e);
     } catch (InterruptedException e) {
@@ -94,7 +99,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     super.cancelElection();
     synchronized (lock) {
       if (leaderZkNodeParentVersion != null) {
-        // no problem
         // no problem
         try {
           // We need to be careful and make sure we *only* delete our own leader registration node.
@@ -114,7 +118,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           Thread.currentThread().interrupt();
           throw e;
         } catch (IllegalArgumentException e) {
-          SolrException.log(log, e);
+          log.error("Illegal argument", e);
         }
         leaderZkNodeParentVersion = null;
       } else {
@@ -126,7 +130,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
   @Override
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-      throws KeeperException, InterruptedException, IOException {
+      throws KeeperException, InterruptedException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
 
     String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
@@ -222,11 +226,12 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                   zkController.getSolrCloudManager(),
                   zkStateReader);
         } else {
-          zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
+          zkController.getOverseer().offerStateUpdate(m);
         }
-      } else {
+      }
+      if (coll != null && coll.isPerReplicaState()) {
         PerReplicaStates prs =
-            PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+            PerReplicaStatesOps.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipLeader(
                 zkStateReader
                     .getClusterState()

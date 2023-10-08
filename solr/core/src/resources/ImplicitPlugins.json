@@ -11,6 +11,13 @@
         "update.contentType": "application/json"
       }
     },
+    "/update/cbor": {
+      "useParams":"_UPDATE_CBOR",
+      "class": "solr.UpdateRequestHandler",
+      "invariants": {
+        "update.contentType": "application/cbor"
+      }
+    },
     "/update/csv": {
       "useParams":"_UPDATE_CSV",
       "class": "solr.UpdateRequestHandler",
@@ -27,7 +34,7 @@
       }
     },
     "update":{
-      "class":"solr.UpdateRequestHandlerApi",
+      "class":"solr.V2UpdateRequestHandler",
       "useParams": "_UPDATE_JSON_DOCS"
     },
     "/config": {

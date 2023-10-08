@@ -17,7 +17,12 @@
 
 package org.apache.solr.search.join;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -97,12 +102,12 @@ public class FiltersQParser extends QParser {
               + " is not defined for "
               + stringIncludingLocalParams);
     }
-    Map<QParser, Occur> clauses = new IdentityHashMap<>();
+    IdentityHashMap<QParser, Occur> clauses = new IdentityHashMap<>();
 
     for (String filter : params == null ? new String[0] : params) {
       if (filter == null || filter.length() == 0) {
-        throw new SyntaxError(
-            "Filter '" + filter + "' has been picked in " + stringIncludingLocalParams);
+        // it is ok to specify a filter param that is not present
+        continue;
       }
       // as a side effect, qparser is mapped by tags in req context
       QParser parser = subQuery(filter, null);

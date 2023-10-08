@@ -16,38 +16,29 @@
  */
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.NodeConfig;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SolrXmlInZkTest extends SolrTestCaseJ4 {
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected ZkTestServer zkServer;
 
   protected Path zkDir;
 
   private SolrZkClient zkClient;
-
-  private ZkStateReader reader;
 
   private NodeConfig cfg;
 
@@ -56,9 +47,8 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     Path solrHome = tmpDir.resolve("home");
     copyMinConf(new File(solrHome.toFile(), "myCollect"));
     if (leaveOnLocal) {
-      FileUtils.copyFile(
-          new File(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"),
-          new File(solrHome.toFile(), "solr.xml"));
+      Files.copy(
+          Path.of(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"), solrHome.resolve("solr.xml"));
     }
 
     ignoreException("No UpdateLog found - cannot sync");
@@ -72,7 +62,11 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     System.setProperty("zkHost", zkServer.getZkAddress());
     zkServer.buildZooKeeper("solrconfig.xml", "schema.xml");
 
-    zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
 
     if (toZk) {
       zkClient.makePath("solr.xml", XML_FOR_ZK.getBytes(StandardCharsets.UTF_8));
@@ -100,9 +94,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
       zkClient.close();
     }
 
-    if (reader != null) {
-      reader.close();
-    }
     zkServer.shutdown();
   }
 
@@ -192,7 +183,6 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
           + "  <solrcloud>"
           + "    <str name=\"host\">127.0.0.1</str>"
           + "    <int name=\"hostPort\">9045</int>"
-          + "    <str name=\"hostContext\">${hostContext:solr}</str>"
           + "  </solrcloud>"
           + "  <shardHandlerFactory name=\"shardHandlerFactory\" class=\"HttpShardHandlerFactory\">"
           + "    <int name=\"socketTimeout\">${socketTimeout:120000}</int>"

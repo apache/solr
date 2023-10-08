@@ -573,7 +573,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
    *   <li>Requests all fields that are present in 'fl' param
    * </ol>
    *
-   * <p>It also asserts that every regular two phase distribtued search:
+   * <p>It also asserts that every regular two phase distributed search:
    *
    * <ol>
    *   <li>Makes at most 2 * 'numSlices' number of shard requests
@@ -593,7 +593,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     // the jettys doesn't include the control jetty which is exactly what we need here
     TrackingShardHandlerFactory.setTrackingQueue(cluster, trackingQueue);
 
-    // let's add debug=track to such requests so we can use DebugComponent responses for assertions
+    // let's add debug=track to such requests, so we can use DebugComponent responses for assertions
     QueryResponse response =
         cluster.getSolrClient().query(COLLECTION, new SolrQuery("debug", "track", q));
 
@@ -608,9 +608,10 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
     for (int i = 0; i < q.length; i += 2) {
       if (ShardParams.DISTRIB_SINGLE_PASS.equals(q[i].toString())
           && Boolean.parseBoolean(q[i + 1].toString())) {
-        assertTrue(
+        assertEquals(
             "distrib.singlePass=true made more requests than number of shards",
-            numRequests == sliceCount);
+            sliceCount,
+            numRequests);
         distribSinglePass = true;
       }
       if (CommonParams.FL.equals(q[i].toString())) {

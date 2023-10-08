@@ -29,7 +29,7 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testHaversine() throws Exception {
+  public void testHaversine() {
     clearIndex();
     assertU(adoc("id", "1", "x_td", "0", "y_td", "0"));
     assertU(adoc("id", "2", "x_td", "0", "y_td", String.valueOf(Math.PI / 2)));
@@ -192,7 +192,7 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testVector() throws Exception {
+  public void testVector() {
     clearIndex();
     assertU(adoc("id", "1", "x_td", "0", "y_td", "0", "z_td", "0", "w_td", "0"));
     assertU(adoc("id", "2", "x_td", "0", "y_td", "1", "z_td", "0", "w_td", "0"));
@@ -294,7 +294,7 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
               "fq",
               "id:1"),
           "//float[@name='score']='0.0'");
-      assertTrue("should throw an exception", false);
+      fail("should throw an exception");
     } catch (Exception e) {
       Throwable cause = e.getCause();
       assertNotNull(cause);

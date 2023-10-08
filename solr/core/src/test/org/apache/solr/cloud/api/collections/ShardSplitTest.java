@@ -21,24 +21,28 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -46,14 +50,26 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.*;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.BasicDistributedZkTest;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.HashBasedRouter;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -63,7 +79,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
+@LuceneTestCase.Nightly
 @LogLevel(
     "org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
 public class ShardSplitTest extends BasicDistributedZkTest {
@@ -83,6 +99,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     useFactory(null);
   }
 
+  @Override
   @Test
   @Nightly
   public void test() throws Exception {
@@ -134,10 +151,16 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         .waitForState(
             collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
 
+    var builder =
+        new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
+
     try (CloudSolrClient client =
-        getCloudSolrClient(
-            zkServer.getZkAddress(), true, cloudClient.getLbClient().getHttpClient())) {
-      client.setDefaultCollection(collectionName);
+        builder
+            .withDefaultCollection(collectionName)
+            .sendUpdatesOnlyToShardLeaders()
+            .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
+            .build()) {
       StoppableIndexingThread thread =
           new StoppableIndexingThread(controlClient, client, "i1", true);
       try {
@@ -209,7 +232,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           // add a new replica for the sub-shard
           CollectionAdminRequest.AddReplica addReplica =
               CollectionAdminRequest.addReplicaToShard(collectionName, SHARD1_0);
-          // use control client because less chances of it being the node being restarted
+          // use control client because there are fewer chances of it being the node being restarted
           // this is to avoid flakiness of test because of NoHttpResponseExceptions
           String control_collection =
               client
@@ -218,9 +241,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   .getReplicas()
                   .get(0)
                   .getBaseUrl();
-          try (HttpSolrClient control =
+          try (var control =
               new HttpSolrClient.Builder(control_collection)
-                  .withHttpClient(client.getLbClient().getHttpClient())
+                  .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
                   .build()) {
             state = addReplica.processAndWait(control, 30);
           }
@@ -283,9 +306,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     long numFound = Long.MIN_VALUE;
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
-      HttpSolrClient client =
+      var client =
           new HttpSolrClient.Builder(replica.getCoreUrl())
-              .withHttpClient(cloudClient.getLbClient().getHttpClient())
+              .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
               .build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
       if (log.isInfoEnabled()) {
@@ -350,7 +373,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     Slice shard11 = collection.getSlice(SHARD1_1);
     assertNull(shard11);
 
-    // lets retry the split
+    // let's retry the split
     TestInjection.reset(); // let the split succeed
     try {
       CollectionAdminRequest.SplitShard splitShard =
@@ -436,8 +459,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       Slice.State expectedState,
       int numNrt,
       int numTlog,
-      int numPull)
-      throws Exception {
+      int numPull) {
     Slice s = coll.getSlice(shard);
     assertEquals("unexpected shard state", expectedState, s.getState());
     AtomicInteger actualNrt = new AtomicInteger();
@@ -544,7 +566,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
             e);
       }
 
-      // we don't care if the split failed because we are injecting faults and it is likely
+      // we don't care if the split failed because we are injecting faults, and it is likely
       // that the split has failed but in any case we want to assert that all docs that got
       // indexed are available in SolrCloud and if the split succeeded then all replicas of the
       // sub-shard must be consistent (i.e. have same numdocs)
@@ -844,6 +866,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
     commit();
 
+    List<String> errors = new CopyOnWriteArrayList<>();
     Thread indexThread =
         new Thread(
             () -> {
@@ -858,21 +881,26 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   indexAndUpdateCount(
                       router, ranges, docCounts, String.valueOf(id), id, documentIds);
                   Thread.sleep(sleep);
-                  if (usually(random)) {
-                    String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
-                    if (deleted.contains(delId)) continue;
-                    try {
-                      deleteAndUpdateCount(router, ranges, docCounts, delId);
-                      deleted.add(delId);
-                      documentIds.remove(String.valueOf(delId));
-                    } catch (Exception e) {
-                      log.error("Exception while deleting docs", e);
-                    }
-                  }
                 } catch (Exception e) {
                   log.error("Exception while adding doc id = {}", id, e);
                   // do not select this id for deletion ever
                   deleted.add(String.valueOf(id));
+                  errors.add(e.getMessage());
+                }
+
+                if (usually(random)) {
+                  String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
+                  if (deleted.contains(delId)) {
+                    continue;
+                  }
+                  try {
+                    deleteAndUpdateCount(router, ranges, docCounts, delId);
+                    deleted.add(delId);
+                    documentIds.remove(delId);
+                  } catch (Exception e) {
+                    log.error("Exception while deleting doc id = {}", delId, e);
+                    errors.add(e.getMessage());
+                  }
                 }
               }
             });
@@ -902,6 +930,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         log.error("Indexing thread interrupted", e);
       }
     }
+
+    assertTrue(
+        "Errors present while concurrently adding and removing docs " + errors, errors.isEmpty());
 
     waitForRecoveriesToFinish(true);
     checkDocCountsAndShardStates(docCounts, numReplicas, documentIds);
@@ -936,7 +967,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     getCommonCloudSolrClient();
     String url = getUrlFromZk(cloudClient.getClusterState(), collectionName);
 
-    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
+    try (SolrClient collectionClient = getHttpSolrClient(url)) {
 
       ClusterState clusterState = cloudClient.getClusterState();
       final DocRouter router = clusterState.getCollection(collectionName).getRouter();
@@ -1007,7 +1038,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     getCommonCloudSolrClient();
     String url = getUrlFromZk(cloudClient.getClusterState(), collectionName);
 
-    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
+    try (SolrClient collectionClient = getHttpSolrClient(url)) {
 
       String splitKey = "b!";
 
@@ -1162,7 +1193,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     ZkCoreNodeProps shard1_0 =
         getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_0);
     QueryResponse response;
-    try (HttpSolrClient shard1_0Client = getHttpSolrClient(shard1_0.getCoreUrl())) {
+    try (SolrClient shard1_0Client = getHttpSolrClient(shard1_0.getCoreUrl())) {
       response = shard1_0Client.query(query);
     }
     long shard10Count = response.getResults().getNumFound();
@@ -1170,7 +1201,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     ZkCoreNodeProps shard1_1 =
         getLeaderUrlFromZk(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1_1);
     QueryResponse response2;
-    try (HttpSolrClient shard1_1Client = getHttpSolrClient(shard1_1.getCoreUrl())) {
+    try (SolrClient shard1_1Client = getHttpSolrClient(shard1_1.getCoreUrl())) {
       response2 = shard1_1Client.query(query);
     }
     long shard11Count = response2.getResults().getNumFound();
@@ -1193,7 +1224,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     for (Replica replica : slice.getReplicas()) {
       String coreUrl = new ZkCoreNodeProps(replica).getCoreUrl();
       QueryResponse response;
-      try (HttpSolrClient client = getHttpSolrClient(coreUrl)) {
+      try (SolrClient client = getHttpSolrClient(coreUrl)) {
         response = client.query(query);
       }
       numFound[c++] = response.getResults().getNumFound();
@@ -1247,7 +1278,11 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    try (HttpSolrClient baseServer = getHttpSolrClient(baseUrl, 30000, 60000 * 5)) {
+    try (SolrClient baseServer =
+        new HttpSolrClient.Builder(baseUrl)
+            .withConnectionTimeout(30, TimeUnit.SECONDS)
+            .withSocketTimeout(5, TimeUnit.MINUTES)
+            .build()) {
       NamedList<Object> rsp = baseServer.request(request);
       if (log.isInfoEnabled()) {
         log.info("Shard split response: {}", Utils.toJSONString(rsp));
@@ -1317,17 +1352,19 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     Map<String, SolrDocument> shard11Docs = new HashMap<>();
     for (int i = 0; i < response.getResults().size(); i++) {
       SolrDocument document = response.getResults().get(i);
-      idVsVersion.put(
-          document.getFieldValue("id").toString(), document.getFieldValue("_version_").toString());
-      SolrDocument old = shard10Docs.put(document.getFieldValue("id").toString(), document);
+      String id = document.getFieldValue("id").toString();
+      Object version = document.getFieldValue("_version_");
+      assertNotNull("doc " + id + " has null _version_ field", version);
+      idVsVersion.put(id, version.toString());
+      SolrDocument old = shard10Docs.put(id, document);
       if (old != null) {
         log.error(
             "EXTRA: ID: {} on shard1_0. Old version: {} new version: {}",
-            document.getFieldValue("id"),
+            id,
             old.getFieldValue("_version_"),
-            document.getFieldValue("_version_"));
+            version);
       }
-      found.add(document.getFieldValue("id").toString());
+      found.add(id);
     }
     for (int i = 0; i < response2.getResults().size(); i++) {
       SolrDocument document = response2.getResults().get(i);

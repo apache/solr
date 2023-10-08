@@ -27,10 +27,9 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,9 +52,8 @@ public class ZookeeperStatusHandlerFailureTest extends SolrCloudTestCase {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();
     GenericSolrRequest mntrReq =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET, "/admin/zookeeper/status", new ModifiableSolrParams());
-    mntrReq.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper/status");
+    mntrReq.setResponseParser(new JsonMapResponseParser());
     NamedList<Object> nl = solr.httpUriRequest(mntrReq).future.get(10000, TimeUnit.MILLISECONDS);
 
     assertEquals("zkStatus", nl.getName(1));

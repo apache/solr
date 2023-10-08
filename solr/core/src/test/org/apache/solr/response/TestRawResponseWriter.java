@@ -21,7 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
@@ -58,7 +58,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupWriters() throws Exception {
+  public static void cleanupWriters() {
     writerXmlBase = null;
     writerJsonBase = null;
     writerBinBase = null;
@@ -155,12 +155,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
 
     // json
     String json = "{\n" + "  \"content\":\"test\",\n" + "  \"foo\":\"bar\"}\n";
-    StringWriter jsonSout = new StringWriter();
-    writerJsonBase.write(jsonSout, req(), rsp);
-    assertEquals(json, jsonSout.toString());
-    ByteArrayOutputStream jsonBout = new ByteArrayOutputStream();
-    writerJsonBase.write(jsonBout, req(), rsp);
-    assertEquals(json, jsonBout.toString(StandardCharsets.UTF_8.toString()));
+    assertJSONEquals(json, writerJsonBase.serializeResponse(req(), rsp));
 
     // javabin
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();

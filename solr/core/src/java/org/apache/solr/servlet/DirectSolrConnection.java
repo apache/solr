@@ -30,6 +30,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -68,7 +69,7 @@ public class DirectSolrConnection {
       params = SolrRequestParsers.parseQueryString(pathAndParams.substring(idx + 1));
     } else {
       path = pathAndParams;
-      params = new MapSolrParams(new HashMap<String, String>());
+      params = new MapSolrParams(new HashMap<>());
     }
 
     return request(path, params, body);
@@ -79,7 +80,7 @@ public class DirectSolrConnection {
     SolrRequestHandler handler = core.getRequestHandler(path);
     if (handler == null) {
       if ("/select".equals(path) || "/select/".equalsIgnoreCase(path)) {
-        if (params == null) params = new MapSolrParams(new HashMap<String, String>());
+        if (params == null) params = new MapSolrParams(new HashMap<>());
         String qt = params.get(CommonParams.QT);
         handler = core.getRequestHandler(qt);
         if (handler == null) {
@@ -96,7 +97,7 @@ public class DirectSolrConnection {
 
   public String request(SolrRequestHandler handler, SolrParams params, String body)
       throws Exception {
-    if (params == null) params = new MapSolrParams(new HashMap<String, String>());
+    if (params == null) params = new MapSolrParams(new HashMap<>());
 
     // Make a stream for the 'body' content
     List<ContentStream> streams = new ArrayList<>(1);
@@ -116,9 +117,13 @@ public class DirectSolrConnection {
 
       // Now write it out
       QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-      StringWriter out = new StringWriter();
-      responseWriter.write(out, req, rsp);
-      return out.toString();
+      if (responseWriter instanceof BinaryResponseWriter) {
+        return ((BinaryResponseWriter) responseWriter).serializeResponse(req, rsp);
+      } else {
+        StringWriter out = new StringWriter();
+        responseWriter.write(out, req, rsp);
+        return out.toString();
+      }
     } finally {
       if (req != null) {
         req.close();

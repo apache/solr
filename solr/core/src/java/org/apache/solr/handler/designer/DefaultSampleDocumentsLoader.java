@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -165,7 +164,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   protected List<SolrInputDocument> loadJsonLines(
       SolrParams params, ContentStreamBase.ByteArrayStream stream, final int maxDocsToLoad)
       throws IOException {
-    List<Map<String, Object>> docs = new LinkedList<>();
+    List<Map<String, Object>> docs = new ArrayList<>();
     try (Reader r = stream.getReader()) {
       BufferedReader br = new BufferedReader(r);
       String line;
@@ -277,7 +276,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
 
   protected List<SolrInputDocument> parseXmlDocs(XMLStreamReader parser, final int maxDocsToLoad)
       throws XMLStreamException {
-    List<SolrInputDocument> docs = new LinkedList<>();
+    List<SolrInputDocument> docs = new ArrayList<>();
     XMLLoader loader = new XMLLoader().init(null);
     while (true) {
       final int event;
@@ -358,7 +357,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   }
 
   private static class SampleCSVLoader extends CSVLoaderBase {
-    List<SolrInputDocument> docs = new LinkedList<>();
+    List<SolrInputDocument> docs = new ArrayList<>();
     CSVRequest req;
     int maxDocsToLoad;
     String multiValueDelimiter;

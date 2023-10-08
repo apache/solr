@@ -60,7 +60,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSuggestions() throws Exception {
+  public void testSuggestions() {
     addDocs();
     assertU(commit()); // configured to do a rebuild on commit
 
@@ -104,7 +104,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRebuild() throws Exception {
+  public void testRebuild() {
     addDocs();
     assertU(commit());
     assertQ(
@@ -134,12 +134,12 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   }
 
   // SOLR-2726
-  public void testAnalyzer() throws Exception {
+  public void testAnalyzer() {
     Suggester suggester = new Suggester();
     NamedList<Object> params = new NamedList<>();
     params.add("field", "test_field");
     params.add("lookupImpl", "org.apache.solr.spelling.suggest.tst.TSTLookupFactory");
     suggester.init(params, h.getCore());
-    assertTrue(suggester.getQueryAnalyzer() != null);
+    assertNotNull(suggester.getQueryAnalyzer());
   }
 }

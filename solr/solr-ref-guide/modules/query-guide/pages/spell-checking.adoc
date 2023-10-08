@@ -105,10 +105,15 @@ The `maxInspections` parameter defines the maximum number of possible matches to
 There is no limit to term length by default.
 
 At first, spellchecker analyses incoming query words by looking up them in the index.
-Only query words, which are absent in index or too rare ones (below `maxQueryFrequency`) are considered as misspelled and used for finding suggestions.
-Words which are frequent than `maxQueryFrequency` bypass spellchecker unchanged.
+Only query words which are absent from the index, or too rare (equal to or below `maxQueryFrequency`) are considered as misspelled and used for finding suggestions.
+Words which are more frequent than `maxQueryFrequency` bypass spellchecker unchanged.
 After suggestions for every misspelled word are found they are filtered for enough frequency with `thresholdTokenFrequency` as boundary value.
-These parameters (`maxQueryFrequency` and `thresholdTokenFrequency`) can be a percentage (such as .01, or 1%) or an absolute value (such as 4).
+These parameters (`maxQueryFrequency` and `thresholdTokenFrequency`) can be a percentage represented as a decimal value below 1 (such as `0.01` for or `1%`) or an absolute value (such as `4`).
+
+[NOTE]
+====
+When `maxQueryFrequency` is specified as a percentage, it is evaluated independently on each shard (relative to that shard's `maxDoc`) to determine if it should be considered misspelled.  Some infrequent terms may be considered correctly spelled, and not generate suggestions when expected, if the term distributions are uneven between shards.
+====
 
 ==== FileBasedSpellChecker
 

@@ -18,6 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -39,7 +40,7 @@ public abstract class AggValueSource extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    return this.getClass() == o.getClass() && name.equals(((AggValueSource) o).name);
+    return (o instanceof AggValueSource) && Objects.equals(name, ((AggValueSource) o).name);
   }
 
   @Override

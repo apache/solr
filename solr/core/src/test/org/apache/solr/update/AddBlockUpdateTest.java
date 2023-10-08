@@ -16,7 +16,10 @@
  */
 package org.apache.solr.update;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,10 +30,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -45,7 +46,6 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -67,13 +67,12 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -91,21 +90,18 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private static final AtomicInteger counter = new AtomicInteger();
   private static ExecutorService exe;
-  private static boolean cachedMode;
 
   private static XMLInputFactory inputFactory;
 
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
 
-  @Rule public ExpectedException thrown = ExpectedException.none();
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     String oldCacheNamePropValue = System.getProperty("blockJoinParentFilterCache");
+    final boolean cachedMode = random().nextBoolean();
     System.setProperty(
-        "blockJoinParentFilterCache",
-        (cachedMode = random().nextBoolean()) ? "blockJoinParentFilterCache" : "don't cache");
+        "blockJoinParentFilterCache", cachedMode ? "blockJoinParentFilterCache" : "don't cache");
     if (oldCacheNamePropValue != null) {
       System.setProperty("blockJoinParentFilterCache", oldCacheNamePropValue);
     }
@@ -153,7 +149,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (null != exe) {
       exe.shutdownNow();
       exe = null;
@@ -324,10 +320,11 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     SolrInputDocument exceptionChildDoc = (SolrInputDocument) document1.get("child1_s").getValue();
     addChildren("child", exceptionChildDoc, 0, false);
 
-    thrown.expect(SolrException.class);
-    final String expectedMessage = "Anonymous child docs can only hang from others or the root";
-    thrown.expectMessage(expectedMessage);
-    indexSolrInputDocumentsDirectly(document1);
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> indexSolrInputDocumentsDirectly(document1));
+    MatcherAssert.assertThat(
+        thrown.getMessage(),
+        containsString("Anonymous child docs can only hang from others or the root"));
   }
 
   @Test
@@ -431,56 +428,17 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     List<SolrInputDocument> docs = new ArrayList<>();
 
-    SolrInputDocument document1 =
-        new SolrInputDocument() {
-          {
-            final String id = id();
-            addField("id", id);
-            addField("parent_s", "X");
+    SolrInputDocument document1 = new SolrInputDocument("id", id(), "parent_s", "X");
+    List<SolrInputDocument> ch1 =
+        Arrays.asList(
+            new SolrInputDocument("id", id(), "child_s", "y"),
+            new SolrInputDocument("id", id(), "child_s", "z"));
+    Collections.shuffle(ch1, random());
+    document1.addChildDocuments(ch1);
 
-            ArrayList<SolrInputDocument> ch1 =
-                new ArrayList<>(
-                    Arrays.asList(
-                        new SolrInputDocument() {
-                          {
-                            addField("id", id());
-                            addField("child_s", "y");
-                          }
-                        },
-                        new SolrInputDocument() {
-                          {
-                            addField("id", id());
-                            addField("child_s", "z");
-                          }
-                        }));
-
-            Collections.shuffle(ch1, random());
-            addChildDocuments(ch1);
-          }
-        };
-
-    SolrInputDocument document2 =
-        new SolrInputDocument() {
-          {
-            final String id = id();
-            addField("id", id);
-            addField("parent_s", "A");
-            addChildDocument(
-                new SolrInputDocument() {
-                  {
-                    addField("id", id());
-                    addField("child_s", "b");
-                  }
-                });
-            addChildDocument(
-                new SolrInputDocument() {
-                  {
-                    addField("id", id());
-                    addField("child_s", "c");
-                  }
-                });
-          }
-        };
+    SolrInputDocument document2 = new SolrInputDocument("id", id(), "parent_s", "A");
+    document2.addChildDocument(new SolrInputDocument("id", id(), "child_s", "b"));
+    document2.addChildDocument(new SolrInputDocument("id", id(), "child_s", "c"));
 
     docs.add(document1);
     docs.add(document2);
@@ -752,19 +710,121 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testXMLSingleLabeledNestedChild() throws IOException, XMLStreamException {
+    UpdateRequest req = new UpdateRequest();
+
+    List<SolrInputDocument> docs = new ArrayList<>();
+
+    String xml_doc1 =
+        "<doc >"
+            + "  <field name=\"id\">1</field>"
+            + "  <field name=\"parent_s\">A</field>"
+            + "  <doc name=\"single_child\">"
+            + "    <field name=\"id\">2</field>"
+            + "    <field name=\"child_s\">b</field>"
+            + "  </doc>"
+            + "  <field name=\"children\">"
+            + "    <doc>"
+            + "      <field name=\"id\">3</field>"
+            + "      <field name=\"child_s\">c</field>"
+            + "    </doc>"
+            + "    <doc>"
+            + "      <field name=\"id\">4</field>"
+            + "      <field name=\"child_s\">d</field>"
+            + "    </doc>"
+            + "  </field>"
+            + "</doc>";
+
+    String xml_doc2 =
+        "<doc >"
+            + "  <field name=\"id\">5</field>"
+            + "  <field name=\"parent_s\">E</field>"
+            + "  <doc name=\"single_child_1\">"
+            + "    <field name=\"id\">6</field>"
+            + "    <field name=\"child_s\">f</field>"
+            + "  </doc>"
+            + "  <doc name=\"single_child_2\">"
+            + "    <field name=\"id\">7</field>"
+            + "    <field name=\"child_s\">g</field>"
+            + "  </doc>"
+            + "  <doc name=\"single_child_3\">"
+            + "    <field name=\"id\">8</field>"
+            + "    <field name=\"child_s\">h</field>"
+            + "  </doc>"
+            + "</doc>";
+
+    XMLStreamReader parser = inputFactory.createXMLStreamReader(new StringReader(xml_doc1));
+    parser.next(); // read the START document...
+    // null for the processor is all right here
+    XMLLoader loader = new XMLLoader();
+    SolrInputDocument document1 = loader.readDoc(parser);
+
+    XMLStreamReader parser2 = inputFactory.createXMLStreamReader(new StringReader(xml_doc2));
+    parser2.next(); // read the START document...
+    // null for the processor is all right here
+    // XMLLoader loader = new XMLLoader();
+    SolrInputDocument document2 = loader.readDoc(parser2);
+
+    assertFalse(document1.hasChildDocuments());
+    assertEquals(
+        document1.toString(),
+        sdoc(
+                "id",
+                "1",
+                "parent_s",
+                "A",
+                "single_child",
+                sdoc("id", "2", "child_s", "b"),
+                "children",
+                sdocs(sdoc("id", "3", "child_s", "c"), sdoc("id", "4", "child_s", "d")))
+            .toString());
+
+    assertFalse(document2.hasChildDocuments());
+    assertEquals(
+        document2.toString(),
+        sdoc(
+                "id",
+                "5",
+                "parent_s",
+                "E",
+                "single_child_1",
+                sdoc("id", "6", "child_s", "f"),
+                "single_child_2",
+                sdoc("id", "7", "child_s", "g"),
+                "single_child_3",
+                sdoc("id", "8", "child_s", "h"))
+            .toString());
+
+    docs.add(document1);
+    docs.add(document2);
+
+    Collections.shuffle(docs, random());
+    req.add(docs);
+
+    RequestWriter requestWriter = new RequestWriter();
+    OutputStream os = new ByteArrayOutputStream();
+    requestWriter.write(req, os);
+    assertBlockU(os.toString());
+    assertU(commit());
+
+    final SolrIndexSearcher searcher = getSearcher();
+    assertSingleParentOf(searcher, "b", "A");
+    assertSingleParentOf(searcher, one("bcd"), "A");
+    assertSingleParentOf(searcher, one("fgh"), "E");
+  }
+
+  @Test
   public void testJavaBinCodecNestedRelation() throws IOException {
     SolrInputDocument topDocument = new SolrInputDocument();
     topDocument.addField("parent_f1", "v1");
     topDocument.addField("parent_f2", "v2");
 
     int childsNum = atLeast(10);
-    Map<String, SolrInputDocument> children = new HashMap<>(childsNum);
     for (int i = 0; i < childsNum; ++i) {
       SolrInputDocument child = new SolrInputDocument();
       child.addField("key", (i + 5) * atLeast(4));
       String childKey = String.format(Locale.ROOT, "child%d", i);
       topDocument.addField(childKey, child);
-      children.put(childKey, child);
     }
 
     ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -852,7 +912,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * on the given abcD it generates one parent doc, taking D from the tail and two subdocs relaitons
+   * on the given abcD it generates one parent doc, taking D from the tail and two subdocs relations
    * ab and c uniq ids are supplied also
    *
    * <pre>{@code

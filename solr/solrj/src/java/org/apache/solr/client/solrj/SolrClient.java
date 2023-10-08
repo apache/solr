@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -1142,7 +1141,7 @@ public abstract class SolrClient implements Serializable, Closeable {
     }
 
     ModifiableSolrParams reqParams = new ModifiableSolrParams(params);
-    if (StringUtils.isEmpty(reqParams.get(CommonParams.QT))) {
+    if (StrUtils.isNullOrEmpty(reqParams.get(CommonParams.QT))) {
       reqParams.set(CommonParams.QT, "/get");
     }
     reqParams.set(

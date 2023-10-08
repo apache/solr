@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import java.io.IOException;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.logging.CircularList;
 import org.junit.Test;
@@ -25,7 +24,7 @@ import org.junit.Test;
 public class CircularListTest extends SolrTestCase {
 
   @Test
-  public void testCircularList() throws IOException {
+  public void testCircularList() {
     CircularList<Integer> list = new CircularList<>(10);
     for (int i = 0; i < 10; i++) {
       list.add(i);

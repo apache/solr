@@ -17,8 +17,9 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-import org.apache.lucene.queryparser.surround.parser.*;
-import org.apache.lucene.queryparser.surround.query.*;
+import org.apache.lucene.queryparser.surround.parser.QueryParser;
+import org.apache.lucene.queryparser.surround.query.BasicQueryFactory;
+import org.apache.lucene.queryparser.surround.query.SrndQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;

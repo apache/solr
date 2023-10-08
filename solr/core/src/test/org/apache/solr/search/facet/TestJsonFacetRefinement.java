@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.client.solrj.SolrClient;
@@ -110,13 +110,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     ObjectBuilder ob =
         new ObjectBuilder(parser) {
           @Override
-          public Object newObject() throws IOException {
+          public Object newObject() {
             return new SimpleOrderedMap<>();
           }
 
           @Override
           @SuppressWarnings("unchecked")
-          public void addKeyVal(Object map, Object key, Object val) throws IOException {
+          public void addKeyVal(Object map, Object key, Object val) {
             ((SimpleOrderedMap<Object>) map).add(key.toString(), val);
           }
         };
@@ -334,7 +334,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
   @Test
   public void testMergeWithOverrefine() throws Exception {
-    // overrefine hueristic should use explicit overrequest as default
+    // overrefine heuristic should use explicit overrequest as default
     doTestRefine(
         "{x : {type:terms, field:X, limit:1, overrequest:1, sort:'count asc', refine:true} }",
         //
@@ -352,7 +352,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         null,
         "=={x:{_l:[x1]}}");
 
-    // completely implicit hueristic when no explicit overrequest
+    // completely implicit heuristic when no explicit overrequest
     // limit=1 + 10% + 4 =~ 5 total, but x2 is fully populated so only the other 4 "lowest" should
     // be refined
     doTestRefine(
@@ -381,7 +381,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
           "=={x:{_l:[x1]}}");
     }
 
-    // with 1<mincount, even sort="count desc" should trigger hueristic overrefinement
+    // with 1<mincount, even sort="count desc" should trigger heuristic overrefinement
     // limit=1 + 10% + 4 =~ 5 total, but x2 is fully populated so only the other 4 "highest" should
     // be refined
     doTestRefine(
@@ -416,14 +416,14 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         "=={x:{_l:[x3]}}",
         "=={x:{_l:[x1,x9]}}");
 
-    // hueristic refinement of nested facets
+    // heuristic refinement of nested facets
     // limit=1 + 10% + 4 =~ 5 total (at each level)
     // -> x2 is fully populated and child buckets are consistent - no refinement needed at all
     // -> x4 has counts from both shards, but child buckets don't align perfectly
     //
     // For (test) simplicity, only x3 and x4 have enough (total) y buckets to prove that the
     // sub-facet
-    // overrefine hueristic is finite...
+    // overrefine heuristic is finite...
     // -> x3 has 6 total sub-facet buckets, only "lowest 5" should be refined on missing shard
     // -> x4 also has 6 total sub-facet buckets, but only 3 need refined since 2 already fully
     // populated
@@ -569,7 +569,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
             + "  ] },"
             + "  cat_2:{ buckets:[ "
             + "            {val:X,count:4,sum_p:4.0}," // count desc
-            + "            {val:A,count:1,sum_p:1.0}," // index order tie break
+            + "            {val:A,count:1,sum_p:1.0}," // index order tiebreak
             + "            {val:B,count:1,sum_p:1.0},"
             + "  ] }"
             + "}");
@@ -625,7 +625,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     // all_ss is only used for sub-faceting...
     // every doc will be in all_ss:z_all, (most c1 docs will be in all_ss:some
-    // (with index order tie breaker, c1 should return "some" when limit:1
+    // (with index order tiebreaker, c1 should return "some" when limit:1
     //  but "z_all" should have a higher count from c0)
 
     // client 0 // shard1: A=1,B=1,C=2 ...
@@ -697,10 +697,10 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     client.commit();
 
     // In an ideal world, 'Z:2' would be returned as the 3rd value,
-    // but neither C or Z make the topN cut in phase#1, so only A,B,X get refined.
+    // but neither C nor Z make the topN cut in phase#1, so only A,B,X get refined.
     // After refinement, X's increased values should *NOT* push it out of the (original) topN
     // to let "C" bubble back up into the topN, with incomplete/inaccurate count/stats
-    // (NOTE: hueristic for num buckets refined is based on 'overrequest' unless explicit
+    // (NOTE: heuristic for num buckets refined is based on 'overrequest' unless explicit
     // 'overrefine')
     client.testJQ(
         params(
@@ -847,7 +847,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
               + "} ] } }");
 
       // With any overrequest param > 0 on the parent facet, both shards will return "z_all" as a
-      // viable candidate and the merge logic should recoginize that X is a better choice,
+      // viable candidate and the merge logic should recognize that X is a better choice,
       // even though the (single shard) stats for "C" will be lower
       final int top_over = TestUtil.nextInt(random(), 1, 999);
       client.testJQ(
@@ -969,9 +969,9 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // all terms will tie on the sort criteria, and "Ax" should win the tiebreaker.
     //
     // When Ax is refined against c1, it's 'debug' sort value will increase, but regardless of the
-    // value of processEmpty, no other term should be returned in it's place (because if they are
-    // also correctly refined, then their 'debug' sort values will also increase and Ax will stll
-    // win the tie breaker -- and if they are not refined they shouldn't be returned)
+    // value of processEmpty, no other term should be returned in its place (because if they are
+    // also correctly refined, then their 'debug' sort values will also increase and Ax will still
+    // win the tiebreaker -- and if they are not refined they shouldn't be returned)
     for (int overrequest = 0; overrequest < 5; overrequest++) {
       for (boolean pe : Arrays.asList(false, true)) {
         ModifiableSolrParams p =
@@ -1065,8 +1065,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
 
     assertTrue(
         clients.size() >= 3); // we only use 2, but assert at least 3 to also test empty shard
-    final SolrClient c0 = clients.get(0);
-    final SolrClient c1 = clients.get(1);
 
     // during the initial request...
     // - shard1 should return "high" count pX & pY w/o any child buckets (no "more" child)
@@ -1122,8 +1120,6 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     final int numClients = clients.size();
 
     assertTrue(numClients >= 3); // we only use 2, but assert at least 3 to also test empty shard
-    final SolrClient c0 = clients.get(0);
-    final SolrClient c1 = clients.get(1);
 
     // if we do the same request as testSortedSubFacetRefinementWhenParentOnlyReturnedByOneShard,
     // but with processEmpty:true, then ideally we should get the same buckets & counts as before,
@@ -1131,15 +1127,15 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     // initially, or during refinement)
     //
     // The problem comes in with how "empty" bucket lists are dealt with...
-    // - child debug counts never get higher then '2' because even with the forced "_l" refinement
+    // - child debug counts never get higher than '2' because even with the forced "_l" refinement
     // of the parent buckets against the "empty" shards we don't explicitly ask those shards to
     // evaluate the child buckets
     // - perhaps we should reconsider the value of "_l" ?
     //   - why aren't we just specifying all the buckets (and child buckets) chosen in phase#1 using
     // "_p" ?
     //   - or at the very least, if the purpose of "_l" is to give other buckets a chance to "bubble
-    // up" in phase#2, then shouldn't a "_l" refinement requests still include the buckets choosen
-    // in phase#1, and request that the shard fill them in in addition to returning its own top
+    // up" in phase#2, then shouldn't a "_l" refinement requests still include the buckets chosen
+    // in phase#1, and request that the shard fill them in addition to returning its own top
     // buckets?
     client.testJQ(
         params(
@@ -1432,7 +1428,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
     */
     for (String method :
         new String[] {"", "dv", "dvhash", "stream", "uif", "enum", "stream", "smart"}) {
-      if (method.equals("")) {
+      if (method.isEmpty()) {
         p.remove("terms");
       } else {
         p.set("terms", "method:" + method + ", ");

@@ -33,10 +33,10 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -53,6 +53,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -64,7 +65,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Slow
 @LogLevel(
     "org.apache.solr.handler.ReplicationHandler=DEBUG;org.apache.solr.handler.IndexFetcher=DEBUG")
 public class TestPullReplica extends SolrCloudTestCase {
@@ -124,8 +124,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     super.tearDown();
   }
 
-  // 2 times to make sure cleanup is complete and we can create the same collection
-  @Repeat(iterations = 2)
+  // 2 times to make sure cleanup is complete, and we can create the same collection
+  @Repeat(iterations = 30)
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
@@ -148,28 +148,27 @@ public class TestPullReplica extends SolrCloudTestCase {
           // These options should all mean the same
           url = url + pickRandom("", "&nrtReplicas=1", "&replicationFactor=1");
           HttpGet createCollectionGet = new HttpGet(url);
-          cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
+          getHttpClient().execute(createCollectionGet);
           break;
         case 2:
           // Sometimes use V2 API
-          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
+          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
           String requestBody =
               String.format(
                   Locale.ROOT,
-                  "{create:{name:%s, config:%s, numShards:%s, pullReplicas:%s, %s}}",
+                  "{\"name\": \"%s\", \"config\": \"%s\", \"numShards\": %s, \"pullReplicas\": %s %s}",
                   collectionName,
                   "conf",
                   2, // numShards
                   3, // pullReplicas
                   pickRandom(
                       "",
-                      ", nrtReplicas:1",
-                      ", replicationFactor:1")); // These options should all mean the same
+                      ", \"nrtReplicas\": 1",
+                      ", \"replicationFactor\": 1")); // These options should all mean the same
           HttpPost createCollectionPost = new HttpPost(url);
           createCollectionPost.setHeader("Content-type", "application/json");
           createCollectionPost.setEntity(new StringEntity(requestBody));
-          HttpResponse httpResponse =
-              cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
+          HttpResponse httpResponse = getHttpClient().execute(createCollectionPost);
           assertEquals(200, httpResponse.getStatusLine().getStatusCode());
           break;
       }
@@ -177,7 +176,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);
         assertNotNull(docCollection);
-        assertEquals("Expecting 4 relpicas per shard", 8, docCollection.getReplicas().size());
+        assertEquals("Expecting 4 replicas per shard", 8, docCollection.getReplicas().size());
         assertEquals(
             "Expecting 6 pull replicas, 3 per shard",
             6,
@@ -270,7 +269,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       log.info("Committed doc {} to leader", numDocs);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
         assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
       }
       log.info(
@@ -285,7 +284,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       waitForNumDocsInAllReplicas(numDocs, pullReplicas);
 
       for (Replica r : pullReplicas) {
-        try (HttpSolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
+        try (SolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
           SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
           QueryResponse statsResponse = pullReplicaClient.query(req);
           // The adds gauge metric should be null for pull replicas since they don't process adds
@@ -459,19 +458,21 @@ public class TestPullReplica extends SolrCloudTestCase {
         collectionName,
         activeReplicaCount(numReplicas, 0, numReplicas));
     DocCollection docCollection = assertNumberOfReplicas(numReplicas, 0, numReplicas, false, true);
-    HttpClient httpClient = cluster.getSolrClient().getHttpClient();
+    HttpClient httpClient = getHttpClient();
     int id = 0;
     Slice slice = docCollection.getSlice("shard1");
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd : slice.getReplicas()) {
-      try (HttpSolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
+      try (SolrClient client =
+          new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
         client.add(new SolrInputDocument("id", String.valueOf(id), "foo_s", "bar"));
       }
       SolrDocument docCloudClient =
           cluster.getSolrClient().getById(collectionName, String.valueOf(id));
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet : slice.getReplicas()) {
-        try (HttpSolrClient client = getHttpSolrClient(rGet.getCoreUrl(), httpClient)) {
+        try (SolrClient client =
+            new HttpSolrClient.Builder(rGet.getCoreUrl()).withHttpClient(httpClient).build()) {
           SolrDocument doc = client.getById(String.valueOf(id));
           assertEquals("bar", doc.getFieldValue("foo_s"));
         }
@@ -481,7 +482,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
-      try (HttpSolrClient client = getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
+      try (SolrClient client =
+          new HttpSolrClient.Builder(rAdd.getCoreUrl()).withHttpClient(httpClient).build()) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
           assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
@@ -512,7 +514,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -566,7 +568,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
 
     // Also fails if I send the update to the pull replica explicitly
-    try (HttpSolrClient pullReplicaClient =
+    try (SolrClient pullReplicaClient =
         getHttpSolrClient(
             docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
       expectThrows(
@@ -584,7 +586,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // Queries should still work
     waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
     // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be
-    // data loss, since the it will become the leader and pull replicas will replicate from it.
+    // data loss, since it will become the leader and pull replicas will replicate from it.
     // Maybe we want to change this. Replicate from pull replicas is not a good idea, since they are
     // by definition out of date.
     if (removeReplica) {
@@ -615,7 +617,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // add docs agin
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
       leaderClient.commit();
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
@@ -682,7 +684,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     TimeOut t = new TimeOut(REPLICATION_TIMEOUT_SECS, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r : replicas) {
       String replicaUrl = r.getCoreUrl();
-      try (HttpSolrClient replicaClient = getHttpSolrClient(replicaUrl)) {
+      try (SolrClient replicaClient = getHttpSolrClient(replicaUrl)) {
         while (true) {
           QueryRequest req = new QueryRequest(new SolrQuery(query));
           if (user != null && pass != null) {
@@ -858,24 +860,28 @@ public class TestPullReplica extends SolrCloudTestCase {
                 shardName,
                 type);
         HttpGet addReplicaGet = new HttpGet(url);
-        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaGet);
+        HttpResponse httpResponse = getHttpClient().execute(addReplicaGet);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
       case 2: // Add replica with V2 API
         url =
             String.format(
                 Locale.ROOT,
-                "%s/____v2/c/%s/shards",
+                "%s/____v2/collections/%s/shards/%s/replicas",
                 cluster.getRandomJetty(random()).getBaseUrl(),
-                collectionName);
-        String requestBody =
-            String.format(Locale.ROOT, "{add-replica:{shard:%s, type:%s}}", shardName, type);
+                collectionName,
+                shardName);
+        String requestBody = String.format(Locale.ROOT, "{\"type\": \"%s\"}", type);
         HttpPost addReplicaPost = new HttpPost(url);
         addReplicaPost.setHeader("Content-type", "application/json");
         addReplicaPost.setEntity(new StringEntity(requestBody));
-        httpResponse = cluster.getSolrClient().getHttpClient().execute(addReplicaPost);
+        httpResponse = getHttpClient().execute(addReplicaPost);
         assertEquals(200, httpResponse.getStatusLine().getStatusCode());
         break;
     }
+  }
+
+  private HttpClient getHttpClient() {
+    return ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 }

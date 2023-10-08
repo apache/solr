@@ -25,10 +25,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -40,7 +41,6 @@ import org.apache.solr.schema.FieldType;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -64,7 +64,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBuildDocument() throws Exception {
+  public void testBuildDocument() {
     SolrCore core = h.getCore();
     // undefined field
     SolrInputDocument doc = new SolrInputDocument();
@@ -114,7 +114,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultiField() throws Exception {
+  public void testMultiField() {
     SolrCore core = h.getCore();
 
     // make sure a null value is not indexed
@@ -271,7 +271,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     Iterator<IndexableField> fieldIterator = storedFields.iterator();
     IndexableField field;
 
-    // Test that we retained the particular value ordering, even though though the 2nd of three was
+    // Test that we retained the particular value ordering, even though the 2nd of three was
     // longest
 
     assertTrue(fieldIterator.hasNext());
@@ -315,6 +315,34 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testMultipleCopyFieldMaxChars() {
+    SolrCore core = h.getCore();
+
+    String testValue = "this is more than 10 characters";
+    String truncatedValue = "this is mo";
+
+    // maxChars with a string value
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("title", testValue);
+
+    Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    assertEquals(testValue, out.get("title"));
+    assertEquals(truncatedValue, out.get("max_chars"));
+    assertEquals(testValue, out.get("no_max_chars"));
+    assertEquals(testValue, out.get("large_max_chars"));
+
+    // maxChars with a ByteArrayUtf8CharSequence
+    doc = new SolrInputDocument();
+    doc.addField("title", new ByteArrayUtf8CharSequence(testValue));
+
+    out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    assertEquals(testValue, out.get("title"));
+    assertEquals(truncatedValue, out.get("max_chars"));
+    assertEquals(testValue, out.get("no_max_chars"));
+    assertEquals(testValue, out.get("large_max_chars"));
+  }
+
+  @Test
   public void denseVector_shouldReturnOneIndexableFieldAndOneStoredFieldPerVectorElement() {
     SolrCore core = h.getCore();
 
@@ -330,7 +358,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             "vector", new float[] {1.1f, 2.1f, 3.1f, 4.1f}, VectorSimilarityFunction.COSINE);
 
     MatcherAssert.assertThat(
-        ((KnnVectorField) out.getField("vector")).vectorValue(),
+        ((KnnFloatVectorField) out.getField("vector")).vectorValue(),
         is(expectedIndexableField.vectorValue()));
 
     List<IndexableField> storedFields =
@@ -356,13 +384,13 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
 
     // from /solr/core/src/test-files/solr/collection1/conf/schema.xml
-    KnnVectorField exectedDestination =
+    KnnVectorField expectedDestination =
         new KnnVectorField(
             "vector2", new float[] {1.1f, 2.1f, 3.1f, 4.1f}, VectorSimilarityFunction.DOT_PRODUCT);
 
     MatcherAssert.assertThat(
-        ((KnnVectorField) out.getField("vector2")).vectorValue(),
-        is(exectedDestination.vectorValue()));
+        ((KnnFloatVectorField) out.getField("vector2")).vectorValue(),
+        is(expectedDestination.vectorValue()));
 
     List<IndexableField> storedFields =
         StreamSupport.stream(out.spliterator(), false)
@@ -385,7 +413,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField("vector3", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
 
     RuntimeException thrown =
-        Assert.assertThrows(
+        assertThrows(
             "Incorrect destination field type should raise exception",
             SolrException.class,
             () -> {
@@ -406,7 +434,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField("vector4", Arrays.asList(1.1f, 2.1f, 3.1f, 4.1f));
 
     RuntimeException thrown =
-        Assert.assertThrows(
+        assertThrows(
             "Incorrect destination dimension should raise exception",
             SolrException.class,
             () -> {
@@ -415,7 +443,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     MatcherAssert.assertThat(
         thrown.getMessage(),
         is(
-            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]', expected format:'[f1, f2, f3...fn]' e.g. [1.0, 3.4, 5.6]"));
+            "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]'"));
     MatcherAssert.assertThat(
         thrown.getCause().getCause().getMessage(),
         is(

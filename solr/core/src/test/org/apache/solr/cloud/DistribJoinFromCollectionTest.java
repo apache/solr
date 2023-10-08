@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -133,7 +134,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
   }
 
   private void testJoins(String toColl, String fromColl, String toDocId, boolean isScoresTest)
-      throws SolrServerException, IOException, InterruptedException {
+      throws SolrServerException, IOException {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c^2";
     CloudSolrClient client = cluster.getSolrClient();
@@ -149,7 +150,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
       QueryResponse rsp = new QueryResponse(client.request(qr), client);
       SolrDocumentList hits = rsp.getResults();
-      assertTrue("Expected 1 doc, got " + hits, hits.getNumFound() == 1);
+      assertEquals("Expected 1 doc, got " + hits, 1, hits.getNumFound());
       SolrDocument doc = hits.get(0);
       assertEquals(toDocId, doc.getFirstValue("id"));
       assertEquals("b", doc.getFirstValue("get_s"));
@@ -175,7 +176,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
       final QueryResponse rsp = new QueryResponse(client.request(qr), client);
       final SolrDocumentList hits = rsp.getResults();
-      assertTrue("Expected 1 doc", hits.getNumFound() == 1);
+      assertEquals("Expected 1 doc", 1, hits.getNumFound());
       SolrDocument doc = hits.get(0);
       assertEquals(toDocId, doc.getFirstValue("id"));
       assertEquals("b", doc.getFirstValue("get_s"));
@@ -197,13 +198,13 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
           new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
       final QueryResponse rsp = new QueryResponse(client.request(qr), client);
       final SolrDocumentList hits = rsp.getResults();
-      assertTrue("Expected no hits", hits.getNumFound() == 0);
+      assertEquals("Expected no hits", 0, hits.getNumFound());
     }
   }
 
   private void assertScore(boolean isScoresTest, SolrDocument doc) {
     if (isScoresTest) {
-      assertThat(
+      MatcherAssert.assertThat(
           "score join doesn't return 1.0", doc.getFirstValue("score").toString(), not("1.0"));
     } else {
       assertEquals("Solr join has constant score", "1.0", doc.getFirstValue("score").toString());
@@ -214,8 +215,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
     return isScoresTest ? "score=" + (scoreModes[random().nextInt(scoreModes.length)]) + " " : "";
   }
 
-  private void checkAbsentFromIndex(String fromColl, String toColl, boolean isScoresTest)
-      throws SolrServerException, IOException {
+  private void checkAbsentFromIndex(String fromColl, String toColl, boolean isScoresTest) {
     final String wrongName = fromColl + "WrongName";
     final String joinQ =
         "{!join "

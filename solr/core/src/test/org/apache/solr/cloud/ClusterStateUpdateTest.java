@@ -16,41 +16,30 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-@Slow
 public class ClusterStateUpdateTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    System.setProperty("solrcloud.skip.autorecovery", "true");
     configureCluster(3).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
-  @BeforeClass
-  public static void beforeClass() {
-    System.setProperty("solrcloud.skip.autorecovery", "true");
-  }
-
   @AfterClass
-  public static void afterClass() throws InterruptedException, IOException {
+  public static void afterClass() throws Exception {
+    shutdownCluster();
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("genericCoreNodeNames");
   }

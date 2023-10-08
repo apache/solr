@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +29,9 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
-
 import org.apache.curator.test.KillSession;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -45,10 +45,13 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.TestableZooKeeper;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,11 +185,21 @@ public class ChaosMonkey {
     if (cores != null) {
       monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
+      causeConnectionLoss(zkClient.getZooKeeper());
+    }
+  }
+
+  public static void causeConnectionLoss(ZooKeeper zooKeeper) {
+    assert zooKeeper instanceof TestableZooKeeper
+        : "Can only cause connection loss for TestableZookeeper";
+    if (zooKeeper instanceof TestableZooKeeper) {
       try {
-        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
-      } catch (Exception e) {
-        e.printStackTrace();
+        ((TestableZooKeeper) zooKeeper).testableConnloss();
+      } catch (IOException ignored) {
+        // best effort
       }
+    } else {
+      // TODO what now?
     }
   }
 
@@ -525,16 +538,14 @@ public class ChaosMonkey {
             () -> {
               while (!stop) {
                 try {
-
                   Thread.sleep(chaosRandom.nextInt(roundPauseUpperLimit));
 
                   causeSomeChaos();
-
                 } catch (InterruptedException e) {
-                  //
+                  Thread.currentThread().interrupt();
+                  log.error("interrupted", e);
                 } catch (Exception e) {
-                  // TODO Auto-generated catch block
-                  e.printStackTrace();
+                  log.error("error causing some chaos", e);
                 }
               }
               monkeyLog("finished");

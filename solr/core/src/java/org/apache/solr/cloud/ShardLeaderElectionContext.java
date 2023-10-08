@@ -16,13 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.EnumSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -32,7 +32,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -98,7 +97,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    */
   @Override
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart)
-      throws KeeperException, InterruptedException, IOException {
+      throws KeeperException, InterruptedException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
@@ -125,35 +124,28 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               .getClusterState()
               .getCollection(collection)
               .getSlice(shardId)
-              .getReplicas()
-              .size()
+              .getNumLeaderReplicas()
           > 1) {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually
         // more than one replica.
-        ZkNodeProps m =
-            new ZkNodeProps(
-                Overseer.QUEUE_OPERATION,
-                OverseerAction.LEADER.toLower(),
-                ZkStateReader.SHARD_ID_PROP,
-                shardId,
-                ZkStateReader.COLLECTION_PROP,
-                collection);
-
+        MapWriter m =
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower())
+                    .put(ZkStateReader.SHARD_ID_PROP, shardId)
+                    .put(ZkStateReader.COLLECTION_PROP, collection);
         if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
           distributedClusterStateUpdater.doSingleStateUpdate(
               DistributedClusterStateUpdater.MutatingCommand.SliceSetShardLeader,
-              m,
+              new ZkNodeProps(m),
               zkController.getSolrCloudManager(),
               zkStateReader);
         } else {
-          zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+          zkController.getOverseer().getStateUpdateQueue().offer(m);
         }
       }
 
       if (!weAreReplacement) {
         waitForReplicasToComeUp(leaderVoteWait);
-      } else {
-        areAllReplicasParticipating();
       }
 
       if (isClosed) {
@@ -213,7 +205,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
           success = result.isSuccess();
         } catch (Exception e) {
-          SolrException.log(log, "Exception while trying to sync", e);
+          log.error("Exception while trying to sync", e);
           result = PeerSync.PeerSyncResult.failure();
         }
 
@@ -317,7 +309,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               ErrorCode.SERVER_ERROR,
               "ZK session expired - cancelling election for " + collection + " " + shardId);
         } catch (Exception e) {
-          SolrException.log(log, "There was a problem trying to register as the leader", e);
+          log.error("There was a problem trying to register as the leader", e);
 
           try (SolrCore core = cc.getCore(coreName)) {
 
@@ -460,7 +452,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                 ErrorCode.SERVER_ERROR,
                 "ZK session expired - cancelling election for " + collection + " " + shardId);
           }
-          SolrException.log(log, "Error checking for the number of election participants", e);
+          log.error("Error checking for the number of election participants", e);
         }
 
         // on startup and after connection timeout, wait for all known shards
@@ -500,41 +492,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     return false;
   }
 
-  // returns true if all replicas are found to be up, false if not
-  private boolean areAllReplicasParticipating() throws InterruptedException {
-    final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
-    final DocCollection docCollection =
-        zkController.getClusterState().getCollectionOrNull(collection);
-
-    if (docCollection != null && docCollection.getSlice(shardId) != null) {
-      final Slice slices = docCollection.getSlice(shardId);
-      int found = 0;
-      try {
-        found = zkClient.getChildren(shardsElectZkPath, null).size();
-      } catch (KeeperException e) {
-        if (e instanceof KeeperException.SessionExpiredException) {
-          // if the session has expired, then another election will be launched, so
-          // quit here
-          throw new SolrException(
-              ErrorCode.SERVER_ERROR,
-              "ZK session expired - cancelling election for " + collection + " " + shardId);
-        }
-        SolrException.log(log, "Error checking for the number of election participants", e);
-      }
-
-      if (found >= slices.getReplicasMap().size()) {
-        log.debug("All replicas are ready to participate in election.");
-        return true;
-      }
-    } else {
-      log.warn("Shard not found: {} for collection {}", shardId, collection);
-      return false;
-    }
-    return false;
-  }
-
-  private void rejoinLeaderElection(SolrCore core)
-      throws InterruptedException, KeeperException, IOException {
+  private void rejoinLeaderElection(SolrCore core) throws InterruptedException, KeeperException {
     // remove our ephemeral and re join the election
     if (cc.isShutDown()) {
       log.debug("Not rejoining election because CoreContainer is closed");

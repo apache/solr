@@ -19,6 +19,7 @@ package org.apache.solr.hdfs.store;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.HashSet;
 import java.util.Random;
@@ -31,7 +32,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.hdfs.cloud.HdfsTestUtil;
@@ -41,6 +42,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -52,6 +55,7 @@ import org.junit.Test;
 @ThreadLeakLingering(
     linger = 1000) // Wait at least 1 second for Netty GlobalEventExecutor to shutdown
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int MAX_NUMBER_OF_WRITES = 10000;
   private static final int MIN_FILE_SIZE = 100;
@@ -79,6 +83,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -94,6 +99,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     random = random();
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -188,7 +194,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
         fsDir.close();
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("Test failed on pass [{}]", i, e);
       fail("Test failed on pass [" + i + "]");
     }
   }

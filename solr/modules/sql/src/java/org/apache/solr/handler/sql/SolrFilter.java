@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -45,7 +46,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.sql.functions.ArrayContainsAll;
 import org.apache.solr.handler.sql.functions.ArrayContainsAny;
 import org.slf4j.Logger;
@@ -88,10 +89,12 @@ class SolrFilter extends Filter implements SolrRel {
     return super.computeSelfCost(planner, mq).multiplyBy(0.1);
   }
 
+  @Override
   public SolrFilter copy(RelTraitSet traitSet, RelNode input, RexNode condition) {
     return new SolrFilter(getCluster(), traitSet, input, condition);
   }
 
+  @Override
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
     if (getInput() instanceof SolrAggregate) {
@@ -168,8 +171,8 @@ class SolrFilter extends Filter implements SolrRel {
       RexNode valuesNode = operands.get(1);
       if (valuesNode instanceof RexLiteral) {
         String literal = toSolrLiteral(fieldName, (RexLiteral) valuesNode);
-        if (!StringUtils.isEmpty(literal)) {
-          return fieldName + ":\"" + literal + "\"";
+        if (StrUtils.isNotNullOrEmpty(literal)) {
+          return fieldName + ":\"" + ClientUtils.escapeQueryChars(literal.trim()) + "\"";
         } else {
           return null;
         }
@@ -178,8 +181,8 @@ class SolrFilter extends Filter implements SolrRel {
         String valuesString =
             valuesRexCall.getOperands().stream()
                 .map(op -> toSolrLiteral(fieldName, (RexLiteral) op))
-                .filter(value -> !StringUtils.isEmpty(value))
-                .map(value -> "\"" + value.trim() + "\"")
+                .filter(StrUtils::isNotNullOrEmpty)
+                .map(value -> "\"" + ClientUtils.escapeQueryChars(value.trim()) + "\"")
                 .collect(Collectors.joining(" " + booleanOperator + " "));
         return fieldName + ":(" + valuesString + ")";
       }
@@ -346,21 +349,55 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected String translateLike(RexNode like) {
-      Pair<String, RexLiteral> pair = getFieldValuePair(like);
-      String terms = pair.getValue().toString().trim();
-      terms = terms.replace("'", "").replace('%', '*').replace('_', '?');
-      boolean wrappedQuotes = false;
-      if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        // restore the * and ? after escaping
-        terms =
-            "\""
-                + ClientUtils.escapeQueryChars(terms).replace("\\*", "*").replace("\\?", "?")
-                + "\"";
-        wrappedQuotes = true;
-      }
+      Pair<Pair<String, RexLiteral>, Character> pairWithEscapeCharacter =
+          getFieldValuePairWithEscapeCharacter(like);
+      Pair<String, RexLiteral> pair = pairWithEscapeCharacter.getKey();
+      Character escapeChar = pairWithEscapeCharacter.getValue();
 
-      String query = pair.getKey() + ":" + terms;
-      return wrappedQuotes ? "{!complexphrase}" + query : query;
+      String terms = pair.getValue().toString().trim();
+      terms = translateLikeTermToSolrSyntax(terms, escapeChar);
+
+      if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
+        terms = escapeWithWildcard(terms);
+
+        // if terms contains multiple words and one or more wildcard chars, then we need to employ
+        // the complexphrase parser
+        // but that expects the terms wrapped in double-quotes, not parens
+        boolean hasMultipleTerms = terms.split("\\s+").length > 1;
+        if (hasMultipleTerms && (terms.contains("*") || terms.contains("?"))) {
+          String quotedTerms = "\"" + terms.substring(1, terms.length() - 1) + "\"";
+          String query = ClientUtils.encodeLocalParamVal(pair.getKey() + ":" + quotedTerms);
+          return String.format(Locale.ROOT, "{!complexphrase v=%s}", query);
+        }
+      } // else treat as an embedded Solr query and pass-through
+
+      return pair.getKey() + ":" + terms;
+    }
+
+    private String translateLikeTermToSolrSyntax(String term, Character escapeChar) {
+      boolean isEscaped = false;
+      StringBuilder sb = new StringBuilder();
+      // Special character % and _ are escaped with escape character and single quote is escaped
+      // with another single quote
+      // If single quote is escaped with escape character, calcite parser fails
+      for (int i = 0; i < term.length(); i++) {
+        char c = term.charAt(i);
+        if (!isEscaped && escapeChar != null && escapeChar == c) {
+          isEscaped = true;
+        } else if (c == '%' && !isEscaped) {
+          sb.append('*');
+        } else if (c == '_' && !isEscaped) {
+          sb.append("?");
+        } else if (c == '\'') {
+          if (i > 0 && term.charAt(i - 1) == '\'') {
+            sb.append(c);
+          }
+        } else {
+          sb.append(c);
+          if (isEscaped) isEscaped = false;
+        }
+      }
+      return sb.toString();
     }
 
     protected String translateComparison(RexNode node) {
@@ -407,25 +444,37 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     private String toEqualsClause(String key, RexLiteral value) {
-      if ("".equals(key)) {
+      if (key != null && key.isEmpty()) {
         // special handling for 1 = 0 kind of clause
         return "-*:*";
       }
 
       String terms = toSolrLiteral(key, value).trim();
 
-      boolean wrappedQuotes = false;
       if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
-        terms = "\"" + ClientUtils.escapeQueryChars(terms) + "\"";
-        wrappedQuotes = true;
+        if (terms.contains("*") || terms.contains("?")) {
+          terms = escapeWithWildcard(terms);
+        } else {
+          terms = "\"" + ClientUtils.escapeQueryChars(terms) + "\"";
+        }
       }
 
-      String clause = key + ":" + terms;
-      if (terms.contains("*") && wrappedQuotes) {
-        clause = "{!complexphrase}" + clause;
-      }
+      return key + ":" + terms;
+    }
 
-      return clause;
+    // Wrap filter criteria containing wildcard with parens and unescape the wildcards after
+    // escaping protected query chars
+    private String escapeWithWildcard(String terms) {
+      String escaped =
+          ClientUtils.escapeQueryChars(terms)
+              .replace("\\*", "*")
+              .replace("\\?", "?")
+              .replace("\\ ", " ");
+      // if multiple terms, then wrap with parens
+      if (escaped.split("\\s+").length > 1) {
+        escaped = "(" + escaped + ")";
+      }
+      return escaped;
     }
 
     // translate to a literal string value for Solr queries, such as translating a
@@ -480,6 +529,28 @@ class SolrFilter extends Filter implements SolrRel {
       return timestamp;
     }
 
+    protected Pair<Pair<String, RexLiteral>, Character> getFieldValuePairWithEscapeCharacter(
+        RexNode node) {
+      if (!(node instanceof RexCall)) {
+        throw new AssertionError("expected RexCall for predicate but found: " + node);
+      }
+      RexCall call = (RexCall) node;
+      if (call.getOperands().size() == 3) {
+        RexNode escapeNode = call.getOperands().get(2);
+        Character escapeChar = null;
+        if (escapeNode.getKind() == SqlKind.LITERAL) {
+          RexLiteral literal = (RexLiteral) escapeNode;
+          if (literal.getTypeName() == SqlTypeName.CHAR) {
+            escapeChar = literal.getValueAs(Character.class);
+          }
+        }
+        return Pair.of(
+            translateBinary2(call.getOperands().get(0), call.getOperands().get(1)), escapeChar);
+      } else {
+        return Pair.of(getFieldValuePair(node), null);
+      }
+    }
+
     protected Pair<String, RexLiteral> getFieldValuePair(RexNode node) {
       if (!(node instanceof RexCall)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
@@ -518,14 +589,15 @@ class SolrFilter extends Filter implements SolrRel {
 
       if (left.getKind() == SqlKind.CAST && right.getKind() == SqlKind.CAST) {
         return translateBinary2(
-            ((RexCall) left).operands.get(0), ((RexCall) right).operands.get(0));
+            ((RexCall) left).getOperands().get(0), ((RexCall) right).getOperands().get(0));
       }
 
       // for WHERE clause like: pdatex >= '2021-07-13T15:12:10.037Z'
       if (left.getKind() == SqlKind.INPUT_REF && right.getKind() == SqlKind.CAST) {
         final RexCall cast = ((RexCall) right);
-        if (cast.operands.size() == 1 && cast.operands.get(0).getKind() == SqlKind.LITERAL) {
-          return translateBinary2(left, cast.operands.get(0));
+        if (cast.getOperands().size() == 1
+            && cast.getOperands().get(0).getKind() == SqlKind.LITERAL) {
+          return translateBinary2(left, cast.getOperands().get(0));
         }
       }
 
@@ -562,7 +634,7 @@ class SolrFilter extends Filter implements SolrRel {
           String name = fieldNames.get(left1.getIndex());
           return new Pair<>(name, rightLiteral);
         case CAST:
-          return translateBinary2(((RexCall) left).operands.get(0), right);
+          return translateBinary2(((RexCall) left).getOperands().get(0), right);
           //        case OTHER_FUNCTION:
           //          String itemName = SolrRules.isItem((RexCall) left);
           //          if (itemName != null) {
@@ -578,7 +650,8 @@ class SolrFilter extends Filter implements SolrRel {
       final String fieldName = getSolrFieldName(condition);
 
       RexCall expanded = (RexCall) RexUtil.expandSearch(builder, null, condition);
-      final RexNode peekAt0 = !expanded.operands.isEmpty() ? expanded.operands.get(0) : null;
+      final RexNode peekAt0 =
+          !expanded.getOperands().isEmpty() ? expanded.getOperands().get(0) : null;
       if (expanded.op.kind == SqlKind.AND) {
         // See if NOT IN was translated into a big AND not
         if (peekAt0 instanceof RexCall) {
@@ -608,7 +681,7 @@ class SolrFilter extends Filter implements SolrRel {
 
     protected String toOrSetOnSameField(String solrField, RexCall search) {
       String orClause =
-          search.operands.stream()
+          search.getOperands().stream()
               .map(
                   n -> {
                     RexCall next = (RexCall) n;

@@ -20,7 +20,8 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.SourceEvaluator;
@@ -51,6 +52,7 @@ public class AnalyzeEvaluator extends SourceEvaluator {
     init(_fieldName, _analyzerField);
   }
 
+  @Override
   public void setStreamContext(StreamContext context) {
     this.streamContext = context;
     Object solrCoreObj = context.get("solr-core");

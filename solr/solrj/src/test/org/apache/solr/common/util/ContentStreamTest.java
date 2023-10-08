@@ -38,9 +38,9 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
   public void testStringStream() throws IOException {
     String input = "aads ghaskdgasgldj asl sadg ajdsg &jag # @ hjsakg hsakdg hjkas s";
     ContentStreamBase stream = new ContentStreamBase.StringStream(input);
-    assertEquals(input.length(), stream.getSize().intValue());
-    assertEquals(input, IOUtils.toString(stream.getStream(), "UTF-8"));
-    assertEquals(input, IOUtils.toString(stream.getReader()));
+    assertEquals(input.length(), stream.getSize().longValue());
+    assertEquals(input, new String(stream.getStream().readAllBytes(), StandardCharsets.UTF_8));
+    assertEquals(input, StrUtils.stringFromReader(stream.getReader()));
   }
 
   public void testFileStream() throws IOException {
@@ -58,7 +58,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
         InputStreamReader isr =
             new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8);
         Reader r = stream.getReader()) {
-      assertEquals(file.length(), stream.getSize().intValue());
+      assertEquals(file.length(), stream.getSize().longValue());
       // Test the code that sets content based on < being the 1st character
       assertEquals("application/xml", stream.getContentType());
       assertTrue(IOUtils.contentEquals(fis, s));
@@ -84,7 +84,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
         FileInputStream fis2 = new FileInputStream(file);
         GZIPInputStream zis2 = new GZIPInputStream(fis2);
         Reader r = stream.getReader()) {
-      assertEquals(file.length(), stream.getSize().intValue());
+      assertEquals(file.length(), stream.getSize().longValue());
       // Test the code that sets content based on < being the 1st character
       assertEquals("application/xml", stream.getContentType());
       assertTrue(IOUtils.contentEquals(isr, r));
@@ -117,9 +117,9 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       //
       assertEquals("text/html", stream.getContentType());
       assertTrue(IOUtils.contentEquals(fis2, s));
-      assertEquals(file.length(), stream.getSize().intValue());
+      assertEquals(file.length(), stream.getSize().longValue());
       assertTrue(IOUtils.contentEquals(isr, r));
-      assertEquals(file.length(), stream.getSize().intValue());
+      assertEquals(file.length(), stream.getSize().longValue());
     }
   }
 
@@ -146,7 +146,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       assertEquals("application/xml", stream.getContentType());
       assertTrue(IOUtils.contentEquals(isr, r));
       assertTrue(IOUtils.contentEquals(zis2, s));
-      assertEquals(file.length(), stream.getSize().intValue());
+      assertEquals(file.length(), stream.getSize().longValue());
     }
   }
 
@@ -173,7 +173,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       assertEquals("text/csv", stream.getContentType());
       assertTrue(IOUtils.contentEquals(isr, r));
       assertTrue(IOUtils.contentEquals(zis2, s));
-      assertEquals(file.length(), stream.getSize().intValue());
+      assertEquals(file.length(), stream.getSize().longValue());
     }
   }
 
@@ -200,7 +200,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       assertEquals("application/json", stream.getContentType());
       assertTrue(IOUtils.contentEquals(isr, r));
       assertTrue(IOUtils.contentEquals(zis2, s));
-      assertEquals(file.length(), stream.getSize().intValue());
+      assertEquals(file.length(), stream.getSize().longValue());
     }
   }
 }

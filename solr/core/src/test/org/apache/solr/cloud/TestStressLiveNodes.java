@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * a ZkStateReader detects the correct set.
  */
 @ThreadLeakLingering(linger = 10)
-@Slow
+@LuceneTestCase.Nightly
 public class TestStressLiveNodes extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -59,7 +59,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   private static final int WAIT_TIME = TEST_NIGHTLY ? 60 : 30;
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
 
     // we only need 1 node, and we don't care about any configs or collections
     // we're going to fake all the live_nodes changes we want to fake.
@@ -72,7 +72,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
     if (null != CLOUD_CLIENT) {
       CLOUD_CLIENT.close();
       CLOUD_CLIENT = null;
@@ -82,7 +82,10 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   private static SolrZkClient newSolrZkClient() {
     assertNotNull(ZK_SERVER_ADDR);
     // WTF is CloudConfigBuilder.DEFAULT_ZK_CLIENT_TIMEOUT private?
-    return new SolrZkClient(ZK_SERVER_ADDR, 15000);
+    return new SolrZkClient.Builder()
+        .withUrl(ZK_SERVER_ADDR)
+        .withTimeout(15000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   /** returns the true set of live nodes (currently in zk) as a sorted list */
@@ -141,9 +144,9 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
 
       // sanity check that ZK says there is in fact 1 live node
       List<String> actualLiveNodes = getTrueLiveNodesFromZk();
-      assertEquals("iter" + iter + ": " + actualLiveNodes.toString(), 1, actualLiveNodes.size());
+      assertEquals("iter" + iter + ": " + actualLiveNodes, 1, actualLiveNodes.size());
 
-      // only here do we forcibly update the cached live nodes so we don't have to wait for it to
+      // only here do we forcibly update the cached live nodes, so we don't have to wait for it to
       // catch up with all the ephemeral nodes that vanished after the last iteration
       cluster.getZkStateReader().updateLiveNodes();
 
@@ -158,13 +161,14 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       // start spinning up some threads to add some live_node children in parallel
 
       // we don't need a lot of threads or nodes (we don't want to swamp the CPUs just bursts of
-      // concurrent adds) but we do want to randomize it a bit so we increase the odds of concurrent
+      // concurrent adds) but we do want to randomize it a bit, so we increase the odds of
+      // concurrent
       // watchers firing regardless of the num CPUs or load on the machine running the test (but we
       // deliberately don't look at availableProcessors() since we want randomization consistency
       // across all machines for a given seed)
       final int numThreads = TestUtil.nextInt(random(), 2, 5);
 
-      // use same num for all thrashers, to increase likely hood of them all competing
+      // use same num for all thrashers, to increase likelihood of them all competing
       // (diff random number would mean heavy concurrency only for ~ the first N=lowest num
       // requests)
       //
@@ -180,7 +184,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
           numNodesPerThrasher);
 
       // NOTE: using ephemeral nodes
-      // so we can't close any of these thrashers until we are done with our assertions
+      // means we can't close any of these thrashers until we are done with our assertions
       final List<LiveNodeTrasher> thrashers = new ArrayList<>(numThreads);
       for (int i = 0; i < numThreads; i++) {
         thrashers.add(new LiveNodeTrasher("T" + iter + "_" + i, numNodesPerThrasher));
@@ -243,6 +247,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       this.client = newSolrZkClient();
     }
     /** returns the number of nodes actually added w/o error */
+    @Override
     public Integer call() {
       running = true;
       // NOTE: test includes 'running'

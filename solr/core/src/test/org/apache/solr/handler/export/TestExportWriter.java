@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.StreamParams;
@@ -1048,11 +1048,11 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           String field = "number_" + type + mv + indexed;
           SchemaField sf = h.getCore().getLatestSchema().getField(field + "_t");
           assertTrue(sf.hasDocValues());
-          assertTrue(sf.getType().getNumberType() != null);
+          assertNotNull(sf.getType().getNumberType());
 
           sf = h.getCore().getLatestSchema().getField(field + "_p");
           assertTrue(sf.hasDocValues());
-          assertTrue(sf.getType().getNumberType() != null);
+          assertNotNull(sf.getType().getNumberType());
           assertTrue(sf.getType().isPointField());
 
           trieFields.add(field + "_t");
@@ -1080,7 +1080,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
       addDouble(doc, random().nextDouble() * 3000 * (random().nextBoolean() ? 1 : -1), false);
       addDate(doc, dateFormat.format(new Date()), false);
 
-      // MV need to be unique in order to be the same in Trie vs Points
+      // MV needs to be unique in order to be the same in Trie vs Points
       Set<Integer> ints = new HashSet<>();
       Set<Long> longs = new HashSet<>();
       Set<Float> floats = new HashSet<>();
@@ -1235,8 +1235,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     for (int i = 0; i < 100; i++) {
       boolean found = false;
       String si = String.valueOf(i);
-      for (int j = 0; j < docs.size(); j++) {
-        if (docs.get(j).get("sortabledv_udvas").equals(si)) {
+      for (Map<String, Object> doc : docs) {
+        if (doc.get("sortabledv_udvas").equals(si)) {
           found = true;
           break;
         }
@@ -1354,7 +1354,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     Map rsp = (Map) Utils.fromJSONString(response);
     List doclist = (List) (((Map) rsp.get("response")).get("docs"));
 
-    assert docs.size() == numDocs;
+    assertEquals(docs.size(), numDocs);
 
     for (int i = 0; i < docs.size() - 1; i++) { // docs..
       assertEquals(
@@ -1362,9 +1362,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           ((LinkedHashMap) doclist.get(i)).get("id"),
           String.valueOf(((HashMap<?, ?>) docs.get(i)).get("id")));
 
-      for (int j = 0; j < fieldSorts.length; j++) { // fields ..
-        String field = fieldSorts[j].getField();
-        String sort = fieldSorts[j].getSort();
+      for (SortFields fieldSort : fieldSorts) { // fields ..
+        String field = fieldSort.getField();
+        String sort = fieldSort.getSort();
         String fieldVal1 = String.valueOf(((HashMap) docs.get(i)).get(field)); // 1st doc
         String fieldVal2 = String.valueOf(((HashMap) docs.get(i + 1)).get(field)); // 2nd obj
         if (fieldVal1.equals(fieldVal2)) {
@@ -1409,7 +1409,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     }
   }
 
-  private class SortFields {
+  private static class SortFields {
     String fieldName;
     String sortOrder;
     String[] orders = {"asc", "desc"};
@@ -1446,7 +1446,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         h.query(req("q", query, "qt", "/export", "fl", pointFieldsFl, "sort", sort));
     String resultTries =
         h.query(req("q", query, "qt", "/export", "fl", trieFieldsFl, "sort", sort));
-    assertJsonEquals(resultPoints.replaceAll("_p", ""), resultTries.replaceAll("_t", ""));
+    assertJsonEquals(resultPoints.replace("_p", ""), resultTries.replace("_t", ""));
   }
 
   private void addFloat(SolrInputDocument doc, float value, boolean mv) {

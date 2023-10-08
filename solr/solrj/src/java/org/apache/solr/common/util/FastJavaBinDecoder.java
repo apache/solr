@@ -18,7 +18,35 @@
 package org.apache.solr.common.util;
 
 import static org.apache.solr.common.util.FastJavaBinDecoder.Tag._EXTERN_STRING;
-import static org.apache.solr.common.util.JavaBinCodec.*;
+import static org.apache.solr.common.util.JavaBinCodec.ARR;
+import static org.apache.solr.common.util.JavaBinCodec.BOOL_FALSE;
+import static org.apache.solr.common.util.JavaBinCodec.BOOL_TRUE;
+import static org.apache.solr.common.util.JavaBinCodec.BYTE;
+import static org.apache.solr.common.util.JavaBinCodec.BYTEARR;
+import static org.apache.solr.common.util.JavaBinCodec.DATE;
+import static org.apache.solr.common.util.JavaBinCodec.DOUBLE;
+import static org.apache.solr.common.util.JavaBinCodec.END;
+import static org.apache.solr.common.util.JavaBinCodec.ENUM_FIELD_VALUE;
+import static org.apache.solr.common.util.JavaBinCodec.EXTERN_STRING;
+import static org.apache.solr.common.util.JavaBinCodec.FLOAT;
+import static org.apache.solr.common.util.JavaBinCodec.INT;
+import static org.apache.solr.common.util.JavaBinCodec.ITERATOR;
+import static org.apache.solr.common.util.JavaBinCodec.LONG;
+import static org.apache.solr.common.util.JavaBinCodec.MAP;
+import static org.apache.solr.common.util.JavaBinCodec.MAP_ENTRY;
+import static org.apache.solr.common.util.JavaBinCodec.MAP_ENTRY_ITER;
+import static org.apache.solr.common.util.JavaBinCodec.NAMED_LST;
+import static org.apache.solr.common.util.JavaBinCodec.NULL;
+import static org.apache.solr.common.util.JavaBinCodec.ORDERED_MAP;
+import static org.apache.solr.common.util.JavaBinCodec.SHORT;
+import static org.apache.solr.common.util.JavaBinCodec.SINT;
+import static org.apache.solr.common.util.JavaBinCodec.SLONG;
+import static org.apache.solr.common.util.JavaBinCodec.SOLRDOC;
+import static org.apache.solr.common.util.JavaBinCodec.SOLRDOCLST;
+import static org.apache.solr.common.util.JavaBinCodec.SOLRINPUTDOC;
+import static org.apache.solr.common.util.JavaBinCodec.STR;
+import static org.apache.solr.common.util.JavaBinCodec.TAG_AND_LEN;
+import static org.apache.solr.common.util.JavaBinCodec.readVInt;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +54,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.SolrDocument;
@@ -583,7 +610,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Integer.valueOf((int) entry.numericVal);
+        return (int) entry.numericVal;
       }
     },
     _SLONG(SLONG, UPPER_3_BITS, DataEntry.Type.LONG) {
@@ -594,7 +621,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
       @Override
       public Object readObject(StreamCodec codec, EntryImpl entry) {
-        return Long.valueOf((int) entry.numericVal);
+        return entry.numericVal;
       }
     },
     _ARR(ARR, UPPER_3_BITS, DataEntry.Type.ENTRY_ITER) {
@@ -755,7 +782,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     if (e.type().isContainer) {
       Object ctx =
           e.type() == DataEntry.Type.KEYVAL_ITER
-              ? new LinkedHashMap(getSize(e))
+              ? CollectionUtil.newLinkedHashMap(getSize(e))
               : new ArrayList(getSize(e));
       if (e.ctx() != null) {
         if (e.isKeyValEntry()) {
