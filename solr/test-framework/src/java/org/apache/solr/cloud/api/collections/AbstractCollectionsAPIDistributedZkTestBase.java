@@ -115,9 +115,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster
-            .getZkClient()
-            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
+        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
   }
 
   @Test
@@ -133,9 +131,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster
-            .getZkClient()
-            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
+        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
   }
 
   @Test

@@ -221,7 +221,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         Stat stat = new Stat();
         try {
           // Attempt to load the managed schema
-          byte[] data = zkClient.getData(managedSchemaPath, null, stat, true);
+          byte[] data = zkClient.getData(managedSchemaPath, null, stat);
           schemaZkVersion = stat.getVersion();
           schemaInputStream =
               new ZkSolrResourceLoader.ZkByteArrayInputStream(data, managedSchemaPath, stat);

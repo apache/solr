@@ -20,10 +20,7 @@ import static org.apache.hadoop.security.token.delegation.ZKDelegationTokenSecre
 import static org.apache.hadoop.security.token.delegation.ZKDelegationTokenSecretManager.ZK_DTSM_ZNODE_WORKING_PATH_DEAFULT;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -31,17 +28,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ZKPaths;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationFilter;
 import org.apache.hadoop.security.token.delegation.web.HttpUserGroupInformation;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
@@ -54,9 +46,6 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
    * servlet filter config.
    */
   static final String DELEGATION_TOKEN_ZK_CLIENT = "solr.kerberos.delegation.token.zk.client";
-
-  private ExecutorService curatorSafeServiceExecutor;
-  private CuratorFramework curatorFramework;
 
   @Override
   public void init(FilterConfig conf) throws ServletException {
@@ -106,14 +95,6 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
   @Override
   public void destroy() {
     super.destroy();
-    if (curatorFramework != null) {
-      curatorFramework.close();
-      curatorFramework = null;
-    }
-    if (curatorSafeServiceExecutor != null) {
-      ExecutorUtil.shutdownNowAndAwaitTermination(curatorSafeServiceExecutor);
-      curatorSafeServiceExecutor = null;
-    }
   }
 
   @Override
@@ -161,12 +142,15 @@ public class HadoopAuthFilter extends DelegationTokenAuthenticationFilter {
     // path
     // without the appropriate ACL configuration. This issue is possibly related to HADOOP-11973
     try {
-      zkClient.makePath(
-          SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, CreateMode.PERSISTENT);
+      zkClient.makePath(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, CreateMode.PERSISTENT);
     } catch (KeeperException.NodeExistsException ex) {
       // ignore?
     }
 
-    return zkClient.getCuratorFramework().usingNamespace(zkClient.getAbsolutePath(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH));
+    // Note - Curator complains if the namespace starts with /
+    String namespace = zkClient.getAbsolutePath(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH);
+    namespace = namespace.startsWith("/") ? namespace.substring(1) : namespace;
+
+    return zkClient.getCuratorFramework().usingNamespace(namespace);
   }
 }

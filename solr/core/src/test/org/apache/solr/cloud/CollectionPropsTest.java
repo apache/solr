@@ -171,8 +171,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
           new String(
               cluster
                   .getZkClient()
-                  .getData(
-                      "/collections/" + collectionName + "/collectionprops.json", null, null),
+                  .getData("/collections/" + collectionName + "/collectionprops.json", null, null),
               StandardCharsets.UTF_8);
     } catch (Exception e) {
       collectionpropsInZk = "Could not get file from ZooKeeper: " + e.getMessage();

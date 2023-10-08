@@ -53,7 +53,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -71,7 +70,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DefaultConnectionStrategy;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.DefaultZkCredentialsInjector;
 import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
@@ -88,7 +86,6 @@ import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkClientConnectionStrategy;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
@@ -232,6 +229,8 @@ public class ZkController implements Closeable {
 
   private boolean genericCoreNodeNames;
 
+  private int clientTimeout;
+
   private volatile boolean isClosed;
 
   private final ConcurrentHashMap<String, Throwable> replicasMetTragicEvent =
@@ -328,28 +327,28 @@ public class ZkController implements Closeable {
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
 
-<<<<<<< HEAD
-    this.clientTimeout = cloudConfig.getZkClientTimeout();
-
     String zkCredentialsInjectorClass = cloudConfig.getZkCredentialsInjectorClass();
     ZkCredentialsInjector zkCredentialsInjector =
         StrUtils.isNullOrEmpty(zkCredentialsInjectorClass)
             ? new DefaultZkCredentialsInjector()
             : cc.getResourceLoader()
-            .newInstance(zkCredentialsInjectorClass, ZkCredentialsInjector.class);
+                .newInstance(zkCredentialsInjectorClass, ZkCredentialsInjector.class);
+
+    this.clientTimeout = cloudConfig.getZkClientTimeout();
 
     String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
-    ACLProvider zkACLProvider = null;
-    if (zkACLProviderClass != null && zkACLProviderClass.trim().length() > 0) {
-      zkACLProvider = cc.getResourceLoader().newInstance(zkACLProviderClass, ACLProvider.class);
-    }
+    ZkACLProvider zkACLProvider =
+        StrUtils.isNullOrEmpty(zkACLProviderClass)
+            ? new DefaultZkACLProvider()
+            : cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
+    zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
 
     String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
-    ZkCredentialsProvider zkCredentialsProvider = null;
-    if (zkCredentialsProviderClass != null && zkCredentialsProviderClass.trim().length() > 0) {
-      zkCredentialsProvider = cc.getResourceLoader()
-              .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class);
-    }
+    ZkCredentialsProvider zkCredentialsProvider =
+        StrUtils.isNullOrEmpty(zkCredentialsProviderClass)
+            ? new DefaultZkCredentialsProvider()
+            : cc.getResourceLoader()
+                .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class);
 
     zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
     addOnReconnectListener(getConfigDirListener());
@@ -365,7 +364,6 @@ public class ZkController implements Closeable {
             .withUrl(zkServerAddress)
             .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
-            .withConnStrategy(strat)
             .withReconnectListener(() -> onReconnect(descriptorsSupplier))
             .withBeforeConnect(() -> beforeReconnect(descriptorsSupplier))
             .withAclProvider(zkACLProvider)
@@ -413,8 +411,7 @@ public class ZkController implements Closeable {
     markAllAsNotLeader(descriptorsSupplier);
   }
 
-  private void onReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier)
-      throws SessionExpiredException {
+  private void onReconnect(Supplier<List<CoreDescriptor>> descriptorsSupplier) {
     // on reconnect, reload cloud info
     log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
     clearZkCollectionTerms();
@@ -515,8 +512,6 @@ public class ZkController implements Closeable {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
       throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
-    } catch (SessionExpiredException e) {
-      throw e;
     } catch (Exception e) {
       log.error("Exception during reconnect", e);
       throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "", e);
@@ -534,8 +529,7 @@ public class ZkController implements Closeable {
       if (!zkClient.exists(ZkStateReader.UNSUPPORTED_CLUSTER_STATE)) {
         return;
       }
-      final byte[] data =
-          zkClient.getData(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, null, null);
+      final byte[] data = zkClient.getData(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, null, null);
 
       if (Arrays.equals("{}".getBytes(StandardCharsets.UTF_8), data)) {
         // Empty json. This log will only occur once.
@@ -606,8 +600,7 @@ public class ZkController implements Closeable {
                           + "/leader_elect/"
                           + slice
                           + "/election",
-                      null
-                  )
+                      null)
                   .size();
           if (children == 0) {
             log.debug(
@@ -1040,8 +1033,7 @@ public class ZkController implements Closeable {
               if (Watcher.Event.EventType.NodeDeleted.equals(event.getType())) {
                 deletedLatch.countDown();
               }
-            }
-        );
+            });
 
     if (stat == null) {
       // znode suddenly disappeared but that's okay
@@ -1049,8 +1041,7 @@ public class ZkController implements Closeable {
     }
 
     boolean deleted =
-        deletedLatch.await(
-            zkClient.getZkSessionTimeout() * 2L, TimeUnit.MILLISECONDS);
+        deletedLatch.await(zkClient.getZkSessionTimeout() * 2L, TimeUnit.MILLISECONDS);
     if (!deleted) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
@@ -1180,19 +1171,14 @@ public class ZkController implements Closeable {
     log.info("Register node as live in ZooKeeper:{}", nodePath);
     Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
     List<SolrZkClient.CuratorOpBuilder> ops = new ArrayList<>(2);
-    ops.add(
-        op -> op
-            .create()
-            .withMode(CreateMode.EPHEMERAL)
-            .forPath(nodePath));
+    ops.add(op -> op.create().withMode(CreateMode.EPHEMERAL).forPath(nodePath));
 
     // Create the roles node as well
-    roles
-        .forEach(
-            (role, mode) ->
-                ops.add(
-                    op -> op
-                        .create()
+    roles.forEach(
+        (role, mode) ->
+            ops.add(
+                op ->
+                    op.create()
                         .withMode(CreateMode.EPHEMERAL)
                         .forPath(NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName)));
 
@@ -1534,8 +1520,7 @@ public class ZkController implements Closeable {
     while (iterCount-- > 0) {
       try {
         byte[] data =
-            zkClient.getData(
-                ZkStateReader.getShardLeadersPath(collection, slice), null, null);
+            zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         return leaderProps;
       } catch (InterruptedException e) {
@@ -2338,9 +2323,7 @@ public class ZkController implements Closeable {
           if (electionNode.startsWith(getNodeName())) {
             try {
               zkClient.delete(
-                  Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE + "/" + electionNode,
-                  -1
-              );
+                  Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE + "/" + electionNode, -1);
             } catch (NoNodeException e) {
               // no problem
             } catch (InterruptedException e) {

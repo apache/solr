@@ -126,15 +126,13 @@ public class ZookeeperReadAPI extends AdminAPIBase {
       if (includeChildren != null && !includeChildren.booleanValue()) {
         return listResponse;
       }
-      List<String> l =
-          coreContainer.getZkController().getZkClient().getChildren(zkPath, null);
+      List<String> l = coreContainer.getZkController().getZkClient().getChildren(zkPath, null);
       String prefix = zkPath.endsWith("/") ? zkPath : zkPath + "/";
 
       Map<String, Stat> stats = new LinkedHashMap<>();
       for (String s : l) {
         try {
-          stats.put(
-              s, coreContainer.getZkController().getZkClient().exists(prefix + s, null));
+          stats.put(s, coreContainer.getZkController().getZkClient().exists(prefix + s, null));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }

@@ -32,13 +32,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
-
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient.IsClosed;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.SolrZkClient.IsClosed;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.CreateMode;
@@ -258,8 +257,9 @@ public class ZkDistributedQueue implements DistributedQueue {
         for (CuratorTransactionResult result : results) {
           if (result.getError() != 0) {
             try {
-            zookeeper.delete(result.getForPath(), -1);
-            } catch (KeeperException.NoNodeException ignored) { }
+              zookeeper.delete(result.getForPath(), -1);
+            } catch (KeeperException.NoNodeException ignored) {
+            }
           }
         }
       }

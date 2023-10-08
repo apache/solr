@@ -607,9 +607,7 @@ public class DistributedClusterStateUpdater {
                 jsonPath,
                 collection.getZNodeVersion());
           }
-          zkStateReader
-              .getZkClient()
-              .setData(jsonPath, stateJson, collection.getZNodeVersion());
+          zkStateReader.getZkClient().setData(jsonPath, stateJson, collection.getZNodeVersion());
         }
       }
     }

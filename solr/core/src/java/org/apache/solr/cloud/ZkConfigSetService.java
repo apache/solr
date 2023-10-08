@@ -139,7 +139,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
     try {
-      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
+      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Error checking whether config exists", SolrZkClient.checkInterrupted(e));
@@ -224,8 +224,7 @@ public class ZkConfigSetService extends ConfigSetService {
           Utils.toJSON(data),
           CreateMode.PERSISTENT,
           null,
-          false
-      );
+          false);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error setting config metadata", SolrZkClient.checkInterrupted(e));
     }
@@ -338,7 +337,7 @@ public class ZkConfigSetService extends ConfigSetService {
           toZkFilePath);
     } else {
       log.debug("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
-      byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
+      byte[] data = zkClient.getData(fromZkFilePath, null, null);
       zkClient.makePath(toZkFilePath, data);
     }
   }

@@ -348,8 +348,7 @@ public class ZkMaintenanceUtils {
             String zkNode = createZkNodeName(zkPath, rootPath, file);
             try {
               // if the path exists (and presumably we're uploading data to it) just set its data
-              if (file.toFile().getName().equals(ZKNODE_DATA_FILE)
-                  && zkClient.exists(zkNode)) {
+              if (file.toFile().getName().equals(ZKNODE_DATA_FILE) && zkClient.exists(zkNode)) {
                 zkClient.setData(zkNode, file);
               } else {
                 // We are only uploading a single file, preVisitDirectory was never called
@@ -627,7 +626,7 @@ public class ZkMaintenanceUtils {
       return;
     }
     try {
-      zkClient.makePath(path, data, createMode, null, true, true);
+      zkClient.makePath(path, data, createMode, null, true, skipPathParts);
     } catch (NodeExistsException ignored) {
       // it's okay if another beats us creating the node
     }
@@ -654,7 +653,7 @@ public class ZkMaintenanceUtils {
       if (path.equals(source) == false)
         finalDestination += "/" + path.substring(source.length() + 1);
       zkClient.makePath(finalDestination, false);
-      zkClient.setData(finalDestination, zkClient.getData(path, null, null, true));
+      zkClient.setData(finalDestination, zkClient.getData(path, null, null));
     }
   }
 }

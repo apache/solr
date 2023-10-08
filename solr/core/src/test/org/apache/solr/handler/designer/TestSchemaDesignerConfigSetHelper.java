@@ -180,8 +180,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertTrue(
         cluster
             .getZkClient()
-            .exists(
-                SchemaDesignerAPI.getConfigSetZkPath(mutableId, "lang/stopwords_en.txt")));
+            .exists(SchemaDesignerAPI.getConfigSetZkPath(mutableId, "lang/stopwords_en.txt")));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
     assertNotNull(schema.getFieldOrNull("*_txt_fr"));
     assertNull(schema.getFieldOrNull("*_txt_ga"));
@@ -204,8 +203,7 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     assertTrue(
         cluster
             .getZkClient()
-            .exists(
-                SchemaDesignerAPI.getConfigSetZkPath(mutableId, "lang/stopwords_en.txt")));
+            .exists(SchemaDesignerAPI.getConfigSetZkPath(mutableId, "lang/stopwords_en.txt")));
     assertNotNull(schema.getFieldTypeByName("text_fr"));
     assertNotNull(schema.getFieldOrNull("*_txt_fr"));
     assertNull(schema.getFieldOrNull("*_txt_ga"));

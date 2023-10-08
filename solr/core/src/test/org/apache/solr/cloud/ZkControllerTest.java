@@ -233,8 +233,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             .makePath(
                 DocCollection.getCollectionPathRoot(collectionName),
                 new byte[0],
-                CreateMode.PERSISTENT
-            );
+                CreateMode.PERSISTENT);
 
         ZkNodeProps m =
             new ZkNodeProps(
@@ -340,30 +339,29 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
               // touchConfDir doesn't make the znode
               Stat s = new Stat();
-              assertFalse(zkClient.exists(zkpath, true));
+              assertFalse(zkClient.exists(zkpath));
               zkClient.makePath(zkpath, true);
-              assertTrue(zkClient.exists(zkpath, true));
-              assertNull(zkClient.getData(zkpath, null, s, true));
+              assertTrue(zkClient.exists(zkpath));
+              assertNull(zkClient.getData(zkpath, null, s));
               assertEquals(0, s.getVersion());
 
               // touchConfDir should only set the data to new byte[] {0}
               ZkController.touchConfDir(loader);
-              assertTrue(zkClient.exists(zkpath, true));
-              assertArrayEquals(
-                  ZkController.TOUCHED_ZNODE_DATA, zkClient.getData(zkpath, null, s, true));
+              assertTrue(zkClient.exists(zkpath));
+              assertArrayEquals(ZkController.TOUCHED_ZNODE_DATA, zkClient.getData(zkpath, null, s));
               assertEquals(1, s.getVersion());
 
               // set new data to check if touchConfDir overwrites later
               byte[] data = "{\"key\", \"new data\"".getBytes(StandardCharsets.UTF_8);
-              s = zkClient.setData(zkpath, data, true);
+              s = zkClient.setData(zkpath, data);
               assertEquals(2, s.getVersion());
 
               // make sure touchConfDir doesn't overwrite existing data.
               // touchConfDir should update version.
-              assertTrue(zkClient.exists(zkpath, true));
+              assertTrue(zkClient.exists(zkpath));
               ZkController.touchConfDir(loader);
-              assertTrue(zkClient.exists(zkpath, true));
-              assertArrayEquals(data, zkClient.getData(zkpath, null, s, true));
+              assertTrue(zkClient.exists(zkpath));
+              assertArrayEquals(data, zkClient.getData(zkpath, null, s));
               assertEquals(3, s.getVersion());
             }
           }
@@ -390,10 +388,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       server
           .getZkClient()
           .create(
-              "/clusterstate.json",
-              "{}".getBytes(StandardCharsets.UTF_8),
-              CreateMode.PERSISTENT,
-              true);
+              "/clusterstate.json", "{}".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
       AtomicInteger idx = new AtomicInteger();
       CountDownLatch latch = new CountDownLatch(nThreads);
       CountDownLatch done = new CountDownLatch(nThreads);
@@ -420,7 +415,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             });
       }
       done.await();
-      assertFalse(server.getZkClient().exists("/clusterstate.json", true));
+      assertFalse(server.getZkClient().exists("/clusterstate.json"));
       assertNull(exception.get());
     } finally {
       ExecutorUtil.shutdownNowAndAwaitTermination(svc);

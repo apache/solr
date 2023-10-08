@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -481,9 +480,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     try {
       ZkNodeProps props =
           ZkNodeProps.load(
-              zkStateReader
-                  .getZkClient()
-                  .getData(Overseer.OVERSEER_ELECT + "/leader", null, null));
+              zkStateReader.getZkClient().getData(Overseer.OVERSEER_ELECT + "/leader", null, null));
       propsId = props.getStr(ID);
       if (myId.equals(propsId)) {
         return LeaderStatus.YES;

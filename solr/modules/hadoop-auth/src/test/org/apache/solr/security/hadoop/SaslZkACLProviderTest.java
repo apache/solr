@@ -114,15 +114,11 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
       zkClient.create(
           "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.makePath(
-          "/protectedMakePathNode",
-          "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT
-      );
+          "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.create(
           SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
           "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT
-      );
+          CreateMode.PERSISTENT);
     } finally {
       zkClient.close();
     }
@@ -130,15 +126,9 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     zkClient = new SolrZkClientNoACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
       zkClient.create(
-          "/unprotectedCreateNode",
-          "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT
-      );
+          "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.makePath(
-          "/unprotectedMakePathNode",
-          "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT
-      );
+          "/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     } finally {
       zkClient.close();
     }

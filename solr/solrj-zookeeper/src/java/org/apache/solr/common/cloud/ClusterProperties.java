@@ -205,15 +205,13 @@ public class ClusterProperties {
             // Don't update ZK unless absolutely necessary.
             if (properties.get(propertyName) != null) {
               properties.remove(propertyName);
-              client.setData(
-                  ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion());
+              client.setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion());
             }
           } else {
             // Don't update ZK unless absolutely necessary.
             if (!propertyValue.equals(properties.get(propertyName))) {
               properties.put(propertyName, propertyValue);
-              client.setData(
-                  ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion());
+              client.setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion());
             }
           }
         } else {

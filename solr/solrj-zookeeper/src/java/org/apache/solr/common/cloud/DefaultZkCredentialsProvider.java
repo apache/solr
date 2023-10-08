@@ -16,11 +16,9 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.curator.framework.AuthInfo;
-
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import org.apache.curator.framework.AuthInfo;
 
 public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
 
@@ -28,11 +26,21 @@ public class DefaultZkCredentialsProvider implements ZkCredentialsProvider {
   protected ZkCredentialsInjector zkCredentialsInjector;
 
   public DefaultZkCredentialsProvider() {
-    this(new DefaultZkCredentialsInjector());
+    this(new DefaultZkCredentialsInjector(), null);
+  }
+
+  public DefaultZkCredentialsProvider(List<AuthInfo> zkCredentials) {
+    this(new DefaultZkCredentialsInjector(), zkCredentials);
   }
 
   public DefaultZkCredentialsProvider(ZkCredentialsInjector zkCredentialsInjector) {
+    this(zkCredentialsInjector, null);
+  }
+
+  public DefaultZkCredentialsProvider(
+      ZkCredentialsInjector zkCredentialsInjector, List<AuthInfo> zkCredentials) {
     this.zkCredentialsInjector = zkCredentialsInjector;
+    this.zkCredentials = zkCredentials;
   }
 
   @Override

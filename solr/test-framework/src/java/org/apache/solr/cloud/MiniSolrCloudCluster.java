@@ -301,13 +301,12 @@ public class MiniSolrCloudCluster {
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      if (!zkClient.exists("/solr/solr.xml", true)) {
+      if (!zkClient.exists("/solr/solr.xml")) {
         zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()));
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
           zkClient.makePath(
               "/solr" + ZkStateReader.CLUSTER_PROPS,
-              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8)
-          );
+              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8));
         }
         if (securityJson.isPresent()) { // configure Solr security
           zkClient.makePath(
@@ -646,9 +645,7 @@ public class MiniSolrCloudCluster {
         // cleanup any property before removing the configset
         getZkClient()
             .delete(
-                ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME,
-                -1
-            );
+                ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME, -1);
       } catch (KeeperException.NoNodeException nne) {
       }
       new ConfigSetAdminRequest.Delete().setConfigSetName(configSet).process(solrClient);

@@ -214,8 +214,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                     + "/"
                     + COLLECTION_PROPS_ZKNODE,
                 null,
-                null
-            );
+                null);
     assertNotNull(data);
     assertTrue(data.length > 0);
     @SuppressWarnings("unchecked")
@@ -1048,8 +1047,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                 aliasUpdate.countDown();
               }
             },
-            stat
-        );
+            stat);
   }
 
   /**

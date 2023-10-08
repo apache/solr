@@ -91,15 +91,11 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient.create(
         "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     zkClient.makePath(
-        "/unprotectedMakePathNode",
-        "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT
-    );
+        "/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     zkClient.create(
         SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
         "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT
-    );
+        CreateMode.PERSISTENT);
     zkClient.close();
 
     if (log.isInfoEnabled()) {

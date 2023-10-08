@@ -92,8 +92,7 @@ abstract class ZkDistributedLock implements DistributedLock {
                 + DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR
                 + lockNodePrefix,
             null,
-            CreateMode.EPHEMERAL_SEQUENTIAL
-        );
+            CreateMode.EPHEMERAL_SEQUENTIAL);
 
     sequence = getSequenceFromNodename(lockNode);
   }

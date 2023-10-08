@@ -576,7 +576,8 @@ public class ZkStateReader implements SolrCloseable {
     } catch (KeeperException.NoNodeException nne) {
       String noNodePath = nne.getPath();
       if (noNodePath.length() > zkClient.getCuratorFramework().getNamespace().length()) {
-        noNodePath = noNodePath.substring(zkClient.getCuratorFramework().getNamespace().length() + 1);
+        noNodePath =
+            noNodePath.substring(zkClient.getCuratorFramework().getNamespace().length() + 1);
       }
       throw new SolrException(
           ErrorCode.SERVICE_UNAVAILABLE,
@@ -1143,8 +1144,7 @@ public class ZkStateReader implements SolrCloseable {
       while (true) {
         try {
           byte[] data =
-              zkClient.getData(
-                  ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat());
+              zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat());
           @SuppressWarnings("unchecked")
           Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(data);
           this.clusterProperties =
@@ -1634,7 +1634,7 @@ public class ZkStateReader implements SolrCloseable {
             ZkStateReader.class.getName() + "/exercised", e);
         // could be a race condition that state.json and PRS entries are deleted between the
         // state.json fetch and PRS entry fetch
-        Stat exists = zkClient.exists(collectionPath, watcher, true);
+        Stat exists = zkClient.exists(collectionPath, watcher);
         if (exists == null) {
           log.info(
               "PRS entry for collection {} not found in ZK. It was probably deleted between state.json read and PRS entry read.",
@@ -2242,7 +2242,8 @@ public class ZkStateReader implements SolrCloseable {
         log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       }
       // Call sync() first to ensure the subsequent read (getData) is up to date.
-      zkClient.runWithCorrectThrows("syncing aliases", () -> zkClient.getCuratorFramework().sync().forPath(ALIASES));
+      zkClient.runWithCorrectThrows(
+          "syncing aliases", () -> zkClient.getCuratorFramework().sync().forPath(ALIASES));
       return setIfNewer(zkClient.getNode(ALIASES, null));
     }
 

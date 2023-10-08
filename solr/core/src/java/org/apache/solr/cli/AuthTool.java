@@ -217,8 +217,7 @@ public class AuthTool extends ToolBase {
                     .withTimeout(
                         SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
                     .build()) {
-              zkClient.setData(
-                  "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
+              zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8));
             } catch (Exception ex) {
               CLIO.out(
                   "Unable to access ZooKeeper. Please add the following security.json to ZooKeeper (in case of SolrCloud):\n"
@@ -384,7 +383,7 @@ public class AuthTool extends ToolBase {
                   .withUrl(zkHost)
                   .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
                   .build()) {
-            zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
+            zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8));
           }
         }
 
@@ -452,8 +451,8 @@ public class AuthTool extends ToolBase {
 
   private void checkSecurityJsonExists(SolrZkClient zkClient)
       throws KeeperException, InterruptedException {
-    if (zkClient.exists("/security.json", true)) {
-      byte[] oldSecurityBytes = zkClient.getData("/security.json", null, null, true);
+    if (zkClient.exists("/security.json")) {
+      byte[] oldSecurityBytes = zkClient.getData("/security.json", null, null);
       if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
         CLIO.out(
             "Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
@@ -479,7 +478,7 @@ public class AuthTool extends ToolBase {
               .withUrl(zkHost)
               .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
               .build()) {
-        zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
+        zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8));
       }
     }
   }

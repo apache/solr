@@ -178,7 +178,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ZkWriteCommand wc = new ZkWriteCommand("c1", state);
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
     writer.writePendingUpdates();
-    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
     reader.waitForState(
         "c1", 1, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState != null);
 
@@ -239,7 +239,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
     writer.writePendingUpdates();
 
-    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
 
     // reader.forceUpdateCollection("c1");
     reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS, (n, c) -> c != null);
@@ -397,7 +397,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
     writer.writePendingUpdates();
 
-    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
 
     reader.forciblyRefreshAllClusterStateSlow();
     ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");
@@ -480,7 +480,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
     writer.writePendingUpdates();
 
-    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
+    assertTrue(fixture.zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
 
     reader.forciblyRefreshAllClusterStateSlow();
     ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");

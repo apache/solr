@@ -16,9 +16,8 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.curator.framework.AuthInfo;
-
 import java.util.List;
+import org.apache.curator.framework.AuthInfo;
 
 public interface ZkCredentialsProvider {
   List<AuthInfo> getCredentials();

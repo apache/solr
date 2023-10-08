@@ -65,15 +65,13 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     NamedList<Object> request = create.process(cloudClient).getResponse();
 
     if (request.get("success") != null) {
-      assertTrue(
-          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
+      assertTrue(getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
 
       CollectionAdminRequest.Delete delete =
           CollectionAdminRequest.deleteCollection(collectionName);
       cloudClient.request(delete);
 
-      assertFalse(
-          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
+      assertFalse(getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
 
       // currently, removing a collection does not wait for cores to be unloaded
       TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -119,7 +117,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     NamedList<Object> request = create.process(cloudClient).getResponse();
     assertNotNull(request.get("success"));
     SolrZkClient.NodeData node =
-        getZkClient().getNode(DocCollection.getCollectionPath(collectionName), null, true);
+        getZkClient().getNode(DocCollection.getCollectionPath(collectionName), null);
 
     DocCollection c =
         ClusterState.createFromCollectionMap(
@@ -165,8 +163,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       cloudClient.request(delete);
 
       // collection has been deleted
-      assertFalse(
-          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
+      assertFalse(getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
       // ... and so has its autocreated config set
       assertFalse(
           "The auto-created config set should have been deleted with its collection",
@@ -186,8 +183,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     if (requestInitial.get("success") != null) {
       // collection exists now
       assertTrue(
-          getZkClient()
-              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial));
+          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial));
 
       String configName =
           cloudClient
@@ -213,8 +209,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       assertTrue(
           "The new collection should exist after a successful creation",
           getZkClient()
-              .exists(
-                  ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig));
+              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig));
 
       String configNameOfSecondCollection =
           cloudClient
@@ -235,8 +230,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
       // initial collection has been deleted
       assertFalse(
-          getZkClient()
-              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial));
+          getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial));
       // ... but not its autocreated config set, since it is shared with another collection
       assertTrue(
           "The auto-created config set should NOT have been deleted. Another collection is using it.",
@@ -251,8 +245,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       // the collection has been deleted
       assertFalse(
           getZkClient()
-              .exists(
-                  ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig));
+              .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig));
       // ... and the config set is now also deleted - once it doesn't get referenced by any
       // collection
       assertFalse(

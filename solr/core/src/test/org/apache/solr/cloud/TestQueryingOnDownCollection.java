@@ -139,8 +139,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     cluster
         .getZkClient()
-        .setData(
-            "/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState));
+        .setData("/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState));
   }
 
   protected static final String STD_CONF =

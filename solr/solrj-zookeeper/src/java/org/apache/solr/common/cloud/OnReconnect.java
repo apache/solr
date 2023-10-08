@@ -16,12 +16,10 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.zookeeper.KeeperException.SessionExpiredException;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Implementations are expected to implement a correct hashCode and equals method needed to uniquely

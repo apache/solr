@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import org.apache.curator.test.KillSession;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.common.cloud.DocCollection;
@@ -50,8 +48,6 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.TestableZooKeeper;
-import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,21 +181,11 @@ public class ChaosMonkey {
     if (cores != null) {
       monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
-      causeConnectionLoss(zkClient.getZooKeeper());
-    }
-  }
-
-  public static void causeConnectionLoss(ZooKeeper zooKeeper) {
-    assert zooKeeper instanceof TestableZooKeeper
-        : "Can only cause connection loss for TestableZookeeper";
-    if (zooKeeper instanceof TestableZooKeeper) {
       try {
-        ((TestableZooKeeper) zooKeeper).testableConnloss();
-      } catch (IOException ignored) {
-        // best effort
+        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
+      } catch (Exception e) {
+        log.warn("Exception causing connection loss", e);
       }
-    } else {
-      // TODO what now?
     }
   }
 

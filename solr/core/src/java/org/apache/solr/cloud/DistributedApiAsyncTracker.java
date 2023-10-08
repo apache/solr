@@ -329,13 +329,11 @@ public class DistributedApiAsyncTracker {
       zkClient.create(
           getPath(asyncId),
           State.SUBMITTED.shorthand.getBytes(StandardCharsets.UTF_8),
-          CreateMode.EPHEMERAL
-      );
+          CreateMode.EPHEMERAL);
     }
 
     void setTaskRunning(String asyncId) throws KeeperException, InterruptedException {
-      zkClient.setData(
-          getPath(asyncId), State.RUNNING.shorthand.getBytes(StandardCharsets.UTF_8));
+      zkClient.setData(getPath(asyncId), State.RUNNING.shorthand.getBytes(StandardCharsets.UTF_8));
     }
 
     void deleteInFlightTask(String asyncId) throws KeeperException, InterruptedException {

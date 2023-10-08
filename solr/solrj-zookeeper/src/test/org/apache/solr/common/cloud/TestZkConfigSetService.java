@@ -28,7 +28,6 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.api.ACLProvider;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
@@ -152,32 +151,34 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
     final String writeablePassword = "writeable";
 
     // Must be Arrays.asList(), Zookeeper does not allow for immutable list types for ACLs
-    List<ACL> acls = Arrays.asList(
-        new ACL(
-            ZooDefs.Perms.ALL,
-            new Id(
-                "digest",
-                DigestAuthenticationProvider.generateDigest(
-                    writeableUsername + ":" + writeablePassword))),
-        new ACL(
-            ZooDefs.Perms.READ,
-            new Id(
-                "digest",
-                DigestAuthenticationProvider.generateDigest(
-                    readOnlyUsername + ":" + readOnlyPassword))));
+    List<ACL> acls =
+        Arrays.asList(
+            new ACL(
+                ZooDefs.Perms.ALL,
+                new Id(
+                    "digest",
+                    DigestAuthenticationProvider.generateDigest(
+                        writeableUsername + ":" + writeablePassword))),
+            new ACL(
+                ZooDefs.Perms.READ,
+                new Id(
+                    "digest",
+                    DigestAuthenticationProvider.generateDigest(
+                        readOnlyUsername + ":" + readOnlyPassword))));
     ACLProvider aclProvider = new DefaultZkACLProvider(acls);
 
-    List<AuthInfo> credentials = List.of(
-        new AuthInfo(
-        "digest",
-        (readOnlyUsername + ":" + readOnlyPassword).getBytes(StandardCharsets.UTF_8)));
+    List<AuthInfo> credentials =
+        List.of(
+            new AuthInfo(
+                "digest",
+                (readOnlyUsername + ":" + readOnlyPassword).getBytes(StandardCharsets.UTF_8)));
     ZkCredentialsProvider readonly = new DefaultZkCredentialsProvider(credentials);
 
-    List<AuthInfo> writeableCredentials = List.of(
-        new AuthInfo(
-            "digest",
-            (writeableUsername + ":" + writeablePassword)
-                .getBytes(StandardCharsets.UTF_8)));
+    List<AuthInfo> writeableCredentials =
+        List.of(
+            new AuthInfo(
+                "digest",
+                (writeableUsername + ":" + writeablePassword).getBytes(StandardCharsets.UTF_8)));
     ZkCredentialsProvider writeable = new DefaultZkCredentialsProvider(writeableCredentials);
 
     Path configPath = createTempDir("acl-config");

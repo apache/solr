@@ -17,12 +17,10 @@
 package org.apache.solr.common.cloud;
 
 import java.util.List;
-
-import org.apache.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 
-public class DefaultZkACLProvider implements ACLProvider {
+public class DefaultZkACLProvider implements ZkACLProvider {
 
   private volatile List<ACL> globalACLsToAdd;
 
@@ -32,6 +30,17 @@ public class DefaultZkACLProvider implements ACLProvider {
 
   public DefaultZkACLProvider(List<ACL> globalACLsToAdd) {
     this.globalACLsToAdd = globalACLsToAdd;
+  }
+
+  @Override
+  public List<ACL> getACLsToAdd(String zNodePath) {
+    // In default (simple) implementation use the same set of ACLs for all znodes
+    if (globalACLsToAdd == null) {
+      synchronized (this) {
+        if (globalACLsToAdd == null) globalACLsToAdd = createGlobalACLsToAdd();
+      }
+    }
+    return globalACLsToAdd;
   }
 
   @Override

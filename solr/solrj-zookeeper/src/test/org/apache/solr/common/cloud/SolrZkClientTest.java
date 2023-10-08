@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -106,7 +105,11 @@ public class SolrZkClientTest extends SolrCloudTestCase {
           protected ACLProvider createACLProvider() {
             try {
               // Must be Arrays.asList(), Zookeeper does not allow for immutable list types for ACLs
-              return new DefaultZkACLProvider(Arrays.asList(new ACL(ZooDefs.Perms.ALL, new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH)))));
+              return new DefaultZkACLProvider(
+                  Arrays.asList(
+                      new ACL(
+                          ZooDefs.Perms.ALL,
+                          new Id(SCHEME, DigestAuthenticationProvider.generateDigest(AUTH)))));
             } catch (NoSuchAlgorithmException e) {
               throw new RuntimeException(e);
             }
@@ -213,12 +216,10 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData(
-            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null);
+        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null);
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData(
-            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped2A, null);
+        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrapped2A, null);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(), "baz", "bam")
         .process(solrClient);
@@ -232,12 +233,10 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData(
-            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null);
+        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null);
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData(
-            "/collections/" + getSaferTestName() + "/collectionprops.json", wrappedB, null);
+        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrappedB, null);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(), "baz", "bang")
         .process(solrClient);

@@ -123,13 +123,11 @@ public class RepositoryManager {
       packageManager.zkClient.create(
           PackageUtils.REPOSITORIES_ZK_PATH,
           getMapper().writeValueAsString(repos).getBytes("UTF-8"),
-          CreateMode.PERSISTENT
-      );
+          CreateMode.PERSISTENT);
     } else {
       packageManager.zkClient.setData(
           PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes("UTF-8")
-      );
+          getMapper().writeValueAsString(repos).getBytes("UTF-8"));
     }
 
     try (InputStream is = new URL(uri + "/publickey.der").openStream()) {
@@ -154,8 +152,7 @@ public class RepositoryManager {
   private String getRepositoriesJson(SolrZkClient zkClient)
       throws UnsupportedEncodingException, KeeperException, InterruptedException {
     if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH)) {
-      return new String(
-          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null), "UTF-8");
+      return new String(zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null), "UTF-8");
     }
     return "[]";
   }

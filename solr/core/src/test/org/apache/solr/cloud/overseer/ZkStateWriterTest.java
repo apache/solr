@@ -500,9 +500,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         writer.writePendingUpdates();
 
         byte[] data =
-            zkClient
-                .getZooKeeper()
-                .getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null);
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null);
         Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(data);
         assertNotNull(map.get("c1"));
       }
@@ -537,8 +535,9 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         byte[] data =
             zkClient
-                .getZooKeeper()
-                .getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json", null, null);
+                .getCuratorFramework()
+                .getData()
+                .forPath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2/state.json");
         assertTrue(compressor.isCompressedBytes(data));
         Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(compressor.decompressBytes(data));
         assertNotNull(map.get("c2"));

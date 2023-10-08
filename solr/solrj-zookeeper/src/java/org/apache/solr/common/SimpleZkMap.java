@@ -84,8 +84,7 @@ public class SimpleZkMap implements SimpleMap<Resource> {
       @Override
       public void get(Consumer consumer) throws SolrException {
         try {
-          byte[] data =
-              zkStateReader.getZkClient().getData(basePath + "/" + path, null, null);
+          byte[] data = zkStateReader.getZkClient().getData(basePath + "/" + path, null, null);
           if (data != null && data.length > 0) {
             consumer.read(new ByteArrayInputStream(data));
           } else {

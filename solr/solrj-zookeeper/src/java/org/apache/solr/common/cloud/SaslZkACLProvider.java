@@ -17,7 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;

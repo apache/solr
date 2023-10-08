@@ -25,7 +25,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.cloud.ZkController.ContextKey;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
@@ -107,7 +106,7 @@ public class LeaderElector {
 
     // If any double-registrations exist for me, remove all but this latest one!
     // TODO: can we even get into this state?
-    String prefix = zkClient.getZooKeeper().getSessionId() + "-" + context.id + "-";
+    String prefix = zkClient.getZkSessionId() + "-" + context.id + "-";
     Iterator<String> it = seqs.iterator();
     while (it.hasNext()) {
       String elec = it.next();
@@ -149,8 +148,7 @@ public class LeaderElector {
             watcher =
                 new ElectionWatcher(
                     context.leaderSeqPath, watchedNode, getSeq(context.leaderSeqPath), context),
-            null
-        );
+            null);
         log.debug("Watching path {} to know if I could be the leader", watchedNode);
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
@@ -227,7 +225,7 @@ public class LeaderElector {
 
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
 
-    long sessionId = zkClient.getZooKeeper().getSessionId();
+    long sessionId = zkClient.getZkSessionId();
     String id = sessionId + "-" + context.id;
     String leaderSeqPath = null;
     boolean cont = true;
@@ -241,10 +239,7 @@ public class LeaderElector {
           if (nodes.size() < 2) {
             leaderSeqPath =
                 zkClient.create(
-                    shardsElectZkPath + "/" + id + "-n_",
-                    null,
-                    CreateMode.EPHEMERAL_SEQUENTIAL
-                );
+                    shardsElectZkPath + "/" + id + "-n_", null, CreateMode.EPHEMERAL_SEQUENTIAL);
           } else {
             String firstInLine = nodes.get(1);
             log.debug("The current head: {}", firstInLine);
@@ -258,10 +253,7 @@ public class LeaderElector {
         } else {
           leaderSeqPath =
               zkClient.create(
-                  shardsElectZkPath + "/" + id + "-n_",
-                  null,
-                  CreateMode.EPHEMERAL_SEQUENTIAL
-              );
+                  shardsElectZkPath + "/" + id + "-n_", null, CreateMode.EPHEMERAL_SEQUENTIAL);
         }
 
         log.debug("Joined leadership election with path: {}", leaderSeqPath);
@@ -365,8 +357,7 @@ public class LeaderElector {
       ZkMaintenanceUtils.ensureExists(electZKPath, zkClient);
     } else {
       // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
-      ZkMaintenanceUtils.ensureExists(
-          electZKPath, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+      ZkMaintenanceUtils.ensureExists(electZKPath, null, CreateMode.PERSISTENT, zkClient, 2);
     }
 
     this.context = context;

@@ -68,8 +68,7 @@ public class DistributedMap {
 
   public void put(String trackingId, byte[] data) throws KeeperException, InterruptedException {
     assertKeyFormat(trackingId);
-    zookeeper.makePath(
-        dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, false);
+    zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, false);
   }
 
   /**
@@ -81,8 +80,7 @@ public class DistributedMap {
       throws KeeperException, InterruptedException {
     assertKeyFormat(trackingId);
     try {
-      zookeeper.makePath(
-          dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, true);
+      zookeeper.makePath(dir + "/" + PREFIX + trackingId, data, CreateMode.PERSISTENT, null, true);
       return true;
     } catch (NodeExistsException e) {
       return false;

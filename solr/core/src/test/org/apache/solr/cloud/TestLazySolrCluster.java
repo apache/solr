@@ -75,10 +75,7 @@ public class TestLazySolrCluster extends SolrCloudTestCase {
     zkClient.create(
         ZkStateReader.CONFIGS_ZKNODE + "/conf1/a/aa1", new byte[1024], CreateMode.PERSISTENT);
     zkClient.create(
-        ZkStateReader.CONFIGS_ZKNODE + "/conf1/a/aa2",
-        new byte[1024 * 2],
-        CreateMode.PERSISTENT
-    );
+        ZkStateReader.CONFIGS_ZKNODE + "/conf1/a/aa2", new byte[1024 * 2], CreateMode.PERSISTENT);
 
     List<String> allFiles = new ArrayList<>();
     byte[] buf = new byte[3 * 1024];

@@ -91,8 +91,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       zkClient.create(
           path + "/some_longer_file2.txt",
           longData.getBytes(StandardCharsets.UTF_8),
-          CreateMode.PERSISTENT
-      );
+          CreateMode.PERSISTENT);
 
       /* RUN */
       // delete all nodes that contain "file"

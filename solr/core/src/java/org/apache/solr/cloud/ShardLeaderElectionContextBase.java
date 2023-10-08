@@ -19,8 +19,6 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-
-import org.apache.curator.framework.api.transaction.CuratorOp;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -40,11 +38,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
-import org.apache.zookeeper.OpResult.SetDataResult;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,8 +105,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
           zkClient.multi(
               op -> op.check().withVersion(leaderZkNodeParentVersion).forPath(parent),
-              op -> op.delete().withVersion(-1).forPath(leaderPath)
-          );
+              op -> op.delete().withVersion(-1).forPath(leaderPath));
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           throw e;
@@ -150,19 +142,25 @@ class ShardLeaderElectionContextBase extends ElectionContext {
               // be used to make sure we only remove our own leader registration node.
               // The setData call used to get the parent version is also the trigger to
               // increment the version. We also do a sanity check that our leaderSeqPath exists.
-              List<CuratorTransactionResult> results = zkClient.multi(
-                  op -> op.check().withVersion(-1).forPath(leaderSeqPath),
-                  op -> op.create()
-                      .withMode(CreateMode.EPHEMERAL)
-                      .forPath(leaderPath, Utils.toJSON(leaderProps)),
-                  op -> op.setData().withVersion(-1).forPath(parent, null)
-              );
-              leaderZkNodeParentVersion = results.stream()
-                  .filter(CuratorTransactionResult.ofTypeAndPath(OperationType.SET_DATA, parent))
-                  .findFirst()
-                  .orElseThrow(() -> new RuntimeException("Could not set data for parent path in ZK: " + parent))
-                  .getResultStat()
-                  .getVersion();
+              List<CuratorTransactionResult> results =
+                  zkClient.multi(
+                      op -> op.check().withVersion(-1).forPath(leaderSeqPath),
+                      op ->
+                          op.create()
+                              .withMode(CreateMode.EPHEMERAL)
+                              .forPath(leaderPath, Utils.toJSON(leaderProps)),
+                      op -> op.setData().withVersion(-1).forPath(parent, null));
+              leaderZkNodeParentVersion =
+                  results.stream()
+                      .filter(
+                          CuratorTransactionResult.ofTypeAndPath(OperationType.SET_DATA, parent))
+                      .findFirst()
+                      .orElseThrow(
+                          () ->
+                              new RuntimeException(
+                                  "Could not set data for parent path in ZK: " + parent))
+                      .getResultStat()
+                      .getVersion();
             }
           });
     } catch (NoNodeException e) {

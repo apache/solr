@@ -337,18 +337,14 @@ public class DistribPackageStore implements PackageStore {
   private void distribute(FileInfo info) {
     try {
       String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
-      coreContainer
-          .getZkController()
-          .getZkClient()
-          .makePath(ZK_PACKAGESTORE + dirName, false);
+      coreContainer.getZkController().getZkClient().makePath(ZK_PACKAGESTORE + dirName, false);
       coreContainer
           .getZkController()
           .getZkClient()
           .create(
               ZK_PACKAGESTORE + info.path,
               info.getDetails().getMetaData().sha512.getBytes(UTF_8),
-              CreateMode.PERSISTENT
-          );
+              CreateMode.PERSISTENT);
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
     }
@@ -536,11 +532,7 @@ public class DistribPackageStore implements PackageStore {
       @SuppressWarnings({"rawtypes"})
       List l = null;
       try {
-        l =
-            coreContainer
-                .getZkController()
-                .getZkClient()
-                .getChildren(ZK_PACKAGESTORE + path, null);
+        l = coreContainer.getZkController().getZkClient().getChildren(ZK_PACKAGESTORE + path, null);
       } catch (KeeperException.NoNodeException e) {
         // does not matter
       }

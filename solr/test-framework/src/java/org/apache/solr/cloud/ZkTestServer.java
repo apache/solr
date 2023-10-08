@@ -810,13 +810,24 @@ public class ZkTestServer {
 
     chRootClient.multi(
         op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections", null),
-        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections/collection1", Utils.toJSON(zkProps)),
-        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections/collection1/shards", null),
-        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections/control_collection", Utils.toJSON(zkProps)),
-        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/collections/control_collection/shards", null),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/collection1", Utils.toJSON(zkProps)),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/collection1/shards", null),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/control_collection", Utils.toJSON(zkProps)),
+        op ->
+            op.create()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath("/collections/control_collection/shards", null),
         op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/configs", null),
-        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/configs/conf1", null)
-    );
+        op -> op.create().withMode(CreateMode.PERSISTENT).forPath("/configs/conf1", null));
 
     // for now, always upload the config and schema to the canonical names
     putConfig("conf1", chRootClient, solrhome, config, "solrconfig.xml");

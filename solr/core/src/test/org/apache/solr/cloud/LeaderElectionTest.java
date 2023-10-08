@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.test.KillSession;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -39,8 +40,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
-import org.apache.zookeeper.TestableZooKeeper;
-import org.apache.zookeeper.ZooKeeper;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -293,8 +292,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     while (iterCount-- > 0) {
       try {
         byte[] data =
-            zkClient.getData(
-                ZkStateReader.getShardLeadersPath(collection, slice), null, null);
+            zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         return leaderProps.getCoreUrl();
       } catch (NoNodeException | SessionExpiredException e) {
@@ -539,11 +537,15 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
                   int j;
                   j = random().nextInt(threads.size());
                   try {
-                    ZooKeeper zk = threads.get(j).es.zkClient.getZooKeeper();
-                    assertTrue(zk instanceof TestableZooKeeper);
-                    ((TestableZooKeeper) zk).testableConnloss();
                     if (random().nextBoolean()) {
-                      server.expire(zk.getSessionId());
+                      KillSession.kill(
+                          threads
+                              .get(j)
+                              .es
+                              .zkClient
+                              .getCuratorFramework()
+                              .getZookeeperClient()
+                              .getZooKeeper());
                     }
                   } catch (Exception e) {
                     log.error("error expiring session", e);
@@ -583,14 +585,15 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
         thread.close();
       }
 
-    // cleanup any threads still running
-    for (ClientThread thread : threads) {
-      thread.es.zkClient.getZooKeeper().close();
-      thread.close();
-    }
+      // cleanup any threads still running
+      for (ClientThread thread : threads) {
+        thread.es.zkClient.close();
+        thread.close();
+      }
 
-    for (Thread thread : threads) {
-      thread.join();
+      for (Thread thread : threads) {
+        thread.join();
+      }
     }
   }
 

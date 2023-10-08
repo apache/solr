@@ -68,8 +68,7 @@ public class OverseerNodePrioritizer {
     SolrZkClient zk = zkStateReader.getZkClient();
     List<String> overseerDesignates = new ArrayList<>();
     if (zk.exists(ZkStateReader.ROLES)) {
-      Map<?, ?> m =
-          (Map<?, ?>) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat()));
+      Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat()));
       @SuppressWarnings("unchecked")
       List<String> l = (List<String>) m.get("overseer");
       if (l != null) {

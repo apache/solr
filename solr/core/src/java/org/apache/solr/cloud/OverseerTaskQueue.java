@@ -295,9 +295,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         try {
           QueueEvent queueEvent =
               new QueueEvent(
-                  dir + "/" + headNode,
-                  zookeeper.getData(dir + "/" + headNode, null, null),
-                  null);
+                  dir + "/" + headNode, zookeeper.getData(dir + "/" + headNode, null, null), null);
           return queueEvent.getId();
         } catch (KeeperException.NoNodeException e) {
           // Another client removed the node first, try next

@@ -43,6 +43,12 @@ dependencies {
   var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   }
+  api('org.apache.curator:curator-client', {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  api('org.apache.curator:curator-framework', {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
   api('org.apache.curator:curator-test') {
     exclude group: 'org.apache.zookeeper', module: 'zookeeper'
     exclude group: 'com.google.guava', module: 'guava'

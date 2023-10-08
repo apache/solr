@@ -67,8 +67,7 @@ public class CollectionProperties {
     try {
       return (Map<String, String>)
           Utils.fromJSON(
-              client.getData(
-                  ZkStateReader.getCollectionPropsPath(collection), null, new Stat()));
+              client.getData(ZkStateReader.getCollectionPropsPath(collection), null, new Stat()));
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();
     } catch (KeeperException | InterruptedException e) {

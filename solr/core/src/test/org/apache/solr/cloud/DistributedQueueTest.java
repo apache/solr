@@ -292,11 +292,15 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
 
   private void forceSessionExpire() throws InterruptedException, TimeoutException {
     final CountDownLatch hasDisconnected = new CountDownLatch(1);
-    zkClient.getCuratorFramework().getConnectionStateListenable().addListener((OnDisconnect) hasDisconnected::countDown);
+    zkClient
+        .getCuratorFramework()
+        .getConnectionStateListenable()
+        .addListener((OnDisconnect) hasDisconnected::countDown);
     long sessionId = zkClient.getZkSessionId();
     zkServer.expire(sessionId);
     hasDisconnected.await(10, TimeUnit.SECONDS);
-    assertEquals("ZK Client did not disconnect after session expiration", 0, hasDisconnected.getCount());
+    assertEquals(
+        "ZK Client did not disconnect after session expiration", 0, hasDisconnected.getCount());
     zkClient.getCuratorFramework().blockUntilConnected(10, TimeUnit.SECONDS);
     assertTrue(zkClient.isConnected());
     assertNotEquals(sessionId, zkClient.getZkSessionId());
