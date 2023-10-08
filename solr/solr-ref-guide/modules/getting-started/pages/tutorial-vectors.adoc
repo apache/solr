@@ -1,4 +1,4 @@
-= Exercise 5: Indexing Vectors
+= Exercise 5: Using Vectors
 :experimental:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -18,12 +18,24 @@
 // under the License.
 
 [[exercise-5]]
-== Exercise 5: Indexing and using Vectors in Solr
+== Exercise 5: Using Vectors in Solr
 
-This exercise will use the Films example that we looked at previously in Excercise 4.
+This exercise will use the Films example that we looked at previously in Exercise  4.
 
+=== Getting Ready
 
-=== Preparing Schemaless for the Vector data
+Make sure you have a running Solr, following the steps in xref:tutorial-films.adoc#restart-solr[].
+Then go ahead to the next section.
+
+=== Preparing for the Vector data
+
+[,console]
+----
+$ bin/solr create -c films
+----
+
+Because we didn't specify a ConfigSet, we will end up using the `_default` ConfigSet.
+
 First we need to update our schema to support the vector data structure.
 
 [,console]
@@ -36,8 +48,7 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
     "similarityFunction":"cosine",
     "knnAlgorithm":"hnsw"
   }
-}
-
+}'
 ----
 
 === Now index the Films data with Vectors
@@ -81,7 +92,10 @@ be used as input vector for all the following example queries.
 
 Search for the top 10 movies most similar to the target vector (KNN Query for recommendation):
 
-http://localhost:8983/solr/films/query?q={!knn%20f=film_vector%20topK=10}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]
+[,console]
+----
+$ curl 'http://localhost:8983/solr/films/query?q={!knn%20f=film_vector%20topK=10}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]'
+----
 
 * Notice that among the results, there are some animation family movies, such as _Curious George_ and _Bambi_, which makes sense, since the target vector was created with two other animation family movies (_Finding Nemo_ and _Bee Movie_).
 * We also notice that among the results there are two movies that the person already watched. In the next example we will filter then out.
@@ -125,3 +139,7 @@ FAQ:
      and _initial_release_date_ would have been guessed as a multi-valued `pdate` type.  It makes more sense with this
      particular data set domain to have the movie name be a single valued general full-text searchable field,
      and for the release date also to be single valued.
+
+=== Exercise 5 Wrap Up
+
+In this excercise, we used the Schema API to add the vector field, and then learned how to index and query Solr using vector data structure.

@@ -39,7 +39,7 @@ We'll specify the specific schema for a couple of fields that Solr would otherwi
 
 [,console]
 ----
-curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
+$ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
   "add-field" : [
     {
       "name":"name",
@@ -75,16 +75,16 @@ http://localhost:8983/solr/films/query?q=name:batman
 
 Show me all 'Super hero' movies:
 
-[source]
+[source,curl,command,copy]
 ----
-curl 'http://localhost:8983/solr/films/query?q=*:*&fq=genre:"Superhero movie"'
+$ curl 'http://localhost:8983/solr/films/query?q=*:*&fq=genre:"Superhero movie"'
 ----
 
 Let's see the distribution of genres across all the movies. See the facet section of the response for the counts:
 
-[source]
+[source,curl,command,copy]
 ----
-curl 'http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre'
+$ curl 'http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre'
 ----
 
 === Time for relevancy tuning with ParamSets :
@@ -101,7 +101,7 @@ That is clearly not what we are looking for.
 Let's set up two relevancy algorithms, using our APIs, and then compare the quality of the results.
 Algorithm *A* will use the `dismax` and a `qf` parameters, and Algorithm *B* will use `dismax`, `qf` and a must match `mm` set to 100%.
 
-[, console]
+[,console]
 ----
 curl http://localhost:8983/solr/films/config/params -X POST -H 'Content-type:application/json' --data-binary '{
 "set": {
@@ -137,4 +137,4 @@ You can extend this to online A/B testing very easily to confirm with real users
 
 === Exercise 4 Wrap Up
 
-In this excercise, we used the Schema API to customize the fields that we needed, and then learned how to organize our query parameters into named groups of parameters called ParamSets that we created using the APIs.
+In this exercise, we used the Schema API to customize the fields that we needed, and then learned how to organize our query parameters into named groups of parameters called ParamSets that we created using the APIs.
