@@ -18,6 +18,8 @@
 # Welcome to the Apache Solr project!
 -----------------------------------
 
+Some cool new intro text.
+
 Solr is the popular, blazing fast open source search platform for all your
 enterprise, e-commerce, and analytics needs, built on [Apache Lucene](https://lucene.apache.org/).
 
