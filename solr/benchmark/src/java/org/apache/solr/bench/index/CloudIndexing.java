@@ -39,16 +39,14 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Timeout;
 import org.openjdk.jmh.annotations.Warmup;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Threads(4)
-@Warmup(time = 10, iterations = 3)
-@Measurement(time = 20, iterations = 4)
+@Threads(16)
+@Warmup(time = 15, iterations = 2)
+@Measurement(time = 60, iterations = 4)
 @Fork(value = 1)
-@Timeout(time = 60)
 // A benchmark to experiment with the performance of distributed indexing.
 public class CloudIndexing {
 
@@ -126,7 +124,6 @@ public class CloudIndexing {
   }
 
   @Benchmark
-  @Timeout(time = 300)
   public Object indexDoc(MiniClusterState.MiniClusterBenchState miniClusterState, BenchState state)
       throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
