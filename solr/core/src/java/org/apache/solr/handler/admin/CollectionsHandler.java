@@ -171,6 +171,7 @@ import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.ClusterProperty;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
@@ -1368,6 +1369,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         CreateCollectionBackupAPI.class,
         CreateShard.class,
         DeleteAlias.class,
+        ClusterProperty.class,
         DeleteCollectionBackup.class,
         DeleteCollection.class,
         DeleteReplica.class,
