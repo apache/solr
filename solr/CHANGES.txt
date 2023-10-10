@@ -13,8 +13,7 @@ New Features
 Improvements
 ---------------------
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
-  REQUESTAPPLYUPDATES call in Collection restore. The latter will still happen in 9.x for
-  backwards-compatibility.  (Julia Lamoine, David Smiley)
+  REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
 
 Optimizations
 ---------------------

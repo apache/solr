@@ -46,6 +46,9 @@ If you are planning to upgrade your cluster using a rolling upgrade model (upgra
 
 Rolling upgrades from Solr 8 to Solr 9 require upgrading from Solr 8.7 or newer. If you run an 8.x. version prior to 8.7 we recommend that you first upgrade to 8.11.
 
+Certain commands, like a restore of a collection, might not complete properly if performed *during* an upgrade.
+They may need to be re-attempted after.
+
 *PKI Authentication*
 
 Internode communication secured by PKI Authentication has changed formats. For detailed information, see
