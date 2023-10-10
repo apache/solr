@@ -92,11 +92,13 @@ teardown() {
       "id":"bad",
       "name" : "The name of this conference is really really terrible to say."
     }
-  ]' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/update/json?update.chain=onnx-opennlp&commit=true"
+  ]' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/update/json?processor=sentimentClassifier&commit=true"
   
   assert_output --partial '"status":0'
   
-  run curl -X GET "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*"
+  run curl -X GET "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=id:good"
+  assert_output --partial '"name_sentiment":"very good"'
   
-  assert_output --partial "dude"
+  run curl -X GET "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=id:bad"
+  assert_output --partial '"name_sentiment":"very bad"'
 }
