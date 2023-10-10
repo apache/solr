@@ -19,13 +19,6 @@ apply plugin: 'java-library'
 
 description = 'Additional analysis components'
 
-configurations.all {
-  resolutionStrategy {
-    force 'org.apache.opennlp:opennlp-tools:2.2.0'
-    force 'org.apache.opennlp:opennlp-dl:2.2.0'
-  }
-}
-
 dependencies {
   api project(':solr:core')
 

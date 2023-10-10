@@ -70,4 +70,4 @@ org.semver4j:semver4j=5.2.1
 org.slf4j:*=2.0.9
 org.xerial.snappy:snappy-java=1.1.10.5
 software.amazon.awssdk:*=2.20.155
-org.apache.opennlp:opennlp-dl=2.2.0
+org.apache.opennlp:opennlp*=2.2.0
