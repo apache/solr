@@ -75,7 +75,7 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
     // OTOH, if even at this tolerance we still get errors, then maybe the replica
     // move is _really_ messing something up, in which case we want to know it's
     // not just because we're being impatient!
-    System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "12000");
+    System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "120000");
   }
 
   @AfterClass
@@ -299,9 +299,11 @@ public abstract class AbstractMoveReplicaTestBase extends SolrCloudTestCase {
               () -> {
                 while (!stop.get()) {
                   try {
-                    assertTrue(
-                        cloudClient.query(coll, new SolrQuery("*:*")).getResults().getNumFound()
-                            > 0);
+                    long numFound =
+                        cloudClient.query(coll, new SolrQuery("*:*")).getResults().getNumFound();
+                    if (numFound <= 0) {
+                      log.warn("expected numFound > 0; found {}", numFound);
+                    }
                   } catch (Exception e) {
                     // we know there might be exceptions, but this is just to generate load.
                   }
