@@ -27,9 +27,14 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -487,19 +492,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   public FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher)
       throws IOException {
-    IndexSchema schema = searcher.getSchema();
-    FieldWriter[] writers = new FieldWriter[fields.length];
     DocValuesIteratorCache dvIterCache = new DocValuesIteratorCache(searcher, false);
-    for (int i = 0; i < fields.length; i++) {
-      String field = fields[i];
-      SchemaField schemaField = null;
 
-      try {
-        schemaField = schema.getField(field);
-      } catch (Exception e) {
-        throw new IOException(e);
-      }
+    List<SchemaField> expandedFields = expandFieldList(fields, searcher);
 
+    FieldWriter[] writers = new FieldWriter[expandedFields.size()];
+    for (int i = 0; i < expandedFields.size(); i++) {
+      SchemaField schemaField = expandedFields.get(i);
+      String field = schemaField.getName();
       if (!schemaField.hasDocValues()) {
         throw new IOException(schemaField + " must have DocValues to use this feature.");
       }
@@ -842,6 +842,63 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     @Override
     public String getMessage() {
       return "Early Client Disconnect";
+    }
+  }
+
+  /**
+   * Creates a complete field list using the provided field list by expanding any glob patterns into
+   * field names
+   *
+   * @param fields the original set of fields provided
+   * @param searcher an index searcher to access schema info
+   * @return a complete list of fields included any fields matching glob patterns
+   * @throws IOException if a provided field does not exist or cannot be retrieved from the schema
+   *     info
+   */
+  private List<SchemaField> expandFieldList(String[] fields, SolrIndexSearcher searcher)
+      throws IOException {
+    List<SchemaField> expandedFields = new ArrayList<>(fields.length);
+    Set<String> fieldsProcessed = new HashSet<>();
+    for (String field : fields) {
+      try {
+        if (field.contains("*")) {
+          getGlobFields(field, searcher, fieldsProcessed, expandedFields);
+        } else {
+          if (fieldsProcessed.add(field)) {
+            expandedFields.add(searcher.getSchema().getField(field));
+          }
+        }
+      } catch (Exception e) {
+        throw new IOException(e);
+      }
+    }
+
+    return expandedFields;
+  }
+
+  /**
+   * Create a list of schema fields that match a given glob pattern
+   *
+   * @param fieldPattern the glob pattern to match
+   * @param searcher an index search to access schema info
+   * @param fieldsProcessed the set of field names already processed to avoid duplicating
+   * @param expandedFields the list of fields to add expanded field names into
+   */
+  private void getGlobFields(
+      String fieldPattern,
+      SolrIndexSearcher searcher,
+      Set<String> fieldsProcessed,
+      List<SchemaField> expandedFields) {
+    for (FieldInfo fi : searcher.getFieldInfos()) {
+      if (FilenameUtils.wildcardMatch(fi.getName(), fieldPattern)) {
+        SchemaField schemaField = searcher.getSchema().getField(fi.getName());
+        if (fieldsProcessed.add(fi.getName())
+            && schemaField.hasDocValues()
+                && (!(schemaField.getType() instanceof SortableTextField)
+                || schemaField.useDocValuesAsStored())) {
+          expandedFields.add(schemaField);
+        }
+      }
     }
   }
 }
