@@ -304,6 +304,7 @@ public class ZkCLI implements CLIO {
         }
       }
 
+      CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkServerAddress)
@@ -312,6 +313,7 @@ public class ZkCLI implements CLIO {
                   SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT, TimeUnit.MILLISECONDS)
               .withReconnectListener(() -> {})
               .withCompressor(compressor)
+              .withSolrClassLoader(cc.getResourceLoader())
               .build()) {
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {
@@ -319,7 +321,6 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
 
-          CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
           cc.setCoreConfigService(new ZkConfigSetService(zkClient));
 
           if (!ZkController.checkChrootPath(zkServerAddress, true)) {

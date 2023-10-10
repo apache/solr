@@ -13,6 +13,13 @@ set SOLR_HOME=%SOLR_INSTALL_DIR%\server\solr
 
 set "LOG4J_CONFIG=file:///%SDIR%\..\..\resources\log4j2-console.xml"
 
+REM Determine top-level Solr directory
+set SOLR_DIR=%SDIR%\..\..\..
+pushd %SOLR_TIP%
+set SOLR_DIR=%CD%
+popd
+
+
 REM Settings for ZK ACL
 REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ^
 REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider ^
@@ -23,5 +30,9 @@ REM optionally, you can use using a a Java properties file 'zkDigestCredentialsF
 REM ...
 REM   -DzkDigestCredentialsFile=/path/to/zkDigestCredentialsFile.properties
 REM ...
+REM  see the Solr documentation for the other available options
+
+REM set SOLR_MODULES=aws-secret-provider
+
 "%JVM%" %SOLR_ZK_CREDS_AND_ACLS% %ZKCLI_JVM_FLAGS% -Dlog4j.configurationFile="%LOG4J_CONFIG%" -Dsolr.home=%SOLR_HOME% ^
--classpath "%SDIR%\..\..\solr-webapp\webapp\WEB-INF\lib\*;%SDIR%\..\..\lib\ext\*;%SDIR%\..\..\lib\*" org.apache.solr.cloud.ZkCLI %*
+-Dsolr.install.dir=%SOLR_DIR% -Dsolr.modules=%SOLR_MODULES% -classpath "%SDIR%\..\..\solr-webapp\webapp\WEB-INF\lib\*;%SDIR%\..\..\lib\ext\*;%SDIR%\..\..\lib\*" org.apache.solr.cloud.ZkCLI %*
