@@ -132,7 +132,7 @@ openApiGenerate {
   generateModelTests = false
   generateApiDocumentation = false
   generateModelDocumentation = false
-  additionalProperties = ["modelPackage": "org.apache.solr.client.api.model"]
+  additionalProperties = ["modelPackage": "org.apache.solr.client.api.model", "useJakartaEe": "true"]
 }
 
 tasks.openApiGenerate.dependsOn configurations.openApiSpecFile
