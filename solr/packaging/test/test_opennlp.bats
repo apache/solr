@@ -51,7 +51,7 @@ teardown() {
     # Can't figure out magic policy stuff to allow loading ONNX, so disable security manager.
   export SOLR_SECURITY_MANAGER_ENABLED=false
   
-  solr start -c -Dsolr.modules=analysis-extras -Denable.packages=true
+  solr start -m 4g -c -Dsolr.modules=analysis-extras -Denable.packages=true
   solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
   
   run solr create -c COLL_NAME
@@ -62,27 +62,27 @@ teardown() {
       "name":"name",
       "type":"string",
       "stored":true }
-  }' http://localhost:${SOLR_PORT}/solr/COLL_NAME/schema
+  }' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/schema"
   
   curl -X POST -H 'Content-type:application/json' --data-binary '{
     "add-field":{
       "name":"name_sentiment",
       "type":"string",
       "stored":true }
-  }' http://localhost:${SOLR_PORT}/solr/COLL_NAME/schema  
+  }' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/schema"
 
-  run curl --data-binary @/Users/epugh/Documents/projects/solr-epugh/exported/vocab.txt -X PUT  http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/vocab.txt
+  run curl --data-binary @/Users/epugh/Documents/projects/solr-epugh/exported/vocab.txt -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/vocab.txt"
   assert_output --partial '"status":0'
   
-  #run curl --data-binary @/Users/epugh/Documents/projects/solr-epugh/exported/model.onnx -X PUT  http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/modex.onnx
-
+  run curl --data-binary @/Users/epugh/Documents/projects/solr-epugh/exported/model.onnx -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/model.onnx"
+  assert_output --partial '"status":0'
     
   run curl -X POST -H 'Content-type:application/json' -d '{
     "add-updateprocessor": {
       "name": "sentimentClassifier",
       "class": "solr.processor.DocumentCategorizerUpdateProcessorFactory",
-      "modelFile": "/Users/epugh/Documents/projects/solr-epugh/exported/model.onnx",
-      "vocabFile": "/Users/epugh/Documents/projects/solr-epugh/exported/vocab.txt",
+      "modelFile": "models/sentiment/model.onnx",
+      "vocabFile": "models/sentiment/vocab.txt",
       "source": "name",
       "dest": "name_sentiment"
     }

@@ -19,9 +19,13 @@ package org.apache.solr.update.processor;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
+import ai.onnxruntime.OrtException;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,8 +36,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
-import ai.onnxruntime.OrtException;
 import opennlp.dl.InferenceOptions;
 import opennlp.dl.doccat.DocumentCategorizerDL;
 import opennlp.dl.doccat.scoring.AverageClassificationScoringStrategy;
@@ -43,6 +45,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -64,6 +67,8 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
   public static final String MODEL_PARAM = "modelFile";
   public static final String VOCAB_PARAM = "vocabFile";
 
+  private Path solrHome;
+
   private SelectorParams srcInclusions = new SelectorParams();
   private Collection<SelectorParams> srcExclusions = new ArrayList<>();
 
@@ -80,7 +85,9 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
    * @see #pattern
    */
   private String dest = null;
-  /** @see #dest */
+  /**
+   * @see #dest
+   */
   private Pattern pattern = null;
 
   protected final FieldNameSelector getSourceSelector() {
@@ -393,7 +400,7 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
 
   @Override
   public void inform(final SolrCore core) {
-
+    this.solrHome = Paths.get(core.getCoreContainer().getSolrHome());
     srcSelector =
         FieldMutatingUpdateProcessor.createFieldNameSelector(
             core.getResourceLoader(),
@@ -423,11 +430,34 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
 
       {
         // Initialize the categorizer.
-        final File modelFile = new File(model);
-        final File vocabFile = new File(vocab);
+
+        var path = solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
+        File modelFile = new File(model);
+        File vocabFile = new File(vocab);
+
+        if (!Files.exists(modelFile.toPath())) {
+          System.out.println("modelFile doesnt exist:" + modelFile.toPath());
+          modelFile = new File(path + "/" + model);
+          System.out.println("New file:" + modelFile);
+        }
+        if (!Files.exists(vocabFile.toPath())) {
+          System.out.println("vocabFile doesnt exist:" + vocabFile.toPath());
+          vocabFile = new File(path + "/" + vocab);
+        }
+
+        System.out.println("model is " + model);
+        System.out.println("does modelFile exist?" + modelFile.exists());
+        System.out.println("model full path is " + modelFile.getAbsolutePath());
+
         System.out.println("In OpenNLP doccat initializing the documentCategorizerDL");
         try {
-          documentCategorizerDL = new DocumentCategorizerDL(modelFile, vocabFile, getCategories(),new AverageClassificationScoringStrategy(), new InferenceOptions());
+          documentCategorizerDL =
+              new DocumentCategorizerDL(
+                  modelFile,
+                  vocabFile,
+                  getCategories(),
+                  new AverageClassificationScoringStrategy(),
+                  new InferenceOptions());
         } catch (IOException e) {
           e.printStackTrace();
         } catch (OrtException e) {
@@ -469,7 +499,7 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
           for (Object val : srcFieldValues) {
             for (Pair<String, String> entity : classify(val)) {
               SolrInputField destField = null;
-              //String classification = entity.first();
+              // String classification = entity.first();
               String classificationValue = entity.second();
               final String resolved = resolvedDest;
               if (doc.containsKey(resolved)) {
@@ -501,7 +531,7 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
         String fullText = srcFieldValue.toString();
 
         // Send the fullText to the model for classification.
-        System.out.println("In OpenNLP doccat callling categorizer()");
+        System.out.println("In OpenNLP doccat calling categorizer()");
         final double[] result = documentCategorizerDL.categorize(new String[] {fullText});
 
         // Add the categories to the list and return it.
