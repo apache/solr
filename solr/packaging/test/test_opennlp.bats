@@ -80,7 +80,7 @@ teardown() {
   run curl -X POST -H 'Content-type:application/json' -d '{
     "add-updateprocessor": {
       "name": "sentimentClassifier",
-      "class": "solr.processor.DocumentCategorizationUpdateProcessorFactory",
+      "class": "solr.processor.DocumentCategorizerUpdateProcessorFactory",
       "modelFile": "/Users/epugh/Documents/projects/solr-epugh/exported/model.onnx",
       "vocabFile": "/Users/epugh/Documents/projects/solr-epugh/exported/vocab.txt",
       "source": "name",

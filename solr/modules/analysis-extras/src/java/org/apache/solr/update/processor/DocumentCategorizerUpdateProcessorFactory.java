@@ -52,7 +52,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DocumentCategorizationUpdateProcessorFactory extends UpdateRequestProcessorFactory
+public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
