@@ -260,6 +260,8 @@ Bug Fixes
 
 * SOLR-17009: json.wrf parameter ignored in JacksonJsonWriter (Alex Deparvu)
 
+* SOLR-17019: ZkCli should create subpaths when necessary (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 
