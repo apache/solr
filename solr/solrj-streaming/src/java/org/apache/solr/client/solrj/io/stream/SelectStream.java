@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eval.EvaluatorException;
@@ -52,14 +53,21 @@ public class SelectStream extends TupleStream implements Expressible {
   private TupleStream stream;
   private StreamContext streamContext;
   private Map<String, String> selectedFields;
+  private List<String> selectedFieldGlobPatterns;
   private Map<StreamEvaluator, String> selectedEvaluators;
   private List<StreamOperation> operations;
 
   public SelectStream(TupleStream stream, List<String> selectedFields) throws IOException {
     this.stream = stream;
     this.selectedFields = new HashMap<>();
+    this.selectedFieldGlobPatterns = new ArrayList<>();
     for (String selectedField : selectedFields) {
-      this.selectedFields.put(selectedField, selectedField);
+      if (selectedField.contains("*")) {
+        // selected field is a glob pattern
+        this.selectedFieldGlobPatterns.add(selectedField);
+      } else {
+        this.selectedFields.put(selectedField, selectedField);
+      }
     }
     operations = new ArrayList<>();
     selectedEvaluators = new LinkedHashMap<>();
@@ -68,6 +76,7 @@ public class SelectStream extends TupleStream implements Expressible {
   public SelectStream(TupleStream stream, Map<String, String> selectedFields) throws IOException {
     this.stream = stream;
     this.selectedFields = selectedFields;
+    selectedFieldGlobPatterns = new ArrayList<>();
     operations = new ArrayList<>();
     selectedEvaluators = new LinkedHashMap<>();
   }
@@ -123,6 +132,7 @@ public class SelectStream extends TupleStream implements Expressible {
     stream = factory.constructStream(streamExpressions.get(0));
 
     selectedFields = new HashMap<>();
+    selectedFieldGlobPatterns = new ArrayList<>();
     selectedEvaluators = new LinkedHashMap<>();
     for (StreamExpressionParameter parameter : selectAsFieldsExpressions) {
       StreamExpressionValue selectField = (StreamExpressionValue) parameter;
@@ -175,7 +185,11 @@ public class SelectStream extends TupleStream implements Expressible {
           selectedFields.put(asValue, asName);
         }
       } else {
-        selectedFields.put(value, value);
+        if (value.contains("*")) {
+          selectedFieldGlobPatterns.add(value);
+        } else {
+          selectedFields.put(value, value);
+        }
       }
     }
 
@@ -215,6 +229,11 @@ public class SelectStream extends TupleStream implements Expressible {
         expression.addParameter(
             String.format(Locale.ROOT, "%s as %s", selectField.getKey(), selectField.getValue()));
       }
+    }
+
+    // selected glob patterns
+    for (String selectFieldGlobPattern : selectedFieldGlobPatterns) {
+      expression.addParameter(selectFieldGlobPattern);
     }
 
     // selected evaluators
@@ -308,6 +327,12 @@ public class SelectStream extends TupleStream implements Expressible {
       workingForEvaluators.put(fieldName, original.get(fieldName));
       if (selectedFields.containsKey(fieldName)) {
         workingToReturn.put(selectedFields.get(fieldName), original.get(fieldName));
+      } else {
+        for (String globPattern : selectedFieldGlobPatterns) {
+          if (FilenameUtils.wildcardMatch(fieldName, globPattern)) {
+            workingToReturn.put(fieldName, original.get(fieldName));
+          }
+        }
       }
     }
 
