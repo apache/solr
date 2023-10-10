@@ -331,6 +331,7 @@ public class SelectStream extends TupleStream implements Expressible {
         for (String globPattern : selectedFieldGlobPatterns) {
           if (FilenameUtils.wildcardMatch(fieldName, globPattern)) {
             workingToReturn.put(fieldName, original.get(fieldName));
+            break;
           }
         }
       }
