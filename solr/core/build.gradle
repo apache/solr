@@ -15,19 +15,9 @@
  * limitations under the License.
  */
 
-plugins {
-  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.9'
-}
-
 apply plugin: 'java-library'
 
 description = 'Apache Solr Core'
-
-resolve {
-  classpath = sourceSets.main.runtimeClasspath
-  outputDir = file("build/generated/openapi")
-  prettyPrint = true
-}
 
 dependencies {
   // Spotbugs Annotations are only needed for old findbugs
@@ -54,6 +44,7 @@ dependencies {
   // We export logging api with dependencies, which is useful for all modules
   api 'org.slf4j:slf4j-api'
 
+  api project(':solr:api')
   api project(':solr:solrj')
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
@@ -79,6 +70,7 @@ dependencies {
   implementation 'org.glassfish.hk2:hk2-api'
   implementation 'jakarta.inject:jakarta.inject-api'
   implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
+  implementation 'jakarta.annotation:jakarta.annotation-api'
 
   // Non-API below; although there are exceptions
 
@@ -96,7 +88,6 @@ dependencies {
   implementation "org.apache.lucene:lucene-join"
   implementation "org.apache.lucene:lucene-misc"
   implementation "org.apache.lucene:lucene-queryparser"
-  implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
 
@@ -120,6 +111,7 @@ dependencies {
   implementation 'com.fasterxml.jackson.core:jackson-core'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
+  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
 
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
@@ -141,9 +133,6 @@ dependencies {
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly ('org.xerial.snappy:snappy-java')
 
-  // For Package Manager
-  implementation 'org.semver4j:semver4j'
-
   implementation('com.jayway.jsonpath:json-path', {
     exclude group: "net.minidev", module: "json-smart"
   })
@@ -152,10 +141,8 @@ dependencies {
   implementation 'com.tdunning:t-digest'
 
   // Distributed Tracing
-  api 'io.opentracing:opentracing-api' // Tracer is exposed on some methods
-  implementation 'io.opentracing:opentracing-noop'
-  implementation 'io.opentracing:opentracing-util'
-  testImplementation 'io.opentracing:opentracing-mock'
+  api 'io.opentelemetry:opentelemetry-api' // Tracer is exposed on some methods
+  implementation 'io.opentelemetry:opentelemetry-context'
 
   implementation 'org.apache.commons:commons-exec'
 
@@ -198,6 +185,9 @@ dependencies {
 
 
   testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
 }

@@ -16,16 +16,13 @@
  */
 package org.apache.solr.cloud;
 
-import com.google.common.util.concurrent.AtomicLongMap;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.management.JMException;
 import org.apache.solr.SolrTestCaseJ4;
@@ -139,8 +137,8 @@ public class ZkTestServer {
       private final String desc;
 
       private volatile LimitViolationAction action;
-      private AtomicLongMap<String> counters = AtomicLongMap.create();
-      private ConcurrentHashMap<String, Long> maxCounters = new ConcurrentHashMap<>();
+      private final Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
+      private final ConcurrentHashMap<String, Long> maxCounters = new ConcurrentHashMap<>();
 
       WatchLimit(long limit, String desc, LimitViolationAction action) {
         this.limit = limit;
@@ -159,7 +157,7 @@ public class ZkTestServer {
       public void updateForWatch(String key, Watcher watcher) {
         if (watcher != null) {
           log.debug("Watch added: {}: {}", desc, key);
-          long count = counters.incrementAndGet(key);
+          long count = counters.computeIfAbsent(key, k -> new AtomicLong()).incrementAndGet();
           Long lastCount = maxCounters.get(key);
           if (lastCount == null || count > lastCount) {
             maxCounters.put(key, count);
@@ -185,11 +183,11 @@ public class ZkTestServer {
         if (log.isDebugEnabled()) {
           log.debug("Watch fired: {}: {}", desc, event.getPath());
         }
-        counters.decrementAndGet(event.getPath());
+        counters.get(event.getPath()).decrementAndGet();
       }
 
       private String reportLimitViolations() {
-        String[] maxKeys = maxCounters.keySet().toArray(new String[maxCounters.size()]);
+        String[] maxKeys = maxCounters.keySet().toArray(new String[0]);
         Arrays.sort(
             maxKeys,
             new Comparator<>() {
@@ -562,18 +560,7 @@ public class ZkTestServer {
                     }
 
                     public void setClientPort(int clientPort) {
-                      if (clientPortAddress != null) {
-                        try {
-                          this.clientPortAddress =
-                              new InetSocketAddress(
-                                  InetAddress.getByName(clientPortAddress.getHostName()),
-                                  clientPort);
-                        } catch (UnknownHostException e) {
-                          throw new RuntimeException(e);
-                        }
-                      } else {
-                        this.clientPortAddress = new InetSocketAddress(clientPort);
-                      }
+                      this.clientPortAddress = new InetSocketAddress("127.0.0.1", clientPort);
                       log.info("client port: {}", this.clientPortAddress);
                     }
                   };

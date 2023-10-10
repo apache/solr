@@ -1,0 +1,233 @@
+= Using Git
+
+
+== Committing changes to Git
+
+*Totally incomplete, but we have to start somewhere. Please contribute!*
+
+There's been a lot of discussion about how to commit to the Git repo since we moved to using Git in early 2016. This page is intended for people new to Git or Solr as a place to start. If you're totally new to Git or if you're a new committer, this should get you started.
+
+NOTES:
+
+* Only committers have the ability to commit to the official Git repository.
+* IntelliJ and Eclipse have built-in Git integration
+* There are visual tools that may be used as well. Mention here is not an endorsement, nor is it a complete list.
+ * SourceTree Free.
+ * SmartGit Licensed, not free. Well liked by at least some committers.
+
+== Useful Links
+
+There are about a zillion "how to use Git" links out there, here are a few links that are useful in this context. Except for Dawid's and Apache's pages, these are not associated with this project.
+
+* https://git-wip-us.apache.org/[Git at Apache] General Apache guidelines.
+* https://github.com/dweiss/lucene-git-guides[Dawid's guide] From our very own Dawid Weiss.
+* http://git.or.cz/course/svn.html[Git for SVN crash course] For people who know SVN but not Git.
+* http://lmgtfy.com/?q=Git+beginners+guide[Let Me Google That For You] I've wanted to paste a link to LMGTFY for a long time...
+
+
+The goal here is to provide a super-simple guide without getting off into the all the possibilities, and it will certainly seem "too simple" to sophisticated users. We all have to start somewhere.
+
+== Git defaults
+
+Here are some recommended defaults to configure Globally for Git:
+
+[console]
+----
+$ git config [--global] user.name <real-name>
+$ git config [--global] user.email <email>@apache.org
+----
+
+*Is this really recommended?*
+
+[console]
+----
+$ git config --global pull.rebase true
+----
+
+== Use a personal fork for branches
+
+For both contributors and committers, using personal forks to store feature branches is *strongly encouraged*.
+You can fork the `apache/solr` repository through the Github UI.
+
+Once you have forked Solr, you can add it as a git "remote" locally so that you can push your branches there.
+Then you can rename the official repo to "apache" to limit confusion.
+If you want to name you local fork something other than "fork", then replace "fork" with the name you want to use.
+
+[console]
+----
+$ git remote add fork <the git clone url that you get from github>"
+$ git fetch fork
+$ git remote rename origin apache
+----
+
+
+== Working with Branches
+
+For almost all development on Solr, it is recommended to create a feature branch in your fork and a Pull Request (PR) in Github.
+
+=== Creating a Branch
+
+Some feature work may be easier accomplished with a dedicated branch in Git.
+This allows several people to work together at once.
+Dawid's Git Page has details on how to create a branch and push it to the remote repository for others to pull and collaborate.
+
+[console]
+----
+$ git checkout apache/main
+$ git pull
+$ git checkout -b feature-name
+$ git push fork feature-name
+----
+
+From now on, you can add files, commit and use `git push fork feature-name` whenever you want to upload your changes.
+
+=== Creating a PR
+
+Once your feature branch has been pushed to your fork, you can create a PR via the Github UI.
+Go to https://github.com/apache/solr/pulls and click "New Pull Request".
+
+Since your feature branch lives on your fork, click "compare across forks".
+Choose your fork for the "head repository", the option on the *right* of the arrow.
+Then choose your feature branch right after it.
+
+Click "Create Pull Request", and choose a name that starts with "SOLR-####: ", so that your JIRA Issue will be linked to this PR.
+Also be sure to click "Allow edits and access to secrets by maintainers", so that you can collaborate with other committers.
+
+=== Keeping your branch up-to-date with main
+
+While working on your branch, you should periodically bring it up to date with "main".
+This will make eventual merging with main later simpler, because you resolve any conflicts as you go.
+
+The Github UI might allow you to do this, and if so it's perfectly safe to use that feature.
+If the Github UI tells you to do it manually, *DO NOT follow their instructions, use the following*:
+
+[console]
+----
+$ git fetch apache
+$ git checkout <branch> # This is the feature branch you want to bring up-to-date
+$ git merge apache/main
+----
+
+At this point, you likely have conflicts.
+You need to resolve those, and there are a number of ways to do that.
+
+Once the conflicts have been resolved:
+
+[console]
+----
+$ git commit # Commit the fixes for conflicts. The message may be already populated, edit it as needed but it's not very important.
+$ git push fork branch # Push the merged feature branch to your fork
+----
+
+=== Merging Your PR/Branch with main
+
+Once all development is done and you are ready to make your commit to `main`, the process should be easy.
+
+Since you have created a PR in Github, use the "Squash and Merge" option at the bottom of the PR.
+
+If this is grayed out and Github says that you have conflicts, use the xref:#_keeping_your_branch_up_to_date_with_main[Keeping your branch up-to-date with main] section to help.
+**DO NOT follow the Github instructions on how to do this, if you have to do it manually.**
+Once this is done, hopefully you have new commit(s) in your PR and the checks will re-run.
+Once those pass you will get a green box allowing you to "Squash and Merge".
+
+That's it! Yay!
+
+Make sure to xref:#_backporting_changes[backport] your commit if it needs to go into a minor or patch release!
+
+=== Using shared branches
+
+Some features require collaboration between many people.
+In this case multiple people need to be able to easily pull and push to a custom branch.
+
+This can be accomplished in two ways:
+* The Github Desktop app
+** Have someone create a branch and PR normally, as described above.
+Make sure they have clicked the checkbox "Allow edits and access to secrets by maintainers" when creating the PR.
+** Download the Github Desktop app.
+** Once you have the Solr repository added, you can checkout a PR and pull/push easily via the UI.
+* Have a feature branch in the apache repo.
+** Preferred practice is to name your branch `SOLR-XXXXX` (where "SOLR-XXXXX" is the JIRA ID), unless your feature does not yet have a single JIRA that's appropriate.
+In that case, you can use feature/<name>.
+If you name your branch in this way, commits to the branch will not pollute the comments of your JIRA issue.
+
+The Github Desktop app is strongly encouraged over a feature branch in the apache repository.
+However, if you do use a feature branch, make sure that it is deleted once development is done on it (merged to `main` or abandoned).
+
+== Simple commits
+
+For simple commits for simple JIRAs, when you do not expect to make a PR or have other people review the commit.
+
+Update your repo (perhaps with .gitconfig making this use rebasing)
+
+[,console]
+----
+$ git checkout origin/main
+----
+
+Make changes, get through `gradlew test` and `gradlew precommit` targets.
+
+[,console]
+----
+$ git add .
+$ git commit -m "SOLR####: additional comments, often the title of the JIRA" # (commits locally, nothing in ASF yet)
+$ git pull apache main
+$ git push apache main
+----
+
+Notes:
+
+At any time `git status` tells you whether you have anything local that isn't in sync with the branch you're on.
+This includes changes not committed locally, new files not added to the local repository.
+
+`git diff --stat apache/main` will show you committed (locally) but not pushed changes.
+
+If you omit the `-m` flag you'll find yourself in a vi-like editor where you can enter long commit messages.
+
+== Backporting changes
+
+Backporting changes from `main` to a branch like `branch_9x`.
+
+Thanks to Jan, we have a wonderful tool that will do most of the backporting for you.
+
+[console]
+----
+$ ./dev-tools/scripts/cherrypick.sh -b branch_9x -r apache -p <commit hash>
+----
+
+The above command will backport the commit hash you provide to `branch_9x` after running precommit first (the `-p` flag).
+If you need to backport to an additional branch, such as `branch_9_2`, you can add an additional `-b branch_9_2` to the command.
+If your remote that tracks the apache repo is not named "apache", then use a that name after the `-r` option.
+
+You should have seen the commit hash echoed when you committed to apache/main, if not and you included the SOLR-####, the JIRA will have it.
+Otherwise run `git checkout main && git log` and find the hash for the commit you want to backport.
+
+The backport might fail because the cherry pick has conflicts.
+If that's the case, then you can do the following.
+
+[console]
+----
+$ git status
+# Fix all necessary conflicts
+$ git add <conflicting files>
+$ git cherry-pick --continue
+$ ./gradlew check -x test
+$ git push apache branch_9x
+# Replace "apache" or "branch_9x" if you have a different repo name or backporting branch.
+----
+
+=== Backporting Manually
+
+If you need to backport manually, it's still pretty simple.
+The script above just does most of it for you
+
+[console]
+----
+$ git checkout apache/branch_9x
+$ git pull apache
+$ git cherry-pick <hash>
+$ ./gradlew check -x test # Run tests if you need to
+$ git show HEAD # This will show you the commit you are about to push, make sure it looks right
+$ git push apache branch_9x
+----
+
+There has been some issue with Solr's CHANGES.txt file "cherry picking" all of the changes for trunk, so check this file especially.

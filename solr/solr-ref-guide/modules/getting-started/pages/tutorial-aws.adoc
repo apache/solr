@@ -242,9 +242,9 @@ On the node you're using to host ZooKeeper (`zookeeper-node`), download the pack
 [,console]
 ----
 # download stable version of ZooKeeper, here {dep-version-zookeeper}
-$ wget https://archive.apache.org/dist/zookeeper/zookeeper-{dep-version-zookeeper}/zookeeper-{dep-version-zookeeper}.tar.gz
+$ wget https://archive.apache.org/dist/zookeeper/zookeeper-{dep-version-zookeeper}/apache-zookeeper-{dep-version-zookeeper}.tar.gz
 # untar
-$ tar -zxvf zookeeper-{dep-version-zookeeper}.tar.gz
+$ tar -zxvf apache-zookeeper-{dep-version-zookeeper}.tar.gz
 ----
 +
 Add an environment variable for ZooKeeper's home directory (`ZOO_HOME`) to the `.bashrc` for the user who will be running the process.
@@ -253,10 +253,10 @@ Correct the path to the ZooKeeper installation as appropriate if where you put i
 +
 [source,bash,subs="attributes"]
 ----
-$ export ZOO_HOME=$PWD/zookeeper-{dep-version-zookeeper}
+$ export ZOO_HOME=$PWD/apache-zookeeper-{dep-version-zookeeper}
 # put the env variable in .bashrc
 # vim ~/.bashrc
-export ZOO_HOME=/home/ec2-user/zookeeper-{dep-version-zookeeper}
+export ZOO_HOME=/home/ec2-user/apache-zookeeper-{dep-version-zookeeper}
 ----
 . Change directories to `ZOO_HOME`, and create the ZooKeeper configuration by using the template provided by ZooKeeper.
 +

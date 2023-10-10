@@ -86,7 +86,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
             1,
             testDir,
             MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML,
-            buildJettyConfig("/solr"),
+            buildJettyConfig(),
             zkTestServer,
             true);
   }
@@ -178,7 +178,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
       // we know we are doing a copy when we are getting data from the base config set and
       // the new config set (partially) exists
       String zkAddress = zkTestServer.getZkAddress();
-      String chroot = zkAddress.substring(zkAddress.lastIndexOf("/"));
+      String chroot = zkAddress.substring(zkAddress.lastIndexOf('/'));
       if (path.startsWith(chroot + CONFIGS_ZKNODE + "/" + BASE_CONFIGSET_NAME)
           && !path.contains(ConfigSetProperties.DEFAULT_FILENAME)) {
         List<String> children = null;

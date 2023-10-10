@@ -21,6 +21,7 @@ import com.codahale.metrics.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.container.ContainerRequestContext;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;

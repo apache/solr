@@ -121,6 +121,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -498,7 +499,7 @@ public class IndexFetcher {
         response = getLatestVersion();
       } catch (Exception e) {
         final String errorMsg = e.toString();
-        if (!StrUtils.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
+        if (StrUtils.isNotNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
           log.warn(
               "Leader at: {} is not available. Index fetch failed by interrupt. Exception: {}",
               leaderUrl,
@@ -855,24 +856,24 @@ public class IndexFetcher {
           core.getDirectoryFactory().remove(tmpIndexDir);
         }
       } catch (Exception e) {
-        SolrException.log(log, e);
+        log.error("Error cleaning up tmpIndexDir", e);
       } finally {
         try {
           if (tmpIndexDir != null) core.getDirectoryFactory().release(tmpIndexDir);
         } catch (Exception e) {
-          SolrException.log(log, e);
+          log.error("Error releasing tmpIndexDir", e);
         }
         try {
           if (indexDir != null) {
             core.getDirectoryFactory().release(indexDir);
           }
         } catch (Exception e) {
-          SolrException.log(log, e);
+          log.error("Error releasing indexDir", e);
         }
         try {
           if (tmpTlogDir != null) delTree(tmpTlogDir);
         } catch (Exception e) {
-          SolrException.log(log, e);
+          log.error("Error deleting tmpTlogDir", e);
         }
       }
     }
@@ -1045,7 +1046,7 @@ public class IndexFetcher {
           try {
             waitSearcher[0].get();
           } catch (InterruptedException | ExecutionException e) {
-            SolrException.log(log, e);
+            log.error("Exception waiting for searcher", e);
           }
         }
         commitPoint = searcher.get().getIndexReader().getIndexCommit();
@@ -1432,7 +1433,7 @@ public class IndexFetcher {
         return false;
       }
     } catch (IOException e) {
-      SolrException.log(log, "could not check if a file exists", e);
+      log.error("could not check if a file exists", e);
       return false;
     }
     try {
@@ -1441,7 +1442,7 @@ public class IndexFetcher {
           .move(tmpIdxDir, indexDir, fname, DirectoryFactory.IOCONTEXT_NO_CACHE);
       success = true;
     } catch (IOException e) {
-      SolrException.log(log, "Could not move file", e);
+      log.error("Could not move file", e);
     }
     return success;
   }
@@ -1550,7 +1551,7 @@ public class IndexFetcher {
     try {
       Files.move(tlogDir, backupTlogDir, StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
-      SolrException.log(log, "Unable to rename: " + tlogDir + " to: " + backupTlogDir, e);
+      log.error("Unable to rename: {} to: {}", tlogDir, backupTlogDir, e);
       return false;
     }
 
@@ -1560,7 +1561,7 @@ public class IndexFetcher {
     try {
       Files.move(src, tlogDir, StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
-      SolrException.log(log, "Unable to rename: " + src + " to: " + tlogDir, e);
+      log.error("Unable to rename: {} to: {}", src, tlogDir, e);
 
       // In case of error, try to revert back the original tlog directory
       try {
@@ -1606,14 +1607,14 @@ public class IndexFetcher {
       names.add(name, null);
     }
     // get the details of the local conf files with the same alias/name
-    List<Map<String, Object>> localFilesInfo =
+    List<CoreReplicationAPI.FileMetaData> localFilesInfo =
         replicationHandler.getConfFileInfoFromCache(names, confFileInfoCache);
     // compare their size/checksum to see if
-    for (Map<String, Object> fileInfo : localFilesInfo) {
-      String name = (String) fileInfo.get(NAME);
+    for (CoreReplicationAPI.FileMetaData fileInfo : localFilesInfo) {
+      String name = fileInfo.name;
       Map<String, Object> m = nameVsFile.get(name);
       if (m == null) continue; // the file is not even present locally (so must be downloaded)
-      if (m.get(CHECKSUM).equals(fileInfo.get(CHECKSUM))) {
+      if (m.get(CHECKSUM).equals(fileInfo.checksum)) {
         nameVsFile.remove(name); // checksums are same so the file need not be downloaded
       }
     }
@@ -1779,7 +1780,7 @@ public class IndexFetcher {
         fetch();
       } catch (Exception e) {
         if (!aborted) {
-          SolrException.log(IndexFetcher.log, "Error fetching file, doing one retry...", e);
+          IndexFetcher.log.error("Error fetching file, doing one retry...", e);
           // one retry
           fetch();
         } else {

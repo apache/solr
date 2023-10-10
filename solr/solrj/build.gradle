@@ -15,12 +15,22 @@
  * limitations under the License.
  */
 
+plugins {
+  id "org.openapi.generator" version "6.6.0"
+}
 
 apply plugin: 'java-library'
+apply plugin: 'com.diffplug.spotless'
+
+import com.diffplug.gradle.spotless.JavaExtension
+
 
 description = 'Solrj - Solr Java Client'
 
 dependencies {
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
+  implementation 'com.fasterxml.jackson.core:jackson-annotations'
+  implementation project(":solr:api")
 
   implementation 'org.slf4j:slf4j-api'
   runtimeOnly 'org.slf4j:jcl-over-slf4j'
@@ -62,6 +72,7 @@ dependencies {
   testImplementation 'org.hamcrest:hamcrest'
 
   testImplementation 'commons-io:commons-io'
+  testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
 
   testImplementation 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api'
 
@@ -74,9 +85,82 @@ dependencies {
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
   testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl", {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
   testImplementation 'org.apache.commons:commons-lang3'
   testImplementation 'io.dropwizard.metrics:metrics-core'
+}
+
+/**
+ * Java Code Generation for Solr API
+ */
+
+evaluationDependsOn(":solr:api")
+
+configurations {
+  openApiSpecFile {
+    canBeConsumed = false
+  }
+}
+
+ext {
+  generatedCodeDir = "${buildDir}/generated/"
+  javaTemplateDir = "${projectDir}/src/resources/java-template"
+}
+
+dependencies {
+  openApiSpecFile(project(path: ":solr:api", configuration: "openapiSpec"))
+}
+
+/**
+ * Code Generation task
+ */
+openApiGenerate {
+  generatorName = "java"
+  inputSpec = project(":solr:api").openApiSpecFile
+
+  // Add 'debugModels: ""' or 'debugOperations: ""' to get the JSON input to mustache templating for those components
+  globalProperties.set([apis: "", models: "false"])
+  templateDir = project.javaTemplateDir
+  apiPackage = "org.apache.solr.client.solrj.request"
+  outputDir = project.generatedCodeDir
+  generateApiTests = false
+  generateModelTests = false
+  generateApiDocumentation = false
+  generateModelDocumentation = false
+  additionalProperties = ["modelPackage": "org.apache.solr.client.api.model"]
+}
+
+tasks.openApiGenerate.dependsOn configurations.openApiSpecFile
+
+def generatedFiles = files("${project.generatedCodeDir}/src/main/java") {
+  builtBy tasks.openApiGenerate
+}
+
+/**
+ * Setup Spotless (Code formatting) for the generated java files
+ */
+def generatedExt = new JavaExtension(spotless)
+project.spotlessJavaSetup.execute(generatedExt)
+generatedExt.target(generatedFiles)
+def generatedSpotlessTask = generatedExt.createIndependentApplyTask("generatedSpotless")
+generatedSpotlessTask.group("build")
+generatedSpotlessTask.description("Apply formatting for generated code")
+
+tasks.openApiGenerate.finalizedBy generatedSpotlessTask
+
+/**
+ * Add the Generated code to the SolrJ Source paths
+ */
+
+sourceSets {
+  main {
+    java {
+      srcDir generatedFiles
+    }
+  }
 }

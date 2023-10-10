@@ -163,8 +163,9 @@ public abstract class Tagger {
 
         // determine if the terms index has a term starting with the provided term
         // TODO create a pool of these cursors to reuse them more?  could be trivial impl
-        if (cursor == null) // (else the existing cursor will be re-used)
-        cursor = new TermPrefixCursor(terms.iterator(), liveDocs, docIdsCache);
+        if (cursor == null) { // (else the existing cursor will be re-used)
+          cursor = new TermPrefixCursor(terms.iterator(), liveDocs, docIdsCache);
+        }
         if (cursor.advance(term)) {
           TagLL newTail =
               new TagLL(head, cursor, offsetAtt.startOffset(), offsetAtt.endOffset(), null);

@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -1558,7 +1557,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     rsp = queryServer(q);
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
     String shards = getShardsString();
-    int cnt = StringUtils.countMatches(shards, ",") + 1;
+    int cnt = shards.length() - shards.replace(",", "").length() + 1;
 
     assertNotNull("missing shard info", sinfo);
     assertEquals(

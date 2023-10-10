@@ -31,6 +31,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import java.lang.invoke.MethodHandles;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -107,8 +108,12 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
         containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE) == null
             ? new SolrJerseyResponse()
             : (SolrJerseyResponse) containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE);
-
-    response.error = ResponseUtils.getTypedErrorInfo(normalizedException, log);
+    response.error =
+        ResponseUtils.getTypedErrorInfo(
+            normalizedException,
+            log,
+            solrQueryRequest.getCore() != null
+                && solrQueryRequest.getCore().getCoreContainer().hideStackTrace());
     response.responseHeader.status = response.error.code;
     final String mediaType =
         V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, MediaType.APPLICATION_JSON);

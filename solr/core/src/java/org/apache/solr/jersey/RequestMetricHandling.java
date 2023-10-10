@@ -30,6 +30,7 @@ import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;

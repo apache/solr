@@ -96,7 +96,7 @@ public abstract class SolrHighlighter {
       for (String field : SolrPluginUtils.split(inField)) {
         if (field.contains("*")) {
           // create a Java regular expression from the wildcard string
-          Pattern fieldRegex = Pattern.compile(field.replaceAll("\\*", ".*"));
+          Pattern fieldRegex = Pattern.compile(field.replace("*", ".*"));
           if (availableFieldNames == null) {
             availableFieldNames = availableFieldNamesSupplier.get();
           }

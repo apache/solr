@@ -19,16 +19,15 @@ package org.apache.solr.handler;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -92,9 +91,7 @@ public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAw
         stream.add("sourceInfo", content.getSourceInfo());
         stream.add("size", content.getSize());
         stream.add("contentType", content.getContentType());
-        try (Reader reader = content.getReader()) {
-          stream.add("stream", IOUtils.toString(reader));
-        }
+        stream.add("stream", StrUtils.stringFromReader(content.getReader()));
         streams.add(stream);
       }
       rsp.add("streams", streams);
@@ -130,7 +127,7 @@ public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    if (solrCore != null && solrCore.getSolrConfig().isEnableRemoteStreams()) {
+    if (solrCore != null && solrCore.getSolrConfig().getRequestParsers().isEnableRemoteStreams()) {
       log.warn(
           "Dump request handler requires config-read permission when remote streams are enabled");
       return Name.CONFIG_READ_PERM;

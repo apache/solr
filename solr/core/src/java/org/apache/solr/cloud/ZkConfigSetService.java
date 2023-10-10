@@ -101,9 +101,9 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader)
-      throws IOException {
+  protected NamedList<Object> loadConfigSetFlags(SolrResourceLoader loader) throws IOException {
     try {
+      // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
       return ConfigSetProperties.readFromResourceLoader(loader, ".");
     } catch (Exception ex) {
       log.debug("No configSet flags", ex);
@@ -139,10 +139,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
     try {
-      Boolean existsSolrConfigXml =
-          zkClient.exists(CONFIGS_ZKNODE + "/" + configName + "/solrconfig.xml", true);
-      if (existsSolrConfigXml == null) return false;
-      return existsSolrConfigXml;
+      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Error checking whether config exists", SolrZkClient.checkInterrupted(e));

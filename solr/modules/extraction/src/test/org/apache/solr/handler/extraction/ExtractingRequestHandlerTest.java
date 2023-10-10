@@ -687,14 +687,13 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     String extraction = (String) list.get("solr-word.pdf");
     assertNotNull("extraction is null and it shouldn't be", extraction);
-    assertTrue(
-        extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
+    assertTrue(extraction + " does not contain " + "solr-word", extraction.contains("solr-word"));
 
     NamedList<?> nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
     assertNotNull("nl is null and it shouldn't be", nl);
     Object title = nl.get("title");
     assertNotNull("title is null and it shouldn't be", title);
-    assertTrue(extraction.indexOf("<?xml") != -1);
+    assertTrue(extraction.contains("<?xml"));
 
     rsp =
         loadLocal(
@@ -708,8 +707,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     extraction = (String) list.get("solr-word.pdf");
     assertNotNull("extraction is null and it shouldn't be", extraction);
-    assertTrue(
-        extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
+    assertTrue(extraction + " does not contain " + "solr-word", extraction.contains("solr-word"));
     assertEquals(-1, extraction.indexOf("<?xml"));
 
     nl = (NamedList<?>) list.get("solr-word.pdf_metadata");

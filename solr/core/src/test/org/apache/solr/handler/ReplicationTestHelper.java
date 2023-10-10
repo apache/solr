@@ -27,10 +27,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -56,14 +58,17 @@ public final class ReplicationTestHelper {
         new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
   }
 
   public static SolrClient createNewSolrClient(String baseUrl) {
-    return SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
+    return new HttpSolrClient.Builder(baseUrl)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   public static int index(SolrClient s, Object... fields) throws Exception {

@@ -39,12 +39,12 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
   <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.allowUrls:}</str>
+  <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
 
   <solrcloud>
 
     <str name="host">${host:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
-    <str name="hostContext">${hostContext:solr}</str>
 
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
 
@@ -57,7 +57,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
     <bool name="distributedCollectionConfigSetExecution">${distributedCollectionConfigSetExecution:false}</bool>
     <int name="minStateByteLenForCompression">${minStateByteLenForCompression:-1}</int>
-    <str name="compressor">${compressor:org.apache.solr.common.util.ZLibCompressor}</str>
+    <str name="stateCompressor">${stateCompressor:org.apache.solr.common.util.ZLibCompressor}</str>
 
   </solrcloud>
 
@@ -80,6 +80,7 @@ Unless the `-DzkHost` or `-DzkRun` are specified at startup time, this section i
 
 == Solr.xml Parameters
 
+[#the-solr-element]
 === The <solr> Element
 
 There are no attributes that you can specify in the `<solr>` tag, which is the root element of `solr.xml`.
@@ -94,7 +95,7 @@ The tables below list the child nodes of each XML element in `solr.xml`.
 +
 This attribute does not need to be set.
 +
-If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter which the type is `org.apache.solr.core.CoreContainer`.
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
 For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
 If this attribute isn't set, Solr uses the default `configSetService`, with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
@@ -188,6 +189,18 @@ The default value is equal to the number of processors.
 +
 The root of the core discovery tree, defaults to `$SOLR_HOME`.
 
+`coresLocator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.core.CorePropertiesLocator`
+|===
++
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that implements `CoresLocator`, and you must provide a constructor with one parameter of type `org.apache.solr.core.NodeConfig`.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>`.
+
 `managementPath`::
 +
 [%autowidth,frame=none]
@@ -254,6 +267,15 @@ In SolrCloud mode, the allow-list is automatically configured to include all liv
 The allow-list can also be configured with the `solr.allowUrls` system property in `solr.in.sh` / `solr.in.cmd`.
 If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
 
+`hideStackTrace`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+When this attribute is set to `true`, Solr will not return any stack traces in the HTTP response in case of errors.  By default (`false`), stack traces are hidden only for predictable Solr exceptions, but are returned in the response for unexpected exceptions (i.e.: HTTP 500)
+
 `shareSchema`::
 +
 [%autowidth,frame=none]
@@ -305,6 +327,22 @@ This is the same system property used in the `_default` configset for the xref:c
 <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 ----
 
+[#hiddenSysProps]
+`hiddenSysProps`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+Comma-separated list of regex patterns to match sysProps that should be redacted to hide sensitive information.
++
+The allow-list can also be configured with the `solr.hiddenSysProps` system property,
+or via the `SOLR_HIDDEN_SYS_PROPS` environment variable.
++
+By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It will also hide any sysProp that contains
+"password" or "secret" in it.
+
 === The <solrcloud> Element
 
 This element defines several parameters that relate so SolrCloud.
@@ -336,15 +374,6 @@ Used to set the underlying `socketTimeout` for intra-cluster updates.
 |===
 +
 The hostname Solr uses to access cores.
-
-`hostContext`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The url context path.
 
 `hostPort`::
 +
@@ -621,6 +650,26 @@ The `<metrics>` element in `solr.xml` allows you to customize the metrics report
 You can define system properties that should not be returned, or define custom suppliers and reporters.
 
 If you would like to customize the metrics for your installation, see the xref:deployment-guide:metrics-reporting.adoc#metrics-configuration[Metrics Configuration] section.
+
+=== The <caches> Element
+
+The `<caches>` element in `solr.xml` supports defining and configuring named node-level caches.
+
+These caches are analogous to xref:caches-warming.adoc#user-defined-caches[user-defined caches in `solrconfig.xml`], except that each named cache exists as a long-lived singleton at the node level. These node-level caches are accessible from application code via `CoreContainer.getCache(String cacheName)`.
+
+Note that because node-level caches exist above the context of an individual core, config parameters that hook into the lifecycle of a core/searcher (such as `autowarmCount` and `regenerator`) are irrelevant/ignored for node-level caches.
+
+[source,xml]
+----
+<solr>
+  <caches>
+    <cache name="myNodeLevelUserCache"
+           class="solr.CaffeineCache"
+           size="4096"
+           initialSize="1024" />
+  </caches>
+</solr>
+----
 
 == Substituting JVM System Properties in solr.xml
 

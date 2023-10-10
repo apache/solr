@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import com.google.common.base.Throwables;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -28,7 +27,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
@@ -102,6 +100,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       List<String> configs = configSetService.listConfigs();
       assertEquals(1, configs.size());
       assertEquals("testconfig", configs.get(0));
+      assertTrue(configSetService.checkConfigExists("testconfig"));
 
       // check downloading
       Path downloadPath = createTempDir("download");
@@ -220,10 +219,10 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
         buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
       ConfigSetService configSetService = new ZkConfigSetService(client);
       assertEquals(1, configSetService.listConfigs().size());
-      configSetService.uploadConfig("acltest2", configPath);
-      fail("Should have thrown an ACL exception");
-    } catch (IOException e) {
-      assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
+      IOException ioException =
+          assertThrows(
+              IOException.class, () -> configSetService.uploadConfig("acltest2", configPath));
+      assertEquals(KeeperException.NoAuthException.class, ioException.getCause().getClass());
     }
 
     // Client with no auth whatsoever can't even get the list of configs
@@ -232,18 +231,16 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
             .withUrl(zkServer.getZkAddress("/acl"))
             .withTimeout(10000, TimeUnit.MILLISECONDS)
             .build()) {
-      ConfigSetService configSetService = new ZkConfigSetService(client);
-      configSetService.listConfigs();
-      fail("Should have thrown an ACL exception");
-    } catch (IOException e) {
-      assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
+      IOException ioException =
+          assertThrows(IOException.class, () -> new ZkConfigSetService(client).listConfigs());
+      assertEquals(KeeperException.NoAuthException.class, ioException.getCause().getClass());
     }
   }
 
   @Test
   public void testBootstrapConf() throws IOException, KeeperException, InterruptedException {
 
-    String solrHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+    String solrHome = legacyExampleCollection1SolrHome();
 
     CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
     System.setProperty("zkHost", zkServer.getZkAddress());

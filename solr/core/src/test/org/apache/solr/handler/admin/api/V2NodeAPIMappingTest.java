@@ -152,22 +152,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLogLevelsApiAllProperties() throws Exception {
-    final ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add("since", "12345678");
-    solrParams.add("threshold", "someThresholdValue");
-    solrParams.add("test", "someTestValue");
-    solrParams.add("set", "SomeClassName");
-    final SolrParams v1Params = captureConvertedLoggingV1Params("/node/logging", "GET", solrParams);
-
-    // All parameters are passed through to v1 API as-is.
-    assertEquals("12345678", v1Params.get("since"));
-    assertEquals("someThresholdValue", v1Params.get("threshold"));
-    assertEquals("someTestValue", v1Params.get("test"));
-    assertEquals("SomeClassName", v1Params.get("set"));
-  }
-
-  @Test
   public void testSystemInfoApiAllProperties() throws Exception {
     final ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add("anyParamName", "anyParamValue");
@@ -199,11 +183,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   private SolrParams captureConvertedSystemV1Params(
       String path, String method, SolrParams inputParams) throws Exception {
     return doCaptureParams(path, method, inputParams, null, mockSystemInfoHandler);
-  }
-
-  private SolrParams captureConvertedLoggingV1Params(
-      String path, String method, SolrParams inputParams) throws Exception {
-    return doCaptureParams(path, method, inputParams, null, mockLoggingHandler);
   }
 
   private SolrParams captureConvertedPropertiesV1Params(
@@ -268,7 +247,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
     apiBag.registerObject(new RejoinLeaderElectionAPI(coreHandler));
     apiBag.registerObject(new NodePropertiesAPI(infoHandler.getPropertiesHandler()));
     apiBag.registerObject(new NodeThreadsAPI(infoHandler.getThreadDumpHandler()));
-    apiBag.registerObject(new NodeLoggingAPI(infoHandler.getLoggingHandler()));
     apiBag.registerObject(new NodeSystemInfoAPI(infoHandler.getSystemInfoHandler()));
     apiBag.registerObject(new NodeHealthAPI(infoHandler.getHealthCheckHandler()));
   }

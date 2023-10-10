@@ -28,12 +28,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
    * Test method for {@link LBHttp2SolrClient.Builder} that validates that the query param keys
    * passed in by the base <code>Http2SolrClient
    * </code> instance are used by the LBHttp2SolrClient.
-   *
-   * <p>TODO: Eliminate the addQueryParams aspect of test as it is not compatible with goal of
-   * immutable SolrClient
    */
   @Test
-  public void testLBHttp2SolrClientSetQueryParams() {
+  public void testLBHttp2SolrClientWithTheseParamNamesInTheUrl() {
     String url = "http://127.0.0.1:8080";
     Set<String> urlParamNames = new HashSet<>(2);
     urlParamNames.add("param1");
@@ -43,17 +40,6 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         LBHttp2SolrClient testClient =
             new LBHttp2SolrClient.Builder(http2SolrClient, url).build()) {
 
-      assertArrayEquals(
-          "Wrong urlParamNames found in lb client.",
-          urlParamNames.toArray(),
-          testClient.getUrlParamNames().toArray());
-      assertArrayEquals(
-          "Wrong urlParamNames found in base client.",
-          urlParamNames.toArray(),
-          http2SolrClient.getUrlParamNames().toArray());
-
-      testClient.addQueryParams("param2");
-      urlParamNames.add("param2");
       assertArrayEquals(
           "Wrong urlParamNames found in lb client.",
           urlParamNames.toArray(),

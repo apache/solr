@@ -23,7 +23,7 @@ import static org.apache.solr.jersey.container.ContainerRequestUtils.DEFAULT_SEC
 import jakarta.ws.rs.container.ContainerRequestContext;
 import java.net.URI;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.admin.api.SchemaNameAPI;
+import org.apache.solr.handler.admin.api.GetSchemaAPI;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.junit.Test;
@@ -38,12 +38,12 @@ public class JerseyResourceTest extends SolrTestCaseJ4 {
     resource.containerRequestContext = requestContext;
     assertTrue(requestContext.getPropertyNames().isEmpty());
 
-    final SchemaNameAPI.GetSchemaNameResponse returned =
-        resource.instantiateJerseyResponse(SchemaNameAPI.GetSchemaNameResponse.class);
+    final GetSchemaAPI.SchemaNameResponse returned =
+        resource.instantiateJerseyResponse(GetSchemaAPI.SchemaNameResponse.class);
 
     assertTrue(requestContext.getPropertyNames().contains(SOLR_JERSEY_RESPONSE));
-    final SchemaNameAPI.GetSchemaNameResponse stashed =
-        (SchemaNameAPI.GetSchemaNameResponse) requestContext.getProperty(SOLR_JERSEY_RESPONSE);
+    final GetSchemaAPI.SchemaNameResponse stashed =
+        (GetSchemaAPI.SchemaNameResponse) requestContext.getProperty(SOLR_JERSEY_RESPONSE);
     assertEquals(stashed, returned);
   }
 

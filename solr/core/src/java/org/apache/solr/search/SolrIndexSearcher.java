@@ -81,6 +81,7 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -132,6 +133,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public static final AtomicLong numCloses = new AtomicLong();
   private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
+
+  // If you find this useful, let us know in dev@solr.apache.org.  Likely to be removed eventually.
+  private static final boolean useExitableDirectoryReader =
+      Boolean.getBoolean("solr.useExitableDirectoryReader");
 
   private final SolrCore core;
   private final IndexSchema schema;
@@ -197,9 +202,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private static DirectoryReader wrapReader(SolrCore core, DirectoryReader reader)
       throws IOException {
     assert reader != null;
-    return ExitableDirectoryReader.wrap(
-        UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper()),
-        SolrQueryTimeoutImpl.getInstance());
+    reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
+    if (useExitableDirectoryReader) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
+      reader = ExitableDirectoryReader.wrap(reader, SolrQueryTimeoutImpl.getInstance());
+    }
+    return reader;
   }
 
   /**
@@ -273,7 +280,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
       if (collector instanceof DelegatingCollector) {
-        ((DelegatingCollector) collector).finish();
+        ((DelegatingCollector) collector).complete();
       }
       throw etce;
     } finally {
@@ -286,7 +293,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
     }
     if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).finish();
+      ((DelegatingCollector) collector).complete();
     }
 
     return collector;
@@ -465,19 +472,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   public CollectionStatistics localCollectionStatistics(String field) throws IOException {
-    // Could call super.collectionStatistics(field); but we can use a cached MultiTerms
-    assert field != null;
-    // SlowAtomicReader has a cache of MultiTerms
-    Terms terms = getSlowAtomicReader().terms(field);
-    if (terms == null) {
-      return null;
-    }
-    return new CollectionStatistics(
-        field,
-        reader.maxDoc(),
-        terms.getDocCount(),
-        terms.getSumTotalTermFreq(),
-        terms.getSumDocFreq());
+    return super.collectionStatistics(field);
   }
 
   public boolean isCachingEnabled() {
@@ -579,7 +574,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     try {
       if (closeReader) rawReader.decRef();
     } catch (Exception e) {
-      SolrException.log(log, "Problem dec ref'ing reader", e);
+      log.error("Problem dec ref'ing reader", e);
     }
 
     if (directoryFactory.searchersReserveCommitPoints()) {
@@ -590,7 +585,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       try {
         cache.close();
       } catch (Exception e) {
-        SolrException.log(log, "Exception closing cache " + cache.name(), e);
+        log.error("Exception closing cache {}", cache.name(), e);
       }
     }
 
@@ -716,23 +711,42 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return qr;
   }
 
-  // FIXME: This option has been dead/noop since 3.1, should we re-enable or remove it?
-  // public Hits search(Query query, Filter filter, Sort sort) throws IOException {
-  // // todo - when Solr starts accepting filters, need to
-  // // change this conditional check (filter!=null) and create a new filter
-  // // that ANDs them together if it already exists.
-  //
-  // if (optimizer==null || filter!=null || !(query instanceof BooleanQuery)
-  // ) {
-  // return super.search(query,filter,sort);
-  // } else {
-  // Query[] newQuery = new Query[1];
-  // Filter[] newFilter = new Filter[1];
-  // optimizer.optimize((BooleanQuery)query, this, 0, newQuery, newFilter);
-  //
-  // return super.search(newQuery[0], newFilter[0], sort);
-  // }
-  // }
+  @Override
+  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
+      throws IOException {
+    final var queryTimeout = SolrQueryTimeoutImpl.getInstance();
+    if (useExitableDirectoryReader || queryTimeout.isTimeoutEnabled() == false) {
+      // no timeout.  Pass through to super class
+      super.search(leaves, weight, collector);
+    } else {
+      // Timeout enabled!  This impl is maybe a hack.  Use Lucene's IndexSearcher timeout.
+      // But only some queries have it so don't use on "this" (SolrIndexSearcher), not to mention
+      //   that timedOut() might race with concurrent queries (dubious design).
+      // So we need to make a new IndexSearcher instead of using "this".
+      new IndexSearcher(reader) { // cheap, actually!
+        void searchWithTimeout() throws IOException {
+          setTimeout(queryTimeout.makeLocalImpl());
+          super.search(leaves, weight, collector); // FYI protected access
+          if (timedOut()) {
+            throw new TimeAllowedExceededFromScorerException("timeAllowed exceeded");
+          }
+        }
+      }.searchWithTimeout();
+    }
+  }
+
+  /**
+   * Thrown when {@link org.apache.solr.common.params.CommonParams#TIME_ALLOWED} is exceeded.
+   * Further, from the low level Lucene {@code org.apache.lucene.search.TimeLimitingBulkScorer}.
+   * Extending {@code ExitableDirectoryReader.ExitingReaderException} is for legacy reasons.
+   */
+  public static class TimeAllowedExceededFromScorerException
+      extends ExitableDirectoryReader.ExitingReaderException {
+
+    public TimeAllowedExceededFromScorerException(String msg) {
+      super(msg);
+    }
+  }
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
@@ -1119,7 +1133,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     search(query, collector);
 
     if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).finish();
+      ((DelegatingCollector) collector).complete();
     }
 
     return DocSetUtil.getDocSet(setCollector, this);
@@ -2358,6 +2372,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public boolean intersects(DocSet a, DocsEnumState deState) throws IOException {
     return a.intersects(getDocSet(deState));
+  }
+
+  /**
+   * Called on the initial searcher for each core, immediately before <code>firstSearcherListeners
+   * </code> are called for the searcher. This provides the opportunity to perform initialization on
+   * the first registered searcher before the searcher begins to see any <code>firstSearcher</code>
+   * -triggered events.
+   */
+  public void bootstrapFirstSearcher() {
+    for (SolrCache<?, ?> solrCache : cacheList) {
+      solrCache.initialSearcher(this);
+    }
   }
 
   /** Warm this searcher based on an old one (primarily for auto-cache warming). */

@@ -23,7 +23,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 
-import com.google.common.base.Throwables;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -491,7 +490,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     final CoreContainer cores = init(CONFIGSETS_SOLR_XML);
     try {
-      Path solrInstallDir = cores.getConfig().getSolrInstallDir();
+      Path solrInstallDir = NodeConfig.getSolrInstallDir();
       assertTrue(
           "solrInstallDir was " + solrInstallDir,
           solrInstallDir != null && installDirPath.toString().equals(solrInstallDir.toString()));
@@ -771,6 +770,45 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testDefaultCoresLocator() throws Exception {
+    String solrXml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><solr></solr>";
+    CoreContainer cc = init(solrXml);
+    try {
+      assertTrue(cc.getCoresLocator() instanceof CorePropertiesLocator);
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  @Test
+  public void testCustomCoresLocator() throws Exception {
+    String solrXml =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+            + "<solr>\n"
+            + "<str name=\"coresLocator\">org.apache.solr.core.TestCoreContainer$CustomCoresLocator</str>\n"
+            + "</solr>";
+    CoreContainer cc = init(solrXml);
+    try {
+      assertTrue(cc.getCoresLocator() instanceof CustomCoresLocator);
+      assertSame(cc.getNodeConfig(), ((CustomCoresLocator) cc.getCoresLocator()).getNodeConfig());
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  public static class CustomCoresLocator extends MockCoresLocator {
+    private final NodeConfig nodeConfig;
+
+    public CustomCoresLocator(NodeConfig nodeConfig) {
+      this.nodeConfig = nodeConfig;
+    }
+
+    public NodeConfig getNodeConfig() {
+      return nodeConfig;
+    }
+  }
+
   private static class MockCoresLocator implements CoresLocator {
 
     List<CoreDescriptor> cores = new ArrayList<>();
@@ -799,6 +837,11 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
       return cores;
+    }
+
+    @Override
+    public CoreDescriptor reload(CoreDescriptor cd, CoreContainer cc) {
+      return cd;
     }
   }
 
@@ -832,7 +875,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
             () -> {
               cc.create("bogus", Map.of("configSet", "bogus_path"));
             });
-    Throwable rootCause = Throwables.getRootCause(thrown);
+    Throwable rootCause = SolrException.getRootCause(thrown);
     assertTrue(
         "init exception doesn't mention bogus dir: " + rootCause.getMessage(),
         0 < rootCause.getMessage().indexOf("bogus_path"));
@@ -862,7 +905,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
               SolrCore c = cc.getCore("bogus");
             });
     assertEquals(500, thrown.code());
-    String cause = Throwables.getRootCause(thrown).getMessage();
+    String cause = SolrException.getRootCause(thrown).getMessage();
     assertTrue(
         "getCore() ex cause doesn't mention init fail: " + cause, 0 < cause.indexOf("bogus_path"));
 

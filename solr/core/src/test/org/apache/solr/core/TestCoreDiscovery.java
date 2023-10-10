@@ -393,13 +393,13 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     final String message = thrown.getMessage();
     assertTrue(
         "Wrong exception thrown on duplicate core names",
-        message.indexOf("Found multiple cores with the name [core1]") != -1);
+        message.contains("Found multiple cores with the name [core1]"));
     assertTrue(
         File.separator + "core1 should have been mentioned in the message: " + message,
-        message.indexOf(File.separator + "core1") != -1);
+        message.contains(File.separator + "core1"));
     assertTrue(
         File.separator + "core2 should have been mentioned in the message:" + message,
-        message.indexOf(File.separator + "core2") != -1);
+        message.contains(File.separator + "core2"));
   }
 
   @Test
@@ -630,7 +630,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
           + Paths.get(TEST_HOME()).resolve("configsets")
           + "</str>"
           + "<solrcloud> "
-          + "<str name=\"hostContext\">solrprop</str> "
           + "<int name=\"zkClientTimeout\">20</int> "
           + "<str name=\"host\">222.333.444.555</str> "
           + "<int name=\"hostPort\">6000</int>  "

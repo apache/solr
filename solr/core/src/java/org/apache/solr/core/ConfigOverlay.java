@@ -31,7 +31,7 @@ import org.apache.solr.common.util.Utils;
 
 /**
  * This class encapsulates the config overlay json file. It is immutable and any edit operations
- * performed on tbhis gives a new copy of the object with the changed value
+ * performed on this gives a new copy of the object with the changed value
  */
 public class ConfigOverlay implements MapSerializable {
   private final int version;

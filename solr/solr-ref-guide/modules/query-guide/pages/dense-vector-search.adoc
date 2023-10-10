@@ -75,7 +75,7 @@ s|Required |Default: none
 The dimension of the dense vector to pass in.
 +
 Accepted values:
-Any integer < = `1024`.
+Any integer.
 
 `similarityFunction`::
 +
@@ -125,6 +125,18 @@ Here's how `DenseVectorField` can be configured with the advanced hyper-paramete
 Accepted values: `hnsw`.
 
 Please note that the `knnAlgorithm` accepted values may change in future releases.
+
+`vectorEncoding`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `FLOAT32`
+|===
++
+(advanced) Specifies the underlying encoding of the dense vector elements. This affects memory/disk impact for both the indexed and stored fields (if enabled)
++
+
+Accepted values: `FLOAT32`, `BYTE`.
 
 
 `hnswMaxConnections`::

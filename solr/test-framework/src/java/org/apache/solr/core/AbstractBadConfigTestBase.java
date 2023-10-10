@@ -71,7 +71,7 @@ public abstract class AbstractBadConfigTestBase extends SolrTestCaseJ4 {
 
   private static boolean matches(Exception e, String errString) {
     for (Throwable t = e; t != null; t = t.getCause()) {
-      if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return true;
+      if (t.getMessage() != null && t.getMessage().contains(errString)) return true;
     }
     return false;
   }

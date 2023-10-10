@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -69,7 +69,6 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       JettySolrRunner runner = jettys.get(i);
       JettyConfig config =
           JettyConfig.builder()
-              .setContext(context)
               .setPort(runner.getLocalPort())
               .stopAtShutdown(false)
               .withServlets(getExtraServlets())
@@ -96,7 +95,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     for (Replica replica : replicas) {
       assertTrue(
           "Replica didn't have the proper urlScheme in the ClusterState",
-          StringUtils.startsWith(replica.getStr(ZkStateReader.BASE_URL_PROP), urlScheme));
+          replica.getStr(ZkStateReader.BASE_URL_PROP).startsWith(urlScheme));
     }
   }
 
@@ -123,12 +122,12 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    List<String> urls = new ArrayList<>();
-    for (Replica replica : getReplicas()) {
-      urls.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
-    }
+    String[] urls =
+        getReplicas().stream()
+            .map(r -> r.getStr(ZkStateReader.BASE_URL_PROP))
+            .toArray(String[]::new);
     // Create new SolrServer to configure new HttpClient w/ SSL config
-    try (SolrClient client = getLBHttpSolrClient(urls.toArray(new String[] {}))) {
+    try (SolrClient client = new LBHttpSolrClient.Builder().withBaseSolrUrls(urls).build()) {
       client.request(request);
     }
   }

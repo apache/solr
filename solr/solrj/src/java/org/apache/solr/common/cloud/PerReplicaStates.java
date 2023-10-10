@@ -88,6 +88,10 @@ public class PerReplicaStates implements ReflectMapWriter {
     this.states = new WrappedSimpleMap<>(tmp);
   }
 
+  public static PerReplicaStates empty(String collectionName) {
+    return new PerReplicaStates(DocCollection.getCollectionPath(collectionName), 0, List.of());
+  }
+
   /** Check and return if all replicas are ACTIVE */
   public boolean allActive() {
     if (this.allActive != null) return allActive;

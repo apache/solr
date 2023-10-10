@@ -227,8 +227,6 @@ See xref:deployment-guide:circuit-breakers.adoc[] for more details
 See xref:requestdispatcher.adoc[] for defaults and acceptable values for these settings.
 
 * `requestDispatcher.handleSelect`
-* `requestDispatcher.requestParsers.enableRemoteStreaming`
-* `requestDispatcher.requestParsers.enableStreamBody`
 * `requestDispatcher.requestParsers.multipartUploadLimitInKB`
 * `requestDispatcher.requestParsers.formdataUploadLimitInKB`
 * `requestDispatcher.requestParsers.addHttpRequestToContext`

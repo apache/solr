@@ -100,7 +100,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
         ((SolrDeletionPolicy) (delPolicy.getWrappedDeletionPolicy()))
             .getMaxCommitAge()
             .replaceAll("[a-zA-Z]", "")
-            .replaceAll("-", "");
+            .replace("-", "");
     long age = Long.parseLong(agestr);
     Thread.sleep(age);
 

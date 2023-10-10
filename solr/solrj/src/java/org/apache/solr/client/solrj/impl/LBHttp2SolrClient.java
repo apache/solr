@@ -23,7 +23,6 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +71,8 @@ import org.slf4j.MDC;
  *
  * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
  * a dedicated thread. This interval can be set using {@link
- * LBHttp2SolrClient.Builder#setAliveCheckInterval(int)} , the default is set to one minute.
+ * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)} , the default is set to one
+ * minute.
  *
  * <p><b>When to use this?</b><br>
  * This can be used as a software load balancer when you do not wish to set up an external load
@@ -86,15 +86,6 @@ import org.slf4j.MDC;
 public class LBHttp2SolrClient extends LBSolrClient {
   private final Http2SolrClient solrClient;
 
-  /**
-   * @deprecated Use {@link LBHttp2SolrClient.Builder} instead
-   */
-  @Deprecated
-  public LBHttp2SolrClient(Http2SolrClient solrClient, String... baseSolrUrls) {
-    super(Arrays.asList(baseSolrUrls));
-    this.solrClient = solrClient;
-  }
-
   private LBHttp2SolrClient(Http2SolrClient solrClient, List<String> baseSolrUrls) {
     super(baseSolrUrls);
     this.solrClient = solrClient;
@@ -105,40 +96,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
     return solrClient;
   }
 
-  /**
-   * Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @param parser Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   * @deprecated Pass in a configured {@link Http2SolrClient} instead
-   */
-  @Deprecated
-  @Override
-  public void setParser(ResponseParser parser) {
-    super.setParser(parser);
-    this.solrClient.setParser(parser);
-  }
-
   @Override
   public ResponseParser getParser() {
     return solrClient.getParser();
-  }
-
-  /**
-   * Choose the {@link RequestWriter} to use.
-   *
-   * <p>By default, {@link BinaryRequestWriter} is used.
-   *
-   * <p>Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @deprecated Pass in a configured {@link Http2SolrClient} instead
-   */
-  @Deprecated
-  @Override
-  public void setRequestWriter(RequestWriter writer) {
-    super.setRequestWriter(writer);
-    this.solrClient.setRequestWriter(writer);
   }
 
   @Override
@@ -148,27 +108,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
   public Set<String> getUrlParamNames() {
     return solrClient.getUrlParamNames();
-  }
-
-  /**
-   * @deprecated You should instead set this on the passed in Http2SolrClient used by the Builder.
-   */
-  @Deprecated
-  public void setQueryParams(Set<String> queryParams) {
-    this.solrClient.setUrlParamNames(queryParams);
-  }
-
-  /**
-   * This method should be removed as being able to add a query parameter isn't compatible with the
-   * idea that query params are an immutable property of a solr client.
-   *
-   * @deprecated you should instead set this on the passed in Http2SolrClient used by the Builder.
-   */
-  @Deprecated
-  public void addQueryParams(String queryOnlyParam) {
-    Set<String> urlParamNames = new HashSet<>(this.solrClient.getUrlParamNames());
-    urlParamNames.add(queryOnlyParam);
-    this.solrClient.setUrlParamNames(urlParamNames);
   }
 
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {

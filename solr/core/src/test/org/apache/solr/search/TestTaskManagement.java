@@ -185,7 +185,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
     NamedList<Object> response =
         cluster
             .getSolrClient(COLLECTION_NAME)
-            .request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list", null));
+            .request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/tasks/list"));
     return (NamedList<String>) response.get("taskList");
   }
 

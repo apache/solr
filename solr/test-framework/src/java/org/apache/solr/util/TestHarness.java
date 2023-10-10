@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -90,6 +91,11 @@ public class TestHarness extends BaseTestHarness {
    */
   public static SolrConfig createConfig(Path solrHome, String confFile) {
     return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
+  }
+
+  public TestHarness(CoreContainer coreContainer) {
+    this.container = coreContainer;
+    this.coreName = SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
   }
 
   /**
@@ -169,7 +175,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public TestHarness(NodeConfig nodeConfig) {
-    this(nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
+    this(nodeConfig, new CorePropertiesLocator(nodeConfig));
   }
 
   /**
@@ -189,10 +195,8 @@ public class TestHarness extends BaseTestHarness {
         (null == System.getProperty("zkHost"))
             ? null
             : new CloudConfig.CloudConfigBuilder(
-                    System.getProperty("host"),
-                    Integer.getInteger("hostPort", 8983),
-                    System.getProperty("hostContext", ""))
-                .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
+                    System.getProperty("host"), Integer.getInteger("hostPort", 8983))
+                .setZkClientTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT)
                 .setZkHost(System.getProperty("zkHost"))
                 .build();
 

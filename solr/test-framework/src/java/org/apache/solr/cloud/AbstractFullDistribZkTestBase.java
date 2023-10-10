@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -728,7 +729,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     JettyConfig jettyconfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
@@ -774,7 +774,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     JettyConfig jettyconfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
@@ -813,7 +812,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     JettyConfig jettyconfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
@@ -2172,6 +2170,33 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         configName);
   }
 
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
+   * not wish to have any randomized behavior should use the {@link
+   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */
+  public static CloudSolrClient getCloudSolrClient(
+      String zkHost,
+      String defaultCollection,
+      boolean shardLeadersOnly,
+      int connectionTimeoutMillis,
+      int socketTimeoutMillis) {
+    RandomizingCloudSolrClientBuilder builder =
+        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
+    if (shardLeadersOnly) {
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
+    }
+    if (defaultCollection != null) {
+      builder.withDefaultCollection(defaultCollection);
+    }
+    return builder
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .withSocketTimeout(socketTimeoutMillis)
+        .build();
+  }
+
   @Override
   protected SolrClient createNewSolrClient(int port) {
     return createNewSolrClient(DEFAULT_COLLECTION, port);
@@ -2180,7 +2205,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrClient createNewSolrClient(String coreName, int port) {
     String baseUrl = buildUrl(port);
     String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-    return getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
+    return new HttpSolrClient.Builder(url)
+        .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {

@@ -31,6 +31,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
@@ -99,7 +100,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       docs.add(doc);
     }
     SolrResponseBase resp;
-    try (SolrClient client = getHttpSolrClient(solrInstance.getUrl(), httpClient)) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(solrInstance.getUrl()).withHttpClient(httpClient).build()) {
       resp = client.add(docs);
       assertEquals(0, resp.getStatus());
       resp = client.commit();
@@ -272,7 +274,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
 
     public String getUrl() {
-      return buildUrl(port, "/solr/collection1");
+      return buildUrl(port) + "/collection1";
     }
 
     public String getSchemaFile() {
@@ -321,8 +323,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       props.setProperty("solrconfig", "bad_solrconfig.xml");
       props.setProperty("solr.data.dir", getDataDir());
 
-      JettyConfig jettyConfig =
-          JettyConfig.builder(buildJettyConfig("/solr")).setPort(port).build();
+      JettyConfig jettyConfig = JettyConfig.builder(buildJettyConfig()).setPort(port).build();
 
       jetty = new JettySolrRunner(getHomeDir(), props, jettyConfig);
       jetty.start();

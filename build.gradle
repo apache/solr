@@ -23,7 +23,7 @@ plugins {
   id "com.palantir.consistent-versions" version "2.11.0"
   id "org.owasp.dependencycheck" version "8.0.1"
   id 'ca.cutterslade.analyze' version "1.9.0"
-  id 'de.thetaphi.forbiddenapis' version '3.5' apply false
+  id 'de.thetaphi.forbiddenapis' version '3.6' apply false
   id "de.undercouch.download" version "5.2.0" apply false
   id "net.ltgt.errorprone" version "3.0.1" apply false
   id 'com.diffplug.spotless' version "6.5.2" apply false
@@ -46,7 +46,11 @@ version = {
   //  -Dversion.suffix=jenkins123
   
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
-  return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+  String v = propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+  if (v.endsWith("-")) {
+    v = v.substring(0, v.length() - 1)
+  }
+  return v
 }()
 description = 'Grandparent project for Apache Solr'
 
@@ -123,6 +127,7 @@ apply from: file('gradle/java/javac.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
+apply from: file('gradle/testing/fail-on-unsupported-jdk.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 

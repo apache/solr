@@ -65,12 +65,15 @@ public class ZLibCompressorTest extends SolrTestCase {
           120, 1, 11, -50, -49, 77, 85, 40, 73, 45, 46, 81, 72, 73, 44, 73, -28, 2, 0, 43, -36, 5,
           57
         };
+    byte[] data = "Some test data\n".getBytes(StandardCharsets.UTF_8);
     byte[] compressedBytes =
-        stateCompression.compressBytes("Some test data\n".getBytes(StandardCharsets.UTF_8));
+        random().nextBoolean()
+            ? stateCompression.compressBytes(data)
+            : stateCompression.compressBytes(data, data.length / 10);
     int decompressedSize = ByteBuffer.wrap(compressedBytes, compressedBytes.length - 8, 4).getInt();
     int xoredSize = ByteBuffer.wrap(compressedBytes, compressedBytes.length - 4, 4).getInt();
     assertEquals(xoredSize, decompressedSize ^ 2018370979);
-    assertEquals("Some test data\n".getBytes(StandardCharsets.UTF_8).length, decompressedSize);
+    assertEquals(data.length, decompressedSize);
     assertArrayEquals(
         testBytes, ArrayUtil.copyOfSubArray(compressedBytes, 0, compressedBytes.length - 8));
   }

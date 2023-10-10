@@ -224,18 +224,6 @@ public abstract class CloudSolrClient extends SolrClient {
     }
   }
 
-  /**
-   * This is the time to wait to refetch the state after getting the same state version from ZK
-   *
-   * <p>secs
-   *
-   * @deprecated use {@link CloudSolrClient.Builder#setRetryExpiryTime(int)} instead
-   */
-  @Deprecated
-  public void setRetryExpiryTime(int secs) {
-    this.retryExpiryTimeNano = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
-  }
-
   protected final StateCache collectionStateCache = new StateCache();
 
   class ExpiringCachedDocCollection {
@@ -279,18 +267,6 @@ public abstract class CloudSolrClient extends SolrClient {
     this.requestRLTGenerator = new RequestReplicaListTransformerGenerator();
   }
 
-  /**
-   * Sets the cache ttl for DocCollection Objects cached.
-   *
-   * @param seconds ttl value in seconds
-   * @deprecated use {@link CloudSolrClient.Builder#withCollectionCacheTtl(int)} instead
-   */
-  @Deprecated
-  public void setCollectionCacheTTl(int seconds) {
-    assert seconds > 0;
-    this.collectionStateCache.timeToLiveMs = seconds * 1000L;
-  }
-
   protected abstract LBSolrClient getLbClient();
 
   public abstract ClusterStateProvider getClusterStateProvider();
@@ -313,43 +289,8 @@ public abstract class CloudSolrClient extends SolrClient {
     return getLbClient().getParser();
   }
 
-  /**
-   * Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @param processor Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   * @deprecated use {@link CloudHttp2SolrClient.Builder} instead
-   */
-  @Deprecated
-  public void setParser(ResponseParser processor) {
-    getLbClient().setParser(processor);
-  }
-
   public RequestWriter getRequestWriter() {
     return getLbClient().getRequestWriter();
-  }
-
-  /**
-   * Choose the {@link RequestWriter} to use.
-   *
-   * <p>Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @deprecated use {@link CloudHttp2SolrClient.Builder} instead
-   */
-  @Deprecated
-  public void setRequestWriter(RequestWriter requestWriter) {
-    getLbClient().setRequestWriter(requestWriter);
-  }
-
-  /**
-   * Sets the default collection for request.
-   *
-   * @deprecated use {@link CloudHttp2SolrClient.Builder#withDefaultCollection(String)} instead
-   */
-  @Deprecated
-  public void setDefaultCollection(String collection) {
-    this.defaultCollection = collection;
   }
 
   /** Gets the default collection for request */
@@ -1151,8 +1092,9 @@ public abstract class CloudSolrClient extends SolrClient {
           String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
               || replica.getState()
-                  != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
-          continue;
+                  != Replica.State.ACTIVE) { // Must be an ACTIVE replica to continue
+            continue;
+          }
           if (sendToLeaders && replica.equals(leader)) {
             sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
           } else {
@@ -1175,8 +1117,14 @@ public abstract class CloudSolrClient extends SolrClient {
       sortedReplicas.forEach(
           replica -> {
             if (seenNodes.add(replica.getNodeName())) {
-              theUrlList.add(
-                  ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              if (inputCollections.size() == 1 && collectionNames.size() == 1) {
+                // If we have a single collection name (and not a alias to multiple collection),
+                // send the query directly to a replica of this collection.
+                theUrlList.add(replica.getCoreUrl());
+              } else {
+                theUrlList.add(
+                    ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              }
             }
           });
 
@@ -1242,17 +1190,6 @@ public abstract class CloudSolrClient extends SolrClient {
    */
   public boolean isDirectUpdatesToLeadersOnly() {
     return directUpdatesToLeadersOnly;
-  }
-
-  /**
-   * If caches are expired they are refreshed after acquiring a lock. use this to set the number of
-   * locks
-   *
-   * @deprecated use {@link CloudHttp2SolrClient.Builder#setParallelCacheRefreshes(int)} instead
-   */
-  @Deprecated
-  public void setParallelCacheRefreshes(int n) {
-    locks = objectList(n);
   }
 
   protected static Object[] objectList(int n) {

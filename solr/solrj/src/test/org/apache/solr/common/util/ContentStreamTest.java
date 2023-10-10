@@ -40,7 +40,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     ContentStreamBase stream = new ContentStreamBase.StringStream(input);
     assertEquals(input.length(), stream.getSize().longValue());
     assertEquals(input, new String(stream.getStream().readAllBytes(), StandardCharsets.UTF_8));
-    assertEquals(input, IOUtils.toString(stream.getReader()));
+    assertEquals(input, StrUtils.stringFromReader(stream.getReader()));
   }
 
   public void testFileStream() throws IOException {

@@ -17,12 +17,8 @@
 
 package org.apache.solr.servlet;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.noop.NoopSpan;
-import io.opentracing.noop.NoopTracer;
-import io.opentracing.propagation.Format;
-import io.opentracing.tag.Tags;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
@@ -45,8 +41,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.util.tracing.HttpServletCarrier;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,34 +192,26 @@ public abstract class ServletUtils {
    * @param request The request to limit
    * @param response The associated response
    * @param limitedExecution code that will be traced
-   * @param trace a boolean that turns tracing on or off
    */
   static void rateLimitRequest(
+      RateLimitManager rateLimitManager,
       HttpServletRequest request,
       HttpServletResponse response,
-      Runnable limitedExecution,
-      boolean trace)
+      Runnable limitedExecution)
       throws ServletException, IOException {
     boolean accepted = false;
-    RateLimitManager rateLimitManager = getRateLimitManager(request);
     try {
-      try {
-        accepted = rateLimitManager.handleRequest(request);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
-      }
-
+      accepted = rateLimitManager.handleRequest(request);
       if (!accepted) {
-        String errorMessage =
-            "Too many requests for this request type."
-                + "Please try after some time or increase the quota for this request type";
-
-        response.sendError(429, errorMessage);
+        response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
+        return;
       }
       // todo: this shouldn't be required, tracing and rate limiting should be independently
       // composable
-      traceHttpRequestExecution2(request, response, limitedExecution, trace);
+      traceHttpRequestExecution2(request, response, limitedExecution);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
     } finally {
       if (accepted) {
         rateLimitManager.decrementActiveRequests(request);
@@ -236,92 +223,48 @@ public abstract class ServletUtils {
    * Sets up tracing for an HTTP request. Perhaps should be converted to a servlet filter at some
    * point.
    *
+   * @param request The request to limit
+   * @param response The associated response
    * @param tracedExecution the executed code
    */
   private static void traceHttpRequestExecution2(
-      HttpServletRequest request,
-      HttpServletResponse response,
-      Runnable tracedExecution,
-      boolean required)
+      HttpServletRequest request, HttpServletResponse response, Runnable tracedExecution)
       throws ServletException, IOException {
-    Tracer tracer = getTracer(request);
-    if (tracer != null) {
-      Span span = buildSpan(tracer, request);
+    Context context = TraceUtils.extractContext(request);
+    Span span = TraceUtils.startHttpRequestSpan(request, context);
 
-      request.setAttribute(Span.class.getName(), span);
-      try (var scope = tracer.scopeManager().activate(span)) {
-
-        assert scope != null; // prevent javac warning about scope being unused
-        MDCLoggingContext.setTracerId(span.context().toTraceId()); // handles empty string
-        try {
-          tracedExecution.run();
-        } catch (ExceptionWhileTracing e) {
-          if (e.e instanceof SolrAuthenticationException) {
-            throw (SolrAuthenticationException) e.e;
-          }
-          if (e.e instanceof ServletException) {
-            throw (ServletException) e.e;
-          }
-          if (e.e instanceof IOException) {
-            throw (IOException) e.e;
-          }
-          if (e.e instanceof RuntimeException) {
-            throw (RuntimeException) e.e;
-          } else {
-            throw new RuntimeException(e.e);
-          }
-        }
-      } catch (SolrAuthenticationException e) {
+    try (var scope = context.with(span).makeCurrent()) {
+      assert scope != null; // prevent javac warning about scope being unused
+      TraceUtils.setSpan(request, span);
+      TraceUtils.ifValidTraceId(
+          span, s -> MDCLoggingContext.setTracerId(s.getSpanContext().getTraceId()));
+      tracedExecution.run();
+    } catch (ExceptionWhileTracing e) {
+      if (e.e instanceof SolrAuthenticationException) {
         // done, the response and status code have already been sent
-      } finally {
-        consumeInputFully(request, response);
-        SolrRequestInfo.reset();
-        SolrRequestParsers.cleanupMultipartFiles(request);
-
-        span.setTag(Tags.HTTP_STATUS, response.getStatus());
-        span.finish();
+        return;
       }
-    } else {
-      if (required) {
-        throw new IllegalStateException(
-            "Tracing required, but could not find Tracer in request attribute:"
-                + SolrDispatchFilter.ATTR_TRACING_TRACER);
+      if (e.e instanceof ServletException) {
+        throw (ServletException) e.e;
+      }
+      if (e.e instanceof IOException) {
+        throw (IOException) e.e;
+      }
+      if (e.e instanceof RuntimeException) {
+        throw (RuntimeException) e.e;
       } else {
-        tracedExecution.run();
+        throw new RuntimeException(e.e);
       }
+    } finally {
+      TraceUtils.setHttpStatus(span, response.getStatus());
+      span.end();
     }
-  }
-
-  private static Tracer getTracer(HttpServletRequest req) {
-    return (Tracer) req.getAttribute(SolrDispatchFilter.ATTR_TRACING_TRACER);
-  }
-
-  private static RateLimitManager getRateLimitManager(HttpServletRequest req) {
-    return (RateLimitManager) req.getAttribute(SolrDispatchFilter.ATTR_RATELIMIT_MANAGER);
-  }
-
-  protected static Span buildSpan(Tracer tracer, HttpServletRequest request) {
-    if (tracer instanceof NoopTracer) {
-      return NoopSpan.INSTANCE;
-    }
-    Tracer.SpanBuilder spanBuilder =
-        tracer
-            .buildSpan("http.request") // will be changed later
-            .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
-            .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
-            .withTag(Tags.HTTP_METHOD, request.getMethod())
-            .withTag(Tags.HTTP_URL, request.getRequestURL().toString());
-    if (request.getQueryString() != null) {
-      spanBuilder.withTag("http.params", request.getQueryString());
-    }
-    spanBuilder.withTag(Tags.DB_TYPE, "solr");
-    return spanBuilder.start();
   }
 
   // we make sure we read the full client request so that the client does
   // not hit a connection reset and we can reuse the
   // connection - see SOLR-8453 and SOLR-8683
-  private static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
+  static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
     try {
       ServletInputStream is = req.getInputStream();
       //noinspection StatementWithEmptyBody

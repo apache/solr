@@ -217,11 +217,10 @@ public class JettySolrRunner {
    * <p>After construction, you must start the jetty with {@link #start()}
    *
    * @param solrHome the solr home directory to use
-   * @param context the context to run in
    * @param port the port to run on
    */
-  public JettySolrRunner(String solrHome, String context, int port) {
-    this(solrHome, JettyConfig.builder().setContext(context).setPort(port).build());
+  public JettySolrRunner(String solrHome, int port) {
+    this(solrHome, JettyConfig.builder().setPort(port).build());
   }
 
   /**
@@ -373,7 +372,7 @@ public class JettySolrRunner {
     {
       // Initialize the servlets
       final ServletContextHandler root =
-          new ServletContextHandler(server, config.context, ServletContextHandler.SESSIONS);
+          new ServletContextHandler(server, "/solr", ServletContextHandler.SESSIONS);
       root.setResourceBase(".");
 
       server.addEventListener(
@@ -396,7 +395,6 @@ public class JettySolrRunner {
               int port = jettyPort;
               if (proxyPort != -1) port = proxyPort;
               nodeProperties.setProperty("hostPort", Integer.toString(port));
-              nodeProperties.setProperty("hostContext", config.context);
 
               root.getServletContext()
                   .setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
@@ -840,7 +838,7 @@ public class JettySolrRunner {
    */
   public URL getBaseUrl() {
     try {
-      return new URL(protocol, host, jettyPort, config.context);
+      return new URL(protocol, host, jettyPort, "/solr");
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
@@ -859,7 +857,7 @@ public class JettySolrRunner {
    */
   public URL getProxyBaseUrl() {
     try {
-      return new URL(protocol, host, getLocalPort(), config.context);
+      return new URL(protocol, host, getLocalPort(), "/solr");
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
@@ -893,7 +891,7 @@ public class JettySolrRunner {
 
   /** A main class that starts jetty+solr This is useful for debugging */
   public static void main(String[] args) throws Exception {
-    JettySolrRunner jetty = new JettySolrRunner(".", "/solr", 8983);
+    JettySolrRunner jetty = new JettySolrRunner(".", 8983);
     jetty.start();
   }
 

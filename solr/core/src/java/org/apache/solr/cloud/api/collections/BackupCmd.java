@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
@@ -68,6 +69,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     this.ccc = ccc;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
@@ -84,14 +86,18 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
+    boolean backupConfigset = message.getBool(CoreAdminParams.BACKUP_CONFIGSET, true);
     String configName =
         ccc.getSolrCloudManager()
             .getClusterStateProvider()
             .getCollection(collectionName)
             .getConfigName();
 
+    Map<String, String> customProps = (Map<String, String>) message.get("extraProperties");
+
     BackupProperties backupProperties =
-        BackupProperties.create(backupName, collectionName, extCollectionName, configName);
+        BackupProperties.create(
+            backupName, collectionName, extCollectionName, configName, customProps);
 
     CoreContainer cc = ccc.getCoreContainer();
     try (BackupRepository repository = cc.newBackupRepository(repo)) {
@@ -145,8 +151,12 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
 
       log.info("Starting to backup ZK data for backupName={}", backupName);
 
-      // Download the configs
-      backupMgr.downloadConfigDir(configName, cc.getConfigSetService());
+      backupMgr.createZkStateDir();
+
+      if (backupConfigset) {
+        // Download the configs
+        backupMgr.downloadConfigDir(configName, cc.getConfigSetService());
+      }
 
       // Save the collection's state. Can be part of the monolithic clusterstate.json or a
       // individual state.json. Since we don't want to distinguish we extract the state and back it
@@ -362,6 +372,9 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
     aggRsp.add("indexVersion", backupProps.getIndexVersion());
     aggRsp.add("startTime", backupProps.getStartTime());
+    if (backupProps.getExtraProperties() != null) {
+      aggRsp.add("extraProperties", backupProps.getExtraProperties());
+    }
 
     // Optional options for backups
     Optional<Integer> indexFileCount = Optional.empty();

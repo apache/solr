@@ -108,7 +108,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     } else {
       final String key = sort.sortVariable;
 
-      /**
+      /*
        * final FacetSortableMerger[] arr = new FacetSortableMerger[buckets.size()]; final int[]
        * index = new int[arr.length]; int start = 0; int nullStart = index.length; int i=0; for
        * (FacetBucket bucket : buckets.values()) { FacetMerger merger =

@@ -24,12 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -68,8 +64,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
   private int dimensionY;
   private FieldComparator bucketSort;
 
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
 
   public Facet2DStream(
       String zkHost,
@@ -101,7 +97,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
 
     if (collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = collectionName.replace("\"", "").replace(" ", "");
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -139,7 +135,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     if (bucketXExpression != null) {
       if (bucketXExpression.getParameter() instanceof StreamExpressionValue) {
         String keyX = ((StreamExpressionValue) bucketXExpression.getParameter()).getValue();
-        if (keyX != null && !keyX.equals("")) {
+        if (keyX != null && !keyX.isEmpty()) {
           x = new Bucket(keyX.trim());
         }
       }
@@ -148,7 +144,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     if (bucketYExpression != null) {
       if (bucketYExpression.getParameter() instanceof StreamExpressionValue) {
         String keyY = ((StreamExpressionValue) bucketYExpression.getParameter()).getValue();
-        if (keyY != null && !keyY.equals("")) {
+        if (keyY != null && !keyY.isEmpty()) {
           y = new Bucket(keyY.trim());
         }
       }
@@ -312,7 +308,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    cache = context.getSolrClientCache();
+    clientCache = context.getSolrClientCache();
   }
 
   @Override
@@ -322,16 +318,11 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
-    if (cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      final List<String> hosts = new ArrayList<>();
-      hosts.add(zkHost);
-      cloudSolrClient =
-          new CloudLegacySolrClient.Builder(hosts, Optional.empty())
-              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
-              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-              .build();
+      doCloseCache = false;
     }
     FieldComparator[] adjustedSorts = adjustSorts(x, y, bucketSort);
 
@@ -344,6 +335,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       NamedList<Object> response = cloudSolrClient.request(request, collection);
       getTuples(response, x, y, metric);
       this.out = tuples.iterator();
@@ -366,10 +358,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (cache == null) {
-      if (cloudSolrClient != null) {
-        cloudSolrClient.close();
-      }
+    if (doCloseCache) {
+      clientCache.close();
     }
   }
 

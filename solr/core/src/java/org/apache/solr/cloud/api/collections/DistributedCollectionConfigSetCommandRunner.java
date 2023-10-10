@@ -275,10 +275,9 @@ public class DistributedCollectionConfigSetCommandRunner {
     // Happens either in the CollectionCommandRunner below or in the catch when the runner would not
     // execute.
     if (!asyncTaskTracker.createNewAsyncJobTracker(asyncId)) {
-      NamedList<Object> resp = new NamedList<>();
-      resp.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
-      resp.add(CoreAdminParams.REQUESTID, asyncId);
-      return new OverseerSolrResponse(resp);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Task with the same requestid already exists. (" + asyncId + ")");
     }
 
     CollectionCommandRunner commandRunner = new CollectionCommandRunner(message, action, asyncId);
@@ -454,9 +453,9 @@ public class DistributedCollectionConfigSetCommandRunner {
         }
         // Output some error logs
         if (collName == null) {
-          SolrException.log(log, "Operation " + action + " failed", e);
+          log.error("Operation {} failed", action, e);
         } else {
-          SolrException.log(log, "Collection " + collName + ", operation " + action + " failed", e);
+          log.error("Collection {}}, operation {} failed", collName, action, e);
         }
 
         results.add("Operation " + action + " caused exception:", e);

@@ -36,6 +36,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.cli.StatusTool;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -63,7 +65,6 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
@@ -111,7 +112,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       JettySolrRunner randomJetty = cluster.getRandomJetty(random());
       String baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
-      zkClient().setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
+      zkClient().setData("/security.json", STD_CONF.replace("'", "\"").getBytes(UTF_8), true);
       verifySecurityStatus(
           cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
@@ -142,8 +143,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
                 .build();
       } else {
         GenericSolrRequest genericSolrRequest =
-            new GenericSolrRequest(
-                SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
+            new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix);
         genericSolrRequest.setContentWriter(
             new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
         genericReq = genericSolrRequest;
@@ -298,15 +298,13 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       verifySecurityStatus(cl, baseUrl + "/admin/info/key", "key", NOT_NULL_PREDICATE, 20);
       assertAuthMetricsMinimums(17, 8, 8, 1, 0, 0);
 
-      String[] toolArgs = new String[] {"status", "-solr", baseUrl};
+      String[] toolArgs = new String[] {"status", "-solrUrl", baseUrl};
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
-      SolrCLI.StatusTool tool = new SolrCLI.StatusTool(stdoutSim);
+      StatusTool tool = new StatusTool(stdoutSim);
       try {
         System.setProperty("basicauth", "harry:HarryIsUberCool");
-        tool.runTool(
-            SolrCLI.processCommandLineArgs(
-                SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), toolArgs));
         Map<?, ?> obj = (Map<?, ?>) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
         assertTrue(obj.containsKey("version"));
         assertTrue(obj.containsKey("startTime"));
@@ -314,7 +312,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         assertTrue(obj.containsKey("memory"));
       } catch (Exception e) {
         log.error(
-            "RunExampleTool failed due to: {}; stdout from tool prior to failure: {}",
+            "StatusTool failed due to: {}; stdout from tool prior to failure: {}",
             e,
             baos.toString(StandardCharsets.UTF_8.name())); // nowarn
       }

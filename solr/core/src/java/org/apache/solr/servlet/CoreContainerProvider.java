@@ -46,16 +46,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
 import org.apache.http.client.HttpClient;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.util.VectorUtil;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -73,7 +76,6 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricManager.ResolutionStrategy;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.servlet.RateLimitManager.Builder;
-import org.apache.solr.util.SolrVersion;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -227,6 +229,20 @@ public class CoreContainerProvider implements ServletContextListener {
         StartupLoggingUtils.changeLogLevel(logLevel);
       }
 
+      // Do initial logs for experimental Lucene classes.
+      // TODO: Use "MethodHandles.lookup().ensureClassInitialized()" instead of "Class.forName()"
+      //   once JDK 15+ is mandatory
+      Stream.of(MMapDirectory.class, VectorUtil.class)
+          .forEach(
+              cls -> {
+                try {
+                  Class.forName(cls.getName());
+                } catch (ReflectiveOperationException re) {
+                  throw new SolrException(
+                      ErrorCode.SERVER_ERROR, "Could not load Lucene class: " + cls.getName());
+                }
+              });
+
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
@@ -251,8 +267,7 @@ public class CoreContainerProvider implements ServletContextListener {
       }
     } catch (Throwable t) {
       // catch this so our filter still works
-      log.error("Could not start Solr. Check solr/home property and the logs");
-      SolrCore.log(t);
+      log.error("Could not start Solr. Check solr/home property and the logs", t);
       if (t instanceof Error) {
         throw (Error) t;
       }
@@ -416,7 +431,7 @@ public class CoreContainerProvider implements ServletContextListener {
   private void setupJvmMetrics(CoreContainer coresInit, MetricsConfig config) {
     metricManager = coresInit.getMetricManager();
     registryName = SolrMetricManager.getRegistryName(Group.jvm);
-    final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
+    final NodeConfig nodeConfig = coresInit.getConfig();
     try {
       metricManager.registerAll(
           registryName, new AltBufferPoolMetricSet(), ResolutionStrategy.IGNORE, "buffers");
@@ -456,8 +471,7 @@ public class CoreContainerProvider implements ServletContextListener {
                   System.getProperties()
                       .forEach(
                           (k, v) -> {
-                            //noinspection SuspiciousMethodCalls
-                            if (!hiddenSysProps.contains(k)) {
+                            if (!nodeConfig.isSysPropHidden(String.valueOf(k))) {
                               map.putNoEx(String.valueOf(k), v);
                             }
                           }));
@@ -469,18 +483,6 @@ public class CoreContainerProvider implements ServletContextListener {
           ResolutionStrategy.IGNORE,
           "properties",
           "system");
-      MetricsMap sysenv =
-          new MetricsMap(
-              map ->
-                  System.getenv()
-                      .forEach(
-                          (k, v) -> {
-                            if (!hiddenSysProps.contains(k)) {
-                              map.putNoEx(String.valueOf(k), v);
-                            }
-                          }));
-      metricManager.registerGauge(
-          null, registryName, sysenv, metricTag, ResolutionStrategy.IGNORE, "env", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }

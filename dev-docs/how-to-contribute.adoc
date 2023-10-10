@@ -4,6 +4,22 @@ The Apache Solr Github Repository is located here: https://github.com/apache/sol
 
 Please keep in mind that the project is community driven, with many members taking their own personal time to help respond to issue and review PRs. Be open to feedback and discussions and maintain a respectful approach. Read our https://solr.apache.org/community.html#code-of-conduct[code of conduct] for more.
 
+## Getting Your Feet Wet: Where to Begin?
+
+New to Solr? Want to find JIRA issues that you can work on without taking on the whole world?
+
+The Solr developers use the **newdev** label to mark issues that developers new to Solr might be interested in working on. The rough criteria used to make this selection are:
+
+* Nobody has done any work on the issue yet.
+* The issue is likely not controversial.
+* The issue is likely self-contained with limited scope.
+
+To see a list of open issues with the **newdev** label, look at this link https://s.apache.org/newdevsolr
+
+Note: Fixing these issues may require asking questions on the developer list to figure out what they mean - there is no guarantee that any of these will be either quick or easy.
+
+Emailing individual committers with questions about specific Solr issues is discouraged. See http://people.apache.org/~hossman/#private_q.
+
 ## Setup for Contributing
 In order to get setup you will need a fork of the Apache Solr repository and an account in the ASF Jira (usable for all Apache projects).
 
@@ -25,3 +41,33 @@ In order to make a new contribution to Solr you will use the fork you have creat
 * If you properly named your PR you will see it automatically linked to your Jira issue when you view the issue.
 * If your PR is still a work in progress, you can use the https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests#draft-pull-requests[PR Draft feature] of Github to denote draft status.
 5. At this point, you will need a Solr committer to review your change and help to get it merged upstream. You can use the https://solr.apache.org/community.html[Solr Developers Mailing List] to get attention to your issue.
+
+## PR Do-s and Don't-s
+
+Please do not:
+
+* reformat code unrelated to the bug being fixed: formatting changes should be separate patches/commits.
+* comment out code that is now obsolete: just remove it.
+* insert comments around each change, marking the change: folks can use git to figure out what's changed and by whom.
+* make things public which are not required by end users.
+* Combine multiple issues into a single patch, especially if they are unrelated or only loosely related. This is true even if the changes affect the same files. In some rare cases it is warranted, but for the most part it makes it harder for committers to evaluate the patch.
+
+Please do:
+
+* try to adhere to the coding style of files you edit;
+* comment code whose function or rationale is not obvious;
+* update documentation (e.g., package.html files, this wiki, etc.)
+* try to provide a unit test that shows a bug was indeed fixed or the new functionality truly works
+* use the "draft state" for PRs which are work in progress
+
+## Getting Your Contribution Merged
+
+Please be patient.
+Committers are busy people too.
+If no one responds to your patch after a few days, please make friendly reminders.
+Please incorporate others suggestions into your patch if you think they're reasonable.
+Remember that even a patch/PR that is not committed is useful to the community.
+Supply your contribution as early as possible, and updates as often as possible during your work.
+This helps the rest of the community and committers to start understanding, help shaping, commenting on etc. your work throughout the entire process.
+Supplying a PR does not necessarily mean that it is complete and ready to be committed, it might also just be a way of communicating your idea and progress.
+It can be useful to set the PR to "Draft" status until you feel it is ready for broad review.

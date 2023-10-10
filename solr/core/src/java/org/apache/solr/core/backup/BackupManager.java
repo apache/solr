@@ -254,7 +254,7 @@ public class BackupManager {
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
     if (!repository.exists(source)) {
-      throw new IllegalArgumentException("Path " + source + " does not exist");
+      throw new IllegalArgumentException("Configset expected at " + source + " does not exist");
     }
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
@@ -270,7 +270,6 @@ public class BackupManager {
   public void downloadConfigDir(String configName, ConfigSetService configSetService)
       throws IOException {
     URI dest = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, configName);
-    repository.createDirectory(getZkStateDir());
     repository.createDirectory(repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
@@ -346,6 +345,10 @@ public class BackupManager {
           log.debug("Writing file {}", filePath);
           // ConfigSetService#downloadFileFromConfig requires '/' in fle path separator
           byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
+          // replace empty zk node (data==null) with empty array
+          if (data == null) {
+            data = new byte[0];
+          }
           try (OutputStream os = repository.createOutput(uri)) {
             os.write(data);
           }
@@ -403,5 +406,9 @@ public class BackupManager {
       zkStateDir = repository.resolveDirectory(backupPath, ZK_STATE_DIR);
     }
     return zkStateDir;
+  }
+
+  public void createZkStateDir() throws IOException {
+    repository.createDirectory(getZkStateDir());
   }
 }

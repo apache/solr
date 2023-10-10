@@ -62,7 +62,11 @@ public abstract class RoutedAlias {
   public static final Set<String> MINIMAL_REQUIRED_PARAMS = Set.of(ROUTER_TYPE_NAME, ROUTER_FIELD);
 
   public static final String ROUTED_ALIAS_NAME_CORE_PROP = "routedAliasName"; // core prop
-  private static final String DIMENSIONAL = "Dimensional[";
+  public static final String DIMENSIONAL = "Dimensional[";
+
+  public static final String TIME = "time";
+
+  public static final String CATEGORY = "category";
 
   // This class is created once per request and the overseer methods prevent duplicate create
   // requests from creating extra copies via locking on the alias name. All we need to track here is

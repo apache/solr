@@ -50,7 +50,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -533,8 +532,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       muteRules.add("\"path:/admin/info/key\"");
     }
 
-    securityJson =
-        securityJson.replace("_MUTERULES_", "[" + StringUtils.join(muteRules, ",") + "]");
+    securityJson = securityJson.replace("_MUTERULES_", "[" + String.join(",", muteRules) + "]");
 
     MiniSolrCloudCluster myCluster =
         new MiniSolrCloudCluster.Builder(NUM_SERVERS, createTempDir())

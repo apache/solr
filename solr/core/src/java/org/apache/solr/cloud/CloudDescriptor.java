@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.common.util.StrUtils;
@@ -157,17 +156,17 @@ public class CloudDescriptor {
     if (reloadFrom == null) return;
 
     setShardId(
-        StringUtils.isEmpty(reloadFrom.getShardId()) ? getShardId() : reloadFrom.getShardId());
+        StrUtils.isNullOrEmpty(reloadFrom.getShardId()) ? getShardId() : reloadFrom.getShardId());
     setCollectionName(
-        StringUtils.isEmpty(reloadFrom.getCollectionName())
+        StrUtils.isNullOrEmpty(reloadFrom.getCollectionName())
             ? getCollectionName()
             : reloadFrom.getCollectionName());
-    setRoles(StringUtils.isEmpty(reloadFrom.getRoles()) ? getRoles() : reloadFrom.getRoles());
+    setRoles(StrUtils.isNullOrEmpty(reloadFrom.getRoles()) ? getRoles() : reloadFrom.getRoles());
     if (reloadFrom.getNumShards() != null) {
       setNumShards(reloadFrom.getNumShards());
     }
     setCoreNodeName(
-        StringUtils.isEmpty(reloadFrom.getCoreNodeName())
+        StrUtils.isNullOrEmpty(reloadFrom.getCoreNodeName())
             ? getCoreNodeName()
             : reloadFrom.getCoreNodeName());
     setLeader(reloadFrom.isLeader);

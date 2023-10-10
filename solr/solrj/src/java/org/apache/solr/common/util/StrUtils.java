@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.nio.CharBuffer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -253,7 +256,7 @@ public class StrUtils {
   }
 
   /** Return if a string starts with '1', 't', or 'T' and return false otherwise. */
-  public static boolean parseBoolean(String s) {
+  public static boolean parseBoolean(CharSequence s) {
     char ch = s.length() > 0 ? s.charAt(0) : 0;
     return (ch == '1' || ch == 't' || ch == 'T');
   }
@@ -264,10 +267,11 @@ public class StrUtils {
    */
   public static boolean parseBool(String s) {
     if (s != null) {
-      if (s.startsWith("true") || s.startsWith("on") || s.startsWith("yes")) {
+      String lowerS = s.toLowerCase(Locale.ROOT);
+      if (lowerS.startsWith("true") || lowerS.startsWith("on") || lowerS.startsWith("yes")) {
         return true;
       }
-      if (s.startsWith("false") || s.startsWith("off") || s.equals("no")) {
+      if (lowerS.startsWith("false") || lowerS.startsWith("off") || lowerS.equals("no")) {
         return false;
       }
     }
@@ -282,10 +286,11 @@ public class StrUtils {
    */
   public static boolean parseBool(String s, boolean def) {
     if (s != null) {
-      if (s.startsWith("true") || s.startsWith("on") || s.startsWith("yes")) {
+      String lowerS = s.toLowerCase(Locale.ROOT);
+      if (lowerS.startsWith("true") || lowerS.startsWith("on") || lowerS.startsWith("yes")) {
         return true;
       }
-      if (s.startsWith("false") || s.startsWith("off") || s.equals("no")) {
+      if (lowerS.startsWith("false") || lowerS.startsWith("off") || lowerS.equals("no")) {
         return false;
       }
     }
@@ -362,5 +367,25 @@ public class StrUtils {
 
   public static boolean isNullOrEmpty(String string) {
     return string == null || string.isEmpty();
+  }
+
+  public static boolean isNotNullOrEmpty(String string) {
+    return !isNullOrEmpty(string);
+  }
+
+  public static boolean isBlank(String string) {
+    return string == null || string.isBlank();
+  }
+
+  public static boolean isNotBlank(String string) {
+    return !isBlank(string);
+  }
+
+  public static String stringFromReader(Reader inReader) throws IOException {
+    try (Reader reader = inReader) {
+      StringWriter stringWriter = new StringWriter();
+      reader.transferTo(stringWriter);
+      return stringWriter.toString();
+    }
   }
 }

@@ -183,7 +183,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(
@@ -259,7 +259,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(
@@ -316,7 +316,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(
@@ -357,7 +357,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(
@@ -398,7 +398,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(

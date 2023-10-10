@@ -16,6 +16,7 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import java.io.IOException;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -41,5 +42,5 @@ public abstract class DictionaryFactory {
    * Create a Dictionary using options in <code>core</code> and optionally uses <code>searcher
    * </code>, in case of index based dictionaries
    */
-  public abstract Dictionary create(SolrCore core, SolrIndexSearcher searcher);
+  public abstract Dictionary create(SolrCore core, SolrIndexSearcher searcher) throws IOException;
 }

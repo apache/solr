@@ -27,7 +27,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -122,7 +121,7 @@ public class SolrRequestInfo {
         try {
           hook.close();
         } catch (Exception e) {
-          SolrException.log(log, "Exception during close hook", e);
+          log.error("Exception during close hook", e);
         }
       }
     }

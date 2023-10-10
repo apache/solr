@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
@@ -58,7 +59,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -592,7 +593,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       throws SolrServerException, IOException {
 
     NamedList<Object> resp;
-    try (SolrClient client = getHttpSolrClient(baseUrl + "/" + collectionName, 15000, 60000)) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(baseUrl + "/" + collectionName)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+            .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/admin/mbeans");
       params.set("stats", "true");
@@ -826,7 +831,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testShutdown() throws IOException {
-    try (CloudSolrClient client = getCloudSolrClient(DEAD_HOST_1)) {
+    try (CloudSolrClient client =
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(DEAD_HOST_1), Optional.empty())
+            .build()) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(client)) {
         zkClientClusterStateProvider.setZkConnectTimeout(100);
@@ -839,7 +847,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Test
   public void testWrongZkChrootTest() throws IOException {
     try (CloudSolrClient client =
-        getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress() + "/xyz/foo"),
+                Optional.empty())
+            .build()) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(client)) {
         zkClientClusterStateProvider.setZkConnectTimeout(1000 * 60);
@@ -861,7 +872,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void customHttpClientTest() throws IOException {
     CloseableHttpClient client = HttpClientUtil.createClient(null);
     try (CloudSolrClient solrClient =
-        getCloudSolrClient(cluster.getZkServer().getZkAddress(), client)) {
+        new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withHttpClient(client)
+            .build()) {
 
       assertSame(((CloudLegacySolrClient) solrClient).getLbClient().getHttpClient(), client);
 
@@ -1170,8 +1184,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    PerReplicaStates prs =
-        PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+    PerReplicaStates prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
 
     JettySolrRunner jsr = null;
@@ -1181,7 +1194,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       // Now let's do an add replica
       CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
           .process(cluster.getSolrClient());
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(5, prs.states.size());
 
       // create a collection with PRS and v2 API
@@ -1191,13 +1204,13 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       new V2Request.Builder("/collections")
           .withMethod(POST)
           .withPayload(
-              "{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true, maxShardsPerNode : 5}}")
+              "{\"name\": \"perReplicaState_testv2\", \"config\" : \"conf\", \"numShards\" : 2, \"nrtReplicas\" : 2, \"perReplicaState\" : true}")
           .build()
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);
       c = cluster.getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(4, prs.states.size());
     } finally {
       if (jsr != null) {

@@ -34,7 +34,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -128,7 +127,7 @@ public class CollectionMutator {
           log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
           continue;
         }
-        PerReplicaStates prs = PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, null);
+        PerReplicaStates prs = PerReplicaStatesOps.fetch(coll.getZNode(), zkClient, null);
         replicaOps =
             enable ? PerReplicaStatesOps.enable(coll, prs) : PerReplicaStatesOps.disable(prs);
         if (!enable) {
@@ -171,7 +170,7 @@ public class CollectionMutator {
     }
 
     DocCollection collection =
-        new DocCollection(
+        DocCollection.create(
             coll.getName(),
             coll.getSlicesMap(),
             props,

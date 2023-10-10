@@ -43,7 +43,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
@@ -58,8 +57,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
   @Test
   public void testHealthCheckHandler() throws Exception {
     GenericSolrRequest req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, new ModifiableSolrParams());
+        new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH);
 
     // positive check that our only existing "healthy" node works with cloud client
     // NOTE: this is using GenericSolrRequest, not HealthCheckRequest which is why it passes

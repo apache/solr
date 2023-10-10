@@ -69,7 +69,7 @@ import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -425,14 +425,12 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 TimeUnit.SECONDS,
                 ccc.getSolrCloudManager().getTimeSource()); // could be a big cluster
         PerReplicaStates prs =
-            PerReplicaStatesFetcher.fetch(
-                collectionPath, ccc.getZkStateReader().getZkClient(), null);
+            PerReplicaStatesOps.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);
         while (!timeout.hasTimedOut()) {
           if (prs.allActive()) break;
           Thread.sleep(100);
           prs =
-              PerReplicaStatesFetcher.fetch(
-                  collectionPath, ccc.getZkStateReader().getZkClient(), null);
+              PerReplicaStatesOps.fetch(collectionPath, ccc.getZkStateReader().getZkClient(), null);
         }
         if (prs.allActive()) {
           // we have successfully found all replicas to be ACTIVE
@@ -627,7 +625,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         log.info("Only one config set found in zk - using it: {}", configName);
       }
     }
-    return "".equals(configName) ? null : configName;
+    return configName != null && configName.isEmpty() ? null : configName;
   }
 
   /** Copies the _default configset to the specified configset name (overwrites if pre-existing) */

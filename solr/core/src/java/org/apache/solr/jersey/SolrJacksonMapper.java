@@ -32,8 +32,19 @@ import org.apache.solr.common.util.NamedList;
 @SuppressWarnings("rawtypes")
 @Provider
 public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
+
+  private static final ObjectMapper objectMapper = createObjectMapper();
+
   @Override
   public ObjectMapper getContext(Class<?> type) {
+    return objectMapper;
+  }
+
+  public static ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
+
+  private static ObjectMapper createObjectMapper() {
     final SimpleModule customTypeModule = new SimpleModule();
     customTypeModule.addSerializer(new NamedListSerializer(NamedList.class));
 

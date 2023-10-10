@@ -37,31 +37,30 @@ public class CloudSolrClientBadInputTest extends SolrCloudTestCase {
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getCloudSolrClient(cluster)) {
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, NULL_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "null"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-      assertExceptionThrownWithMessageContaining(
-          IllegalArgumentException.class,
-          List.of("ids", "empty"),
-          () -> {
-            client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
-          });
-    }
+    SolrClient client = cluster.getSolrClient();
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "null"),
+        () -> {
+          client.deleteById(ANY_COLLECTION, NULL_STR_LIST);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "empty"),
+        () -> {
+          client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "null"),
+        () -> {
+          client.deleteById(ANY_COLLECTION, NULL_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+        });
+    assertExceptionThrownWithMessageContaining(
+        IllegalArgumentException.class,
+        List.of("ids", "empty"),
+        () -> {
+          client.deleteById(ANY_COLLECTION, EMPTY_STR_LIST, ANY_COMMIT_WITHIN_TIME);
+        });
   }
 }

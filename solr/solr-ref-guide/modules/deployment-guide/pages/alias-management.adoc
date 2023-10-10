@@ -45,7 +45,7 @@ While it is possible to send updates to an alias spanning multiple collections, 
 
 *Routed aliases* are aliases with additional capabilities to act as a kind of super-collection that route updates to the correct collection.
 
-Routing is data driven and may be based on a temporal field or on categories   specified in a field (normally string based).
+Routing is data driven and may be based on a temporal field or on categories specified in a field (normally string based).
 See xref:aliases.adoc#routed-aliases[Routed Aliases] for some important high-level information before getting started.
 
 [source,text]
@@ -115,7 +115,16 @@ Most routed alias parameters become _alias properties_ that can subsequently be 
 CREATEALIAS will validate against many (but not all) bad values, whereas ALIASPROP blindly accepts any key or value you give it.
 Some "valid" modifications allowed by CREATEALIAS may still be unwise, see notes below. "Expert only" modifications are technically possible, but require good understanding of how the code works and may require several precursor operations.
 
-`router.name`::
+Routed aliases currently support up to two "dimensions" of routing, with each dimension being either a "time" or "category"-based.
+Each dimension takes a number of parameters, which vary based on its type.
+
+On v1 requests, routing-dimension parameters are grouped together by query-parameter prefix.
+A routed alias with only one dimension uses the `router.` prefix for its parameters (e.g. `router.field`).
+Two-dimensional routed aliases add a number to this query-parameter prefix to distinguish which routing-dimension the parameter belongs to (e.g. `router.0.name`, `router.1.field`).
+
+On v2 requests, routing-dimensions are specified as individual objects within a list (e.g. `[{"type": "category", "field": "manu_id_s"}]`).
+
+`router.name` (v1), `type` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -124,6 +133,7 @@ s|Required |Default: none |Modify: Do not change after creation
 +
 The type of routing to use.
 Presently only `time` and `category` and `Dimensional[]` are valid.
+v2 requests only allow `time` or `category` since dimensionality information lives in the `routers` list unique to v2 requests (though the caveats below about dimension ordering still apply).
 +
 In the case of a xref:aliases.adoc#dimensional-routed-aliases[multi-dimensional routed alias] (aka "DRA"), it is required to express all the dimensions in the same order that they will appear in the dimension
 array.
@@ -134,7 +144,7 @@ Careful design of dimensional routing is required to avoid an explosion in the n
 Solr Cloud may have difficulty managing more than a thousand collections.
 See examples below for further clarification on how to configure individual dimensions.
 
-`router.field`::
+`router.field` (v1), `field` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -156,9 +166,11 @@ All other fields are identical in requirements and naming except that we insist 
 The configset must be created beforehand, either uploaded or copied and modified.
 It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
 
+On v2 requests, `create-collection` takes a JSON object containing all provided collection-creation parameters (e.g. `"create-collection": { "numShards": 3, "config": "_default"}`).
+
 ==== Time Routed Alias Parameters
 
-`router.start`::
+`router.start` (v2), `start` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -172,7 +184,7 @@ If a document is submitted with an earlier value for `router.field` then the ear
 This date/time MUST NOT have a milliseconds component other than 0.
 Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc., will work just fine.
 
-`TZ`::
+`TZ` (v1), `tz` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -186,7 +198,7 @@ as an alias property.
 If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01.2345Z would be stored in the myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
 
 
-`router.interval`::
+`router.interval` (v1), `interval` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -196,7 +208,7 @@ s|Required |Default: none | Modify: Yes
 A date math expression that will be appended to a timestamp to determine the next collection in the series.
 Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will work here.
 
-`router.maxFutureMs`::
+`router.maxFutureMs` (v1), `maxFutureMs` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -206,7 +218,7 @@ Any date math expression that can be evaluated if appended to a timestamp of the
 The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted without error.
 If there was no limit, then an erroneous value could trigger many collections to be created.
 
-`router.preemptiveCreateMath`::
+`router.preemptiveCreateMath` (v1), `preemptiveCreateMath` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -233,7 +245,7 @@ Example: `90MINUTES`.
 +
 This property is empty by default indicating just-in-time, synchronous creation of new collections.
 
-`router.autoDeleteAge`::
+`router.autoDeleteAge` (v1), `autoDeleteAge` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -251,7 +263,7 @@ The default is not to delete.
 
 ==== Category Routed Alias Parameters
 
-`router.maxCardinality`::
+`router.maxCardinality` (v1), `maxCardinality` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -261,7 +273,7 @@ The default is not to delete.
 The maximum number of categories allowed for this alias.
 This setting safeguards against the inadvertent creation of an infinite number of collections in the event of bad data.
 
-`router.mustMatch`::
+`router.mustMatch` (v1), `mustMatch` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -277,14 +289,14 @@ Overly complex patterns will produce CPU or garbage collection overhead during i
 
 ==== Dimensional Routed Alias Parameters
 
-`router.#.`::
+`router.#.` (v1)::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none | Modify: As per above
 |===
 +
-This prefix denotes which position in the dimension array is being referred to for purposes of dimension configuration.
+A prefix used on v1 request parameters to associate the parameter with a particular dimensional, in multi-dimensional aliases.
 +
 For example in a `Dimensional[time,category]` alias, `router.0.start` would be used to set the start time for the time dimension.
 
@@ -332,12 +344,10 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&c
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
   {
-    "create-alias":{
-      "name":"testalias",
-      "collections":["foo","bar"]
-    }
+    "name":"testalias",
+    "collections":["foo","bar"]
   }
 '
 ----
@@ -408,32 +418,32 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
   {
-    "create-alias" : {
       "name": "somethingTemporalThisWayComes",
-      "router" : {
-        "name": "time",
-        "field": "evt_dt",
-        "start":"NOW/MINUTE",
-        "interval":"+2HOUR",
-        "maxFutureMs":"14400000"
-      },
+      "routers" : [
+        {
+          "type": "time",
+          "field": "evt_dt",
+          "start":"NOW/MINUTE",
+          "interval":"+2HOUR",
+          "maxFutureMs":"14400000"
+        }
+      ]
       "create-collection" : {
         "config":"_default",
         "router": {
           "name":"implicit",
           "field":"foo_s"
         },
-        "shards":"foo,bar,baz",
+        "shardNames": ["foo", "bar", "baz"],
         "numShards": 3,
         "tlogReplicas":1,
         "pullReplicas":1,
         "properties" : {
           "foobar":"bazbam"
         }
-      }
-    }
+     }  
   }
 '
 ----
@@ -502,26 +512,26 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
   {
-    "create-alias":{
-      "name":"dra_test1",
-      "router": {
-        "name": "Dimensional[time,category]",
-        "routerList" : [ {
-              "field":"myDate_tdt",
-              "start":"2019-01-01T00:00:00Z",
-              "interval":"+1MONTH",
-              "maxFutureMs":600000
-          },{
-               "field":"myCategory_s",
-               "maxCardinality":20
-          }]
+    "name":"dra_test1",
+    "routers": [
+      {
+        "type": "time",
+        "field":"myDate_tdt",
+        "start":"2019-01-01T00:00:00Z",
+        "interval":"+1MONTH",
+        "maxFutureMs":600000
       },
-      "create-collection": {
-        "config":"_default",
-        "numShards":2
+      {
+        "type": "category",
+        "field":"myCategory_s",
+        "maxCardinality":20
       }
+    ]
+    "create-collection": {
+      "config":"_default",
+      "numShards":2
     }
   }
 '

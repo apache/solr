@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.ZkIndexSchemaReader.SchemaWatcher;
@@ -56,6 +56,6 @@ public class SchemaWatcherTest {
     schemaWatcher.process(
         new WatchedEvent(EventType.NodeDataChanged, KeeperState.SyncConnected, "/test"));
     // after discardReaderReference, SchemaWatcher should no longer hold a ref to the reader
-    verifyZeroInteractions(mockSchemaReader);
+    verifyNoInteractions(mockSchemaReader);
   }
 }

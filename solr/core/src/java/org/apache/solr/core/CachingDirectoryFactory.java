@@ -189,7 +189,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           }
           assert val.refCnt == 0 : val.refCnt;
         } catch (Exception e) {
-          SolrException.log(log, "Error closing directory", e);
+          log.error("Error closing directory", e);
         }
       }
 
@@ -206,7 +206,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
             }
           }
         } catch (Exception e) {
-          SolrException.log(log, "Error closing directory", e);
+          log.error("Error closing directory", e);
         }
       }
 
@@ -215,7 +215,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         try {
           removeDirectory(val);
         } catch (Exception e) {
-          SolrException.log(log, "Error removing directory", e);
+          log.error("Error removing directory", e);
         }
       }
 
@@ -231,7 +231,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     byPathCache.remove(v.path);
   }
 
-  // be sure this is called with the this sync lock
+  // be sure the method is called with the sync lock on this object
   // returns true if we closed the cacheValue, false if it will be closed later
   private boolean closeCacheValue(CacheValue cacheValue) {
     log.debug("looking to close {} {}", cacheValue.path, cacheValue.closeEntries);
@@ -241,7 +241,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         try {
           listener.preClose();
         } catch (Exception e) {
-          SolrException.log(log, "Error executing preClose for directory", e);
+          log.error("Error executing preClose for directory", e);
         }
       }
     }
@@ -283,7 +283,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         try {
           removeDirectory(val);
         } catch (Exception e) {
-          SolrException.log(log, "Error removing directory " + val.path + " before core close", e);
+          log.error("Error removing directory {} before core close", val.path, e);
         }
       } else {
         removeEntries.add(val);
@@ -295,7 +295,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         try {
           listener.postClose();
         } catch (Exception e) {
-          SolrException.log(log, "Error executing postClose for directory", e);
+          log.error("Error executing postClose for directory", e);
         }
       }
     }
@@ -320,7 +320,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       assert ObjectReleaseTracker.release(val.directory);
     } catch (Exception e) {
-      SolrException.log(log, "Error closing directory", e);
+      log.error("Error closing directory", e);
     }
   }
 
@@ -441,7 +441,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       throw new NullPointerException();
     }
     synchronized (this) {
-      // don't check if already closed here - we need to able to release
+      // don't check if already closed here - we need to be able to release
       // while #close() waits.
 
       CacheValue cacheValue = byDirectoryCache.get(directory);

@@ -33,7 +33,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import javax.security.auth.Subject;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.http.Header;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
@@ -139,7 +138,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
             try {
               String credentials =
                   new String(Base64.getDecoder().decode(st.nextToken()), StandardCharsets.UTF_8);
-              int p = credentials.indexOf(":");
+              int p = credentials.indexOf(':');
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();
                 String pwd = credentials.substring(p + 1).trim();
@@ -324,10 +323,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
 
     @Override
     public String toString() {
-      return new ToStringBuilder(this)
-          .append("username", username)
-          .append("pwd", "*****")
-          .toString();
+      return "BasicAuthPlugin [username=" + username + ",pwd=*****]";
     }
   }
 }

@@ -106,7 +106,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     Timer.Context time = stats.time(dir + "_remove_event");
     try {
       String path = event.getId();
-      String responsePath = dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf("-") + 1);
+      String responsePath = dir + "/" + RESPONSE_PREFIX + path.substring(path.lastIndexOf('-') + 1);
 
       try {
         zookeeper.setData(responsePath, event.getBytes(), true);
@@ -244,7 +244,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
   void createRequestNode(byte[] data, String watchID) throws KeeperException, InterruptedException {
     createData(
-        dir + "/" + PREFIX + watchID.substring(watchID.lastIndexOf("-") + 1),
+        dir + "/" + PREFIX + watchID.substring(watchID.lastIndexOf('-') + 1),
         data,
         CreateMode.PERSISTENT);
   }

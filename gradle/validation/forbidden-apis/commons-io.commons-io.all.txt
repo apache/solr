@@ -31,6 +31,9 @@ org.apache.commons.io.IOUtils#closeQuietly(**)
 @defaultMessage Use new String(inputstream.readAllBytes(), StandardCharsets.UTF_8)
 org.apache.commons.io.IOUtils#toString(java.io.InputStream, java.lang.String)
 
+@defaultMessage Use StrUtis.stringFromReader(reader)
+org.apache.commons.io.IOUtils#toString(java.io.Reader)
+
 @defaultMessage Use readAllBytes() method on InputStream
 org.apache.commons.io.IOUtils#toByteArray(java.io.InputStream)
 org.apache.commons.io.IOUtils#toByteArray(java.net.URL)

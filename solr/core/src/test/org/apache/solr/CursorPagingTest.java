@@ -35,7 +35,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.mutable.MutableValueInt;
@@ -848,7 +847,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                       "forceElevation",
                       "true",
                       "elevateIds",
-                      StringUtils.join(expectedElevated, ',')),
+                      Arrays.stream(expectedElevated)
+                          .mapToObj(String::valueOf)
+                          .collect(Collectors.joining(","))),
                   main),
               ids);
       for (int expected : expectedElevated) {

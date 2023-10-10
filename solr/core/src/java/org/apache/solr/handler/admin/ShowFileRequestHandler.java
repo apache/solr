@@ -302,7 +302,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
     // This is slightly off, a valid path is something like ./schema.xml. I don't think it's worth
     // the effort though to fix it to handle all possibilities though.
-    if (fname.indexOf("..") >= 0 || fname.startsWith(".")) {
+    if (fname.contains("..") || fname.startsWith(".")) {
       if (reportError) {
         log.error("Invalid path: {}", fname);
         rsp.setException(

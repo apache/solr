@@ -29,8 +29,8 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
@@ -108,10 +108,10 @@ abstract class AbstractMLTQParser extends QParser {
     if (qf != null) {
       ArrayList<String> fields = new ArrayList<>();
       for (String fieldName : qf) {
-        if (!StringUtils.isEmpty(fieldName)) {
+        if (StrUtils.isNotNullOrEmpty(fieldName)) {
           String[] strings = splitList.split(fieldName);
           for (String string : strings) {
-            if (!StringUtils.isEmpty(string)) {
+            if (StrUtils.isNotNullOrEmpty(string)) {
               fields.add(string);
             }
           }

@@ -34,9 +34,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +99,7 @@ public class ZkMaintenanceUtils {
         VISIT_ORDER.VISIT_PRE,
         znode -> {
           if (znode.startsWith("/zookeeper")) return; // can't do anything with this node!
-          int iPos = znode.lastIndexOf("/");
+          int iPos = znode.lastIndexOf('/');
           if (iPos > 0) {
             for (int idx = 0; idx < iPos; ++idx) sb.append(" ");
             sb.append(znode.substring(iPos + 1)).append(System.lineSeparator());
@@ -521,7 +522,7 @@ public class ZkMaintenanceUtils {
   // Will return empty string if the path is just "/"
   // Will return empty string if the path is just ""
   public static String getZkParent(String path) {
-    if (StringUtils.isEmpty(path) || "/".equals(path)) {
+    if (StrUtils.isNullOrEmpty(path) || "/".equals(path)) {
       return "";
     }
     // Remove trailing slash if present.
@@ -529,7 +530,7 @@ public class ZkMaintenanceUtils {
     if (path.endsWith("/")) {
       endIndex--;
     }
-    int index = path.lastIndexOf("/", endIndex);
+    int index = path.lastIndexOf('/', endIndex);
     if (index == -1) {
       return "";
     }
@@ -542,7 +543,7 @@ public class ZkMaintenanceUtils {
   public static String createZkNodeName(String zkRoot, Path root, Path file) {
     String relativePath = root.relativize(file).toString();
     // Windows shenanigans
-    if ("\\".equals(File.separator)) relativePath = relativePath.replaceAll("\\\\", "/");
+    if ("\\".equals(File.separator)) relativePath = relativePath.replace("\\", "/");
     // It's possible that the relative path and file are the same, in which case
     // adding the bare slash is A Bad Idea unless it's a non-leaf data node
     boolean isNonLeafData = file.toFile().getName().equals(ZKNODE_DATA_FILE);
@@ -578,7 +579,7 @@ public class ZkMaintenanceUtils {
           String userForbiddenFileTypes =
               System.getProperty(
                   FORBIDDEN_FILE_TYPES_PROP, System.getenv(FORBIDDEN_FILE_TYPES_ENV));
-          if (StringUtils.isEmpty(userForbiddenFileTypes)) {
+          if (StrUtils.isNullOrEmpty(userForbiddenFileTypes)) {
             USE_FORBIDDEN_FILE_TYPES = DEFAULT_FORBIDDEN_FILE_TYPES;
           } else {
             USE_FORBIDDEN_FILE_TYPES = Set.of(userForbiddenFileTypes.split(","));
@@ -586,31 +587,90 @@ public class ZkMaintenanceUtils {
         }
       }
     }
-    int lastDot = filePath.lastIndexOf(".");
+    int lastDot = filePath.lastIndexOf('.');
     return lastDot >= 0 && USE_FORBIDDEN_FILE_TYPES.contains(filePath.substring(lastDot + 1));
   }
-}
 
-class ZkCopier implements ZkMaintenanceUtils.ZkVisitor {
-
-  String source;
-  String dest;
-  SolrZkClient zkClient;
-
-  ZkCopier(SolrZkClient zkClient, String source, String dest) {
-    this.source = source;
-    this.dest = dest;
-    if (dest.endsWith("/")) {
-      this.dest = dest.substring(0, dest.length() - 1);
-    }
-    this.zkClient = zkClient;
+  /**
+   * Create a persistent znode with no data if it does not already exist
+   *
+   * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
+   */
+  public static void ensureExists(String path, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
+    ensureExists(path, null, CreateMode.PERSISTENT, zkClient, 0);
   }
 
-  @Override
-  public void visit(String path) throws InterruptedException, KeeperException {
-    String finalDestination = dest;
-    if (path.equals(source) == false) finalDestination += "/" + path.substring(source.length() + 1);
-    zkClient.makePath(finalDestination, false, true);
-    zkClient.setData(finalDestination, zkClient.getData(path, null, null, true), true);
+  /**
+   * Create a persistent znode with the given data if it does not already exist
+   *
+   * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
+   */
+  public static void ensureExists(String path, final byte[] data, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
+    ensureExists(path, data, CreateMode.PERSISTENT, zkClient, 0);
+  }
+
+  /**
+   * Create a znode with the given mode and data if it does not already exist
+   *
+   * @see #ensureExists(String, byte[], CreateMode, SolrZkClient, int)
+   */
+  public static void ensureExists(
+      String path, final byte[] data, CreateMode createMode, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
+    ensureExists(path, data, createMode, zkClient, 0);
+  }
+
+  /**
+   * Create a node if it does not exist
+   *
+   * @param path the path at which to create the znode
+   * @param data the optional data to set on the znode
+   * @param createMode the mode with which to create the znode
+   * @param zkClient the client to use to check and create
+   * @param skipPathParts how many path elements to skip
+   */
+  public static void ensureExists(
+      final String path,
+      final byte[] data,
+      CreateMode createMode,
+      final SolrZkClient zkClient,
+      int skipPathParts)
+      throws KeeperException, InterruptedException {
+
+    if (zkClient.exists(path, true)) {
+      return;
+    }
+    try {
+      zkClient.makePath(path, data, createMode, null, true, true, skipPathParts);
+    } catch (NodeExistsException ignored) {
+      // it's okay if another beats us creating the node
+    }
+  }
+
+  static class ZkCopier implements ZkMaintenanceUtils.ZkVisitor {
+
+    String source;
+    String dest;
+    SolrZkClient zkClient;
+
+    ZkCopier(SolrZkClient zkClient, String source, String dest) {
+      this.source = source;
+      this.dest = dest;
+      if (dest.endsWith("/")) {
+        this.dest = dest.substring(0, dest.length() - 1);
+      }
+      this.zkClient = zkClient;
+    }
+
+    @Override
+    public void visit(String path) throws InterruptedException, KeeperException {
+      String finalDestination = dest;
+      if (path.equals(source) == false)
+        finalDestination += "/" + path.substring(source.length() + 1);
+      zkClient.makePath(finalDestination, false, true);
+      zkClient.setData(finalDestination, zkClient.getData(path, null, null, true), true);
+    }
   }
 }

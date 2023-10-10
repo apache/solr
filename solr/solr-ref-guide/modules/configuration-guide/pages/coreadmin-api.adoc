@@ -318,11 +318,7 @@ http://localhost:8983/solr/admin/cores?action=RELOAD&core=techproducts
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/cores/techproducts -H 'Content-Type: application/json' -d '
-  {
-    "reload": {}
-  }
-'
+curl -X POST http://localhost:8983/api/cores/techproducts/reload
 ----
 ====
 --
@@ -439,7 +435,31 @@ The `UNLOAD` action removes a core from Solr.
 Active requests will continue to be processed, but no new requests will be sent to the named core.
 If a core is registered under more than one name, only the given name is removed.
 
-`admin/cores?action=UNLOAD&core=_core-name_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-unload]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?actionUNLOAD&core=techproducts
+
+----
+====
+
+[example.tab-pane#v2coreadmin-unload]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/techproducts/unload -H 'Content-Type: application/json' -d '
+  {}
+'
+----
+====
+--
 
 The `UNLOAD` action requires a parameter (`core`) identifying the core to be removed.
 If the persistent attribute of `<solr>` is set to `true`, the `<core>` element with this `name` attribute will be removed from `solr.xml`.

@@ -17,10 +17,8 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Arrays;
 import java.util.Set;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.common.SolrException;
@@ -30,6 +28,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -153,8 +152,8 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     if (streams != null) {
       // NOTE: Only the first content stream is currently processed
       for (ContentStream stream : streams) {
-        try (Reader reader = stream.getReader()) {
-          value = IOUtils.toString(reader);
+        try {
+          value = StrUtils.stringFromReader(stream.getReader());
         } catch (IOException e) {
           // do nothing, leave value set to the request parameter
         }

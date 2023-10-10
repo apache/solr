@@ -73,11 +73,18 @@ public class ZLibCompressor implements Compressor {
 
   @Override
   public byte[] compressBytes(byte[] data) {
+    // By default, the compression ratio is assumed to be 5:1 to set the initial capacity of the
+    // compression buffer.
+    return compressBytes(data, data.length / 5);
+  }
+
+  @Override
+  public byte[] compressBytes(byte[] data, int initialBufferCapacity) {
     Deflater compressor = new Deflater(Deflater.BEST_SPEED);
     try {
       compressor.setInput(data);
       compressor.finish();
-      byte[] buf = new byte[data.length + 8];
+      byte[] buf = new byte[Math.max(initialBufferCapacity, 16)];
       int compressedSize = 0;
       while (!compressor.finished()) {
         if (compressedSize >= buf.length) {

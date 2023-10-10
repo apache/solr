@@ -16,12 +16,13 @@
  */
 package org.apache.solr.common.util;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 /**
- * Methods for creating collections with exact sizes.
+ * Methods for creating collections with exact sizes, and other convenience methods
  *
  * @lucene.internal
  */
@@ -59,5 +60,13 @@ public final class CollectionUtil {
     // org.apache.lucene.util.CollectionUtil.newHashSet(int size)
     // Replace with HashSet.newHashSet when Solr moves to minimum jdk19
     return new HashSet<>((int) (size / 0.75f) + 1);
+  }
+
+  public static boolean isEmpty(Collection<?> collection) {
+    return collection == null || collection.isEmpty();
+  }
+
+  public static boolean isNotEmpty(Collection<?> collection) {
+    return !isEmpty(collection);
   }
 }

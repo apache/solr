@@ -40,7 +40,6 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
@@ -49,6 +48,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.api.MoreLikeThisAPI;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -291,7 +291,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
     final boolean needDocSet;
     Map<String, Float> boostFields;
 
-    public MoreLikeThisHelper(SolrParams params, SolrIndexSearcher searcher) {
+    public MoreLikeThisHelper(SolrParams params, SolrIndexSearcher searcher) throws IOException {
       this.searcher = searcher;
       this.reader = searcher.getIndexReader();
       this.uniqueKeyField = searcher.getSchema().getUniqueKeyField();
@@ -301,10 +301,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       String[] fl = required.getParams(MoreLikeThisParams.SIMILARITY_FIELDS);
       List<String> list = new ArrayList<>();
       for (String f : fl) {
-        if (!StringUtils.isEmpty(f)) {
+        if (StrUtils.isNotNullOrEmpty(f)) {
           String[] strings = splitList.split(f);
           for (String string : strings) {
-            if (!StringUtils.isEmpty(string)) {
+            if (StrUtils.isNotNullOrEmpty(string)) {
               list.add(string);
             }
           }

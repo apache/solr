@@ -56,10 +56,10 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
       cluster =
           new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build()) {
             @Override
-            public JettySolrRunner startJettySolrRunner(
-                String name, String context, JettyConfig config) throws Exception {
+            public JettySolrRunner startJettySolrRunner(String name, JettyConfig config)
+                throws Exception {
               if (jettyIndex.incrementAndGet() != 2)
-                return super.startJettySolrRunner(name, context, config);
+                return super.startJettySolrRunner(name, config);
               throw new IOException("Fake exception on startup!");
             }
           };
@@ -199,15 +199,15 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
       final MiniSolrCloudCluster x =
           new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build()) {
             @Override
-            public JettySolrRunner startJettySolrRunner(
-                String name, String hostContext, JettyConfig config) throws Exception {
+            public JettySolrRunner startJettySolrRunner(String name, JettyConfig config)
+                throws Exception {
               System.setProperty("zkHost", getZkServer().getZkAddress());
 
               final Properties nodeProps = new Properties();
               nodeProps.setProperty("test-from-sysprop", "yup");
 
               Path runnerPath = createTempDir(name);
-              JettyConfig newConfig = JettyConfig.builder(config).setContext("/blarfh").build();
+              JettyConfig newConfig = JettyConfig.builder(config).build();
               JettySolrRunner jetty =
                   new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
               return super.startJettySolrRunner(jetty);

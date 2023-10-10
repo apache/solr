@@ -98,7 +98,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.setParam("debugQuery", "on");
 
     String qryResult = JQ("/query" + query.toQueryString());
-    qryResult = qryResult.replaceAll("\n", " ");
+    qryResult = qryResult.replace("\n", " ");
 
     MatcherAssert.assertThat(qryResult, containsString("\"debug\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("debug"));
@@ -334,7 +334,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     query.setParam("debugQuery", "on");
 
     String qryResult = JQ("/query" + query.toQueryString());
-    qryResult = qryResult.replaceAll("\n", " ");
+    qryResult = qryResult.replace("\n", " ");
 
     MatcherAssert.assertThat(qryResult, containsString("\"debug\":{"));
     qryResult = qryResult.substring(qryResult.indexOf("debug"));

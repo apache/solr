@@ -270,7 +270,7 @@ class RequiredValidator extends Validator<List<String>> {
                     + ").  This is a bug.");
             return false;
           }
-          String subprop = requiredProp.substring(requiredProp.indexOf(".") + 1);
+          String subprop = requiredProp.substring(requiredProp.indexOf('.') + 1);
           if (!validate(((Map) o).get(requiredProp), errs, Collections.singleton(subprop))) {
             return false;
           }

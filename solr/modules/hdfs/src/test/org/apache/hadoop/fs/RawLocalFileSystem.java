@@ -896,7 +896,7 @@ public class RawLocalFileSystem extends FileSystem {
     // remove domain name as follows:
     // DOMAIN\\user => user, DOMAIN\\group => group
     private String removeDomain(String str) {
-      int index = str.indexOf("\\");
+      int index = str.indexOf('\\');
       if (index != -1) {
         str = str.substring(index + 1);
       }

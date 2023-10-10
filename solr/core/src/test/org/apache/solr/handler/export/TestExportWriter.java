@@ -1446,7 +1446,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         h.query(req("q", query, "qt", "/export", "fl", pointFieldsFl, "sort", sort));
     String resultTries =
         h.query(req("q", query, "qt", "/export", "fl", trieFieldsFl, "sort", sort));
-    assertJsonEquals(resultPoints.replaceAll("_p", ""), resultTries.replaceAll("_t", ""));
+    assertJsonEquals(resultPoints.replace("_p", ""), resultTries.replace("_t", ""));
   }
 
   private void addFloat(SolrInputDocument doc, float value, boolean mv) {

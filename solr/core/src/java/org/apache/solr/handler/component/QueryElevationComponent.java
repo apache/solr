@@ -43,7 +43,6 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -330,8 +329,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *
    * @return The cached or loaded {@link ElevationProvider}.
    */
-  @VisibleForTesting
-  ElevationProvider getElevationProvider(IndexReader reader, SolrCore core) {
+  protected ElevationProvider getElevationProvider(IndexReader reader, SolrCore core) {
     synchronized (LOCK) {
       if (cacheElevationProvider != null && Objects.equals(cacheIndexReader.get(), reader)) {
         return cacheElevationProvider; // cache hit !
@@ -378,7 +376,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    *
    * @return The loaded {@link ElevationProvider}; not null.
    */
-  private ElevationProvider loadElevationProvider(SolrCore core) throws IOException, SAXException {
+  protected ElevationProvider loadElevationProvider(SolrCore core)
+      throws IOException, SAXException {
     Document xmlDocument;
     try {
       xmlDocument = SafeXMLParsing.parseConfigXML(log, core.getResourceLoader(), configFileName);
@@ -568,13 +567,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     SolrParams params = rb.req.getParams();
 
     String tagStr = params.get(QueryElevationParams.ELEVATE_EXCLUDE_TAGS);
-    if (StringUtils.isEmpty(tagStr)) {
+    if (StrUtils.isNullOrEmpty(tagStr)) {
       // the parameter that specifies tags for exclusion was not provided or had no value
       return;
     }
 
     List<String> excludeTags = StrUtils.splitSmart(tagStr, ',');
-    excludeTags.removeIf(s -> StringUtils.isBlank(s));
+    excludeTags.removeIf(s -> StrUtils.isBlank(s));
     if (excludeTags.isEmpty()) {
       // the parameter that specifies tags for exclusion was provided but the tag names were blank
       return;

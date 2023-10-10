@@ -259,9 +259,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   }
 
   private static String getActualPath(ApiInfo apiInfo, String path) {
-    path = path.replaceAll("\\$path-prefix", apiInfo.info.pathPrefix);
-    path = path.replaceAll("\\$plugin-name", apiInfo.info.name);
-    return path;
+    return path.replace("$path-prefix", Objects.requireNonNullElse(apiInfo.info.pathPrefix, ""))
+        .replace("$plugin-name", apiInfo.info.name);
   }
 
   private static Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
