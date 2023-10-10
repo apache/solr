@@ -19,6 +19,13 @@ apply plugin: 'java-library'
 
 description = 'Additional analysis components'
 
+configurations.all {
+  resolutionStrategy {
+    force 'org.apache.opennlp:opennlp-tools:2.2.0'
+    force 'org.apache.opennlp:opennlp-dl:2.2.0'
+  }
+}
+
 dependencies {
   api project(':solr:core')
 
@@ -33,6 +40,7 @@ dependencies {
   implementation 'org.apache.lucene:lucene-core'
   // NOTE: Need to stay on same version of opennlp-tools as lucene-analysis-opennlp
   implementation 'org.apache.opennlp:opennlp-tools'
+  implementation 'org.apache.opennlp:opennlp-dl'
   implementation 'org.slf4j:slf4j-api'
 
   testImplementation project(':solr:test-framework')
