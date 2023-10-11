@@ -242,7 +242,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     for (Replica replica : replicas.values()) {
       if (replica.isLeader()) {
         assert replica.getType() == Type.TLOG || replica.getType() == Type.NRT
-                : "Pull replica should not become leader!";
+            : "Pull replica should not become leader!";
         return replica;
       }
     }
