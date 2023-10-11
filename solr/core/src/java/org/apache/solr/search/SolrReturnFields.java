@@ -578,7 +578,7 @@ public class SolrReturnFields extends ReturnFields {
     }
     for (String s : globs) {
       // TODO something better?
-      if (GlobPatternUtil.matches(name, s)) {
+      if (GlobPatternUtil.matches(s, name)) {
         okFieldNames.add(name); // Don't calculate it again
         return true;
       }
