@@ -144,7 +144,9 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
 
   @Override
   public void setAttribute(Attribute attribute)
-      throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException,
+      throws AttributeNotFoundException,
+          InvalidAttributeValueException,
+          MBeanException,
           ReflectionException {
     initJmxAttributes();
     jmxAttributes.put(attribute.getName(), String.valueOf(attribute.getValue()));

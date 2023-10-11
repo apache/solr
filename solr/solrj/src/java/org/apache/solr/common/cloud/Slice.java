@@ -92,6 +92,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     replicasCopy.put(modified.getName(), modified);
     return new Slice(name, replicasCopy, propMap, collection);
   }
+
   /** The slice's state. */
   public enum State {
 
@@ -252,6 +253,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   public String getCollection() {
     return collection;
   }
+
   /** Return slice name (shard id). */
   public String getName() {
     return name;

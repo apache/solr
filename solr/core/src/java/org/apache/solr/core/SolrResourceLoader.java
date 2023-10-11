@@ -885,6 +885,7 @@ public class SolrResourceLoader
   public List<SolrInfoBean> getInfoMBeans() {
     return Collections.unmodifiableList(infoMBeans);
   }
+
   /**
    * Load a class using an appropriate {@link SolrResourceLoader} depending of the package on that
    * class

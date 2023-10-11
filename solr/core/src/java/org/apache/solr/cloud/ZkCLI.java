@@ -110,8 +110,12 @@ public class ZkCLI implements CLIO {
    * machine, multi node tests.
    */
   public static void main(String[] args)
-      throws InterruptedException, TimeoutException, IOException, ParserConfigurationException,
-          SAXException, KeeperException {
+      throws InterruptedException,
+          TimeoutException,
+          IOException,
+          ParserConfigurationException,
+          SAXException,
+          KeeperException {
 
     CommandLineParser parser = new PosixParser();
     Options options = new Options();

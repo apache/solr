@@ -105,6 +105,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   protected final CommitTracker softCommitTracker;
 
   protected boolean commitWithinSoftCommit;
+
   /**
    * package access for testing
    *

@@ -161,6 +161,7 @@ public class IndexSchema {
 
   private Map<FieldType, PayloadDecoder> decoders =
       new HashMap<>(); // cache to avoid scanning token filters repeatedly, unnecessarily
+
   /** keys are all fields copied to, count is num of copyField directives that target them. */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 

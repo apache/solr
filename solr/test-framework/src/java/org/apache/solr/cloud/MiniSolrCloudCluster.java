@@ -246,6 +246,7 @@ public class MiniSolrCloudCluster {
         false,
         formatZkServer);
   }
+
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
    * protected so as to discourage its usage. Ideally *new* functionality should use {@linkplain

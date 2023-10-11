@@ -54,9 +54,11 @@ public class CreateCollectionRequestBody {
   // V1 API uses createNodeSet
   @JsonProperty("nodeSet")
   public List<String> nodeSet;
+
   // v1 API uses createNodeSet=EMPTY
   @JsonProperty("createReplicas")
   public Boolean createReplicas;
+
   // V1 API uses 'createNodeSet.shuffle'
   @JsonProperty("shuffleNodes")
   public Boolean shuffleNodes;

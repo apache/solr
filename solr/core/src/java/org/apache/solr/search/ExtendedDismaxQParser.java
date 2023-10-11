@@ -1767,6 +1767,7 @@ public class ExtendedDismaxQParser extends QParser {
           solrParams.getBool(
               QueryParsing.SPLIT_ON_WHITESPACE, SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE);
     }
+
     /**
      * @return true if there are valid multiplicative boost queries
      */
@@ -1780,6 +1781,7 @@ public class ExtendedDismaxQParser extends QParser {
     public boolean hasBoostFunctions() {
       return null != boostFuncs && 0 != boostFuncs.length;
     }
+
     /**
      * @return true if there are valid boost params
      */
