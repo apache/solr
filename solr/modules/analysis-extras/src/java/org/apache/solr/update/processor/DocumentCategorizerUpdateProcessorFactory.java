@@ -100,8 +100,6 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
   @Override
   public void init(NamedList<?> args) {
 
-    System.out.println("In OpenNLP doccat init()");
-
     // high level (loose) check for which type of config we have.
     //
     // individual init methods do more strict syntax checking
@@ -436,20 +434,13 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
         File vocabFile = new File(vocab);
 
         if (!Files.exists(modelFile.toPath())) {
-          System.out.println("modelFile doesnt exist:" + modelFile.toPath());
           modelFile = new File(path + "/" + model);
-          System.out.println("New file:" + modelFile);
         }
         if (!Files.exists(vocabFile.toPath())) {
-          System.out.println("vocabFile doesnt exist:" + vocabFile.toPath());
           vocabFile = new File(path + "/" + vocab);
         }
 
-        System.out.println("model is " + model);
-        System.out.println("does modelFile exist?" + modelFile.exists());
-        System.out.println("model full path is " + modelFile.getAbsolutePath());
-
-        System.out.println("In OpenNLP doccat initializing the documentCategorizerDL");
+        log.info("initializing the documentCategorizerDL");
         try {
           documentCategorizerDL =
               new DocumentCategorizerDL(
@@ -531,7 +522,7 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
         String fullText = srcFieldValue.toString();
 
         // Send the fullText to the model for classification.
-        System.out.println("In OpenNLP doccat calling categorizer()");
+        log.info("calling categorizer()");
         final double[] result = documentCategorizerDL.categorize(new String[] {fullText});
 
         // Add the categories to the list and return it.
@@ -541,7 +532,9 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
         List<Pair<String, String>> classifications = new ArrayList<>();
 
         String bestCategory = documentCategorizerDL.getBestCategory(result);
-        System.out.println("In OpenNLP doccat - best category = " + bestCategory);
+        if (log.isInfoEnabled()) {
+          log.info("best category = {}", bestCategory);
+        }
 
         Pair<String, String> pair = new Pair<>("classification", bestCategory);
         classifications.add(pair);
