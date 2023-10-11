@@ -173,6 +173,8 @@ Bug Fixes
 
 * SOLR-17009: json.wrf parameter ignored in JacksonJsonWriter (Alex Deparvu)
 
+* SOLR-17019: ZkCli should create subpaths when necessary (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 * PR#1676: Update org.glassfish.jersey*:* to v2.39.1 (solrbot)
