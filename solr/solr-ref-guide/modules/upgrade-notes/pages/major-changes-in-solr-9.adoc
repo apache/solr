@@ -46,6 +46,9 @@ If you are planning to upgrade your cluster using a rolling upgrade model (upgra
 
 Rolling upgrades from Solr 8 to Solr 9 require upgrading from Solr 8.7 or newer. If you run an 8.x. version prior to 8.7 we recommend that you first upgrade to 8.11.
 
+Certain commands, like a restore of a collection, might not complete properly if performed *during* an upgrade.
+They may need to be re-attempted after.
+
 *PKI Authentication*
 
 Internode communication secured by PKI Authentication has changed formats. For detailed information, see
@@ -59,7 +62,7 @@ A rolling upgrade from Solr 8 to Solr 9 requires the following multiple restart 
 
 === Reindexing After Upgrade
 
-It is always strongly recommended that you fully reindex your documents after a major version upgrade. For details, see the xref:indexing-guide:reindexing.adoc[] section, which covers several strategies for how to reindex.
+It is always strongly recommended that you fully reindex your documents after a major version upgrade if collection was created in Solr 8. It is mandatory to reindex your documents if collection was created on Solr 7 or older. For details, see the xref:indexing-guide:reindexing.adoc[] section, which covers several strategies for how to reindex.
 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.

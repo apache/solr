@@ -218,7 +218,7 @@ public class ClusterProperties {
           @SuppressWarnings({"rawtypes"})
           Map properties = new LinkedHashMap();
           properties.put(propertyName, propertyValue);
-          client.create(
+          client.makePath(
               ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT);
         }
       } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {

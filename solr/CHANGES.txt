@@ -73,8 +73,7 @@ New Features
 Improvements
 ---------------------
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
-  REQUESTAPPLYUPDATES call in Collection restore. The latter will still happen in 9.x for
-  backwards-compatibility.  (Julia Lamoine, David Smiley)
+  REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
 
 Optimizations
 ---------------------
@@ -260,6 +259,8 @@ Bug Fixes
 
 * SOLR-17009: json.wrf parameter ignored in JacksonJsonWriter (Alex Deparvu)
 
+* SOLR-17019: ZkCli should create subpaths when necessary (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 
@@ -268,6 +269,8 @@ Dependency Upgrades
 * SOLR-16985: Upgrade Lucene to 9.8.0 (Alex Deparvu, Christine Poerschke)
 
 * PR#1971: Update forbiddenapis to 3.6 to support Java 21/22 and commons-io up to 2.14.0 (Uwe Schindler)
+
+* PR#2001: Update org.eclipse.jetty to 10.0.17 (Alex Deparvu)
 
 Other Changes
 ---------------------
@@ -454,6 +457,9 @@ Improvements
 
 * SOLR-16397: Reload core v2 endpoints have been updated to be more REST-ful.
   RELOAD is now available at `POST /api/cores/coreName/reload` (Sanjay Dutt via Jason Gerlowski)
+
+* SOLR-16397: Unload core v2 endpoints have been updated to be more REST-ful.
+  UNLOAD is now available at `POST /api/cores/coreName/unload` (Sanjay Dutt via Jason Gerlowski)
 
 Optimizations
 ---------------------
