@@ -82,7 +82,6 @@ public class AWSSecretCredentialsProviderTest extends SolrTestCaseJ4 {
     if (log.isInfoEnabled()) {
       log.info("####SETUP_START {}", getTestName());
     }
-    createTempDir();
 
     zkDir = createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);

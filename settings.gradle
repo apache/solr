@@ -33,6 +33,7 @@ include "solr:solrj-streaming"
 include "solr:core"
 include "solr:server"
 include "solr:modules:analysis-extras"
+include "solr:modules:aws-secret-provider"
 include "solr:modules:clustering"
 include "solr:modules:opentelemetry"
 include "solr:modules:extraction"
@@ -55,7 +56,6 @@ include "solr:packaging"
 include "solr:distribution"
 include "solr:docker"
 include "solr:prometheus-exporter"
-include "solr:modules:aws-secret-provider"
 
 // Configures development for joint Lucene/ Solr composite build.
 apply from: file('gradle/lucene-dev/lucene-dev-repo-composite.gradle')
