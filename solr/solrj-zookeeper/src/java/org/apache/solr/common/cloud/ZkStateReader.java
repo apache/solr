@@ -372,6 +372,17 @@ public class ZkStateReader implements SolrCloseable {
 
   private static class StatefulCollectionWatch extends CollectionWatch<DocCollectionWatcher> {
     private DocCollection currentState;
+
+    /**
+     * The {@link StateWatcher} that is associated with this {@link StatefulCollectionWatch}. It is
+     * necessary to track this because of the way {@link StateWatcher} instances expire
+     * asynchronously: once registered with ZooKeeper, a {@link StateWatcher} cannot be removed, and
+     * its {@link StateWatcher#process(WatchedEvent)} method will be invoked upon node update.
+     * Because it is not possible to synchronously remove the {@link StateWatcher} as part of a
+     * transaction with {@link ZkStateReader#collectionWatches}, we keep track of a unique {@link
+     * StateWatcher} here, so that all other {@link StateWatcher}s may properly expire in a deferred
+     * way.
+     */
     private volatile StateWatcher associatedWatcher;
 
     private StatefulCollectionWatch(StateWatcher associatedWatcher) {
