@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongConsumer;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -90,6 +91,8 @@ public class LBHttp2SolrClient extends LBSolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Http2SolrClient solrClient;
 
+  private final LongConsumer delayedRequestListener;
+
   /**
    * @deprecated Use {@link LBHttp2SolrClient.Builder} instead
    */
@@ -97,11 +100,15 @@ public class LBHttp2SolrClient extends LBSolrClient {
   public LBHttp2SolrClient(Http2SolrClient solrClient, String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
     this.solrClient = solrClient;
+    this.delayedRequestListener = DELAYED_REQ_LOGGER;
   }
 
-  private LBHttp2SolrClient(Http2SolrClient solrClient, List<String> baseSolrUrls) {
+  private LBHttp2SolrClient(
+      Http2SolrClient solrClient, List<String> baseSolrUrls, LongConsumer delayedRequestListener) {
     super(baseSolrUrls);
     this.solrClient = solrClient;
+    this.delayedRequestListener =
+        delayedRequestListener == null ? DELAYED_REQ_LOGGER : delayedRequestListener;
   }
 
   @Override
@@ -250,6 +257,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
   private static final long DELAY_WARN_THRESHOLD =
       TimeUnit.NANOSECONDS.convert(2000, TimeUnit.MILLISECONDS);
+  static LongConsumer DELAYED_REQ_LOGGER =
+      it -> {
+        if (it > DELAY_WARN_THRESHOLD) {
+          log.info(
+              "Remote shard request delayed by {} milliseconds",
+              TimeUnit.MILLISECONDS.convert(it, TimeUnit.NANOSECONDS));
+        }
+      };
 
   private Cancellable doRequest(
       String baseUrl,
@@ -273,13 +288,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
                 // the request. Here we add extra logging to notify us if this assumption is
                 // violated. See: SOLR-16099, SOLR-16129,
                 // https://github.com/fullstorydev/lucene-solr/commit/445508adb4a
-                long delayed = System.nanoTime() - requestSubmitTimeNanos;
-                if (delayed > DELAY_WARN_THRESHOLD) {
-                  log.info(
-                      "Remote shard request to {} delayed by {} milliseconds",
-                      req.servers,
-                      TimeUnit.MILLISECONDS.convert(delayed, TimeUnit.NANOSECONDS));
-                }
+                delayedRequestListener.accept(System.nanoTime() - requestSubmitTimeNanos);
                 AsyncListener.super.onStart();
               }
 
@@ -342,12 +351,19 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
     private final Http2SolrClient http2SolrClient;
     private final String[] baseSolrUrls;
+
+    private LongConsumer delayedRequestListener;
     private long aliveCheckIntervalMillis =
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2SolrClient = http2Client;
       this.baseSolrUrls = baseSolrUrls;
+    }
+
+    public Builder setDelayedRequestListener(LongConsumer listener) {
+      this.delayedRequestListener = listener;
+      return this;
     }
 
     /**
@@ -367,7 +383,8 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
     public LBHttp2SolrClient build() {
       LBHttp2SolrClient solrClient =
-          new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
+          new LBHttp2SolrClient(
+              this.http2SolrClient, Arrays.asList(this.baseSolrUrls), delayedRequestListener);
       solrClient.aliveCheckIntervalMillis = this.aliveCheckIntervalMillis;
       return solrClient;
     }
