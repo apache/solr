@@ -119,7 +119,7 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
   }
 
   // synchronized due to SOLR-11535
-  // TODO: remove `synchronized`, now that SOLR-11535 is fixed
+  // TODO: can we remove `synchronized`, now that SOLR-11535 is fixed?
   @Override
   public synchronized boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
     if (log.isDebugEnabled()) {
