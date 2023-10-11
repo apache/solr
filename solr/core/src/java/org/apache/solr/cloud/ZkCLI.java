@@ -304,8 +304,8 @@ public class ZkCLI implements CLIO {
         }
       }
 
-      // solrHome is mandatory for all 'cmd' options (needed particularly for SolrClassLoader to
-      // load classes from 'modules')
+      // 'solrhome' is mandatory for all 'cmd' options (needed particularly for SolrClassLoader to
+      // load classes from 'modules'). zkcli.* scripts automatically pass this value via 'solr.home'
       if (line.hasOption(CMD) && solrHome == null) {
         stdout.println("-" + SOLRHOME + " is required for " + CMD);
         System.exit(1);
@@ -322,11 +322,6 @@ public class ZkCLI implements CLIO {
               .withSolrClassLoader(cc.getResourceLoader())
               .build()) {
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
-          if (!line.hasOption(SOLRHOME)) {
-            stdout.println("-" + SOLRHOME + " is required for " + BOOTSTRAP);
-            System.exit(1);
-          }
-
           cc.setCoreConfigService(new ZkConfigSetService(zkClient));
 
           if (!ZkController.checkChrootPath(zkServerAddress, true)) {
