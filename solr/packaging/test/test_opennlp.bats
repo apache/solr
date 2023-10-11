@@ -36,7 +36,18 @@ teardown() {
   save_home_on_failure
 }
 
+# This BATS style test is really just to help explore the space of Modern NLP in
+# Apache Solr, versus a "true" integration test that I want to have run regularly.
+# On the other hand, since integrationg NLP requires a lot of steps, maybe having this
+# long test as an "integration" test is something we decide is okay?
+# I also have dreams of incorporating this as code snippets in a Tutorial via the ascii doc tags
+# like we use for the SolrJ code snippets.  That way we know the snippets continue to work!
 @test "Check lifecycle of sentiment classification" {
+
+  pip install transformers onnx onnxruntime
+  python -m transformers.onnx -m nlptown/bert-base-multilingual-uncased-sentiment --feature sequence-classification ${SOLR_TIP}/models/sentiment
+  
+  curl --insecure -o ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment/resolve/main/vocab.txt
   
   # GPU versions is linux and windows only, not OSX.  So swap jars.
   rm -f ${SOLR_TIP}/modules/analysis-extras/lib/onnxruntime_gpu-1.14.0.jar
@@ -71,10 +82,10 @@ teardown() {
       "stored":true }
   }' "http://localhost:${SOLR_PORT}/solr/COLL_NAME/schema"
 
-  run curl --data-binary @/Users/epugh/Documents/projects/solr-epugh/exported/vocab.txt -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/vocab.txt"
+  run curl --data-binary @${SOLR_TIP}/models/sentiment/vocab.txt -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/vocab.txt"
   assert_output --partial '"status":0'
   
-  run curl --data-binary @/Users/epugh/Documents/projects/solr-epugh/exported/model.onnx -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/model.onnx"
+  run curl --data-binary @${SOLR_TIP}/models/sentiment/model.onnx -X PUT  "http://localhost:${SOLR_PORT}/api/cluster/files/models/sentiment/model.onnx"
   assert_output --partial '"status":0'
     
   run curl -X POST -H 'Content-type:application/json' -d '{
