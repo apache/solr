@@ -16,47 +16,34 @@
  */
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.INDEX_NAME_PATH_PARAMETER;
-import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
-import static org.apache.solr.client.api.util.Constants.INDEX_TYPE_PATH_PARAMETER;
+import static org.apache.solr.client.api.util.Constants.STORE_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.Schema;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.api.model.SchemaInfoResponse;
 import org.apache.solr.client.api.model.SchemaNameResponse;
 import org.apache.solr.client.api.model.SchemaSimilarityResponse;
 import org.apache.solr.client.api.model.SchemaUniqueKeyResponse;
 import org.apache.solr.client.api.model.SchemaVersionResponse;
 import org.apache.solr.client.api.model.SchemaZkVersionResponse;
-import org.apache.solr.client.api.util.IndexApiParameters;
+import org.apache.solr.client.api.util.StoreApiParameters;
 
-@Path(INDEX_PATH_PREFIX + "/schema")
+@Path(STORE_PATH_PREFIX + "/schema")
 public interface GetSchemaApi {
 
-  // TODO NOCOMMIT Use IndexApiParameters for this method - left off currently for a demo
   @GET
+  @StoreApiParameters
   @Operation(
       summary = "Fetch the entire schema of the specified core or collection",
-      parameters = {
-        @Parameter(
-            name = INDEX_TYPE_PATH_PARAMETER,
-            in = ParameterIn.PATH,
-            schema = @Schema(implementation = IndexType.class, enumAsRef = true)),
-        @Parameter(name = INDEX_NAME_PATH_PARAMETER, in = ParameterIn.PATH)
-      },
       tags = {"schema"})
   SchemaInfoResponse getSchemaInfo();
 
   @GET
   @Path("/name")
-  @IndexApiParameters
+  @StoreApiParameters
   @Operation(
       summary = "Get the name of the schema used by the specified core or collection",
       tags = {"schema"})
@@ -64,7 +51,7 @@ public interface GetSchemaApi {
 
   @GET
   @Path("/similarity")
-  @IndexApiParameters
+  @StoreApiParameters
   @Operation(
       summary = "Get the default similarity configuration used by the specified core or collection",
       tags = {"schema"})
@@ -72,7 +59,7 @@ public interface GetSchemaApi {
 
   @GET
   @Path("/uniquekey")
-  @IndexApiParameters
+  @StoreApiParameters
   @Operation(
       summary = "Fetch the uniquekey of the specified core or collection",
       tags = {"schema"})
@@ -80,7 +67,7 @@ public interface GetSchemaApi {
 
   @GET
   @Path("/version")
-  @IndexApiParameters
+  @StoreApiParameters
   @Operation(
       summary = "Fetch the schema version currently used by the specified core or collection",
       tags = {"schema"})
@@ -88,7 +75,7 @@ public interface GetSchemaApi {
 
   @GET
   @Path("/zkversion")
-  @IndexApiParameters
+  @StoreApiParameters
   @Operation(
       summary = "Fetch the schema version currently used by the specified core or collection",
       tags = {"schema"})
