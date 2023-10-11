@@ -386,7 +386,7 @@ public class Grouping {
 
     if (!collectors.isEmpty()) {
       Collector secondPhaseCollectors =
-          MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
+          MultiCollector.wrap(collectors.toArray(new Collector[0]));
       if (collectors.size() > 0) {
         if (cachedCollector != null) {
           if (cachedCollector.isCached()) {

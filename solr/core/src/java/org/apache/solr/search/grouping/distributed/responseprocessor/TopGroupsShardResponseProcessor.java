@@ -215,11 +215,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
       final TopDocs mergedTopDocs;
       if (withinGroupSort.equals(Sort.RELEVANCE)) {
-        mergedTopDocs = TopDocs.merge(start, topN, topDocs.toArray(new TopDocs[topDocs.size()]));
+        mergedTopDocs = TopDocs.merge(start, topN, topDocs.toArray(new TopDocs[0]));
       } else {
         mergedTopDocs =
             TopDocs.merge(
-                withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
+                withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[0]));
       }
       rb.mergedQueryCommandResults.put(
           entry.getKey(), new QueryCommandResult(mergedTopDocs, mergedMatches, maxScore));

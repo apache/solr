@@ -210,7 +210,7 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
         log.warn("Could not get attributes of MetricsMap: {}", this, e);
     }
     MBeanAttributeInfo[] attrInfoArr =
-        attrInfoList.toArray(new MBeanAttributeInfo[attrInfoList.size()]);
+        attrInfoList.toArray(new MBeanAttributeInfo[0]);
     return new MBeanInfo(getClass().getName(), "MetricsMap", attrInfoArr, null, null, null);
   }
 
