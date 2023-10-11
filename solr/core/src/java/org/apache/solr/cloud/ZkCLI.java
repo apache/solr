@@ -415,7 +415,7 @@ public class ZkCLI implements CLIO {
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);
           } else {
-            zkClient.create(path, data, CreateMode.PERSISTENT, true);
+            zkClient.makePath(path, data, CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT_FILE)) {
           List<String> arglist = line.getArgList();
@@ -436,7 +436,7 @@ public class ZkCLI implements CLIO {
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);
           } else {
-            zkClient.create(path, data, CreateMode.PERSISTENT, true);
+            zkClient.makePath(path, data, CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
           List<String> arglist = line.getArgList();
