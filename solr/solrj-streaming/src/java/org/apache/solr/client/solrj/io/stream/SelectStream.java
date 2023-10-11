@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eval.EvaluatorException;
@@ -39,6 +38,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.util.GlobPatternUtil;
 
 /**
  * Selects fields from the incoming stream and applies optional field renaming. Does not reorder the
@@ -329,7 +329,7 @@ public class SelectStream extends TupleStream implements Expressible {
         workingToReturn.put(selectedFields.get(fieldName), original.get(fieldName));
       } else {
         for (String globPattern : selectedFieldGlobPatterns) {
-          if (FilenameUtils.wildcardMatch(fieldName, globPattern)) {
+          if (GlobPatternUtil.matches(globPattern, fieldName)) {
             workingToReturn.put(fieldName, original.get(fieldName));
             break;
           }

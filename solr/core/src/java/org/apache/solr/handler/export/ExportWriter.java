@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -58,6 +57,7 @@ import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
+import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -890,7 +890,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       Set<String> fieldsProcessed,
       List<SchemaField> expandedFields) {
     for (FieldInfo fi : searcher.getFieldInfos()) {
-      if (FilenameUtils.wildcardMatch(fi.getName(), fieldPattern)) {
+      if (GlobPatternUtil.matches(fieldPattern, fi.getName())) {
         SchemaField schemaField = searcher.getSchema().getField(fi.getName());
         if (fieldsProcessed.add(fi.getName())
             && schemaField.hasDocValues()
