@@ -336,7 +336,7 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
       NoAuthException e =
           assertThrows(
               NoAuthException.class, () -> zkClient.getData("/security.json", null, null, false));
-      assertEquals("/security.json", e.getPath());
+      assertEquals("/solr/security.json", e.getPath());
     }
   }
 
