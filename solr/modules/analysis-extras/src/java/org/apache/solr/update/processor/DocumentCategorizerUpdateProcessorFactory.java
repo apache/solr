@@ -450,9 +450,9 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
                   new AverageClassificationScoringStrategy(),
                   new InferenceOptions());
         } catch (IOException e) {
-          e.printStackTrace();
+          log.warn("Attempted to initialize documentCategorizerDL", e);
         } catch (OrtException e) {
-          e.printStackTrace();
+          log.warn("Attempted to initialize documentCategorizerDL", e);
         }
       }
 
