@@ -304,6 +304,12 @@ public class ZkCLI implements CLIO {
         }
       }
 
+      // solrHome is mandatory for all 'cmd' options (needed particularly for SolrClassLoader to
+      // load classes from 'modules')
+      if (line.hasOption(CMD) && solrHome == null) {
+        stdout.println("-" + SOLRHOME + " is required for " + CMD);
+        System.exit(1);
+      }
       CoreContainer cc = new CoreContainer(Paths.get(solrHome), new Properties());
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
