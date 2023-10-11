@@ -54,7 +54,7 @@ public class SimpleZkMap implements SimpleMap<Resource> {
   @Override
   public void abortableForEach(BiFunction<String, ? super Resource, Boolean> fun) {
     try {
-      recursiveRead("", zkStateReader.getZkClient().getChildren(basePath, null), fun);
+      recursiveRead("", zkStateReader.getZkClient().getChildren(basePath, null, true), fun);
     } catch (KeeperException | InterruptedException e) {
       throwZkExp(e);
     }
@@ -84,7 +84,8 @@ public class SimpleZkMap implements SimpleMap<Resource> {
       @Override
       public void get(Consumer consumer) throws SolrException {
         try {
-          byte[] data = zkStateReader.getZkClient().getData(basePath + "/" + path, null, null);
+          byte[] data =
+              zkStateReader.getZkClient().getData(basePath + "/" + path, null, null, true);
           if (data != null && data.length > 0) {
             consumer.read(new ByteArrayInputStream(data));
           } else {
@@ -108,7 +109,7 @@ public class SimpleZkMap implements SimpleMap<Resource> {
         String relativePath = parent.isEmpty() ? child : parent + "/" + child;
         if (!fun.apply(relativePath, readZkNode(relativePath))) return false;
         List<String> l1 =
-            zkStateReader.getZkClient().getChildren(basePath + "/" + relativePath, null);
+            zkStateReader.getZkClient().getChildren(basePath + "/" + relativePath, null, true);
         if (l1 != null && !l1.isEmpty()) {
           withKids.put(relativePath, l1);
         }

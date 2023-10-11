@@ -279,7 +279,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       List<String> children =
           zkClient()
               .getChildren(
-                  "/collections/" + collectionName + "/leader_elect/shard1/election", null);
+                  "/collections/" + collectionName + "/leader_elect/shard1/election", null, true);
       log.info("{} election nodes:{}", collectionName, children);
       throw e;
     }

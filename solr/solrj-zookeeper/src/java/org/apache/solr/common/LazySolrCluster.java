@@ -265,7 +265,7 @@ public class LazySolrCluster implements SolrCluster {
           byte[] d =
               zkStateReader
                   .getZkClient()
-                  .getData(DocCollection.getCollectionPathRoot(coll.getName()), null, null);
+                  .getData(DocCollection.getCollectionPathRoot(coll.getName()), null, null, true);
           if (d == null || d.length == 0) return null;
           Map<?, ?> m = (Map<?, ?>) Utils.fromJSON(d);
           confName = (String) m.get("configName");

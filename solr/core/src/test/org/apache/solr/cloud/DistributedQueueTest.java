@@ -334,9 +334,9 @@ public class DistributedQueueTest extends SolrTestCaseJ4 {
   }
 
   protected String setupNewDistributedQueueZNode(String znodePath) throws Exception {
-    if (!zkClient.exists("/")) zkClient.makePath("/", false);
-    if (zkClient.exists(znodePath)) zkClient.clean(znodePath);
-    zkClient.makePath(znodePath, false);
+    if (!zkClient.exists("/", true)) zkClient.makePath("/", false, true);
+    if (zkClient.exists(znodePath, true)) zkClient.clean(znodePath);
+    zkClient.makePath(znodePath, false, true);
     return znodePath;
   }
 

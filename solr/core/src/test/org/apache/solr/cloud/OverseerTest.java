@@ -155,13 +155,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       // live node
       final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-      zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
+      zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
     }
 
     private void deleteNode(final String path) {
 
       try {
-        zkClient.delete(path, -1);
+        zkClient.delete(path, -1, true);
       } catch (NoNodeException e) {
         // fine
         log.warn("cancelElection did not find election node to remove");
@@ -192,7 +192,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     public void createCollection(String collection, int numShards) throws Exception {
       // Create collection znode before having ClusterStateUpdater create state.json below, or it
       // will fail.
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true);
 
       ZkNodeProps m =
           new ZkNodeProps(
@@ -287,7 +287,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
           try {
             zkClient.makePath(
-                "/collections/" + collection + "/leader_elect/" + shardId + "/election");
+                "/collections/" + collection + "/leader_elect/" + shardId + "/election", true);
           } catch (NodeExistsException nee) {
           }
           ZkNodeProps props =
@@ -448,7 +448,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   private void createCollection(String collection, int numShards) throws Exception {
     // Create collection znode before having ClusterStateUpdater create state.json below, or it
     // will fail.
-    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+    zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true);
 
     ZkNodeProps m =
         new ZkNodeProps(
@@ -1203,7 +1203,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       // Create collection znode before repeatedly trying to enqueue the cluster state update
       // message
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION, true);
 
       for (int i = 0; i < atLeast(4); i++) {
         killCounter.incrementAndGet(); // for each round allow 1 kill
@@ -1452,7 +1452,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       final int MAX_COLLECTIONS = 10, MAX_CORES = 10, MAX_STATE_CHANGES = 20000;
 
       for (int i = 0; i < MAX_COLLECTIONS; i++) {
-        zkClient.makePath("/collections/perf" + i);
+        zkClient.makePath("/collections/perf" + i, true);
         ZkNodeProps m =
             new ZkNodeProps(
                 Overseer.QUEUE_OPERATION,
@@ -1573,7 +1573,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       // state
       DistributedQueue queue = Overseer.getInternalWorkQueue(zkClient, new Stats());
 
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION, true);
 
       ZkNodeProps m =
           new ZkNodeProps(
@@ -1751,7 +1751,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       q.offer(m);
 
       final String testCollectionName = "test";
-      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + testCollectionName);
+      zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + testCollectionName, true);
       m =
           new ZkNodeProps(
               Overseer.QUEUE_OPERATION,
@@ -1769,9 +1769,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       final String path =
           ZkStateReader.COLLECTIONS_ZKNODE + "/" + testCollectionName + "/state.json";
-      byte[] data = zkClient.getData(path, null, null);
+      byte[] data = zkClient.getData(path, null, null, true);
       // Simulate an external modification of state.json
-      zkClient.setData(path, data);
+      zkClient.setData(path, data, true);
 
       m =
           new ZkNodeProps(
@@ -1973,7 +1973,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       // create collection
       {
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION, true);
         ZkNodeProps m =
             new ZkNodeProps(
                 Overseer.QUEUE_OPERATION,

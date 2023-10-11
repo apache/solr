@@ -431,7 +431,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       throws KeeperException, InterruptedException {
     List<String> children = null;
     try {
-      children = zk.getChildren(Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE, null);
+      children = zk.getChildren(Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE, null, true);
     } catch (Exception e) {
       log.warn("error ", e);
       return new ArrayList<>();
@@ -446,7 +446,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       throws KeeperException, InterruptedException {
     List<String> children = null;
     try {
-      children = zk.getChildren(path, null);
+      children = zk.getChildren(path, null, true);
       LeaderElector.sortSeqs(children);
       return children;
     } catch (Exception e) {
@@ -464,7 +464,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       throws KeeperException, InterruptedException {
     byte[] data = null;
     try {
-      data = zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, new Stat());
+      data = zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, new Stat(), true);
     } catch (KeeperException.NoNodeException e) {
       return null;
     }
@@ -480,7 +480,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     try {
       ZkNodeProps props =
           ZkNodeProps.load(
-              zkStateReader.getZkClient().getData(Overseer.OVERSEER_ELECT + "/leader", null, null));
+              zkStateReader
+                  .getZkClient()
+                  .getData(Overseer.OVERSEER_ELECT + "/leader", null, null, true));
       propsId = props.getStr(ID);
       if (myId.equals(propsId)) {
         return LeaderStatus.YES;

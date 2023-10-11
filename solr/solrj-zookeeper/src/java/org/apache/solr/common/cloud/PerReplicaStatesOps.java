@@ -59,12 +59,12 @@ public class PerReplicaStatesOps {
       assert CommonTestInjection.injectBreakpoint(
           PerReplicaStatesOps.class.getName() + "/beforePrsFetch");
       if (current != null) {
-        Stat stat = zkClient.exists(current.path, null);
+        Stat stat = zkClient.exists(current.path, null, true);
         if (stat == null) return new PerReplicaStates(path, 0, Collections.emptyList());
         if (current.cversion == stat.getCversion()) return current; // not modifiedZkStateReaderTest
       }
       Stat stat = new Stat();
-      List<String> children = zkClient.getChildren(path, null, stat);
+      List<String> children = zkClient.getChildren(path, null, stat, true);
       return new PerReplicaStates(path, stat.getCversion(), Collections.unmodifiableList(children));
     } catch (KeeperException.NoNodeException e) {
       throw new PrsZkNodeNotFoundException(
@@ -115,7 +115,7 @@ public class PerReplicaStatesOps {
     try {
       zkClient.multi(ops);
     } catch (KeeperException e) {
-      log.error("Multi-op exception: {}", zkClient.getChildren(znode, null));
+      log.error("Multi-op exception: {}", zkClient.getChildren(znode, null, true));
       throw e;
     }
   }

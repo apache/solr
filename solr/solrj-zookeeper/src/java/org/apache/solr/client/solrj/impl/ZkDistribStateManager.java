@@ -66,7 +66,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   @Override
   public boolean hasData(String path) throws IOException, KeeperException, InterruptedException {
     try {
-      return zkClient.exists(path);
+      return zkClient.exists(path, true);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new AlreadyClosedException();
@@ -77,7 +77,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   public List<String> listData(String path, Watcher watcher)
       throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     try {
-      return zkClient.getChildren(path, watcher);
+      return zkClient.getChildren(path, watcher, true);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (InterruptedException e) {
@@ -97,7 +97,7 @@ public class ZkDistribStateManager implements DistribStateManager {
       throws NoSuchElementException, IOException, KeeperException, InterruptedException {
     Stat stat = new Stat();
     try {
-      byte[] bytes = zkClient.getData(path, watcher, stat);
+      byte[] bytes = zkClient.getData(path, watcher, stat, true);
       return new VersionedData(
           stat.getVersion(),
           bytes,
@@ -115,7 +115,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   public void makePath(String path)
       throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
     try {
-      zkClient.makePath(path);
+      zkClient.makePath(path, true);
     } catch (KeeperException.NodeExistsException e) {
       throw new AlreadyExistsException(path);
     } catch (InterruptedException e) {
@@ -128,7 +128,7 @@ public class ZkDistribStateManager implements DistribStateManager {
   public void makePath(String path, byte[] data, CreateMode createMode, boolean failOnExists)
       throws AlreadyExistsException, IOException, KeeperException, InterruptedException {
     try {
-      zkClient.makePath(path, data, createMode, null, failOnExists);
+      zkClient.makePath(path, data, createMode, null, failOnExists, true);
     } catch (KeeperException.NodeExistsException e) {
       throw new AlreadyExistsException(path);
     } catch (InterruptedException e) {
@@ -142,7 +142,7 @@ public class ZkDistribStateManager implements DistribStateManager {
       throws NoSuchElementException, AlreadyExistsException, IOException, KeeperException,
           InterruptedException {
     try {
-      return zkClient.create(path, data, mode);
+      return zkClient.create(path, data, mode, true);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (KeeperException.NodeExistsException e) {
@@ -158,7 +158,7 @@ public class ZkDistribStateManager implements DistribStateManager {
       throws NoSuchElementException, BadVersionException, NotEmptyException, IOException,
           KeeperException, InterruptedException {
     try {
-      zkClient.delete(path, version);
+      zkClient.delete(path, version, true);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (KeeperException.NotEmptyException e) {
@@ -176,7 +176,7 @@ public class ZkDistribStateManager implements DistribStateManager {
       throws BadVersionException, NoSuchElementException, IOException, KeeperException,
           InterruptedException {
     try {
-      zkClient.setData(path, data, version);
+      zkClient.setData(path, data, version, true);
     } catch (KeeperException.NoNodeException e) {
       throw new NoSuchElementException(path);
     } catch (KeeperException.BadVersionException e) {

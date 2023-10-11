@@ -708,7 +708,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while (!timeOut.hasTimedOut()) {
         timeOut.sleep(500);
-        if (ZkStateReader.from(cloudClient).getZkClient().exists(path)) {
+        if (ZkStateReader.from(cloudClient).getZkClient().exists(path, true)) {
           log.info("=== found lock node");
           break;
         }
@@ -726,13 +726,13 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       // make sure the lock still exists
       assertTrue(
           "lock znode expected but missing",
-          ZkStateReader.from(cloudClient).getZkClient().exists(path));
+          ZkStateReader.from(cloudClient).getZkClient().exists(path, true));
       // let the first split proceed
       TestInjection.splitLatch.countDown();
       timeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while (!timeOut.hasTimedOut()) {
         timeOut.sleep(500);
-        if (!ZkStateReader.from(cloudClient).getZkClient().exists(path)) {
+        if (!ZkStateReader.from(cloudClient).getZkClient().exists(path, true)) {
           break;
         }
       }

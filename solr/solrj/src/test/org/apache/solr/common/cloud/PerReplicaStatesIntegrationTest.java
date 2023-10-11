@@ -306,7 +306,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       Stat stat = null;
       CollectionAdminRequest.createCollection(NONPRS_COLL, "conf", 10, 1)
           .process(cluster.getSolrClient());
-      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(NONPRS_COLL), null);
+      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(NONPRS_COLL), null, true);
       log.info("");
       // the actual number can vary depending on batching
       assertTrue(stat.getVersion() >= 2);
@@ -315,7 +315,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(PRS_COLL, "conf", 10, 1)
           .setPerReplicaState(Boolean.TRUE)
           .process(cluster.getSolrClient());
-      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null);
+      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // +1 after all replica are added with on state.json write to CreateCollectionCmd.setData()
       assertEquals(1, stat.getVersion());
       // For each replica:
@@ -330,7 +330,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard1")
               .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(PRS_COLL, 10, 11);
-      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null);
+      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // For the new replica:
       // +2 for state.json overseer writes, even though there's no longer PRS updates from
       // overseer, current code would still do a "TOUCH" on the PRS entry
@@ -350,7 +350,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       CollectionAdminRequest.deleteReplica(PRS_COLL, "shard1", addedReplica.getName())
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(PRS_COLL, 10, 10);
-      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null);
+      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
       // For replica deletion
       // +1 for ZkController#unregister, which delete the PRS entry from data node
       // overseer, current code would still do a "TOUCH" on the PRS entry
@@ -359,7 +359,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         j.stop();
         j.start(true);
-        stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null);
+        stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
         // ensure restart does not update the state.json, after addReplica/deleteReplica, 2 more
         // updates hence at version 3 on state.json version
         assertEquals(3, stat.getVersion());

@@ -115,7 +115,9 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
+        cluster
+            .getZkClient()
+            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
   }
 
   @Test
@@ -123,7 +125,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     String collectionName = "out_of_sync_collection";
 
     // manually create a collections zknode
-    cluster.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName);
+    cluster.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true);
 
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
 
@@ -131,7 +133,9 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
+        cluster
+            .getZkClient()
+            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
   }
 
   @Test
@@ -169,7 +173,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     final String collectionName = "onlyinzk";
 
     // create the collections node, but nothing else
-    cluster.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName);
+    cluster.getZkClient().makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true);
 
     // delete via API - should remove collections node
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());

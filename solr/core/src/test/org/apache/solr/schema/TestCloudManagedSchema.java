@@ -92,16 +92,16 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
   private String getFileContentFromZooKeeper(SolrZkClient zkClient, String fileName)
       throws KeeperException, InterruptedException {
 
-    return (new String(zkClient.getData(fileName, null, null), StandardCharsets.UTF_8));
+    return (new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8));
   }
 
   protected final void assertFileNotInZooKeeper(
       SolrZkClient zkClient, String parent, String fileName) throws Exception {
-    List<String> kids = zkClient.getChildren(parent, null);
+    List<String> kids = zkClient.getChildren(parent, null, true);
     for (String kid : kids) {
       if (kid.equalsIgnoreCase(fileName)) {
         String rawContent =
-            new String(zkClient.getData(fileName, null, null), StandardCharsets.UTF_8);
+            new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8);
         fail(
             "File '"
                 + fileName

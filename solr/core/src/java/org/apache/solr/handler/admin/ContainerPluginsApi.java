@@ -174,7 +174,7 @@ public class ContainerPluginsApi {
     try {
       Map<String, Object> clusterPropsJson =
           (Map<String, Object>)
-              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat()));
+              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
       return (Map<String, Object>)
           clusterPropsJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>());
     } catch (KeeperException.NoNodeException e) {

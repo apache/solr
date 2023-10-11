@@ -265,11 +265,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void deleteThemAll(SolrZkClient zkClient, String node)
       throws KeeperException, InterruptedException {
-    List<String> kids = zkClient.getChildren(node, null);
+    List<String> kids = zkClient.getChildren(node, null, true);
     for (String kid : kids) {
       deleteThemAll(zkClient, node + "/" + kid);
     }
-    zkClient.delete(node, -1);
+    zkClient.delete(node, -1, true);
   }
 
   private void assertCountsForRepFactorAndNrtReplicas(CloudSolrClient client, String collectionName)

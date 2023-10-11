@@ -187,7 +187,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       final byte[] data = writer.toString().getBytes(StandardCharsets.UTF_8);
       if (createOnly) {
         try {
-          zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT);
+          zkClient.create(managedSchemaPath, data, CreateMode.PERSISTENT, true);
           schemaZkVersion = 0;
           log.info("Created and persisted managed schema znode at {}", managedSchemaPath);
         } catch (KeeperException.NodeExistsException e) {
@@ -199,7 +199,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       } else {
         try {
           // Assumption: the path exists
-          Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion);
+          Stat stat = zkClient.setData(managedSchemaPath, data, schemaZkVersion, true);
           schemaZkVersion = stat.getVersion();
           log.info(
               "Persisted managed schema version {}  at {}", schemaZkVersion, managedSchemaPath);

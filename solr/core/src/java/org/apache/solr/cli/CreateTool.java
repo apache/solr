@@ -243,7 +243,9 @@ public class CreateTool extends ToolBase {
     boolean configExistsInZk =
         confName != null
             && !confName.trim().isEmpty()
-            && ZkStateReader.from(cloudSolrClient).getZkClient().exists("/configs/" + confName);
+            && ZkStateReader.from(cloudSolrClient)
+                .getZkClient()
+                .exists("/configs/" + confName, true);
 
     if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
       // do nothing

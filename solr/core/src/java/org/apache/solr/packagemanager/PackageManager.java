@@ -182,14 +182,14 @@ public class PackageManager implements Closeable {
     List<SolrPackageInstance> ret = new ArrayList<>();
     packages = new HashMap<>();
     try {
-      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH)) {
+      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true)) {
         @SuppressWarnings("unchecked")
         Map<String, List<Map<?, ?>>> packagesZnodeMap =
             (Map<String, List<Map<?, ?>>>)
                 getMapper()
                     .readValue(
                         new String(
-                            zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null),
+                            zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true),
                             StandardCharsets.UTF_8),
                         Map.class)
                     .get("packages");
@@ -322,7 +322,7 @@ public class PackageManager implements Closeable {
 
   private void ensureCollectionsExist(List<String> collections) {
     try {
-      List<String> existingCollections = zkClient.getChildren("/collections", null);
+      List<String> existingCollections = zkClient.getChildren("/collections", null, true);
       Set<String> nonExistent = new HashSet<>(collections);
       nonExistent.removeAll(existingCollections);
       if (!nonExistent.isEmpty()) {
@@ -1080,7 +1080,7 @@ public class PackageManager implements Closeable {
   public Map<String, String> getDeployedCollections(String packageName) {
     List<String> allCollections;
     try {
-      allCollections = zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, null);
+      allCollections = zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, null, true);
     } catch (KeeperException | InterruptedException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
     }

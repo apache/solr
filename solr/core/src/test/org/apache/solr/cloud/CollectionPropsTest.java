@@ -171,7 +171,8 @@ public class CollectionPropsTest extends SolrCloudTestCase {
           new String(
               cluster
                   .getZkClient()
-                  .getData("/collections/" + collectionName + "/collectionprops.json", null, null),
+                  .getData(
+                      "/collections/" + collectionName + "/collectionprops.json", null, null, true),
               StandardCharsets.UTF_8);
     } catch (Exception e) {
       collectionpropsInZk = "Could not get file from ZooKeeper: " + e.getMessage();
@@ -221,7 +222,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
     log.info("deleting props");
     zkStateReader
         .getZkClient()
-        .delete("/collections/" + collectionName + "/collectionprops.json", -1);
+        .delete("/collections/" + collectionName + "/collectionprops.json", -1, true);
     assertEquals(1, watcher.waitForTrigger());
     final Map<String, String> props = watcher.getProps();
     assertTrue(props.toString(), props.isEmpty());

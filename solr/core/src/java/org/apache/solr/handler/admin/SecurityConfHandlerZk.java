@@ -79,7 +79,8 @@ public class SecurityConfHandlerZk extends SecurityConfHandler {
           .setData(
               SOLR_SECURITY_CONF_PATH,
               Utils.toJSON(securityConfig.getData()),
-              securityConfig.getVersion());
+              securityConfig.getVersion(),
+              true);
       log.debug("Persisted security.json to {}", SOLR_SECURITY_CONF_PATH);
       return true;
     } catch (KeeperException.BadVersionException bdve) {

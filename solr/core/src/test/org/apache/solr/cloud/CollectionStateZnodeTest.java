@@ -50,10 +50,10 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     assertTrue(
         "Collection path does not exist",
-        zkClient().exists(DocCollection.getCollectionPath(collectionName)));
+        zkClient().exists(DocCollection.getCollectionPath(collectionName), true));
 
     Stat stat = new Stat();
-    zkClient().getData(DocCollection.getCollectionPath(collectionName), null, stat);
+    zkClient().getData(DocCollection.getCollectionPath(collectionName), null, stat, true);
 
     DocCollection c = getCollectionState(collectionName);
 
@@ -68,6 +68,6 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
 
     assertFalse(
         "collection state should not exist",
-        zkClient().exists(DocCollection.getCollectionPath(collectionName)));
+        zkClient().exists(DocCollection.getCollectionPath(collectionName), true));
   }
 }

@@ -471,7 +471,7 @@ public class HttpSolrCall {
                 .getZkController()
                 .zkStateReader
                 .getZkClient()
-                .exists(DocCollection.getCollectionPath(collectionName))) {
+                .exists(DocCollection.getCollectionPath(collectionName), true)) {
           // no change and such a collection does not exist. go back
           return;
         }

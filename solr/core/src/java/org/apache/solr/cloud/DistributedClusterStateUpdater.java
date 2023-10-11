@@ -598,7 +598,7 @@ public class DistributedClusterStateUpdater {
         if (updater.isCollectionCreation()) {
           // The state.json file does not exist yet (more precisely it is assumed not to exist)
           log.debug("going to create collection {}", jsonPath);
-          zkStateReader.getZkClient().create(jsonPath, stateJson, CreateMode.PERSISTENT);
+          zkStateReader.getZkClient().create(jsonPath, stateJson, CreateMode.PERSISTENT, true);
         } else {
           // We're updating an existing state.json
           if (log.isDebugEnabled()) {
@@ -607,7 +607,9 @@ public class DistributedClusterStateUpdater {
                 jsonPath,
                 collection.getZNodeVersion());
           }
-          zkStateReader.getZkClient().setData(jsonPath, stateJson, collection.getZNodeVersion());
+          zkStateReader
+              .getZkClient()
+              .setData(jsonPath, stateJson, collection.getZNodeVersion(), true);
         }
       }
     }
@@ -621,7 +623,7 @@ public class DistributedClusterStateUpdater {
     private ClusterState fetchStateForCollection() throws KeeperException, InterruptedException {
       String collectionStatePath = DocCollection.getCollectionPath(updater.getCollectionName());
       Stat stat = new Stat();
-      byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat);
+      byte[] data = zkStateReader.getZkClient().getData(collectionStatePath, null, stat, true);
 
       // This factory method can detect a missing configName and supply it by reading it from the
       // old ZK location.
@@ -931,7 +933,7 @@ public class DistributedClusterStateUpdater {
 
       try {
         final List<String> collectionNames =
-            zkStateReader.getZkClient().getChildren(COLLECTIONS_ZKNODE, null);
+            zkStateReader.getZkClient().getChildren(COLLECTIONS_ZKNODE, null, true);
 
         // Collections are totally independent of each other. Multiple threads could share the load
         // here (need a ZK connection for each though).

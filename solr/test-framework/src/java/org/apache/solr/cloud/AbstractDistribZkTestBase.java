@@ -395,7 +395,6 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
   protected void restartZk(int pauseMillis) throws Exception {
     log.info("Restarting ZK with a pause of {}ms in between", pauseMillis);
-
     zkServer.shutdown();
     // disconnect enough to test stalling, if things stall, then clientSoTimeout will be hit
     Thread.sleep(pauseMillis);

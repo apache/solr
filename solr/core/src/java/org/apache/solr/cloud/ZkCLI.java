@@ -398,7 +398,7 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
-          zkClient.makePath(arglist.get(0));
+          zkClient.makePath(arglist.get(0), true);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 2) {
@@ -406,17 +406,16 @@ public class ZkCLI implements CLIO {
                 "-" + PUT + " requires two args - the path to create and the data string");
             System.exit(1);
           }
-
           String path = arglist.get(0);
           byte[] data = arglist.get(1).getBytes(StandardCharsets.UTF_8);
           if (shouldCompressData(data, path, minStateByteLenForCompression)) {
             // state.json should be compressed before being put to ZK
             data = compressor.compressBytes(data, data.length / 10);
           }
-          if (zkClient.exists(path)) {
-            zkClient.setData(path, data);
+          if (zkClient.exists(path, true)) {
+            zkClient.setData(path, data, true);
           } else {
-            zkClient.makePath(path, data, CreateMode.PERSISTENT);
+            zkClient.makePath(path, data, CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT_FILE)) {
           List<String> arglist = line.getArgList();
@@ -434,10 +433,10 @@ public class ZkCLI implements CLIO {
             // state.json should be compressed before being put to ZK
             data = compressor.compressBytes(data, data.length / 10);
           }
-          if (zkClient.exists(path)) {
-            zkClient.setData(path, data);
+          if (zkClient.exists(path, true)) {
+            zkClient.setData(path, data, true);
           } else {
-            zkClient.makePath(path, data, CreateMode.PERSISTENT);
+            zkClient.makePath(path, data, CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
           List<String> arglist = line.getArgList();
@@ -445,7 +444,7 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + GET + " requires one arg - the path to get");
             System.exit(1);
           }
-          byte[] data = zkClient.getData(arglist.get(0), null, null);
+          byte[] data = zkClient.getData(arglist.get(0), null, null, true);
           stdout.println(new String(data, StandardCharsets.UTF_8));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET_FILE)) {
           List<String> arglist = line.getArgList();
@@ -454,7 +453,7 @@ public class ZkCLI implements CLIO {
                 "-" + GET_FILE + "requires two args - the path to get and the file to save it to");
             System.exit(1);
           }
-          byte[] data = zkClient.getData(arglist.get(0), null, null);
+          byte[] data = zkClient.getData(arglist.get(0), null, null, true);
           Files.write(Path.of(arglist.get(1)), data);
         } else if (line.getOptionValue(CMD).equals(UPDATEACLS)) {
           List<String> arglist = line.getArgList();

@@ -62,7 +62,7 @@ final class OverseerElectionContext extends ElectionContext {
     final String id = leaderSeqPath.substring(leaderSeqPath.lastIndexOf('/') + 1);
     ZkNodeProps myProps = new ZkNodeProps(ID, id);
 
-    zkClient.makePath(leaderPath, Utils.toJSON(myProps), CreateMode.EPHEMERAL);
+    zkClient.makePath(leaderPath, Utils.toJSON(myProps), CreateMode.EPHEMERAL, true);
     if (pauseBeforeStartMs > 0) {
       try {
         Thread.sleep(pauseBeforeStartMs);

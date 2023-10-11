@@ -81,7 +81,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
       assertTrue(
           "List of uploaded configs does not contain 'testconfig'",
-          cluster.getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + "testconfig"));
+          cluster.getZkClient().exists(ZkStateReader.CONFIGS_ZKNODE + "/" + "testconfig", true));
 
     } finally {
       cluster.shutdown();

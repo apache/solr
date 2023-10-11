@@ -97,7 +97,7 @@ public class ClusterProperties {
     try {
       Map<String, Object> properties =
           (Map<String, Object>)
-              Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat()));
+              Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
       return convertCollectionDefaultsToNestedFormat(properties);
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();
@@ -197,21 +197,23 @@ public class ClusterProperties {
     for (; ; ) {
       Stat s = new Stat();
       try {
-        if (client.exists(ZkStateReader.CLUSTER_PROPS)) {
+        if (client.exists(ZkStateReader.CLUSTER_PROPS, true)) {
           @SuppressWarnings({"rawtypes"})
           Map properties =
-              (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s));
+              (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s, true));
           if (propertyValue == null) {
             // Don't update ZK unless absolutely necessary.
             if (properties.get(propertyName) != null) {
               properties.remove(propertyName);
-              client.setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion());
+              client.setData(
+                  ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
             }
           } else {
             // Don't update ZK unless absolutely necessary.
             if (!propertyValue.equals(properties.get(propertyName))) {
               properties.put(propertyName, propertyValue);
-              client.setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion());
+              client.setData(
+                  ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
             }
           }
         } else {
@@ -219,7 +221,7 @@ public class ClusterProperties {
           Map properties = new LinkedHashMap();
           properties.put(propertyName, propertyValue);
           client.makePath(
-              ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT);
+              ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
         }
       } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {
         // race condition

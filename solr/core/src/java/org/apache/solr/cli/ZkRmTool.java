@@ -87,7 +87,7 @@ public class ZkRmTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      if (!recurse && zkClient.getChildren(znode, null).size() != 0) {
+      if (!recurse && zkClient.getChildren(znode, null, true).size() != 0) {
         throw new SolrServerException(
             "ZooKeeper node " + znode + " has children and recurse has NOT been specified.");
       }

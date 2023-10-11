@@ -55,7 +55,7 @@ public abstract class ElectionContext implements Closeable {
     if (leaderSeqPath != null) {
       try {
         log.debug("Canceling election {}", leaderSeqPath);
-        zkClient.delete(leaderSeqPath, -1);
+        zkClient.delete(leaderSeqPath, -1, true);
       } catch (NoNodeException e) {
         // fine
         log.debug("cancelElection did not find election node to remove {}", leaderSeqPath);

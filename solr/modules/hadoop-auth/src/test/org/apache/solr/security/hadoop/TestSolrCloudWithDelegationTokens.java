@@ -399,8 +399,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
             .withUrl(miniCluster.getZkServer().getZkAddress())
             .withTimeout(1000, TimeUnit.MILLISECONDS)
             .build()) {
-      assertTrue(zkClient.exists("/security/zkdtsm"));
-      assertTrue(zkClient.exists("/security/token"));
+      assertTrue(zkClient.exists("/security/zkdtsm", true));
+      assertTrue(zkClient.exists("/security/token", true));
     }
   }
 

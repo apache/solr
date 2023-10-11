@@ -490,10 +490,10 @@ public class SchemaManager {
       SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
       String managedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + schemaResourceName;
       try {
-        if (!zkClient.exists(managedSchemaPath)) {
+        if (!zkClient.exists(managedSchemaPath, true)) {
           String backupName =
               schemaResourceName + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;
-          if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName)) {
+          if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName, true)) {
             log.warn(
                 "Unable to retrieve fresh managed schema, neither {} nor {} exist.",
                 schemaResourceName,

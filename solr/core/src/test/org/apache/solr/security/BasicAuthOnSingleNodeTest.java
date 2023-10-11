@@ -80,7 +80,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
 
       // Deleting security.json will disable security - before SOLR-9679 it would instead cause an
       // exception
-      cluster.getZkClient().delete("/security.json", -1);
+      cluster.getZkClient().delete("/security.json", -1, false);
 
       int count = 0;
       boolean done = false;

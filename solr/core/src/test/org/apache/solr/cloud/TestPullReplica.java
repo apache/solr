@@ -192,7 +192,9 @@ public class TestPullReplica extends SolrCloudTestCase {
               cluster
                   .getZkClient()
                   .getChildren(
-                      ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null);
+                      ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()),
+                      null,
+                      true);
           assertEquals(
               "Unexpected election nodes for Shard: "
                   + s.getName()

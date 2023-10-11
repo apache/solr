@@ -69,7 +69,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
           new RateLimiterConfig(SolrRequest.SolrRequestType.QUERY);
       Map<String, Object> clusterPropsJson =
           (Map<String, Object>)
-              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat()));
+              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
       byte[] configInput = Utils.toJSON(clusterPropsJson.get(RL_CONFIG_KEY));
 
       if (configInput.length == 0) {

@@ -479,7 +479,7 @@ public class Overseer implements SolrCloseable {
       final String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
-        data = zkClient.getData(path, null, stat);
+        data = zkClient.getData(path, null, stat, true);
       } catch (IllegalStateException e) {
         return;
       } catch (Exception e) {
@@ -494,7 +494,7 @@ public class Overseer implements SolrCloseable {
             log.warn(
                 "I (id={}) am exiting, but I'm still the leader",
                 overseerCollectionConfigSetProcessor.getId());
-            zkClient.delete(path, stat.getVersion());
+            zkClient.delete(path, stat.getVersion(), true);
           } catch (KeeperException.BadVersionException e) {
             // no problem ignore it some other Overseer has already taken over
           } catch (Exception e) {
@@ -616,7 +616,7 @@ public class Overseer implements SolrCloseable {
       String propsId = null;
       try {
         ZkNodeProps props =
-            ZkNodeProps.load(zkClient.getData(OVERSEER_ELECT + "/leader", null, null));
+            ZkNodeProps.load(zkClient.getData(OVERSEER_ELECT + "/leader", null, null, true));
         propsId = props.getStr(ID);
         if (myId.equals(propsId)) {
           return LeaderStatus.YES;
@@ -1184,7 +1184,7 @@ public class Overseer implements SolrCloseable {
 
   private void createOverseerNode(final SolrZkClient zkClient) {
     try {
-      zkClient.create("/overseer", new byte[0], CreateMode.PERSISTENT);
+      zkClient.create("/overseer", new byte[0], CreateMode.PERSISTENT, true);
     } catch (KeeperException.NodeExistsException e) {
       // ok
     } catch (InterruptedException e) {

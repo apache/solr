@@ -75,12 +75,12 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     String roleName = message.getStr("role");
-    boolean nodeExists = zkClient.exists(ZkStateReader.ROLES);
+    boolean nodeExists = zkClient.exists(ZkStateReader.ROLES, true);
     if (nodeExists) {
       @SuppressWarnings("unchecked")
       Map<String, List<String>> tmp =
           (Map<String, List<String>>)
-              Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat()));
+              Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
       roles = tmp;
     } else {
       roles = CollectionUtil.newLinkedHashMap(1);
@@ -96,9 +96,9 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     if (nodeExists) {
-      zkClient.setData(ZkStateReader.ROLES, Utils.toJSON(roles));
+      zkClient.setData(ZkStateReader.ROLES, Utils.toJSON(roles), true);
     } else {
-      zkClient.create(ZkStateReader.ROLES, Utils.toJSON(roles), CreateMode.PERSISTENT);
+      zkClient.create(ZkStateReader.ROLES, Utils.toJSON(roles), CreateMode.PERSISTENT, true);
     }
     runPrioritizer();
   }

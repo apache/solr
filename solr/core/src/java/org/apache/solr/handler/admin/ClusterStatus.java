@@ -113,10 +113,11 @@ public class ClusterStatus {
     }
 
     Map<?, ?> roles = null;
-    if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES)) {
+    if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
       roles =
           (Map<?, ?>)
-              Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null));
+              Utils.fromJSON(
+                  zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
     }
 
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -196,7 +197,7 @@ public class ClusterStatus {
     }
 
     List<String> liveNodes =
-        zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null);
+        zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
 
     // now we need to walk the collectionProps tree to cross-check replica state with live nodes
     crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);

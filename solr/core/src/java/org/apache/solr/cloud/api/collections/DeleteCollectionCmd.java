@@ -107,7 +107,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
       if (zkStateReader.getClusterState().getCollectionOrNull(collection) == null) {
         if (zkStateReader
             .getZkClient()
-            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
+            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection, true)) {
           // if the collection is not in the clusterstate, but is listed in zk, do nothing, it will
           // just be removed in the finally - we cannot continue, because the below code will error
           // if the collection is not in the clusterstate
@@ -209,7 +209,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
       try {
         String collectionPath = DocCollection.getCollectionPathRoot(collection);
-        if (zkStateReader.getZkClient().exists(collectionPath)) {
+        if (zkStateReader.getZkClient().exists(collectionPath, true)) {
           if (removeCounterNode) {
             zkStateReader.getZkClient().clean(collectionPath);
           } else {

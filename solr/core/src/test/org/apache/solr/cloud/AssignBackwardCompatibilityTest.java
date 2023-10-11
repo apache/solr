@@ -73,7 +73,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
       if (random().nextBoolean() && i > 5 && !clearedCounter) {
         log.info("Clear collection counter");
         // clear counter
-        cluster.getZkClient().delete("/collections/" + COLLECTION + "/counter", -1);
+        cluster.getZkClient().delete("/collections/" + COLLECTION + "/counter", -1, true);
         clearedCounter = true;
       }
       if (deleteReplica) {
@@ -115,7 +115,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
       byte[] data =
           cluster
               .getZkClient()
-              .getData("/collections/" + COLLECTION + "/counter", null, new Stat());
+              .getData("/collections/" + COLLECTION + "/counter", null, new Stat(), true);
       int count = NumberUtils.bytesToInt(data);
       if (count < 0) throw new AssertionError("Found negative collection counter " + count);
       return count;

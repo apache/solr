@@ -160,7 +160,8 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
                 + "confFaulty"
                 + Path.SEPARATOR
                 + "solrconfig.xml",
-            -1);
+            -1,
+            true);
   }
 
   @AfterClass

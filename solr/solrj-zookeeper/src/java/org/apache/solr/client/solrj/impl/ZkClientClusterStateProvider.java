@@ -100,7 +100,7 @@ public class ZkClientClusterStateProvider
         try {
           // read configName from collections/collection node
           String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + coll;
-          byte[] data = zkClient.getData(path, null, null);
+          byte[] data = zkClient.getData(path, null, null, true);
           if (data != null && data.length > 0) {
             ZkNodeProps configProp = ZkNodeProps.load(data);
             String configName = configProp.getStr(ZkStateReader.CONFIGNAME_PROP);

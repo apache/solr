@@ -130,7 +130,7 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     byte[] data = null;
     Stat stat = new Stat();
     try {
-      data = cc.getZkController().getZkStateReader().getZkClient().getData(path, null, stat);
+      data = cc.getZkController().getZkStateReader().getZkClient().getData(path, null, stat, true);
     } catch (KeeperException.NoNodeException nne) {
       // ignore
     } catch (KeeperException | InterruptedException e) {

@@ -64,9 +64,9 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
             .build()) {
       String path = getAndMakeInitialPath(zkClient);
       DistributedMap map = createMap(zkClient, path);
-      assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo"));
+      assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
       map.put("foo", new byte[0]);
-      assertTrue(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo"));
+      assertTrue(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
     }
   }
 
@@ -79,7 +79,12 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       String path = getAndMakeInitialPath(zkClient);
       byte[] data = "data".getBytes(Charset.defaultCharset());
       zkClient.makePath(
-          path + "/" + DistributedMap.PREFIX + "foo", data, CreateMode.PERSISTENT, null, false);
+          path + "/" + DistributedMap.PREFIX + "foo",
+          data,
+          CreateMode.PERSISTENT,
+          null,
+          false,
+          true);
       DistributedMap map = createMap(zkClient, path);
       assertArrayEquals(data, map.get("foo"));
     }
@@ -99,7 +104,8 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
           new byte[0],
           CreateMode.PERSISTENT,
           null,
-          false);
+          false,
+          true);
       assertTrue(map.contains("foo"));
     }
   }
@@ -118,10 +124,11 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
           new byte[0],
           CreateMode.PERSISTENT,
           null,
-          false);
+          false,
+          true);
       assertTrue(map.remove("foo"));
       assertFalse(map.contains("foo"));
-      assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo"));
+      assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo", true));
     }
   }
 
@@ -233,7 +240,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       String path = getAndMakeInitialPath(zkClient);
       // Add a "legacy" / malformed key
       final var key = "slash/test/0";
-      zkClient.makePath(path + "/" + DistributedMap.PREFIX + key, new byte[0]);
+      zkClient.makePath(path + "/" + DistributedMap.PREFIX + key, new byte[0], true);
 
       DistributedMap map = createMap(zkClient, path);
       assertEquals(1, map.size());
@@ -249,7 +256,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
   protected String getAndMakeInitialPath(SolrZkClient zkClient)
       throws KeeperException, InterruptedException {
     String path = String.format(Locale.ROOT, "/%s/%s", getClass().getName(), getSaferTestName());
-    zkClient.makePath(path, false);
+    zkClient.makePath(path, false, true);
     return path;
   }
 }

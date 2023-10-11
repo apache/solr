@@ -69,7 +69,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
             .build();
 
     if (toZk) {
-      zkClient.makePath("solr.xml", XML_FOR_ZK.getBytes(StandardCharsets.UTF_8));
+      zkClient.makePath("solr.xml", XML_FOR_ZK.getBytes(StandardCharsets.UTF_8), true);
     }
 
     zkClient.close();

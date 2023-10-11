@@ -149,7 +149,7 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
       String path = getAndMakeInitialPath(zkClient);
 
       // Add a "legacy" / malformed key
-      zkClient.makePath(path + "/" + DistributedMap.PREFIX + "slash/test/0", new byte[0]);
+      zkClient.makePath(path + "/" + DistributedMap.PREFIX + "slash/test/0", new byte[0], true);
 
       AtomicInteger overFlowCounter = new AtomicInteger();
       DistributedMap map =

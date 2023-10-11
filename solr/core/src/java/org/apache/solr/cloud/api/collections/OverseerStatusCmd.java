@@ -175,13 +175,13 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
     String leaderNode = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     results.add("leader", leaderNode);
     Stat stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue", null, stat);
+    zkStateReader.getZkClient().getData("/overseer/queue", null, stat, true);
     results.add("overseer_queue_size", stat.getNumChildren());
     stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue-work", null, stat);
+    zkStateReader.getZkClient().getData("/overseer/queue-work", null, stat, true);
     results.add("overseer_work_queue_size", stat.getNumChildren());
     stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/collection-queue-work", null, stat);
+    zkStateReader.getZkClient().getData("/overseer/collection-queue-work", null, stat, true);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
 
     NamedList<Object> overseerStats = new NamedList<>();

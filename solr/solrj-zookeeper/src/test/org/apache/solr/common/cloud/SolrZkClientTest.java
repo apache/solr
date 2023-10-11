@@ -86,7 +86,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
       // Set up chroot
-      client.makePath("/solr", false);
+      client.makePath("/solr", false, true);
     }
 
     defaultClient =
@@ -94,7 +94,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
             .withUrl(zkServer.getZkAddress())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
-    defaultClient.makePath(PATH);
+    defaultClient.makePath(PATH, true);
 
     aclClient =
         new SolrZkClient(
@@ -216,10 +216,12 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null);
+        .getData(
+            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null, true);
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrapped2A, null);
+        .getData(
+            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped2A, null, true);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(), "baz", "bam")
         .process(solrClient);
@@ -233,10 +235,12 @@ public class SolrZkClientTest extends SolrCloudTestCase {
 
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null);
+        .getData(
+            "/collections/" + getSaferTestName() + "/collectionprops.json", wrapped1A, null, true);
     ZkStateReader.from(solrClient)
         .getZkClient()
-        .getData("/collections/" + getSaferTestName() + "/collectionprops.json", wrappedB, null);
+        .getData(
+            "/collections/" + getSaferTestName() + "/collectionprops.json", wrappedB, null, true);
 
     CollectionAdminRequest.setCollectionProperty(getSaferTestName(), "baz", "bang")
         .process(solrClient);
@@ -253,7 +257,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
   private static boolean canRead(SolrZkClient zkClient, String path)
       throws KeeperException, InterruptedException {
     try {
-      zkClient.getData(path, null, null);
+      zkClient.getData(path, null, null, true);
       return true;
     } catch (KeeperException.NoAuthException e) {
       return false;

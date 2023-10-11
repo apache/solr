@@ -294,7 +294,7 @@ public class BackupManager {
         repository.openInput(sourceDir, ZkStateReader.COLLECTION_PROPS_ZKNODE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()];
       is.readBytes(arr, 0, (int) is.length());
-      zkStateReader.getZkClient().create(zkPath, arr, CreateMode.PERSISTENT);
+      zkStateReader.getZkClient().create(zkPath, arr, CreateMode.PERSISTENT, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Error uploading file to zookeeper path " + source.toString() + " to " + zkPath,
@@ -312,13 +312,13 @@ public class BackupManager {
             + ZkStateReader.COLLECTION_PROPS_ZKNODE;
 
     try {
-      if (!zkStateReader.getZkClient().exists(zkPath)) {
+      if (!zkStateReader.getZkClient().exists(zkPath, true)) {
         // Nothing to back up
         return;
       }
 
       try (OutputStream os = repository.createOutput(dest)) {
-        byte[] data = zkStateReader.getZkClient().getData(zkPath, null, null);
+        byte[] data = zkStateReader.getZkClient().getData(zkPath, null, null, true);
         os.write(data);
       }
     } catch (KeeperException | InterruptedException e) {

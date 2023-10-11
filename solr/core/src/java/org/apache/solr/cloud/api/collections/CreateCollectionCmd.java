@@ -190,7 +190,9 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             new ClusterStateMutator(ccc.getSolrCloudManager())
                 .createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-        ccc.getZkStateReader().getZkClient().create(collectionPath, data, CreateMode.PERSISTENT);
+        ccc.getZkStateReader()
+            .getZkClient()
+            .create(collectionPath, data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
@@ -374,7 +376,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             Utils.toJSON(
                 Collections.singletonMap(
                     collectionName, clusterState.getCollection(collectionName)));
-        zkStateReader.getZkClient().setData(collectionPath, data);
+        zkStateReader.getZkClient().setData(collectionPath, data, true);
       }
 
       // Distributed updates don't need to do anything for PRS collections that wrote state.json

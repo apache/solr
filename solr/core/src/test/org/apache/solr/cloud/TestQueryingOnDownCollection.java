@@ -123,7 +123,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     byte[] collectionState =
         cluster
             .getZkClient()
-            .getData("/collections/" + COLLECTION_NAME + "/state.json", null, null);
+            .getData("/collections/" + COLLECTION_NAME + "/state.json", null, null, true);
 
     Map<String, Map<String, ?>> infectedState =
         (Map<String, Map<String, ?>>) Utils.fromJSON(collectionState);
@@ -139,7 +139,8 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     cluster
         .getZkClient()
-        .setData("/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState));
+        .setData(
+            "/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState), true);
   }
 
   protected static final String STD_CONF =

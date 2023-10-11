@@ -282,7 +282,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         // cache is stale, rebuild the full list ...
         cachedCollections = new ArrayList<String>();
 
-        List<String> fromZk = zkClient.getChildren("/collections", this);
+        List<String> fromZk = zkClient.getChildren("/collections", this, true);
         if (fromZk != null) cachedCollections.addAll(fromZk);
 
         // sort the final merged set of collections
@@ -623,7 +623,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       Stat stat = new Stat();
       try {
         // Trickily, the call to zkClient.getData fills in the stat variable
-        byte[] data = zkClient.getData(path, null, stat);
+        byte[] data = zkClient.getData(path, null, stat, true);
 
         if (stat.getEphemeralOwner() != 0) {
           writeKeyValue(json, "ephemeral", true, false);
@@ -656,7 +656,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         json.startArray();
 
         try {
-          List<String> children = zkClient.getChildren(path, null);
+          List<String> children = zkClient.getChildren(path, null, true);
           java.util.Collections.sort(children);
 
           boolean first = true;
@@ -711,7 +711,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         String dataStrErr = null;
         Stat stat = new Stat();
         // Trickily, the call to zkClient.getData fills in the stat variable
-        byte[] data = zkClient.getData(path, null, stat);
+        byte[] data = zkClient.getData(path, null, stat, true);
         if (null != data) {
           try {
             dataStr = (new BytesRef(data)).utf8ToString();
