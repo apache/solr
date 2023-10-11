@@ -91,7 +91,7 @@ public class {{classname}} {
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
                   "{{{path}}}"{{#pathParams}}
-                    .replace("{" + "{{baseName}}" + "}", {{paramName}}){{/pathParams}}
+                    .replace("{" + "{{baseName}}" + "}", {{paramName}}{{#isEnumRef}}.name(){{/isEnumRef}}){{/pathParams}}
                 );
 
                 {{#requiredParams}}
