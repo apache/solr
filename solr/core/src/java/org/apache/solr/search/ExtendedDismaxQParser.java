@@ -1572,8 +1572,7 @@ public class ExtendedDismaxQParser extends QParser {
       // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
       // rather than Collections.sort() then converting to an array, since Collections.sort()
       // copies to an array first, then sets each collection member from the array.
-      negativeDynamicUserFields =
-          negDynUserFields.toArray(new DynamicField[0]);
+      negativeDynamicUserFields = negDynUserFields.toArray(new DynamicField[0]);
       Arrays.sort(negativeDynamicUserFields);
     }
 

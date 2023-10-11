@@ -218,8 +218,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         mergedTopDocs = TopDocs.merge(start, topN, topDocs.toArray(new TopDocs[0]));
       } else {
         mergedTopDocs =
-            TopDocs.merge(
-                withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[0]));
+            TopDocs.merge(withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[0]));
       }
       rb.mergedQueryCommandResults.put(
           entry.getKey(), new QueryCommandResult(mergedTopDocs, mergedMatches, maxScore));

@@ -306,8 +306,7 @@ public class UninvertingReader extends FilterLeafReader {
     if (!wrap) {
       return in;
     } else {
-      FieldInfos fieldInfos =
-          new FieldInfos(newFieldInfos.toArray(new FieldInfo[0]));
+      FieldInfos fieldInfos = new FieldInfos(newFieldInfos.toArray(new FieldInfo[0]));
       return new UninvertingReader(in, mapping, fieldInfos);
     }
   }
