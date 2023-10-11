@@ -500,9 +500,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         writer.writePendingUpdates();
 
         byte[] data =
-            zkClient
-                .getZooKeeper()
-                .getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null);
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true);
         Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(data);
         assertNotNull(map.get("c1"));
       }
