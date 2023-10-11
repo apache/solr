@@ -88,9 +88,9 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c3", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1");
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2");
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c3");
 
         Map<String, Object> props =
             Collections.singletonMap(
@@ -327,7 +327,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         ZkStateWriter writer =
             new ZkStateWriter(reader, new Stats(), -1, STATE_COMPRESSION_PROVIDER);
 
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1");
 
         // create new collection
         ZkWriteCommand c1 =
@@ -348,7 +348,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
             (Map<?, ?>)
                 Utils.fromJSON(
                     zkClient.getData(
-                        ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
+                        ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null));
         assertNotNull(map.get("c1"));
       }
     } finally {
@@ -380,8 +380,8 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         ZkStateWriter writer =
             new ZkStateWriter(reader, new Stats(), -1, STATE_COMPRESSION_PROVIDER);
 
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1");
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2");
 
         ClusterState state = reader.getClusterState();
 
@@ -402,8 +402,8 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         int c2Version = state.getCollection("c2").getZNodeVersion();
 
         // Simulate an external modification to /collections/c2/state.json
-        byte[] data = zkClient.getData(DocCollection.getCollectionPath("c2"), null, null, true);
-        zkClient.setData(DocCollection.getCollectionPath("c2"), data, true);
+        byte[] data = zkClient.getData(DocCollection.getCollectionPath("c2"), null, null);
+        zkClient.setData(DocCollection.getCollectionPath("c2"), data);
 
         // get the most up-to-date state
         reader.forceUpdateCollection("c2");
@@ -500,7 +500,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         writer.writePendingUpdates();
 
         byte[] data =
-            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true);
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null);
         Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(data);
         assertNotNull(map.get("c1"));
       }

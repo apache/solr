@@ -443,7 +443,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       if (slices != null) {
         int found = 0;
         try {
-          found = zkClient.getChildren(shardsElectZkPath, null, true).size();
+          found = zkClient.getChildren(shardsElectZkPath, null).size();
         } catch (KeeperException e) {
           if (e instanceof KeeperException.SessionExpiredException) {
             // if the session has expired, then another election will be launched, so

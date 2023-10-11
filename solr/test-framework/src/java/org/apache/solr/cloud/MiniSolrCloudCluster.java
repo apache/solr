@@ -301,17 +301,16 @@ public class MiniSolrCloudCluster {
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      if (!zkClient.exists("/solr/solr.xml", true)) {
-        zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
+      if (!zkClient.exists("/solr/solr.xml")) {
+        zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()));
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
           zkClient.makePath(
               "/solr" + ZkStateReader.CLUSTER_PROPS,
-              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8),
-              true);
+              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8));
         }
         if (securityJson.isPresent()) { // configure Solr security
           zkClient.makePath(
-              "/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()), true);
+              "/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()));
         }
       }
     }
@@ -646,9 +645,7 @@ public class MiniSolrCloudCluster {
         // cleanup any property before removing the configset
         getZkClient()
             .delete(
-                ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME,
-                -1,
-                true);
+                ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME, -1);
       } catch (KeeperException.NoNodeException nne) {
       }
       new ConfigSetAdminRequest.Delete().setConfigSetName(configSet).process(solrClient);
@@ -737,10 +734,10 @@ public class MiniSolrCloudCluster {
    * Set data in zk without exposing caller to the ZK API, i.e. tests won't need to include
    * Zookeeper dependencies
    */
-  public void zkSetData(String path, byte[] data, boolean retryOnConnLoss)
+  public void zkSetData(String path, byte[] data)
       throws InterruptedException {
     try {
-      getZkClient().setData(path, data, -1, retryOnConnLoss);
+      getZkClient().setData(path, data, -1);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.UNKNOWN, "Failed writing to Zookeeper", e);
     }

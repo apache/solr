@@ -242,12 +242,12 @@ public class NodeConfig {
               .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
               .withSolrClassLoader(loader)
               .build()) {
-        if (zkClient.exists("/solr.xml", true)) {
+        if (zkClient.exists("/solr.xml")) {
           log.info("solr.xml found in ZooKeeper. Loading...");
           DeprecationLog.log(
               "solrxml-zookeeper",
               "Loading solr.xml from zookeeper is deprecated. See reference guide for details.");
-          byte[] data = zkClient.getData("/solr.xml", null, null, true);
+          byte[] data = zkClient.getData("/solr.xml", null, null);
           return SolrXmlConfig.fromInputStream(
               solrHome, new ByteArrayInputStream(data), nodeProperties, true);
         }

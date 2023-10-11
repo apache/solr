@@ -94,7 +94,7 @@ public class LeaderElector {
     context.checkIfIamLeaderFired();
     // get all other numbers...
     final String holdElectionPath = context.electionPath + ELECTION_NODE;
-    List<String> seqs = zkClient.getChildren(holdElectionPath, null, true);
+    List<String> seqs = zkClient.getChildren(holdElectionPath, null);
     sortSeqs(seqs);
 
     String leaderSeqNodeName =
@@ -114,7 +114,7 @@ public class LeaderElector {
         try {
           String toDelete = holdElectionPath + "/" + elec;
           log.warn("Deleting duplicate registration: {}", toDelete);
-          zkClient.delete(toDelete, -1, true);
+          zkClient.delete(toDelete, -1);
         } catch (KeeperException.NoNodeException e) {
           // ignore
         }
@@ -148,8 +148,7 @@ public class LeaderElector {
             watcher =
                 new ElectionWatcher(
                     context.leaderSeqPath, watchedNode, getSeq(context.leaderSeqPath), context),
-            null,
-            true);
+            null);
         log.debug("Watching path {} to know if I could be the leader", watchedNode);
       } catch (KeeperException.SessionExpiredException e) {
         throw e;
@@ -240,10 +239,7 @@ public class LeaderElector {
           if (nodes.size() < 2) {
             leaderSeqPath =
                 zkClient.create(
-                    shardsElectZkPath + "/" + id + "-n_",
-                    null,
-                    CreateMode.EPHEMERAL_SEQUENTIAL,
-                    false);
+                    shardsElectZkPath + "/" + id + "-n_", null, CreateMode.EPHEMERAL_SEQUENTIAL);
           } else {
             String firstInLine = nodes.get(1);
             log.debug("The current head: {}", firstInLine);
@@ -252,15 +248,12 @@ public class LeaderElector {
               throw new IllegalStateException("Could not find regex match in:" + firstInLine);
             }
             leaderSeqPath = shardsElectZkPath + "/" + id + "-n_" + m.group(1);
-            zkClient.create(leaderSeqPath, null, CreateMode.EPHEMERAL, false);
+            zkClient.create(leaderSeqPath, null, CreateMode.EPHEMERAL);
           }
         } else {
           leaderSeqPath =
               zkClient.create(
-                  shardsElectZkPath + "/" + id + "-n_",
-                  null,
-                  CreateMode.EPHEMERAL_SEQUENTIAL,
-                  false);
+                  shardsElectZkPath + "/" + id + "-n_", null, CreateMode.EPHEMERAL_SEQUENTIAL);
         }
 
         log.debug("Joined leadership election with path: {}", leaderSeqPath);
@@ -268,7 +261,7 @@ public class LeaderElector {
         cont = false;
       } catch (ConnectionLossException e) {
         // we don't know if we made our node or not...
-        List<String> entries = zkClient.getChildren(shardsElectZkPath, null, true);
+        List<String> entries = zkClient.getChildren(shardsElectZkPath, null);
 
         boolean foundId = false;
         for (String entry : entries) {
@@ -336,7 +329,7 @@ public class LeaderElector {
       if (canceled) {
         log.debug("This watcher is not active anymore {}", myNode);
         try {
-          zkClient.delete(myNode, -1, true);
+          zkClient.delete(myNode, -1);
         } catch (KeeperException.NoNodeException nne) {
           // expected . don't do anything
         } catch (Exception e) {
@@ -364,8 +357,7 @@ public class LeaderElector {
       ZkMaintenanceUtils.ensureExists(electZKPath, zkClient);
     } else {
       // we use 2 param so that replica won't create /collection/{collection} if it doesn't exist
-      ZkMaintenanceUtils.ensureExists(
-          electZKPath, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+      ZkMaintenanceUtils.ensureExists(electZKPath, null, CreateMode.PERSISTENT, zkClient, 2);
     }
 
     this.context = context;

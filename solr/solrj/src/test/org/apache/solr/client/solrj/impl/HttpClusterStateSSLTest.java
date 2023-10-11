@@ -66,9 +66,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
 
     // verify the base_url is actually stored with https in it on the server-side
     byte[] stateJsonBytes =
-        cluster
-            .getZkClient()
-            .getData(DocCollection.getCollectionPath(collectionId), null, null, true);
+        cluster.getZkClient().getData(DocCollection.getCollectionPath(collectionId), null, null);
     assertNotNull(stateJsonBytes);
     Map<String, Object> replicasMap =
         (Map<String, Object>)

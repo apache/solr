@@ -360,8 +360,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
             .withUrl(cluster.getZkServer().getZkAddress())
             .withTimeout(1000, TimeUnit.MILLISECONDS)
             .build()) {
-      assertTrue(zkClient.exists("/security/zkdtsm", true));
-      assertTrue(zkClient.exists("/security/token", true));
+      assertTrue(zkClient.exists("/security/zkdtsm"));
+      assertTrue(zkClient.exists("/security/token"));
     }
   }
 

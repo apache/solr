@@ -71,14 +71,11 @@ public class TestLazySolrCluster extends SolrCloudTestCase {
 
     assertEquals(5, solrCluster.nodes().size());
     SolrZkClient zkClient = ZkStateReader.from(cloudClient).getZkClient();
-    zkClient.create(ZkStateReader.CONFIGS_ZKNODE + "/conf1/a", null, CreateMode.PERSISTENT, true);
+    zkClient.create(ZkStateReader.CONFIGS_ZKNODE + "/conf1/a", null, CreateMode.PERSISTENT);
     zkClient.create(
-        ZkStateReader.CONFIGS_ZKNODE + "/conf1/a/aa1", new byte[1024], CreateMode.PERSISTENT, true);
+        ZkStateReader.CONFIGS_ZKNODE + "/conf1/a/aa1", new byte[1024], CreateMode.PERSISTENT);
     zkClient.create(
-        ZkStateReader.CONFIGS_ZKNODE + "/conf1/a/aa2",
-        new byte[1024 * 2],
-        CreateMode.PERSISTENT,
-        true);
+        ZkStateReader.CONFIGS_ZKNODE + "/conf1/a/aa2", new byte[1024 * 2], CreateMode.PERSISTENT);
 
     List<String> allFiles = new ArrayList<>();
     byte[] buf = new byte[3 * 1024];

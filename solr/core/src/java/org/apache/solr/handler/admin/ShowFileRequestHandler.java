@@ -156,7 +156,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     }
 
     // Show a directory listing
-    List<String> children = zkClient.getChildren(adminFile, null, true);
+    List<String> children = zkClient.getChildren(adminFile, null);
     if (children.size() > 0) {
 
       NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<>();
@@ -167,7 +167,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
 
         SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<>();
         files.add(f, fileInfo);
-        List<String> fchildren = zkClient.getChildren(adminFile + "/" + f, null, true);
+        List<String> fchildren = zkClient.getChildren(adminFile + "/" + f, null);
         if (fchildren.size() > 0) {
           fileInfo.add("directory", true);
         } else {
@@ -185,8 +185,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
       ContentStreamBase content =
-          new ContentStreamBase.ByteArrayStream(
-              zkClient.getData(adminFile, null, null, true), adminFile);
+          new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null), adminFile);
       content.setContentType(getSafeContentType(req.getParams().get(USE_CONTENT_TYPE)));
 
       rsp.add(RawResponseWriter.CONTENT, content);
@@ -342,7 +341,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase implements Permis
     }
 
     // Make sure the file exists, is readable and is not a hidden file
-    if (!zkClient.exists(adminFile, true)) {
+    if (!zkClient.exists(adminFile)) {
       log.error("Can not find: {}", adminFile);
       rsp.setException(
           new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find: " + adminFile));

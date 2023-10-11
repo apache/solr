@@ -290,11 +290,11 @@ public class ZkStateWriter {
               // When compressing state.json, we expect at least a 10:1 compression ratio.
               data = compressor.compressBytes(data, data.length / 10);
             }
-            if (reader.getZkClient().exists(path, true)) {
+            if (reader.getZkClient().exists(path)) {
               if (log.isDebugEnabled()) {
                 log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
               }
-              Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
+              Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion());
               DocCollection newCollection =
                   DocCollection.create(
                       name,
@@ -306,7 +306,7 @@ public class ZkStateWriter {
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
-              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
+              reader.getZkClient().create(path, data, CreateMode.PERSISTENT);
               DocCollection newCollection =
                   DocCollection.create(
                       name,

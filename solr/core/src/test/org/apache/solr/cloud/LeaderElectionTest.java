@@ -72,8 +72,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             .build();
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer, Thread>());
-    zkClient.makePath("/collections/collection1", true);
-    zkClient.makePath("/collections/collection2", true);
+    zkClient.makePath("/collections/collection1");
+    zkClient.makePath("/collections/collection2");
   }
 
   static class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
@@ -292,8 +292,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     while (iterCount-- > 0) {
       try {
         byte[] data =
-            zkClient.getData(
-                ZkStateReader.getShardLeadersPath(collection, slice), null, null, true);
+            zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         return leaderProps.getCoreUrl();
       } catch (NoNodeException | SessionExpiredException e) {

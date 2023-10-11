@@ -158,8 +158,7 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
     // path
     // without the appropriate ACL configuration. This issue is possibly related to HADOOP-11973
     try {
-      zkClient.makePath(
-          SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, CreateMode.PERSISTENT, true);
+      zkClient.makePath(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, CreateMode.PERSISTENT);
     } catch (KeeperException.NodeExistsException ex) {
       // ignore?
     }

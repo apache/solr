@@ -623,7 +623,7 @@ public class TestPackages extends SolrCloudTestCase {
             new MapWriterMap(
                 (Map<String, Object>)
                     Utils.fromJSON(
-                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat()))),
         Map.of(":packages:test_pkg[0]:version", "0.12", ":packages:test_pkg[0]:files[0]", FILE2));
 
     // post a new jar with a proper signature
@@ -647,7 +647,7 @@ public class TestPackages extends SolrCloudTestCase {
             new MapWriterMap(
                 (Map<String, Object>)
                     Utils.fromJSON(
-                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat()))),
         Map.of(":packages:test_pkg[1]:version", "0.13", ":packages:test_pkg[1]:files[0]", FILE3));
 
     // Now we will just delete one version
@@ -673,7 +673,7 @@ public class TestPackages extends SolrCloudTestCase {
             new MapWriterMap(
                 (Map<String, Object>)
                     Utils.fromJSON(
-                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+                        cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat()))),
         Map.of(":packages:test_pkg[0]:version", "0.13", ":packages:test_pkg[0]:files[0]", FILE3));
 
     // So far we have been verifying the details with  ZK directly

@@ -218,7 +218,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     String filePath = getConfigSetZkPath(getMutableId(configSet), file);
     byte[] data;
     try {
-      data = zkStateReader().getZkClient().getData(filePath, null, null, true);
+      data = zkStateReader().getZkClient().getData(filePath, null, null);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error reading file: " + filePath, SolrZkClient.checkInterrupted(e));
     }
@@ -273,7 +273,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // apply the update and reload the temp collection / re-index sample docs
     SolrZkClient zkClient = zkStateReader().getZkClient();
     try {
-      zkClient.setData(zkPath, data, true);
+      zkClient.setData(zkPath, data);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Failed to save data in ZK at path: " + zkPath, SolrZkClient.checkInterrupted(e));
@@ -402,8 +402,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     SolrZkClient zkClient = zkStateReader().getZkClient();
     String configId = mutableId;
     try {
-      if (!zkClient.exists(getConfigSetZkPath(mutableId, null), true)) {
-        if (zkClient.exists(getConfigSetZkPath(configSet, null), true)) {
+      if (!zkClient.exists(getConfigSetZkPath(mutableId, null))) {
+        if (zkClient.exists(getConfigSetZkPath(configSet, null))) {
           configId = configSet;
         } else {
           throw new SolrException(
@@ -1363,7 +1363,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   private boolean pathExistsInZk(final String zkPath) throws IOException {
     SolrZkClient zkClient = zkStateReader().getZkClient();
     try {
-      return zkClient.exists(zkPath, true);
+      return zkClient.exists(zkPath);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Failed to check if path exists: " + zkPath, SolrZkClient.checkInterrupted(e));

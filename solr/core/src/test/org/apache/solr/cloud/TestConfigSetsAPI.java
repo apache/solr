@@ -354,7 +354,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       throws Exception {
     byte[] oldPropsData = null;
     try {
-      oldPropsData = zkClient.getData(path, null, null, true);
+      oldPropsData = zkClient.getData(path, null, null);
     } catch (KeeperException.NoNodeException e) {
       // okay, properties just don't exist
     }
@@ -444,17 +444,15 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .build();
 
     // Create dummy config files in zookeeper
-    zkClient.makePath("/configs/myconf", true);
+    zkClient.makePath("/configs/myconf");
     zkClient.create(
         "/configs/myconf/firstDummyFile",
         "first dummy content".getBytes(UTF_8),
-        CreateMode.PERSISTENT,
-        true);
+        CreateMode.PERSISTENT);
     zkClient.create(
         "/configs/myconf/anotherDummyFile",
         "second dummy content".getBytes(UTF_8),
-        CreateMode.PERSISTENT,
-        true);
+        CreateMode.PERSISTENT);
 
     // Checking error when configuration name specified already exists
     ignoreException("already exists");
@@ -472,10 +470,10 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     assertEquals(400l, statusCode);
     assertTrue(
         "Expected file doesnt exist in zk. It's possibly overwritten",
-        zkClient.exists("/configs/myconf/firstDummyFile", true));
+        zkClient.exists("/configs/myconf/firstDummyFile"));
     assertTrue(
         "Expected file doesnt exist in zk. It's possibly overwritten",
-        zkClient.exists("/configs/myconf/anotherDummyFile", true));
+        zkClient.exists("/configs/myconf/anotherDummyFile"));
 
     zkClient.close();
     solrClient.close();
@@ -533,7 +531,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
       assertTrue(
           "managed-schema file should have been uploaded",
-          zkClient.exists("/configs/" + configSetName + "/managed-schema", true));
+          zkClient.exists("/configs/" + configSetName + "/managed-schema"));
     } finally {
       zkClient.close();
     }
@@ -635,20 +633,19 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               configPath + "/foo2/1",
               configPath + "/foo2/2");
       for (String f : extraFiles) {
-        zkClient.makePath(f, true);
+        zkClient.makePath(f);
       }
       assertEquals(
           0, uploadConfigSet(configsetName, configsetSuffix, null, true, false, v2, false));
       for (String f : extraFiles) {
         assertTrue(
-            "Expecting file " + f + " to exist in ConfigSet but it's gone",
-            zkClient.exists(f, true));
+            "Expecting file " + f + " to exist in ConfigSet but it's gone", zkClient.exists(f));
       }
       assertEquals(0, uploadConfigSet(configsetName, configsetSuffix, null, true, true, v2, false));
       for (String f : extraFiles) {
         assertFalse(
             "Expecting file " + f + " to be deleted from ConfigSet but it wasn't",
-            zkClient.exists(f, true));
+            zkClient.exists(f));
       }
       assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
     }
@@ -680,7 +677,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
         String f = configPath + "/test." + fileEnding;
         assertFalse(
             "Expecting file " + f + " to not exist, because it has a forbidden file type",
-            zkClient.exists(f, true));
+            zkClient.exists(f));
       }
     }
   }
@@ -989,8 +986,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertFalse(
           "New file should not exist, since the trust check did not succeed.",
           zkClient.exists(
-              "/configs/" + configsetName + configsetSuffix + "/test/upload/path/solrconfig.xml",
-              true));
+              "/configs/" + configsetName + configsetSuffix + "/test/upload/path/solrconfig.xml"));
       assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
       unIgnoreException("ConfigSet uploads do not allow cleanup=true when filePath is used.");
     }
@@ -1051,8 +1047,10 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       assertFalse(
           "New file should not exist, since the trust check did not succeed.",
           zkClient.exists(
-              "/configs/" + configsetName + configsetSuffix + "/test/different/path/solrconfig.xml",
-              true));
+              "/configs/"
+                  + configsetName
+                  + configsetSuffix
+                  + "/test/different/path/solrconfig.xml"));
       assertTrue(isTrusted(zkClient, configsetName, configsetSuffix));
       assertConfigsetFiles(configsetName, configsetSuffix, zkClient);
       unIgnoreException("Trying to make an unstrusted ConfigSet update on a trusted configSet");
@@ -1125,8 +1123,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
                     + configsetName
                     + configsetSuffix
                     + "/test/different/path/solrconfig."
-                    + fileType,
-                true));
+                    + fileType));
         unIgnoreException("is forbidden for use in configSets");
       }
     }
@@ -1309,8 +1306,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       List<String> children =
           zkClient.getChildren(
               String.format(Locale.ROOT, "/configs/%s%s", configsetName, configsetSuffixTrusted),
-              null,
-              true);
+              null);
       assertEquals("The configSet should only have one file uploaded.", 1, children.size());
       assertEquals("Incorrect file uploaded.", "solrconfig.xml", children.get(0));
 
@@ -1335,8 +1331,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       children =
           zkClient.getChildren(
               String.format(Locale.ROOT, "/configs/%s%s", configsetName, configsetSuffixUntrusted),
-              null,
-              true);
+              null);
       assertEquals("The configSet should only have one file uploaded.", 1, children.size());
       assertEquals("Incorrect file uploaded.", "solrconfig.xml", children.get(0));
     }
@@ -1346,7 +1341,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       throws KeeperException, InterruptedException {
     String configSetZkPath =
         String.format(Locale.ROOT, "/configs/%s%s", configsetName, configsetSuffix);
-    byte[] configSetNodeContent = zkClient.getData(configSetZkPath, null, null, true);
+    byte[] configSetNodeContent = zkClient.getData(configSetZkPath, null, null);
     ;
 
     @SuppressWarnings("unchecked")
@@ -1361,8 +1356,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     zkClient.getData(
         String.format(Locale.ROOT, "/configs/%s%s/%s", configsetName, configsetSuffix, configFile),
         null,
-        stat,
-        true);
+        stat);
     return stat.getVersion();
   }
 
@@ -1488,22 +1482,20 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       throws KeeperException, InterruptedException, IOException {
     assertTrue(
         "managed-schema.xml file should have been uploaded",
-        zkClient.exists("/configs/" + configSetName + suffix + "/managed-schema.xml", true));
+        zkClient.exists("/configs/" + configSetName + suffix + "/managed-schema.xml"));
     assertArrayEquals(
         "managed-schema.xml file contents on zookeeper are not exactly same as that of the file uploaded in config",
-        zkClient.getData(
-            "/configs/" + configSetName + suffix + "/managed-schema.xml", null, null, true),
+        zkClient.getData("/configs/" + configSetName + suffix + "/managed-schema.xml", null, null),
         readFile("solr/configsets/upload/" + configSetName + "/managed-schema.xml"));
 
     assertTrue(
         "solrconfig.xml file should have been uploaded",
-        zkClient.exists("/configs/" + configSetName + suffix + "/solrconfig.xml", true));
-    byte data[] = zkClient.getData("/configs/" + configSetName + suffix, null, null, true);
+        zkClient.exists("/configs/" + configSetName + suffix + "/solrconfig.xml"));
+    byte data[] = zkClient.getData("/configs/" + configSetName + suffix, null, null);
     // assertEquals("{\"trusted\": false}", new String(data, StandardCharsets.UTF_8));
     assertArrayEquals(
         "solrconfig.xml file contents on zookeeper are not exactly same as that of the file uploaded in config",
-        zkClient.getData(
-            "/configs/" + configSetName + suffix + "/solrconfig.xml", null, null, true),
+        zkClient.getData("/configs/" + configSetName + suffix + "/solrconfig.xml", null, null),
         readFile("solr/configsets/upload/" + configSetName + "/solrconfig.xml"));
   }
 

@@ -86,9 +86,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
         bytes[i] = (byte) random().nextInt(128);
       }
       try {
-        cluster
-            .getZkClient()
-            .create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
+        cluster.getZkClient().create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT);
         Utils.executeGET(
             client.getHttpClient(),
             basezk + "/configs/_default/testdata",
@@ -101,7 +99,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
               return null;
             });
       } finally {
-        cluster.getZkClient().delete("/configs/_default/testdata", -1, true);
+        cluster.getZkClient().delete("/configs/_default/testdata", -1);
       }
     }
   }

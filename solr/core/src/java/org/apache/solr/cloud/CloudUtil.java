@@ -140,10 +140,10 @@ public class CloudUtil {
   public static Map<String, byte[]> getTrustedKeys(SolrZkClient zk, String dir) {
     Map<String, byte[]> result = new HashMap<>();
     try {
-      List<String> children = zk.getChildren("/keys/" + dir, null, true);
+      List<String> children = zk.getChildren("/keys/" + dir, null);
       for (String key : children) {
         if (key.endsWith(".der"))
-          result.put(key, zk.getData("/keys/" + dir + "/" + key, null, null, true));
+          result.put(key, zk.getData("/keys/" + dir + "/" + key, null, null));
       }
     } catch (KeeperException.NoNodeException e) {
       log.info("Error fetching key names");

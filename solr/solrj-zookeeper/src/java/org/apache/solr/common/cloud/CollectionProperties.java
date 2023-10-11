@@ -67,8 +67,7 @@ public class CollectionProperties {
     try {
       return (Map<String, String>)
           Utils.fromJSON(
-              client.getData(
-                  ZkStateReader.getCollectionPropsPath(collection), null, new Stat(), true));
+              client.getData(ZkStateReader.getCollectionPropsPath(collection), null, new Stat()));
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();
     } catch (KeeperException | InterruptedException e) {
@@ -94,25 +93,25 @@ public class CollectionProperties {
     while (true) {
       Stat s = new Stat();
       try {
-        if (client.exists(znodePath, true)) {
+        if (client.exists(znodePath)) {
           Map<String, String> properties =
-              (Map<String, String>) Utils.fromJSON(client.getData(znodePath, null, s, true));
+              (Map<String, String>) Utils.fromJSON(client.getData(znodePath, null, s));
           if (propertyValue == null) {
             if (properties.remove(propertyName)
                 != null) { // Don't update ZK unless absolutely necessary.
-              client.setData(znodePath, Utils.toJSON(properties), s.getVersion(), true);
+              client.setData(znodePath, Utils.toJSON(properties), s.getVersion());
             }
           } else {
             if (!propertyValue.equals(
                 properties.put(
                     propertyName, propertyValue))) { // Don't update ZK unless absolutely necessary.
-              client.setData(znodePath, Utils.toJSON(properties), s.getVersion(), true);
+              client.setData(znodePath, Utils.toJSON(properties), s.getVersion());
             }
           }
         } else {
           Map<String, String> properties = new LinkedHashMap<>();
           properties.put(propertyName, propertyValue);
-          client.create(znodePath, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
+          client.create(znodePath, Utils.toJSON(properties), CreateMode.PERSISTENT);
         }
       } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {
         // race condition
