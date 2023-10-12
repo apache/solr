@@ -109,7 +109,7 @@ public class FieldCacheImpl implements FieldCache {
         }
       }
     }
-    return result.toArray(new CacheEntry[result.size()]);
+    return result.toArray(new CacheEntry[0]);
   }
 
   // per-segment fieldcaches don't purge until the shared core closes.

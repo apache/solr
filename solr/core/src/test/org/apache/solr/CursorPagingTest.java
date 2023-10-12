@@ -58,8 +58,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** solrconfig.xml file name, shared with other cursor related tests */
   public static final String TEST_SOLRCONFIG_NAME = "solrconfig-deeppaging.xml";
+
   /** schema.xml file name, shared with other cursor related tests */
   public static final String TEST_SCHEMAXML_NAME = "schema-sorts.xml";
+
   /** values from enumConfig.xml */
   public static final List<String> SEVERITY_ENUM_VALUES =
       List.of("Not Available", "Low", "Medium", "High", "Critical");

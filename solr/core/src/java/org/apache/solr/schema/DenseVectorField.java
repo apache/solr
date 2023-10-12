@@ -74,11 +74,13 @@ public class DenseVectorField extends FloatPointField {
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
   private String knnAlgorithm;
+
   /**
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
    * candidates are connected to the new node. See {@link HnswGraph} for more details.
    */
   private int hnswMaxConn;
+
   /**
    * This parameter is coupled with the hnsw algorithm. The number of candidate neighbors to track
    * while searching the graph for each newly inserted node. See {@link HnswGraph} for details.

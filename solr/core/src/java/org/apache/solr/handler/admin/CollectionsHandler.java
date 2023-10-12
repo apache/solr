@@ -127,6 +127,7 @@ import org.apache.solr.client.api.model.InstallShardDataRequestBody;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
+import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -170,7 +171,7 @@ import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
-import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
+import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
 import org.apache.solr.handler.admin.api.CreateCollection;
@@ -185,7 +186,7 @@ import org.apache.solr.handler.admin.api.DeleteCollectionSnapshot;
 import org.apache.solr.handler.admin.api.DeleteNode;
 import org.apache.solr.handler.admin.api.DeleteReplica;
 import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
-import org.apache.solr.handler.admin.api.DeleteShardAPI;
+import org.apache.solr.handler.admin.api.DeleteShard;
 import org.apache.solr.handler.admin.api.ForceLeader;
 import org.apache.solr.handler.admin.api.InstallShardData;
 import org.apache.solr.handler.admin.api.ListAliases;
@@ -193,7 +194,7 @@ import org.apache.solr.handler.admin.api.ListCollectionBackups;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
 import org.apache.solr.handler.admin.api.ListCollections;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
-import org.apache.solr.handler.admin.api.MigrateReplicasAPI;
+import org.apache.solr.handler.admin.api.MigrateReplicas;
 import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
 import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
@@ -718,7 +719,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETESHARD_OP(
         DELETESHARD,
         (req, rsp, h) -> {
-          DeleteShardAPI.invokeWithV1Params(h.coreContainer, req, rsp);
+          DeleteShard.invokeWithV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     FORCELEADER_OP(
@@ -786,14 +787,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final String propName = req.getParams().required().get(PROPERTY_NAME);
           final String val = req.getParams().get(PROPERTY_VALUE);
 
-          final CollectionPropertyAPI setCollPropApi =
-              new CollectionPropertyAPI(h.coreContainer, req, rsp);
+          final CollectionProperty setCollPropApi =
+              new CollectionProperty(h.coreContainer, req, rsp);
           final SolrJerseyResponse setPropRsp =
               (val != null)
                   ? setCollPropApi.createOrUpdateCollectionProperty(
-                      collection,
-                      propName,
-                      new CollectionPropertyAPI.UpdateCollectionPropertyRequestBody(val))
+                      collection, propName, new UpdateCollectionPropertyRequestBody(val))
                   : setCollPropApi.deleteCollectionProperty(collection, propName);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, setPropRsp);
           return null;
@@ -1373,7 +1372,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DeleteCollection.class,
         DeleteReplica.class,
         DeleteReplicaProperty.class,
-        DeleteShardAPI.class,
+        DeleteShard.class,
         ForceLeader.class,
         InstallShardData.class,
         ListCollections.class,
@@ -1381,11 +1380,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ReloadCollectionAPI.class,
         RenameCollection.class,
         ReplaceNode.class,
-        MigrateReplicasAPI.class,
+        MigrateReplicas.class,
         BalanceReplicas.class,
         RestoreCollectionAPI.class,
         SyncShard.class,
-        CollectionPropertyAPI.class,
+        CollectionProperty.class,
         DeleteNode.class,
         ListAliases.class,
         AliasProperty.class,

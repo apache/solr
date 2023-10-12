@@ -40,6 +40,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class RawResponseWriter implements BinaryQueryResponseWriter {
 
   public static final String CONTENT_TYPE = "application/vnd.apache.solr.raw";
+
   /**
    * The key that should be used to add a ContentStream to the SolrQueryResponse if you intend to
    * use this Writer.

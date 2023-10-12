@@ -2170,6 +2170,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD, ROUTER_START, ROUTER_INTERVAL);
     }
   }
+
   /**
    * Returns a SolrRequest to create a category routed alias.
    *

@@ -87,6 +87,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       int zkVersion) {
     this(name, slices, props, router, zkVersion, null);
   }
+
   /**
    * @param name The name of the collection
    * @param slices The logical shards of the collection. This is used directly and a copy is not
@@ -289,6 +290,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         new DocCollection(getName(), slices, propMap, router, znodeVersion, perReplicaStatesRef);
     return result;
   }
+
   /** Return collection name. */
   public String getName() {
     return name;

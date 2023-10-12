@@ -69,12 +69,6 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
     params = calls.get("rename");
     assertEquals("core1", params[0]);
     assertEquals("core2", params[1]);
-
-    TestCollectionAPIs.makeCall(
-        apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{unload:{deleteIndex : true}}");
-    params = calls.get("unload");
-    assertEquals("core1", params[0]);
-    assertEquals(Boolean.TRUE, params[1]);
   }
 
   @SuppressWarnings({"unchecked"})

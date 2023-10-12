@@ -255,6 +255,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       assertNotInDebug(response, key);
     }
   }
+
   /** Asserts that the specified debug result key does exist in the response and is non-null */
   private void assertInDebug(QueryResponse response, String key) {
     assertNotNull("debug map is null", response.getDebugMap());

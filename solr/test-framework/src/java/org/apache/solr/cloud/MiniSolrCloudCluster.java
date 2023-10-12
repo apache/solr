@@ -246,6 +246,7 @@ public class MiniSolrCloudCluster {
         false,
         formatZkServer);
   }
+
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
    * protected so as to discourage its usage. Ideally *new* functionality should use {@linkplain
@@ -1318,8 +1319,13 @@ public class MiniSolrCloudCluster {
    * mechanics.
    */
   private static void injectRandomRecordingFlag() {
-    boolean isRecording = LuceneTestCase.rarely();
-    TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+    try {
+      boolean isRecording = LuceneTestCase.rarely();
+      TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+    } catch (IllegalStateException e) {
+      // This can happen in benchmarks or other places that aren't in a randomized test
+      log.warn("Unable to inject random recording flag due to outside randomized context", e);
+    }
   }
 
   private static void resetRecordingFlag() {
