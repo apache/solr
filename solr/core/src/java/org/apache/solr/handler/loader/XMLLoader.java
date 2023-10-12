@@ -23,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -108,7 +109,7 @@ public class XMLLoader extends ContentStreamLoader {
       ContentStream stream,
       UpdateRequestProcessor processor)
       throws Exception {
-    final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+    final Charset charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
     XMLStreamReader parser = null;
 
     // Normal XML Loader
@@ -116,7 +117,7 @@ public class XMLLoader extends ContentStreamLoader {
       parser =
           (charset == null)
               ? inputFactory.createXMLStreamReader(is)
-              : inputFactory.createXMLStreamReader(is, charset);
+              : inputFactory.createXMLStreamReader(is, charset.name());
       this.processUpdate(req, processor, parser);
     } catch (XMLStreamException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
@@ -125,7 +126,7 @@ public class XMLLoader extends ContentStreamLoader {
     }
   }
 
-  private InputStream getStream(ContentStream cs, String charset) throws IOException {
+  private InputStream getStream(ContentStream cs, Charset charset) throws IOException {
     if (log.isTraceEnabled()) {
       try (InputStream is = cs.getStream()) {
         final byte[] body = is.readAllBytes();

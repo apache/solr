@@ -21,8 +21,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 
 import java.io.File;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +89,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
     // put a new mapping into the synonyms
     Map<String, List<String>> syns = new HashMap<>();
-    syns.put("happy", Arrays.asList("glad", "cheerful", "joyful"));
+    syns.put("happy", List.of("glad", "cheerful", "joyful"));
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     assertJQ(endpoint, "/synonymMappings/managedMap/happy==['cheerful','glad','joyful']");
@@ -107,8 +106,8 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     assertJQ(endpoint, "/synonymMappings/initArgs/ignoreCase==true");
 
     syns = new HashMap<>();
-    syns.put("sad", Arrays.asList("unhappy"));
-    syns.put("SAD", Arrays.asList("bummed"));
+    syns.put("sad", List.of("unhappy"));
+    syns.put("SAD", List.of("bummed"));
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     assertJQ(endpoint, "/synonymMappings/managedMap/sad==['unhappy']");
@@ -169,25 +168,28 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/response/result[@name='response'][@numFound='1']",
         "/response/result[@name='response']/doc/str[@name='id'][.='5150']");
     assertQ(
-        "/select?q=" + newFieldName + ":" + URLEncoder.encode(multiTermOrigin, "UTF-8"),
+        "/select?q="
+            + newFieldName
+            + ":"
+            + URLEncoder.encode(multiTermOrigin, StandardCharsets.UTF_8),
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='1']",
         "/response/result[@name='response']/doc/str[@name='id'][.='040']");
 
     // add a mapping that will expand a query for "mad" to match docs with "angry"
     syns = new HashMap<>();
-    syns.put("mad", Arrays.asList("angry"));
+    syns.put("mad", List.of("angry"));
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     assertJQ(endpoint, "/synonymMappings/managedMap/mad==['angry']");
 
     // add a mapping that will expand a query for "multi-term synonym" to match docs with "acronym"
     syns = new HashMap<>();
-    syns.put(multiTermSynonym, Arrays.asList(multiTermOrigin));
+    syns.put(multiTermSynonym, List.of(multiTermOrigin));
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     assertJQ(
-        endpoint + "/" + URLEncoder.encode(multiTermSynonym, "UTF-8"),
+        endpoint + "/" + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8),
         "/" + multiTermSynonym + "==['" + multiTermOrigin + "']");
 
     // should not match as the synonym mapping between mad and angry does not
@@ -203,7 +205,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/select?q="
             + newFieldName
             + ":("
-            + URLEncoder.encode(multiTermSynonym, "UTF-8")
+            + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8)
             + ")&sow=false",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='0']");
@@ -222,7 +224,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
         "/select?q="
             + newFieldName
             + ":("
-            + URLEncoder.encode(multiTermSynonym, "UTF-8")
+            + URLEncoder.encode(multiTermSynonym, StandardCharsets.UTF_8)
             + ")&sow=false",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
         "/response/result[@name='response'][@numFound='1']",
@@ -230,17 +232,16 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
     // test for SOLR-6015
     syns = new HashMap<>();
-    syns.put("mb", Arrays.asList("megabyte"));
+    syns.put("mb", List.of("megabyte"));
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
-    syns.put("MB", Arrays.asList("MiB", "Megabyte"));
+    syns.put("MB", List.of("MiB", "Megabyte"));
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     assertJQ(endpoint + "/MB", "/MB==['Megabyte','MiB','megabyte']");
 
     // test for SOLR-6878 - by default, expand is true, but only applies when sending in a list
-    List<String> m2mSyns = new ArrayList<>();
-    m2mSyns.addAll(Arrays.asList("funny", "entertaining", "whimsical", "jocular"));
+    List<String> m2mSyns = List.of("funny", "entertaining", "whimsical", "jocular");
     assertJPut(endpoint, toJSONString(m2mSyns), "/responseHeader/status==0");
 
     assertJQ(endpoint + "/funny", "/funny==['entertaining','funny','jocular','whimsical']");
@@ -265,7 +266,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     Map<String, List<String>> syns = new HashMap<>();
 
     // now put a synonym
-    syns.put("fröhlich", Arrays.asList("glücklick"));
+    syns.put("fröhlich", List.of("glücklick"));
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     // and check if it exists
@@ -292,7 +293,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     Map<String, List<String>> syns = new HashMap<>();
 
     // now put a synonym
-    syns.put("tiger", Arrays.asList("tiger|1.0"));
+    syns.put("tiger", List.of("tiger|1.0"));
     assertJPut(endpoint, toJSONString(syns), "/responseHeader/status==0");
 
     // and check if it exists
@@ -319,7 +320,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     Map<String, List<String>> syns = new HashMap<>();
 
     // now put a synonym
-    List<String> tigerSyonyms = Arrays.asList("tiger|1.0", "panthera tigris|0.9", "Shere Kan|0.8");
+    List<String> tigerSyonyms = List.of("tiger|1.0", "panthera tigris|0.9", "Shere Kan|0.8");
     syns.put("tiger", tigerSyonyms);
     String jsonTigerSynonyms = toJSONString(syns);
     assertJPut(endpoint, jsonTigerSynonyms, "/responseHeader/status==0");

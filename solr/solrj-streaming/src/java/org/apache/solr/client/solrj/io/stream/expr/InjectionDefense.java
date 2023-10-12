@@ -120,7 +120,7 @@ public class InjectionDefense {
 
   String buildExpression() {
     Matcher anyParam = ANY_PARAM.matcher(exprString);
-    StringBuffer buff = new StringBuffer();
+    StringBuilder buff = new StringBuilder();
     int pIdx = 0;
     while (anyParam.find()) {
       String found = anyParam.group();
@@ -155,12 +155,12 @@ public class InjectionDefense {
     exprString = STRING_PARAM.matcher(exprString).replaceAll("foo");
     exprString = NUMBER_PARAM.matcher(exprString).replaceAll("0");
     Matcher eMatcher = EXPRESSION_PARAM.matcher(exprString);
-    StringBuffer temp = new StringBuffer();
+    StringBuilder temp = new StringBuilder();
     while (eMatcher.find()) {
       Matcher counter = EXPRESSION_COUNT.matcher(eMatcher.group());
       eMatcher.appendReplacement(temp, "noop()");
       if (counter.find()) {
-        Integer subExprCount = Integer.valueOf(counter.group());
+        int subExprCount = Integer.parseInt(counter.group());
         if (subExprCount < 1) {
           throw new IllegalStateException(
               "Expression Param must contribute at least 1 expression!"

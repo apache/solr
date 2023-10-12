@@ -25,9 +25,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -44,7 +44,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
  */
 public abstract class ContentStreamBase implements ContentStream {
 
-  public static final String DEFAULT_CHARSET = StandardCharsets.UTF_8.name();
+  public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
   private static final String TEXT_CSV = "text/csv";
   public static final String TEXT_XML = "text/xml";
   public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
@@ -65,11 +65,11 @@ public abstract class ContentStreamBase implements ContentStream {
   // ---------------------------------------------------------------------
   // ---------------------------------------------------------------------
 
-  public static String getCharsetFromContentType(String contentType) {
+  public static Charset getCharsetFromContentType(String contentType) {
     if (contentType != null) {
       int idx = contentType.toLowerCase(Locale.ROOT).indexOf("charset=");
       if (idx > 0) {
-        return contentType.substring(idx + "charset=".length()).trim();
+        return Charset.forName(contentType.substring(idx + "charset=".length()).trim());
       }
     }
     return null;
@@ -207,12 +207,7 @@ public abstract class ContentStreamBase implements ContentStream {
       this.str = str;
       this.contentType = contentType;
       name = null;
-      try {
-        size = (long) str.getBytes(DEFAULT_CHARSET).length;
-      } catch (UnsupportedEncodingException e) {
-        // won't happen
-        throw new RuntimeException(e);
-      }
+      size = (long) str.getBytes(DEFAULT_CHARSET).length;
       sourceInfo = "string";
     }
 
@@ -248,7 +243,7 @@ public abstract class ContentStreamBase implements ContentStream {
     /** If an charset is defined (by the contentType) use that, otherwise use a StringReader */
     @Override
     public Reader getReader() throws IOException {
-      String charset = getCharsetFromContentType(contentType);
+      Charset charset = getCharsetFromContentType(contentType);
       return charset == null ? new StringReader(str) : new InputStreamReader(getStream(), charset);
     }
   }
@@ -259,7 +254,7 @@ public abstract class ContentStreamBase implements ContentStream {
    */
   @Override
   public Reader getReader() throws IOException {
-    String charset = getCharsetFromContentType(getContentType());
+    Charset charset = getCharsetFromContentType(getContentType());
     return charset == null
         ? new InputStreamReader(getStream(), DEFAULT_CHARSET)
         : new InputStreamReader(getStream(), charset);

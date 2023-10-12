@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.util.Locale;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -154,9 +155,9 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         metadata.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(stream.getSize()));
         metadata.add(ExtractingMetadataConstants.STREAM_CONTENT_TYPE, stream.getContentType());
         // HtmlParser and TXTParser regard Metadata.CONTENT_ENCODING in metadata
-        String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+        Charset charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
         if (charset != null) {
-          metadata.add(HttpHeaders.CONTENT_ENCODING, charset);
+          metadata.add(HttpHeaders.CONTENT_ENCODING, charset.name());
         }
 
         String xpathExpr = params.get(ExtractingParams.XPATH_EXPRESSION);

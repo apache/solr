@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -114,7 +115,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     // e.g. JSON vs. JSON lines or different CSV strategies ...
     ContentStreamBase.ByteArrayStream byteStream =
         new ContentStreamBase.ByteArrayStream(uploadedBytes, fileSource, contentType);
-    String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+    Charset charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
     if (charset == null) {
       charset = ContentStreamBase.DEFAULT_CHARSET;
     }
@@ -144,7 +145,11 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
   }
 
   protected List<SolrInputDocument> loadCsvDocs(
-      SolrParams params, String source, byte[] streamBytes, String charset, final int maxDocsToLoad)
+      SolrParams params,
+      String source,
+      byte[] streamBytes,
+      Charset charset,
+      final int maxDocsToLoad)
       throws IOException {
     ContentStream stream;
     if (params.get(SEPARATOR) == null) {
@@ -205,7 +210,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     } else if (json instanceof Map) {
       // single doc ... see if this is a json lines file
       boolean isJsonLines = false;
-      String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+      Charset charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       String jsonStr =
           new String(
               streamAsBytes(stream.getStream()),

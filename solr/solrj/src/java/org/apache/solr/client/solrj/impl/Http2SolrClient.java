@@ -967,7 +967,7 @@ public class Http2SolrClient extends SolrClient {
                 .collect(Collectors.joining(", "));
         String prefix =
             "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
-        String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
+        Charset exceptionEncoding = encoding != null ? Charset.forName(encoding) : FALLBACK_CHARSET;
         try {
           ByteArrayOutputStream body = new ByteArrayOutputStream();
           is.transferTo(body);

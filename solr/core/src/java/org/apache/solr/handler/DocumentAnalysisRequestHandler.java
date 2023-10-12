@@ -21,6 +21,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
@@ -147,11 +148,11 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     XMLStreamReader parser = null;
 
     try (InputStream is = stream.getStream()) {
-      final String charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+      final Charset charset = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
       parser =
           (charset == null)
               ? inputFactory.createXMLStreamReader(is)
-              : inputFactory.createXMLStreamReader(is, charset);
+              : inputFactory.createXMLStreamReader(is, charset.name());
 
       while (true) {
         int event = parser.next();

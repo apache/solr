@@ -19,6 +19,7 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -52,13 +53,13 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
   public static final String SOURCE_FILE_CHAR_ENCODING = "characterEncoding";
 
-  private String characterEncoding;
+  private Charset characterEncoding;
   public static final String WORD_FIELD_NAME = "word";
 
   @Override
   public String init(NamedList<?> config, SolrCore core) {
     super.init(config, core);
-    characterEncoding = (String) config.get(SOURCE_FILE_CHAR_ENCODING);
+    characterEncoding = Charset.forName((String) config.get(SOURCE_FILE_CHAR_ENCODING));
     return name;
   }
 
@@ -132,6 +133,6 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
   }
 
   public String getCharacterEncoding() {
-    return characterEncoding;
+    return characterEncoding.name();
   }
 }

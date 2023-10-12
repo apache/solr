@@ -25,6 +25,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -699,7 +700,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
     SolrClient client = cluster.getSolrClient();
-    byte[] binData = collectionName.getBytes("UTF-8");
+    byte[] binData = collectionName.getBytes(StandardCharsets.UTF_8);
     // index some docs
     for (int i = 0; i < 10; i++) {
       SolrInputDocument doc = new SolrInputDocument();

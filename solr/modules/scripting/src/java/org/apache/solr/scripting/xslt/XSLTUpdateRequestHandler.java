@@ -22,6 +22,7 @@ import static org.apache.solr.scripting.xslt.XSLTConstants.XSLT_CACHE_DEFAULT;
 import static org.apache.solr.scripting.xslt.XSLTConstants.XSLT_CACHE_PARAM;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.nio.charset.Charset;
 import java.util.Map;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -112,7 +113,10 @@ public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
         xmlr.setErrorHandler(xmllog);
         xmlr.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
         final InputSource isrc = new InputSource(is);
-        isrc.setEncoding(ContentStreamBase.getCharsetFromContentType(stream.getContentType()));
+        Charset encoding = ContentStreamBase.getCharsetFromContentType(stream.getContentType());
+        if (encoding != null) {
+          isrc.setEncoding(encoding.name());
+        }
         final SAXSource source = new SAXSource(xmlr, isrc);
         t.transform(source, result);
       } catch (TransformerException e) {

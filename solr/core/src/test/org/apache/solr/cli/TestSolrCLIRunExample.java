@@ -119,9 +119,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           String solrHomeDir = getArg("-s", args);
           int port = Integer.parseInt(getArg("-p", args));
           String solrxml =
-              new String(
-                  Files.readAllBytes(Paths.get(solrHomeDir).resolve("solr.xml")),
-                  Charset.defaultCharset());
+              Files.readString(
+                  Paths.get(solrHomeDir).resolve("solr.xml"), Charset.defaultCharset());
 
           JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
           try {
@@ -361,7 +360,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       // capture tool output to stdout
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+      PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8);
 
       RunExampleExecutor executor = new RunExampleExecutor(stdoutSim);
       closeables.add(executor);
@@ -385,14 +384,16 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
         assertEquals("it should be ok " + tool + " " + Arrays.toString(toolArgs), 0, status);
       } catch (Exception e) {
-        log.error(
-            "RunExampleTool failed due to: {}; stdout from tool prior to failure: {}",
-            e,
-            baos.toString(StandardCharsets.UTF_8.name())); // nowarn
+        if (log.isErrorEnabled()) {
+          log.error(
+              "RunExampleTool failed due to: {}; stdout from tool prior to failure: {}",
+              e,
+              baos.toString(StandardCharsets.UTF_8));
+        }
         throw e;
       }
 
-      String toolOutput = baos.toString(StandardCharsets.UTF_8.name());
+      String toolOutput = baos.toString(StandardCharsets.UTF_8);
 
       // dump all the output written by the SolrCLI commands to stdout
       // System.out.println("\n\n"+toolOutput+"\n\n");
@@ -482,7 +483,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // capture tool output to stdout
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8);
 
     RunExampleExecutor executor = new RunExampleExecutor(stdoutSim);
     closeables.add(executor);
@@ -495,11 +496,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "RunExampleTool failed due to: "
               + e
               + "; stdout from tool prior to failure: "
-              + baos.toString(StandardCharsets.UTF_8.name()));
+              + baos.toString(StandardCharsets.UTF_8));
       throw e;
     }
 
-    String toolOutput = baos.toString(StandardCharsets.UTF_8.name());
+    String toolOutput = baos.toString(StandardCharsets.UTF_8);
 
     // verify Solr is running on the expected port and verify the collection exists
     String solrUrl = "http://localhost:" + bindPort + "/solr";
@@ -590,12 +591,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "-serverDir", solrServerDir.getAbsolutePath(),
           "-exampleDir", solrExampleDir.getAbsolutePath(),
           "-p", String.valueOf(bindPort),
-          "-script", toExecute.getAbsolutePath().toString()
+          "-script", toExecute.getAbsolutePath()
         };
 
     // capture tool output to stdout
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+    PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8);
 
     DefaultExecutor executor = new DefaultExecutor();
 

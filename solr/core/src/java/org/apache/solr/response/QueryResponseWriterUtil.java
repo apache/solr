@@ -20,8 +20,8 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastWriter;
@@ -65,8 +65,7 @@ public final class QueryResponseWriterUtil {
     }
   }
 
-  private static Writer buildWriter(OutputStream outputStream, String charset)
-      throws UnsupportedEncodingException {
+  private static Writer buildWriter(OutputStream outputStream, Charset charset) {
     Writer writer =
         (charset == null)
             ? new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)

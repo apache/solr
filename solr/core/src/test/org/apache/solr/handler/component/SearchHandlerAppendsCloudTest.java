@@ -163,7 +163,7 @@ public class SearchHandlerAppendsCloudTest extends SolrCloudTestCase {
             final Map<String, Object> debugMap = queryResponse.getDebugMap();
             assertNotNull(debugMap);
             final List<?> filterQueriesList =
-                (List<?>) debugMap.getOrDefault("filter_queries", Collections.EMPTY_LIST);
+                (List<?>) debugMap.getOrDefault("filter_queries", Collections.emptyList());
             final Set<?> filterQueriesSet = new HashSet<>(filterQueriesList);
 
             contextInfo.append(",filterQueriesList=" + filterQueriesList.toString());

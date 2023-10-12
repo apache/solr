@@ -110,35 +110,35 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     // range with the same value
     assertQ(
-        req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[\"Not Available\" TO \"Not Available\"]"),
+        req("fl", FIELD_NAME, "q", FIELD_NAME + ":[\"Not Available\" TO \"Not Available\"]"),
         "//*[@numFound='5']");
 
     assertQ(
-        req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[\"Not Available\" TO Critical]"),
+        req("fl", FIELD_NAME, "q", FIELD_NAME + ":[\"Not Available\" TO Critical]"),
         "//*[@numFound='15']");
 
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[Low TO High]"), "//*[@numFound='9']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":[Low TO High]"), "//*[@numFound='9']");
 
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[High TO Low]"), "//*[@numFound='0']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":[High TO Low]"), "//*[@numFound='0']");
 
     // with int values
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[High TO 11]"), "//*[@numFound='3']");
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[3 TO Critical]"), "//*[@numFound='3']");
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[3 TO 11]"), "//*[@numFound='3']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":[High TO 11]"), "//*[@numFound='3']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":[3 TO Critical]"), "//*[@numFound='3']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":[3 TO 11]"), "//*[@numFound='3']");
 
     // exclusive
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":{Low TO High]"), "//*[@numFound='5']");
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[Low TO High}"), "//*[@numFound='7']");
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":{Low TO High}"), "//*[@numFound='3']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":{Low TO High]"), "//*[@numFound='5']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":[Low TO High}"), "//*[@numFound='7']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":{Low TO High}"), "//*[@numFound='3']");
 
     // all docs
-    assertQ(req("fl", "" + FIELD_NAME, "q", "*:*"), "//*[@numFound='17']");
+    assertQ(req("fl", FIELD_NAME, "q", "*:*"), "//*[@numFound='17']");
 
     // all docs with values
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":[* TO *]"), "//*[@numFound='15']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":[* TO *]"), "//*[@numFound='15']");
 
     // empty docs
-    assertQ(req("fl", "" + FIELD_NAME, "q", "-" + FIELD_NAME + ":[* TO *]"), "//*[@numFound='2']");
+    assertQ(req("fl", FIELD_NAME, "q", "-" + FIELD_NAME + ":[* TO *]"), "//*[@numFound='2']");
   }
 
   @Test
@@ -182,50 +182,36 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     // range with the same value
     assertQ(
-        req(
-            "fl",
-            "" + MV_FIELD_NAME,
-            "q",
-            MV_FIELD_NAME + ":[\"Not Available\" TO \"Not Available\"]"),
+        req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[\"Not Available\" TO \"Not Available\"]"),
         "//*[@numFound='4']");
 
     assertQ(
-        req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[\"Not Available\" TO Critical]"),
+        req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[\"Not Available\" TO Critical]"),
         "//*[@numFound='13']");
 
-    assertQ(
-        req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[Low TO High]"),
-        "//*[@numFound='10']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[Low TO High]"), "//*[@numFound='10']");
 
-    assertQ(
-        req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[High TO Low]"), "//*[@numFound='0']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[High TO Low]"), "//*[@numFound='0']");
 
     // with int values
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[High TO 11]"), "//*[@numFound='8']");
     assertQ(
-        req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[High TO 11]"), "//*[@numFound='8']");
-    assertQ(
-        req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[3 TO Critical]"),
-        "//*[@numFound='8']");
-    assertQ(req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[3 TO 11]"), "//*[@numFound='8']");
+        req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[3 TO Critical]"), "//*[@numFound='8']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[3 TO 11]"), "//*[@numFound='8']");
 
     // exclusive
-    assertQ(
-        req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":{Low TO High]"), "//*[@numFound='9']");
-    assertQ(
-        req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[Low TO High}"), "//*[@numFound='8']");
-    assertQ(
-        req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":{Low TO High}"), "//*[@numFound='7']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":{Low TO High]"), "//*[@numFound='9']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[Low TO High}"), "//*[@numFound='8']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":{Low TO High}"), "//*[@numFound='7']");
 
     // all docs
-    assertQ(req("fl", "" + MV_FIELD_NAME, "q", "*:*"), "//*[@numFound='15']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", "*:*"), "//*[@numFound='15']");
 
     // all docs with values
-    assertQ(req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[* TO *]"), "//*[@numFound='13']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":[* TO *]"), "//*[@numFound='13']");
 
     // empty docs
-    assertQ(
-        req("fl", "" + MV_FIELD_NAME, "q", "-" + MV_FIELD_NAME + ":[* TO *]"),
-        "//*[@numFound='2']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", "-" + MV_FIELD_NAME + ":[* TO *]"), "//*[@numFound='2']");
   }
 
   @Test
@@ -250,11 +236,11 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":bla"), "//*[@numFound='0']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":bla"), "//*[@numFound='0']");
 
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":7"), "//*[@numFound='0']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":7"), "//*[@numFound='0']");
 
-    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":\"-3\""), "//*[@numFound='0']");
+    assertQ(req("fl", FIELD_NAME, "q", FIELD_NAME + ":\"-3\""), "//*[@numFound='0']");
   }
 
   @Test
@@ -279,11 +265,11 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":bla"), "//*[@numFound='0']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":bla"), "//*[@numFound='0']");
 
-    assertQ(req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":7"), "//*[@numFound='0']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":7"), "//*[@numFound='0']");
 
-    assertQ(req("fl", "" + MV_FIELD_NAME, "q", MV_FIELD_NAME + ":\"-3\""), "//*[@numFound='0']");
+    assertQ(req("fl", MV_FIELD_NAME, "q", MV_FIELD_NAME + ":\"-3\""), "//*[@numFound='0']");
   }
 
   @Test
@@ -560,7 +546,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
           instanceof
           EnumField) { // Trie field TermInSetQuery non-XML chars serialize with "#XX;" syntax
         Pattern nonXMLCharPattern = Pattern.compile("[\u0000-\u0008\u000B\u000C\u000E-\u0019]");
-        StringBuffer munged = new StringBuffer();
+        StringBuilder munged = new StringBuilder();
         Matcher matcher = nonXMLCharPattern.matcher(setQuery);
         while (matcher.find()) {
           matcher.appendReplacement(munged, "#" + (int) matcher.group(0).charAt(0) + ";");
@@ -641,7 +627,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
       // Trie field TermInSetQuery non-XML chars serialize with "#XX;" syntax
       if (sf.getType() instanceof EnumField) {
         Pattern nonXMLCharPattern = Pattern.compile("[\u0000-\u0008\u000B\u000C\u000E-\u0019]");
-        StringBuffer munged = new StringBuffer();
+        StringBuilder munged = new StringBuilder();
         Matcher matcher = nonXMLCharPattern.matcher(setQuery);
         while (matcher.find()) {
           matcher.appendReplacement(munged, "#" + (int) matcher.group(0).charAt(0) + ";");
@@ -731,7 +717,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
             + "missing : true, exists : true, allBuckets : true, method : enum }}";
 
     assertQ(
-        req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":*", "json.facet", jsonFacetParam),
+        req("fl", FIELD_NAME, "q", FIELD_NAME + ":*", "json.facet", jsonFacetParam),
         "//*[@name='facets']/long/text()=6",
         "//*[@name='allBuckets']/long/text()=6",
         "//*[@name='buckets']/lst[long[@name='count'][.='2']][str[@name='val'][.='Critical']]",
@@ -741,15 +727,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
         "//*[@name='buckets']/lst[long[@name='count'][.='1']][str[@name='val'][.='High']]");
 
     try (SolrQueryRequest req =
-        req(
-            "fl",
-            "" + FIELD_NAME,
-            "q",
-            FIELD_NAME + ":*",
-            "json.facet",
-            jsonFacetParam,
-            "wt",
-            "json")) {
+        req("fl", FIELD_NAME, "q", FIELD_NAME + ":*", "json.facet", jsonFacetParam, "wt", "json")) {
       SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
       List<NamedList<?>> buckets =
           (List<NamedList<?>>)

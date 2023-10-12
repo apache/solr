@@ -53,7 +53,7 @@ public class StringsDSL {
     words = new ArrayList<>(1000);
     InputStream inputStream = StringsDSL.class.getClassLoader().getResourceAsStream("words.txt");
     try (Scanner scanner =
-        new Scanner(Objects.requireNonNull(inputStream), StandardCharsets.UTF_8.name())) {
+        new Scanner(Objects.requireNonNull(inputStream), StandardCharsets.UTF_8)) {
       while (scanner.hasNextLine()) {
         words.add(scanner.nextLine());
       }

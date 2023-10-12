@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
 
 import com.codahale.metrics.MetricRegistry;
@@ -112,7 +111,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       JettySolrRunner randomJetty = cluster.getRandomJetty(random());
       String baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
-      zkClient().setData("/security.json", STD_CONF.replace("'", "\"").getBytes(UTF_8), true);
+      zkClient()
+          .setData(
+              "/security.json", STD_CONF.replace("'", "\"").getBytes(StandardCharsets.UTF_8), true);
       verifySecurityStatus(
           cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
@@ -168,7 +169,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       HttpPost httpPost = new HttpPost(baseUrl + authcPrefix);
       setAuthorizationHeader(httpPost, makeBasicAuthHeader("solr", "SolrRocks"));
-      httpPost.setEntity(new ByteArrayEntity(command.getBytes(UTF_8)));
+      httpPost.setEntity(new ByteArrayEntity(command.getBytes(StandardCharsets.UTF_8)));
       httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
       HttpResponse r = cl.execute(httpPost);
@@ -300,7 +301,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       String[] toolArgs = new String[] {"status", "-solrUrl", baseUrl};
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8.name());
+      PrintStream stdoutSim = new PrintStream(baos, true, StandardCharsets.UTF_8);
       StatusTool tool = new StatusTool(stdoutSim);
       try {
         System.setProperty("basicauth", "harry:HarryIsUberCool");
@@ -311,10 +312,12 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         assertTrue(obj.containsKey("uptime"));
         assertTrue(obj.containsKey("memory"));
       } catch (Exception e) {
-        log.error(
-            "StatusTool failed due to: {}; stdout from tool prior to failure: {}",
-            e,
-            baos.toString(StandardCharsets.UTF_8.name())); // nowarn
+        if (log.isErrorEnabled()) {
+          log.error(
+              "StatusTool failed due to: {}; stdout from tool prior to failure: {}",
+              e,
+              baos.toString(StandardCharsets.UTF_8));
+        }
       }
 
       SolrParams params = new MapSolrParams(Collections.singletonMap("q", "*:*"));
@@ -446,7 +449,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     HttpResponse r;
     httpPost = new HttpPost(url);
     setAuthorizationHeader(httpPost, makeBasicAuthHeader(user, pwd));
-    httpPost.setEntity(new ByteArrayEntity(payload.getBytes(UTF_8)));
+    httpPost.setEntity(new ByteArrayEntity(payload.getBytes(StandardCharsets.UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
     String response = new String(r.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);

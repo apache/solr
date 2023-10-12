@@ -737,8 +737,8 @@ public class SolrRequestParsers {
       }
 
       // get query String from request body, using the charset given in content-type:
-      final String cs = ContentStreamBase.getCharsetFromContentType(req.getContentType());
-      final Charset charset = (cs == null) ? StandardCharsets.UTF_8 : Charset.forName(cs);
+      final Charset cs = ContentStreamBase.getCharsetFromContentType(req.getContentType());
+      final Charset charset = (cs == null) ? StandardCharsets.UTF_8 : cs;
 
       try {
         // Protect container owned streams from being closed by us, see SOLR-8933

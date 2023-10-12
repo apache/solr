@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -66,7 +68,9 @@ public class NoOpResponseParser extends ResponseParser {
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     try {
       StringWriter writer = new StringWriter();
-      new InputStreamReader(body, encoding == null ? "UTF-8" : encoding).transferTo(writer);
+      new InputStreamReader(
+              body, encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding))
+          .transferTo(writer);
       String output = writer.toString();
       NamedList<Object> list = new NamedList<>();
       list.add("response", output);

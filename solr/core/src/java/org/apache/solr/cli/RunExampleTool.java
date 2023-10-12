@@ -451,7 +451,7 @@ public class RunExampleTool extends ToolBase {
 
     echo("\nWelcome to the SolrCloud example!\n");
 
-    Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8.name()) : null;
+    Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8) : null;
     if (prompt) {
       echo(
           "This interactive session will help you launch a SolrCloud cluster on your local workstation.");

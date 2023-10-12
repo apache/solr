@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
@@ -39,11 +41,12 @@ public class JsonMapResponseParser extends ResponseParser {
   @SuppressWarnings({"unchecked"})
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     @SuppressWarnings({"rawtypes"})
-    Map map = null;
+    Map map;
     try (InputStreamReader reader =
-        new InputStreamReader(body, encoding == null ? "UTF-8" : encoding)) {
+        new InputStreamReader(
+            body, encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding))) {
       ObjectBuilder builder = new ObjectBuilder(new JSONParser(reader));
-      map = (Map) builder.getObject();
+      map = (Map<?, ?>) builder.getObject();
     } catch (IOException | JSONParser.ParseException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JSON parsing error", e);
     }

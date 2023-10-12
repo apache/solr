@@ -19,7 +19,7 @@ package org.apache.solr.common.util;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 public class BytesOutputStream extends OutputStream {
@@ -95,11 +95,7 @@ public class BytesOutputStream extends OutputStream {
   }
 
   public String toString(String charset) {
-    try {
-      return new String(buf, 0, sz, charset);
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalArgumentException(e);
-    }
+    return new String(buf, 0, sz, Charset.forName(charset));
   }
 
   private void expandBuf(int minCapacity) {

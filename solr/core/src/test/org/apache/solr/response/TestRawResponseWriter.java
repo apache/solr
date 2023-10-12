@@ -111,7 +111,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
       // we should have UTF-8 Bytes if we use an OutputStream
       ByteArrayOutputStream bout = new ByteArrayOutputStream();
       writer.write(bout, req(), rsp);
-      assertEquals(data, bout.toString(StandardCharsets.UTF_8.toString()));
+      assertEquals(data, bout.toString(StandardCharsets.UTF_8));
     }
   }
 
@@ -144,14 +144,14 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     assertEquals(xml, xmlSout.toString());
     ByteArrayOutputStream xmlBout = new ByteArrayOutputStream();
     writerXmlBase.write(xmlBout, req(), rsp);
-    assertEquals(xml, xmlBout.toString(StandardCharsets.UTF_8.toString()));
+    assertEquals(xml, xmlBout.toString(StandardCharsets.UTF_8));
     //
     StringWriter noneSout = new StringWriter();
     writerNoBase.write(noneSout, req(), rsp);
     assertEquals(xml, noneSout.toString());
     ByteArrayOutputStream noneBout = new ByteArrayOutputStream();
     writerNoBase.write(noneBout, req(), rsp);
-    assertEquals(xml, noneBout.toString(StandardCharsets.UTF_8.toString()));
+    assertEquals(xml, noneBout.toString(StandardCharsets.UTF_8));
 
     // json
     String json = "{\n" + "  \"content\":\"test\",\n" + "  \"foo\":\"bar\"}\n";

@@ -19,10 +19,10 @@ package org.apache.solr.rest;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -253,11 +253,7 @@ public class RestManager {
     /** Determines the ManagedResource resourceId from the request path. */
     public static String resolveResourceId(final String path) {
       String resourceId;
-      try {
-        resourceId = URLDecoder.decode(path, "UTF-8");
-      } catch (UnsupportedEncodingException e) {
-        throw new RuntimeException(e); // shouldn't happen
-      }
+      resourceId = URLDecoder.decode(path, StandardCharsets.UTF_8);
 
       int at = resourceId.indexOf("/schema");
       if (at == -1) {
