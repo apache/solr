@@ -1458,7 +1458,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       return;
     }
 
-    if (!zkController.getZkClient().getConnectionManager().isLikelyExpired()) {
+    if (zkController.isConnected()) {
       return;
     }
 

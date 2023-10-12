@@ -24,13 +24,13 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.Watcher;
 
 /** This interface represents a distributed state repository. */
@@ -85,7 +85,7 @@ public interface DistribStateManager extends SolrCloseable {
       throws BadVersionException, NoSuchElementException, IOException, KeeperException,
           InterruptedException;
 
-  List<OpResult> multi(final Iterable<Op> ops)
+  List<CuratorTransactionResult> multi(final List<SolrZkClient.CuratorOpBuilder> ops)
       throws BadVersionException, NoSuchElementException, AlreadyExistsException, IOException,
           KeeperException, InterruptedException;
 

@@ -311,8 +311,8 @@ public class DistributedApiAsyncTracker {
       this.rootNodePath = rootNodePath;
 
       try {
-        if (!zkClient.exists(rootNodePath, true)) {
-          zkClient.makePath(rootNodePath, new byte[0], CreateMode.PERSISTENT, true);
+        if (!zkClient.exists(rootNodePath)) {
+          zkClient.makePath(rootNodePath, new byte[0], CreateMode.PERSISTENT);
         }
       } catch (KeeperException.NodeExistsException nee) {
         // Some other thread (on this or another JVM) beat us to create the node, that's ok, the
@@ -329,27 +329,25 @@ public class DistributedApiAsyncTracker {
       zkClient.create(
           getPath(asyncId),
           State.SUBMITTED.shorthand.getBytes(StandardCharsets.UTF_8),
-          CreateMode.EPHEMERAL,
-          true);
+          CreateMode.EPHEMERAL);
     }
 
     void setTaskRunning(String asyncId) throws KeeperException, InterruptedException {
-      zkClient.setData(
-          getPath(asyncId), State.RUNNING.shorthand.getBytes(StandardCharsets.UTF_8), true);
+      zkClient.setData(getPath(asyncId), State.RUNNING.shorthand.getBytes(StandardCharsets.UTF_8));
     }
 
     void deleteInFlightTask(String asyncId) throws KeeperException, InterruptedException {
-      zkClient.delete(getPath(asyncId), -1, true);
+      zkClient.delete(getPath(asyncId), -1);
     }
 
     State getInFlightState(String asyncId) throws KeeperException, InterruptedException {
-      if (!zkClient.exists(getPath(asyncId), true)) {
+      if (!zkClient.exists(getPath(asyncId))) {
         return State.NOT_FOUND;
       }
 
       final byte[] bytes;
       try {
-        bytes = zkClient.getData(getPath(asyncId), null, null, true);
+        bytes = zkClient.getData(getPath(asyncId), null, null);
       } catch (KeeperException.NoNodeException nne) {
         // Unlikely race, but not impossible...
         if (log.isInfoEnabled()) {

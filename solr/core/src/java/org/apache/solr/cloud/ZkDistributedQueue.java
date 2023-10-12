@@ -32,16 +32,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.SolrZkClient.IsClosed;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
@@ -246,24 +246,19 @@ public class ZkDistributedQueue implements DistributedQueue {
 
   public void remove(Collection<String> paths) throws KeeperException, InterruptedException {
     if (paths.isEmpty()) return;
-    List<Op> ops = new ArrayList<>();
+    List<SolrZkClient.CuratorOpBuilder> ops = new ArrayList<>();
     for (String path : paths) {
-      ops.add(Op.delete(dir + "/" + path, -1));
+      ops.add(op -> op.delete().withVersion(-1).forPath(dir + "/" + path));
     }
     for (int from = 0; from < ops.size(); from += 1000) {
       int to = Math.min(from + 1000, ops.size());
       if (from < to) {
-        try {
-          zookeeper.multi(ops.subList(from, to), true);
-        } catch (KeeperException.NoNodeException e) {
-          // don't know which nodes are not exist, so try to delete one by one node
-          for (int j = from; j < to; j++) {
+        Collection<CuratorTransactionResult> results = zookeeper.multi(ops.subList(from, to));
+        for (CuratorTransactionResult result : results) {
+          if (result.getError() != 0) {
             try {
-              zookeeper.delete(ops.get(j).getPath(), -1, true);
-            } catch (KeeperException.NoNodeException e2) {
-              if (log.isDebugEnabled()) {
-                log.debug("Can not remove node which is not exist : {}", ops.get(j).getPath());
-              }
+              zookeeper.delete(result.getForPath(), -1);
+            } catch (KeeperException.NoNodeException ignored) {
             }
           }
         }
@@ -319,7 +314,7 @@ public class ZkDistributedQueue implements DistributedQueue {
           if (maxQueueSize > 0) {
             if (offerPermits.get() <= 0 || offerPermits.getAndDecrement() <= 0) {
               // If a max queue size is set, check it before creating a new queue item.
-              Stat stat = zookeeper.exists(dir, null, true);
+              Stat stat = zookeeper.exists(dir, null);
               if (stat == null) {
                 // jump to the code below, which tries to create dir if it doesn't exist
                 throw new KeeperException.NoNodeException();
@@ -337,12 +332,12 @@ public class ZkDistributedQueue implements DistributedQueue {
 
           // Explicitly set isDirty here so that synchronous same-thread calls behave as expected.
           // This will get set again when the watcher actually fires, but that's ok.
-          zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL, true);
+          zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL);
           isDirty = true;
           return;
         } catch (KeeperException.NoNodeException e) {
           try {
-            zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT, true);
+            zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT);
           } catch (KeeperException.NodeExistsException ne) {
             // someone created it
           }
@@ -429,7 +424,7 @@ public class ZkDistributedQueue implements DistributedQueue {
       try {
         TreeSet<String> orderedChildren = new TreeSet<>();
 
-        List<String> childNames = zookeeper.getChildren(dir, watcher, true);
+        List<String> childNames = zookeeper.getChildren(dir, watcher);
         stats.setQueueLength(childNames.size());
         for (String childName : childNames) {
           // Check format
@@ -441,7 +436,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         }
         return orderedChildren;
       } catch (KeeperException.NoNodeException e) {
-        zookeeper.makePath(dir, false, true);
+        zookeeper.makePath(dir, false);
         // go back to the loop and try again
       }
     }
@@ -504,7 +499,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         break;
       }
       try {
-        byte[] data = zookeeper.getData(dir + "/" + child, null, null, true);
+        byte[] data = zookeeper.getData(dir + "/" + child, null, null);
         result.add(new Pair<>(child, data));
       } catch (KeeperException.NoNodeException e) {
         // Another client deleted the node first, remove the in-memory and continue.
@@ -531,7 +526,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         return null;
       }
       try {
-        return zookeeper.getData(dir + "/" + firstChild, null, null, true);
+        return zookeeper.getData(dir + "/" + firstChild, null, null);
       } catch (KeeperException.NoNodeException e) {
         // Another client deleted the node first, remove the in-memory and retry.
         updateLock.lockInterruptibly();
@@ -554,8 +549,8 @@ public class ZkDistributedQueue implements DistributedQueue {
       }
       try {
         String path = dir + "/" + firstChild;
-        byte[] result = zookeeper.getData(path, null, null, true);
-        zookeeper.delete(path, -1, true);
+        byte[] result = zookeeper.getData(path, null, null);
+        zookeeper.delete(path, -1);
         stats.setQueueLength(knownChildren.size());
         return result;
       } catch (KeeperException.NoNodeException e) {

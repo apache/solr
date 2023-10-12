@@ -119,17 +119,15 @@ public class RepositoryManager {
     @SuppressWarnings({"unchecked"})
     List<PackageRepository> repos = getMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(repoName, uri));
-    if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {
+    if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH) == false) {
       packageManager.zkClient.create(
           PackageUtils.REPOSITORIES_ZK_PATH,
           getMapper().writeValueAsString(repos).getBytes("UTF-8"),
-          CreateMode.PERSISTENT,
-          true);
+          CreateMode.PERSISTENT);
     } else {
       packageManager.zkClient.setData(
           PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes("UTF-8"),
-          true);
+          getMapper().writeValueAsString(repos).getBytes("UTF-8"));
     }
 
     try (InputStream is = new URL(uri + "/publickey.der").openStream()) {
@@ -153,9 +151,8 @@ public class RepositoryManager {
 
   private String getRepositoriesJson(SolrZkClient zkClient)
       throws UnsupportedEncodingException, KeeperException, InterruptedException {
-    if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true)) {
-      return new String(
-          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true), "UTF-8");
+    if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH)) {
+      return new String(zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null), "UTF-8");
     }
     return "[]";
   }

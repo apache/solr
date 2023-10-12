@@ -337,18 +337,14 @@ public class DistribPackageStore implements PackageStore {
   private void distribute(FileInfo info) {
     try {
       String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
-      coreContainer
-          .getZkController()
-          .getZkClient()
-          .makePath(ZK_PACKAGESTORE + dirName, false, true);
+      coreContainer.getZkController().getZkClient().makePath(ZK_PACKAGESTORE + dirName, false);
       coreContainer
           .getZkController()
           .getZkClient()
           .create(
               ZK_PACKAGESTORE + info.path,
               info.getDetails().getMetaData().sha512.getBytes(UTF_8),
-              CreateMode.PERSISTENT,
-              true);
+              CreateMode.PERSISTENT);
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
     }
@@ -512,7 +508,7 @@ public class DistribPackageStore implements PackageStore {
   private void checkInZk(String path) {
     try {
       // fail if file exists
-      if (coreContainer.getZkController().getZkClient().exists(ZK_PACKAGESTORE + path, true)) {
+      if (coreContainer.getZkController().getZkClient().exists(ZK_PACKAGESTORE + path)) {
         throw new SolrException(BAD_REQUEST, "The path exist ZK, delete and retry");
       }
 
@@ -536,11 +532,7 @@ public class DistribPackageStore implements PackageStore {
       @SuppressWarnings({"rawtypes"})
       List l = null;
       try {
-        l =
-            coreContainer
-                .getZkController()
-                .getZkClient()
-                .getChildren(ZK_PACKAGESTORE + path, null, true);
+        l = coreContainer.getZkController().getZkClient().getChildren(ZK_PACKAGESTORE + path, null);
       } catch (KeeperException.NoNodeException e) {
         // does not matter
       }
@@ -647,7 +639,7 @@ public class DistribPackageStore implements PackageStore {
 
   public static void deleteZKFileEntry(SolrZkClient client, String path) {
     try {
-      client.delete(ZK_PACKAGESTORE + path, -1, true);
+      client.delete(ZK_PACKAGESTORE + path, -1);
     } catch (KeeperException | InterruptedException e) {
       log.error("", e);
     }

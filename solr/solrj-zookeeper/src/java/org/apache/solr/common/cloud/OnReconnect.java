@@ -16,7 +16,10 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.apache.zookeeper.KeeperException.SessionExpiredException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 
 /**
  * Implementations are expected to implement a correct hashCode and equals method needed to uniquely
@@ -25,6 +28,19 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
  * org.apache.solr.cloud.ZkController#removeOnReconnectListener(OnReconnect) when it no longer needs
  * to be notified of ZK reconnection events.
  */
-public interface OnReconnect {
-  void command() throws SessionExpiredException;
+public interface OnReconnect extends ConnectionStateListener {
+  void command();
+
+  AtomicBoolean sessionEnded = new AtomicBoolean(false);
+
+  @Override
+  default void stateChanged(CuratorFramework client, ConnectionState newState) {
+    if (ConnectionState.RECONNECTED.equals(newState)) {
+      if (sessionEnded.getAndSet(false)) {
+        command();
+      }
+    } else if (ConnectionState.LOST == newState) {
+      sessionEnded.set(true);
+    }
+  }
 }

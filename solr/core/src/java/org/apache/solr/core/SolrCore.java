@@ -3473,7 +3473,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private static boolean checkStale(SolrZkClient zkClient, String zkPath, int currentVersion) {
     if (zkPath == null) return false;
     try {
-      Stat stat = zkClient.exists(zkPath, null, true);
+      Stat stat = zkClient.exists(zkPath, null);
       if (stat == null) {
         if (currentVersion > -1) return true;
         return false;

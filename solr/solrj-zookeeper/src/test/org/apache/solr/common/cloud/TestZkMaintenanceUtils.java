@@ -81,18 +81,17 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
       String data2 = "myStringData2";
       String longData = "myLongStringData";
       // create zk nodes that have the same path length
-      zkClient.create("/myPath", null, CreateMode.PERSISTENT, true);
-      zkClient.create(path, null, CreateMode.PERSISTENT, true);
+      zkClient.create("/myPath", null, CreateMode.PERSISTENT);
+      zkClient.create(path, null, CreateMode.PERSISTENT);
       zkClient.create(
-          path + "/file1.txt", data1.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
-      zkClient.create(path + "/nothing.txt", null, CreateMode.PERSISTENT, true);
+          path + "/file1.txt", data1.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
+      zkClient.create(path + "/nothing.txt", null, CreateMode.PERSISTENT);
       zkClient.create(
-          path + "/file2.txt", data2.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true);
+          path + "/file2.txt", data2.getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
       zkClient.create(
           path + "/some_longer_file2.txt",
           longData.getBytes(StandardCharsets.UTF_8),
-          CreateMode.PERSISTENT,
-          true);
+          CreateMode.PERSISTENT);
 
       /* RUN */
       // delete all nodes that contain "file"
@@ -138,9 +137,9 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
             .withUrl(zkServer.getZkHost())
             .withTimeout(10000, TimeUnit.MILLISECONDS)
             .build()) {
-      zkClient.makePath("/testTraverseZkTree/1/1", true, true);
-      zkClient.makePath("/testTraverseZkTree/1/2", false, true);
-      zkClient.makePath("/testTraverseZkTree/2", false, true);
+      zkClient.makePath("/testTraverseZkTree/1/1", true);
+      zkClient.makePath("/testTraverseZkTree/1/2", false);
+      zkClient.makePath("/testTraverseZkTree/2", false);
       assertEquals(
           Arrays.asList(
               "/testTraverseZkTree",
@@ -172,7 +171,7 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
             .build()) {
       byte[] oneByte = new byte[1];
       oneByte[0] = 0x30;
-      zkClient.makePath("/test1byte/one", oneByte, true);
+      zkClient.makePath("/test1byte/one", oneByte);
 
       Path tmpDest = Paths.get(createTempDir().toFile().getAbsolutePath(), "MustBeOne");
       ZkMaintenanceUtils.downloadFromZK(zkClient, "/test1byte/one", tmpDest);

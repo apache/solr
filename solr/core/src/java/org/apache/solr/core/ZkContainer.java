@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
@@ -223,7 +222,7 @@ public class ZkContainer {
               log.error("Interrupted", e);
             } catch (KeeperException e) {
               log.error("KeeperException registering core {}", core.getName(), e);
-            } catch (AlreadyClosedException ignore) {
+            } catch (IllegalStateException ignore) {
 
             } catch (Exception e) {
               log.error("Exception registering core {}", core.getName(), e);

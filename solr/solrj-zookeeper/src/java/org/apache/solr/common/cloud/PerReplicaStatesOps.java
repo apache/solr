@@ -30,7 +30,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,12 +59,12 @@ public class PerReplicaStatesOps {
       assert CommonTestInjection.injectBreakpoint(
           PerReplicaStatesOps.class.getName() + "/beforePrsFetch");
       if (current != null) {
-        Stat stat = zkClient.exists(current.path, null, true);
+        Stat stat = zkClient.exists(current.path, null);
         if (stat == null) return new PerReplicaStates(path, 0, Collections.emptyList());
         if (current.cversion == stat.getCversion()) return current; // not modifiedZkStateReaderTest
       }
       Stat stat = new Stat();
-      List<String> children = zkClient.getChildren(path, null, stat, true);
+      List<String> children = zkClient.getChildren(path, null, stat);
       return new PerReplicaStates(path, stat.getCversion(), Collections.unmodifiableList(children));
     } catch (KeeperException.NoNodeException e) {
       throw new PrsZkNodeNotFoundException(
@@ -104,20 +103,19 @@ public class PerReplicaStatesOps {
       log.debug("Per-replica state being persisted for : '{}', ops: {}", znode, operations);
     }
 
-    List<Op> ops = new ArrayList<>(operations.size());
+    List<SolrZkClient.CuratorOpBuilder> ops = new ArrayList<>(operations.size());
     for (PerReplicaStates.Operation op : operations) {
       // the state of the replica is being updated
       String path = znode + "/" + op.state.asString;
       ops.add(
           op.typ == PerReplicaStates.Operation.Type.ADD
-              ? Op.create(
-                  path, null, zkClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT)
-              : Op.delete(path, -1));
+              ? zkOp -> zkOp.create().withMode(CreateMode.PERSISTENT).forPath(path, null)
+              : zkOp -> zkOp.delete().withVersion(-1).forPath(path));
     }
     try {
-      zkClient.multi(ops, true);
+      zkClient.multi(ops);
     } catch (KeeperException e) {
-      log.error("Multi-op exception: {}", zkClient.getChildren(znode, null, true));
+      log.error("Multi-op exception: {}", zkClient.getChildren(znode, null));
       throw e;
     }
   }

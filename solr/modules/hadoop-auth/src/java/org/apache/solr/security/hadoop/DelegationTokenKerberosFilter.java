@@ -20,23 +20,15 @@ import static org.apache.hadoop.security.token.delegation.ZKDelegationTokenSecre
 import static org.apache.hadoop.security.token.delegation.ZKDelegationTokenSecretManager.ZK_DTSM_ZNODE_WORKING_PATH_DEAFULT;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.curator.RetryPolicy;
-import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.api.ACLProvider;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
@@ -44,13 +36,8 @@ import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthentica
 import org.apache.hadoop.security.token.delegation.web.HttpUserGroupInformation;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.ACL;
 
 /**
  * This is an authentication filter based on Hadoop's {@link DelegationTokenAuthenticationFilter}.
@@ -58,9 +45,6 @@ import org.apache.zookeeper.data.ACL;
  * reuse the authentication of an end-user or another application.
  */
 public class DelegationTokenKerberosFilter extends DelegationTokenAuthenticationFilter {
-  private ExecutorService curatorSafeServiceExecutor;
-  private CuratorFramework curatorFramework;
-
   @Override
   public void init(FilterConfig conf) throws ServletException {
     if (conf != null && "zookeeper".equals(conf.getInitParameter("signer.secret.provider"))) {
@@ -130,19 +114,6 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
   }
 
   @Override
-  public void destroy() {
-    super.destroy();
-    if (curatorFramework != null) {
-      curatorFramework.close();
-      curatorFramework = null;
-    }
-    if (curatorSafeServiceExecutor != null) {
-      ExecutorUtil.shutdownNowAndAwaitTermination(curatorSafeServiceExecutor);
-      curatorSafeServiceExecutor = null;
-    }
-  }
-
-  @Override
   protected void initializeAuthHandler(String authHandlerClassName, FilterConfig filterConfig)
       throws ServletException {
     // set the internal authentication handler in order to record whether the request should
@@ -183,108 +154,19 @@ public class DelegationTokenKerberosFilter extends DelegationTokenAuthentication
 
   protected CuratorFramework getCuratorClient(SolrZkClient zkClient)
       throws InterruptedException, KeeperException {
-    // should we try to build a RetryPolicy off of the ZkController?
-    RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-    if (zkClient == null) {
-      throw new IllegalArgumentException("zkClient required");
-    }
-    String zkHost = zkClient.getZkServerAddress();
-    String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf('/')) : "";
-    String zkNamespace = zkChroot + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH;
-    zkNamespace = zkNamespace.startsWith("/") ? zkNamespace.substring(1) : zkNamespace;
-    String zkConnectionString =
-        zkHost.contains("/") ? zkHost.substring(0, zkHost.indexOf('/')) : zkHost;
-    SolrZkToCuratorCredentialsACLs curatorToSolrZk = new SolrZkToCuratorCredentialsACLs(zkClient);
-    final int connectionTimeoutMs = 30000; // this value is currently hard coded, see SOLR-7561.
-
     // Create /security znode upfront. Without this, the curator framework creates this directory
     // path
     // without the appropriate ACL configuration. This issue is possibly related to HADOOP-11973
     try {
-      zkClient.makePath(
-          SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, CreateMode.PERSISTENT, true);
-    } catch (KeeperException.NodeExistsException ignore) {
+      zkClient.makePath(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH, CreateMode.PERSISTENT);
+    } catch (KeeperException.NodeExistsException ex) {
+      // ignore?
     }
 
-    curatorSafeServiceExecutor =
-        ExecutorUtil.newMDCAwareSingleThreadExecutor(
-            new SolrNamedThreadFactory("delegationtokenkerberosfilter-curator-safeService"));
-    curatorFramework =
-        CuratorFrameworkFactory.builder()
-            .namespace(zkNamespace)
-            .connectString(zkConnectionString)
-            .retryPolicy(retryPolicy)
-            .aclProvider(curatorToSolrZk.getACLProvider())
-            .authorization(curatorToSolrZk.getAuthInfos())
-            .sessionTimeoutMs(zkClient.getZkClientTimeout())
-            .connectionTimeoutMs(connectionTimeoutMs)
-            .runSafeService(curatorSafeServiceExecutor)
-            .build();
-    curatorFramework.start();
+    // Note - Curator complains if the namespace starts with /
+    String namespace = zkClient.getAbsolutePath(SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH);
+    namespace = namespace.startsWith("/") ? namespace.substring(1) : namespace;
 
-    return curatorFramework;
-  }
-
-  /** Convert Solr Zk Credentials/ACLs to Curator versions */
-  protected static class SolrZkToCuratorCredentialsACLs {
-    private final String zkChroot;
-    private final ACLProvider aclProvider;
-    private final List<AuthInfo> authInfos;
-
-    public SolrZkToCuratorCredentialsACLs(SolrZkClient zkClient) {
-      this.aclProvider = createACLProvider(zkClient);
-      this.authInfos = createAuthInfo(zkClient);
-      String zkHost = zkClient.getZkServerAddress();
-      this.zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf('/')) : null;
-    }
-
-    public ACLProvider getACLProvider() {
-      return aclProvider;
-    }
-
-    public List<AuthInfo> getAuthInfos() {
-      return authInfos;
-    }
-
-    private ACLProvider createACLProvider(SolrZkClient zkClient) {
-      final ZkACLProvider zkACLProvider = zkClient.getZkACLProvider();
-      return new ACLProvider() {
-        @Override
-        public List<ACL> getDefaultAcl() {
-          return zkACLProvider.getACLsToAdd(null);
-        }
-
-        @Override
-        public List<ACL> getAclForPath(String path) {
-          List<ACL> acls = null;
-
-          // The logic in SecurityAwareZkACLProvider does not work when
-          // the Solr zkPath is chrooted (e.g. /solr instead of /). This
-          // due to the fact that the getACLsToAdd(..) callback provides
-          // an absolute path (instead of relative path to the chroot) and
-          // the string comparison in SecurityAwareZkACLProvider fails.
-          if (zkACLProvider instanceof SecurityAwareZkACLProvider && zkChroot != null) {
-            acls = zkACLProvider.getACLsToAdd(path.replace(zkChroot, ""));
-          } else {
-            acls = zkACLProvider.getACLsToAdd(path);
-          }
-
-          return acls;
-        }
-      };
-    }
-
-    private List<AuthInfo> createAuthInfo(SolrZkClient zkClient) {
-      List<AuthInfo> ret = new ArrayList<>();
-
-      // In theory the credentials to add could change here if zookeeper hasn't been initialized
-      ZkCredentialsProvider credentialsProvider =
-          zkClient.getZkClientConnectionStrategy().getZkCredentialsToAddAutomatically();
-      for (ZkCredentialsProvider.ZkCredentials zkCredentials :
-          credentialsProvider.getCredentials()) {
-        ret.add(new AuthInfo(zkCredentials.getScheme(), zkCredentials.getAuth()));
-      }
-      return ret;
-    }
+    return zkClient.getCuratorFramework().usingNamespace(namespace);
   }
 }

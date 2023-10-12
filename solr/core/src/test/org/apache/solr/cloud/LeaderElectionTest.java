@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.test.KillSession;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -39,8 +40,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
-import org.apache.zookeeper.TestableZooKeeper;
-import org.apache.zookeeper.ZooKeeper;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,8 +72,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             .build();
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer, Thread>());
-    zkClient.makePath("/collections/collection1", true);
-    zkClient.makePath("/collections/collection2", true);
+    zkClient.makePath("/collections/collection1");
+    zkClient.makePath("/collections/collection2");
   }
 
   static class TestLeaderElectionContext extends ShardLeaderElectionContextBase {
@@ -119,7 +118,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
               .build();
       zkStateReader = new ZkStateReader(zkClient);
       elector = new LeaderElector(zkClient);
-      zkController = MockSolrSource.makeSimpleMock(null, zkStateReader, null);
+      zkController = MockSolrSource.makeSimpleMock(null, zkStateReader, zkClient);
     }
 
     public void close() {
@@ -187,9 +186,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     public void run() {
       try {
         setupOnConnect();
+      } catch (IllegalStateException ignored) {
+        return;
       } catch (Throwable e) {
         log.error("setup failed", e);
-        es.close();
         return;
       }
 
@@ -292,8 +292,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     while (iterCount-- > 0) {
       try {
         byte[] data =
-            zkClient.getData(
-                ZkStateReader.getShardLeadersPath(collection, slice), null, null, true);
+            zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         return leaderProps.getCoreUrl();
       } catch (NoNodeException | SessionExpiredException e) {
@@ -478,8 +477,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     final List<ClientThread> threads = Collections.synchronizedList(new ArrayList<ClientThread>());
 
     // start with a leader
-    ClientThread thread1 = null;
-    thread1 = new ClientThread("shard1", 0);
+    ClientThread thread1 = new ClientThread("shard1", 0);
     threads.add(thread1);
     scheduler.schedule(thread1, 0, TimeUnit.MILLISECONDS);
 
@@ -539,11 +537,15 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
                   int j;
                   j = random().nextInt(threads.size());
                   try {
-                    ZooKeeper zk = threads.get(j).es.zkClient.getZooKeeper();
-                    assertTrue(zk instanceof TestableZooKeeper);
-                    ((TestableZooKeeper) zk).testableConnloss();
                     if (random().nextBoolean()) {
-                      server.expire(zk.getSessionId());
+                      KillSession.kill(
+                          threads
+                              .get(j)
+                              .es
+                              .zkClient
+                              .getCuratorFramework()
+                              .getZookeeperClient()
+                              .getZooKeeper());
                     }
                   } catch (Exception e) {
                     log.error("error expiring session", e);
@@ -555,36 +557,43 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
               }
             });
 
-    scheduleThread.start();
-    connLossThread.start();
-    killThread.start();
+    try {
+      scheduleThread.start();
+      connLossThread.start();
+      killThread.start();
 
-    Thread.sleep(4000);
+      Thread.sleep(4000);
 
-    stopStress = true;
+      stopStress = true;
 
-    scheduleThread.interrupt();
-    connLossThread.interrupt();
-    killThread.interrupt();
+      scheduleThread.interrupt();
+      connLossThread.interrupt();
+      killThread.interrupt();
 
-    scheduleThread.join();
-    scheduler.shutdownNow();
+      scheduleThread.join();
+      scheduler.shutdownNow();
 
-    connLossThread.join();
-    killThread.join();
+      connLossThread.join();
+      killThread.join();
 
-    int seq = threads.get(getLeaderThread()).getSeq();
+      int seq = threads.get(getLeaderThread()).getSeq();
 
-    // we have a leader we know, TODO: lets check some other things
+      // we have a leader we know, TODO: lets check some other things
+    } finally {
+      // cleanup any threads still running
+      for (ClientThread thread : threads) {
+        thread.close();
+      }
 
-    // cleanup any threads still running
-    for (ClientThread thread : threads) {
-      thread.es.zkClient.getZooKeeper().close();
-      thread.close();
-    }
+      // cleanup any threads still running
+      for (ClientThread thread : threads) {
+        thread.es.zkClient.close();
+        thread.close();
+      }
 
-    for (Thread thread : threads) {
-      thread.join();
+      for (Thread thread : threads) {
+        thread.join();
+      }
     }
   }
 

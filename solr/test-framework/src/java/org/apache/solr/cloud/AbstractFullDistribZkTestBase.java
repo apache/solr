@@ -262,18 +262,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               .create(
                   ZkStateReader.CLUSTER_PROPS,
                   Utils.toJSON(Collections.singletonMap(URL_SCHEME, HTTPS)),
-                  CreateMode.PERSISTENT,
-                  true);
+                  CreateMode.PERSISTENT);
         } catch (KeeperException.NodeExistsException e) {
           ZkNodeProps props =
               ZkNodeProps.load(
-                  zkStateReader
-                      .getZkClient()
-                      .getData(ZkStateReader.CLUSTER_PROPS, null, null, true));
+                  zkStateReader.getZkClient().getData(ZkStateReader.CLUSTER_PROPS, null, null));
           zkStateReader
               .getZkClient()
-              .setData(
-                  ZkStateReader.CLUSTER_PROPS, Utils.toJSON(props.plus(URL_SCHEME, HTTPS)), true);
+              .setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(props.plus(URL_SCHEME, HTTPS)));
         }
       }
     }

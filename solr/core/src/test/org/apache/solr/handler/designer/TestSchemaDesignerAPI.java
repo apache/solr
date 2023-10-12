@@ -126,7 +126,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     String mutableId = getMutableId(configSet);
     assertFalse(cc.getZkController().getClusterState().hasCollection(mutableId));
     SolrZkClient zkClient = cc.getZkController().getZkClient();
-    assertFalse(zkClient.exists("/configs/" + mutableId, true));
+    assertFalse(zkClient.exists("/configs/" + mutableId));
   }
 
   @Test
@@ -681,7 +681,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     String mutableId = getMutableId(configSet);
     assertFalse(cc.getZkController().getClusterState().hasCollection(mutableId));
     SolrZkClient zkClient = cc.getZkController().getZkClient();
-    assertFalse(zkClient.exists("/configs/" + mutableId, true));
+    assertFalse(zkClient.exists("/configs/" + mutableId));
 
     SolrQuery query = new SolrQuery("*:*");
     query.setRows(0);

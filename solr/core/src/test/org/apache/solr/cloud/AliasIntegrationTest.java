@@ -124,7 +124,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals("collection1meta", aliases.get(0));
     assertEquals("collection2meta", aliases.get(1));
     // ensure we have the back-compat format in ZK:
-    final byte[] rawBytes = zkStateReader.getZkClient().getData(ALIASES, null, null, true);
+    final byte[] rawBytes = zkStateReader.getZkClient().getData(ALIASES, null, null);
     assertTrue(
         ((Map<String, Map<String, ?>>) Utils.fromJSON(rawBytes)).get("collection").get("meta1")
             instanceof String);

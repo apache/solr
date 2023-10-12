@@ -96,8 +96,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
         .getZkClient()
         .setData(
             "/configs/" + baseConfigSetName,
-            "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8),
-            true);
+            "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8));
   }
 
   private Exception getFirstExceptionOrNull(List<Exception> list) {

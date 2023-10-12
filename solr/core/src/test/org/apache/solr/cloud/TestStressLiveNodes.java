@@ -93,7 +93,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     SolrZkClient client = newSolrZkClient();
     try {
       ArrayList<String> result =
-          new ArrayList<>(client.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true));
+          new ArrayList<>(client.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null));
       Collections.sort(result);
       return result;
     } finally {
@@ -254,7 +254,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       for (int i = 0; running && i < numNodesToAdd; i++) {
         final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/thrasher-" + id + "-" + i;
         try {
-          client.makePath(nodePath, CreateMode.EPHEMERAL, true);
+          client.makePath(nodePath, CreateMode.EPHEMERAL);
           numAdded++;
         } catch (Exception e) {
           log.error("failed to create: {}", nodePath, e);

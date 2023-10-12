@@ -54,6 +54,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.servlet.Filter;
+import org.apache.curator.test.KillSession;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -300,17 +301,16 @@ public class MiniSolrCloudCluster {
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      if (!zkClient.exists("/solr/solr.xml", true)) {
-        zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
+      if (!zkClient.exists("/solr/solr.xml")) {
+        zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()));
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
           zkClient.makePath(
               "/solr" + ZkStateReader.CLUSTER_PROPS,
-              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8),
-              true);
+              "{'urlScheme':'https'}".getBytes(StandardCharsets.UTF_8));
         }
         if (securityJson.isPresent()) { // configure Solr security
           zkClient.makePath(
-              "/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()), true);
+              "/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()));
         }
       }
     }
@@ -645,9 +645,7 @@ public class MiniSolrCloudCluster {
         // cleanup any property before removing the configset
         getZkClient()
             .delete(
-                ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME,
-                -1,
-                true);
+                ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME, -1);
       } catch (KeeperException.NoNodeException nne) {
       }
       new ConfigSetAdminRequest.Delete().setConfigSetName(configSet).process(solrClient);
@@ -736,10 +734,10 @@ public class MiniSolrCloudCluster {
    * Set data in zk without exposing caller to the ZK API, i.e. tests won't need to include
    * Zookeeper dependencies
    */
-  public void zkSetData(String path, byte[] data, boolean retryOnConnLoss)
+  public void zkSetData(String path, byte[] data)
       throws InterruptedException {
     try {
-      getZkClient().setData(path, data, -1, retryOnConnLoss);
+      getZkClient().setData(path, data, -1);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.UNKNOWN, "Failed writing to Zookeeper", e);
     }
@@ -806,7 +804,14 @@ public class MiniSolrCloudCluster {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
       ChaosMonkey.causeConnectionLoss(jetty);
-      zkServer.expire(cores.getZkController().getZkClient().getZooKeeper().getSessionId());
+      SolrZkClient zkClient = cores.getZkController().getZkClient();
+      long sessionId = zkClient.getZkSessionId();
+      zkServer.expire(sessionId);
+      try {
+        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
+      } catch (Exception e) {
+        log.error("Exception killing session", e);
+      }
       if (log.isInfoEnabled()) {
         log.info("Expired zookeeper session from node {}", jetty.getBaseUrl());
       }

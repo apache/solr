@@ -324,9 +324,7 @@ public class SearchHandler extends RequestHandlerBase
       boolean requireZkConnected =
           shardsTolerant != null && shardsTolerant.equals(ShardParams.REQUIRE_ZK_CONNECTED);
       ZkController zkController = cc.getZkController();
-      boolean zkConnected =
-          zkController != null
-              && !zkController.getZkClient().getConnectionManager().isLikelyExpired();
+      boolean zkConnected = zkController != null && zkController.getZkClient().isConnected();
       if (requireZkConnected && false == zkConnected) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper is not connected");
       } else {
