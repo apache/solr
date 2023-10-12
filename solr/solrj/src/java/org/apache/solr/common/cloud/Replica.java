@@ -127,16 +127,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     public static Type get(String name) {
       return name == null ? Type.NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
     }
-
-    /**
-     * Only certain replica types can become leaders
-     *
-     * @param type the type of a replica
-     * @return true if that type is able to be leader, false otherwise
-     */
-    public static boolean isLeaderType(Type type) {
-      return type == null || type == NRT || type == TLOG;
-    }
   }
 
   // immutable
