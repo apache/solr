@@ -321,28 +321,14 @@ http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the `reload` command is provided as part of the JSON data that contains the required parameters:
+With the v2 API, the `reload` command is provided as a part of URL path. The request body is optional if the optional `async` parameter is omitted:
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
   {
-    "reload": {}
+    "async": "someAsyncId"
   }
-'
-----
-
-Additional parameters can be passed in via the `reload` key:
-
-[source,bash]
-----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
-  {
-    "reload": {
-      "async": "reload1"
-    }
-  }
-'
 ----
 ====
 --
@@ -357,7 +343,8 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 |===
 +
 The name of the collection to reload.
-This parameter is required by the V1 API.
+This parameter is required.
+It appears as a query-parameter on v1 requests, and in the URL path of v2 requests.
 
 `async`::
 +
@@ -542,7 +529,7 @@ Aliases that refer to more than 1 collection are not supported.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=renamedCollection
+http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=newName
 ----
 ====
 
@@ -554,7 +541,7 @@ http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
   {
-    "to": "new_name"
+    "to": "newName"
   }
 '
 ----
@@ -1677,6 +1664,23 @@ The upper-bound on how many backups should be retained at the backup location.
 If the current number exceeds this bound, older backups will be deleted until only `maxNumBackupPoints` backups remain.
 This parameter has no effect if `incremental=false` is specified.
 
+`backupConfigset`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Indicates if configset files should be included with the index backup or not. Note that in order to restore a collection, the configset must either exist in ZooKeeper or be part of the backup. Only set this to `false` if you can restore configsets by other means external to Solr (i.e. you have it stored with your application source code, is part of your ZooKeeper backups, etc).
+
+`property.<propertyName>` (V1), `extraProperties` (V2)::
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Allows storing additional key/value pairs for custom information related to the backup. In v2, the value is a map of key-value pairs.
+
 `incremental`::
 +
 [%autowidth,frame=none]
@@ -1820,14 +1824,7 @@ http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=myBackupName
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d '
-  {
-    "list-backups" : {
-      "name": "myBackupName",
-      "location": "/path/to/my/shared/drive"
-    }
-  }
-'
+curl -X GET "http://localhost:8983/api/backups/backupName/versions?location=/path/to/my/shared/drive"
 ----
 ====
 --
@@ -2005,21 +2002,23 @@ The DELETEBACKUP API does not support the deprecated format and attempts to use 
 ====
 
 Solr allows storing multiple backups for the same collection at any given logical "location".
-These backup points are each given an identifier (`backupId`) which can be used to delete them specifically with this API.
+These backup points are each given an identifier (`backupId`) which can be used to delete them individually with this API.
 Alternatively Solr can be told to keep the last `maxNumBackupPoints` backups, deleting everything else at the given location.
 Deleting backup points in these ways can orphan index files that are no longer referenced by any backup points.
 These orphaned files can be detected and deleted using the `purgeUnused` option.
-See the parameter descriptions below for more information.
 
-=== DELETEBACKUP Example
+Alternately, Solr's v2 API offers separate API endpoints for each of these backup-deletion mechanisms.
+See the examples and parameter descriptions below for more information.
+
+=== DELETEBACKUP Examples
+
+==== Deleting by Backup ID
 
 *Input*
 
-The following API command deletes the first backup (`backupId=0`) at the specified repository location.
-
 [.dynamic-tabs]
 --
-[example.tab-pane#v1deletebackup]
+[example.tab-pane#v1deletebackupsingle]
 ====
 [.tab-label]*V1 API*
 
@@ -2029,21 +2028,13 @@ http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupNa
 ----
 ====
 
-[example.tab-pane#v2deletebackup]
+[example.tab-pane#v2deletebackupsingle]
 ====
 [.tab-label]*V2 API*
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: application/json' -d '
-  {
-    "delete-backups" : {
-      "name": "myBackupName",
-      "location": "/path/to/my/shared/drive",
-      "backupId": 0
-    }
-  }
-'
+curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions/0?location=/path/to/my/shared/drive"
 ----
 ====
 --
@@ -2064,6 +2055,62 @@ curl -X POST http://localhost:8983/v2/collections/backups -H 'Content-Type: appl
   "collection":"books"}
 ----
 
+==== Deleting all but N recent backups
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletebackupmulti]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&maxNumBackupsPoints=2
+----
+====
+
+[example.tab-pane#v2deletebackupmulti]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+
+curl -X DELETE "http://localhost:8983/api/backups/myBackupName/versions?retainLatest=2&location=/path/to/my/shared/drive"
+----
+====
+--
+
+==== "Garbage collecting" unused files
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletebackupgc]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&purgeUnused=true
+----
+====
+
+[example.tab-pane#v2deletebackupgc]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+
+curl -X PUT -H "Content-type: application/json" "http://localhost:8983/api/backups/myBackupName/purgeUnused" '
+  {
+    "location": "/path/to/my/shared/drive"
+  }
+'
+----
+====
+--
+
 === DELETEBACKUP Parameters
 
 `name`::
@@ -2074,6 +2121,7 @@ s|Required |Default: none
 |===
 +
 The backup name to delete backup files from.
+Provided as a query parameter in v1 requests, and as a path parameter in v2 requests.
 
 `location`::
 +
@@ -2108,15 +2156,17 @@ If no repository is specified then the local filesystem repository will be used 
 |===
 +
 Explicitly specify a single backup-ID to delete.
-Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per v1 DELETEBACKUP request.
+Provided as a query parameter in v1 requests, and as a path parameter in v2 requests.
 
-`maxNumBackupPoints`::
+`maxNumBackupPoints` (v1), `retainLatest` (v2)::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
 |===
 +
+TODO
 Specify how many backups should be retained, deleting all others.
 Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
 
@@ -2130,7 +2180,7 @@ Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified
 Solr's incremental backup support can orphan files if the backups referencing them are deleted.
 The `purgeUnused` flag parameter triggers a scan to detect these orphaned files and delete them.
 Administrators doing repeated backups at the same location should plan on using this parameter sporadically to reclaim disk space.
-Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per v1 DELETEBACKUP request.
 
 `async`::
 +

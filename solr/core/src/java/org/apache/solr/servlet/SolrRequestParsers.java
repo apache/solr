@@ -113,8 +113,9 @@ public class SolrRequestParsers {
 
       formUploadLimitKB = globalConfig.getFormUploadLimitKB();
 
-      enableRemoteStreams = globalConfig.isEnableRemoteStreams();
-      enableStreamBody = globalConfig.isEnableStreamBody();
+      // security risks; disabled by default
+      enableRemoteStreams = Boolean.getBoolean("solr.enableRemoteStreaming");
+      enableStreamBody = Boolean.getBoolean("solr.enableStreamBody");
 
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.isHandleSelect();
@@ -289,6 +290,7 @@ public class SolrRequestParsers {
   private static HttpSolrCall getHttpSolrCall(HttpServletRequest req) {
     return req == null ? null : (HttpSolrCall) req.getAttribute(HttpSolrCall.class.getName());
   }
+
   /** Given a url-encoded query string (UTF-8), map it into solr params */
   public static MultiMapSolrParams parseQueryString(String queryString) {
     Map<String, String[]> map = new HashMap<>();
@@ -523,6 +525,10 @@ public class SolrRequestParsers {
 
   public void setAddRequestHeadersToContext(boolean addRequestHeadersToContext) {
     this.addHttpRequestToContext = addRequestHeadersToContext;
+  }
+
+  public boolean isEnableRemoteStreams() {
+    return enableRemoteStreams;
   }
 
   // -----------------------------------------------------------------

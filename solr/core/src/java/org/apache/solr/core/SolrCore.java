@@ -124,9 +124,10 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.CSVResponseWriter;
+import org.apache.solr.response.CborResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
-import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.PHPResponseWriter;
 import org.apache.solr.response.PHPSerializedResponseWriter;
 import org.apache.solr.response.PythonResponseWriter;
@@ -172,7 +173,8 @@ import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -244,7 +246,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final ConfigSet configSet;
   // singleton listener for all packages used in schema
 
-  private final CircuitBreakerManager circuitBreakerManager;
+  private final CircuitBreakerRegistry circuitBreakerRegistry = new CircuitBreakerRegistry();
 
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
@@ -1083,7 +1085,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
-      this.circuitBreakerManager = initCircuitBreakerManager();
       solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
@@ -1110,6 +1111,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       // initialize core metrics
       initializeMetrics(solrMetricsContext, null);
+
+      // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
+      initPlugins(null, CircuitBreaker.class);
 
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
@@ -1321,13 +1325,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private SolrCoreMetricManager initCoreMetricManager(SolrConfig config) {
     SolrCoreMetricManager coreMetricManager = new SolrCoreMetricManager(this);
     return coreMetricManager;
-  }
-
-  private CircuitBreakerManager initCircuitBreakerManager() {
-    final PluginInfo info = solrConfig.getPluginInfo(CircuitBreakerManager.class.getName());
-    CircuitBreakerManager circuitBreakerManager = CircuitBreakerManager.build(info);
-
-    return circuitBreakerManager;
   }
 
   @Override
@@ -1709,8 +1706,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return updateProcessors;
   }
 
-  public CircuitBreakerManager getCircuitBreakerManager() {
-    return circuitBreakerManager;
+  public CircuitBreakerRegistry getCircuitBreakerRegistry() {
+    return circuitBreakerRegistry;
   }
 
   // this core current usage count
@@ -1766,6 +1763,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
     log.info("CLOSING SolrCore {}", this);
 
     ExecutorUtil.shutdownAndAwaitTermination(coreAsyncTaskExecutor);
+
+    // Close circuit breakers that may have background threads, before metrics because some circuit
+    // breakers use metrics
+    try {
+      getCircuitBreakerRegistry().close();
+    } catch (Throwable e) {
+      log.error("Exception closing circuit breakers", e);
+      if (e instanceof Error) {
+        throw (Error) e;
+      }
+    }
 
     // stop reporting metrics
     try {
@@ -2642,6 +2650,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
           future =
               searcherExecutor.submit(
                   () -> {
+                    newSearcher.bootstrapFirstSearcher();
                     for (SolrEventListener listener : firstSearcherListeners) {
                       try {
                         listener.newSearcher(newSearcher, null);
@@ -2903,7 +2912,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       }
 
       /* slowQueryThresholdMillis defaults to -1 in SolrConfig -- not enabled.*/
-      if (log.isWarnEnabled() && slowQueryThresholdMillis >= 0) {
+      if (slowLog.isWarnEnabled() && slowQueryThresholdMillis >= 0) {
         final long qtime = (long) (req.getRequestTimer().getTime());
         if (qtime >= slowQueryThresholdMillis) {
           slowLog.warn("slow: {}", rsp.getToLogAsString());
@@ -3024,7 +3033,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   static {
     HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
     m.put("xml", new XMLResponseWriter());
-    m.put(CommonParams.JSON, new JSONResponseWriter());
+    m.put(CommonParams.JSON, new JacksonJsonWriter());
     m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
@@ -3034,6 +3043,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
     m.put(CommonParams.JAVABIN, new BinaryResponseWriter());
+    m.put("cbor", new CborResponseWriter());
     m.put("csv", new CSVResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
     m.put("smile", new SmileResponseWriter());
@@ -3042,10 +3052,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
     try {
       m.put(
           "xlsx",
-          (QueryResponseWriter)
-              Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter")
-                  .getConstructor()
-                  .newInstance());
+          Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter")
+              .asSubclass(QueryResponseWriter.class)
+              .getDeclaredConstructor()
+              .newInstance());
     } catch (Exception e) {
       // don't worry; extraction module not in class path
     }
@@ -3162,10 +3172,13 @@ public class SolrCore implements SolrInfoBean, Closeable {
     T def = null;
     for (PluginInfo info : pluginInfos) {
       T o = createInitInstance(info, type, type.getSimpleName(), defClassName);
-      registry.put(info.name, o);
+      if (registry != null) registry.put(info.name, o);
       if (o instanceof SolrMetricProducer) {
         coreMetricManager.registerMetricProducer(
             type.getSimpleName() + "." + info.name, (SolrMetricProducer) o);
+      }
+      if (o instanceof CircuitBreaker) {
+        circuitBreakerRegistry.register((CircuitBreaker) o);
       }
       if (info.isDefault()) {
         def = o;

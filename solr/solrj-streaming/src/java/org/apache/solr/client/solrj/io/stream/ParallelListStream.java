@@ -17,12 +17,12 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -31,8 +31,6 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 public class ParallelListStream extends TupleStream implements Expressible {
 
@@ -140,27 +138,14 @@ public class ParallelListStream extends TupleStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-    ExecutorService service =
-        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("ParallelListStream"));
-    try {
-      List<Future<StreamIndex>> futures = new ArrayList<>();
-      int i = 0;
-      for (TupleStream tupleStream : streams) {
-        StreamOpener so = new StreamOpener(new StreamIndex(tupleStream, i++));
-        Future<StreamIndex> future = service.submit(so);
-        futures.add(future);
-      }
-
-      try {
-        for (Future<StreamIndex> f : futures) {
-          StreamIndex streamIndex = f.get();
-          this.streams[streamIndex.getIndex()] = streamIndex.getTupleStream();
-        }
-      } catch (Exception e) {
-        throw new IOException(e);
-      }
-    } finally {
-      service.shutdown();
+    List<Callable<StreamIndex>> tasks = new ArrayList<>();
+    int i = 0;
+    for (TupleStream tupleStream : streams) {
+      tasks.add(new StreamOpener(new StreamIndex(tupleStream, i++)));
+    }
+    var results = submitAllAndAwaitAggregatingExceptions(tasks, "ParallelListStream");
+    for (var r : results) {
+      this.streams[r.getIndex()] = r.getTupleStream();
     }
   }
 

@@ -163,14 +163,19 @@ public class S3OutputStream extends OutputStream {
       return;
     }
 
+    if (multiPartUpload != null && multiPartUpload.aborted) {
+      multiPartUpload = null;
+      closed = true;
+      return;
+    }
+
     // flush first
     uploadPart();
 
     if (multiPartUpload != null) {
       multiPartUpload.complete();
-      multiPartUpload = null;
     }
-
+    multiPartUpload = null;
     closed = true;
   }
 
@@ -186,6 +191,7 @@ public class S3OutputStream extends OutputStream {
   private class MultipartUpload {
     private final String uploadId;
     private final List<CompletedPart> completedParts;
+    private boolean aborted = false;
 
     public MultipartUpload(String uploadId) {
       this.uploadId = uploadId;
@@ -200,6 +206,10 @@ public class S3OutputStream extends OutputStream {
     }
 
     void uploadPart(ByteArrayInputStream inputStream, long partSize) {
+      if (aborted) {
+        throw new IllegalStateException(
+            "Can't upload new parts on a MultipartUpload that was aborted. id '" + uploadId + "'");
+      }
       int currentPartNumber = completedParts.size() + 1;
 
       UploadPartRequest request =
@@ -221,6 +231,10 @@ public class S3OutputStream extends OutputStream {
 
     /** To be invoked when closing the stream to mark upload is done. */
     void complete() {
+      if (aborted) {
+        throw new IllegalStateException(
+            "Can't complete a MultipartUpload that was aborted. id '" + uploadId + "'");
+      }
       if (log.isDebugEnabled()) {
         log.debug("Completing multi-part upload for key '{}', id '{}'", key, uploadId);
       }
@@ -242,6 +256,9 @@ public class S3OutputStream extends OutputStream {
         // ignoring failure on abort.
         log.error("Unable to abort multipart upload, you may need to purge uploaded parts: ", e);
       }
+      // Even if the abort operation failed, we consider this MultiPartUpload aborted,
+      // and we'll not try to complete it.
+      aborted = true;
     }
   }
 }

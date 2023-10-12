@@ -23,8 +23,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEQ
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
-import io.opentracing.Span;
-import io.opentracing.tag.Tags;
+import io.opentelemetry.api.trace.Span;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -45,7 +44,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -65,6 +63,7 @@ import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.servlet.cache.Method;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
@@ -472,6 +471,10 @@ public class V2HttpCall extends HttpSolrCall {
               rsp,
               suppressNotFoundProp);
       if (!resourceFound) {
+        // Whatever this API call is, it's not a core-level request so make sure we free our
+        // SolrCore counter
+        core.close();
+        core = null;
         response.getHeaderNames().stream().forEach(name -> response.setHeader(name, null));
         invokeJerseyRequest(
             cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), rsp);
@@ -499,29 +502,12 @@ public class V2HttpCall extends HttpSolrCall {
         coreOrColName = pathTemplateValues.get("core");
       }
     }
-    if (coreOrColName != null) {
-      span.setTag(Tags.DB_INSTANCE, coreOrColName);
-    }
+    TraceUtils.setDbInstance(span, coreOrColName);
 
     // Get the templatize-ed path, ex: "/c/{collection}"
     final String path = computeEndpointPath();
-
-    String verb = null;
-    // if this api has commands ...
-    final Map<String, JsonSchemaValidator> validators = getValidators(); // should be cached
-    if (validators != null && validators.isEmpty() == false && solrReq != null) {
-      boolean validateInput = true; // because getCommands caches it; and we want it validated later
-      // does this request have one command?
-      List<CommandOperation> cmds = solrReq.getCommands(validateInput);
-      if (cmds.size() == 1) {
-        verb = cmds.get(0).name;
-      }
-    }
-    if (verb == null) {
-      verb = req.getMethod().toLowerCase(Locale.ROOT);
-    }
-
-    span.setOperationName(verb + ":" + path);
+    final String verb = req.getMethod().toLowerCase(Locale.ROOT);
+    span.updateName(verb + ":" + path);
   }
 
   /** Example: /c/collection1/ and template map collection->collection1 produces /c/{collection}. */

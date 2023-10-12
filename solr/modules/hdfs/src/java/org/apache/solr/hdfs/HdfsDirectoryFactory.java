@@ -47,7 +47,6 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -476,11 +475,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
 
     return normalize(
         SolrPaths.normalizeDir(
-            ZkController.trimLeadingAndTrailingSlashes(hdfsDataDir)
-                + "/"
-                + path
-                + "/"
-                + cd.getDataDir()));
+            trimLeadingAndTrailingSlashes(hdfsDataDir) + "/" + path + "/" + cd.getDataDir()));
   }
 
   /**
@@ -723,5 +718,22 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   @Override
   public UpdateLog newDefaultUpdateLog() {
     return new HdfsUpdateLog(getConfDir());
+  }
+
+  /**
+   * Utility method for trimming and leading and/or trailing slashes from its input. May return the
+   * empty string. May return null if and only if the input is null.
+   */
+  public static String trimLeadingAndTrailingSlashes(final String in) {
+    if (null == in) return in;
+
+    String out = in;
+    if (out.startsWith("/")) {
+      out = out.substring(1);
+    }
+    if (out.endsWith("/")) {
+      out = out.substring(0, out.length() - 1);
+    }
+    return out;
   }
 }

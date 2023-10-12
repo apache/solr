@@ -42,8 +42,13 @@ public interface ShardParams {
   /** whether the request goes to a shard */
   String IS_SHARD = "isShard";
 
-  /** The requested URL for this shard */
-  String SHARD_URL = "shard.url";
+  /**
+   * The requested URL for this shard
+   *
+   * @deprecated This was an internally used param never ment for clients to specify; it is no
+   *     longer used by Solr.
+   */
+  @Deprecated String SHARD_URL = "shard.url";
 
   /** The requested shard name */
   String SHARD_NAME = "shard.name";

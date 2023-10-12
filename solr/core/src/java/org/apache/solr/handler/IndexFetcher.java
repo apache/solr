@@ -121,6 +121,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -1218,6 +1219,7 @@ public class IndexFetcher {
   // -----------START----------------------
   static BooleanSupplier testWait = () -> true;
   static Function<String, Long> usableDiskSpaceProvider = dir -> getUsableSpace(dir);
+
   // ------------ END---------------------
 
   private static Long getUsableSpace(String dir) {
@@ -1606,14 +1608,14 @@ public class IndexFetcher {
       names.add(name, null);
     }
     // get the details of the local conf files with the same alias/name
-    List<Map<String, Object>> localFilesInfo =
+    List<CoreReplicationAPI.FileMetaData> localFilesInfo =
         replicationHandler.getConfFileInfoFromCache(names, confFileInfoCache);
     // compare their size/checksum to see if
-    for (Map<String, Object> fileInfo : localFilesInfo) {
-      String name = (String) fileInfo.get(NAME);
+    for (CoreReplicationAPI.FileMetaData fileInfo : localFilesInfo) {
+      String name = fileInfo.name;
       Map<String, Object> m = nameVsFile.get(name);
       if (m == null) continue; // the file is not even present locally (so must be downloaded)
-      if (m.get(CHECKSUM).equals(fileInfo.get(CHECKSUM))) {
+      if (m.get(CHECKSUM).equals(fileInfo.checksum)) {
         nameVsFile.remove(name); // checksums are same so the file need not be downloaded
       }
     }

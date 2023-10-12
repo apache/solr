@@ -20,10 +20,13 @@ import static java.util.Optional.ofNullable;
 import static org.apache.lucene.codecs.lucene95.Lucene95HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
 import static org.apache.lucene.codecs.lucene95.Lucene95HnswVectorsFormat.DEFAULT_MAX_CONN;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.lucene.codecs.KnnVectorsFormat;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.KnnByteVectorField;
 import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.StoredField;
@@ -31,6 +34,8 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
+import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
@@ -43,6 +48,8 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
 import org.apache.solr.util.vector.FloatDenseVectorParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a field type to support Lucene's {@link org.apache.lucene.document.KnnVectorField}. See
@@ -53,6 +60,7 @@ import org.apache.solr.util.vector.FloatDenseVectorParser;
  * Only {@code Indexed} and {@code Stored} attributes are supported.
  */
 public class DenseVectorField extends FloatPointField {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String HNSW_ALGORITHM = "hnsw";
   public static final String DEFAULT_KNN_ALGORITHM = HNSW_ALGORITHM;
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
@@ -66,11 +74,13 @@ public class DenseVectorField extends FloatPointField {
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
   private String knnAlgorithm;
+
   /**
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
    * candidates are connected to the new node. See {@link HnswGraph} for more details.
    */
   private int hnswMaxConn;
+
   /**
    * This parameter is coupled with the hnsw algorithm. The number of candidate neighbors to track
    * while searching the graph for each newly inserted node. See {@link HnswGraph} for details.
@@ -182,6 +192,31 @@ public class DenseVectorField extends FloatPointField {
           SolrException.ErrorCode.SERVER_ERROR,
           getClass().getSimpleName() + " fields can not have docValues: " + field.getName());
     }
+
+    switch (vectorEncoding) {
+      case FLOAT32:
+        if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS) {
+          if (log.isWarnEnabled()) {
+            log.warn(
+                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
+                dimension,
+                field.getName(),
+                KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
+          }
+        }
+        break;
+      case BYTE:
+        if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS) {
+          if (log.isWarnEnabled()) {
+            log.warn(
+                "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
+                dimension,
+                field.getName(),
+                KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
+          }
+        }
+        break;
+    }
   }
 
   @Override
@@ -218,20 +253,51 @@ public class DenseVectorField extends FloatPointField {
 
   @Override
   public IndexableField createField(SchemaField field, Object vectorValue) {
+    FieldType denseVectorFieldType = getDenseVectorFieldType();
+
     if (vectorValue == null) return null;
     DenseVectorParser vectorBuilder = (DenseVectorParser) vectorValue;
     switch (vectorEncoding) {
       case BYTE:
         return new KnnByteVectorField(
-            field.getName(), vectorBuilder.getByteVector(), similarityFunction);
+            field.getName(), vectorBuilder.getByteVector(), denseVectorFieldType);
       case FLOAT32:
         return new KnnFloatVectorField(
-            field.getName(), vectorBuilder.getFloatVector(), similarityFunction);
+            field.getName(), vectorBuilder.getFloatVector(), denseVectorFieldType);
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Unexpected state. Vector Encoding: " + vectorEncoding);
     }
+  }
+
+  /**
+   * This is needed at the moment to support dimensions higher than a hard-coded arbitrary Lucene
+   * max dimension. N.B. this may stop working and need changes when adopting future Lucene
+   * releases.
+   *
+   * @return a FieldType compatible with Dense vectors
+   */
+  private FieldType getDenseVectorFieldType() {
+    FieldType vectorFieldType =
+        new FieldType() {
+          @Override
+          public int vectorDimension() {
+            return dimension;
+          }
+
+          @Override
+          public VectorEncoding vectorEncoding() {
+            return vectorEncoding;
+          }
+
+          @Override
+          public VectorSimilarityFunction vectorSimilarityFunction() {
+            return similarityFunction;
+          }
+        };
+
+    return vectorFieldType;
   }
 
   @Override
@@ -280,9 +346,16 @@ public class DenseVectorField extends FloatPointField {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
+
+    switch (vectorEncoding) {
+      case FLOAT32:
+        return new FloatKnnVectorFieldSource(field.getName());
+      case BYTE:
+        return new ByteKnnVectorFieldSource(field.getName());
+    }
+
     throw new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST,
-        "Function queries are not supported for Dense Vector fields.");
+        SolrException.ErrorCode.BAD_REQUEST, "Vector encoding not supported for function queries.");
   }
 
   public Query getKnnVectorQuery(

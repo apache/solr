@@ -59,7 +59,6 @@ public class LTRScoringQuery extends Query implements Accountable {
 
   // contains a description of the model
   private final LTRScoringModel ltrScoringModel;
-  private final boolean extractAllFeatures;
   private final LTRThreadModule ltrThreadMgr;
 
   // limits the number of threads per query, so that multiple requests can be serviced
@@ -67,7 +66,7 @@ public class LTRScoringQuery extends Query implements Accountable {
   private final Semaphore querySemaphore;
 
   // feature logger to output the features.
-  private FeatureLogger fl;
+  private FeatureLogger logger;
   // Map of external parameters, such as query intent, that can be used by
   // features
   private final Map<String, String[]> efi;
@@ -77,21 +76,15 @@ public class LTRScoringQuery extends Query implements Accountable {
   private SolrQueryRequest request;
 
   public LTRScoringQuery(LTRScoringModel ltrScoringModel) {
-    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), false, null);
-  }
-
-  public LTRScoringQuery(LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
-    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), extractAllFeatures, null);
+    this(ltrScoringModel, Collections.<String, String[]>emptyMap(), null);
   }
 
   public LTRScoringQuery(
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> externalFeatureInfo,
-      boolean extractAllFeatures,
       LTRThreadModule ltrThreadMgr) {
     this.ltrScoringModel = ltrScoringModel;
     this.efi = externalFeatureInfo;
-    this.extractAllFeatures = extractAllFeatures;
     this.ltrThreadMgr = ltrThreadMgr;
     if (this.ltrThreadMgr != null) {
       this.querySemaphore = this.ltrThreadMgr.createQuerySemaphore();
@@ -108,12 +101,12 @@ public class LTRScoringQuery extends Query implements Accountable {
     return ltrScoringModel.getName();
   }
 
-  public void setFeatureLogger(FeatureLogger fl) {
-    this.fl = fl;
+  public void setFeatureLogger(FeatureLogger logger) {
+    this.logger = logger;
   }
 
   public FeatureLogger getFeatureLogger() {
-    return fl;
+    return logger;
   }
 
   public void setOriginalQuery(Query originalQuery) {
@@ -207,8 +200,8 @@ public class LTRScoringQuery extends Query implements Accountable {
     final Collection<Feature> allFeatures = ltrScoringModel.getAllFeatures();
     int modelFeatSize = modelFeatures.size();
 
-    Collection<Feature> features = null;
-    if (this.extractAllFeatures) {
+    Collection<Feature> features;
+    if (logger != null && logger.isLoggingAll()) {
       features = allFeatures;
     } else {
       features = modelFeatures;
@@ -224,13 +217,12 @@ public class LTRScoringQuery extends Query implements Accountable {
       createWeightsParallel(searcher, scoreMode.needsScores(), featureWeights, features);
     }
     int i = 0, j = 0;
-    if (this.extractAllFeatures) {
+    if (logger != null && logger.isLoggingAll()) {
       for (final Feature.FeatureWeight fw : featureWeights) {
         extractedFeatureWeights[i++] = fw;
       }
       for (final Feature f : modelFeatures) {
-        // we can lookup by featureid because all features will be
-        // extracted when this.extractAllFeatures is set
+        // we can lookup by featureid because all features will be extracted
         modelFeaturesWeights[j++] = extractedFeatureWeights[f.getIndex()];
       }
     } else {
@@ -388,6 +380,7 @@ public class LTRScoringQuery extends Query implements Accountable {
      *
      */
     private final FeatureInfo[] featuresInfo;
+
     /*
      * @param modelFeatureWeights
      *     - should be the same size as the number of features used by the model

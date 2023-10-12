@@ -1117,8 +1117,14 @@ public abstract class CloudSolrClient extends SolrClient {
       sortedReplicas.forEach(
           replica -> {
             if (seenNodes.add(replica.getNodeName())) {
-              theUrlList.add(
-                  ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              if (inputCollections.size() == 1 && collectionNames.size() == 1) {
+                // If we have a single collection name (and not a alias to multiple collection),
+                // send the query directly to a replica of this collection.
+                theUrlList.add(replica.getCoreUrl());
+              } else {
+                theUrlList.add(
+                    ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              }
             }
           });
 

@@ -71,10 +71,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    * @see #testParserCoverage
    */
   private static boolean doAssertParserCoverage = false;
+
   /**
    * @see #testParserCoverage
    */
   private static final Set<String> qParsersTested = new HashSet<>();
+
   /**
    * @see #testParserCoverage
    */
@@ -906,6 +908,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("vector(5,4, field(foo_i))", "vector(5, 4, foo_i)");
     assertFuncEquals("vector(foo_i,4)", "vector(foo_i, 4)");
     assertFuncEquals("vector(foo_i,sum(4,bar_i))", "vector(foo_i, sum(4,bar_i))");
+  }
+
+  public void testFuncKnnVector() throws Exception {
+    assertFuncEquals(
+        "vectorSimilarity(FLOAT32,COSINE,[1,2,3],[4,5,6])",
+        "vectorSimilarity(FLOAT32, COSINE, [1, 2, 3], [4, 5, 6])");
+
+    assertFuncEquals(
+        "vectorSimilarity(BYTE, EUCLIDEAN, bar_i, [4,5,6])",
+        "vectorSimilarity(BYTE, EUCLIDEAN, field(bar_i), [4, 5,  6])");
   }
 
   public void testFuncQuery() throws Exception {

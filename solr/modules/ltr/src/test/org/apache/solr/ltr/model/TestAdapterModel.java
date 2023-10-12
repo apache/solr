@@ -106,6 +106,7 @@ public class TestAdapterModel extends TestRerankBase {
      * individually influence the class hashCode, equals, etc.
      */
     private String answerFileName;
+
     /**
      * answerValue is obtained from answerFileName and therefore here it does not individually
      * influence the class hashCode, equals, etc.

@@ -137,36 +137,7 @@ At this point, Solr will create the collection and again output to the screen th
 
 [,console]
 ----
-Uploading /solr-{solr-full-version}/server/solr/configsets/_default/conf for config techproducts to ZooKeeper at localhost:9983
-
-Connecting to ZooKeeper at localhost:9983 ...
-INFO  - 2017-07-27 12:48:59.289; org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider; Cluster at localhost:9983 ready
-Uploading /solr-{solr-full-version}/server/solr/configsets/sample_techproducts_configs/conf for config techproducts to ZooKeeper at localhost:9983
-
-Creating new collection 'techproducts' using command:
-http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts&numShards=2&replicationFactor=2&collection.configName=techproducts
-
-{
-  "responseHeader":{
-    "status":0,
-    "QTime":5460},
-  "success":{
-    "192.168.0.110:7574_solr":{
-      "responseHeader":{
-        "status":0,
-        "QTime":4056},
-      "core":"techproducts_shard1_replica_n1"},
-    "192.168.0.110:8983_solr":{
-      "responseHeader":{
-        "status":0,
-        "QTime":4056},
-      "core":"techproducts_shard2_replica_n2"}}}
-
-Enabling auto soft-commits with maxTime 3 secs using the Config API
-
-POSTing request to Config API: http://localhost:8983/solr/techproducts/config
-{"set-property":{"updateHandler.autoSoftCommit.maxTime":"3000"}}
-Successfully set-property updateHandler.autoSoftCommit.maxTime to 3000
+Created collection 'techproducts' with 2 shard(s), 2 replica(s) with config-set 'techproducts'
 
 SolrCloud example running, please visit: http://localhost:8983/solr
 ----

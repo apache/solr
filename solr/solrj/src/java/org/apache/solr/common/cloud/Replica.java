@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,16 +126,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
     public static Type get(String name) {
       return name == null ? Type.NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
-    }
-
-    /**
-     * Only certain replica types can become leaders
-     *
-     * @param type the type of a replica
-     * @return true if that type is able to be leader, false otherwise
-     */
-    public static boolean isLeaderType(Type type) {
-      return type == null || type == NRT || type == TLOG;
     }
   }
 
@@ -372,11 +361,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return new Replica(name, node, collection, shard, core, getState(), type, propMap);
   }
 
-  @Override
-  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
-    _allPropsWriter().writeMap(ew);
-  }
-
   private static final Map<String, State> STATES = new HashMap<>();
 
   static {
@@ -390,28 +374,21 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return STATES.get(shortName);
   }
 
-  private MapWriter _allPropsWriter() {
-    return w -> {
-      w.putIfNotNull(ReplicaStateProps.CORE_NAME, core)
-          .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
-          .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
-          .putIfNotNull(ReplicaStateProps.STATE, getState().toString())
-          .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? "true" : null)
-          .putIfNotNull(
-              ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
-          .putIfNotNull(ReplicaStateProps.BASE_URL, propMap.get(ReplicaStateProps.BASE_URL));
-      for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        if (!ReplicaStateProps.WELL_KNOWN_PROPS.contains(e.getKey())) {
-          w.putIfNotNull(e.getKey(), e.getValue());
-        }
-      }
-    };
-  }
-
   @Override
-  public void write(JSONWriter jsonWriter) {
-    // this serializes also our declared properties
-    jsonWriter.write(_allPropsWriter());
+  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
+    ew.putIfNotNull(ReplicaStateProps.CORE_NAME, core)
+        .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
+        .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
+        .putIfNotNull(ReplicaStateProps.STATE, getState().toString())
+        .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? "true" : null)
+        .putIfNotNull(
+            ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
+        .putIfNotNull(ReplicaStateProps.BASE_URL, propMap.get(ReplicaStateProps.BASE_URL));
+    for (Map.Entry<String, Object> e : propMap.entrySet()) {
+      if (!ReplicaStateProps.WELL_KNOWN_PROPS.contains(e.getKey())) {
+        ew.putIfNotNull(e.getKey(), e.getValue());
+      }
+    }
   }
 
   @Override
@@ -425,6 +402,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public interface ReplicaStateProps {
     String COLLECTION = "collection";
     String SHARD_ID = "shard";
+    String REPLICA_ID = "replica";
     String LEADER = "leader";
     String STATE = "state";
     String CORE_NAME = "core";
@@ -437,5 +415,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Set<String> WELL_KNOWN_PROPS =
         Set.of(
             LEADER, STATE, CORE_NAME, CORE_NODE_NAME, TYPE, NODE_NAME, BASE_URL, FORCE_SET_STATE);
+  }
+
+  public ZkNodeProps toFullProps() {
+    return new ZkNodeProps()
+        .plus(propMap)
+        .plus(ReplicaStateProps.COLLECTION, getCollection())
+        .plus(ReplicaStateProps.SHARD_ID, getShard())
+        .plus(ReplicaStateProps.REPLICA_ID, getName());
   }
 }

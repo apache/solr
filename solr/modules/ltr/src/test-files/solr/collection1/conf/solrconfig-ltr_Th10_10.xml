@@ -19,7 +19,7 @@
  <schemaFactory class="ClassicIndexSchemaFactory" />
 
  <requestDispatcher>
-   <requestParsers enableStreamBody="true" />
+   <requestParsers />
  </requestDispatcher>
  
  <!-- Query parser used to rerank top docs with a provided model -->

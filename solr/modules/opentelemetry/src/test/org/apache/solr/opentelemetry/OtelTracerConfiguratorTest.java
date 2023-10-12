@@ -16,18 +16,14 @@
  */
 package org.apache.solr.opentelemetry;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import io.opentracing.util.GlobalTracer;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-@ThreadLeakLingering(linger = 10000)
 public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
   private OtelTracerConfigurator instance;
 
@@ -35,8 +31,7 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    instance = new OtelTracerConfigurator();
-    instance.currentEnv =
+    Map<String, String> currentEnv =
         Map.of(
             "OTELNOTHERE", "foo",
             "OTEL_K1", "env-k1",
@@ -44,10 +39,8 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     System.setProperty("otelnothere", "bar");
     System.setProperty("otel.k1", "prop-k1");
     System.setProperty("otel.k3", "prop-k3");
-
-    // to be safe because this test tests tracing.
-    resetGlobalTracer();
-    ExecutorUtil.resetThreadLocalProviders();
+    System.setProperty("host", "my.solr.host");
+    instance = new OtelTracerConfigurator(currentEnv);
   }
 
   @Override
@@ -57,7 +50,8 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     System.clearProperty("otelnothere");
     System.clearProperty("otel.k1");
     System.clearProperty("otel.k3");
-    System.clearProperty("otel.bsp.export.timeout");
+    System.clearProperty("host");
+    System.clearProperty("otel.resource.attributes");
   }
 
   @Test
@@ -93,28 +87,21 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInjected() throws Exception {
+  public void testResourceAttributes() throws Exception {
     System.setProperty("otel.resource.attributes", "foo=bar,ILLEGAL-LACKS-VALUE,");
-    System.setProperty("host", "my.solr.host");
-    // Make sure the batch exporter times out before our thread lingering time of 10s
-    instance.setDefaultIfNotConfigured("OTEL_BSP_SCHEDULE_DELAY", "1000");
-    instance.setDefaultIfNotConfigured("OTEL_BSP_EXPORT_TIMEOUT", "2000");
-    MiniSolrCloudCluster cluster =
-        new MiniSolrCloudCluster.Builder(2, createTempDir())
-            .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
-            .withSolrXml(getFile("solr/solr.xml").toPath())
-            .build();
-    try {
-      assertTrue(
-          "Tracer shim not registered with GlobalTracer",
-          GlobalTracer.get().toString().contains("ClosableTracerShim"));
-      assertEquals(
-          List.of("host.name=my.solr.host", "foo=bar"),
-          List.of(System.getProperty("otel.resource.attributes").split(",")));
-    } finally {
-      cluster.shutdown();
-      System.clearProperty("otel.resource.attributes");
-      System.clearProperty("host");
-    }
+    instance.prepareConfiguration(new NamedList<>());
+    assertEquals(
+        List.of("host.name=my.solr.host", "foo=bar"),
+        List.of(System.getProperty("otel.resource.attributes").split(",")));
+  }
+
+  @Test
+  public void testPluginConfig() throws Exception {
+    NamedList<String> conf = new NamedList<>();
+    conf.add("OTEL_K1", "conf-k1"); // will be replaced by sys prop
+    conf.add("otel.k7", "conf-k7"); // will be kept
+    instance.prepareConfiguration(conf);
+    assertEquals("prop-k1", instance.getCurrentOtelConfig().get("OTEL_K1"));
+    assertEquals("conf-k7", instance.getCurrentOtelConfig().get("OTEL_K7"));
   }
 }

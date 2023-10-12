@@ -297,6 +297,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
     public TechProduct() {}
   }
+
   // end::solrj-techproduct-value-type[]
 
   private void expectLine(String expectedLine) {

@@ -197,6 +197,7 @@ public class DocumentBuilder {
             if (copyFields != null) {
               used |=
                   addCopyFields(
+                      schema,
                       vectorValue,
                       sfield.getType(),
                       copyFields,
@@ -223,6 +224,7 @@ public class DocumentBuilder {
             if (copyFields != null) {
               used |=
                   addCopyFields(
+                      schema,
                       v,
                       sfield.getType(),
                       copyFields,
@@ -306,6 +308,7 @@ public class DocumentBuilder {
   }
 
   private static boolean addCopyFields(
+      final IndexSchema schema,
       final Object originalFieldValue,
       FieldType originalFieldType,
       List<CopyField> copyFields,
@@ -322,9 +325,14 @@ public class DocumentBuilder {
       // Dense Vector Fields can only be copied to same field type
       if (originalFieldType instanceof DenseVectorField
           && !(destinationField.getType() instanceof DenseVectorField)) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "The copy field destination must be a DenseVectorField: " + destinationField.getName());
+        if (schema.getCopySources(destinationField.getName()).contains("*")) {
+          continue;
+        } else {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "The copy field destination must be a DenseVectorField: "
+                  + destinationField.getName());
+        }
       }
 
       // check if the copy field is a multivalued or not

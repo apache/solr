@@ -39,6 +39,7 @@ dependencies {
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
   implementation 'org.eclipse.jetty:jetty-client'
+  implementation 'org.eclipse.jetty:jetty-http'
   implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
   implementation 'com.google.guava:guava'
   implementation 'org.slf4j:slf4j-api'
@@ -48,6 +49,9 @@ dependencies {
   testImplementation 'junit:junit'
 
   testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
   testImplementation('no.nav.security:mock-oauth2-server', {

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.packagemanager;
 
+import static org.apache.solr.client.solrj.util.SolrIdentifierValidator.validateCollectionName;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
@@ -51,7 +53,6 @@ import org.apache.solr.filestore.DistribPackageStore;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
-import org.semver4j.Semver;
 
 public class PackageUtils {
 
@@ -224,14 +225,6 @@ public class PackageUtils {
     return str;
   }
 
-  /**
-   * Compares two versions v1 and v2. Returns negative if v1 isLessThan v2, positive if v1
-   * isGreaterThan v2 and 0 if equal.
-   */
-  public static int compareVersions(String v1, String v2) {
-    return new Semver(v1).compareTo(new Semver(v2));
-  }
-
   public static String BLACK = "\u001B[30m";
   public static String RED = "\u001B[31m";
   public static String GREEN = "\u001B[32m";
@@ -268,17 +261,8 @@ public class PackageUtils {
   }
 
   public static String[] validateCollections(String collections[]) {
-    String collectionNameRegex = "^[a-zA-Z0-9_-]*$";
     for (String c : collections) {
-      if (c.matches(collectionNameRegex) == false) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Invalid collection name: "
-                + c
-                + ". Didn't match the pattern: '"
-                + collectionNameRegex
-                + "'");
-      }
+      validateCollectionName(c);
     }
     return collections;
   }

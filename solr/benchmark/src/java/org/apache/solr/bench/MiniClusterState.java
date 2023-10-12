@@ -40,6 +40,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -84,6 +85,8 @@ public class MiniClusterState {
 
     /** The Nodes. */
     public List<String> nodes;
+
+    public String zkHost;
 
     /** The Cluster. */
     MiniSolrCloudCluster cluster;
@@ -276,6 +279,7 @@ public class MiniClusterState {
       for (JettySolrRunner runner : jetties) {
         nodes.add(runner.getBaseUrl().toString());
       }
+      zkHost = cluster.getZkServer().getZkAddress();
 
       client = new Http2SolrClient.Builder().useHttp1_1(useHttp1).build();
 
@@ -331,6 +335,11 @@ public class MiniClusterState {
       this.useHttp1 = useHttp1;
     }
 
+    @SuppressForbidden(reason = "This module does not need to deal with logging context")
+    public void index(String collection, Docs docs, int docCount) throws Exception {
+      index(collection, docs, docCount, true);
+    }
+
     /**
      * Index.
      *
@@ -339,64 +348,15 @@ public class MiniClusterState {
      * @param docCount the doc count
      * @throws Exception the exception
      */
-    @SuppressForbidden(reason = "This module does not need to deal with logging context")
-    public void index(String collection, Docs docs, int docCount) throws Exception {
+    public void index(String collection, Docs docs, int docCount, boolean parallel)
+        throws Exception {
       if (createCollectionAndIndex) {
-
         log("indexing data for benchmark...");
-        Meter meter = new Meter();
-        ExecutorService executorService =
-            Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors(),
-                new SolrNamedThreadFactory("SolrJMH Indexer"));
-        ScheduledExecutorService scheduledExecutor =
-            Executors.newSingleThreadScheduledExecutor(
-                new SolrNamedThreadFactory("SolrJMH Indexer Progress"));
-        scheduledExecutor.scheduleAtFixedRate(
-            () -> {
-              if (meter.getCount() == docCount) {
-                scheduledExecutor.shutdown();
-              } else {
-                log(meter.getCount() + " docs at " + meter.getMeanRate() + " doc/s");
-              }
-            },
-            10,
-            10,
-            TimeUnit.SECONDS);
-        for (int i = 0; i < docCount; i++) {
-          executorService.submit(
-              new Runnable() {
-                final SplittableRandom threadRandom = random.split();
-
-                @Override
-                public void run() {
-                  UpdateRequest updateRequest = new UpdateRequest();
-                  updateRequest.setBasePath(
-                      nodes.get(threadRandom.nextInt(cluster.getJettySolrRunners().size())));
-                  SolrInputDocument doc = docs.inputDocument();
-                  // log("add doc " + doc);
-                  updateRequest.add(doc);
-                  meter.mark();
-
-                  try {
-                    client.request(updateRequest, collection);
-                  } catch (Exception e) {
-                    throw new RuntimeException(e);
-                  }
-                }
-              });
+        if (parallel) {
+          indexParallel(collection, docs, docCount);
+        } else {
+          indexBatch(collection, docs, docCount, 10000);
         }
-
-        log("done adding docs, waiting for executor to terminate...");
-
-        executorService.shutdown();
-        boolean result = false;
-        while (!result) {
-          result = executorService.awaitTermination(600, TimeUnit.MINUTES);
-        }
-
-        scheduledExecutor.shutdown();
-
         log("done indexing data for benchmark");
 
         log("committing data ...");
@@ -420,6 +380,90 @@ public class MiniClusterState {
 
       log("Dump Core Info");
       dumpCoreInfo();
+    }
+
+    @SuppressForbidden(reason = "This module does not need to deal with logging context")
+    private void indexParallel(String collection, Docs docs, int docCount)
+        throws InterruptedException {
+      Meter meter = new Meter();
+      ExecutorService executorService =
+          Executors.newFixedThreadPool(
+              Runtime.getRuntime().availableProcessors(),
+              new SolrNamedThreadFactory("SolrJMH Indexer"));
+      ScheduledExecutorService scheduledExecutor =
+          Executors.newSingleThreadScheduledExecutor(
+              new SolrNamedThreadFactory("SolrJMH Indexer Progress"));
+      scheduledExecutor.scheduleAtFixedRate(
+          () -> {
+            if (meter.getCount() == docCount) {
+              scheduledExecutor.shutdown();
+            } else {
+              log(meter.getCount() + " docs at " + meter.getMeanRate() + " doc/s");
+            }
+          },
+          10,
+          10,
+          TimeUnit.SECONDS);
+      for (int i = 0; i < docCount; i++) {
+        executorService.submit(
+            new Runnable() {
+              final SplittableRandom threadRandom = random.split();
+
+              @Override
+              public void run() {
+                UpdateRequest updateRequest = new UpdateRequest();
+                updateRequest.setBasePath(
+                    nodes.get(threadRandom.nextInt(cluster.getJettySolrRunners().size())));
+                SolrInputDocument doc = docs.inputDocument();
+                // log("add doc " + doc);
+                updateRequest.add(doc);
+                meter.mark();
+
+                try {
+                  client.request(updateRequest, collection);
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
+              }
+            });
+      }
+
+      log("done adding docs, waiting for executor to terminate...");
+
+      executorService.shutdown();
+      boolean result = false;
+      while (!result) {
+        result = executorService.awaitTermination(600, TimeUnit.MINUTES);
+      }
+
+      scheduledExecutor.shutdown();
+    }
+
+    private void indexBatch(String collection, Docs docs, int docCount, int batchSize)
+        throws SolrServerException, IOException {
+      Meter meter = new Meter();
+      List<SolrInputDocument> batch = new ArrayList<>(batchSize);
+      for (int i = 0; i < docCount; i++) {
+        batch.add(docs.inputDocument());
+        if (i % batchSize == 0) {
+          UpdateRequest updateRequest = new UpdateRequest();
+          updateRequest.setBasePath(nodes.get(0));
+          updateRequest.add(batch);
+          client.request(updateRequest, collection);
+          meter.mark(batch.size());
+          batch.clear();
+          log(meter.getCount() + " docs at " + meter.getMeanRate() + " doc/s");
+        }
+      }
+      if (!batch.isEmpty()) {
+        UpdateRequest updateRequest = new UpdateRequest();
+        updateRequest.setBasePath(nodes.get(0));
+        updateRequest.add(batch);
+        client.request(updateRequest, collection);
+        meter.mark(batch.size());
+        batch = null;
+      }
+      log(meter.getCount() + " docs at " + meter.getMeanRate() + " doc/s");
     }
 
     /**

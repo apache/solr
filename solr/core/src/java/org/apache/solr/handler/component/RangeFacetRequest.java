@@ -65,8 +65,10 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
   /** The computed start value of this range */
   protected final Object startObj;
+
   /** The computed end value of this range taking into account facet.range.hardend */
   protected final Object endObj;
+
   /** The computed gap between each range */
   protected final Object gapObj;
 

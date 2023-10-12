@@ -85,6 +85,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
+/** Supports export command in the bin/solr script. */
 public class ExportTool extends ToolBase {
   @Override
   public String getName() {
@@ -93,7 +94,39 @@ public class ExportTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return OPTIONS;
+    return List.of(
+        Option.builder("url")
+            .hasArg()
+            .required()
+            .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
+            .build(),
+        Option.builder("out")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
+            .build(),
+        Option.builder("format")
+            .hasArg()
+            .required(false)
+            .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
+            .build(),
+        Option.builder("compress").required(false).desc("Compress the output.").build(),
+        Option.builder("limit")
+            .hasArg()
+            .required(false)
+            .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
+            .build(),
+        Option.builder("query")
+            .hasArg()
+            .required(false)
+            .desc("A custom query, default is '*:*'.")
+            .build(),
+        Option.builder("fields")
+            .hasArg()
+            .required(false)
+            .desc("Comma separated list of fields to export. By default all fields are fetched.")
+            .build());
   }
 
   public abstract static class Info {
@@ -228,41 +261,6 @@ public class ExportTool extends ToolBase {
 
     void end() throws IOException {}
   }
-
-  private static final List<Option> OPTIONS =
-      List.of(
-          Option.builder("url")
-              .hasArg()
-              .required()
-              .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
-              .build(),
-          Option.builder("out")
-              .hasArg()
-              .required(false)
-              .desc(
-                  "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
-              .build(),
-          Option.builder("format")
-              .hasArg()
-              .required(false)
-              .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
-              .build(),
-          Option.builder("compress").required(false).desc("Compress the output.").build(),
-          Option.builder("limit")
-              .hasArg()
-              .required(false)
-              .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
-              .build(),
-          Option.builder("query")
-              .hasArg()
-              .required(false)
-              .desc("A custom query, default is '*:*'.")
-              .build(),
-          Option.builder("fields")
-              .hasArg()
-              .required(false)
-              .desc("Comma separated list of fields to export. By default all fields are fetched.")
-              .build());
 
   static class JsonWithLinesSink extends DocsSink {
     private final CharArr charArr = new CharArr(1024 * 2);
@@ -518,7 +516,7 @@ public class ExportTool extends ToolBase {
         addConsumer(consumerlatch);
         addProducers(m);
         if (output != null) {
-          output.println("NO: of shards : " + corehandlers.size());
+          output.println("Number of shards : " + corehandlers.size());
         }
         CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
         corehandlers.forEach(
@@ -550,10 +548,10 @@ public class ExportTool extends ToolBase {
         }
         System.out.println(
             "\nTotal Docs exported: "
-                + (docsWritten.get() - 1)
-                + ". Time taken: "
+                + docsWritten.get()
+                + ". Time elapsed: "
                 + ((System.currentTimeMillis() - startTime) / 1000)
-                + "secs");
+                + "seconds");
       }
     }
 
@@ -582,7 +580,9 @@ public class ExportTool extends ToolBase {
               }
               if (doc == EOFDOC) break;
               try {
-                if (docsWritten.get() > limit) continue;
+                if (docsWritten.get() >= limit) {
+                  continue;
+                }
                 sink.accept(doc);
               } catch (Exception e) {
                 if (output != null) output.println("Failed to write to file " + e.getMessage());
@@ -605,7 +605,7 @@ public class ExportTool extends ToolBase {
       boolean exportDocsFromCore() throws IOException, SolrServerException {
 
         try (SolrClient client = new Http2SolrClient.Builder(baseurl).build()) {
-          expectedDocs = getDocCount(replica.getCoreName(), client);
+          expectedDocs = getDocCount(replica.getCoreName(), client, query);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(Q, query);
@@ -638,17 +638,18 @@ public class ExportTool extends ToolBase {
               NamedList<Object> rsp = client.request(request);
               String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
               if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
-                if (output != null)
+                if (output != null) {
                   output.println(
                       StrUtils.formatString(
-                          "\nExport complete for : {0}, docs : {1}",
-                          replica.getCoreName(), receivedDocs.get()));
+                          "\nExport complete from shard {0}, core {1}, docs received: {2}",
+                          replica.getShard(), replica.getCoreName(), receivedDocs.get()));
+                }
                 if (expectedDocs != receivedDocs.get()) {
                   if (output != null) {
                     output.println(
                         StrUtils.formatString(
-                            "Could not download all docs for core {0} , expected: {1} , actual",
-                            replica.getCoreName(), expectedDocs, receivedDocs));
+                            "Could not download all docs from core {0}, docs expected: {1}, received: {2}",
+                            replica.getCoreName(), expectedDocs, receivedDocs.get()));
                     return false;
                   }
                 }
@@ -672,9 +673,9 @@ public class ExportTool extends ToolBase {
     }
   }
 
-  static long getDocCount(String coreName, SolrClient client)
+  static long getDocCount(String coreName, SolrClient client, String query)
       throws SolrServerException, IOException {
-    SolrQuery q = new SolrQuery("*:*");
+    SolrQuery q = new SolrQuery(query);
     q.setRows(0);
     q.add("distrib", "false");
     GenericSolrRequest request =

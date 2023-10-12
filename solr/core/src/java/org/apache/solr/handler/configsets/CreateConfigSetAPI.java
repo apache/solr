@@ -64,7 +64,7 @@ public class CreateConfigSetAPI extends ConfigSetAPIBase {
 
     if (!DISABLE_CREATE_AUTH_CHECKS
         && !isTrusted(obj.getRequest().getUserPrincipal(), coreContainer.getAuthenticationPlugin())
-        && isCurrentlyTrusted(createConfigPayload.baseConfigSet)) {
+        && configSetService.isConfigSetTrusted(createConfigPayload.baseConfigSet)) {
       throw new SolrException(
           SolrException.ErrorCode.UNAUTHORIZED,
           "Can't create a configset with an unauthenticated request from a trusted "

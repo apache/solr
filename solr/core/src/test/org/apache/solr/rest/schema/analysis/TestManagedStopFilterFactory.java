@@ -61,10 +61,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
 

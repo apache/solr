@@ -42,6 +42,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
@@ -53,7 +54,6 @@ import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
-import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,8 +65,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SystemInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static String REDACT_STRING = RedactionUtils.getRedactString();
 
   /**
    * Undocumented expert level system property to prevent doing a reverse lookup of our hostname.
@@ -152,7 +150,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
     }
 
     rsp.add("lucene", getLuceneInfo());
-    rsp.add("jvm", getJvmInfo());
+    NodeConfig nodeConfig = getCoreContainer(req).getNodeConfig();
+    rsp.add("jvm", getJvmInfo(nodeConfig));
     rsp.add("security", getSecurityInfo(req));
     rsp.add("system", getSystemInfo());
     if (solrCloudMode) {
@@ -235,7 +234,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
   }
 
   /** Get JVM Info - including memory info */
-  public static SimpleOrderedMap<Object> getJvmInfo() {
+  public static SimpleOrderedMap<Object> getJvmInfo(NodeConfig nodeConfig) {
     SimpleOrderedMap<Object> jvm = new SimpleOrderedMap<>();
 
     final String javaVersion = System.getProperty("java.specification.version", "unknown");
@@ -304,7 +303,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
       // the input arguments passed to the Java virtual machine
       // which does not include the arguments to the main method.
-      jmx.add("commandLineArgs", getInputArgumentsRedacted(mx));
+      jmx.add("commandLineArgs", getInputArgumentsRedacted(nodeConfig, mx));
 
       jmx.add("startTime", new Date(mx.getStartTime()));
       jmx.add("upTimeMS", mx.getUptime());
@@ -408,14 +407,18 @@ public class SystemInfoHandler extends RequestHandlerBase {
     return newSizeAndUnits;
   }
 
-  private static List<String> getInputArgumentsRedacted(RuntimeMXBean mx) {
+  private static List<String> getInputArgumentsRedacted(NodeConfig nodeConfig, RuntimeMXBean mx) {
     List<String> list = new ArrayList<>();
     for (String arg : mx.getInputArguments()) {
       if (arg.startsWith("-D")
           && arg.contains("=")
-          && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf('=')))) {
+          && nodeConfig.isSysPropHidden(arg.substring(2, arg.indexOf('=')))) {
         list.add(
-            String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf('=')), REDACT_STRING));
+            String.format(
+                Locale.ROOT,
+                "%s=%s",
+                arg.substring(0, arg.indexOf('=')),
+                NodeConfig.REDACTED_SYS_PROP_VALUE));
       } else {
         list.add(arg);
       }

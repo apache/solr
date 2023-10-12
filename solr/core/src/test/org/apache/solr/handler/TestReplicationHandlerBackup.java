@@ -64,8 +64,6 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   private static final String CONF_DIR =
       "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
 
-  private static String context = "/solr";
-
   boolean addNumberToKeepInRequest = true;
   String backupKeepParamName = ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM;
   private static long docsSeed; // see indexDocs()
@@ -78,14 +76,14 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
   }
 
   private static SolrClient createNewSolrClient(int port) {
-    final String baseUrl = buildUrl(port, context);
+    final String baseUrl = buildUrl(port);
     return new HttpSolrClient.Builder(baseUrl)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
@@ -255,7 +253,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   public static void runBackupCommand(JettySolrRunner leaderJetty, String cmd, String params)
       throws IOException {
     String leaderUrl =
-        buildUrl(leaderJetty.getLocalPort(), context)
+        buildUrl(leaderJetty.getLocalPort())
             + "/"
             + DEFAULT_TEST_CORENAME
             + ReplicationHandler.PATH

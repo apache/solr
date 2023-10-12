@@ -35,6 +35,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ALIASPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCE_REPLICAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATEALIAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
@@ -50,6 +51,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.INSTALLSHARDDATA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MAINTAINROUTEDALIAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE_REPLICAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_COLL_TASK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_REPLICA_TASK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_SHARD_TASK;
@@ -142,6 +144,8 @@ public class CollApiCmds {
       commandMap =
           Map.ofEntries(
               Map.entry(REPLACENODE, new ReplaceNodeCmd(ccc)),
+              Map.entry(MIGRATE_REPLICAS, new MigrateReplicasCmd(ccc)),
+              Map.entry(BALANCE_REPLICAS, new BalanceReplicasCmd(ccc)),
               Map.entry(DELETENODE, new DeleteNodeCmd(ccc)),
               Map.entry(BACKUP, new BackupCmd(ccc)),
               Map.entry(RESTORE, new RestoreCmd(ccc)),
