@@ -572,7 +572,7 @@ public class TermsComponent extends SearchComponent {
 
     // based on code from facets
     public TermsResponse.Term[] getLexSorted(HashMap<String, TermsResponse.Term> data) {
-      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
+      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[0]);
 
       Arrays.sort(arr, (o1, o2) -> o1.getTerm().compareTo(o2.getTerm()));
 
