@@ -176,6 +176,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
    */
   @Test
   public void testApacheClient() throws Exception {
+    getAndClearSpans(); // reset
     CollectionAdminRequest.ColStatus a1 = CollectionAdminRequest.collectionStatus(COLLECTION);
     CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
     assertEquals(0, r1.getStatus());
