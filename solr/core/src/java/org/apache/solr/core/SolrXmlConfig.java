@@ -750,7 +750,7 @@ public class SolrXmlConfig {
       PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
       configs.add(defaultPlugin);
     }
-    return configs.toArray(new PluginInfo[configs.size()]);
+    return configs.toArray(new PluginInfo[0]);
   }
 
   /**

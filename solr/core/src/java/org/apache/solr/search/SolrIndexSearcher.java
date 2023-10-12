@@ -409,7 +409,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }
 
-      cacheList = clist.toArray(new SolrCache[clist.size()]);
+      cacheList = clist.toArray(new SolrCache[0]);
     } else {
       this.filterCache = null;
       this.queryResultCache = null;

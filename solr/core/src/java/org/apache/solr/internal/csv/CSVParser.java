@@ -217,7 +217,7 @@ public class CSVParser {
       }
     }
     if (!record.isEmpty()) {
-      ret = record.toArray(new String[record.size()]);
+      ret = record.toArray(new String[0]);
     }
     return ret;
   }

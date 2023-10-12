@@ -203,7 +203,7 @@ public class CommandHandler {
     } else {
       collectors.add(allGroupHeadsCollector);
       searchWithTimeLimiter(
-          query, filter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
+          query, filter, MultiCollector.wrap(collectors.toArray(new Collector[0])));
     }
 
     return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));
