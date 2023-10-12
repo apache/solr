@@ -8,7 +8,8 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 
 New Features
 ---------------------
-(No changes)
+
+* SOLR-16943: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient (Alex Deparvu, David Smiley)
 
 Improvements
 ---------------------
