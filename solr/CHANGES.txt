@@ -15,6 +15,8 @@ Improvements
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
   REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
 
+* SOLR-17019: ZkCli should create chroot when necessary (Houston Putman)
+
 Optimizations
 ---------------------
 (No changes)
