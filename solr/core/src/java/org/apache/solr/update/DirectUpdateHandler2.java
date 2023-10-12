@@ -645,7 +645,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       }
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[mergeReaders.size()]));
+        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[0]));
       } finally {
         iw.decref();
       }
@@ -1050,7 +1050,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       // skips uniqueKey and _root_
       List<IndexableField> fields = cmd.makeLuceneDocForInPlaceUpdate().getFields();
       log.debug("updateDocValues({})", cmd);
-      writer.updateDocValues(updateTerm, fields.toArray(new Field[fields.size()]));
+      writer.updateDocValues(updateTerm, fields.toArray(new Field[0]));
 
     } else { // more normal path
 

@@ -540,7 +540,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           newInfos.add(fieldInfo);
         }
       }
-      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
+      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[0]));
       this.fieldInfos = infos;
     }
 
