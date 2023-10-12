@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** */
   private final HttpClient httpClient;
 

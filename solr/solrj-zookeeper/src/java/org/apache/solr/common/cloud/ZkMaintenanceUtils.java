@@ -52,6 +52,7 @@ public class ZkMaintenanceUtils {
   public static final String CONFIGS_ZKNODE = "/configs";
 
   public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+
   /** files matching this pattern will not be uploaded to ZkNode /configs */
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN =
       Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);

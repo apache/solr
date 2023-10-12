@@ -1219,6 +1219,7 @@ public class IndexFetcher {
   // -----------START----------------------
   static BooleanSupplier testWait = () -> true;
   static Function<String, Long> usableDiskSpaceProvider = dir -> getUsableSpace(dir);
+
   // ------------ END---------------------
 
   private static Long getUsableSpace(String dir) {

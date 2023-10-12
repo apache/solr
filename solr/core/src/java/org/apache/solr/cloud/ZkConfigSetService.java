@@ -50,6 +50,7 @@ public class ZkConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ZkController zkController;
   private final SolrZkClient zkClient;
+
   /** ZkNode where named configs are stored */
   public static final String CONFIGS_ZKNODE = "/configs";
 

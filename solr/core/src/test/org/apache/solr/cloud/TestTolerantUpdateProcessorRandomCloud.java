@@ -72,6 +72,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
+
   /** one SolrClient for each server */
   private static List<SolrClient> NODE_CLIENTS;
 

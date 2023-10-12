@@ -65,8 +65,10 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   /** Extract Only supported format */
   public static final String TEXT_FORMAT = "text";
+
   /** Extract Only supported format. Default */
   public static final String XML_FORMAT = "xml";
+
   /** XHTML XPath parser. */
   private static final XPathParser PARSER = new XPathParser("xhtml", XHTMLContentHandler.XHTML);
 

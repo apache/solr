@@ -490,6 +490,7 @@ public class SolrCLI implements CLIO {
     }
     return solrUrl;
   }
+
   /**
    * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
    * ZooKeeper.

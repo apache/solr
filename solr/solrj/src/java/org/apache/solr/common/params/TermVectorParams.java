@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.common.params;
+
 /** */
 public interface TermVectorParams {
 
@@ -22,12 +23,16 @@ public interface TermVectorParams {
 
   /** Return Term Frequency info */
   public static final String TF = TV_PREFIX + "tf";
+
   /** Return Term Vector position information */
   public static final String POSITIONS = TV_PREFIX + "positions";
+
   /** Return Term Vector payloads information */
   public static final String PAYLOADS = TV_PREFIX + "payloads";
+
   /** Return offset information, if available */
   public static final String OFFSETS = TV_PREFIX + "offsets";
+
   /** Return IDF information. May be expensive */
   public static final String DF = TV_PREFIX + "df";
 

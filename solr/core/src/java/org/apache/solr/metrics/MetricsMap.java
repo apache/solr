@@ -144,7 +144,9 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
 
   @Override
   public void setAttribute(Attribute attribute)
-      throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException,
+      throws AttributeNotFoundException,
+          InvalidAttributeValueException,
+          MBeanException,
           ReflectionException {
     initJmxAttributes();
     jmxAttributes.put(attribute.getName(), String.valueOf(attribute.getValue()));
@@ -209,8 +211,7 @@ public class MetricsMap implements Gauge<Map<String, Object>>, MapWriter, Dynami
       if (!(SolrException.getRootCause(e) instanceof AlreadyClosedException))
         log.warn("Could not get attributes of MetricsMap: {}", this, e);
     }
-    MBeanAttributeInfo[] attrInfoArr =
-        attrInfoList.toArray(new MBeanAttributeInfo[attrInfoList.size()]);
+    MBeanAttributeInfo[] attrInfoArr = attrInfoList.toArray(new MBeanAttributeInfo[0]);
     return new MBeanInfo(getClass().getName(), "MetricsMap", attrInfoArr, null, null, null);
   }
 

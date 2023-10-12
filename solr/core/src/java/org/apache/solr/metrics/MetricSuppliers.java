@@ -81,8 +81,10 @@ public class MetricSuppliers {
 
   /** Clock type parameter. */
   public static final String CLOCK = "clock";
+
   /** User-time clock. */
   public static final String CLOCK_USER = "user";
+
   /** CPU-time clock. */
   public static final String CLOCK_CPU = "cpu";
 
@@ -139,10 +141,13 @@ public class MetricSuppliers {
    * the implementations available in metrics-core.
    */
   public static final String RESERVOIR = "reservoir";
+
   /** Size of reservoir. */
   public static final String RESERVOIR_SIZE = "size";
+
   /** Alpha parameter of {@link ExponentiallyDecayingReservoir}. */
   public static final String RESERVOIR_EDR_ALPHA = "alpha";
+
   /** Time window in seconds of {@link SlidingTimeWindowReservoir}. */
   public static final String RESERVOIR_WINDOW = "window";
 

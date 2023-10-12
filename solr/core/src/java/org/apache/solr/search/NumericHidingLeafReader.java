@@ -81,7 +81,7 @@ public class NumericHidingLeafReader extends FilterLeafReader {
         filteredInfos.add(fi);
       }
     }
-    fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
+    fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[0]));
   }
 
   @Override
