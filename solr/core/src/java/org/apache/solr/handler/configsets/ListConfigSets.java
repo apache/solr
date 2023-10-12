@@ -18,9 +18,9 @@ package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
-import javax.inject.Inject;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ListConfigsetsApi;
 import org.apache.solr.client.api.model.ListConfigsetsResponse;

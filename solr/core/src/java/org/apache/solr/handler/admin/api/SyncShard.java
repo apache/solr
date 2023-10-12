@@ -21,9 +21,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.SyncShardApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrClient;

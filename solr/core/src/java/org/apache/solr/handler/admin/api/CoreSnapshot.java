@@ -19,11 +19,11 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import javax.inject.Inject;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.client.api.endpoint.CoreSnapshotApi;
 import org.apache.solr.client.api.model.CreateCoreSnapshotResponse;

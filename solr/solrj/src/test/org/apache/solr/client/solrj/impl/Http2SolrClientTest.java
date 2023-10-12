@@ -19,6 +19,10 @@ package org.apache.solr.client.solrj.impl;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -34,10 +38,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -84,7 +84,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     public static HashMap<String, String> headers = null;
     public static Map<String, String[]> parameters = null;
     public static String queryString = null;
-    public static javax.servlet.http.Cookie[] cookies = null;
+    public static jakarta.servlet.http.Cookie[] cookies = null;
     public static List<String[]> responseHeaders = null;
 
     public static void setErrorCode(Integer code) {
@@ -138,7 +138,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     }
 
     private void setCookies(HttpServletRequest req) {
-      javax.servlet.http.Cookie[] ck = req.getCookies();
+      jakarta.servlet.http.Cookie[] ck = req.getCookies();
       cookies = req.getCookies();
     }
 

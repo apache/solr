@@ -20,12 +20,12 @@ package org.apache.solr.jersey;
 import static org.apache.solr.jersey.PostRequestDecorationFilter.PRIORITY;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import javax.annotation.Priority;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;

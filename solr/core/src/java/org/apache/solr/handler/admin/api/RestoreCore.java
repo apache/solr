@@ -18,8 +18,8 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.net.URI;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.RestoreCoreApi;
 import org.apache.solr.client.api.model.RestoreCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;

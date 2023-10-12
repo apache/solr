@@ -16,7 +16,7 @@
  */
 
 plugins {
-  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.16'
 }
 
 apply plugin: 'java-library'
@@ -44,10 +44,16 @@ resolve {
 
 dependencies {
     runtimeOnly 'org.slf4j:slf4j-api'
-    
+
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
-    api 'io.swagger.core.v3:swagger-annotations'
+    api 'io.swagger.core.v3:swagger-annotations-jakarta'
+    // required to support swagger generating with jakarta instead of javax
+    permitUnusedDeclared 'jakarta.servlet:jakarta.servlet-api'
+    implementation 'jakarta.servlet:jakarta.servlet-api'
+    permitUnusedDeclared 'io.swagger.core.v3:swagger-jaxrs2-jakarta'
+    implementation 'io.swagger.core.v3:swagger-jaxrs2-jakarta'
+
     implementation 'org.semver4j:semver4j'
 
     testImplementation project(':solr:test-framework')

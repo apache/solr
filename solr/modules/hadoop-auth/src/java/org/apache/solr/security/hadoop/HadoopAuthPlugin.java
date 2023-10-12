@@ -20,6 +20,12 @@ import static org.apache.solr.security.hadoop.HadoopAuthFilter.DELEGATION_TOKEN_
 import static org.apache.solr.security.hadoop.RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
@@ -28,12 +34,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;

@@ -17,8 +17,8 @@
 
 package org.apache.solr.handler.admin.api;
 
+import jakarta.inject.Inject;
 import java.lang.invoke.MethodHandles;
-import javax.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.GetSchemaApi;
 import org.apache.solr.client.api.model.SchemaInfoResponse;

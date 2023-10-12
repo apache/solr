@@ -206,7 +206,7 @@ def checkAllJARs(topDir, gitRevision, version):
         if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
             or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
             or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
-            or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
+            or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-jakarta-servlet-api-'))):
           print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)

@@ -25,10 +25,10 @@ import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.request.SolrQueryRequest;
 

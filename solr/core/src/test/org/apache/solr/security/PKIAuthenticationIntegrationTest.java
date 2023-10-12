@@ -18,11 +18,11 @@ package org.apache.solr.security;
 
 import static java.util.Collections.singletonMap;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;

@@ -20,8 +20,8 @@ package org.apache.solr.jersey;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_CORE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_PARAMS;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Context;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;

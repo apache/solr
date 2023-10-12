@@ -18,10 +18,10 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
+import jakarta.inject.Inject;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.ListAliasesApi;
 import org.apache.solr.client.api.model.GetAliasByNameResponse;
 import org.apache.solr.client.api.model.ListAliasesResponse;

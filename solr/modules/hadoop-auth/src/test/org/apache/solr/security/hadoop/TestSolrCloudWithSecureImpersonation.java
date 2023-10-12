@@ -20,12 +20,12 @@ import static org.apache.solr.security.hadoop.HttpParamDelegationTokenPlugin.REM
 import static org.apache.solr.security.hadoop.HttpParamDelegationTokenPlugin.REMOTE_HOST_PARAM;
 import static org.apache.solr.security.hadoop.HttpParamDelegationTokenPlugin.USER_PARAM;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;

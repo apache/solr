@@ -33,6 +33,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,8 +54,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;

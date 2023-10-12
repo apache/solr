@@ -20,8 +20,8 @@ package org.apache.solr.api;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 import static org.apache.solr.jersey.container.ContainerRequestUtils.DEFAULT_SECURITY_CONTEXT;
 
+import jakarta.ws.rs.container.ContainerRequestContext;
 import java.net.URI;
-import javax.ws.rs.container.ContainerRequestContext;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.SchemaNameResponse;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
