@@ -20,14 +20,14 @@ package org.apache.solr.util.tracing;
 import io.opentracing.propagation.TextMap;
 import java.util.Iterator;
 import java.util.Map;
-import org.eclipse.jetty.client.api.Request;
+import org.apache.http.HttpRequest;
 
 /** An OpenTracing Carrier for injecting Span context through SolrRequest */
-public class SolrRequestCarrier implements TextMap {
+public class SolrHttpRequestCarrier implements TextMap {
 
-  private final Request solrRequest;
+  private final HttpRequest solrRequest;
 
-  public SolrRequestCarrier(Request solrRequest) {
+  public SolrHttpRequestCarrier(HttpRequest solrRequest) {
     this.solrRequest = solrRequest;
   }
 
@@ -38,6 +38,6 @@ public class SolrRequestCarrier implements TextMap {
 
   @Override
   public void put(String key, String value) {
-    solrRequest.headers(httpFields -> httpFields.put(key, value));
+    solrRequest.setHeader(key, value);
   }
 }

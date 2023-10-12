@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
@@ -98,14 +99,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     finishedSpans.removeIf(x -> !x.tags().get("http.url").toString().endsWith("/select"));
     // one from client to server, 2 for execute query, 2 for fetching documents
     assertEquals(5, finishedSpans.size());
-    assertEquals(1, finishedSpans.stream().filter(s -> s.parentId() == 0).count());
-    long parentId =
-        finishedSpans.stream()
-            .filter(s -> s.parentId() == 0)
-            .collect(Collectors.toList())
-            .get(0)
-            .context()
-            .spanId();
+    var parentId = getRootTraceId(finishedSpans);
     for (MockSpan span : finishedSpans) {
       if (span.parentId() != 0 && parentId != span.parentId()) {
         fail("All spans must belong to single span, but:" + finishedSpans);
@@ -166,6 +160,27 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(1, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
   }
 
+  /**
+   * Best effort test of the apache http client tracing. the test assumes the request uses the http
+   * client but there is no way to enforce it, so when the api will be rewritten this test will
+   * become obsolete
+   */
+  @Test
+  public void testApacheClient() throws Exception {
+    getAndClearSpans(); // reset
+    CollectionAdminRequest.ColStatus a1 = CollectionAdminRequest.collectionStatus(COLLECTION);
+    CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
+    assertEquals(0, r1.getStatus());
+    var finishedSpans = getAndClearSpans();
+    var parentTraceId = getRootTraceId(finishedSpans);
+    for (var span : finishedSpans) {
+      if (span.parentId() == 0) {
+        continue;
+      }
+      assertEquals(span.parentId(), parentTraceId);
+    }
+  }
+
   private void assertDbInstanceColl(MockSpan mockSpan) {
     MatcherAssert.assertThat(mockSpan.tags().get("db.instance"), Matchers.equalTo("collection1"));
   }
@@ -192,5 +207,15 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     Collections.reverse(result); // nicer to see spans chronologically
     tracer.reset();
     return result;
+  }
+
+  private long getRootTraceId(List<MockSpan> finishedSpans) {
+    assertEquals(1, finishedSpans.stream().filter(s -> s.parentId() == 0).count());
+    return finishedSpans.stream()
+        .filter(s -> s.parentId() == 0)
+        .collect(Collectors.toList())
+        .get(0)
+        .context()
+        .spanId();
   }
 }

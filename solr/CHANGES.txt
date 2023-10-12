@@ -20,6 +20,8 @@ Improvements
 
 * SOLR-17046: SchemaCodecFactory is now the implicit default codec factory.  (hossman)
 
+* SOLR-16943: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient (Alex Deparvu, David Smiley)
+
 Optimizations
 ---------------------
 (No changes)
