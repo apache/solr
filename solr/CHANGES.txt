@@ -65,6 +65,8 @@ Other Changes
 
 * SOLR-16911: Establish /solr as the only host context supported by Solr, removing legacy ability to change this.  Solr paths will only be either /solr or /api now.  (Eric Pugh)
 
+* SOLR-16995: Add a ReplicaCount class to keep track of replicas per type (Vincent Primault)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------

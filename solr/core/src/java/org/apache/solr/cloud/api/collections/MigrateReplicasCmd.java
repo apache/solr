@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -95,14 +96,11 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
       List<Assign.AssignRequest> assignRequests = new ArrayList<>(sourceReplicas.size());
       List<String> targetNodeList = new ArrayList<>(targetNodes);
       for (Replica sourceReplica : sourceReplicas) {
-        Replica.Type replicaType = sourceReplica.getType();
         Assign.AssignRequest assignRequest =
             new Assign.AssignRequestBuilder()
                 .forCollection(sourceReplica.getCollection())
                 .forShard(Collections.singletonList(sourceReplica.getShard()))
-                .assignNrtReplicas(replicaType == Replica.Type.NRT ? 1 : 0)
-                .assignTlogReplicas(replicaType == Replica.Type.TLOG ? 1 : 0)
-                .assignPullReplicas(replicaType == Replica.Type.PULL ? 1 : 0)
+                .assignReplicas(ReplicaCount.of(sourceReplica.getType(), 1))
                 .onNodes(targetNodeList)
                 .build();
         assignRequests.add(assignRequest);
