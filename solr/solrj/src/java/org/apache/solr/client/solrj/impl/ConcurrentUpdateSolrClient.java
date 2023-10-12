@@ -451,6 +451,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   static class Update {
     UpdateRequest request;
     String collection;
+
     /**
      * @param request the update request.
      * @param collection The collection, can be null.
@@ -459,6 +460,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       this.request = request;
       this.collection = collection;
     }
+
     /**
      * @return the update request.
      */
@@ -469,6 +471,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     public void setRequest(UpdateRequest request) {
       this.request = request;
     }
+
     /**
      * @return the collection, can be null.
      */

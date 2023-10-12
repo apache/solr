@@ -278,6 +278,7 @@ public class SolrPluginUtils {
     }
     return debugInterests;
   }
+
   /**
    * Returns a NamedList containing many "standard" pieces of debugging information.
    *
@@ -467,6 +468,7 @@ public class SolrPluginUtils {
   public static Map<String, Float> parseFieldBoosts(String in) {
     return parseFieldBoosts(new String[] {in});
   }
+
   /**
    * Like <code>parseFieldBoosts(String)</code>, but parses all the strings in the provided array
    * (which may be null).
@@ -497,6 +499,7 @@ public class SolrPluginUtils {
     }
     return out;
   }
+
   /**
    * /** Like {@link #parseFieldBoosts}, but allows for an optional slop value prefixed by "~".
    *

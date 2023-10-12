@@ -1516,6 +1516,7 @@ public class CoreContainer {
   }
 
   final Set<String> inFlightCreations = ConcurrentHashMap.newKeySet(); // See SOLR-14969
+
   /**
    * Creates a new core in a specified instance directory, publishing the core state to the cluster
    *
@@ -2236,6 +2237,7 @@ public class CoreContainer {
   public SolrCore getCore(String name) {
     return getCore(name, null);
   }
+
   /**
    * Gets a core by name and increase its refcount.
    *

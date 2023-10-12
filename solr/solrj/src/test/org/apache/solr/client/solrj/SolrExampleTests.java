@@ -2982,6 +2982,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   /** used by genNestedDocuments */
   private int idCounter = 0;
+
   /** used by genNestedDocuments */
   private static final String[] names = new String[] {"java", "python", "scala", "ruby", "clojure"};
 
@@ -3011,8 +3012,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testAddChildToChildFreeDoc()
-      throws IOException, SolrServerException, IllegalArgumentException, IllegalAccessException,
-          SecurityException, NoSuchFieldException {
+      throws IOException,
+          SolrServerException,
+          IllegalArgumentException,
+          IllegalAccessException,
+          SecurityException,
+          NoSuchFieldException {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
 
@@ -3054,8 +3059,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testDeleteParentDoc()
-      throws IOException, SolrServerException, IllegalArgumentException, IllegalAccessException,
-          SecurityException, NoSuchFieldException {
+      throws IOException,
+          SolrServerException,
+          IllegalArgumentException,
+          IllegalAccessException,
+          SecurityException,
+          NoSuchFieldException {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
 

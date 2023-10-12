@@ -71,10 +71,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    * @see #testParserCoverage
    */
   private static boolean doAssertParserCoverage = false;
+
   /**
    * @see #testParserCoverage
    */
   private static final Set<String> qParsersTested = new HashSet<>();
+
   /**
    * @see #testParserCoverage
    */

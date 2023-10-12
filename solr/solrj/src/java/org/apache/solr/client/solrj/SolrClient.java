@@ -1044,6 +1044,7 @@ public abstract class SolrClient implements Serializable, Closeable {
       throws SolrServerException, IOException {
     return getById(collection, id, null);
   }
+
   /**
    * Retrieves the SolrDocument associated with the given identifier.
    *

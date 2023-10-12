@@ -98,10 +98,13 @@ public abstract class FieldType extends FieldProperties {
 
   /** The name of the type (not the name of the field) */
   protected String typeName;
+
   /** additional arguments specified in the field type declaration */
   protected Map<String, String> args;
+
   /** properties explicitly set to true */
   protected int trueProperties;
+
   /** properties explicitly set to false */
   protected int falseProperties;
 

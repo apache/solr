@@ -77,6 +77,7 @@ public abstract class AnalyticsFacet {
       importFacetValue(input, input.readUTF());
     }
   }
+
   /**
    * Import the next facet value's set of {@link ReductionData}.
    *
@@ -108,6 +109,7 @@ public abstract class AnalyticsFacet {
       exportFacetValue(output, facetValue);
     }
   }
+
   /**
    * Export the next facet value's set of {@link ReductionData}.
    *

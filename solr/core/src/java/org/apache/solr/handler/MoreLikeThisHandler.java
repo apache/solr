@@ -459,6 +459,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       }
       return results;
     }
+
     /**
      * Yields terms with boosts from the boosted MLT query.
      *

@@ -87,6 +87,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   static final int MAX_RETRIES_ON_FORWARD_DEAULT =
       Integer.getInteger("solr.retries.on.forward", 25);
+
   /** Requests from leader to it's followers will be retried this amount of times by default */
   static final int MAX_RETRIES_TO_FOLLOWERS_DEFAULT =
       Integer.getInteger("solr.retries.to.followers", 3);
@@ -148,6 +149,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   /** Number of times requests forwarded to some other shard's leader can be retried */
   protected final int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD_DEAULT;
+
   /** Number of times requests from leaders to followers can be retried */
   protected final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 

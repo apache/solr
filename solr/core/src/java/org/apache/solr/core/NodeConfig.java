@@ -770,6 +770,7 @@ public class NodeConfig {
       this.replayUpdatesThreads = replayUpdatesThreads;
       return this;
     }
+
     // Remove in Solr 10.0
 
     @Deprecated

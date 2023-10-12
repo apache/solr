@@ -165,6 +165,7 @@ public class ReplicationHandler extends RequestHandlerBase
       generation = g;
       version = v;
     }
+
     /**
      * builds a CommitVersionInfo data for the specified IndexCommit. Will never be null, ut version
      * and generation may be zero if there are problems extracting them from the commit data

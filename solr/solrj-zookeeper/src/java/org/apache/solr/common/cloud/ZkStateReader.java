@@ -82,6 +82,7 @@ public class ZkStateReader implements SolrCloseable {
   // if this flag equals to false and the replica does not exist in cluster state, set state op
   // become no op (default is true)
   public static final String FORCE_SET_STATE_PROP = Replica.ReplicaStateProps.FORCE_SET_STATE;
+
   /** SolrCore name. */
   public static final String CORE_NAME_PROP = "core";
 
@@ -115,6 +116,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String ROLES = "/roles.json";
 
   public static final String ALIASES = "/aliases.json";
+
   /**
    * This ZooKeeper file is no longer used starting with Solr 9 but keeping the name around to check
    * if it is still present and non empty (in case of upgrade from previous Solr version). It used

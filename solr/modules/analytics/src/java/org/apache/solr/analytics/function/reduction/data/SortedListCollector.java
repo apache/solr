@@ -152,6 +152,7 @@ public abstract class SortedListCollector<T extends Comparable<T>>
   }
 
   Iterator<T> iter;
+
   /**
    * The list to be exported is unsorted. The lists of all shards will be combined with the {@link
    * #startImport} and {@link #importNext} methods.
@@ -162,6 +163,7 @@ public abstract class SortedListCollector<T extends Comparable<T>>
     iter = ioData.list.iterator();
     return ioData.list.size();
   }
+
   /**
    * Return the next value in the list.
    *

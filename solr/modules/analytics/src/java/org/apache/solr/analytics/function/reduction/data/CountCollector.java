@@ -40,6 +40,7 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
   public long count() {
     return count;
   }
+
   /**
    * The number of Solr Documents used in this reduction.
    *

@@ -172,6 +172,7 @@ public class ReductionCollectionManager {
       reductionDataCollectors[i].addLastingCollectTarget(target.dataArr[i]);
     }
   }
+
   /** Clear lasting collection targets. */
   public void clearLastingCollectTargets() {
     for (int i = 0; i < reductionDataCollectors.length; i++) {
@@ -193,6 +194,7 @@ public class ReductionCollectionManager {
     }
     return newCol;
   }
+
   /**
    * Add a {@link ReductionDataCollection} to target while collecting the next document. This target
    * is only valid for the next {@link #apply()} call.
@@ -254,6 +256,7 @@ public class ReductionCollectionManager {
     readers.clear();
     reservations.forEach(resv -> readers.add(resv.createReadStream(input)));
   }
+
   /**
    * Merge the data from the given shard input stream into the set IO data collectors. Should always
    * be called after {@link #setShardInput(DataInput)} and either {@link
@@ -277,6 +280,7 @@ public class ReductionCollectionManager {
     writers.clear();
     reservations.forEach(resv -> writers.add(resv.createWriteStream(output)));
   }
+
   /**
    * Export the data from the set IO data collectors to the given shard output stream. Should always
    * be called after {@link #setShardOutput(DataOutput)} and {@link

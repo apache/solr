@@ -37,6 +37,7 @@ public interface AnalyticsValueStream {
    * @return the name of function/value
    */
   String getName();
+
   /**
    * Get the expression string of the analytics value stream. Must be unique to the expression. If
    * passed to {@link ExpressionFactory#createExpression(String)}, the exact same expression should
@@ -45,6 +46,7 @@ public interface AnalyticsValueStream {
    * @return the name of function/value
    */
   String getExpressionStr();
+
   /**
    * Stream the object representations of all current values, if any exist.
    *

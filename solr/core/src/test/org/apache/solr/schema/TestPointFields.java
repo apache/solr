@@ -4762,6 +4762,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
       throws Exception {
     doTestFloatPointFieldExactQuery(field, true, testDouble);
   }
+
   /**
    * @param field the field to use for indexing and searching against
    * @param searchable set to true if searches against "field" should succeed, false if field is

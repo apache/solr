@@ -319,6 +319,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       this.defaultCollection = collection;
       return this;
     }
+
     /**
      * Sets the cache ttl for DocCollection Objects cached.
      *

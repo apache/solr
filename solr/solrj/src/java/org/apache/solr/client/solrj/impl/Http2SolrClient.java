@@ -147,6 +147,7 @@ public class Http2SolrClient extends SolrClient {
   protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
+
   /** The URL of the Solr server. */
   private final String serverBaseUrl;
 
@@ -1237,6 +1238,7 @@ public class Http2SolrClient extends SolrClient {
       withMaxConnectionsPerHost(max);
       return this;
     }
+
     /**
      * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
      * to 4
