@@ -547,6 +547,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
     int nextLength; // length of the next record (the next one closer to the start of the log file)
     long prevPos; // where we started reading from last time (so prevPos - nextLength == start of
+
     // next record)
 
     public HDFSReverseReader() throws IOException {

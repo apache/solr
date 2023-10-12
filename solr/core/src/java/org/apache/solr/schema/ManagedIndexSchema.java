@@ -620,8 +620,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       // Rebuild affected dynamic copy fields
       if (dynamicCopyFieldsToRebuild.size() > 0) {
-        newSchema.dynamicCopyFields =
-            newDynamicCopyFields.toArray(new DynamicCopy[newDynamicCopyFields.size()]);
+        newSchema.dynamicCopyFields = newDynamicCopyFields.toArray(new DynamicCopy[0]);
         for (DynamicCopy dynamicCopy : dynamicCopyFieldsToRebuild) {
           newSchema.registerCopyField(
               dynamicCopy.getRegex(), dynamicCopy.getDestFieldName(), dynamicCopy.getMaxChars());
@@ -752,8 +751,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       // This may trigger an exception, if one of the deleted dynamic fields was the only matching
       // source or target.
       if (dynamicCopyFieldsToRebuild.size() > 0) {
-        newSchema.dynamicCopyFields =
-            newDynamicCopyFields.toArray(new DynamicCopy[newDynamicCopyFields.size()]);
+        newSchema.dynamicCopyFields = newDynamicCopyFields.toArray(new DynamicCopy[0]);
         for (DynamicCopy dynamicCopy : dynamicCopyFieldsToRebuild) {
           newSchema.registerCopyField(
               dynamicCopy.getRegex(), dynamicCopy.getDestFieldName(), dynamicCopy.getMaxChars());
@@ -830,8 +828,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       // Rebuild affected dynamic copy fields
       if (dynamicCopyFieldsToRebuild.size() > 0) {
-        newSchema.dynamicCopyFields =
-            newDynamicCopyFields.toArray(new DynamicCopy[newDynamicCopyFields.size()]);
+        newSchema.dynamicCopyFields = newDynamicCopyFields.toArray(new DynamicCopy[0]);
         for (DynamicCopy dynamicCopy : dynamicCopyFieldsToRebuild) {
           newSchema.registerCopyField(
               dynamicCopy.getRegex(), dynamicCopy.getDestFieldName(), dynamicCopy.getMaxChars());
@@ -1284,8 +1281,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       // Rebuild affected dynamic copy fields
       if (dynamicCopyFieldsToRebuild.size() > 0) {
-        newSchema.dynamicCopyFields =
-            newDynamicCopyFields.toArray(new DynamicCopy[newDynamicCopyFields.size()]);
+        newSchema.dynamicCopyFields = newDynamicCopyFields.toArray(new DynamicCopy[0]);
         for (DynamicCopy dynamicCopy : dynamicCopyFieldsToRebuild) {
           newSchema.registerCopyField(
               dynamicCopy.getRegex(), dynamicCopy.getDestFieldName(), dynamicCopy.getMaxChars());

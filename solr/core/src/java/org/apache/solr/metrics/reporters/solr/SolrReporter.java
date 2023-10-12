@@ -170,6 +170,7 @@ public class SolrReporter extends ScheduledReporter {
       this.params = params;
       return this;
     }
+
     /**
      * If true then use {@link org.apache.solr.client.solrj.impl.CloudSolrClient} for communication.
      * Default is false.

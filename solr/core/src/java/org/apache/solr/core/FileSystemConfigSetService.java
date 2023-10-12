@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FileSystemConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** .metadata.json hidden file where metadata is stored */
   public static final String METADATA_FILE = ".metadata.json";
 

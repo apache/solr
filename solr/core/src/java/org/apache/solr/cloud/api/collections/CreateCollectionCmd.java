@@ -541,6 +541,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
     return replicaPositions;
   }
+
   // the cloud manager should reflect the latest internal cluster state
   private static SolrCloudManager wrapCloudManager(
       ClusterState clusterState, SolrCloudManager solrCloudManager) {

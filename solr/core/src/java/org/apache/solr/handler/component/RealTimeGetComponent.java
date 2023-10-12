@@ -1427,6 +1427,7 @@ public class RealTimeGetComponent extends SearchComponent {
   private static final class IdsRequested {
     /** An List (which may be empty but will never be null) of the uniqueKeys requested. */
     public final List<String> allIds;
+
     /**
      * true if the params provided by the user indicate that a single doc response structure should
      * be used. Value is meaningless if <code>ids</code> is empty.

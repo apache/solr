@@ -124,6 +124,7 @@ public class ZkShardTerms implements AutoCloseable {
   public ShardTerms getShardTerms() {
     return terms.get();
   }
+
   /**
    * Can this replica become leader?
    *

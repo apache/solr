@@ -86,6 +86,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
 
   /** If a number has less than this number of digits, it'll not be considered a timestamp. */
   private static final int MIN_TIMESTAMP_DIGITS = 10; // a timestamp of 9999999999 is year 1970
+
   /** If a number has more than this number of digits, it'll not be considered a timestamp. */
   private static final int MAX_TIMESTAMP_DIGITS = 13; // a timestamp of 9999999999999 is year 2286
 

@@ -458,6 +458,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertSingleParentOf(searcher, one("yz"), "X");
     assertSingleParentOf(searcher, one("bc"), "A");
   }
+
   // This is the same as testSolrJXML above but uses the XMLLoader
   // to illustrate the structure of the XML documents
   @Test
