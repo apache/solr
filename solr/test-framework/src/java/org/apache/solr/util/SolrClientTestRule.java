@@ -61,6 +61,8 @@ public abstract class SolrClientTestRule extends ExternalResource {
     private String configSet;
     private String configFile;
     private String schemaFile;
+    private String basicAuthUser;
+    private String basicAuthPwd;
 
     public NewCollectionBuilder(String name) {
       this.name = name;
@@ -93,6 +95,12 @@ public abstract class SolrClientTestRule extends ExternalResource {
       return this;
     }
 
+    public NewCollectionBuilder withBasicAuthCredentials(String user, String password) {
+      this.basicAuthUser = user;
+      this.basicAuthPwd = password;
+      return this;
+    }
+
     public String getName() {
       return name;
     }
@@ -111,6 +119,14 @@ public abstract class SolrClientTestRule extends ExternalResource {
 
     public void create() throws SolrServerException, IOException {
       SolrClientTestRule.this.create(this);
+    }
+
+    public String getBasicAuthUser() {
+      return basicAuthUser;
+    }
+
+    public String getBasicAuthPwd() {
+      return basicAuthPwd;
     }
   }
 
@@ -132,18 +148,30 @@ public abstract class SolrClientTestRule extends ExternalResource {
       req.setSchemaName(b.getSchemaFile());
     }
 
+    if (b.getBasicAuthUser() != null) {
+      req.setBasicAuthCredentials(b.getBasicAuthUser(), b.getBasicAuthPwd());
+    }
+
     req.process(getAdminClient());
   }
 
-  /** Provides a SolrClient instance for administration actions */
-  public abstract SolrClient getAdminClient();
+  /**
+   * Provides a SolrClient instance for administration actions. The caller doesn't need to close it
+   */
+  public SolrClient getAdminClient() {
+    return getSolrClient(null);
+  }
 
-  /** Provides a SolrClient instance for collection1 */
+  /** Provides a SolrClient instance for collection1. The caller doesn't need to close it */
   public SolrClient getSolrClient() {
     return getSolrClient("collection1");
   }
 
-  public abstract SolrClient getSolrClient(String name);
+  /**
+   * Provides a SolrClient instance for caller defined collection name. The caller doesn't need to
+   * close it
+   */
+  public abstract SolrClient getSolrClient(String collection);
 
   public void clearIndex() throws SolrServerException, IOException {
     new UpdateRequest().deleteByQuery("*:*").commit(getSolrClient(), null);

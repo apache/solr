@@ -27,7 +27,6 @@ import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -79,11 +78,10 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     this.collection = collection;
 
     String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
-    ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
     // only if /collections/{collection} exists already do we succeed in creating this path
     log.info("make sure parent is created {}", parent);
     try {
-      zcmd.ensureExists(parent, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
+      ZkMaintenanceUtils.ensureExists(parent, (byte[]) null, CreateMode.PERSISTENT, zkClient, 2);
     } catch (KeeperException e) {
       throw new RuntimeException(e);
     } catch (InterruptedException e) {

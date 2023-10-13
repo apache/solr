@@ -272,6 +272,40 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     }
   }
 
+  public void testRTGCompositeRouterWithRouterField() throws Exception {
+    final CloudSolrClient cloudClient = cluster.getSolrClient();
+    final String testCollectionName =
+        "composite_collection_with_routerfield_" + NAME_COUNTER.getAndIncrement();
+    assertEquals(
+        RequestStatusState.COMPLETED,
+        CollectionAdminRequest.createCollection(testCollectionName, "_default", 2, 2)
+            .setRouterName("compositeId")
+            .setRouterField("routefield_s")
+            .setShards("shard1,shard2")
+            .processAndWait(cloudClient, DEFAULT_TIMEOUT));
+    ZkStateReader.from(cloudClient)
+        .waitForState(
+            testCollectionName,
+            DEFAULT_TIMEOUT,
+            TimeUnit.SECONDS,
+            (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
+
+    // Add a few documents with diff routes
+    cloudClient.add(testCollectionName, sdoc("id", "1", "routefield_s", "europe"));
+    cloudClient.add(testCollectionName, sdoc("id", "3", "routefield_s", "europe"));
+    cloudClient.add(testCollectionName, sdoc("id", "5", "routefield_s", "africa"));
+    cloudClient.add(testCollectionName, sdoc("id", "7", "routefield_s", "africa"));
+    cloudClient.commit(testCollectionName);
+
+    var docsNoRoute = cloudClient.getById(testCollectionName, List.of("3"));
+    assertEquals(0, docsNoRoute.getNumFound());
+
+    var params = new ModifiableSolrParams();
+    params.set("_route_", "europe");
+    var docsWRoute = cloudClient.getById(testCollectionName, List.of("3"), params);
+    assertEquals(1, docsWRoute.getNumFound());
+  }
+
   public void testDeleteByIdCompositeRouterWithRouterField() throws Exception {
     final CloudSolrClient cloudClient = cluster.getSolrClient();
     final String testCollectionName =

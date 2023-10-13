@@ -17,7 +17,6 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.solr.cloud.api.collections.Assign;
@@ -26,14 +25,15 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.PlacementRequest;
+import org.apache.solr.common.cloud.ReplicaCount;
 
 public class PlacementRequestImpl implements PlacementRequest {
   private final SolrCollection solrCollection;
   private final Set<String> shardNames;
   private final Set<Node> targetNodes;
-  private final EnumMap<Replica.ReplicaType, Integer> countReplicas =
-      new EnumMap<>(Replica.ReplicaType.class);
+  private final ReplicaCount numReplicas;
 
+  @Deprecated
   public PlacementRequestImpl(
       SolrCollection solrCollection,
       Set<String> shardNames,
@@ -41,14 +41,22 @@ public class PlacementRequestImpl implements PlacementRequest {
       int countNrtReplicas,
       int countTlogReplicas,
       int countPullReplicas) {
+    this(
+        solrCollection,
+        shardNames,
+        targetNodes,
+        new ReplicaCount(countNrtReplicas, countTlogReplicas, countPullReplicas));
+  }
+
+  public PlacementRequestImpl(
+      SolrCollection solrCollection,
+      Set<String> shardNames,
+      Set<Node> targetNodes,
+      ReplicaCount numReplicas) {
     this.solrCollection = solrCollection;
     this.shardNames = shardNames;
     this.targetNodes = targetNodes;
-    // Initializing map for all values of enum, so unboxing always possible later without checking
-    // for null
-    countReplicas.put(Replica.ReplicaType.NRT, countNrtReplicas);
-    countReplicas.put(Replica.ReplicaType.TLOG, countTlogReplicas);
-    countReplicas.put(Replica.ReplicaType.PULL, countPullReplicas);
+    this.numReplicas = numReplicas;
   }
 
   @Override
@@ -68,7 +76,8 @@ public class PlacementRequestImpl implements PlacementRequest {
 
   @Override
   public int getCountReplicasToCreate(Replica.ReplicaType replicaType) {
-    return countReplicas.get(replicaType);
+    return numReplicas.get(
+        SimpleClusterAbstractionsImpl.ReplicaImpl.toCloudReplicaType(replicaType));
   }
 
   /**
@@ -111,12 +120,6 @@ public class PlacementRequestImpl implements PlacementRequest {
       }
     }
 
-    return new PlacementRequestImpl(
-        solrCollection,
-        shardNames,
-        nodes,
-        assignRequest.numNrtReplicas,
-        assignRequest.numTlogReplicas,
-        assignRequest.numPullReplicas);
+    return new PlacementRequestImpl(solrCollection, shardNames, nodes, assignRequest.numReplicas);
   }
 }

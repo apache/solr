@@ -270,6 +270,16 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     headers.put(key, value);
   }
 
+  public void addHeaders(Map<String, String> headers) {
+    if (headers == null) {
+      return;
+    }
+    if (this.headers == null) {
+      this.headers = new HashMap<>();
+    }
+    this.headers.putAll(headers);
+  }
+
   public Map<String, String> getHeaders() {
     if (headers == null) return null;
     return Collections.unmodifiableMap(headers);

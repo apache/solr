@@ -62,6 +62,8 @@ setup() {
   run solr status -help
   assert_output --partial 'usage: status'
   refute_output --partial 'ERROR'
+  # Make sure custom selection of options for status help works.
+  refute_output --partial '-solrUrl'
 }
 
 @test "healthcheck help flag prints help" {

@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
@@ -113,7 +112,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   @Override
   public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
-    MDCLoggingContext.setCollection(message.getStr(COLLECTION));
+    // sometimes overseer messages have the collection name in 'name' field, not 'collection'
+    MDCLoggingContext.setCollection(
+        message.getStr(COLLECTION_PROP) != null
+            ? message.getStr(COLLECTION_PROP)
+            : message.getStr(NAME));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
     log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);

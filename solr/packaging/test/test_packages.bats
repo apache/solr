@@ -47,7 +47,7 @@ teardown() {
   assert_output --partial "Available packages:"
 }
 
-@test "deploying and undeploying of packages" {
+@test "deploying and undeploying a collection level package" {
   run solr start -c -Denable.packages=true
 
   solr create -c foo-1.2
@@ -65,3 +65,24 @@ teardown() {
   refute_output --partial "Invalid collection"
   assert_output --partial "Package PACKAGE_NAME not deployed on collection foo-1.2"
 }
+
+# This test is useful if you are debugging/working with packages.
+# We have commented it out for now since it depends on a live internet
+# connection to run.  This could be updated with a local Repo server if we had
+# a package that is part of the Solr project to use.
+# @test "deploying and undeploying a cluster level package" {
+#  run solr start -c -Denable.packages=true
+  
+#  run solr package add-repo splainer "https://raw.githubusercontent.com/o19s/splainer/main/solr-splainer-package/repo"
+#  assert_output --partial "Added repository: splainer"
+  
+#  run solr package list-available
+#  assert_output --partial "solr-splainer 		Splainer for Solr"
+#  run solr package install solr-splainer
+#  assert_output --partial "solr-splainer installed."
+
+#  run solr package deploy solr-splainer -y -cluster
+#  assert_output --partial "Deployment successful"
+  
+#  run -0 curl --fail http://localhost:${SOLR_PORT}/v2/splainer/index.html
+# }

@@ -310,7 +310,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           }
         }
       }
-      String[] fields = list.toArray(new String[list.size()]);
+      String[] fields = list.toArray(new String[0]);
       if (fields.length < 1) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -459,6 +459,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       }
       return results;
     }
+
     /**
      * Yields terms with boosts from the boosted MLT query.
      *

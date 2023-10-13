@@ -185,11 +185,13 @@ grant {
   permission java.io.FilePermission "${hadoop.security.credential.provider.path}", "read,write,delete,readlink";
   permission java.io.FilePermission "${hadoop.security.credential.provider.path}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.jetty.keystore}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.jetty.keystore}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.jetty.keystore}", "read,readlink";
 
-  permission java.io.FilePermission "${solr.jetty.truststore}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.jetty.truststore}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.jetty.truststore}", "read,readlink";
+
+  permission java.io.FilePermission "${javax.net.ssl.keyStore}", "read,readlink";
+
+  permission java.io.FilePermission "${javax.net.ssl.trustStore}", "read,readlink";
 
   permission java.io.FilePermission "${solr.install.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.install.dir}${/}-", "read,write,delete,readlink";

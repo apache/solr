@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -47,7 +48,6 @@ import org.apache.solr.core.backup.repository.BackupRepository.PathType;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

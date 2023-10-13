@@ -31,6 +31,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -41,7 +42,6 @@ import org.apache.solr.handler.IncrementalShardBackup;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -54,6 +54,11 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
       SolrQueryResponse solrQueryResponse,
       CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker) {
     super(coreContainer, coreAdminAsyncTracker, solrQueryRequest, solrQueryResponse);
+  }
+
+  @Override
+  boolean isExpensive() {
+    return true;
   }
 
   @POST

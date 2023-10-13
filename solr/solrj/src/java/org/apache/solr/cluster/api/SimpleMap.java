@@ -54,6 +54,7 @@ public interface SimpleMap<T> extends MapWriter {
   }
 
   int size();
+
   /**
    * iterate through all keys but abort in between if required The default impl is suboptimal.
    * Proper implementations must do it more efficiently

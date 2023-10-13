@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -79,17 +80,11 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
     if (target == null || target.isEmpty()) {
       List<Assign.AssignRequest> assignRequests = new ArrayList<>(sourceReplicas.size());
       for (Replica sourceReplica : sourceReplicas) {
-        Replica.Type replicaType = sourceReplica.getType();
-        int numNrtReplicas = replicaType == Replica.Type.NRT ? 1 : 0;
-        int numTlogReplicas = replicaType == Replica.Type.TLOG ? 1 : 0;
-        int numPullReplicas = replicaType == Replica.Type.PULL ? 1 : 0;
         Assign.AssignRequest assignRequest =
             new Assign.AssignRequestBuilder()
                 .forCollection(sourceReplica.getCollection())
                 .forShard(Collections.singletonList(sourceReplica.getShard()))
-                .assignNrtReplicas(numNrtReplicas)
-                .assignTlogReplicas(numTlogReplicas)
-                .assignPullReplicas(numPullReplicas)
+                .assignReplicas(ReplicaCount.of(sourceReplica.getType(), 1))
                 .onNodes(
                     ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes().stream()
                         .filter(node -> !node.equals(source))

@@ -61,13 +61,13 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     systemSetPropertySolrDisableUrlAllowList("true");
     File solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
-    String url = jetty.getBaseUrl().toString();
+    String url = getBaseUrl();
 
     collection1 = getHttpSolrClient(url + "/collection1");
     collection2 = getHttpSolrClient(url + "/collection2");
 
-    String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
-    String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
+    String urlCollection1 = getBaseUrl() + "/" + "collection1";
+    String urlCollection2 = getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
 
@@ -100,10 +100,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     if (null != collection2) {
       collection2.close();
       collection2 = null;
-    }
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
     }
     resetExceptionIgnores();
     systemClearPropertySolrDisableUrlAllowList();
@@ -259,6 +255,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       assertNotInDebug(response, key);
     }
   }
+
   /** Asserts that the specified debug result key does exist in the response and is non-null */
   private void assertInDebug(QueryResponse response, String key) {
     assertNotNull("debug map is null", response.getDebugMap());

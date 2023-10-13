@@ -21,10 +21,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -562,18 +560,7 @@ public class ZkTestServer {
                     }
 
                     public void setClientPort(int clientPort) {
-                      if (clientPortAddress != null) {
-                        try {
-                          this.clientPortAddress =
-                              new InetSocketAddress(
-                                  InetAddress.getByName(clientPortAddress.getHostName()),
-                                  clientPort);
-                        } catch (UnknownHostException e) {
-                          throw new RuntimeException(e);
-                        }
-                      } else {
-                        this.clientPortAddress = new InetSocketAddress(clientPort);
-                      }
+                      this.clientPortAddress = new InetSocketAddress("127.0.0.1", clientPort);
                       log.info("client port: {}", this.clientPortAddress);
                     }
                   };

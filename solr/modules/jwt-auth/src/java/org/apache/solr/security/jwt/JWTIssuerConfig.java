@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -32,8 +33,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.jose4j.http.Get;
 import org.jose4j.http.SimpleResponse;
@@ -41,9 +44,12 @@ import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.lang.JoseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc */
 public class JWTIssuerConfig {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final String PARAM_ISS_NAME = "name";
   static final String PARAM_JWKS_URL = "jwksUrl";
   static final String PARAM_JWK = "jwk";
@@ -51,7 +57,9 @@ public class JWTIssuerConfig {
   static final String PARAM_AUDIENCE = "aud";
   static final String PARAM_WELL_KNOWN_URL = "wellKnownUrl";
   static final String PARAM_AUTHORIZATION_ENDPOINT = "authorizationEndpoint";
+  static final String PARAM_TOKEN_ENDPOINT = "tokenEndpoint";
   static final String PARAM_CLIENT_ID = "clientId";
+  static final String PARAM_AUTHORIZATION_FLOW = "authorizationFlow";
 
   private static HttpsJwksFactory httpsJwksFactory = new HttpsJwksFactory(3600, 5000);
   private String iss;
@@ -64,12 +72,18 @@ public class JWTIssuerConfig {
   private WellKnownDiscoveryConfig wellKnownDiscoveryConfig;
   private String clientId;
   private String authorizationEndpoint;
+  private String tokenEndpoint;
+  private String authorizationFlow;
   private Collection<X509Certificate> trustedCerts;
 
   public static boolean ALLOW_OUTBOUND_HTTP =
       Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG =
       "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
+  private static final String DEFAULT_AUTHORIZATION_FLOW =
+      "implicit"; // 'implicit' to be deprecated
+  private static final Set<String> VALID_AUTHORIZATION_FLOWS =
+      Set.of(DEFAULT_AUTHORIZATION_FLOW, "code_pkce");
 
   /**
    * Create config for further configuration with setters, builder style. Once all values are set,
@@ -117,6 +131,10 @@ public class JWTIssuerConfig {
       if (authorizationEndpoint == null) {
         authorizationEndpoint = wellKnownDiscoveryConfig.getAuthorizationEndpoint();
       }
+
+      if (tokenEndpoint == null) {
+        tokenEndpoint = wellKnownDiscoveryConfig.getTokenEndpoint();
+      }
     }
     if (iss == null && usesHttpsJwk() && !JWTAuthPlugin.PRIMARY_ISSUER.equals(name)) {
       throw new SolrException(
@@ -141,6 +159,8 @@ public class JWTIssuerConfig {
     setJwksUrl(confJwksUrl);
     setJsonWebKeySet(conf.get(PARAM_JWK));
     setAuthorizationEndpoint((String) conf.get(PARAM_AUTHORIZATION_ENDPOINT));
+    setTokenEndpoint((String) conf.get(PARAM_TOKEN_ENDPOINT));
+    setAuthorizationFlow((String) conf.get(PARAM_AUTHORIZATION_FLOW));
 
     conf.remove(PARAM_WELL_KNOWN_URL);
     conf.remove(PARAM_ISSUER);
@@ -150,6 +170,8 @@ public class JWTIssuerConfig {
     conf.remove(PARAM_JWKS_URL);
     conf.remove(PARAM_JWK);
     conf.remove(PARAM_AUTHORIZATION_ENDPOINT);
+    conf.remove(PARAM_TOKEN_ENDPOINT);
+    conf.remove(PARAM_AUTHORIZATION_FLOW);
 
     if (!conf.isEmpty()) {
       throw new SolrException(
@@ -315,6 +337,41 @@ public class JWTIssuerConfig {
     return this;
   }
 
+  public String getTokenEndpoint() {
+    return tokenEndpoint;
+  }
+
+  public JWTIssuerConfig setTokenEndpoint(String tokenEndpoint) {
+    this.tokenEndpoint = tokenEndpoint;
+    return this;
+  }
+
+  public String getAuthorizationFlow() {
+    return authorizationFlow;
+  }
+
+  public JWTIssuerConfig setAuthorizationFlow(String authorizationFlow) {
+    this.authorizationFlow =
+        StrUtils.isNullOrEmpty(authorizationFlow)
+            ? DEFAULT_AUTHORIZATION_FLOW
+            : authorizationFlow.trim();
+    if (!VALID_AUTHORIZATION_FLOWS.contains(this.authorizationFlow)) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Invalid value for "
+              + PARAM_AUTHORIZATION_FLOW
+              + ". Expected one of "
+              + VALID_AUTHORIZATION_FLOWS
+              + " but found "
+              + authorizationFlow);
+    }
+    if (this.authorizationFlow.equals("implicit")) {
+      log.warn(
+          "JWT authentication plugin is using 'implicit flow' which is deprecated and less secure. It's recommended to switch to 'code_pkce'");
+    }
+    return this;
+  }
+
   public Map<String, Object> asConfig() {
     HashMap<String, Object> config = new HashMap<>();
     putIfNotNull(config, PARAM_ISS_NAME, name);
@@ -324,6 +381,8 @@ public class JWTIssuerConfig {
     putIfNotNull(config, PARAM_WELL_KNOWN_URL, wellKnownUrl);
     putIfNotNull(config, PARAM_CLIENT_ID, clientId);
     putIfNotNull(config, PARAM_AUTHORIZATION_ENDPOINT, authorizationEndpoint);
+    putIfNotNull(config, PARAM_TOKEN_ENDPOINT, tokenEndpoint);
+    putIfNotNull(config, PARAM_AUTHORIZATION_FLOW, authorizationFlow);
     if (jsonWebKeySet != null) {
       putIfNotNull(config, PARAM_JWK, jsonWebKeySet.getJsonWebKeys());
     }

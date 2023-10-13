@@ -26,9 +26,9 @@ import org.apache.solr.api.ApiSupport;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
+import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.handler.configsets.ListConfigSetsAPI;
+import org.apache.solr.handler.configsets.ListConfigSets;
 import org.apache.solr.jersey.APIConfigProvider;
 import org.apache.solr.jersey.APIConfigProvider.APIConfig;
 import org.apache.solr.jersey.APIConfigProviderBinder;
@@ -95,12 +95,12 @@ public class PluginBagTest extends SolrTestCaseJ4 {
   public void testRegistersJerseyResourcesAssociatedWithRequestHandlers() {
     final PluginBag<SolrRequestHandler> handlerPluginBag =
         new PluginBag<>(SolrRequestHandler.class, null);
-    assertFalse(handlerPluginBag.getJerseyEndpoints().isRegistered(ListConfigSetsAPI.class));
+    assertFalse(handlerPluginBag.getJerseyEndpoints().isRegistered(ListConfigSets.class));
 
     handlerPluginBag.put("/foo", new ConfigSetsHandler(coreContainer));
     final ResourceConfig config = handlerPluginBag.getJerseyEndpoints();
 
-    assertTrue(handlerPluginBag.getJerseyEndpoints().isRegistered(ListConfigSetsAPI.class));
+    assertTrue(handlerPluginBag.getJerseyEndpoints().isRegistered(ListConfigSets.class));
   }
 
   @Test
@@ -149,7 +149,7 @@ public class PluginBagTest extends SolrTestCaseJ4 {
     @Override
     public Collection<Class<? extends JerseyResource>> getJerseyResources() {
       // random pick of v2 api
-      return List.of(CollectionPropertyAPI.class);
+      return List.of(CollectionProperty.class);
     }
 
     @Override

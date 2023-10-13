@@ -200,6 +200,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
    * @see #pattern
    */
   private String dest = null;
+
   /**
    * @see #dest
    */

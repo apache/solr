@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,41 +35,28 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.AfterClass;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
 public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
 
-  protected static JettySolrRunner yetty;
-  private static String fooUrl;
-  private static String barUrl;
+  @ClassRule public static SolrJettyTestRule secondJetty = new SolrJettyTestRule();
+  private static String fooUrl; // first Jetty URL
+  private static String barUrl; // second Jetty URL
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     createAndStartJetty(legacyExampleCollection1SolrHome());
-    // stealing the first made jetty
-    yetty = jetty;
-    barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
+    fooUrl = getBaseUrl() + "/" + "collection1";
 
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-
-    fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
-  }
-
-  @AfterClass
-  public static void stopYetty() throws Exception {
-    if (null != yetty) {
-      yetty.stop();
-      yetty = null;
-    }
+    secondJetty.startSolr(Path.of(legacyExampleCollection1SolrHome()));
+    barUrl = secondJetty.getBaseUrl() + "/" + "collection1";
   }
 
   public void testPoolSize() throws SolrServerException, IOException {
     PoolingHttpClientConnectionManager pool = HttpClientUtil.createPoolingConnectionManager();
 
-    final String fooUrl = jetty.getBaseUrl().toString() + "/" + "collection1";
-    final String barUrl = yetty.getBaseUrl().toString() + "/" + "collection1";
     CloseableHttpClient httpClient =
         HttpClientUtil.createClient(
             new ModifiableSolrParams(), pool, false /* let client shutdown it*/);

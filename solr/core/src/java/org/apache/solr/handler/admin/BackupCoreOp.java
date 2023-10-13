@@ -25,9 +25,13 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.handler.admin.api.BackupCoreAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.SolrJerseyResponse;
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
+
+  @Override
+  public boolean isExpensive() {
+    return true;
+  }
 
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
@@ -53,7 +57,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
         new BackupCoreAPI(
             it.handler.coreContainer, it.req, it.rsp, it.handler.coreAdminAsyncTracker);
     try {
-      SolrJerseyResponse response = backupCoreAPI.createBackup(cname, backupCoreRequestBody);
+      final var response = backupCoreAPI.createBackup(cname, backupCoreRequestBody);
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       V2ApiUtils.squashIntoNamedListWithoutHeader(namedList, response);
       it.rsp.addResponse(namedList);

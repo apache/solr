@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -85,7 +84,7 @@ public class ConfigTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String solrUrl = SolrCLI.resolveSolrUrl(cli);
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     String action = cli.getOptionValue("action", "set-property");
     String collection = cli.getOptionValue("name");
     String property = cli.getOptionValue("property");
@@ -109,7 +108,7 @@ public class ConfigTool extends ToolBase {
     echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
     echo(jsonBody);
 
-    try (SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build()) {
+    try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
       Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
       if (statusCode == 0) {

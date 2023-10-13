@@ -117,6 +117,7 @@ public interface ConfigNode {
   default double doubleVal(double def) {
     return _double(txt(), def);
   }
+
   /** Iterate through child nodes with the name and return the first child that matches */
   default ConfigNode child(Predicate<ConfigNode> test, String name) {
     ConfigNode[] result = new ConfigNode[1];

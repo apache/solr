@@ -46,6 +46,14 @@ teardown() {
   refute collection_exists "COLL_NAME"
 }
 
+@test "can delete collections with solrUrl" {
+  solr create -c "COLL_NAME"
+  assert collection_exists "COLL_NAME"
+
+  solr delete -c "COLL_NAME" -solrUrl http://localhost:${SOLR_PORT}
+  refute collection_exists "COLL_NAME"
+}
+
 @test "collection delete also deletes zk config" {
   solr create -c "COLL_NAME"
   assert config_exists "COLL_NAME"

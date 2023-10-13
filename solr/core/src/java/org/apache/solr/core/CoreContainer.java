@@ -26,14 +26,11 @@ import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
-import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
-import io.opentracing.Tracer;
-import io.opentracing.noop.NoopTracer;
-import io.opentracing.noop.NoopTracerFactory;
+import io.opentelemetry.api.trace.Tracer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -41,6 +38,7 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -96,6 +94,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
@@ -138,6 +137,8 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.AuditLoggerPlugin;
@@ -268,11 +269,13 @@ public class CoreContainer {
 
   protected volatile SolrMetricsContext solrMetricsContext;
 
-  protected volatile Tracer tracer = NoopTracerFactory.create();
+  protected volatile Tracer tracer;
 
   protected MetricsHandler metricsHandler;
 
   private volatile SolrClientCache solrClientCache;
+
+  private volatile Map<String, SolrCache<?, ?>> caches;
 
   private final ObjectCache objectCache = new ObjectCache();
 
@@ -373,21 +376,24 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(NodeConfig config) {
-    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
+    this(config, CoresLocator.instantiate(config));
   }
 
   public CoreContainer(NodeConfig config, boolean asyncSolrCoreLoad) {
-    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
+    this(config, CoresLocator.instantiate(config), asyncSolrCoreLoad);
   }
 
   /**
-   * Create a new CoreContainer using the given configuration and locator. The container's cores are
-   * not loaded.
+   * Create a new CoreContainer using the given configuration and locator.
+   *
+   * <p>The container's cores are not loaded. This constructor should be used only in tests, as it
+   * overrides {@link CoresLocator}'s instantiation process.
    *
    * @param config a ConfigSolr representation of this container's configuration
    * @param locator a CoresLocator
    * @see #load()
    */
+  @VisibleForTesting
   public CoreContainer(NodeConfig config, CoresLocator locator) {
     this(config, locator, false);
   }
@@ -695,7 +701,7 @@ public class CoreContainer {
     return metricsHandler;
   }
 
-  /** Never null but may implement {@link NoopTracer}. */
+  /** Never null */
   public Tracer getTracer() {
     return tracer;
   }
@@ -710,6 +716,10 @@ public class CoreContainer {
 
   public PackageStoreAPI getPackageStoreAPI() {
     return packageStoreAPI;
+  }
+
+  public SolrCache<?, ?> getCache(String name) {
+    return caches.get(name);
   }
 
   public SolrClientCache getSolrClientCache() {
@@ -797,6 +807,20 @@ public class CoreContainer {
     updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
 
     solrClientCache = new SolrClientCache(updateShardHandler.getDefaultHttpClient());
+
+    Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
+    if (cachesConfig.isEmpty()) {
+      this.caches = Collections.emptyMap();
+    } else {
+      Map<String, SolrCache<?, ?>> m = CollectionUtil.newHashMap(cachesConfig.size());
+      for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {
+        SolrCache<?, ?> c = e.getValue().newInstance();
+        String cacheName = e.getKey();
+        c.initializeMetrics(solrMetricsContext, "nodeLevelCache/" + cacheName);
+        m.put(cacheName, c);
+      }
+      this.caches = Collections.unmodifiableMap(m);
+    }
 
     StartupLoggingUtils.checkRequestLogging();
 
@@ -1265,6 +1289,17 @@ public class CoreContainer {
       // Now clear all the cores that are being operated upon.
       solrCores.close();
 
+      final Map<String, SolrCache<?, ?>> closeCaches = caches;
+      if (closeCaches != null) {
+        for (Map.Entry<String, SolrCache<?, ?>> e : caches.entrySet()) {
+          try {
+            e.getValue().close();
+          } catch (Exception ex) {
+            log.warn("error closing node-level cache: {}", e.getKey(), ex);
+          }
+        }
+      }
+
       objectCache.clear();
 
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it
@@ -1375,8 +1410,6 @@ public class CoreContainer {
       org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
-
-    tracer.close();
   }
 
   public void cancelCoreRecoveries() {
@@ -1479,6 +1512,7 @@ public class CoreContainer {
   }
 
   final Set<String> inFlightCreations = ConcurrentHashMap.newKeySet(); // See SOLR-14969
+
   /**
    * Creates a new core in a specified instance directory, publishing the core state to the cluster
    *
@@ -1914,9 +1948,7 @@ public class CoreContainer {
       return null;
     }
 
-    CorePropertiesLocator cpl = new CorePropertiesLocator(null);
-    CoreDescriptor ret =
-        cpl.buildCoreDescriptor(oldDesc.getInstanceDir().resolve(PROPERTIES_FILENAME), this);
+    CoreDescriptor ret = getCoresLocator().reload(oldDesc, this);
 
     // Ok, this little jewel is all because we still create core descriptors on the fly from lists
     // of properties in tests particularly. Theoretically, there should be _no_ way to create a
@@ -2201,6 +2233,7 @@ public class CoreContainer {
   public SolrCore getCore(String name) {
     return getCore(name, null);
   }
+
   /**
    * Gets a core by name and increase its refcount.
    *
@@ -2410,6 +2443,10 @@ public class CoreContainer {
 
   public long getStatus() {
     return status;
+  }
+
+  public boolean hideStackTrace() {
+    return cfg.hideStackTraces();
   }
 
   /**

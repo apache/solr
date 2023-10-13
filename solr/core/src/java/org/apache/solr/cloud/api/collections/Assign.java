@@ -49,6 +49,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -325,20 +326,18 @@ public class Assign {
       ClusterState clusterState,
       String collectionName,
       String shard,
-      int nrtReplicas,
-      int tlogReplicas,
-      int pullReplicas,
+      ReplicaCount numReplicas,
       Object createNodeSet,
       SolrCloudManager cloudManager,
       CoreContainer coreContainer)
       throws IOException, InterruptedException, AssignmentException {
-    log.debug(
-        "getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}",
-        shard,
-        nrtReplicas,
-        tlogReplicas,
-        pullReplicas,
-        createNodeSet);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "getNodesForNewReplicas() shard={}, {} , createNodeSet={}",
+          shard,
+          numReplicas,
+          createNodeSet);
+    }
     List<String> createNodeList;
 
     if (createNodeSet instanceof List) {
@@ -361,9 +360,7 @@ public class Assign {
         new AssignRequestBuilder()
             .forCollection(collectionName)
             .forShard(Collections.singletonList(shard))
-            .assignNrtReplicas(nrtReplicas)
-            .assignTlogReplicas(tlogReplicas)
-            .assignPullReplicas(pullReplicas)
+            .assignReplicas(numReplicas)
             .onNodes(createNodeList)
             .build();
     AssignStrategy assignStrategy = createAssignStrategy(coreContainer);
@@ -501,23 +498,17 @@ public class Assign {
     public final String collectionName;
     public final List<String> shardNames;
     public final List<String> nodes;
-    public final int numNrtReplicas;
-    public final int numTlogReplicas;
-    public final int numPullReplicas;
+    public final ReplicaCount numReplicas;
 
     public AssignRequest(
         String collectionName,
         List<String> shardNames,
         List<String> nodes,
-        int numNrtReplicas,
-        int numTlogReplicas,
-        int numPullReplicas) {
+        ReplicaCount numReplicas) {
       this.collectionName = collectionName;
       this.shardNames = shardNames;
       this.nodes = nodes;
-      this.numNrtReplicas = numNrtReplicas;
-      this.numTlogReplicas = numTlogReplicas;
-      this.numPullReplicas = numPullReplicas;
+      this.numReplicas = numReplicas;
     }
   }
 
@@ -525,9 +516,11 @@ public class Assign {
     private String collectionName;
     private List<String> shardNames;
     private List<String> nodes;
-    private int numNrtReplicas;
-    private int numTlogReplicas;
-    private int numPullReplicas;
+    private ReplicaCount numReplicas;
+
+    public AssignRequestBuilder() {
+      this.numReplicas = ReplicaCount.empty();
+    }
 
     public AssignRequestBuilder forCollection(String collectionName) {
       this.collectionName = collectionName;
@@ -544,26 +537,15 @@ public class Assign {
       return this;
     }
 
-    public AssignRequestBuilder assignNrtReplicas(int numNrtReplicas) {
-      this.numNrtReplicas = numNrtReplicas;
-      return this;
-    }
-
-    public AssignRequestBuilder assignTlogReplicas(int numTlogReplicas) {
-      this.numTlogReplicas = numTlogReplicas;
-      return this;
-    }
-
-    public AssignRequestBuilder assignPullReplicas(int numPullReplicas) {
-      this.numPullReplicas = numPullReplicas;
+    public AssignRequestBuilder assignReplicas(ReplicaCount numReplicas) {
+      this.numReplicas = numReplicas;
       return this;
     }
 
     public AssignRequest build() {
       Objects.requireNonNull(collectionName, "The collectionName cannot be null");
       Objects.requireNonNull(shardNames, "The shard names cannot be null");
-      return new AssignRequest(
-          collectionName, shardNames, nodes, numNrtReplicas, numTlogReplicas, numPullReplicas);
+      return new AssignRequest(collectionName, shardNames, nodes, numReplicas);
     }
   }
 

@@ -58,6 +58,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
     dependencies {
       solrPlatformLibs project(":solr:core")
       solrPlatformLibs project(":solr:solrj")
+      solrPlatformLibs project(":solr:api")
       solrPlatformLibs project(":solr:solrj-zookeeper")
       // libExt has logging libs, which we don't want.  Lets users decide what they want.
       solrPlatformLibs project(path: ":solr:server", configuration: 'libExt')

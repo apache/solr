@@ -380,6 +380,7 @@ public class LTRScoringQuery extends Query implements Accountable {
      *
      */
     private final FeatureInfo[] featuresInfo;
+
     /*
      * @param modelFeatureWeights
      *     - should be the same size as the number of features used by the model

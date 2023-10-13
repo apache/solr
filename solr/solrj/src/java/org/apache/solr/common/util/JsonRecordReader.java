@@ -63,6 +63,7 @@ public class JsonRecordReader {
   }
 
   private JsonRecordReader() {}
+
   /**
    * a '|' separated list of path expressions which define sub sections of the JSON stream that are
    * to be emitted as separate records. It is possible to have multiple levels of split one for
