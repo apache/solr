@@ -10,6 +10,8 @@ Bug Fixes
 ---------------------
 * SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
 
+* SOLR-6853: Allow '/' characters in the text managed by Managed Resources API. (Nikita Rusetskii via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
