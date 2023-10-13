@@ -50,10 +50,9 @@ teardown() {
   curl --insecure -o ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment/resolve/main/vocab.txt
   
   # GPU versions is linux and windows only, not OSX.  So swap jars.
+  # Pending https://issues.apache.org/jira/browse/OPENNLP-1515
   rm -f ${SOLR_TIP}/modules/analysis-extras/lib/onnxruntime_gpu-1.14.0.jar
-  # restore 
-  #curl --insecure -o ${SOLR_TIP}/modules/analysis-extras/lib/onnxruntime-1.14.0.jar https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime/1.14.0/onnxruntime-1.14.0.jar
-  cp /Users/epugh/Documents/projects/solr-epugh/onnxruntime-1.14.0.jar ${SOLR_TIP}/modules/analysis-extras/lib/
+  curl --insecure -o ${SOLR_TIP}/modules/analysis-extras/lib/onnxruntime-1.14.0.jar https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime/1.14.0/onnxruntime-1.14.0.jar
   
   run ls -alh ${SOLR_TIP}/modules/analysis-extras/lib  
   refute_output --partial "onnxruntime_gpu"
