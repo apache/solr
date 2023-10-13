@@ -894,8 +894,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         SchemaField schemaField = searcher.getSchema().getField(fi.getName());
         if (fieldsProcessed.add(fi.getName())
             && schemaField.hasDocValues()
-            && (!(schemaField.getType() instanceof SortableTextField)
-                || schemaField.useDocValuesAsStored())) {
+            && schemaField.useDocValuesAsStored()) {
           expandedFields.add(schemaField);
         }
       }
