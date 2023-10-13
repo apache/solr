@@ -26,7 +26,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
 
 Deprecation Removals
 ----------------------
@@ -86,7 +86,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-6853: Allow '/' characters in the text managed by Managed Resources API. (Nikita Rusetskii via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
