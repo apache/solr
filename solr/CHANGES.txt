@@ -27,7 +27,6 @@ Optimizations
 Bug Fixes
 ---------------------
 
-* SOLR-6853: Add slash support for Managed Resources. (Nikita Rusetskii)
 
 Deprecation Removals
 ----------------------
@@ -87,7 +86,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-6853: Allow '/' characters in the text managed by Managed Resources API. (Nikita Rusetskii via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
