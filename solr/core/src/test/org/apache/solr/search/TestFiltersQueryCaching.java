@@ -215,6 +215,6 @@ public class TestFiltersQueryCaching extends SolrTestCaseJ4 {
     request.addAll(List.of("q", "*:*", "indent", "true", "fq", "{!filters param=$fqs}"));
     request.addAll(fqsArgs);
     assertJQ(
-        req(request.toArray(new String[request.size()])), "/response/numFound==" + expectNumFound);
+        req(request.toArray(new String[0])), "/response/numFound==" + expectNumFound);
   }
 }
