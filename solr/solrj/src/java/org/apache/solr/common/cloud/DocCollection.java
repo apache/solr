@@ -148,7 +148,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         }
       }
     }
-    this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
+    this.activeSlicesArr = activeSlices.values().toArray(new Slice[0]);
     this.router = router;
     this.znode = getCollectionPath(name);
     assert name != null && slices != null;

@@ -226,7 +226,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
         debug.add("true");
         all = true;
       }
-      q.set("debug", debug.toArray(new String[debug.size()]));
+      q.set("debug", debug.toArray(new String[0]));
 
       QueryResponse r = client.query(q);
       try {

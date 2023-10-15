@@ -1117,9 +1117,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       if (null != previousFacets) {
         assertEquals(
             "Facets not the same as on previous page:\nprevious page facets: "
-                + Arrays.toString(facets.toArray(new Object[facets.size()]))
+                + Arrays.toString(facets.toArray(new Object[0]))
                 + "\ncurrent page facets: "
-                + Arrays.toString(previousFacets.toArray(new Object[previousFacets.size()])),
+                + Arrays.toString(previousFacets.toArray(new Object[0])),
             previousFacets,
             facets);
       }
