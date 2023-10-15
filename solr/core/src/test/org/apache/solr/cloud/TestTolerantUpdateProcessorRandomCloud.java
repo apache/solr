@@ -277,7 +277,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       assertUpdateTolerantErrors(
           client.toString() + " => " + expectedErrors,
           rsp,
-          expectedErrors.toArray(new ExpectedErr[expectedErrors.size()]));
+          expectedErrors.toArray(new ExpectedErr[0]));
 
       if (log.isInfoEnabled()) {
         log.info("END ITER #{}, expecting #docs: {}", i, expectedDocIds.cardinality());

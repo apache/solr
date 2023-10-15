@@ -3108,12 +3108,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
     if (!Boolean.getBoolean("enable.update.log")) {
       return;
     }
-    List<String> datesList =
+    String[] dates =
         getRandomLongs(3, false, MAX_DATE_EPOCH_MILLIS).stream()
             .map(Instant::ofEpochMilli)
             .map(Object::toString)
-            .collect(Collectors.toList());
-    String[] dates = datesList.toArray(new String[datesList.size()]);
+            .toArray(String[]::new);
     doTestMultiValuedPointFieldsAtomicUpdates("number_p_dt_mv", "date", dates);
     doTestMultiValuedPointFieldsAtomicUpdates("number_p_dt_ni_mv_dv", "date", dates);
     doTestMultiValuedPointFieldsAtomicUpdates("number_p_dt_dv_ns_mv", "date", dates);

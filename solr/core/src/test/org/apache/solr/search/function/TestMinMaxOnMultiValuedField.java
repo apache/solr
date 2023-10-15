@@ -1055,7 +1055,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     }
     assertQ(
         req("q", "*:*", "rows", "" + sortedDocs.size(), "sort", sort),
-        xpaths.toArray(new String[xpaths.size()]));
+        xpaths.toArray(new String[0]));
   }
 
   /**
