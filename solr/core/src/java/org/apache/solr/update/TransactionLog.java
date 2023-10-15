@@ -106,9 +106,11 @@ public class TransactionLog implements Closeable {
         }
       };
 
-  protected static final OutputStreamOpener OUTPUT_STREAM_OPENER = (channel, position) -> Channels.newOutputStream(channel);
+  protected static final OutputStreamOpener OUTPUT_STREAM_OPENER =
+      (channel, position) -> Channels.newOutputStream(channel);
 
-  protected static final ChannelInputStreamOpener CHANNEL_INPUT_STREAM_OPENER = ChannelFastInputStream::new;
+  protected static final ChannelInputStreamOpener CHANNEL_INPUT_STREAM_OPENER =
+      ChannelFastInputStream::new;
 
   public class LogCodec extends JavaBinCodec {
 
@@ -177,11 +179,12 @@ public class TransactionLog implements Closeable {
     this(tlogFile, globalStrings, openExisting, OUTPUT_STREAM_OPENER, CHANNEL_INPUT_STREAM_OPENER);
   }
 
-  protected TransactionLog(Path tlogFile,
-                           Collection<String> globalStrings,
-                           boolean openExisting,
-                           OutputStreamOpener outputStreamOpener,
-                           ChannelInputStreamOpener channelInputStreamOpener) {
+  protected TransactionLog(
+      Path tlogFile,
+      Collection<String> globalStrings,
+      boolean openExisting,
+      OutputStreamOpener outputStreamOpener,
+      ChannelInputStreamOpener channelInputStreamOpener) {
     boolean success = false;
     try {
       this.tlog = tlogFile;
@@ -255,8 +258,8 @@ public class TransactionLog implements Closeable {
   protected TransactionLog() {}
 
   /**
-   * Sets the counter of written data in the {@link FastOutputStream} view of the log file,
-   * to reflect that we aren't starting at the beginning.
+   * Sets the counter of written data in the {@link FastOutputStream} view of the log file, to
+   * reflect that we aren't starting at the beginning.
    */
   protected void setWrittenCount(long fileStartOffset) throws IOException {
     fos.setWritten(fileStartOffset);
@@ -1026,8 +1029,8 @@ public class TransactionLog implements Closeable {
     /**
      * Opens an {@link OutputStream} to write in a {@link FileChannel}.
      *
-     * @param position The initial write position of the {@link OutputStream}
-     *                view of the {@link FileChannel}.
+     * @param position The initial write position of the {@link OutputStream} view of the {@link
+     *     FileChannel}.
      */
     OutputStream open(FileChannel channel, long position) throws IOException;
   }
@@ -1038,8 +1041,8 @@ public class TransactionLog implements Closeable {
     /**
      * Opens a {@link ChannelFastInputStream} to read a {@link FileChannel}.
      *
-     * @param position The initial read position of the {@link OutputStream}
-     *                view of the {@link FileChannel}.
+     * @param position The initial read position of the {@link OutputStream} view of the {@link
+     *     FileChannel}.
      */
     ChannelFastInputStream open(FileChannel channel, long position) throws IOException;
   }
