@@ -48,6 +48,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.handler.admin.api.InstallShardData;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -62,7 +63,7 @@ import org.slf4j.LoggerFactory;
  * repository. This base-class will populate that backup repository all data necessary for these
  * tests.
  *
- * @see org.apache.solr.handler.admin.api.InstallShardDataAPI
+ * @see InstallShardData
  */
 public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
 
@@ -224,7 +225,6 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
         + "  <solrcloud>\n"
         + "    <str name=\"host\">127.0.0.1</str>\n"
         + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-        + "    <str name=\"hostContext\">${hostContext:solr}</str>\n"
         + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
         + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
         + "    <int name=\"leaderVoteWait\">10000</int>\n"

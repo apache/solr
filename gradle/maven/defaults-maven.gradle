@@ -24,6 +24,7 @@
 configure(rootProject) {
   ext {
     published = [
+        ":solr:api",
         ":solr:core",
         ":solr:solrj",
         ":solr:solrj-streaming",

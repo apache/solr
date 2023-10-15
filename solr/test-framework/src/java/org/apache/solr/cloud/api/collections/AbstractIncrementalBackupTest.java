@@ -21,8 +21,11 @@ import static org.apache.solr.core.TrackingBackupRepository.copiedFiles;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -348,6 +351,142 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testSkipConfigset() throws Exception {
+    setTestSuffix("testskipconfigset");
+    final String backupCollectionName = getCollectionName();
+    final String restoreCollectionName = backupCollectionName + "-restore";
+
+    CloudSolrClient solrClient = cluster.getSolrClient();
+
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+        .process(solrClient);
+    int numDocs = indexDocs(backupCollectionName, true);
+    String backupName = BACKUPNAME_PREFIX + testSuffix;
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+          .setLocation(backupLocation)
+          .setBackupConfigset(false)
+          .setRepositoryName(BACKUP_REPO_NAME)
+          .processAndWait(cluster.getSolrClient(), 100);
+
+      assertFalse(
+          "Configset shouldn't be part of the backup but found:\n"
+              + TrackingBackupRepository.directoriesCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.directoriesCreated().stream()
+              .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertFalse(
+          "Configset shouldn't be part of the backup but found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertFalse(
+          "solrconfig.xml shouldn't be part of the backup but found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("solrconfig.xml")));
+      assertFalse(
+          "schema.xml shouldn't be part of the backup but found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("schema.xml")));
+
+      CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+          .setLocation(backupLocation)
+          .setRepositoryName(BACKUP_REPO_NAME)
+          .processAndWait(solrClient, 500);
+
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+          restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), false, 3);
+      assertEquals(
+          numDocs,
+          cluster
+              .getSolrClient()
+              .query(restoreCollectionName, new SolrQuery("*:*"))
+              .getResults()
+              .getNumFound());
+    }
+
+    TrackingBackupRepository.clear();
+
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+          .setLocation(backupLocation)
+          .setBackupConfigset(true)
+          .setRepositoryName(BACKUP_REPO_NAME)
+          .processAndWait(cluster.getSolrClient(), 100);
+
+      assertTrue(
+          "Configset should be part of the backup but not found:\n"
+              + TrackingBackupRepository.directoriesCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.directoriesCreated().stream()
+              .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertTrue(
+          "Configset should be part of the backup but not found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("configs/conf1")));
+      assertTrue(
+          "solrconfig.xml should be part of the backup but not found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("solrconfig.xml")));
+      assertTrue(
+          "schema.xml should be part of the backup but not found:\n"
+              + TrackingBackupRepository.outputsCreated().stream()
+                  .map(URI::toString)
+                  .collect(Collectors.joining("\n")),
+          TrackingBackupRepository.outputsCreated().stream()
+              .anyMatch(f -> f.getPath().contains("schema.xml")));
+    }
+  }
+
+  public void testBackupProperties() throws IOException {
+    BackupProperties p =
+        BackupProperties.create(
+            "backupName",
+            "collection1",
+            "collection1-ext",
+            "conf1",
+            Map.of("foo", "bar", "aaa", "bbb"));
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      URI dest = repository.resolve(repository.createURI(backupLocation), "props-file.properties");
+      try (Writer propsWriter =
+          new OutputStreamWriter(repository.createOutput(dest), StandardCharsets.UTF_8)) {
+        p.store(propsWriter);
+      }
+      BackupProperties propsRead =
+          BackupProperties.readFrom(
+              repository, repository.createURI(backupLocation), "props-file.properties");
+      assertEquals(p.getCollection(), propsRead.getCollection());
+      assertEquals(p.getCollectionAlias(), propsRead.getCollectionAlias());
+      assertEquals(p.getConfigName(), propsRead.getConfigName());
+      assertEquals(p.getIndexVersion(), propsRead.getIndexVersion());
+      assertEquals(p.getExtraProperties(), propsRead.getExtraProperties());
+      assertEquals(p.getBackupName(), propsRead.getBackupName());
+    }
+  }
+
   protected void corruptIndexFiles() throws IOException {
     List<Slice> slices = new ArrayList<>(getCollectionState(getCollectionName()).getSlices());
     Replica leader = slices.get(random().nextInt(slices.size())).getLeader();
@@ -442,7 +581,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     log.info("Indexed {} docs to collection: {}", numDocs, collectionName);
   }
 
-  private int indexDocs(String collectionName, boolean useUUID) throws Exception {
+  protected int indexDocs(String collectionName, boolean useUUID) throws Exception {
     Random random =
         new Random(
             docsSeed); // use a constant seed for the whole test run so that we can easily re-index.

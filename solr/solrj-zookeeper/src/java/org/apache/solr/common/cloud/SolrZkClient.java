@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -69,8 +70,6 @@ import org.slf4j.LoggerFactory;
 public class SolrZkClient implements Closeable {
 
   static final String NEWL = System.getProperty("line.separator");
-
-  static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 30000;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -1127,8 +1126,8 @@ public class SolrZkClient implements Closeable {
 
   public static class Builder {
     public String zkServerAddress;
-    public int zkClientTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
-    public int zkClientConnectTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
+    public int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+    public int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     public OnReconnect onReconnect;
     public BeforeReconnect beforeReconnect;
     public ZkClientConnectionStrategy connectionStrategy;
@@ -1143,13 +1142,25 @@ public class SolrZkClient implements Closeable {
       return this;
     }
 
-    public Builder withTimeout(int i, TimeUnit unit) {
-      this.zkClientTimeout = (int) unit.toMillis(i);
+    /**
+     * Sets the Zk client session timeout
+     *
+     * @param zkClientTimeout timeout value
+     * @param unit time unit
+     */
+    public Builder withTimeout(int zkClientTimeout, TimeUnit unit) {
+      this.zkClientTimeout = Math.toIntExact(unit.toMillis(zkClientTimeout));
       return this;
     }
 
-    public Builder withConnTimeOut(int i, TimeUnit unit) {
-      this.zkClientConnectTimeout = (int) unit.toMillis(i);
+    /**
+     * Sets the Zk connection timeout
+     *
+     * @param zkConnectTimeout timeout value
+     * @param unit time unit
+     */
+    public Builder withConnTimeOut(int zkConnectTimeout, TimeUnit unit) {
+      this.zkClientConnectTimeout = Math.toIntExact(unit.toMillis(zkConnectTimeout));
       return this;
     }
 

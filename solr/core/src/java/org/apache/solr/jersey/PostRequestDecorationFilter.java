@@ -17,13 +17,16 @@
 
 package org.apache.solr.jersey;
 
+import static org.apache.solr.jersey.PostRequestDecorationFilter.PRIORITY;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import javax.annotation.Priority;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -37,7 +40,9 @@ import org.slf4j.LoggerFactory;
  *
  * @see SolrCore#postDecorateResponse(SolrRequestHandler, SolrQueryRequest, SolrQueryResponse)
  */
+@Priority(PRIORITY)
 public class PostRequestDecorationFilter implements ContainerResponseFilter {
+  public static final int PRIORITY = 10;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

@@ -125,7 +125,7 @@ The first is exactly the same: start Solr running in a container, then execute t
 [source,bash]
 ----
 docker run -d -p 8983:8983 --name my_solr solr
-docker exec -it my_solr solr create_core -c gettingstarted
+docker exec -it my_solr solr create -c gettingstarted
 ----
 
 This is not very convenient for users, and makes it harder to turn it into configuration for Docker Compose and orchestration tools like Kubernetes.
@@ -189,7 +189,7 @@ The third way is to use a separate container:
 
 [source,bash]
 ----
-docker run -e SOLR_HOST=solr1 --network docs_solr solr solr create_collection -c gettingstarted3 -p 8983
+docker run -e SOLR_HOST=solr1 --network docs_solr solr solr create -c gettingstarted3 -p 8983
 ----
 
 The fourth way is to use the remote API, from the host or from one of the containers, or some new container on the same network (adjust the hostname accordingly):
@@ -224,7 +224,7 @@ The same works if you use the <<docker-compose,example docker compose cluster>>,
 
 [source,bash]
 ----
-docker run -e SOLR_HOST=solr1 --network=mycluster_solr solr solr create_collection -c books -p 8983
+docker run -e SOLR_HOST=solr1 --network=mycluster_solr solr solr create -c books -p 8983
 docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr post  -c books /mydata/books.csv -host solr1
 ----
 

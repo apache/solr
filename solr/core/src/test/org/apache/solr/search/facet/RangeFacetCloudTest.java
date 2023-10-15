@@ -73,6 +73,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
    * number of docs that will have that value.
    */
   private static final int[] RANGE_MODEL = new int[NUM_RANGE_VALUES];
+
   /**
    * the array indexes represent values in our numeric field, while the array values track the
    * mapping from string field terms to facet counts for docs that have that numeric value
@@ -1117,6 +1118,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   private static final class ModelRange {
     public final int lower;
     public final int upper;
+
     /** Don't use, use the convenience methods */
     public ModelRange(int lower, int upper) {
       if (lower < 0 || upper < 0) {
@@ -1152,6 +1154,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     int result = TestUtil.nextInt(random(), -10, atLeast(TERM_VALUES_RANDOMIZER));
     return (result <= 0) ? -1 : result;
   }
+
   /** randomized helper */
   private static CharSequence makeSubFacet(final Integer subFacetLimit) {
     if (null == subFacetLimit) {

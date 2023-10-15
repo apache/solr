@@ -197,7 +197,7 @@ Next let's create a collection:
 
 [source,bash]
 ----
-ssh -n $ZKSOLR1_HOST docker exec -i zksolr1 /opt/solr/bin/solr create_collection -c my_collection1 -shards 2 -p 8983
+ssh -n $ZKSOLR1_HOST docker exec -i zksolr1 /opt/solr/bin/solr create -c my_collection1 -shards 2 -p 8983
 ----
 
 To load data, and see it was split over shards:

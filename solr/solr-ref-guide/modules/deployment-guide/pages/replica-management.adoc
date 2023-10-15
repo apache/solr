@@ -339,7 +339,7 @@ http://localhost:8983/solr/admin/collections?action=MOVEREPLICA&collection=test&
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
   {
     "move-replica":{
       "replica":"core_node6",

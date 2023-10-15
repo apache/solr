@@ -20,7 +20,6 @@ import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharS
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,7 +30,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -39,7 +37,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utf8CharSequence;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -59,15 +56,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) response.removeResponseHeader();
     try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
       jbc.setWritableDocFields(resolver).marshal(response.getValues(), out);
-    }
-  }
-
-  private static void serialize(SolrQueryResponse response, Resolver resolver, String f)
-      throws IOException {
-    try (JavaBinCodec jbc = new JavaBinCodec(resolver);
-        FileOutputStream fos = new FileOutputStream(f)) {
-      jbc.setWritableDocFields(resolver).marshal(response.getValues(), fos);
-      fos.flush();
     }
   }
 
@@ -95,13 +83,6 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     @Override
     public Object resolve(Object o, JavaBinCodec codec) throws IOException {
-      if (o instanceof StoredField) {
-        CharSequence val = ((StoredField) o).getCharSequenceValue();
-        if (val instanceof Utf8CharSequence) {
-          codec.writeUTF8Str((Utf8CharSequence) val);
-          return null;
-        }
-      }
       if (o instanceof ResultContext) {
         ReturnFields orig = returnFields;
         ResultContext res = (ResultContext) o;

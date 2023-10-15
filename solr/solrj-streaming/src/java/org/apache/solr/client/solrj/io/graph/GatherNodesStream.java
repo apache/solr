@@ -653,7 +653,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
 
       List<String> laggedWindow = windowList.subList(lag, windowList.size());
-      return laggedWindow.toArray(new String[laggedWindow.size()]);
+      return laggedWindow.toArray(new String[0]);
     } catch (ParseException e) {
       log.warn("Unparseable date:{}", String.valueOf(start));
       return new String[0];
@@ -684,7 +684,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
 
       List<String> laggedWindow = windowList.subList(lag, windowList.size());
-      return laggedWindow.toArray(new String[laggedWindow.size()]);
+      return laggedWindow.toArray(new String[0]);
     } catch (ParseException e) {
       log.warn("Unparseable date:{}", String.valueOf(start));
       return new String[0];

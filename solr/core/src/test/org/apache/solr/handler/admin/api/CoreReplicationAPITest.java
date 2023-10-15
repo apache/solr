@@ -20,7 +20,10 @@ package org.apache.solr.handler.admin.api;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.opentracing.noop.NoopSpan;
+import io.opentelemetry.api.trace.Span;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
@@ -36,7 +39,6 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
   private CoreReplicationAPI coreReplicationAPI;
   private SolrCore mockCore;
   private ReplicationHandler mockReplicationHandler;
-  private static final String coreName = "test";
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
 
@@ -51,9 +53,9 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     super.setUp();
     setUpMocks();
     mockQueryRequest = mock(SolrQueryRequest.class);
-    when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
+    when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
     queryResponse = new SolrQueryResponse();
-    coreReplicationAPI = new CoreReplicationAPI(mockCore, mockQueryRequest, queryResponse);
+    coreReplicationAPI = new CoreReplicationAPIMock(mockCore, mockQueryRequest, queryResponse);
   }
 
   @Test
@@ -62,15 +64,38 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
         new CoreReplicationAPI.IndexVersionResponse(123L, 123L, "testGeneration");
     when(mockReplicationHandler.getIndexVersionResponse()).thenReturn(expected);
 
-    CoreReplicationAPI.IndexVersionResponse response = coreReplicationAPI.doFetchIndexVersion();
-    assertEquals(expected.indexVersion, response.indexVersion);
-    assertEquals(expected.generation, response.generation);
-    assertEquals(expected.status, response.status);
+    CoreReplicationAPI.IndexVersionResponse actual = coreReplicationAPI.doFetchIndexVersion();
+    assertEquals(expected.indexVersion, actual.indexVersion);
+    assertEquals(expected.generation, actual.generation);
+    assertEquals(expected.status, actual.status);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testFetchFiles() throws Exception {
+    CoreReplicationAPI.FileListResponse actualResponse = coreReplicationAPI.fetchFileList(-1);
+    assertEquals(123, actualResponse.fileList.get(0).size);
+    assertEquals("test", actualResponse.fileList.get(0).name);
+    assertEquals(123456789, actualResponse.fileList.get(0).checksum);
   }
 
   private void setUpMocks() {
     mockCore = mock(SolrCore.class);
     mockReplicationHandler = mock(ReplicationHandler.class);
     when(mockCore.getRequestHandler(ReplicationHandler.PATH)).thenReturn(mockReplicationHandler);
+  }
+
+  private static class CoreReplicationAPIMock extends CoreReplicationAPI {
+    public CoreReplicationAPIMock(SolrCore solrCore, SolrQueryRequest req, SolrQueryResponse rsp) {
+      super(solrCore, req, rsp);
+    }
+
+    @Override
+    protected FileListResponse getFileList(long generation, ReplicationHandler replicationHandler) {
+      final FileListResponse filesResponse = new FileListResponse();
+      List<FileMetaData> fileMetaData = Arrays.asList(new FileMetaData(123, "test", 123456789));
+      filesResponse.fileList = new ArrayList<>(fileMetaData);
+      return filesResponse;
+    }
   }
 }

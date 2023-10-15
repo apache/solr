@@ -91,7 +91,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     SolrClient solrClient = null;
     try {
       httpClient = HttpClientUtil.createClient(null);
-      String baseUrl = buildUrl(jetty.getLocalPort(), "/solr");
+      String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 5);

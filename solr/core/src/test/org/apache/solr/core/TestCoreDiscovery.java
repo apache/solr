@@ -630,7 +630,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
           + Paths.get(TEST_HOME()).resolve("configsets")
           + "</str>"
           + "<solrcloud> "
-          + "<str name=\"hostContext\">solrprop</str> "
           + "<int name=\"zkClientTimeout\">20</int> "
           + "<str name=\"host\">222.333.444.555</str> "
           + "<int name=\"hostPort\">6000</int>  "

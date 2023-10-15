@@ -352,9 +352,12 @@ If you do not define the `wt` parameter in your queries, JSON will be returned a
 
 == logParamsList Parameter
 
-By default, Solr logs all parameters of requests.
-Set this parameter to restrict which parameters of a request are logged.
+By default, Solr logs all query parameters on each request.
+This parameter allows users to override this behavior, by specifying a comma-separated "allowlist" of parameter names that should be logged.
 This may help control logging to only those parameters considered important to your organization.
+
+NOTE: `logParamsList` only governs the logging of query parameters.
+It does not apply to parameters specified in the request path, body, etc.
 
 For example, you could define this like:
 

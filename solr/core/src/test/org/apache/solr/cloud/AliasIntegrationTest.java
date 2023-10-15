@@ -517,6 +517,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       }
     }
   }
+
   // Rather a long title, but it's common to recommend when people need to re-index for any reason
   // that they:
   // 1> create a new collection

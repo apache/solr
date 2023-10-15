@@ -129,6 +129,7 @@ public abstract class SolrParams
   public Stream<Map.Entry<String, String[]>> stream() {
     return StreamSupport.stream(spliterator(), false);
   }
+
   // Do we add Map.forEach equivalent too?  But it eager-fetches the value, and Iterable<Map.Entry>
   // allows the user to only get the value when needed.
 

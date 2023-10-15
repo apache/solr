@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -51,6 +52,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
@@ -67,7 +69,7 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -85,8 +87,26 @@ public class SearchHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** A counter to ensure that no RID is equal, even if they fall in the same millisecond */
+  /**
+   * A counter to ensure that no RID is equal, even if they fall in the same millisecond
+   *
+   * @deprecated this was replaced by the auto-generated trace ids
+   */
+  @Deprecated(since = "9.4")
   private static final AtomicLong ridCounter = new AtomicLong();
+
+  /**
+   * An opt-out flag to prevent the addition of {@link CommonParams#REQUEST_ID} tracing on
+   * distributed queries
+   *
+   * <p>Defaults to 'false' if not specified.
+   *
+   * @see CommonParams#DISABLE_REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
+   */
+  @Deprecated(since = "9.4")
+  private static final boolean DISABLE_REQUEST_ID_DEFAULT =
+      Boolean.getBoolean("solr.disableRequestId");
 
   private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
   private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
@@ -329,6 +349,50 @@ public class SearchHandler extends RequestHandlerBase
     return new ResponseBuilder(req, rsp, components);
   }
 
+  /**
+   * Check if {@link SolrRequestType#QUERY} circuit breakers are tripped. Override this method in
+   * sub classes that do not want to check circuit breakers.
+   *
+   * @return true if circuit breakers are tripped, false otherwise.
+   */
+  protected boolean checkCircuitBreakers(
+      SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb) {
+    if (isInternalShardRequest(req)) {
+      if (log.isTraceEnabled()) {
+        log.trace("Internal request, skipping circuit breaker check");
+      }
+      return false;
+    }
+    final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
+
+    final CircuitBreakerRegistry circuitBreakerRegistry = req.getCore().getCircuitBreakerRegistry();
+    if (circuitBreakerRegistry.isEnabled(SolrRequestType.QUERY)) {
+      List<CircuitBreaker> trippedCircuitBreakers;
+
+      if (timer != null) {
+        RTimerTree subt = timer.sub("circuitbreaker");
+        rb.setTimer(subt);
+
+        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
+
+        rb.getTimer().stop();
+      } else {
+        trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
+      }
+
+      if (trippedCircuitBreakers != null) {
+        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
+        rsp.add(STATUS, FAILURE);
+        rsp.setException(
+            new SolrException(
+                CircuitBreaker.getErrorCode(trippedCircuitBreakers),
+                "Circuit Breakers tripped " + errorMessage));
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
@@ -354,30 +418,8 @@ public class SearchHandler extends RequestHandlerBase
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
-    final CircuitBreakerManager circuitBreakerManager = req.getCore().getCircuitBreakerManager();
-    if (circuitBreakerManager.isEnabled()) {
-      List<CircuitBreaker> trippedCircuitBreakers;
-
-      if (timer != null) {
-        RTimerTree subt = timer.sub("circuitbreaker");
-        rb.setTimer(subt);
-
-        trippedCircuitBreakers = circuitBreakerManager.checkTripped();
-
-        rb.getTimer().stop();
-      } else {
-        trippedCircuitBreakers = circuitBreakerManager.checkTripped();
-      }
-
-      if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerManager.toErrorMessage(trippedCircuitBreakers);
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(
-            new SolrException(
-                SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-                "Circuit Breakers tripped " + errorMessage));
-        return;
-      }
+    if (checkCircuitBreakers(req, rsp, rb)) {
+      return; // Circuit breaker tripped, return immediately
     }
 
     // creates a ShardHandler object only if it's needed
@@ -584,9 +626,11 @@ public class SearchHandler extends RequestHandlerBase
           }
         }
         nl.add("error", cause.toString());
-        StringWriter trace = new StringWriter();
-        cause.printStackTrace(new PrintWriter(trace));
-        nl.add("trace", trace.toString());
+        if (!core.getCoreContainer().hideStackTrace()) {
+          StringWriter trace = new StringWriter();
+          cause.printStackTrace(new PrintWriter(trace));
+          nl.add("trace", trace.toString());
+        }
       } else if (rb.getResults() != null) {
         nl.add("numFound", rb.getResults().docList.matches());
         nl.add(
@@ -607,7 +651,7 @@ public class SearchHandler extends RequestHandlerBase
 
   private void tagRequestWithRequestId(ResponseBuilder rb) {
     final boolean ridTaggingDisabled =
-        rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, false);
+        rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, DISABLE_REQUEST_ID_DEFAULT);
     if (!ridTaggingDisabled) {
       String rid = getOrGenerateRequestId(rb.req);
 
@@ -646,7 +690,14 @@ public class SearchHandler extends RequestHandlerBase
    */
   public static String getOrGenerateRequestId(SolrQueryRequest req) {
     String rid = req.getParams().get(CommonParams.REQUEST_ID);
-    return StrUtils.isNotBlank(rid) ? rid : generateRid(req);
+    if (StrUtils.isNotBlank(rid)) {
+      return rid;
+    }
+    String traceId = MDCLoggingContext.getTraceId();
+    if (StrUtils.isNotBlank(traceId)) {
+      return traceId;
+    }
+    return generateRid(req);
   }
 
   private static String generateRid(SolrQueryRequest req) {

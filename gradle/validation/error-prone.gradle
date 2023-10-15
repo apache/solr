@@ -85,6 +85,7 @@ allprojects { prj ->
             // '-Xep:AutoValueConstructorOrderChecker:OFF', // we don't use autovalue
             '-Xep:BadAnnotationImplementation:ERROR',
             '-Xep:BadShiftAmount:ERROR',
+            '-Xep:BanClassLoader:ERROR',
             '-Xep:BanJNDI:ERROR', // todo - implement with forbidden APIs instead?
             '-Xep:BoxedPrimitiveEquality:ERROR',
             // '-Xep:BundleDeserializationCast:OFF', // we don't use android
@@ -104,6 +105,7 @@ allprojects { prj ->
             '-Xep:DangerousLiteralNull:ERROR',
             '-Xep:DeadException:ERROR',
             '-Xep:DeadThread:ERROR',
+            '-Xep:DereferenceWithNullBranch:ERROR',
             '-Xep:DiscardedPostfixExpression:ERROR',
             // '-Xep:DoNotCall:OFF', // we don't use this annotation
             '-Xep:DoNotMock:ERROR',
@@ -262,6 +264,7 @@ allprojects { prj ->
             '-Xep:AssertThrowsMultipleStatements:WARN',
             '-Xep:AssertionFailureIgnored:WARN',
             '-Xep:AssistedInjectAndInjectOnSameConstructor:WARN',
+            '-Xep:AttemptedNegativeZero:WARN',
             // '-Xep:AutoValueFinalMethods:OFF', // we don't use autovalue
             // '-Xep:AutoValueImmutableFields:OFF', // we don't use autovalue
             // '-Xep:AutoValueSubclassLeaked:OFF', // we don't use autovalue
@@ -284,6 +287,7 @@ allprojects { prj ->
             '-Xep:ClassCanBeStatic:WARN',
             '-Xep:ClassNewInstance:WARN',
             // '-Xep:CloseableProvides:OFF', // we don't use this annotation
+            '-Xep:ClosingStandardOutputStreams:WARN',
             '-Xep:CollectionUndefinedEquality:WARN',
             '-Xep:CollectorShouldNotUseState:WARN',
             '-Xep:ComparableAndComparator:WARN',
@@ -299,6 +303,7 @@ allprojects { prj ->
             // '-Xep:DoNotCallSuggester:OFF', // we don't use this annotation
             // '-Xep:DoNotClaimAnnotations:OFF', // we don't use this annotation
             // '-Xep:DoNotMockAutoValue:OFF', // we don't use autovalue
+            // '-Xep:DoNotUseRuleChain:OFF', // todo could be fixed but not easy
             // '-Xep:DoubleCheckedLocking:OFF', // todo check if useful or comment why not
             '-Xep:EmptyBlockTag:WARN',
             // '-Xep:EmptyCatch:OFF', // todo check if useful or comment why not - might be handled by ECJ?
@@ -325,6 +330,7 @@ allprojects { prj ->
             // '-Xep:FutureReturnValueIgnored:OFF', // todo there are problems that should be fixed
             '-Xep:GetClassOnEnum:WARN',
             '-Xep:HidingField:WARN',
+            '-Xep:ICCProfileGetInstance:WARN',
             '-Xep:IdentityHashMapUsage:WARN',
             // '-Xep:ImmutableAnnotationChecker:OFF', // we don't use this annotation
             '-Xep:ImmutableEnumChecker:WARN',
@@ -343,6 +349,7 @@ allprojects { prj ->
             // '-Xep:InlineMeInliner:OFF', // we don't use this annotation
             // '-Xep:InlineMeSuggester:OFF', // We don't use this annotation
             // '-Xep:InputStreamSlowMultibyteRead:OFF', // todo check if useful or comment why not
+            '-Xep:InlineTrivialConstant:WARN',
             '-Xep:InstanceOfAndCastMatchWrongType:WARN',
             '-Xep:IntLongMath:WARN',
             // '-Xep:InvalidBlockTag:OFF', // this is needed for tags like lucene.internal
@@ -379,6 +386,7 @@ allprojects { prj ->
             '-Xep:LiteEnumValueOf:WARN',
             '-Xep:LiteProtoToString:WARN',
             '-Xep:LockNotBeforeTry:WARN',
+            '-Xep:LockOnNonEnclosingClassLiteral:WARN',
             '-Xep:LogicalAssignment:WARN',
             '-Xep:LongDoubleConversion:WARN',
             '-Xep:LongFloatConversion:WARN',
@@ -390,25 +398,32 @@ allprojects { prj ->
             '-Xep:MissingFail:WARN',
             '-Xep:MissingImplementsComparable:WARN',
             '-Xep:MissingOverride:WARN',
+            // '-Xep:MissingRefasterAnnotation:OFF', // don't use Refaster
             // '-Xep:MissingSummary:OFF', // style preference that we don't want to enforce
             // '-Xep:MixedMutabilityReturnType:OFF', // todo check if useful or comment why not
             '-Xep:MockNotUsedInProduction:WARN',
             '-Xep:ModifiedButNotUsed:WARN',
             '-Xep:ModifyCollectionInEnhancedForLoop:WARN',
             '-Xep:ModifySourceCollectionInStream:WARN',
+            '-Xep:MultimapKeys:WARN',
             '-Xep:MultipleParallelOrSequentialCalls:WARN',
             '-Xep:MultipleUnaryOperatorsInMethodCall:WARN',
+            // '-Xep:MutableGuiceModule:OFF', // we don't use guice
             '-Xep:MutablePublicArray:WARN',
+            '-Xep:NamedLikeContextualKeyword:WARN',
             '-Xep:NarrowCalculation:WARN',
             '-Xep:NarrowingCompoundAssignment:WARN',
             // '-Xep:NegativeCharLiteral:OFF', // todo check if useful or comment why not
             '-Xep:NestedInstanceOfConditions:WARN',
             '-Xep:NewFileSystem:WARN',
+            //'-Xep:NonApiType:OFF', // todo could be fixed but lots of changes
             // '-Xep:NonAtomicVolatileUpdate:OFF', // todo check if useful or comment why not
             '-Xep:NonCanonicalType:WARN',
             '-Xep:NonOverridingEquals:WARN',
+            '-Xep:NotJavadoc:WARN',
             '-Xep:NullOptional:WARN',
             // '-Xep:NullableConstructor:OFF', // we don't use this annotation
+            '-Xep:NullableOptional:WARN',
             // '-Xep:NullablePrimitive:OFF', // we don't use this annotation
             // '-Xep:NullablePrimitiveArray:OFF', // we don't use this annotation
             // '-Xep:NullableVoid:OFF', // we don't use this annotation
@@ -420,9 +435,10 @@ allprojects { prj ->
             '-Xep:OptionalNotPresent:WARN',
             '-Xep:OrphanedFormatString:WARN',
             // '-Xep:OutlineNone:OFF', // we don't use gwt
+            '-Xep:OverridingMethodInconsistentArgumentNamesChecker:WARN',
             '-Xep:OverrideThrowableToString:WARN',
             '-Xep:Overrides:WARN',
-            '-Xep:OverridesGuiceInjectableMethod:WARN',
+            // '-Xep:OverridesGuiceInjectableMethod:OFF', // we don't use guice
             '-Xep:ParameterName:WARN',
             '-Xep:PreconditionsCheckNotNullRepeated:WARN',
             '-Xep:PrimitiveAtomicReference:WARN',
@@ -434,6 +450,7 @@ allprojects { prj ->
             '-Xep:ReachabilityFenceUsage:WARN',
             '-Xep:ReferenceEquality:WARN',
             '-Xep:RethrowReflectiveOperationExceptionAsLinkageError:WARN',
+            '-Xep:ReturnAtTheEndOfVoidFunction:WARN',
             '-Xep:ReturnFromVoid:WARN',
             '-Xep:RobolectricShadowDirectlyOn:WARN',
             '-Xep:RxReturnValueIgnored:WARN',
@@ -446,6 +463,7 @@ allprojects { prj ->
             '-Xep:StaticMockMember:WARN',
             // '-Xep:StreamResourceLeak:OFF', // todo check if useful or comment why not
             '-Xep:StreamToIterable:WARN',
+            // '-Xep:StringCaseLocaleUsage:OFF', // we have forbiddenapis for that
             // '-Xep:StringSplitter:OFF', // todo check if useful or comment why not - might be able to use forbidden-apis for this?
             // '-Xep:SwigMemoryLeak:OFF', // we don't use swig
             // '-Xep:SynchronizeOnNonFinalField:OFF', // todo check if useful or comment why not
@@ -457,6 +475,7 @@ allprojects { prj ->
             '-Xep:ToStringReturnsNull:WARN',
             // '-Xep:TruthAssertExpected:OFF', // we don't use truth
             // '-Xep:TruthConstantAsserts:OFF', // we don't use truth
+            // '-Xep:TruthContainsExactlyElementsInUsage:OFF', // we don't use truth
             // '-Xep:TruthGetOrDefault:OFF', // we don't use truth
             // '-Xep:TruthIncompatibleType:OFF', // we don't use truth
             '-Xep:TypeEquals:WARN',
@@ -468,11 +487,14 @@ allprojects { prj ->
             '-Xep:UnescapedEntity:WARN',
             // '-Xep:UnicodeEscape:OFF', // can't enable since Lucene/Solr tests use unicode a bunch
             // '-Xep:UnnecessaryAssignment:OFF', // we don't use these annotations
+            '-Xep:UnnecessaryAsync:WARN',
             '-Xep:UnnecessaryLambda:WARN',
             '-Xep:UnnecessaryLongToIntConversion:WARN',
             '-Xep:UnnecessaryMethodInvocationMatcher:WARN',
             '-Xep:UnnecessaryMethodReference:WARN',
             // '-Xep:UnnecessaryParentheses:OFF', // style preference that we don't want to enforce
+            '-Xep:UnnecessaryStringBuilder:WARN',
+            // '-Xep:UnnecessaryTestMethodPrefix:OFF', // style preference that we don't want to enforce
             // '-Xep:UnqualifiedYield:OFF', // javac takes care
             '-Xep:UnrecognisedJavadocTag:WARN',
             '-Xep:UnsafeFinalization:WARN',

@@ -27,6 +27,7 @@ public class CommitUpdateCommand extends UpdateCommand {
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
   public boolean prepareCommit = false;
+
   /**
    * User provided commit data. Can be let to null if there is none. It is possible to commit this
    * user data, even if there is no uncommitted change in the index writer, provided this user data

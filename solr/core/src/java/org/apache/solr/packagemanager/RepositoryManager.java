@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -287,7 +288,7 @@ public class RepositoryManager {
       return getLastPackageRelease(pkg);
     }
     for (SolrPackageRelease release : pkg.versions) {
-      if (PackageUtils.compareVersions(version, release.version) == 0) {
+      if (SolrVersion.compareVersions(version, release.version) == 0) {
         return release;
       }
     }
@@ -310,7 +311,7 @@ public class RepositoryManager {
       if (latest == null) {
         latest = release;
       } else {
-        if (PackageUtils.compareVersions(latest.version, release.version) < 0) {
+        if (SolrVersion.compareVersions(latest.version, release.version) < 0) {
           latest = release;
         }
       }
@@ -329,7 +330,7 @@ public class RepositoryManager {
     }
     String installedVersion = packageManager.getPackageInstance(packageName, null).version;
     SolrPackageRelease last = getLastPackageRelease(packageName);
-    return last != null && PackageUtils.compareVersions(last.version, installedVersion) > 0;
+    return last != null && SolrVersion.compareVersions(last.version, installedVersion) > 0;
   }
 
   /**

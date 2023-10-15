@@ -122,6 +122,12 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.InstallShardDataRequestBody;
+import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
+import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -160,45 +166,45 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.AddReplicaPropertyAPI;
+import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
-import org.apache.solr.handler.admin.api.AliasPropertyAPI;
-import org.apache.solr.handler.admin.api.BalanceReplicasAPI;
+import org.apache.solr.handler.admin.api.AliasProperty;
+import org.apache.solr.handler.admin.api.BalanceReplicas;
 import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
-import org.apache.solr.handler.admin.api.CollectionPropertyAPI;
+import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
-import org.apache.solr.handler.admin.api.CreateCollectionAPI;
+import org.apache.solr.handler.admin.api.CreateCollection;
 import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
-import org.apache.solr.handler.admin.api.CreateReplicaAPI;
-import org.apache.solr.handler.admin.api.CreateShardAPI;
-import org.apache.solr.handler.admin.api.DeleteAliasAPI;
-import org.apache.solr.handler.admin.api.DeleteCollectionAPI;
-import org.apache.solr.handler.admin.api.DeleteCollectionBackupAPI;
-import org.apache.solr.handler.admin.api.DeleteCollectionSnapshotAPI;
-import org.apache.solr.handler.admin.api.DeleteNodeAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaAPI;
-import org.apache.solr.handler.admin.api.DeleteReplicaPropertyAPI;
-import org.apache.solr.handler.admin.api.DeleteShardAPI;
-import org.apache.solr.handler.admin.api.ForceLeaderAPI;
-import org.apache.solr.handler.admin.api.InstallShardDataAPI;
-import org.apache.solr.handler.admin.api.ListAliasesAPI;
-import org.apache.solr.handler.admin.api.ListCollectionBackupsAPI;
+import org.apache.solr.handler.admin.api.CreateReplica;
+import org.apache.solr.handler.admin.api.CreateShard;
+import org.apache.solr.handler.admin.api.DeleteAlias;
+import org.apache.solr.handler.admin.api.DeleteCollection;
+import org.apache.solr.handler.admin.api.DeleteCollectionBackup;
+import org.apache.solr.handler.admin.api.DeleteCollectionSnapshot;
+import org.apache.solr.handler.admin.api.DeleteNode;
+import org.apache.solr.handler.admin.api.DeleteReplica;
+import org.apache.solr.handler.admin.api.DeleteReplicaProperty;
+import org.apache.solr.handler.admin.api.DeleteShard;
+import org.apache.solr.handler.admin.api.ForceLeader;
+import org.apache.solr.handler.admin.api.InstallShardData;
+import org.apache.solr.handler.admin.api.ListAliases;
+import org.apache.solr.handler.admin.api.ListCollectionBackups;
 import org.apache.solr.handler.admin.api.ListCollectionSnapshotsAPI;
-import org.apache.solr.handler.admin.api.ListCollectionsAPI;
+import org.apache.solr.handler.admin.api.ListCollections;
 import org.apache.solr.handler.admin.api.MigrateDocsAPI;
+import org.apache.solr.handler.admin.api.MigrateReplicas;
 import org.apache.solr.handler.admin.api.ModifyCollectionAPI;
 import org.apache.solr.handler.admin.api.MoveReplicaAPI;
 import org.apache.solr.handler.admin.api.RebalanceLeadersAPI;
 import org.apache.solr.handler.admin.api.ReloadCollectionAPI;
-import org.apache.solr.handler.admin.api.RenameCollectionAPI;
-import org.apache.solr.handler.admin.api.ReplaceNodeAPI;
+import org.apache.solr.handler.admin.api.RenameCollection;
+import org.apache.solr.handler.admin.api.ReplaceNode;
 import org.apache.solr.handler.admin.api.RestoreCollectionAPI;
 import org.apache.solr.handler.admin.api.SplitShardAPI;
-import org.apache.solr.handler.admin.api.SyncShardAPI;
+import org.apache.solr.handler.admin.api.SyncShard;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -503,9 +509,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CREATE_OP(
         CREATE,
         (req, rsp, h) -> {
-          final CreateCollectionAPI.CreateCollectionRequestBody requestBody =
-              CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(req.getParams(), true);
-          final CreateCollectionAPI createApi = new CreateCollectionAPI(h.coreContainer, req, rsp);
+          final var requestBody =
+              CreateCollection.createRequestBodyFromV1Params(req.getParams(), true);
+          final CreateCollection createApi = new CreateCollection(h.coreContainer, req, rsp);
           final SolrJerseyResponse response = createApi.createCollection(requestBody);
 
           // 'rsp' may be null, as when overseer commands execute CollectionAction impl's directly.
@@ -542,8 +548,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         DELETE,
         (req, rsp, h) -> {
           final RequiredSolrParams requiredParams = req.getParams().required();
-          final DeleteCollectionAPI deleteCollectionAPI =
-              new DeleteCollectionAPI(h.coreContainer, req, rsp);
+          final DeleteCollection deleteCollectionAPI =
+              new DeleteCollection(h.coreContainer, req, rsp);
           final SolrJerseyResponse deleteCollResponse =
               deleteCollectionAPI.deleteCollection(
                   requiredParams.get(NAME),
@@ -604,7 +610,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     SYNCSHARD_OP(
         SYNCSHARD,
         (req, rsp, h) -> {
-          SyncShardAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          SyncShard.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
 
@@ -622,7 +628,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEALIAS_OP(
         DELETEALIAS,
         (req, rsp, h) -> {
-          final DeleteAliasAPI deleteAliasAPI = new DeleteAliasAPI(h.coreContainer, req, rsp);
+          final DeleteAlias deleteAliasAPI = new DeleteAlias(h.coreContainer, req, rsp);
           final SolrJerseyResponse response =
               deleteAliasAPI.deleteAlias(
                   req.getParams().required().get(NAME), req.getParams().get(ASYNC));
@@ -638,11 +644,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           String name = req.getParams().required().get(NAME);
           Map<String, Object> properties = collectToMap(req.getParams(), "property");
-          AliasPropertyAPI.UpdateAliasPropertiesRequestBody requestBody =
-              new AliasPropertyAPI.UpdateAliasPropertiesRequestBody();
+          final var requestBody = new UpdateAliasPropertiesRequestBody();
           requestBody.properties = properties;
           requestBody.async = req.getParams().get(ASYNC);
-          final AliasPropertyAPI aliasPropertyAPI = new AliasPropertyAPI(h.coreContainer, req, rsp);
+          final AliasProperty aliasPropertyAPI = new AliasProperty(h.coreContainer, req, rsp);
           final SolrJerseyResponse getAliasesResponse =
               aliasPropertyAPI.updateAliasProperties(name, requestBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
@@ -653,7 +658,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LISTALIASES_OP(
         LISTALIASES,
         (req, rsp, h) -> {
-          final ListAliasesAPI getAliasesAPI = new ListAliasesAPI(h.coreContainer, req, rsp);
+          final ListAliases getAliasesAPI = new ListAliases(h.coreContainer, req, rsp);
           final SolrJerseyResponse getAliasesResponse = getAliasesAPI.getAliases();
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, getAliasesResponse);
           return null;
@@ -714,25 +719,25 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETESHARD_OP(
         DELETESHARD,
         (req, rsp, h) -> {
-          DeleteShardAPI.invokeWithV1Params(h.coreContainer, req, rsp);
+          DeleteShard.invokeWithV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     FORCELEADER_OP(
         FORCELEADER,
         (req, rsp, h) -> {
-          ForceLeaderAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          ForceLeader.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     CREATESHARD_OP(
         CREATESHARD,
         (req, rsp, h) -> {
-          CreateShardAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          CreateShard.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     DELETEREPLICA_OP(
         DELETEREPLICA,
         (req, rsp, h) -> {
-          DeleteReplicaAPI.invokeWithV1Params(h.coreContainer, req, rsp);
+          DeleteReplica.invokeWithV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     MIGRATE_OP(
@@ -782,14 +787,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final String propName = req.getParams().required().get(PROPERTY_NAME);
           final String val = req.getParams().get(PROPERTY_VALUE);
 
-          final CollectionPropertyAPI setCollPropApi =
-              new CollectionPropertyAPI(h.coreContainer, req, rsp);
+          final CollectionProperty setCollPropApi =
+              new CollectionProperty(h.coreContainer, req, rsp);
           final SolrJerseyResponse setPropRsp =
               (val != null)
                   ? setCollPropApi.createOrUpdateCollectionProperty(
-                      collection,
-                      propName,
-                      new CollectionPropertyAPI.UpdateCollectionPropertyRequestBody(val))
+                      collection, propName, new UpdateCollectionPropertyRequestBody(val))
                   : setCollPropApi.deleteCollectionProperty(collection, propName);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, setPropRsp);
           return null;
@@ -939,9 +942,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final var params = req.getParams();
           params.required().check(COLLECTION_PROP, SHARD_ID_PROP);
 
-          final var api = new CreateReplicaAPI(h.coreContainer, req, rsp);
-          final var requestBody =
-              CreateReplicaAPI.AddReplicaRequestBody.fromV1Params(req.getParams());
+          final var api = new CreateReplica(h.coreContainer, req, rsp);
+          final var requestBody = CreateReplica.createRequestBodyFromV1Params(req.getParams());
           final var response =
               api.createReplica(
                   params.get(COLLECTION_PROP), params.get(SHARD_ID_PROP), requestBody);
@@ -963,8 +965,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     LIST_OP(
         LIST,
         (req, rsp, h) -> {
-          final ListCollectionsAPI listCollectionsAPI =
-              new ListCollectionsAPI(h.coreContainer, req, rsp);
+          final ListCollections listCollectionsAPI = new ListCollections(h.coreContainer, req, rsp);
           final SolrJerseyResponse listCollectionsResponse = listCollectionsAPI.listCollections();
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, listCollectionsResponse);
           return null;
@@ -987,8 +988,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ADDREPLICAPROP,
         (req, rsp, h) -> {
           final RequiredSolrParams requiredParams = req.getParams().required();
-          final AddReplicaPropertyAPI.AddReplicaPropertyRequestBody requestBody =
-              new AddReplicaPropertyAPI.AddReplicaPropertyRequestBody();
+          final var requestBody = new AddReplicaPropertyRequestBody();
           requestBody.value = requiredParams.get(PROPERTY_VALUE_PROP);
           requestBody.shardUnique = req.getParams().getBool(SHARD_UNIQUE);
           final String propName = requiredParams.get(PROPERTY_PROP);
@@ -997,8 +997,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   ? propName.substring(PROPERTY_PREFIX.length())
                   : propName;
 
-          final AddReplicaPropertyAPI addReplicaPropertyAPI =
-              new AddReplicaPropertyAPI(h.coreContainer, req, rsp);
+          final AddReplicaProperty addReplicaPropertyAPI =
+              new AddReplicaProperty(h.coreContainer, req, rsp);
           final SolrJerseyResponse addReplicaPropResponse =
               addReplicaPropertyAPI.addReplicaProperty(
                   requiredParams.get(COLLECTION_PROP),
@@ -1012,9 +1012,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEREPLICAPROP_OP(
         DELETEREPLICAPROP,
         (req, rsp, h) -> {
-          final var api = new DeleteReplicaPropertyAPI(h.coreContainer, req, rsp);
+          final var api = new DeleteReplicaProperty(h.coreContainer, req, rsp);
           final var deleteReplicaPropResponse =
-              DeleteReplicaPropertyAPI.invokeUsingV1Inputs(api, req.getParams());
+              DeleteReplicaProperty.invokeUsingV1Inputs(api, req.getParams());
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteReplicaPropResponse);
           return null;
         }),
@@ -1080,13 +1080,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           req.getParams().required().check(COLLECTION, SHARD);
           final String collectionName = req.getParams().get(COLLECTION);
           final String shardName = req.getParams().get(SHARD);
-          final InstallShardDataAPI.InstallShardRequestBody reqBody =
-              new InstallShardDataAPI.InstallShardRequestBody();
-          reqBody.asyncId = req.getParams().get(ASYNC);
+          final InstallShardDataRequestBody reqBody = new InstallShardDataRequestBody();
+          reqBody.async = req.getParams().get(ASYNC);
           reqBody.repository = req.getParams().get(BACKUP_REPOSITORY);
           reqBody.location = req.getParams().get(BACKUP_LOCATION);
 
-          final InstallShardDataAPI installApi = new InstallShardDataAPI(h.coreContainer, req, rsp);
+          final InstallShardData installApi = new InstallShardData(h.coreContainer, req, rsp);
           final SolrJerseyResponse installResponse =
               installApi.installShardData(collectionName, shardName, reqBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, installResponse);
@@ -1095,14 +1094,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETEBACKUP_OP(
         DELETEBACKUP,
         (req, rsp, h) -> {
-          DeleteCollectionBackupAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          DeleteCollectionBackup.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     LISTBACKUP_OP(
         LISTBACKUP,
         (req, rsp, h) -> {
           req.getParams().required().check(NAME);
-          ListCollectionBackupsAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          ListCollectionBackups.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     CREATESNAPSHOT_OP(
@@ -1141,10 +1140,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final boolean followAliases = req.getParams().getBool(FOLLOW_ALIASES, false);
           final String asyncId = req.getParams().get(ASYNC);
 
-          final DeleteCollectionSnapshotAPI deleteCollectionSnapshotAPI =
-              new DeleteCollectionSnapshotAPI(h.coreContainer, req, rsp);
+          final DeleteCollectionSnapshot deleteCollectionSnapshotAPI =
+              new DeleteCollectionSnapshot(h.coreContainer, req, rsp);
 
-          final DeleteCollectionSnapshotAPI.DeleteSnapshotResponse deleteSnapshotResponse =
+          final var deleteSnapshotResponse =
               deleteCollectionSnapshotAPI.deleteSnapshot(
                   extCollectionName, commitName, followAliases, asyncId);
 
@@ -1175,12 +1174,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         (req, rsp, h) -> {
           final SolrParams params = req.getParams();
           final RequiredSolrParams requiredParams = req.getParams().required();
-          final ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
-              new ReplaceNodeAPI.ReplaceNodeRequestBody();
+          final var requestBody = new ReplaceNodeRequestBody();
           requestBody.targetNodeName = params.get(TARGET_NODE);
           requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
           requestBody.async = params.get(ASYNC);
-          final ReplaceNodeAPI replaceNodeAPI = new ReplaceNodeAPI(h.coreContainer, req, rsp);
+          final ReplaceNode replaceNodeAPI = new ReplaceNode(h.coreContainer, req, rsp);
           final SolrJerseyResponse replaceNodeResponse =
               replaceNodeAPI.replaceNode(requiredParams.get(SOURCE_NODE), requestBody);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, replaceNodeResponse);
@@ -1206,9 +1204,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     DELETENODE_OP(
         DELETENODE,
         (req, rsp, h) -> {
-          final DeleteNodeAPI deleteNodeAPI = new DeleteNodeAPI(h.coreContainer, req, rsp);
+          final DeleteNode deleteNodeAPI = new DeleteNode(h.coreContainer, req, rsp);
           final SolrJerseyResponse deleteNodeResponse =
-              DeleteNodeAPI.invokeUsingV1Inputs(deleteNodeAPI, req.getParams());
+              DeleteNode.invokeUsingV1Inputs(deleteNodeAPI, req.getParams());
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteNodeResponse);
           return null;
         }),
@@ -1362,36 +1360,37 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return List.of(
-        CreateReplicaAPI.class,
-        AddReplicaPropertyAPI.class,
+        CreateReplica.class,
+        AddReplicaProperty.class,
         BalanceShardUniqueAPI.class,
         CreateAliasAPI.class,
-        CreateCollectionAPI.class,
+        CreateCollection.class,
         CreateCollectionBackupAPI.class,
-        CreateShardAPI.class,
-        DeleteAliasAPI.class,
-        DeleteCollectionBackupAPI.class,
-        DeleteCollectionAPI.class,
-        DeleteReplicaAPI.class,
-        DeleteReplicaPropertyAPI.class,
-        DeleteShardAPI.class,
-        ForceLeaderAPI.class,
-        InstallShardDataAPI.class,
-        ListCollectionsAPI.class,
-        ListCollectionBackupsAPI.class,
+        CreateShard.class,
+        DeleteAlias.class,
+        DeleteCollectionBackup.class,
+        DeleteCollection.class,
+        DeleteReplica.class,
+        DeleteReplicaProperty.class,
+        DeleteShard.class,
+        ForceLeader.class,
+        InstallShardData.class,
+        ListCollections.class,
+        ListCollectionBackups.class,
         ReloadCollectionAPI.class,
-        RenameCollectionAPI.class,
-        ReplaceNodeAPI.class,
-        BalanceReplicasAPI.class,
+        RenameCollection.class,
+        ReplaceNode.class,
+        MigrateReplicas.class,
+        BalanceReplicas.class,
         RestoreCollectionAPI.class,
-        SyncShardAPI.class,
-        CollectionPropertyAPI.class,
-        DeleteNodeAPI.class,
-        ListAliasesAPI.class,
-        AliasPropertyAPI.class,
+        SyncShard.class,
+        CollectionProperty.class,
+        DeleteNode.class,
+        ListAliases.class,
+        AliasProperty.class,
         ListCollectionSnapshotsAPI.class,
         CreateCollectionSnapshotAPI.class,
-        DeleteCollectionSnapshotAPI.class);
+        DeleteCollectionSnapshot.class);
   }
 
   @Override

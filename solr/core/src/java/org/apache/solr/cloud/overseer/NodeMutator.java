@@ -28,7 +28,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -123,7 +122,7 @@ public class NodeMutator {
         PerReplicaStates prs =
             client == null
                 ? docCollection.getPerReplicaStates()
-                : PerReplicaStatesFetcher.fetch(
+                : PerReplicaStatesOps.fetch(
                     docCollection.getZNode(), client, docCollection.getPerReplicaStates());
 
         return Optional.of(
