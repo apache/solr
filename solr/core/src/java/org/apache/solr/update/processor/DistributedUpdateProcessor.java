@@ -390,7 +390,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       if (versionsStored) {
 
-        long bucketVersion = bucket.highest;
+        long bucketVersion = bucket.getHighest();
 
         if (leaderLogic) {
 
@@ -1107,7 +1107,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     try {
       BytesRef idBytes = cmd.getIndexedId();
       if (versionsStored) {
-        long bucketVersion = bucket.highest;
+        long bucketVersion = bucket.getHighest();
 
         if (leaderLogic) {
 

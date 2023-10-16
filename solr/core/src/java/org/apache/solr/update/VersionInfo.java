@@ -23,6 +23,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.IntObjectMap;
+import com.carrotsearch.hppc.ObjectLongHashMap;
+import com.carrotsearch.hppc.ObjectLongMap;
+import com.carrotsearch.hppc.procedures.IntObjectProcedure;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
@@ -48,9 +54,16 @@ public class VersionInfo {
   private static final String SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS =
       "bucketVersionLockTimeoutMs";
 
+  private static final float BUCKET_MAP_MAX_SIZE_RATIO = 0.75f;
+
   private final UpdateLog ulog;
-  private final VersionBucket[] buckets;
-  private SchemaField versionField;
+  private final int numBuckets;
+  private volatile IntObjectMap<VersionBucket> bucketMap;
+  private final int bucketMapMaxSize;
+  private volatile VersionBucket[] bucketArray;
+  private final Object bucketsSync = new Object();
+  private volatile long highestVersionSeed;
+  private final SchemaField versionField;
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
   private int versionBucketLockTimeoutMs;
@@ -103,21 +116,23 @@ public class VersionInfo {
             .get("versionBucketLockTimeoutMs")
             .intVal(
                 Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
-    buckets = new VersionBucket[BitUtil.nextHighestPowerOfTwo(nBuckets)];
-    for (int i = 0; i < buckets.length; i++) {
-      if (versionBucketLockTimeoutMs > 0) {
-        buckets[i] = new TimedVersionBucket();
-      } else {
-        buckets[i] = new VersionBucket();
-      }
-    }
+    numBuckets = BitUtil.nextHighestPowerOfTwo(nBuckets);
+    // Instead of directly creating the large bucket array which takes 1.5 MB per SolrCore,
+    // start with a map in which keys are the bucket slot and values are the BucketVersion.
+    // This map will be automatically replaced by the bucket array if its size exceeds
+    // 3/4 numBuckets, at which point the map would start to weight more in memory than the
+    // array.
+    bucketMap = new IntObjectHashMap<>();
+    bucketMapMaxSize = (int) (numBuckets * BUCKET_MAP_MAX_SIZE_RATIO);
   }
 
   public int getVersionBucketLockTimeoutMs() {
     return versionBucketLockTimeoutMs;
   }
 
-  public void reload() {}
+  public void reload() {
+    System.out.println("DEBUG");//TODO: remove
+  }
 
   public SchemaField getVersionField() {
     return versionField;
@@ -205,9 +220,58 @@ public class VersionInfo {
     // Make sure high bits are moved down, since only the low bits will matter.
     // int h = hash + (hash >>> 8) + (hash >>> 16) + (hash >>> 24);
     // Assume good hash codes for now.
+    int slot = hash & (numBuckets - 1);
+    if (bucketMap != null) {
+      return getBucketFromMap(slot);
+    }
+    return getBucketFromArray(slot);
+  }
 
-    int slot = hash & (buckets.length - 1);
-    return buckets[slot];
+  private VersionBucket getBucketFromMap(int slot) {
+    VersionBucket bucket = bucketMap.get(slot);
+    if (bucket == null) {
+      synchronized (bucketsSync) {
+        int index = bucketMap.indexOf(slot);
+        if (index >= 0) {
+          bucket = bucketMap.indexGet(index);
+        } else if (bucketMap.size() >= bucketMapMaxSize) {
+          replaceBucketMapByBucketArray();
+          return getBucketFromArray(slot);
+        } else {
+          // Create VersionBucket lazily.
+          bucket = createVersionBucket();
+          bucketMap.indexInsert(index, slot, bucket);
+        }
+      }
+    }
+    return bucket;
+  }
+
+  private void replaceBucketMapByBucketArray() {
+    bucketArray = new VersionBucket[numBuckets];
+    bucketMap.forEach((IntObjectProcedure<VersionBucket>) (slot, bucket) -> bucketArray[slot] = bucket);
+    bucketMap = null;
+  }
+
+  private VersionBucket getBucketFromArray(int slot) {
+    VersionBucket bucket = bucketArray[slot];
+    if (bucket == null) {
+      synchronized (bucketsSync) {
+        bucket = bucketArray[slot];
+        if (bucket == null) {
+          // Create VersionBucket lazily.
+          bucket = createVersionBucket();
+          bucketArray[slot] = bucket;
+        }
+      }
+    }
+    return bucket;
+  }
+
+  private VersionBucket createVersionBucket() {
+    return versionBucketLockTimeoutMs > 0 ?
+        new TimedVersionBucket(highestVersionSeed)
+        : new VersionBucket(highestVersionSeed);
   }
 
   public Long lookupVersion(BytesRef idBytes) {
@@ -256,7 +320,7 @@ public class VersionInfo {
     log.debug(
         "Refreshing highest value of {} for {} version buckets from index",
         versionFieldName,
-        buckets.length);
+        numBuckets);
     // if indexed, then we have terms to get the max from
     if (versionField.indexed()) {
       if (versionField.getType().isPointField()) {
@@ -284,12 +348,26 @@ public class VersionInfo {
   }
 
   public void seedBucketsWithHighestVersion(long highestVersion) {
-    for (int i = 0; i < buckets.length; i++) {
-      // should not happen, but in case other threads are calling updateHighest on the version
-      // bucket
-      synchronized (buckets[i]) {
-        if (buckets[i].highest < highestVersion) buckets[i].highest = highestVersion;
+    // Sets the highest version on existing buckets only
+    synchronized (bucketsSync) {
+      if (bucketMap != null) {
+        bucketMap.forEach((IntObjectProcedure<VersionBucket>) (i, bucket) -> {
+          // Should not happen, but synchronize in case other threads are calling updateHighest
+          // on the version bucket.
+          synchronized (bucket) {
+            bucket.setHighestIfGreater(highestVersion);
+          }
+        });
+      } else {
+        for (VersionBucket bucket : bucketArray) {
+          if (bucket != null) {
+            synchronized (bucket) {
+              bucket.setHighestIfGreater(highestVersion);
+            }
+          }
+        }
       }
+      highestVersionSeed = Math.max(highestVersion, highestVersionSeed);
     }
   }
 

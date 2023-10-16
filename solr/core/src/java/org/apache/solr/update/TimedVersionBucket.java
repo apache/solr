@@ -35,6 +35,10 @@ public class TimedVersionBucket extends VersionBucket {
   private final Lock lock = new ReentrantLock(true);
   private final Condition condition = lock.newCondition();
 
+  public TimedVersionBucket(long highest) {
+    super(highest);
+  }
+
   /**
    * This will run the function with the lock. It will throw exception if it can't obtain the lock
    * within <code>lockTimeoutMs</code>.

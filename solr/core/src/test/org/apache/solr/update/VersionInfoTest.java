@@ -93,7 +93,7 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
 
     int bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
     VersionBucket bucket = vInfo.bucket(bucketHash);
-    assertEquals(bucket.highest, version.longValue());
+    assertEquals(bucket.getHighest(), version.longValue());
 
     // send 2nd doc ... BUT DO NOT COMMIT
     docId = Integer.toString(2);
@@ -145,7 +145,7 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
 
     bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
     bucket = vInfo.bucket(bucketHash);
-    assertEquals(bucket.highest, version.longValue());
+    assertEquals(bucket.getHighest(), version.longValue());
 
     // reload the core, which should reset the max
     CoreContainer coreContainer = req.getCore().getCoreContainer();
@@ -180,6 +180,6 @@ public class VersionInfoTest extends SolrTestCaseJ4 {
 
     bucketHash = Hash.murmurhash3_x86_32(idBytes.bytes, idBytes.offset, idBytes.length, 0);
     bucket = vInfo.bucket(bucketHash);
-    assertEquals(bucket.highest, version.longValue());
+    assertEquals(bucket.getHighest(), version.longValue());
   }
 }

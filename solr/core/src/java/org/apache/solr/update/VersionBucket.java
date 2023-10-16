@@ -31,12 +31,39 @@ import java.util.concurrent.TimeUnit;
  * ignores the <code>lockTimeoutMs</code>.
  */
 public class VersionBucket {
-  public long highest;
 
+  private long highest;
+
+  /**
+   * @param highest the initial value of this bucket highest version.
+   */
+  public VersionBucket(long highest) {
+    setHighestIfGreater(highest);
+  }
+
+  /**
+   * Updates the highest version if the current bucket value is not zero and if the provided value
+   * is greater than the current bucket value. The caller must synchronize on this bucket when
+   * calling this method.
+   */
   public void updateHighest(long val) {
     if (highest != 0) {
-      highest = Math.max(highest, Math.abs(val));
+      setHighestIfGreater(Math.abs(val));
     }
+  }
+
+  /**
+   * Sets the highest version if the provided value is greater than the current bucket value.
+   * The caller must synchronize on this bucket when calling this method.
+   */
+  public void setHighestIfGreater(long val) {
+    if (val > highest) {
+      this.highest = val;
+    }
+  }
+
+  public long getHighest() {
+    return highest;
   }
 
   @FunctionalInterface
