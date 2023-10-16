@@ -55,7 +55,6 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
 
 We have the vectors embedded in our `films.json` file, so lets index that data, taking advantage of our new schema field we just defined.
 
-.To Index JSON Format
 [.dynamic-tabs]
 --
 [example.tab-pane#unixindexjson]
@@ -80,12 +79,49 @@ $ bin/solr post -c films example\films\films.json
 ====
 --
 
-==== Let's do a Vector search
+=== Let's do some Vector searches
 Before making the queries, we define an example target vector, simulating a person that 
 watched 3 movies: _Finding Nemo_, _Bee Movie_, and _Harry Potter and the Chamber of Secrets_. 
-We get the 3 vectors of each movie, then calculate the resulting average vector, which will 
+We get the vector of each movie, then calculate the resulting average vector, which will 
 be used as input vector for all the following example queries.
 
+CAN WE DEMO A QUERY?
+
+q=name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"
+
+search(films,
+       qt="/select",
+       q="name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"",
+       fl="id,name,film_vector")
+
+       
+select(      
+  search(films,
+       qt="/select",
+       q="name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"",
+       fl="id,name,film_vector"),
+  film_vector
+  )
+
+  let(
+    a=matrix(array(1, 2), array(4, 5)),
+      b=scalarAdd(10, a)
+      )
+
+      let(
+        a=matrix(  
+
+  
+        
+select(      
+  search(films,
+        qt="/select",
+        q="name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"",
+        fl="id,name,film_vector"),
+  film_vector,
+  mult(film_vector, 10) as new_film_vector
+  )
+        
 ```
 [-0.1784, 0.0096, -0.1455, 0.4167, -0.1148, -0.0053, -0.0651, -0.0415, 0.0859, -0.1789]
 ```
@@ -142,4 +178,4 @@ FAQ:
 
 === Exercise 5 Wrap Up
 
-In this excercise, we used the Schema API to add the vector field, and then learned how to index and query Solr using vector data structure.
+In this exercise, we used the Schema API to add the vector field, and then learned how to index and query Solr using the vector data structure.
