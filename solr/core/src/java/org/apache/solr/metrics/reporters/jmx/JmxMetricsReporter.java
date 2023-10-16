@@ -166,6 +166,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
   // MBean interfaces and base classes
   public interface MetricMBean {
     ObjectName objectName();
+
     // this strange-looking method name is used for producing "_instanceTag" attribute name
     String get_instanceTag();
   }

@@ -110,8 +110,12 @@ public class ZkCLI implements CLIO {
    * machine, multi node tests.
    */
   public static void main(String[] args)
-      throws InterruptedException, TimeoutException, IOException, ParserConfigurationException,
-          SAXException, KeeperException {
+      throws InterruptedException,
+          TimeoutException,
+          IOException,
+          ParserConfigurationException,
+          SAXException,
+          KeeperException {
 
     CommandLineParser parser = new PosixParser();
     Options options = new Options();
@@ -398,6 +402,10 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
+          if (!ZkController.checkChrootPath(zkServerAddress, true)) {
+            stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
+            System.exit(1);
+          }
           zkClient.makePath(arglist.get(0), true);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
           List<String> arglist = line.getArgList();
@@ -415,7 +423,7 @@ public class ZkCLI implements CLIO {
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);
           } else {
-            zkClient.create(path, data, CreateMode.PERSISTENT, true);
+            zkClient.makePath(path, data, CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT_FILE)) {
           List<String> arglist = line.getArgList();
@@ -436,7 +444,11 @@ public class ZkCLI implements CLIO {
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);
           } else {
-            zkClient.create(path, data, CreateMode.PERSISTENT, true);
+            if (!ZkController.checkChrootPath(zkServerAddress, true)) {
+              stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
+              System.exit(1);
+            }
+            zkClient.makePath(path, data, CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
           List<String> arglist = line.getArgList();
@@ -465,6 +477,10 @@ public class ZkCLI implements CLIO {
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLUSTERPROP)) {
           if (!line.hasOption(NAME)) {
             stdout.println("-" + NAME + " is required for " + CLUSTERPROP);
+          }
+          if (!ZkController.checkChrootPath(zkServerAddress, true)) {
+            stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
+            System.exit(1);
           }
           String propertyName = line.getOptionValue(NAME);
           // If -val option is missing, we will use the null value. This is required to maintain

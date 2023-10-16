@@ -41,11 +41,9 @@ import org.slf4j.LoggerFactory;
 @State(Scope.Benchmark)
 public class BaseBenchState {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final long RANDOM_SEED = System.nanoTime();
 
-  private static final long RANDOM_SEED = 6624420638116043983L;
-
-  private static final SplittableRandom random = new SplittableRandom(getInitRandomeSeed());
+  private static final SplittableRandom random = new SplittableRandom(getInitRandomSeed());
 
   /**
    * Gets random seed.
@@ -137,13 +135,14 @@ public class BaseBenchState {
     }
   }
 
-  private static Long getInitRandomeSeed() {
+  private static Long getInitRandomSeed() {
     Long seed = Long.getLong("solr.bench.seed");
 
     if (seed == null) {
       seed = RANDOM_SEED;
     }
 
+    log("");
     log("benchmark random seed: " + seed);
 
     return seed;

@@ -65,6 +65,7 @@ import org.slf4j.LoggerFactory;
 public class DistribPackageStore implements PackageStore {
   static final long MAX_PKG_SIZE =
       Long.parseLong(System.getProperty("max.file.store.size", String.valueOf(100 * 1024 * 1024)));
+
   /** This is where al the files in the package store are listed */
   static final String ZK_PACKAGESTORE = "/packagestore";
 

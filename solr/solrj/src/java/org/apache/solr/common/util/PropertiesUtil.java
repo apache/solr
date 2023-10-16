@@ -33,6 +33,7 @@ public class PropertiesUtil {
     if (coreProperties == null) return substitute(value, null);
     return substitute(value, coreProperties::getProperty);
   }
+
   /*
    * This method borrowed from Ant's PropertyHelper.replaceProperties:
    *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java

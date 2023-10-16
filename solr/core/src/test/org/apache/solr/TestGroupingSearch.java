@@ -1991,7 +1991,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     public Doc maxDoc; // the document highest according to the "sort" param
 
     public void setMaxDoc(Comparator<Doc> comparator) {
-      Doc[] arr = docs.toArray(new Doc[docs.size()]);
+      Doc[] arr = docs.toArray(new Doc[0]);
       Arrays.sort(arr, comparator);
       maxDoc = arr.length > 0 ? arr[0] : null;
     }

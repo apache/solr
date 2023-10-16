@@ -205,7 +205,7 @@ groups:
   title: Prerequisites
   description: |
     Releasing software requires thorough understanding of the process and careful execution,
-    as it is easy to make mistakes. It also requires an environtment and tools such as gpg
+    as it is easy to make mistakes. It also requires an environment and tools such as gpg
     correctly setup. This section makes sure you're in good shape for the job!
   todos:
   - !Todo
@@ -526,7 +526,7 @@ groups:
     - major
     - minor
     links:
-    - https://cwiki.apache.org/confluence/display/LUCENEJAVA/JenkinsReleaseBuilds
+    - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
   - !Todo
     id: inform_devs
     title: Inform Devs of the new Release Branch
@@ -544,7 +544,7 @@ groups:
 
       NOTICE:
 
-      Branch {{ release_branch }} has been cut and versions updated to {{ release_version_major }}.{{ release_version_minor + 1 }} on stable branch.
+      Branch {{ release_branch }} has been cut and versions updated to {{ release_version_major }}.{{ release_version_minor + 1 }} on the stable branch.
 
       Please observe the normal rules:
 
@@ -636,7 +636,7 @@ groups:
       Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
-      NOTE: Do not add every single JIRA issue, but distill the Release note into important changes!
+      NOTE: Do not add every single JIRA issue, but distill the release notes into important changes!
     links:
     - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
   - !Todo
@@ -660,7 +660,7 @@ groups:
     description: |-
       To make sure a new release is not announced before the reference guide is complete, add a new
       Blocker JIRA issue for version {{ release_version }} with subject
-      "Complete Major changes and Upgrade Notes in RefGudie for {{ release_version }}".
+      "Complete Major changes and Upgrade Notes in RefGuide for {{ release_version }}".
       Note that this does not block the RC and voting process, but will block announcing the release.
     types:
     - major
@@ -1588,6 +1588,7 @@ groups:
       Fill in the same date that you used for the release in previous steps.
       Do not use a product name prefix for the version, as this is the main release of the Solr PMC.
       Just use the version of this release: {{ release_version }}
+      Note: you have to be a member of the Solr PMC to be able to complete this step.
     links:
       - https://reporter.apache.org/addrelease.html?solr
 - !TodoGroup
