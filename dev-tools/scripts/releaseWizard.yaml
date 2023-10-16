@@ -1588,6 +1588,7 @@ groups:
       Fill in the same date that you used for the release in previous steps.
       Do not use a product name prefix for the version, as this is the main release of the Solr PMC.
       Just use the version of this release: {{ release_version }}
+      Note: you have to be a member of the Solr PMC to be able to complete this step.
     links:
       - https://reporter.apache.org/addrelease.html?solr
 - !TodoGroup
