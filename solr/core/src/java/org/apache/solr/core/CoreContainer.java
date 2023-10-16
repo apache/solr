@@ -206,8 +206,7 @@ public class CoreContainer {
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
 
-  private final ContainerPluginsRegistry containerPluginsRegistry =
-      new ContainerPluginsRegistry(this, containerHandlers.getApiBag());
+  private volatile ContainerPluginsRegistry containerPluginsRegistry = null;
 
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
@@ -776,6 +775,7 @@ public class CoreContainer {
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
 
+    containerPluginsRegistry = new ContainerPluginsRegistry(this, containerHandlers.getApiBag());
     containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());

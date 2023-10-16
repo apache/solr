@@ -48,6 +48,7 @@ public class PluginMeta implements ReflectMapWriter {
     result.name = name;
     result.klass = klass;
     result.version = version;
+    result.pathPrefix = pathPrefix;
     result.config = config;
     return result;
   }

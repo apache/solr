@@ -71,7 +71,7 @@ Other Changes
 ==================  9.5.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-15782: Declare container-level plugins in solr.xml (Vincent Primault)
 
 Improvements
 ---------------------

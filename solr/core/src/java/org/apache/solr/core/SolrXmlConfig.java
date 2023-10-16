@@ -182,6 +182,7 @@ public class SolrXmlConfig {
     configBuilder.setFromZookeeper(fromZookeeper);
     configBuilder.setDefaultZkHost(defaultZkHost);
     configBuilder.setCoreAdminHandlerActions(coreAdminHandlerActions);
+    configBuilder.setContainerPlugins(getContainerPluginInfos(root.getAll("containerPlugin")));
     return fillSolrSection(configBuilder, root);
   }
 
@@ -656,6 +657,17 @@ public class SolrXmlConfig {
       configs[i] = new PluginInfo(c, "BackupRepositoryFactory", true, true);
     }
 
+    return configs;
+  }
+
+  private static PluginInfo[] getContainerPluginInfos(List<ConfigNode> cfg) {
+    if (cfg.isEmpty()) {
+      return new PluginInfo[0];
+    }
+    PluginInfo[] configs = new PluginInfo[cfg.size()];
+    for (int i = 0; i < cfg.size(); i++) {
+      configs[i] = new PluginInfo(cfg.get(i), "ContainerPlugin", true, true);
+    }
     return configs;
   }
 

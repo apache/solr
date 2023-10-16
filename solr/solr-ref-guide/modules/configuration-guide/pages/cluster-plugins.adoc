@@ -88,24 +88,22 @@ A JSON map of additional plugin configuration parameters.
 Plugins that implement `ConfigurablePlugin` interface will be initialized with a
 plugin-specific configuration object deserialized from this map.
 
-Example plugin configuration:
+Example plugin with configuration:
 
-[source,bash]
+[source,json]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{
-    "add":{
-        "name": ".placement-plugin",
-        "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
-        "config": {
-          "minimalFreeDiskGB": 20,
-          "prioritizedFreeDiskGB": 100,
-          "withCollection": {
-            "A_primary": "A_secondary",
-            "B_primary": "B_secondary"
-          }
-        }
-    }}'
-  http://localhost:8983/api/cluster/plugin
+{
+  "name": ".placement-plugin",
+  "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
+  "config": {
+    "minimalFreeDiskGB": 20,
+    "prioritizedFreeDiskGB": 100,
+    "withCollection": {
+      "A_primary": "A_secondary",
+      "B_primary": "B_secondary"
+    }
+  }
+}
 ----
 
 === Types of Cluster Plugins
@@ -277,4 +275,35 @@ curl -X POST -H 'Content-type: application/json' -d '{
     "remove": "my-plugin1"
     }'
   http://localhost:8983/api/cluster/plugin
+----
+
+== Plugin Configuration in solr.xml
+
+Plugins can also be installed by creating `<containerPlugin>` elements in `solr.xml`.
+This might be preferred in some situations, such as enforcing immutable infrastructure.
+
+TIP: See also the section xref:configuration-guide:configuring-solr-xml.adoc[] for more information about the `solr.xml` file, where to find it, and how to edit it.
+
+A plugin is configured with the following syntax:
+
+[source,xml]
+----
+<containerPlugin name="my-plugin1" class="my-package:com.example.MyPlugin" />
+----
+
+Attributes `version` and `path-prefix` may also be specified on the element, for xref:#plugin-configurations[the same effect as the properties with the same name].
+Additional configuration, if the plugin supports it via the `config` property, is specified with children elements.
+
+Example plugin with configuration in `solr.xml`
+
+[source,xml]
+----
+<containerPlugin name=".placement-plugin" class="org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory">
+    <int name="minimalFreeDiskGB">20</int>
+    <int name="prioritizedFreeDiskGB">200</int>
+    <lst name="withCollection">
+        <str name="A_primary">A_secondary</str>
+        <str name="B_primary">B_secondary</str>
+    </lst>
+</containerPlugin>
 ----

@@ -116,6 +116,7 @@ public class NodeConfig {
   private final Map<String, CacheConfig> cachesConfig;
 
   private final PluginInfo tracerConfig;
+  private final PluginInfo[] containerPlugins;
 
   // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper
   // connection later. If it becomes necessary to track multiple potential sources in the future,
@@ -153,6 +154,7 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
+      PluginInfo[] containerPlugins,
       boolean fromZookeeper,
       String defaultZkHost,
       Set<Path> allowPaths,
@@ -199,6 +201,7 @@ public class NodeConfig {
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
     this.hiddenSysProps = hiddenSysProps;
+    this.containerPlugins = containerPlugins;
     this.hiddenSysPropPattern =
         Pattern.compile("^(" + String.join("|", hiddenSysProps) + ")$", Pattern.CASE_INSENSITIVE)
             .asMatchPredicate();
@@ -419,6 +422,10 @@ public class NodeConfig {
     return tracerConfig;
   }
 
+  public PluginInfo[] getContainerPlugins() {
+    return containerPlugins;
+  }
+
   /**
    * True if this node config was loaded from zookeeper
    *
@@ -627,6 +634,7 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
+    private PluginInfo[] containerPlugins;
     private boolean fromZookeeper = false;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
@@ -814,6 +822,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setContainerPlugins(PluginInfo[] containerPlugins) {
+      this.containerPlugins = containerPlugins;
+      return this;
+    }
+
     public NodeConfigBuilder setFromZookeeper(boolean fromZookeeper) {
       this.fromZookeeper = fromZookeeper;
       return this;
@@ -929,6 +942,7 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
+          containerPlugins,
           fromZookeeper,
           defaultZkHost,
           allowPaths,

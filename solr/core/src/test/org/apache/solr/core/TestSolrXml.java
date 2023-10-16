@@ -78,6 +78,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("info handler class", "testInfoHandler", cfg.getInfoHandlerClass());
     assertEquals(
         "config set handler class", "testConfigSetsHandler", cfg.getConfigSetsHandlerClass());
+    assertEquals("cores locator class", "testCoresLocator", cfg.getCoresLocatorClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
     assertEquals("replay update threads", 100, cfg.getReplayUpdatesThreads());
     MatcherAssert.assertThat(
@@ -136,6 +137,14 @@ public class TestSolrXml extends SolrTestCaseJ4 {
                         .map(s -> Path.of(s))
                         .collect(Collectors.toSet())));
     assertTrue("hideStackTrace", cfg.hideStackTraces());
+
+    PluginInfo[] containerPlugins = cfg.getContainerPlugins();
+    assertEquals(1, containerPlugins.length);
+    assertEquals("testPlugin", containerPlugins[0].name);
+    assertEquals("TestPlugin", containerPlugins[0].className);
+    assertEquals(1, containerPlugins[0].initArgs.size());
+    assertEquals("value", containerPlugins[0].initArgs.get("param"));
+
     System.clearProperty("solr.allowPaths");
   }
 

@@ -68,6 +68,8 @@ import org.slf4j.LoggerFactory;
  * removing / replacing the plugins according to the updated configuration obtained from {@link
  * ContainerPluginsApi#plugins(Supplier)}.
  *
+ * <p>It also handles plugins declared in solr.xml, which are loaded at startup.
+ *
  * <p>Plugins instantiated by this class may implement zero or more {@link Api}-s, which are then
  * registered in the CoreContainer {@link ApiBag}. They may be also post-processed for additional
  * functionality by {@link PluginRegistryListener}-s registered with this class.
@@ -120,6 +122,33 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   public ContainerPluginsRegistry(CoreContainer coreContainer, ApiBag apiBag) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
+    loadFromNodeConfig();
+  }
+
+  private void loadFromNodeConfig() {
+    // Load plugins defined in solr.xml. Those plugins are then considered exactly like
+    // other plugins, e.g., they can be updated or uninstalled.
+    for (PluginInfo pluginInfo : coreContainer.getNodeConfig().getContainerPlugins()) {
+      Map<String, Object> info = new HashMap<>();
+      info.put("name", pluginInfo.name);
+      info.put("class", pluginInfo.className);
+      String version = pluginInfo.attributes.get("version");
+      if (null != version) {
+        info.put("version", version);
+      }
+      String pathPrefix = pluginInfo.attributes.get("path-prefix");
+      if (null != pathPrefix) {
+        info.put("path-prefix", pathPrefix);
+      }
+      if (pluginInfo.initArgs.size() > 0) {
+        info.put("config", pluginInfo.initArgs.toMap(new HashMap<>()));
+      }
+      try {
+        addOrUpdatePlugin(Diff.ADDED, pluginInfo.name, new PluginMetaHolder(info));
+      } catch (Exception exp) {
+        log.error("Invalid pluginInfo configuration", exp);
+      }
+    }
   }
 
   @Override
@@ -167,6 +196,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     }
   }
 
+  /** Update the list of container plugins from configuration stored in ZK. */
   @SuppressWarnings("unchecked")
   public synchronized void refresh() {
     Map<String, Object> pluginInfos;
@@ -209,50 +239,54 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       } else {
         // ADDED or UPDATED
         PluginMetaHolder info = newState.get(e.getKey());
-        List<String> errs = new ArrayList<>();
-        ApiInfo apiInfo = new ApiInfo(info, errs);
-        if (!errs.isEmpty()) {
-          log.error(StrUtils.join(errs, ','));
-          continue;
+        addOrUpdatePlugin(e.getValue(), e.getKey(), info);
+      }
+    }
+  }
+
+  private void addOrUpdatePlugin(Diff diff, String name, PluginMetaHolder info) {
+    List<String> errs = new ArrayList<>();
+    ApiInfo apiInfo = new ApiInfo(info, errs);
+    if (!errs.isEmpty()) {
+      log.error(StrUtils.join(errs, ','));
+      return;
+    }
+    try {
+      apiInfo.init();
+    } catch (Exception exp) {
+      log.error("Cannot install apiInfo ", exp);
+      return;
+    }
+    if (diff == Diff.ADDED) {
+      // this plugin is totally new
+      for (ApiHolder holder : apiInfo.holders) {
+        containerApiBag.register(holder, getTemplateVars(apiInfo.info));
+      }
+      currentPlugins.put(name, apiInfo);
+      final ApiInfo apiInfoFinal = apiInfo;
+      listeners.forEach(listener -> listener.added(apiInfoFinal));
+    } else {
+      // this plugin is being updated
+      ApiInfo old = currentPlugins.put(name, apiInfo);
+      for (ApiHolder holder : apiInfo.holders) {
+        // register all new paths
+        containerApiBag.register(holder, getTemplateVars(apiInfo.info));
+      }
+      final ApiInfo apiInfoFinal = apiInfo;
+      listeners.forEach(listener -> listener.modified(old, apiInfoFinal));
+      if (old != null) {
+        // this is an update of the plugin. But, it is possible that
+        // some paths are remved in the newer version of the plugin
+        for (ApiHolder oldHolder : old.holders) {
+          if (apiInfo.get(oldHolder.api.getEndPoint()) == null) {
+            // there was a path in the old plugin which is not present in the new one
+            containerApiBag.unregister(
+                oldHolder.getMethod(), getActualPath(old, oldHolder.getPath()));
+          }
         }
-        try {
-          apiInfo.init();
-        } catch (Exception exp) {
-          log.error("Cannot install apiInfo ", exp);
-          continue;
-        }
-        if (e.getValue() == Diff.ADDED) {
-          // this plugin is totally new
-          for (ApiHolder holder : apiInfo.holders) {
-            containerApiBag.register(holder, getTemplateVars(apiInfo.info));
-          }
-          currentPlugins.put(e.getKey(), apiInfo);
-          final ApiInfo apiInfoFinal = apiInfo;
-          listeners.forEach(listener -> listener.added(apiInfoFinal));
-        } else {
-          // this plugin is being updated
-          ApiInfo old = currentPlugins.put(e.getKey(), apiInfo);
-          for (ApiHolder holder : apiInfo.holders) {
-            // register all new paths
-            containerApiBag.register(holder, getTemplateVars(apiInfo.info));
-          }
-          final ApiInfo apiInfoFinal = apiInfo;
-          listeners.forEach(listener -> listener.modified(old, apiInfoFinal));
-          if (old != null) {
-            // this is an update of the plugin. But, it is possible that
-            // some paths are remved in the newer version of the plugin
-            for (ApiHolder oldHolder : old.holders) {
-              if (apiInfo.get(oldHolder.api.getEndPoint()) == null) {
-                // there was a path in the old plugin which is not present in the new one
-                containerApiBag.unregister(
-                    oldHolder.getMethod(), getActualPath(old, oldHolder.getPath()));
-              }
-            }
-            if (old instanceof Closeable) {
-              // close the old instance of the plugin
-              closeWhileHandlingException((Closeable) old);
-            }
-          }
+        if (old instanceof Closeable) {
+          // close the old instance of the plugin
+          closeWhileHandlingException((Closeable) old);
         }
       }
     }
@@ -322,7 +356,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       return info.copy();
     }
 
-    public ApiInfo(PluginMetaHolder infoHolder, List<String> errs) {
+    private ApiInfo(PluginMetaHolder infoHolder, List<String> errs) {
       this.holder = infoHolder;
       this.info = infoHolder.meta;
       PluginInfo.ClassName klassInfo = new PluginInfo.ClassName(info.klass);
