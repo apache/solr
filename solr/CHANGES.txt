@@ -94,7 +94,9 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-10808 : The Solr schema version has been increased to 1.7. Since schema version 1.7, all fields/fieldTypes that
+  support docValues will have them enabled by default. This behavior can be reverted by setting
+  'docValues' parameter for a field or a field type to false, the default for schema versions 1.6 and below. (Houston Putman)
 
 ==================  9.4.0 ==================
 New Features

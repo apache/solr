@@ -68,6 +68,18 @@ In Solr 8, it was possible to add docValues to a schema without re-indexing via 
 Due to changes in Lucene 9, that isn't possible any more.
 
 == Solr 9.5
+
+=== SchemaVersion upgraded to 1.7
+Starting with Solr 9.5, the default schemaVersion is 1.7.
+With the new schema version, all fields and fieldTypes that support docValues (StrField, *PointField, BoolField, etc.)
+will have docValues enabled by default.
+
+In order to upgrade from schemaVersion 1.6 to 1.7, a re-index of all data will generally be required.
+However, if any of the following is true, a re-index is not required:
+
+* All applicable fields already have docValues enabled in the original schema
+* The schema is updated to explicitly default `docValues="false"` for all fields and fieldTypes that did not have an explicit `docValues` default provided.
+
 === Curator upgraded to 5.5.0 and requires Zookeeper 3.5.x or higher
 xref:upgrade-notes:major-changes-in-solr-9.html#solr-8-2[Solr 8.2 recommended using Zookeeper 3.5.5] and now with Curator 5.5.0 requires https://curator.apache.org/docs/breaking-changes/[Zookeeper 3.5.x or higher]. This primarily affects users of `hadoop-auth`, but usage of Curator could affect other parts of Solr.
 
