@@ -18,17 +18,14 @@ package org.apache.solr.update;
 
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.IntObjectMap;
+import com.carrotsearch.hppc.procedures.IntObjectProcedure;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import com.carrotsearch.hppc.IntObjectHashMap;
-import com.carrotsearch.hppc.IntObjectMap;
-import com.carrotsearch.hppc.ObjectLongHashMap;
-import com.carrotsearch.hppc.ObjectLongMap;
-import com.carrotsearch.hppc.procedures.IntObjectProcedure;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
@@ -130,9 +127,7 @@ public class VersionInfo {
     return versionBucketLockTimeoutMs;
   }
 
-  public void reload() {
-    System.out.println("DEBUG");//TODO: remove
-  }
+  public void reload() {}
 
   public SchemaField getVersionField() {
     return versionField;
@@ -249,7 +244,8 @@ public class VersionInfo {
 
   private void replaceBucketMapByBucketArray() {
     bucketArray = new VersionBucket[numBuckets];
-    bucketMap.forEach((IntObjectProcedure<VersionBucket>) (slot, bucket) -> bucketArray[slot] = bucket);
+    bucketMap.forEach(
+        (IntObjectProcedure<VersionBucket>) (slot, bucket) -> bucketArray[slot] = bucket);
     bucketMap = null;
   }
 
@@ -269,8 +265,8 @@ public class VersionInfo {
   }
 
   private VersionBucket createVersionBucket() {
-    return versionBucketLockTimeoutMs > 0 ?
-        new TimedVersionBucket(highestVersionSeed)
+    return versionBucketLockTimeoutMs > 0
+        ? new TimedVersionBucket(highestVersionSeed)
         : new VersionBucket(highestVersionSeed);
   }
 
@@ -351,13 +347,15 @@ public class VersionInfo {
     // Sets the highest version on existing buckets only
     synchronized (bucketsSync) {
       if (bucketMap != null) {
-        bucketMap.forEach((IntObjectProcedure<VersionBucket>) (i, bucket) -> {
-          // Should not happen, but synchronize in case other threads are calling updateHighest
-          // on the version bucket.
-          synchronized (bucket) {
-            bucket.setHighestIfGreater(highestVersion);
-          }
-        });
+        bucketMap.forEach(
+            (IntObjectProcedure<VersionBucket>)
+                (i, bucket) -> {
+                  // Should not happen, but synchronize in case other threads are calling
+                  // updateHighest on the version bucket.
+                  synchronized (bucket) {
+                    bucket.setHighestIfGreater(highestVersion);
+                  }
+                });
       } else {
         for (VersionBucket bucket : bucketArray) {
           if (bucket != null) {

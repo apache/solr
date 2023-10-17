@@ -53,8 +53,8 @@ public class VersionBucket {
   }
 
   /**
-   * Sets the highest version if the provided value is greater than the current bucket value.
-   * The caller must synchronize on this bucket when calling this method.
+   * Sets the highest version if the provided value is greater than the current bucket value. The
+   * caller must synchronize on this bucket when calling this method.
    */
   public void setHighestIfGreater(long val) {
     if (val > highest) {
