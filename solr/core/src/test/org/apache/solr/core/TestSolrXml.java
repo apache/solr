@@ -138,12 +138,12 @@ public class TestSolrXml extends SolrTestCaseJ4 {
                         .collect(Collectors.toSet())));
     assertTrue("hideStackTrace", cfg.hideStackTraces());
 
-    PluginInfo[] containerPlugins = cfg.getContainerPlugins();
-    assertEquals(1, containerPlugins.length);
-    assertEquals("testPlugin", containerPlugins[0].name);
-    assertEquals("TestPlugin", containerPlugins[0].className);
-    assertEquals(1, containerPlugins[0].initArgs.size());
-    assertEquals("value", containerPlugins[0].initArgs.get("param"));
+    PluginInfo[] nodePlugins = cfg.getNodePlugins();
+    assertEquals(1, nodePlugins.length);
+    assertEquals("testPlugin", nodePlugins[0].name);
+    assertEquals("TestPlugin", nodePlugins[0].className);
+    assertEquals(1, nodePlugins[0].initArgs.size());
+    assertEquals("value", nodePlugins[0].initArgs.get("param"));
 
     System.clearProperty("solr.allowPaths");
   }

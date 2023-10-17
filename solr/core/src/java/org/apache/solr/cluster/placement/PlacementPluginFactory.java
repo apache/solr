@@ -21,7 +21,7 @@ import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 
 /**
- * Factory implemented by client code and configured in container plugins (see {@link
+ * Factory implemented by client code and configured in node plugins (see {@link
  * org.apache.solr.handler.admin.ContainerPluginsApi#editAPI}) allowing the creation of instances of
  * {@link PlacementPlugin} to be used for replica placement computation.
  *

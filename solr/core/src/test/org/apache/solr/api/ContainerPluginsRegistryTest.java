@@ -31,7 +31,7 @@ public class ContainerPluginsRegistryTest extends SolrTestCaseJ4 {
   @Test
   public void testPluginIsLoadedFromSolrXml() {
     String solrXml =
-        "<solr><containerPlugin "
+        "<solr><plugin "
             + "name=\"custom-request-handler\" "
             + "class=\"org.apache.solr.api.ContainerPluginsRegistryTest$CustomRequestHandler\""
             + "/></solr>";
@@ -46,7 +46,7 @@ public class ContainerPluginsRegistryTest extends SolrTestCaseJ4 {
   @Test
   public void testPluginIsLoadedFromSolrXmlWithVersion() {
     String solrXml =
-        "<solr><containerPlugin "
+        "<solr><plugin "
             + "name=\"custom-request-handler\" "
             + "class=\"org.apache.solr.api.ContainerPluginsRegistryTest$CustomRequestHandler\" "
             + "version=\"1.0.0\""
@@ -60,7 +60,7 @@ public class ContainerPluginsRegistryTest extends SolrTestCaseJ4 {
   @Test
   public void testPluginIsLoadedFromSolrXmlWithPathPrefix() {
     String solrXml =
-        "<solr><containerPlugin "
+        "<solr><plugin "
             + "name=\"custom-request-handler\" "
             + "class=\"org.apache.solr.api.ContainerPluginsRegistryTest$CustomRequestHandler\" "
             + "path-prefix=\"foo\""
@@ -74,7 +74,7 @@ public class ContainerPluginsRegistryTest extends SolrTestCaseJ4 {
   @Test
   public void testPluginIsLoadedFromSolrXmlWithConfig() {
     String solrXml =
-        "<solr><containerPlugin "
+        "<solr><plugin "
             + "name=\".placement-plugin\" "
             + "class=\"org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory\">"
             + "<int name=\"minimalFreeDiskGB\">20</int>"
@@ -83,7 +83,7 @@ public class ContainerPluginsRegistryTest extends SolrTestCaseJ4 {
             + "  <str name=\"A_primary\">A_secondary</str>"
             + "  <str name=\"B_primary\">B_secondary</str>"
             + "</lst>"
-            + "</containerPlugin></solr>";
+            + "</plugin></solr>";
     cc = createCoreContainer(solrHome, solrXml);
 
     ContainerPluginsRegistry.ApiInfo apiInfo = getPlugin(".placement-plugin");

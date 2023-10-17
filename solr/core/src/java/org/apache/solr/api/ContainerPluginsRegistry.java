@@ -64,11 +64,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class manages the container-level plugins and their Api-s. It is responsible for adding /
- * removing / replacing the plugins according to the updated configuration obtained from {@link
- * ContainerPluginsApi#plugins(Supplier)}.
+ * This class manages the node-level plugins and their Api-s.
  *
- * <p>It also handles plugins declared in solr.xml, which are loaded at startup.
+ * <p>Plugins can be declared in solr.xml to be loaded at startup.
+ *
+ * <p>This class is responsible for adding / removing / replacing the plugins according to the
+ * updated configuration obtained from {@link ContainerPluginsApi#plugins(Supplier)}.
  *
  * <p>Plugins instantiated by this class may implement zero or more {@link Api}-s, which are then
  * registered in the CoreContainer {@link ApiBag}. They may be also post-processed for additional
@@ -128,7 +129,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   private void loadFromNodeConfig() {
     // Load plugins defined in solr.xml. Those plugins are then considered exactly like
     // other plugins, e.g., they can be updated or uninstalled.
-    for (PluginInfo pluginInfo : coreContainer.getNodeConfig().getContainerPlugins()) {
+    for (PluginInfo pluginInfo : coreContainer.getNodeConfig().getNodePlugins()) {
       Map<String, Object> info = new HashMap<>();
       info.put("name", pluginInfo.name);
       info.put("class", pluginInfo.className);
@@ -196,7 +197,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     }
   }
 
-  /** Update the list of container plugins from configuration stored in ZK. */
+  /** Update the list of plugins with cluster plugins stored in ZK. */
   @SuppressWarnings("unchecked")
   public synchronized void refresh() {
     Map<String, Object> pluginInfos;

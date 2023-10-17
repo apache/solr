@@ -279,7 +279,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
 
 == Plugin Configuration in solr.xml
 
-Plugins can also be installed by creating `<containerPlugin>` elements in `solr.xml`.
+Plugins can also be installed by creating `<plugin>` elements in `solr.xml`.
 This might be preferred in some situations, such as enforcing immutable infrastructure.
 
 TIP: See also the section xref:configuration-guide:configuring-solr-xml.adoc[] for more information about the `solr.xml` file, where to find it, and how to edit it.
@@ -288,7 +288,7 @@ A plugin is configured with the following syntax:
 
 [source,xml]
 ----
-<containerPlugin name="my-plugin1" class="my-package:com.example.MyPlugin" />
+<plugin name="my-plugin1" class="my-package:com.example.MyPlugin" />
 ----
 
 Attributes `version` and `path-prefix` may also be specified on the element, for xref:#plugin-configurations[the same effect as the properties with the same name].
@@ -298,12 +298,12 @@ Example plugin with configuration in `solr.xml`
 
 [source,xml]
 ----
-<containerPlugin name=".placement-plugin" class="org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory">
+<plugin name=".placement-plugin" class="org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory">
     <int name="minimalFreeDiskGB">20</int>
     <int name="prioritizedFreeDiskGB">200</int>
     <lst name="withCollection">
         <str name="A_primary">A_secondary</str>
         <str name="B_primary">B_secondary</str>
     </lst>
-</containerPlugin>
+</plugin>
 ----

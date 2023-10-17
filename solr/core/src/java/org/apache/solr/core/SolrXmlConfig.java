@@ -182,7 +182,7 @@ public class SolrXmlConfig {
     configBuilder.setFromZookeeper(fromZookeeper);
     configBuilder.setDefaultZkHost(defaultZkHost);
     configBuilder.setCoreAdminHandlerActions(coreAdminHandlerActions);
-    configBuilder.setContainerPlugins(getContainerPluginInfos(root.getAll("containerPlugin")));
+    configBuilder.setNodePlugins(getNodePluginInfos(root.getAll("plugin")));
     return fillSolrSection(configBuilder, root);
   }
 
@@ -660,13 +660,13 @@ public class SolrXmlConfig {
     return configs;
   }
 
-  private static PluginInfo[] getContainerPluginInfos(List<ConfigNode> cfg) {
+  private static PluginInfo[] getNodePluginInfos(List<ConfigNode> cfg) {
     if (cfg.isEmpty()) {
       return new PluginInfo[0];
     }
     PluginInfo[] configs = new PluginInfo[cfg.size()];
     for (int i = 0; i < cfg.size(); i++) {
-      configs[i] = new PluginInfo(cfg.get(i), "ContainerPlugin", true, true);
+      configs[i] = new PluginInfo(cfg.get(i), "NodePlugin", true, true);
     }
     return configs;
   }

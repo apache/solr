@@ -116,7 +116,7 @@ public class NodeConfig {
   private final Map<String, CacheConfig> cachesConfig;
 
   private final PluginInfo tracerConfig;
-  private final PluginInfo[] containerPlugins;
+  private final PluginInfo[] nodePlugins;
 
   // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper
   // connection later. If it becomes necessary to track multiple potential sources in the future,
@@ -154,7 +154,7 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
-      PluginInfo[] containerPlugins,
+      PluginInfo[] nodePlugins,
       boolean fromZookeeper,
       String defaultZkHost,
       Set<Path> allowPaths,
@@ -201,7 +201,7 @@ public class NodeConfig {
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
     this.hiddenSysProps = hiddenSysProps;
-    this.containerPlugins = containerPlugins;
+    this.nodePlugins = nodePlugins;
     this.hiddenSysPropPattern =
         Pattern.compile("^(" + String.join("|", hiddenSysProps) + ")$", Pattern.CASE_INSENSITIVE)
             .asMatchPredicate();
@@ -422,8 +422,8 @@ public class NodeConfig {
     return tracerConfig;
   }
 
-  public PluginInfo[] getContainerPlugins() {
-    return containerPlugins;
+  public PluginInfo[] getNodePlugins() {
+    return nodePlugins;
   }
 
   /**
@@ -634,7 +634,7 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
-    private PluginInfo[] containerPlugins;
+    private PluginInfo[] nodePlugins;
     private boolean fromZookeeper = false;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
@@ -822,8 +822,8 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setContainerPlugins(PluginInfo[] containerPlugins) {
-      this.containerPlugins = containerPlugins;
+    public NodeConfigBuilder setNodePlugins(PluginInfo[] nodePlugins) {
+      this.nodePlugins = nodePlugins;
       return this;
     }
 
@@ -942,7 +942,7 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
-          containerPlugins,
+          nodePlugins,
           fromZookeeper,
           defaultZkHost,
           allowPaths,
