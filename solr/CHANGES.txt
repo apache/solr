@@ -101,6 +101,8 @@ Improvements
 * SOLR-16397: The rename-core v2 endpoint has been updated to be more REST-ful.
   RENAME is now available at `POST /api/cores/coreName/rename` (Sanjay Dutt via Jason Gerlowski)
 
+* SOLR-17035: Add trace id to jetty thread names to improve debuggability via stack traces (Alex Deparvu)
+
 Optimizations
 ---------------------
 (No changes)
