@@ -78,6 +78,44 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     assertTrue(res.contains("the model 0 is empty"));
   }
 
+
+  @Test
+  public void ltrRepeatedQueriesCachedTest() throws Exception {
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("bloomberg baz buzz");
+    query.add("q", "bloomberg baz buzz");
+    query.add("qf", "title description");
+    query.add("defType", "edismax");
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+    query.add("fv", "true");
+    query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=3}");
+
+    // Different order for top 3 reranked, but last one is the same top nonreranked doc
+    assertJQ("/query" + query.toQueryString(),
+            "/response/docs/[0]/id=='7'",
+            "/response/docs/[1]/id=='8'",
+            "/response/docs/[2]/id=='9'",
+            "/response/docs/[3]/id=='6'"
+    );
+
+    // to check caching
+    assertJQ("/query" + query.toQueryString(),
+            "/response/docs/[0]/id=='7'",
+            "/response/docs/[1]/id=='8'",
+            "/response/docs/[2]/id=='9'",
+            "/response/docs/[3]/id=='6'"
+    );
+
+    // to check caching
+    assertJQ("/query" + query.toQueryString(),
+            "/response/docs/[0]/id=='7'",
+            "/response/docs/[1]/id=='8'",
+            "/response/docs/[2]/id=='9'",
+            "/response/docs/[3]/id=='6'"
+    );
+  }
+
   @Test
   public void ltrBadRerankDocsTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
