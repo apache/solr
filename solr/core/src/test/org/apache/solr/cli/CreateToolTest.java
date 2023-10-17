@@ -23,15 +23,8 @@ import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
@@ -39,11 +32,11 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@SolrTestCaseJ4.SuppressSSL
-public class PostToolTest extends SolrCloudTestCase {
+public class CreateToolTest extends SolrCloudTestCase {
 
   private static final String USER = "solr";
   private static final String PASS = "SolrRocksAgain";
+  private static final String collectionName = "testCreateCollectionWithBasicAuth";
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
@@ -73,37 +66,28 @@ public class PostToolTest extends SolrCloudTestCase {
         .configure();
   }
 
-  private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
-    req.setBasicAuthCredentials(USER, PASS);
-    return req;
-  }
-
   @Test
-  public void testBasicRun() throws Exception {
-    final String collection = "aliasedCollection";
-
-    withBasicAuth(CollectionAdminRequest.createCollection(collection, "config", 1, 1, 0, 0))
-        .processAndWait(cluster.getSolrClient(), 10);
-
-    File jsonDoc = File.createTempFile("temp", "json");
-
-    FileWriter fw = new FileWriter(jsonDoc, StandardCharsets.UTF_8);
-    Utils.writeJson(Utils.toJSONString(Map.of("id", "1", "title", "mytitle")), fw, true);
+  public void testCreateCollectionWithBasicAuth() throws Exception {
 
     String[] args = {
-      "post",
-      "-url",
-      cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection,
+      "create",
+      "-c",
+      collectionName,
+      "-n",
+      "cloud-minimal",
+      "-zkHost",
+      cluster.getZkClient().getZkServerAddress(),
       "-credentials",
       USER + ":" + PASS,
-      jsonDoc.getAbsolutePath()
+      "-verbose"
     };
+
     assertEquals(0, runTool(args));
   }
 
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
-    assertTrue(tool instanceof PostTool);
+    assertTrue(tool instanceof CreateTool);
     CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
     return tool.runTool(cli);
   }

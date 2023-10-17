@@ -267,7 +267,8 @@ public class RunExampleTool extends ToolBase {
     // safe check if core / collection already exists
     boolean alreadyExists = false;
     if (nodeStatus.get("cloud") != null) {
-      if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+      if (SolrCLI.safeCheckCollectionExists(
+          solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
         alreadyExists = true;
         echo(
             "\nWARNING: Collection '"
@@ -276,7 +277,8 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       String coreName = collectionName;
-      if (SolrCLI.safeCheckCoreExists(solrUrl, coreName)) {
+      if (SolrCLI.safeCheckCoreExists(
+          solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
         alreadyExists = true;
         echo(
             "\nWARNING: Core '"
@@ -536,7 +538,13 @@ public class RunExampleTool extends ToolBase {
     waitToSeeLiveNodes(zkHost, numNodes);
 
     // create the collection
-    String collectionName = createCloudExampleCollection(numNodes, readInput, prompt, solrUrl);
+    String collectionName =
+        createCloudExampleCollection(
+            numNodes,
+            readInput,
+            prompt,
+            solrUrl,
+            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
 
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
   }
@@ -640,7 +648,9 @@ public class RunExampleTool extends ToolBase {
         String.format(
             Locale.ROOT, "%s://%s:%d/solr", urlScheme, (host != null ? host : "localhost"), port);
 
-    Map<String, Object> nodeStatus = checkPortConflict(solrUrl, solrHomeDir, port);
+    String credentials = null; // for now we don't need it for example tool.  But we should.
+
+    Map<String, Object> nodeStatus = checkPortConflict(solrUrl, credentials, solrHomeDir, port);
     if (nodeStatus != null)
       return nodeStatus; // the server they are trying to start is already running
 
@@ -687,16 +697,18 @@ public class RunExampleTool extends ToolBase {
     }
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
-    return getNodeStatus(solrUrl, maxWaitSecs);
+    return getNodeStatus(
+        solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs);
   }
 
-  protected Map<String, Object> checkPortConflict(String solrUrl, File solrHomeDir, int port) {
+  protected Map<String, Object> checkPortConflict(
+      String solrUrl, String credentials, File solrHomeDir, int port) {
     // quickly check if the port is in use
     if (isPortAvailable(port)) return null; // not in use ... try to start
 
     Map<String, Object> nodeStatus = null;
     try {
-      nodeStatus = (new StatusTool()).getStatus(solrUrl);
+      nodeStatus = (new StatusTool()).getStatus(solrUrl, credentials);
     } catch (Exception ignore) {
       /* just trying to determine if this example is already running. */
     }
@@ -745,7 +757,8 @@ public class RunExampleTool extends ToolBase {
   }
 
   protected String createCloudExampleCollection(
-      int numNodes, Scanner readInput, boolean prompt, String solrUrl) throws Exception {
+      int numNodes, Scanner readInput, boolean prompt, String solrUrl, String credentials)
+      throws Exception {
     // yay! numNodes SolrCloud nodes running
     int numShards = 2;
     int replicationFactor = 2;
@@ -769,7 +782,7 @@ public class RunExampleTool extends ToolBase {
 
         // Test for existence and then prompt to either create another collection or skip the
         // creation step
-        if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+        if (SolrCLI.safeCheckCollectionExists(solrUrl, credentials, collectionName)) {
           echo("\nCollection '" + collectionName + "' already exists!");
           int oneOrTwo =
               promptForInt(
@@ -825,7 +838,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       // must verify if default collection exists
-      if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+      if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName, credentials)) {
         echo(
             "\nCollection '"
                 + collectionName
@@ -868,13 +881,14 @@ public class RunExampleTool extends ToolBase {
     return configDir.isDirectory();
   }
 
-  protected Map<String, Object> getNodeStatus(String solrUrl, int maxWaitSecs) throws Exception {
+  protected Map<String, Object> getNodeStatus(String solrUrl, String credentials, int maxWaitSecs)
+      throws Exception {
     StatusTool statusTool = new StatusTool();
     if (verbose) echo("\nChecking status of Solr at " + solrUrl + " ...");
 
     URL solrURL = new URL(solrUrl);
     Map<String, Object> nodeStatus =
-        statusTool.waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
+        statusTool.waitToSeeSolrUp(solrUrl, credentials, maxWaitSecs, TimeUnit.SECONDS);
     nodeStatus.put("baseUrl", solrUrl);
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(nodeStatus);

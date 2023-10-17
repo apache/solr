@@ -71,7 +71,7 @@ Other Changes
 ==================  9.5.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
 
 Improvements
 ---------------------

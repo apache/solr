@@ -1313,6 +1313,26 @@ public class Http2SolrClient extends SolrClient {
       this.proxyIsSecure = isSecure;
       return this;
     }
+
+    /**
+     * Setup basic authentication from a string formatted as username:password. If the string is
+     * Null then it doesn't do anything.
+     *
+     * @param credentials The username and password formatted as username:password
+     * @return this Builder
+     */
+    public Builder withOptionalBasicAuthCredentials(String credentials) {
+      if (credentials != null) {
+        if (credentials.indexOf(':') == -1) {
+          throw new IllegalStateException(
+              "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
+        }
+        String username = credentials.substring(0, credentials.indexOf(':'));
+        String password = credentials.substring(credentials.indexOf(':') + 1, credentials.length());
+        withBasicAuthCredentials(username, password);
+      }
+      return this;
+    }
   }
 
   public Set<String> getUrlParamNames() {
