@@ -18,13 +18,10 @@ package org.apache.solr.ltr;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Map;
 
 public class TestLTRQParserPlugin extends TestRerankBase {
 
