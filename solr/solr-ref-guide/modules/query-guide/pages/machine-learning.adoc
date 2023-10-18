@@ -110,7 +110,7 @@ The `count(*)` field populates the values in the cells of the matrix.
 The `distance` function is then used to compute the distance matrix for the columns of the matrix using `cosine` distance.
 This produces a distance matrix that shows distance between complaint types based on the zip codes they appear in.
 
-Finally the `zplot` function is used to plot the distance matrix as a heat map.
+Finally, the `zplot` function is used to plot the distance matrix as a heat map.
 Notice that the heat map has been configured so that the intensity of color increases as the distance between vectors decreases.
 
 
@@ -182,7 +182,7 @@ These are the zip codes that are most similar to the 10280 zip code based on the
 
 K-nearest neighbor regression is a non-linear, bivariate and multivariate regression method.
 KNN regression is a lazy learning technique which means it does not fit a model to the training set in advance.
-Instead the entire training set of observations and outcomes are held in memory and predictions are made by averaging the outcomes of the k-nearest neighbors.
+Instead, the entire training set of observations and outcomes are held in memory and predictions are made by averaging the outcomes of the k-nearest neighbors.
 
 The `knnRegress` function is used to perform nearest neighbor regression.
 
@@ -229,7 +229,7 @@ These predictions will be used to determine how well the KNN regression performe
 The error, or *residuals*, for the regression are then calculated by subtracting the *predicted* quality from the *observed* quality.
 The `ebeSubtract` function is used to perform the element-by-element subtraction between the two vectors.
 
-Finally the `zplot` function formats the predictions and errors for the visualization of the *residual plot*.
+Finally, the `zplot` function formats the predictions and errors for the visualization of the *residual plot*.
 
 image::math-expressions/redwine1.png[]
 
@@ -262,7 +262,7 @@ From this plot we can see the probability of getting prediction errors between -
 The `knnRegression` function has three additional parameters that make it suitable for many different regression scenarios.
 
 . Any of the distance measures can be used for the regression simply by adding the function to the call.
-This allows for regression analysis over sparse vectors (`cosine`), dense vectors and geo-spatial lat/lon vectors (`haversineMeters`).
+This allows for regression analysis over sparse vectors (`cosine`), dense vectors and geospatial lat/lon vectors (`haversineMeters`).
 +
 Sample syntax:
 +
@@ -330,9 +330,9 @@ The matrix is transposed so each row contains a single latitude, longitude point
 The `dbscan` function is then used to cluster the latitude and longitude points.
 Notice that the `dbscan` function in the example has four parameters.
 
-* `obs` : The observation matrix of lat/lon points
+* `obs`: The observation matrix of lat/lon points
 
-* `eps` : The distance between points to be considered a cluster.
+* `eps`: The distance between points to be considered a cluster.
 100 meters in the example.
 
 * `min points`: The minimum points in a cluster for the cluster to be returned by the function.
@@ -386,7 +386,7 @@ The plot is dense enough so the outlines of the different boroughs are visible i
 
 Each cluster is shown in a different color.
 This plot provides interesting insight into the densities of rat sightings throughout the five boroughs of New York City.
-For example it highlights a cluster of dense sightings in Brooklyn at cluster1
+For example, it highlights a cluster of dense sightings in Brooklyn at cluster1
 surrounded by less dense but still high activity clusters.
 
 === Plotting the Centroids
@@ -412,7 +412,7 @@ K-means clustering produces centroids or *prototype* vectors which can be used t
 In this example the key features of the centroids are extracted to represent the key phrases for clusters of TF-IDF term vectors.
 
 NOTE: The example below works with TF-IDF _term vectors_.
-The section xref:term-vectors.adoc[] offers a full explanation of this features.
+The section xref:term-vectors.adoc[] offers a full explanation of these features.
 
 In the example the `search` function returns documents where the `review_t` field matches the phrase "star wars".
 The `select` function is run over the result set and applies the `analyze` function which uses the analyzer attached to the schema field `text_bigrams` to re-analyze the `review_t` field.
@@ -420,7 +420,7 @@ This analyzer returns bigrams which are then annotated to documents in a field c
 
 The `termVectors` function then creates TD-IDF term vectors from the bigrams stored in the `terms` field.
 The `kmeans` function is then used to cluster the bigram term vectors into 5 clusters.
-Finally the top 5 features are extracted from the centroids and returned.
+Finally, the top 5 features are extracted from the centroids and returned.
 Notice that the features are all bigram phrases with semantic significance.
 
 [source,text]
@@ -565,7 +565,7 @@ This expression returns the following response:
 
 == Fuzzy K-Means Clustering
 
-The `fuzzyKmeans` function is a soft clustering algorithm which allows vectors to be assigned to more then one cluster.
+The `fuzzyKmeans` function is a soft clustering algorithm which allows vectors to be assigned to more than one cluster.
 The `fuzziness` parameter is a value between `1` and `2` that determines how fuzzy to make the cluster assignment.
 
 After the clustering has been performed the `getMembershipMatrix` function can be called on the clustering result to return a matrix describing the probabilities of cluster membership for each vector.
@@ -597,7 +597,7 @@ When operating on a matrix the rows of the matrix are scaled.
 === Min/Max Scaling
 
 The `minMaxScale` function scales a vector or matrix between a minimum and maximum value.
-By default it will scale between `0` and `1` if min/max values are not provided.
+By default, it will scale between `0` and `1` if min/max values are not provided.
 
 Below is a plot of a sine wave, with an amplitude of 1, before and after it has been scaled between -5 and 5.
 
@@ -654,7 +654,7 @@ Below is a plot of a sine wave, with an amplitude of 1, before and after it has 
 
 image::math-expressions/standardize.png[]
 
-Below is a simple example of of a standardized matrix.
+Below is a simple example of a standardized matrix.
 Notice that once brought into the same scale the vectors are the same.
 
 [source,text]
