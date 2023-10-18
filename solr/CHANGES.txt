@@ -8,7 +8,7 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.4.1 ==================
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
 
 Dependency Upgrades
 ---------------------
