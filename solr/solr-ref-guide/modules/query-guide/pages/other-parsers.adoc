@@ -73,7 +73,7 @@ For a BooleanQuery with no `must` queries, one or more `should` queries must mat
 A list of queries that *must* appear in matching documents.
 However, unlike `must`, the score of filter queries is ignored.
 Also, these queries are cached in filter cache.
-To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
+To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to the underlying Query DSL Object.
 
 `excludeTags`::
 +
