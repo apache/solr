@@ -16,10 +16,15 @@
  */
 package org.apache.solr.ltr;
 
+import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Map;
 
 public class TestLTRQParserPlugin extends TestRerankBase {
 
@@ -107,6 +112,11 @@ public class TestLTRQParserPlugin extends TestRerankBase {
             "/response/docs/[3]/id=='6'"
     );
 
+    String resp = restTestHarness.adminQuery("/admin/metrics?group=core&&prefix=CACHE.searcher.queryResultCache");
+    String error = JSONTestUtil.match(resp,
+                       "/metrics/solr.core.collection1/CACHE.searcher.queryResultCache/hits==1");
+    assertNull("cache check failed with error: " + error, error);
+
     // to check caching
     assertJQ("/query" + query.toQueryString(),
             "/response/docs/[0]/id=='7'",
@@ -114,6 +124,12 @@ public class TestLTRQParserPlugin extends TestRerankBase {
             "/response/docs/[2]/id=='9'",
             "/response/docs/[3]/id=='6'"
     );
+
+    resp = restTestHarness.adminQuery("/admin/metrics?group=core&&prefix=CACHE.searcher.queryResultCache");
+    error = JSONTestUtil.match(resp,
+            "/metrics/solr.core.collection1/CACHE.searcher.queryResultCache/hits==2");
+    assertNull("cache check failed with error: " + error, error);;
+
   }
 
   @Test
