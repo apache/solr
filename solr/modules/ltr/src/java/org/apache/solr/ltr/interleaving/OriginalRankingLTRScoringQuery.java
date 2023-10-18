@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr.interleaving;
 
+import org.apache.solr.ltr.LTRScoringQuery;
+
 public final class OriginalRankingLTRScoringQuery extends LTRInterleavingScoringQuery {
 
   private final String originalRankingModelName;
@@ -28,5 +30,15 @@ public final class OriginalRankingLTRScoringQuery extends LTRInterleavingScoring
   @Override
   public String getScoringModelName() {
     return this.originalRankingModelName;
+  }
+
+  @Override
+  public LTRScoringQuery clone() {
+    OriginalRankingLTRScoringQuery cloned = new OriginalRankingLTRScoringQuery(getScoringModelName());
+    cloned.setOriginalQuery(getOriginalQuery());
+    cloned.setFeatureLogger(getFeatureLogger());
+    cloned.setRequest(getRequest());
+    cloned.setPickedInterleavingDocIds(getPickedInterleavingDocIds());
+    return cloned;
   }
 }
