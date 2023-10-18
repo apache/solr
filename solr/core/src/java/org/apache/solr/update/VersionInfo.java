@@ -18,9 +18,6 @@ package org.apache.solr.update;
 
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
-import com.carrotsearch.hppc.IntObjectHashMap;
-import com.carrotsearch.hppc.IntObjectMap;
-import com.carrotsearch.hppc.procedures.IntObjectProcedure;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
@@ -51,15 +48,11 @@ public class VersionInfo {
   private static final String SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS =
       "bucketVersionLockTimeoutMs";
 
-  private static final float BUCKET_MAP_MAX_SIZE_RATIO = 0.75f;
-
   private final UpdateLog ulog;
   private final int numBuckets;
-  private volatile IntObjectMap<VersionBucket> bucketMap;
-  private final int bucketMapMaxSize;
-  private volatile VersionBucket[] bucketArray;
+  private volatile VersionBucket[] buckets;
   private final Object bucketsSync = new Object();
-  private volatile long highestVersionSeed;
+  private long highestVersionSeed;
   private final SchemaField versionField;
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
@@ -114,13 +107,6 @@ public class VersionInfo {
             .intVal(
                 Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
     numBuckets = BitUtil.nextHighestPowerOfTwo(nBuckets);
-    // Instead of directly creating the large bucket array which takes 1.5 MB per SolrCore,
-    // start with a map in which keys are the bucket slot and values are the BucketVersion.
-    // This map will be automatically replaced by the bucket array if its size exceeds
-    // 3/4 numBuckets, at which point the map would start to weight more in memory than the
-    // array.
-    bucketMap = new IntObjectHashMap<>();
-    bucketMapMaxSize = (int) (numBuckets * BUCKET_MAP_MAX_SIZE_RATIO);
   }
 
   public int getVersionBucketLockTimeoutMs() {
@@ -216,58 +202,25 @@ public class VersionInfo {
     // int h = hash + (hash >>> 8) + (hash >>> 16) + (hash >>> 24);
     // Assume good hash codes for now.
     int slot = hash & (numBuckets - 1);
-    if (bucketMap != null) {
-      return getBucketFromMap(slot);
-    }
-    return getBucketFromArray(slot);
-  }
-
-  private VersionBucket getBucketFromMap(int slot) {
-    VersionBucket bucket = bucketMap.get(slot);
-    if (bucket == null) {
+    if (buckets == null) {
       synchronized (bucketsSync) {
-        int index = bucketMap.indexOf(slot);
-        if (index >= 0) {
-          bucket = bucketMap.indexGet(index);
-        } else if (bucketMap.size() >= bucketMapMaxSize) {
-          replaceBucketMapByBucketArray();
-          return getBucketFromArray(slot);
-        } else {
-          // Create VersionBucket lazily.
-          bucket = createVersionBucket();
-          bucketMap.indexInsert(index, slot, bucket);
+        if (buckets == null) {
+          buckets = createVersionBuckets();
         }
       }
     }
-    return bucket;
+    return buckets[slot];
   }
 
-  private void replaceBucketMapByBucketArray() {
-    bucketArray = new VersionBucket[numBuckets];
-    bucketMap.forEach(
-        (IntObjectProcedure<VersionBucket>) (slot, bucket) -> bucketArray[slot] = bucket);
-    bucketMap = null;
-  }
-
-  private VersionBucket getBucketFromArray(int slot) {
-    VersionBucket bucket = bucketArray[slot];
-    if (bucket == null) {
-      synchronized (bucketsSync) {
-        bucket = bucketArray[slot];
-        if (bucket == null) {
-          // Create VersionBucket lazily.
-          bucket = createVersionBucket();
-          bucketArray[slot] = bucket;
-        }
-      }
+  private VersionBucket[] createVersionBuckets() {
+    VersionBucket[] buckets = new VersionBucket[numBuckets];
+    for (int i = 0; i < buckets.length; i++) {
+      buckets[i] =
+          versionBucketLockTimeoutMs > 0
+              ? new TimedVersionBucket(highestVersionSeed)
+              : new VersionBucket(highestVersionSeed);
     }
-    return bucket;
-  }
-
-  private VersionBucket createVersionBucket() {
-    return versionBucketLockTimeoutMs > 0
-        ? new TimedVersionBucket(highestVersionSeed)
-        : new VersionBucket(highestVersionSeed);
+    return buckets;
   }
 
   public Long lookupVersion(BytesRef idBytes) {
@@ -344,28 +297,21 @@ public class VersionInfo {
   }
 
   public void seedBucketsWithHighestVersion(long highestVersion) {
-    // Sets the highest version on existing buckets only
-    synchronized (bucketsSync) {
-      if (bucketMap != null) {
-        bucketMap.forEach(
-            (IntObjectProcedure<VersionBucket>)
-                (i, bucket) -> {
-                  // Should not happen, but synchronize in case other threads are calling
-                  // updateHighest on the version bucket.
-                  synchronized (bucket) {
-                    bucket.setHighestIfGreater(highestVersion);
-                  }
-                });
-      } else {
-        for (VersionBucket bucket : bucketArray) {
-          if (bucket != null) {
-            synchronized (bucket) {
-              bucket.setHighestIfGreater(highestVersion);
-            }
-          }
+    if (buckets == null) {
+      synchronized (bucketsSync) {
+        if (buckets == null) {
+          // Update the highest version seed to use if/when buckets are created.
+          highestVersionSeed = Math.max(highestVersion, highestVersionSeed);
+          return;
         }
       }
-      highestVersionSeed = Math.max(highestVersion, highestVersionSeed);
+    }
+    for (VersionBucket bucket : buckets) {
+      // Should not happen, but synchronize in case other threads are calling
+      // updateHighest on the version bucket.
+      synchronized (bucket) {
+        bucket.setHighestIfGreater(highestVersion);
+      }
     }
   }
 
