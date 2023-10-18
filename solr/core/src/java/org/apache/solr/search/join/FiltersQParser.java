@@ -61,6 +61,9 @@ public class FiltersQParser extends QParser {
     for (Map.Entry<QParser, Occur> clause : clauses.entrySet()) {
       builder.add(unwrapQuery(clause.getKey().getQuery(), clause.getValue()), clause.getValue());
     }
+
+    builder.setMinimumNumberShouldMatch(minShouldMatch());
+
     // what about empty query?
     return builder.build();
   }
@@ -71,6 +74,10 @@ public class FiltersQParser extends QParser {
 
   protected Query wrapSubordinateClause(Query subordinate) throws SyntaxError {
     return subordinate;
+  }
+
+  protected int minShouldMatch() {
+    return 0;
   }
 
   protected Query noClausesQuery() throws SyntaxError {

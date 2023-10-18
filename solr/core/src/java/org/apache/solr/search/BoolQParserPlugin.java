@@ -27,8 +27,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.FiltersQParser;
 
 /**
- * Create a boolean query from sub queries. Sub queries can be marked as must, must_not, filter or
- * should
+ * Create a boolean query from sub queries. Sub queries can be marked as {@code must}, {@code
+ * must_not}, {@code filter}, or {@code should}.
  *
  * <p>Example: <code>{!bool should=title:lucene should=title:solr must_not=id:1}</code>
  */
@@ -56,6 +56,11 @@ public class BoolQParserPlugin extends QParserPlugin {
           }
         }
         return query;
+      }
+
+      @Override
+      protected int minShouldMatch() {
+        return localParams.getInt("mm", 0);
       }
 
       @Override
