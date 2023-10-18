@@ -137,7 +137,9 @@ public class LTRScoringQuery extends Query implements Accountable {
     return request;
   }
 
-  protected LTRThreadModule getThreadModule() {return ltrThreadMgr; }
+  protected LTRThreadModule getThreadModule() {
+    return ltrThreadMgr;
+  }
 
   @Override
   public int hashCode() {

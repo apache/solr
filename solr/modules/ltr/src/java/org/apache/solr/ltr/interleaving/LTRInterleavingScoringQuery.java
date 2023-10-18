@@ -48,8 +48,9 @@ public class LTRInterleavingScoringQuery extends LTRScoringQuery {
 
   @Override
   public LTRScoringQuery clone() {
-    LTRInterleavingScoringQuery cloned = new LTRInterleavingScoringQuery(getScoringModel(),
-            getExternalFeatureInfo(), getThreadModule());
+    LTRInterleavingScoringQuery cloned =
+        new LTRInterleavingScoringQuery(
+            getScoringModel(), getExternalFeatureInfo(), getThreadModule());
     cloned.setOriginalQuery(getOriginalQuery());
     cloned.setFeatureLogger(getFeatureLogger());
     cloned.setRequest(getRequest());
@@ -57,17 +58,16 @@ public class LTRInterleavingScoringQuery extends LTRScoringQuery {
     return cloned;
   }
 
-
   @Override
   public boolean equals(Object o) {
     return sameClassAs(o) && equalsTo(getClass().cast(o));
   }
+
   private boolean equalsTo(LTRInterleavingScoringQuery other) {
     boolean superSame = (super.equalsTo(other) && other.equalsTo((LTRScoringQuery) this));
     if (this.getPickedInterleavingDocIds() != null && other.getPickedInterleavingDocIds() != null) {
       return this.pickedInterleavingDocIds.equals(other.getPickedInterleavingDocIds());
-    }
-    else {
+    } else {
       return (this.pickedInterleavingDocIds == other.getPickedInterleavingDocIds());
     }
   }

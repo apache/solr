@@ -34,7 +34,8 @@ public final class OriginalRankingLTRScoringQuery extends LTRInterleavingScoring
 
   @Override
   public LTRScoringQuery clone() {
-    OriginalRankingLTRScoringQuery cloned = new OriginalRankingLTRScoringQuery(getScoringModelName());
+    OriginalRankingLTRScoringQuery cloned =
+        new OriginalRankingLTRScoringQuery(getScoringModelName());
     cloned.setOriginalQuery(getOriginalQuery());
     cloned.setFeatureLogger(getFeatureLogger());
     cloned.setRequest(getRequest());
