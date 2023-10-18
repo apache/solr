@@ -2402,10 +2402,10 @@ function start_solr() {
       # Check if entropy is available and pool size is non-zero
       if [[ $entropy_avail -gt 0 && $pool_size -ne 0 ]]; then
         # Compute the ratio of entropy available to pool size
-        ratio=$(awk -v ea="$entropy_avail" -v ps="$pool_size" 'BEGIN {print (ea/ps)*100}')
+        ratio=$(awk -v ea="$entropy_avail" -v ps="$pool_size" 'BEGIN {print int((ea/ps)*100)}')
 
         # Check if the ratio is less than 25%
-        if (( $(echo "$ratio < 25" | bc -l) )); then
+        if (( ratio < 25 )); then
           echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
           echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
         fi

@@ -23,6 +23,8 @@ Bug Fixes
 ---------------------
 * SOLR-6853: Allow '/' characters in the text managed by Managed Resources API. (Nikita Rusetskii via Eric Pugh)
 
+* SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
