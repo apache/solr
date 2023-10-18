@@ -93,6 +93,14 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
   }
 
+  public LTRScoringQuery clone() {
+    LTRScoringQuery cloned = new LTRScoringQuery(ltrScoringModel, efi, ltrThreadMgr);
+    cloned.setOriginalQuery(getOriginalQuery());
+    cloned.setFeatureLogger(getFeatureLogger());
+    cloned.setRequest(getRequest());
+    return cloned;
+  }
+
   public LTRScoringModel getScoringModel() {
     return ltrScoringModel;
   }
