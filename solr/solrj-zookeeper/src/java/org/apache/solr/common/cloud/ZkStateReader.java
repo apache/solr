@@ -141,11 +141,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CONFIGS_ZKNODE = "/configs";
   public static final String CONFIGNAME_PROP = "configName";
 
-  /**
-   * @deprecated use {@link org.apache.solr.common.params.CollectionAdminParams#DEFAULTS} instead.
-   */
-  @Deprecated public static final String COLLECTION_DEF = "collectionDefaults";
-
   public static final String URL_SCHEME = "urlScheme";
   public static final String HTTP = "http";
   public static final String HTTPS = "https";
@@ -1136,6 +1131,7 @@ public class ZkStateReader implements SolrCloseable {
         loadClusterProperties();
       };
 
+  @SuppressWarnings("unchecked")
   private void loadClusterProperties() {
     try {
       while (true) {
@@ -1143,10 +1139,7 @@ public class ZkStateReader implements SolrCloseable {
           byte[] data =
               zkClient.getData(
                   ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
-          @SuppressWarnings("unchecked")
-          Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(data);
-          this.clusterProperties =
-              ClusterProperties.convertCollectionDefaultsToNestedFormat(properties);
+          this.clusterProperties = (Map<String, Object>) Utils.fromJSON(data);
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {

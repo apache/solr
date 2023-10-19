@@ -338,12 +338,6 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-NOTE: Until Solr 7.5, cluster properties supported a `collectionDefaults` key which is now deprecated and
-replaced with `defaults`.
-Using the `collectionDefaults` parameter in Solr 7.4 or 7.5 will continue to work
- but the format of the properties will automatically be converted to the new nested structure.
-Support for the "collectionDefaults" key will be removed in Solr 9.
-
 === Default Shard Preferences
 
 Using the `defaultShardPreferences` parameter, you can implement rack or availability zone awareness.

@@ -36,6 +36,8 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
+* SOLR-17024: Remove support for the long-defunct "collectionDefaults" clusterprops key (Jason Gerlowski)
+
 * SOLR-17042: Deprecate the V2RequestSupport interface, and the associated `setUseV2` and `setUseBinaryV2` SolrRequest
   methods.  SolrJ users looking to make use of v2 APIs in their applications can use the SolrRequest implementations
   dedicated to that purpose. (Jason Gerlowski)
