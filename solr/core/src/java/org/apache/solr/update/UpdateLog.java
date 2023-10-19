@@ -25,6 +25,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -1343,9 +1344,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     copyOverOldUpdatesMeter.mark();
 
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams());
-    TransactionLog.LogReader logReader = oldTlog.getReader(0);
+    TransactionLog.LogReader logReader = null;
     Object o = null;
     try {
+      logReader = oldTlog.getReader(0);
       while ((o = logReader.next()) != null) {
         try {
           List<?> entry = (List<?>) o;
@@ -1921,10 +1923,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             recoveryInfo.positionOfStart,
             inSortedOrder);
         long lastStatusTime = System.nanoTime();
-        if (inSortedOrder) {
-          tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
-        } else {
-          tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+        try {
+          if (inSortedOrder) {
+            tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
+          } else {
+            tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+          }
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
         }
 
         // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
