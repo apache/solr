@@ -18,7 +18,6 @@
 package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -26,7 +25,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -34,6 +32,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
@@ -108,14 +107,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
                 || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/select"));
     // one from client to server, 2 for execute query, 2 for fetching documents
     assertEquals(5, finishedSpans.size());
-    assertEquals(1, finishedSpans.stream().filter(TestDistributedTracing::isRootSpan).count());
-    var parentTraceId =
-        finishedSpans.stream()
-            .filter(TestDistributedTracing::isRootSpan)
-            .collect(Collectors.toList())
-            .get(0)
-            .getSpanContext()
-            .getTraceId();
+    var parentTraceId = getRootTraceId(finishedSpans);
     for (var span : finishedSpans) {
       if (isRootSpan(span)) {
         continue;
@@ -177,8 +169,30 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals(1, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
   }
 
+  /**
+   * Best effort test of the apache http client tracing. the test assumes the request uses the http
+   * client but there is no way to enforce it, so when the api will be rewritten this test will
+   * become obsolete
+   */
+  @Test
+  public void testApacheClient() throws Exception {
+    getAndClearSpans(); // reset
+    CollectionAdminRequest.ColStatus a1 = CollectionAdminRequest.collectionStatus(COLLECTION);
+    CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
+    assertEquals(0, r1.getStatus());
+    var finishedSpans = getAndClearSpans();
+    var parentTraceId = getRootTraceId(finishedSpans);
+    for (var span : finishedSpans) {
+      if (isRootSpan(span)) {
+        continue;
+      }
+      assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
+      assertEquals(span.getTraceId(), parentTraceId);
+    }
+  }
+
   private static boolean isRootSpan(SpanData span) {
-    return span.getParentSpanContext() == SpanContext.getInvalid();
+    return !span.getParentSpanContext().isValid();
   }
 
   private static void assertCollectionName(SpanData span) {
@@ -207,5 +221,15 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     Collections.reverse(result); // nicer to see spans chronologically
     exporter.reset();
     return result;
+  }
+
+  private String getRootTraceId(List<SpanData> finishedSpans) {
+    assertEquals(1, finishedSpans.stream().filter(TestDistributedTracing::isRootSpan).count());
+    return finishedSpans.stream()
+        .filter(TestDistributedTracing::isRootSpan)
+        .findFirst()
+        .get()
+        .getSpanContext()
+        .getTraceId();
   }
 }

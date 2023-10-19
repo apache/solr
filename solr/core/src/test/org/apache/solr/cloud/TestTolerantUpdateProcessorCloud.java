@@ -787,7 +787,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
               update(
                       params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
-                      docs.toArray(new SolrInputDocument[docs.size()]))
+                      docs.toArray(new SolrInputDocument[0]))
                   .process(client);
             });
 
@@ -895,7 +895,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
               update(
                       params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
-                      docs.toArray(new SolrInputDocument[docs.size()]))
+                      docs.toArray(new SolrInputDocument[0]))
                   .process(client);
             });
 
@@ -964,12 +964,12 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                     "update.chain", "tolerant-chain-max-errors-10",
                     "maxErrors", "-1",
                     "commit", "true"),
-                docs.toArray(new SolrInputDocument[docs.size()]))
+                docs.toArray(new SolrInputDocument[0]))
             .process(client);
     assertUpdateTolerantErrors(
         "many docs from shard2 fail, but req should succeed",
         rsp,
-        expectedErrs.toArray(new ExpectedErr[expectedErrs.size()]));
+        expectedErrs.toArray(new ExpectedErr[0]));
     assertQueryDocIds(
         client,
         true,

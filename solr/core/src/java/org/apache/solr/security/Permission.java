@@ -126,6 +126,7 @@ class Permission {
     }
     return set == null ? singleton(null) : set;
   }
+
   /**
    * read a key value as a set. if the value is a single string, return a singleton set
    *

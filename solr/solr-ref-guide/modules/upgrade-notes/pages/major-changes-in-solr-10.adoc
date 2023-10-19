@@ -30,11 +30,6 @@ Before starting an upgrade to this version of Solr, please take the time to revi
 
 Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
 
-=== Backup / Restore
-
-If an in-place upgrade is occurring, it's best to ensure that no Collection backups are being restored _while_ this happens.
-It's possible for a restored collection to not accept future indexing.
-
 === Deprecation removals
 
 * The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.

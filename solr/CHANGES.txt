@@ -8,7 +8,8 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 
 New Features
 ---------------------
-(No changes)
+
+* SOLR-16943: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient (Alex Deparvu, David Smiley)
 
 Improvements
 ---------------------
@@ -25,7 +26,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
 
 Deprecation Removals
 ----------------------
@@ -65,16 +66,17 @@ Other Changes
 
 * SOLR-16911: Establish /solr as the only host context supported by Solr, removing legacy ability to change this.  Solr paths will only be either /solr or /api now.  (Eric Pugh)
 
+* SOLR-16995: Add a ReplicaCount class to keep track of replicas per type (Vincent Primault)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
 
 Improvements
 ---------------------
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
-  REQUESTAPPLYUPDATES call in Collection restore. The latter will still happen in 9.x for
-  backwards-compatibility.  (Julia Lamoine, David Smiley)
+  REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
 
 Optimizations
 ---------------------
@@ -82,11 +84,15 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-6853: Allow '/' characters in the text managed by Managed Resources API. (Nikita Rusetskii via Eric Pugh)
+
+* SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
 
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
+
+* SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
 
 Other Changes
 ---------------------
@@ -260,6 +266,8 @@ Bug Fixes
 
 * SOLR-17009: json.wrf parameter ignored in JacksonJsonWriter (Alex Deparvu)
 
+* SOLR-17019: ZkCli should create subpaths when necessary (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 
@@ -268,6 +276,8 @@ Dependency Upgrades
 * SOLR-16985: Upgrade Lucene to 9.8.0 (Alex Deparvu, Christine Poerschke)
 
 * PR#1971: Update forbiddenapis to 3.6 to support Java 21/22 and commons-io up to 2.14.0 (Uwe Schindler)
+
+* PR#2001: Update org.eclipse.jetty to 10.0.17 (Alex Deparvu)
 
 Other Changes
 ---------------------

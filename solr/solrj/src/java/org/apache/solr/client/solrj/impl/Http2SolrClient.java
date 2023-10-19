@@ -147,6 +147,7 @@ public class Http2SolrClient extends SolrClient {
   protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
+
   /** The URL of the Solr server. */
   private final String serverBaseUrl;
 
@@ -1209,6 +1210,7 @@ public class Http2SolrClient extends SolrClient {
       withMaxConnectionsPerHost(max);
       return this;
     }
+
     /**
      * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
      * to 4
@@ -1309,6 +1311,26 @@ public class Http2SolrClient extends SolrClient {
       this.proxyPort = port;
       this.proxyIsSocks4 = isSocks4;
       this.proxyIsSecure = isSecure;
+      return this;
+    }
+
+    /**
+     * Setup basic authentication from a string formatted as username:password. If the string is
+     * Null then it doesn't do anything.
+     *
+     * @param credentials The username and password formatted as username:password
+     * @return this Builder
+     */
+    public Builder withOptionalBasicAuthCredentials(String credentials) {
+      if (credentials != null) {
+        if (credentials.indexOf(':') == -1) {
+          throw new IllegalStateException(
+              "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
+        }
+        String username = credentials.substring(0, credentials.indexOf(':'));
+        String password = credentials.substring(credentials.indexOf(':') + 1, credentials.length());
+        withBasicAuthCredentials(username, password);
+      }
       return this;
     }
   }
