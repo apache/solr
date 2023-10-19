@@ -178,7 +178,8 @@ public abstract class FieldType extends FieldProperties {
    * which is called by this method.
    */
   protected void setArgs(IndexSchema schema, Map<String, String> args) {
-    // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
+    // default to STORED, INDEXED, OMIT_TF_POSITIONS,MULTIVALUED, USE_DOCVALUES_AS_STORED
+    // and DOC_VALUES depending on schema version
     properties = (STORED | INDEXED);
     float schemaVersion = schema.getVersion();
     if (schemaVersion < 1.1f) properties |= MULTIVALUED;
@@ -187,6 +188,7 @@ public abstract class FieldType extends FieldProperties {
       args.remove("compressThreshold");
     }
     if (schemaVersion >= 1.6f) properties |= USE_DOCVALUES_AS_STORED;
+    if (schemaVersion >= 1.7f) properties |= DOC_VALUES;
 
     properties |= UNINVERTIBLE;
 
