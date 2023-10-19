@@ -16,5 +16,6 @@
  */
 package org.apache.solr.cloud;
 
+// TODO: Move here the VM specific tests from the super class?
 public class VMParamsZkACLAndCredentialsProvidersTest
     extends AbstractDigestZkACLAndCredentialsProvidersTestBase {}

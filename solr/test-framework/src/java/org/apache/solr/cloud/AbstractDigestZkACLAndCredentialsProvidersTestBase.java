@@ -46,16 +46,17 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: make this class abstract (or rename it). Consider favoring composition over inheritance
 public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Charset DATA_ENCODING = StandardCharsets.UTF_8;
 
-  private static final String ALL_USERNAME = "connectAndAllACLUsername";
-  private static final String ALL_PASSWORD = "connectAndAllACLPassword";
-  private static final String READONLY_USERNAME = "readonlyACLUsername";
-  private static final String READONLY_PASSWORD = "readonlyACLPassword";
+  public static final String ALL_USERNAME = "connectAndAllACLUsername";
+  public static final String ALL_PASSWORD = "connectAndAllACLPassword";
+  public static final String READONLY_USERNAME = "readonlyACLUsername";
+  public static final String READONLY_PASSWORD = "readonlyACLPassword";
 
   protected ZkTestServer zkServer;
 
@@ -80,75 +81,88 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
     if (log.isInfoEnabled()) {
       log.info("####SETUP_START {}", getTestName());
     }
-    createTempDir();
 
     zkDir = createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
-    setSecuritySystemProperties();
     zkServer = new ZkTestServer(zkDir);
     zkServer.run(false);
-
     System.setProperty("zkHost", zkServer.getZkAddress());
 
+    setUpZKNodes(zkServer);
     setDigestZkSystemProps();
+    if (log.isInfoEnabled()) {
+      log.info("####SETUP_END {}", getTestName());
+    }
+  }
+
+  public static void setUpZKNodes(ZkTestServer zkServer) throws Exception {
+    System.setProperty(
+        SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+        DigestZkCredentialsProvider.class.getName());
+    System.setProperty(
+        SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, DigestZkACLProvider.class.getName());
     System.setProperty(
         SolrZkClient.ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME,
         AllAndReadonlyCredentialZkCredentialsInjector.class.getName());
 
-    SolrZkClient zkClient =
+    try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .build();
+            .build()) {
+      zkClient.makePath("/solr", false, true);
+    }
 
-    zkClient.makePath("/solr", false, true);
-    zkClient.close();
-
-    zkClient =
+    // for some reason (race condition?) it fails when we run the 2 blocks under the same 'try'
+    // it only works if we close and recreate a new zkClient. TODO: check this out
+    try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkServer.getZkAddress())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .build();
-    zkClient.create(
-        "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
-    zkClient.makePath(
-        "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+            .build()) {
+      zkClient.create(
+          "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+      zkClient.makePath(
+          "/protectedMakePathNode",
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT,
+          false);
 
-    zkClient.create(
-        SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
-        "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT,
-        false);
-    zkClient.close();
+      zkClient.create(
+          SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT,
+          false);
+    }
 
-    clearSecuritySystemProperties();
+    // Clear and reconnect without VM params to add the unprotected nodes
+    System.clearProperty(SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
+    System.clearProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
+    System.clearProperty(SolrZkClient.ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME);
 
-    zkClient =
+    try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkServer.getZkAddress())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .build();
-    // Currently, no credentials on ZK connection, because those same VM-params are used for adding
-    // ACLs, and here we want
-    // no (or completely open) ACLs added. Therefore, hack your way into being authorized for
-    // creating anyway
-    zkClient
-        .getZooKeeper()
-        .addAuthInfo(
-            "digest", (ALL_USERNAME + ":" + ALL_PASSWORD).getBytes(StandardCharsets.UTF_8));
-    zkClient.create(
-        "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
-    zkClient.makePath(
-        "/unprotectedMakePathNode",
-        "content".getBytes(DATA_ENCODING),
-        CreateMode.PERSISTENT,
-        false);
-    zkClient.close();
-
-    setDigestZkSystemProps();
-    if (log.isInfoEnabled()) {
-      log.info("####SETUP_END {}", getTestName());
+            .build()) {
+      // Currently, no credentials on ZK connection, because those same VM-params are used for
+      // adding ACLs, and here we want no (or completely open) ACLs added. Therefore, hack your way
+      // into being authorized for creating anyway
+      zkClient
+          .getZooKeeper()
+          .addAuthInfo(
+              "digest", (ALL_USERNAME + ":" + ALL_PASSWORD).getBytes(StandardCharsets.UTF_8));
+      zkClient.create(
+          "/unprotectedCreateNode",
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT,
+          false);
+      zkClient.makePath(
+          "/unprotectedMakePathNode",
+          "content".getBytes(DATA_ENCODING),
+          CreateMode.PERSISTENT,
+          false);
     }
   }
 
@@ -510,6 +524,8 @@ public class AbstractDigestZkACLAndCredentialsProvidersTestBase extends SolrTest
   public static class ConnectWithReadonlyCredsInjector implements ZkCredentialsInjector {
     @Override
     public List<ZkCredential> getZkCredentials() {
+      // SolrZkClient uses ALL 'user' to connect to ZK, hence perms=ALL. Still, we want to test the
+      // read-only creds, i.e. connect to ZK with read-only creds
       return List.of(
           new ZkCredential(READONLY_USERNAME, READONLY_PASSWORD, ZkCredential.Perms.ALL));
     }
