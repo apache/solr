@@ -289,6 +289,9 @@ public interface CommonParams {
   @Deprecated(since = "9.4")
   String DISABLE_REQUEST_ID = "disableRequestId";
 
+  /** Flag to disable remote stats request at query time */
+  String DISABLE_DISTRIB_STATS = "disableDistribStats";
+
   /** Request Purpose parameter added to each internal shard request when using debug=track */
   String REQUEST_PURPOSE = "requestPurpose";
 
