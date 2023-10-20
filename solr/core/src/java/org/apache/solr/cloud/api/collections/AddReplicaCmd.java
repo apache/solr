@@ -255,10 +255,10 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       CreateReplica createReplica)
       throws InterruptedException, KeeperException {
     if (!skipCreateReplicaInClusterState) {
-      ZkNodeProps props =
-          new ZkNodeProps(
+      Map<String, Object> replicaProps =
+          Utils.makeMap(
               Overseer.QUEUE_OPERATION,
-              ADDREPLICA.toLower(),
+              (Object) ADDREPLICA.toLower(),
               ZkStateReader.COLLECTION_PROP,
               collectionName,
               ZkStateReader.SHARD_ID_PROP,
@@ -274,8 +274,11 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
               ZkStateReader.REPLICA_TYPE,
               createReplica.replicaType.name());
       if (createReplica.coreNodeName != null) {
-        props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
+        replicaProps.put(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
       }
+      CollectionHandlingUtils.addPropertyParams(message, replicaProps);
+
+      ZkNodeProps props = new ZkNodeProps(replicaProps);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
@@ -342,6 +345,9 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     if (createReplica.coreNodeName != null) {
       params.set(CoreAdminParams.CORE_NODE_NAME, createReplica.coreNodeName);
     }
+    // Inherit user-defined properties from collection.
+    CollectionHandlingUtils.addPropertyParams(coll, params);
+    // Inherit user-defined properties from replica.
     CollectionHandlingUtils.addPropertyParams(message, params);
 
     return params;
