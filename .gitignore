@@ -43,5 +43,3 @@ __pycache__
 # Ignore gradle wrapper
 gradle/wrapper/gradle-wrapper.jar
 .gradletasknamecache
-
-.tool-versions
