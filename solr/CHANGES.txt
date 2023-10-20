@@ -73,6 +73,9 @@ New Features
 ---------------------
 * SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
 
+* SOLR-17006: Collection creation & adding replicas: User-defined properties are persisted to state.json and
+  applied to new replicas, available for use as property substitution in configuration files.  (Vincent Primault)
+
 Improvements
 ---------------------
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
