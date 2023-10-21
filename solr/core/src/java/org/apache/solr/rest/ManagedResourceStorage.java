@@ -426,6 +426,14 @@ public abstract class ManagedResourceStorage {
     }
 
     /**
+     * @param indentSize The number of space characters to use as an indent (default 2). 0=newlines   but no spaces, -1=no indent at all.
+     */
+    public JsonStorage(StorageIO storageIO, SolrResourceLoader loader, int indentSize) {
+      super(storageIO, loader);
+      this.indentSize = indentSize;
+    }
+
+    /**
      * Determines the relative path (from the storage root) for the given resource. In this case, it
      * returns a file named with the .json extension.
      */
@@ -441,7 +449,7 @@ public abstract class ManagedResourceStorage {
 
     @Override
     public void store(String resourceId, Object toStore) throws IOException {
-      String json = toJSONString(toStore);
+      String json = toJSONString(toStore, indentSize);
       String storedResourceId = getStoredResourceId(resourceId);
       OutputStreamWriter writer = null;
       try {
@@ -468,7 +476,7 @@ public abstract class ManagedResourceStorage {
 
   protected StorageIO storageIO;
   protected SolrResourceLoader loader;
-
+  protected int indentSize = 2;
   protected ManagedResourceStorage(StorageIO storageIO, SolrResourceLoader loader) {
     this.storageIO = storageIO;
     this.loader = loader;
