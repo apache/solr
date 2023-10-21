@@ -302,7 +302,7 @@ public class TestUtils extends SolrTestCaseJ4 {
 
     assertEquals(
         "{\"k2\":\"v2\",\"k1\":{\"a\":\"b\",\"p\":\"r\",\"k21\":{\"xx\":\"yy\"}}}",
-        new String(Utils.toJSON(object, -1)));
+        new String(Utils.toJSON(object, -1), UTF_8));
     String formatedJson =
         "{\n"
             + "  \"k2\":\"v2\",\n"
@@ -311,6 +311,6 @@ public class TestUtils extends SolrTestCaseJ4 {
             + "    \"p\":\"r\",\n"
             + "    \"k21\":{\"xx\":\"yy\"}}}";
 
-    assertEquals(formatedJson, new String(Utils.toJSON(object)));
+    assertEquals(formatedJson, new String(Utils.toJSON(object), UTF_8));
   }
 }
