@@ -291,4 +291,21 @@ public class TestUtils extends SolrTestCaseJ4 {
     assertEquals(3L, Utils.getObjectByPath(sink, true, List.of(COLLECTION_DEF, NUM_SHARDS_PROP)));
     assertEquals(2L, Utils.getObjectByPath(sink, true, List.of(COLLECTION_DEF, NRT_REPLICAS)));
   }
+
+  @SuppressWarnings({"unchecked"})
+  public void testToJson() {
+    Map<String, Object> object =
+            (Map<String, Object>) Utils.fromJSONString("{k2:v2, k1: {a:b, p:r, k21:{xx:yy}}}");
+
+    assertEquals("{\"k2\":\"v2\",\"k1\":{\"a\":\"b\",\"p\":\"r\",\"k21\":{\"xx\":\"yy\"}}}",new String(Utils.toJSON(object,-1)));
+    String formatedJson =
+                    "{\n" +
+                    "  \"k2\":\"v2\",\n" +
+                    "  \"k1\":{\n"+
+                    "    \"a\":\"b\",\n" +
+                    "    \"p\":\"r\",\n" +
+                    "    \"k21\":{\"xx\":\"yy\"}}}";
+
+    assertEquals(formatedJson,new String(Utils.toJSON(object)));
+  }
 }
