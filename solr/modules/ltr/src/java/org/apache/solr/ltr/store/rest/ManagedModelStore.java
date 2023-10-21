@@ -88,6 +88,12 @@ public class ManagedModelStore extends ManagedResource
     store = new ModelStore();
   }
 
+  @Override
+  protected ManagedResourceStorage createStorage(
+      ManagedResourceStorage.StorageIO storageIO, SolrResourceLoader loader) throws SolrException {
+    return new ManagedResourceStorage.JsonStorage(storageIO, loader, -1);
+  }
+
   public void setManagedFeatureStore(ManagedFeatureStore managedFeatureStore) {
     log.info("INIT model store");
     this.managedFeatureStore = managedFeatureStore;
