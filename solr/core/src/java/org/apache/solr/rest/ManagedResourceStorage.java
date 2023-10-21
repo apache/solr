@@ -426,7 +426,8 @@ public abstract class ManagedResourceStorage {
     }
 
     /**
-     * @param indentSize The number of space characters to use as an indent (default 2). 0=newlines   but no spaces, -1=no indent at all.
+     * @param indentSize The number of space characters to use as an indent (default 2). 0=newlines
+     *     but no spaces, -1=no indent at all.
      */
     public JsonStorage(StorageIO storageIO, SolrResourceLoader loader, int indentSize) {
       super(storageIO, loader);
@@ -477,6 +478,7 @@ public abstract class ManagedResourceStorage {
   protected StorageIO storageIO;
   protected SolrResourceLoader loader;
   protected int indentSize = 2;
+
   protected ManagedResourceStorage(StorageIO storageIO, SolrResourceLoader loader) {
     this.storageIO = storageIO;
     this.loader = loader;
