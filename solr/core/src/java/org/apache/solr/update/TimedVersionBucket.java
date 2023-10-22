@@ -24,20 +24,15 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.solr.common.SolrException;
 
 /**
- * @lucene.internal
- */
-/**
  * This implementation uses lock and condition and will throw exception if it can't obtain the lock
  * within <code>lockTimeoutMs</code>.
+ *
+ * @lucene.internal
  */
 public class TimedVersionBucket extends VersionBucket {
 
   private final Lock lock = new ReentrantLock(true);
   private final Condition condition = lock.newCondition();
-
-  public TimedVersionBucket(long highest) {
-    super(highest);
-  }
 
   /**
    * This will run the function with the lock. It will throw exception if it can't obtain the lock

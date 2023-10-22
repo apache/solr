@@ -155,7 +155,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         processor.vinfo = vinfo;
 
         doReturn(
-                new TimedVersionBucket(0) {
+                new TimedVersionBucket() {
                   /** simulate the case: it takes 5 seconds to add the doc */
                   @Override
                   protected boolean tryLock(int lockTimeoutMs) {
