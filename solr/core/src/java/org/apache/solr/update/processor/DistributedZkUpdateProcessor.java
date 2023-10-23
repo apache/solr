@@ -184,10 +184,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // This could happen if there are only pull replicas
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to distribute commit operation. No replicas available of types "
-              + Replica.Type.TLOG
-              + " or "
-              + Replica.Type.NRT);
+          "Unable to distribute commit operation. No leader replicas available.");
     }
 
     nodes.removeIf(
