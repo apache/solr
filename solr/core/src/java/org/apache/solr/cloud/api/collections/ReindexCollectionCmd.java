@@ -21,7 +21,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -103,17 +104,19 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   public static final String STATE = "state";
   public static final String PHASE = "phase";
 
-  private static final List<String> COLLECTION_PARAMS =
-      Arrays.asList(
-          ZkStateReader.CONFIGNAME_PROP,
-          ZkStateReader.NUM_SHARDS_PROP,
-          ZkStateReader.NRT_REPLICAS,
-          ZkStateReader.PULL_REPLICAS,
-          ZkStateReader.TLOG_REPLICAS,
-          ZkStateReader.REPLICATION_FACTOR,
-          "shards",
-          CollectionAdminParams.CREATE_NODE_SET_PARAM,
-          CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM);
+  private static final List<String> COLLECTION_PARAMS = makeCollectionParams();
+
+  private static List<String> makeCollectionParams() {
+    List<String> collectionParams = new ArrayList<>(10);
+    collectionParams.add(ZkStateReader.CONFIGNAME_PROP);
+    collectionParams.add(ZkStateReader.NUM_SHARDS_PROP);
+    collectionParams.add(ZkStateReader.REPLICATION_FACTOR);
+    collectionParams.add("shards");
+    collectionParams.add(CollectionAdminParams.CREATE_NODE_SET_PARAM);
+    collectionParams.add(CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM);
+    collectionParams.addAll(CollectionHandlingUtils.numReplicasProperties());
+    return List.copyOf(collectionParams);
+  }
 
   private final CollectionCommandContext ccc;
 
@@ -249,9 +252,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     String query = message.getStr(CommonParams.Q, "*:*");
     String fl = message.getStr(CommonParams.FL, "*");
     Integer rf = message.getInt(ZkStateReader.REPLICATION_FACTOR, coll.getReplicationFactor());
-    Integer numNrt = message.getInt(ZkStateReader.NRT_REPLICAS, coll.getNumNrtReplicas());
-    Integer numTlog = message.getInt(ZkStateReader.TLOG_REPLICAS, coll.getNumTlogReplicas());
-    Integer numPull = message.getInt(ZkStateReader.PULL_REPLICAS, coll.getNumPullReplicas());
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, coll);
     int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, coll.getActiveSlices().size());
     DocRouter router = coll.getRouter();
     if (router == null) {
@@ -338,14 +339,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       if (rf != null) {
         propMap.put(ZkStateReader.REPLICATION_FACTOR, rf);
       }
-      if (numNrt != null) {
-        propMap.put(ZkStateReader.NRT_REPLICAS, numNrt);
-      }
-      if (numTlog != null) {
-        propMap.put(ZkStateReader.TLOG_REPLICAS, numTlog);
-      }
-      if (numPull != null) {
-        propMap.put(ZkStateReader.PULL_REPLICAS, numPull);
+      for (Replica.Type replicaType : numReplicas.keySet()) {
+        propMap.put(replicaType.numReplicasProperty, numReplicas.get(replicaType));
       }
       // create the target collection
       cmd = new ZkNodeProps(propMap);

@@ -18,7 +18,6 @@ package org.apache.solr.cloud.overseer;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 
@@ -149,7 +148,8 @@ public class CollectionMutator {
         }
         // SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
         if (prop.equals(REPLICATION_FACTOR)) {
-          props.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
+          props.put(
+              Replica.Type.defaultType().numReplicasProperty, message.get(REPLICATION_FACTOR));
         }
       }
     }

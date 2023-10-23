@@ -29,14 +29,11 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQU
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -137,6 +134,7 @@ import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.common.SolrException;
@@ -587,9 +585,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               ReindexCollectionCmd.TARGET,
               ZkStateReader.CONFIGNAME_PROP,
               NUM_SLICES,
-              NRT_REPLICAS,
-              PULL_REPLICAS,
-              TLOG_REPLICAS,
               REPLICATION_FACTOR,
               CREATE_NODE_SET,
               CREATE_NODE_SET_SHUFFLE,
@@ -598,6 +593,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               CommonParams.Q,
               CommonParams.FL,
               FOLLOW_ALIASES);
+          copy(req.getParams(), m, CollectionHandlingUtils.numReplicasProperties());
           if (req.getParams().get("collection." + ZkStateReader.CONFIGNAME_PROP) != null) {
             m.put(
                 ZkStateReader.CONFIGNAME_PROP,
@@ -1055,7 +1051,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             DocCollection.verifyProp(m, prop);
           }
           if (m.get(REPLICATION_FACTOR) != null) {
-            m.put(NRT_REPLICAS, m.get(REPLICATION_FACTOR));
+            m.put(Replica.Type.defaultType().numReplicasProperty, m.get(REPLICATION_FACTOR));
           }
           return m;
         }),

@@ -17,10 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -35,6 +31,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -97,9 +94,12 @@ import org.slf4j.LoggerFactory;
 public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
+  private final EnumSet<Replica.Type> leaderEligibleReplicaTypes;
 
   public CreateCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
+    leaderEligibleReplicaTypes = CollectionHandlingUtils.leaderEligibleReplicaTypes();
+    ;
   }
 
   @Override
@@ -139,7 +139,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // fail fast if parameters are wrong or incomplete
     List<String> shardNames = populateShardNames(message, router);
     ReplicaCount numReplicas = getNumReplicas(message);
-    numReplicas.validate();
 
     DocCollection newColl = null;
     final String collectionPath = DocCollection.getCollectionPath(collectionName);
@@ -590,12 +589,22 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     return shardNames;
   }
 
-  private static ReplicaCount getNumReplicas(ZkNodeProps message) {
-    int numTlogReplicas = message.getInt(TLOG_REPLICAS, 0);
-    int numNrtReplicas =
-        message.getInt(
-            NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, numTlogReplicas > 0 ? 0 : 1));
-    return new ReplicaCount(numNrtReplicas, numTlogReplicas, message.getInt(PULL_REPLICAS, 0));
+  private ReplicaCount getNumReplicas(ZkNodeProps message) {
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message);
+    int numLeaderEligibleReplicas = numReplicas.count(leaderEligibleReplicaTypes);
+    if (numLeaderEligibleReplicas == 0 && !numReplicas.contains(Replica.Type.defaultType())) {
+      // Ensure that there is at least one replica that can become leader if the user did
+      // not force a replica count.
+      numReplicas.put(Replica.Type.defaultType(), 1);
+    } else if (numLeaderEligibleReplicas == 0) {
+      // This can still fail if the user manually forced "0" replica counts.
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Unexpected number of replicas ("
+              + numReplicas
+              + "), there must be at least one leader-eligible replica");
+    }
+    return numReplicas;
   }
 
   String getConfigName(String coll, ZkNodeProps message) throws IOException {

@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -308,7 +307,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             CREATE.toLower(),
             NAME,
             tempSourceCollectionName,
-            NRT_REPLICAS,
+            Replica.Type.defaultType().numReplicasProperty,
             1,
             CollectionHandlingUtils.NUM_SLICES,
             1,
@@ -394,7 +393,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             ccc.getSolrCloudManager().getDistribStateManager(),
             zkStateReader.getClusterState().getCollection(tempSourceCollectionName),
             tempSourceSlice.getName(),
-            Replica.Type.NRT);
+            Replica.Type.defaultType());
     props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
     props.put(COLLECTION_PROP, tempSourceCollectionName);

@@ -24,11 +24,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
-import static org.apache.solr.common.params.CollectionAdminParams.NRT_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
-import static org.apache.solr.common.params.CollectionAdminParams.PULL_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
@@ -51,10 +48,12 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -70,15 +69,17 @@ import org.apache.solr.response.SolrQueryResponse;
 @Path("/backups/{backupName}/restore")
 public class RestoreCollectionAPI extends BackupAPIBase {
 
-  private static final Set<String> CREATE_PARAM_ALLOWLIST =
-      Set.of(
-          COLL_CONF,
-          REPLICATION_FACTOR,
-          NRT_REPLICAS,
-          TLOG_REPLICAS,
-          PULL_REPLICAS,
-          CREATE_NODE_SET_PARAM,
-          CREATE_NODE_SET_SHUFFLE_PARAM);
+  private static final Set<String> CREATE_PARAM_ALLOWLIST = Set.copyOf(makeCreateParamAllowList());
+
+  private static Set<String> makeCreateParamAllowList() {
+    Set<String> params = CollectionUtil.newHashSet(7);
+    params.add(COLL_CONF);
+    params.add(REPLICATION_FACTOR);
+    params.add(CREATE_NODE_SET_PARAM);
+    params.add(CREATE_NODE_SET_SHUFFLE_PARAM);
+    params.addAll(CollectionHandlingUtils.numReplicasProperties());
+    return params;
+  }
 
   @Inject
   public RestoreCollectionAPI(

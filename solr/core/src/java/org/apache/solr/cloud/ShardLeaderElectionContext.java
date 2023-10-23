@@ -17,12 +17,11 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -68,10 +67,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     this.cc = cc;
     this.syncStrategy = new SyncStrategy(cc);
     this.distributedClusterStateUpdater = zkController.getDistributedClusterStateUpdater();
-    leaderEligibleReplicaTypes =
-        Arrays.stream(Replica.Type.values())
-            .filter(t -> t.leaderEligible)
-            .collect(Collectors.toCollection(() -> EnumSet.noneOf(Replica.Type.class)));
+    leaderEligibleReplicaTypes = CollectionHandlingUtils.leaderEligibleReplicaTypes();
   }
 
   @Override

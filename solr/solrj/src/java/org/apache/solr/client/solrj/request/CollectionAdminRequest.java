@@ -129,17 +129,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   }
 
   private static void writeNumReplicas(ReplicaCount numReplicas, ModifiableSolrParams params) {
-    if (numReplicas.contains(Replica.Type.NRT)) {
-      params.add(
-          CollectionAdminParams.NRT_REPLICAS, String.valueOf(numReplicas.get(Replica.Type.NRT)));
-    }
-    if (numReplicas.contains(Replica.Type.TLOG)) {
-      params.add(
-          CollectionAdminParams.TLOG_REPLICAS, String.valueOf(numReplicas.get(Replica.Type.TLOG)));
-    }
-    if (numReplicas.contains(Replica.Type.PULL)) {
-      params.add(
-          CollectionAdminParams.PULL_REPLICAS, String.valueOf(numReplicas.get(Replica.Type.PULL)));
+    for (Replica.Type replicaType : numReplicas.keySet()) {
+      params.add(replicaType.numReplicasProperty, String.valueOf(numReplicas.get(replicaType)));
     }
   }
 
@@ -461,7 +452,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         ImplicitDocRouter.NAME,
         null,
         checkNotNull("shards", shards),
-        new ReplicaCount(numNrtReplicas, numTlogReplicas, numPullReplicas));
+        ReplicaCount.of(numNrtReplicas, numTlogReplicas, numPullReplicas));
   }
 
   /**
@@ -505,7 +496,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
           null,
           numShards,
           null,
-          new ReplicaCount(numNrtReplicas, numTlogReplicas, numPullReplicas));
+          ReplicaCount.of(numNrtReplicas, numTlogReplicas, numPullReplicas));
     }
 
     /**
@@ -2426,8 +2417,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   // ADDREPLICA request
   public static class AddReplica extends AsyncCollectionAdminRequest {
 
-    private static final String REPLICA_TYPE_PARAM = "type";
-
     protected String collection;
     protected String shard;
     protected String node;
@@ -2597,7 +2586,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.add(CoreAdminParams.NAME, coreName);
       }
       if (type != null) {
-        params.add(REPLICA_TYPE_PARAM, type.name());
+        params.add(CollectionAdminParams.REPLICA_TYPE, type.name());
       }
       if (properties != null) {
         addProperties(params, properties);
