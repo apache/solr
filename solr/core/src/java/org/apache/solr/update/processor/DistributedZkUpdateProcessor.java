@@ -213,8 +213,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
         params.set(COMMIT_END_POINT, "leaders");
         params.set(
-                DISTRIB_FROM,
-                ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
+            DISTRIB_FROM,
+            ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
         cmdDistrib.distribCommit(cmd, useNodes, params);
         issuedDistribCommit = true;
       }
@@ -846,11 +846,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     final List<SolrCmdDistributor.Node> urls = new ArrayList<>(slices.size());
     for (Map.Entry<String, Slice> sliceEntry : slices.entrySet()) {
       Slice replicas = slices.get(sliceEntry.getKey());
-        Replica replica = docCollection.getLeader(replicas.getName());
-        if (replica != null) {
-          ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(replica);
-          urls.add(new SolrCmdDistributor.StdNode(nodeProps, collection, replicas.getName()));
-        }
+      Replica replica = docCollection.getLeader(replicas.getName());
+      if (replica != null) {
+        ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(replica);
+        urls.add(new SolrCmdDistributor.StdNode(nodeProps, collection, replicas.getName()));
+      }
     }
     if (urls.isEmpty()) {
       return null;
@@ -938,7 +938,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         skippedCoreNodeNames.add(replica.getName());
       } else {
         nodes.add(
-            new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(replica), collection, shardId, maxRetries));
+            new SolrCmdDistributor.StdNode(
+                new ZkCoreNodeProps(replica), collection, shardId, maxRetries));
       }
     }
     return nodes;
