@@ -17,7 +17,12 @@
 
 package org.apache.solr.client.solrj;
 
-/** A a request object is able to convert itself to V2 Request it should implement this interface */
+/**
+ * A a request object is able to convert itself to V2 Request it should implement this interface
+ *
+ * @deprecated use v2-native {@link SolrRequest} implementations directly instead
+ */
+@Deprecated
 public interface V2RequestSupport {
   /** If usev2 flag is set to true, return V2Request, if not, return V1 request object */
   @SuppressWarnings({"rawtypes"})
