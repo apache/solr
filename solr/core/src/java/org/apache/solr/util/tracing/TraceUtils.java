@@ -18,6 +18,7 @@ package org.apache.solr.util.tracing;
 
 import io.opentracing.Span;
 import io.opentracing.Tracer;
+import io.opentracing.Tracer.SpanBuilder;
 import io.opentracing.noop.NoopSpan;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
@@ -74,5 +75,16 @@ public class TraceUtils {
       req.getSpan().setTag("ops", String.join(",", ops));
       req.getSpan().setTag("class", clazz);
     }
+  }
+
+  public static Span startCollectionApiCommandSpan(
+      Tracer tracer, String name, String collection, boolean isAsync) {
+    SpanBuilder spanBuilder =
+        tracer
+            .buildSpan(name)
+            .asChildOf(tracer.activeSpan())
+            .withTag(Tags.SPAN_KIND, isAsync ? Tags.SPAN_KIND_PRODUCER : Tags.SPAN_KIND_CLIENT)
+            .withTag(Tags.DB_INSTANCE, collection);
+    return spanBuilder.start();
   }
 }

@@ -69,10 +69,15 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.SP
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.noop.NoopTracer;
+import io.opentracing.util.GlobalTracer;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -94,6 +99,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,7 +189,44 @@ public class CollApiCmds {
     }
 
     CollApiCmds.CollectionApiCommand getActionCommand(CollectionParams.CollectionAction action) {
-      return commandMap.get(action);
+      var command = commandMap.get(action);
+      if (command != null) {
+        return new TraceAwareCommand(commandMap.get(action));
+      } else {
+        return command;
+      }
+    }
+  }
+
+  public static class TraceAwareCommand implements CollectionApiCommand {
+
+    private final CollectionApiCommand command;
+    private final Tracer tracer = GlobalTracer.get();
+
+    public TraceAwareCommand(CollectionApiCommand command) {
+      this.command = command;
+    }
+
+    @Override
+    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+        throws Exception {
+      if (tracer instanceof NoopTracer) {
+        command.call(state, message, results);
+      } else {
+        String collection =
+            Optional.ofNullable(message.getStr(COLLECTION_PROP, message.getStr(NAME)))
+                .orElse("unknown");
+        boolean isAsync = message.containsKey(ASYNC);
+        Span localSpan =
+            TraceUtils.startCollectionApiCommandSpan(
+                tracer, command.getClass().getSimpleName(), collection, isAsync);
+        try (var scope = tracer.scopeManager().activate(localSpan)) {
+          assert scope != null; // prevent javac warning about scope being unused
+          command.call(state, message, results);
+        } finally {
+          localSpan.finish();
+        }
+      }
     }
   }
 

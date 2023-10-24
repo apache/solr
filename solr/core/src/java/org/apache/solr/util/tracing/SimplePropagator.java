@@ -20,9 +20,9 @@ import io.opentracing.Scope;
 import io.opentracing.ScopeManager;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
-import io.opentracing.Tracer;
 import io.opentracing.Tracer.SpanBuilder;
 import io.opentracing.noop.NoopSpan;
+import io.opentracing.noop.NoopTracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
 import io.opentracing.tag.Tag;
@@ -64,7 +64,7 @@ public class SimplePropagator {
    *
    * <p>Heavily inspired from JaegerTracer, NoopTracer
    */
-  static class SimplePropagatorTracer implements Tracer {
+  static class SimplePropagatorTracer implements NoopTracer {
 
     private final ScopeManager scopeManager = new ThreadLocalScopeManager();
 
