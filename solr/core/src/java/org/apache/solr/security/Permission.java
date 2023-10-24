@@ -39,6 +39,8 @@ class Permission {
   Set<String> path, role, collections, method;
   Map<String, Function<String[], Boolean>> params;
   PermissionNameProvider.Name wellknownName;
+  static Set<String> reservedNames =
+      Set.of("metrics-history-read", "autoscaling-read", "autoscaling-write");
   Map<?, ?> originalConfig;
 
   private Permission() {}
@@ -47,6 +49,11 @@ class Permission {
     Permission p = new Permission();
     p.originalConfig = new LinkedHashMap<>(m);
     String name = (String) m.get(NAME);
+    if (reservedNames.contains(name)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          name + " is a reserved permission name that cannot be used.");
+    }
     if (!m.containsKey("role"))
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "role not specified");
     p.role = readValueAsSet(m, "role");
