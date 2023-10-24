@@ -32,7 +32,6 @@ import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.FETCH_FROM_LEADER;
 import static org.apache.solr.handler.ReplicationHandler.FILE;
 import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
-import static org.apache.solr.handler.ReplicationHandler.FileInfo;
 import static org.apache.solr.handler.ReplicationHandler.GENERATION;
 import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.LEADER_URL;
@@ -121,6 +120,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler.FileInfo;
 import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -132,6 +132,7 @@ import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -265,11 +266,13 @@ public class IndexFetcher {
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
-
+    // no metrics, just tracing
+    InstrumentedHttpRequestExecutor executor = new InstrumentedHttpRequestExecutor(null);
     return HttpClientUtil.createClient(
         httpClientParams,
         core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyConnectionManager(),
-        true);
+        true,
+        executor);
   }
 
   public IndexFetcher(
