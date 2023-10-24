@@ -344,7 +344,7 @@ public class MiniSolrCloudCluster {
   }
 
   private void waitForAllNodes(int numServers, int timeoutSeconds)
-      throws IOException, InterruptedException, TimeoutException {
+      throws InterruptedException, TimeoutException {
     log.info("waitForAllNodes: numServers={}", numServers);
 
     int numRunning;
@@ -668,7 +668,7 @@ public class MiniSolrCloudCluster {
                 IOUtils.closeQuietly(c);
               });
       solrClientByCollection.clear();
-      ;
+
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
@@ -768,13 +768,6 @@ public class MiniSolrCloudCluster {
         .withConnectionTimeout(15000);
   }
 
-  private static String getHostContextSuitableForServletContext(String ctx) {
-    if (ctx == null || ctx.isEmpty()) ctx = "/solr";
-    if (ctx.endsWith("/")) ctx = ctx.substring(0, ctx.length() - 1);
-    if (!ctx.startsWith("/")) ctx = "/" + ctx;
-    return ctx;
-  }
-
   private Exception checkForExceptions(String message, Collection<Future<JettySolrRunner>> futures)
       throws InterruptedException {
     Exception parsed = new Exception(message);
@@ -822,6 +815,7 @@ public class MiniSolrCloudCluster {
     }
   }
 
+  // Currently not used ;-(
   public synchronized void injectChaos(Random random) throws Exception {
 
     // sometimes we restart one of the jetty nodes
@@ -951,11 +945,7 @@ public class MiniSolrCloudCluster {
           }
         }
       }
-      if (activeReplicas == expectedReplicas) {
-        return true;
-      }
-
-      return false;
+      return activeReplicas == expectedReplicas;
     };
   }
 

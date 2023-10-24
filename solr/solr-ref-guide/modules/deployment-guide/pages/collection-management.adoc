@@ -250,6 +250,7 @@ If `true` the states of individual replicas will be maintained as individual chi
 +
 Set core property _name_ to _value_.
 See the section xref:configuration-guide:core-discovery.adoc[] for details on supported properties and values.
+Those properties are also applied to every new core that will be created when adding replicas to the collection later on.
 +
 [WARNING]
 ====

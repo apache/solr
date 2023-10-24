@@ -97,7 +97,11 @@ public class StatusTool extends ToolBase {
       int solrPort = (new URL(solrUrl)).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
       try {
-        waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
+        waitToSeeSolrUp(
+            solrUrl,
+            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()),
+            maxWaitSecs,
+            TimeUnit.SECONDS);
         echo("Started Solr server on port " + solrPort + ". Happy searching!");
       } catch (TimeoutException timeout) {
         throw new Exception(
@@ -106,7 +110,8 @@ public class StatusTool extends ToolBase {
     } else {
       try {
         CharArr arr = new CharArr();
-        new JSONWriter(arr, 2).write(getStatus(solrUrl));
+        new JSONWriter(arr, 2)
+            .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
         echo(arr.toString());
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {
@@ -123,12 +128,13 @@ public class StatusTool extends ToolBase {
     }
   }
 
-  public Map<String, Object> waitToSeeSolrUp(String solrUrl, long maxWait, TimeUnit unit)
-      throws Exception {
+  public Map<String, Object> waitToSeeSolrUp(
+      String solrUrl, String credentials, long maxWait, TimeUnit unit) throws Exception {
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWait, unit);
     while (System.nanoTime() < timeout) {
+
       try {
-        return getStatus(solrUrl);
+        return getStatus(solrUrl, credentials);
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {
           throw exc;
@@ -148,16 +154,20 @@ public class StatusTool extends ToolBase {
             + " seconds!");
   }
 
-  public Map<String, Object> getStatus(String solrUrl) throws Exception {
+  public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
+    try (var solrClient = SolrCLI.getSolrClient(solrUrl, credentials)) {
+      return getStatus(solrClient);
+    }
+  }
+
+  public Map<String, Object> getStatus(SolrClient solrClient) throws Exception {
     Map<String, Object> status;
 
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
-      NamedList<Object> systemInfo =
-          solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-      // convert raw JSON into user-friendly output
-      status = reportStatus(systemInfo, solrClient);
-    }
+    NamedList<Object> systemInfo =
+        solrClient.request(
+            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+    // convert raw JSON into user-friendly output
+    status = reportStatus(systemInfo, solrClient);
 
     return status;
   }
