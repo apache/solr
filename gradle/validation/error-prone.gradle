@@ -305,7 +305,7 @@ allprojects { prj ->
             // '-Xep:DoNotMockAutoValue:OFF', // we don't use autovalue
             // '-Xep:DoNotUseRuleChain:OFF', // todo could be fixed but not easy
             // '-Xep:DoubleCheckedLocking:OFF', // todo check if useful or comment why not
-            '-Xep:DuplicateDateFormatField:WARN', // TODO NEW
+            '-Xep:DuplicateDateFormatField:WARN',
             '-Xep:EmptyBlockTag:WARN',
             // '-Xep:EmptyCatch:OFF', // todo check if useful or comment why not - might be handled by ECJ?
             // '-Xep:EmptySetMultibindingContributions:OFF', // we don't use this annotation
@@ -421,7 +421,7 @@ allprojects { prj ->
             // '-Xep:NonAtomicVolatileUpdate:OFF', // todo check if useful or comment why not
             '-Xep:NonCanonicalType:WARN',
             '-Xep:NonOverridingEquals:WARN',
-            //'-Xep:NonFinalStaticField:WARN', // TODO NEW
+            //'-Xep:NonFinalStaticField:WARN', // todo there are problems that should be fixed
             '-Xep:NotJavadoc:WARN',
             '-Xep:NullOptional:WARN',
             // '-Xep:NullableConstructor:OFF', // we don't use this annotation
@@ -466,10 +466,10 @@ allprojects { prj ->
             // '-Xep:StreamResourceLeak:OFF', // todo check if useful or comment why not
             '-Xep:StreamToIterable:WARN',
             // '-Xep:StringCaseLocaleUsage:OFF', // we have forbiddenapis for that
-            '-Xep:StringCharset:WARN', // TODO NEW
-            '-Xep:StringFormatWithLiteral:WARN', // TODO NEW
+            '-Xep:StringCharset:WARN',
+            '-Xep:StringFormatWithLiteral:WARN',
             // '-Xep:StringSplitter:OFF', // todo check if useful or comment why not - might be able to use forbidden-apis for this?
-            '-Xep:SuperEqualsIsObjectEquals:WARN', // TODO NEW
+            '-Xep:SuperEqualsIsObjectEquals:WARN',
             // '-Xep:SwigMemoryLeak:OFF', // we don't use swig
             // '-Xep:SynchronizeOnNonFinalField:OFF', // todo check if useful or comment why not
             // '-Xep:ThreadJoinLoop:OFF', // todo check if useful or comment why not
