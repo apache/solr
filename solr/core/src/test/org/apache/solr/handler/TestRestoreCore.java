@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -129,7 +130,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
           .getCoreContainer()
           .getAllowPaths()
           .add(Path.of(location)); // Allow core to be created outside SOLR_HOME
-      params += "&location=" + URLEncoder.encode(location, "UTF-8");
+      params += "&location=" + URLEncoder.encode(location, StandardCharsets.UTF_8);
     }
 
     // named snapshot vs default snapshot name
@@ -189,7 +190,8 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   public void testBackupFailsMissingAllowPaths() throws Exception {
     final String params =
-        "&location=" + URLEncoder.encode(createTempDir().toFile().getAbsolutePath(), "UTF-8");
+        "&location="
+            + URLEncoder.encode(createTempDir().toFile().getAbsolutePath(), StandardCharsets.UTF_8);
     Throwable t =
         expectThrows(
             IOException.class,
@@ -208,7 +210,11 @@ public class TestRestoreCore extends SolrJettyTestBase {
     String location = createTempDir().toFile().getAbsolutePath();
     leaderJetty.getCoreContainer().getAllowPaths().add(Path.of(location));
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
-    String params = "&name=" + snapshotName + "&location=" + URLEncoder.encode(location, "UTF-8");
+    String params =
+        "&name="
+            + snapshotName
+            + "&location="
+            + URLEncoder.encode(location, StandardCharsets.UTF_8);
     String baseUrl = leaderJetty.getBaseUrl().toString();
 
     TestReplicationHandlerBackup.runBackupCommand(
