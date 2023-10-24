@@ -20,6 +20,8 @@ Improvements
 
 * SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
 
+* SOLR-17011: Add tracing spans to internal collection commands (Alex Deparvu)
+
 Optimizations
 ---------------------
 (No changes)
