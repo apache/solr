@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -998,7 +997,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             entry
                 + " is not a partial doc"
                 + ", while looking for id="
-                + new String(id.bytes, Charset.forName("UTF-8")));
+                + new String(id.bytes, StandardCharsets.UTF_8));
       }
       // This update is an inplace update, get the partial doc. The input doc is always at last
       // position.
