@@ -24,7 +24,9 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,6 +40,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -71,12 +74,15 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     CustomTestOtelTracerConfigurator.resetForTest();
   }
 
+  @Before
+  private void resetSpanData() {
+    getAndClearSpans();
+  }
+
   @Test
   public void test() throws IOException, SolrServerException {
     // TODO it would be clearer if we could compare the complete Span tree between reality
     // and what we assert it looks like in a structured visual way.
-
-    getAndClearSpans(); // reset
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     // Indexing
@@ -90,7 +96,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertOneSpanIsChildOfAnother(finishedSpans);
     // core because cloudClient routes to core
     assertEquals("post:/{core}/update", finishedSpans.get(0).getName());
-    assertCoreName(finishedSpans.get(0));
+    assertCoreName(finishedSpans.get(0), COLLECTION);
 
     cloudClient.add(COLLECTION, sdoc("id", "2"));
     cloudClient.add(COLLECTION, sdoc("id", "3"));
@@ -116,12 +122,11 @@ public class TestDistributedTracing extends SolrCloudTestCase {
       assertEquals(span.getTraceId(), parentTraceId);
     }
     assertEquals("get:/{core}/select", finishedSpans.get(0).getName());
-    assertCoreName(finishedSpans.get(0));
+    assertCoreName(finishedSpans.get(0), COLLECTION);
   }
 
   @Test
   public void testAdminApi() throws Exception {
-    getAndClearSpans(); // reset
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics"));
@@ -135,7 +140,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
 
   @Test
   public void testV2Api() throws Exception {
-    getAndClearSpans(); // reset
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
     new V2Request.Builder("/collections/" + COLLECTION + "/reload")
@@ -145,7 +149,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .process(cloudClient);
     var finishedSpans = getAndClearSpans();
     assertEquals("post:/collections/{collection}/reload", finishedSpans.get(0).getName());
-    assertCollectionName(finishedSpans.get(0));
+    assertCollectionName(finishedSpans.get(0), COLLECTION);
 
     new V2Request.Builder("/c/" + COLLECTION + "/update/json")
         .withMethod(SolrRequest.METHOD.POST)
@@ -155,7 +159,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
         .process(cloudClient);
     finishedSpans = getAndClearSpans();
     assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).getName());
-    assertCollectionName(finishedSpans.get(0));
+    assertCollectionName(finishedSpans.get(0), COLLECTION);
 
     final V2Response v2Response =
         new V2Request.Builder("/c/" + COLLECTION + "/select")
@@ -165,7 +169,7 @@ public class TestDistributedTracing extends SolrCloudTestCase {
             .process(cloudClient);
     finishedSpans = getAndClearSpans();
     assertEquals("get:/c/{collection}/select", finishedSpans.get(0).getName());
-    assertCollectionName(finishedSpans.get(0));
+    assertCollectionName(finishedSpans.get(0), COLLECTION);
     assertEquals(1, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
   }
 
@@ -176,7 +180,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
    */
   @Test
   public void testApacheClient() throws Exception {
-    getAndClearSpans(); // reset
     CollectionAdminRequest.ColStatus a1 = CollectionAdminRequest.collectionStatus(COLLECTION);
     CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
     assertEquals(0, r1.getStatus());
@@ -191,16 +194,108 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testInternalCollectionApiCommands() throws Exception {
+    String collecton = "testInternalCollectionApiCommands";
+    verifyCollectionCreation(collecton);
+    verifyCollectionDeletion(collecton);
+  }
+
+  private void verifyCollectionCreation(String collection) throws Exception {
+    var a1 = CollectionAdminRequest.createCollection(collection, 2, 2);
+    CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
+    assertEquals(0, r1.getStatus());
+
+    // Expecting 8 spans:
+    // 1. api call "name=create:/admin/collections". db.instance=testInternalCollectionApiCommands
+    // - unique traceId unrelated to the internal trace id generated for the operation
+    // 2. internal CollectionApiCommand "name=CreateCollectionCmd"
+    // db.instance=testInternalCollectionApiCommands
+    // - this will be the parent span, all following spans will have the same traceId
+    //
+    // 3..6 (4 times) name=post:/admin/cores
+    // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
+    // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
+    // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
+    // db.instance=testInternalCollectionApiCommands_shard1_replica_n6
+    //
+    // 7..8 (2 times) name=post:/{core}/get
+    // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
+    // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
+
+    var finishedSpans = getAndClearSpans();
+    var s0 = finishedSpans.remove(0);
+    assertCollectionName(s0, collection);
+    assertEquals("create:/admin/collections", s0.getName());
+
+    Map<String, Integer> ops = new HashMap<>();
+    assertEquals(7, finishedSpans.size());
+    var parentTraceId = getRootTraceId(finishedSpans);
+    for (var span : finishedSpans) {
+      if (isRootSpan(span)) {
+        assertCollectionName(span, collection);
+      } else {
+        assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
+        assertCoreName(span, collection);
+      }
+      assertEquals(span.getTraceId(), parentTraceId);
+      ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
+    }
+    var expectedOps =
+        Map.of("CreateCollectionCmd", 1, "post:/admin/cores", 4, "post:/{core}/get", 2);
+    assertEquals(expectedOps, ops);
+  }
+
+  private void verifyCollectionDeletion(String collection) throws Exception {
+    var a1 = CollectionAdminRequest.deleteCollection(collection);
+    CollectionAdminResponse r1 = a1.process(cluster.getSolrClient());
+    assertEquals(0, r1.getStatus());
+
+    // Expecting 6 spans:
+    // 1. api call "name=delete:/admin/collections". db.instance=testInternalCollectionApiCommands
+    // - unique traceId unrelated to the internal trace id generated for the operation
+    // 2. internal CollectionApiCommand "name=DeleteCollectionCmd"
+    // db.instance=testInternalCollectionApiCommands
+    // - this will be the parent span, all following spans will have the same traceId
+    //
+    // 3..6 (4 times) name=post:/admin/cores
+    // db.instance=testInternalCollectionApiCommands_shard2_replica_n1
+    // db.instance=testInternalCollectionApiCommands_shard1_replica_n2
+    // db.instance=testInternalCollectionApiCommands_shard2_replica_n4
+    // db.instance=testInternalCollectionApiCommands_shard1_replica_n6
+
+    var finishedSpans = getAndClearSpans();
+    var s0 = finishedSpans.remove(0);
+    assertCollectionName(s0, collection);
+    assertEquals("delete:/admin/collections", s0.getName());
+
+    Map<String, Integer> ops = new HashMap<>();
+    assertEquals(5, finishedSpans.size());
+    var parentTraceId = getRootTraceId(finishedSpans);
+    for (var span : finishedSpans) {
+      if (isRootSpan(span)) {
+        assertCollectionName(span, collection);
+      } else {
+        assertEquals(span.getParentSpanContext().getTraceId(), parentTraceId);
+        assertCoreName(span, collection);
+      }
+      assertEquals(span.getTraceId(), parentTraceId);
+      ops.put(span.getName(), ops.getOrDefault(span.getName(), 0) + 1);
+    }
+    var expectedOps = Map.of("DeleteCollectionCmd", 1, "post:/admin/cores", 4);
+    assertEquals(expectedOps, ops);
+  }
+
   private static boolean isRootSpan(SpanData span) {
     return !span.getParentSpanContext().isValid();
   }
 
-  private static void assertCollectionName(SpanData span) {
-    assertEquals(COLLECTION, span.getAttributes().get(TraceUtils.TAG_DB));
+  private static void assertCollectionName(SpanData span, String collection) {
+    assertEquals(collection, span.getAttributes().get(TraceUtils.TAG_DB));
   }
 
-  private static void assertCoreName(SpanData span) {
-    assertTrue(span.getAttributes().get(TraceUtils.TAG_DB).startsWith(COLLECTION + "_"));
+  private static void assertCoreName(SpanData span, String collection) {
+    assertTrue(span.getAttributes().get(TraceUtils.TAG_DB).startsWith(collection + "_"));
   }
 
   private void assertOneSpanIsChildOfAnother(List<SpanData> finishedSpans) {
