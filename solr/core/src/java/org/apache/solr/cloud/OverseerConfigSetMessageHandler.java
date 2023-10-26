@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.addExceptionToNamedList;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
@@ -97,6 +98,8 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       } else {
         log.error("ConfigSet: {} operation: {} failed", configSetName, operation, e);
       }
+
+      addExceptionToNamedList(operation, e, results);
 
       results.add("Operation " + operation + " caused exception:", e);
       SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
