@@ -362,7 +362,6 @@ public class QueryComponent extends SearchComponent {
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
     boolean disableDistribStats = params.getBool(CommonParams.DISABLE_DISTRIB_STATS, false);
 
-
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
@@ -733,8 +732,10 @@ public class QueryComponent extends SearchComponent {
 
   protected void createDistributedStats(ResponseBuilder rb) {
     StatsCache cache = rb.req.getSearcher().getStatsCache();
-    boolean disableDistribStats = rb.req.getParams().getBool(CommonParams.DISABLE_DISTRIB_STATS, false);
-    if (!disableDistribStats && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
+    boolean disableDistribStats =
+        rb.req.getParams().getBool(CommonParams.DISABLE_DISTRIB_STATS, false);
+    if (!disableDistribStats
+        && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
             || rb.getSortSpec().includesScore())) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
       if (sreq != null) {

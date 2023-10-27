@@ -48,12 +48,18 @@ public final class QueryResultKey implements Accountable {
     this(query, filters, sort, nc_flags, Integer.MAX_VALUE, false);
   }
 
-  public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount) {
+  public QueryResultKey(
+      Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount) {
     this(query, filters, sort, nc_flags, minExactCount, false);
   }
 
   public QueryResultKey(
-      Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount, boolean disableDistribStats) {
+      Query query,
+      List<Query> filters,
+      Sort sort,
+      int nc_flags,
+      int minExactCount,
+      boolean disableDistribStats) {
     this.query = query;
     this.sort = sort;
     this.nc_flags = nc_flags;

@@ -290,8 +290,10 @@ public interface CommonParams {
   String DISABLE_REQUEST_ID = "disableRequestId";
 
   /**
-   *  Parameter to disable the distributed term statistics request for current query when distributed IDF is enabled in solrconfig.xml
-   *  Defaults for 'false' if not specified
+   * Parameter to disable the distributed term statistics request for current query when distributed
+   * IDF is enabled in solrconfig
+   *
+   * <p>Defaults to 'false' if not specified
    */
   String DISABLE_DISTRIB_STATS = "disableDistribStats";
 

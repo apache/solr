@@ -226,5 +226,8 @@ public class QueryCommand {
     this.disableDistribStats = disableDistribStats;
     return this;
   }
-  public boolean isDisableDistribStats() {return disableDistribStats; }
+
+  public boolean isDisableDistribStats() {
+    return disableDistribStats;
+  }
 }
