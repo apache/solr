@@ -360,10 +360,13 @@ public class QueryComponent extends SearchComponent {
 
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
+    boolean disableDistribStats = params.getBool(CommonParams.DISABLE_DISTRIB_STATS, false);
+
 
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
+    cmd.setDisableDistribStats(disableDistribStats);
 
     boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
 

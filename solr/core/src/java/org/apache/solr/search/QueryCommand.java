@@ -39,6 +39,7 @@ public class QueryCommand {
   private long timeAllowed = -1;
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
+  private boolean disableDistribStats = false;
 
   public CursorMark getCursorMark() {
     return cursorMark;
@@ -220,4 +221,10 @@ public class QueryCommand {
   public boolean isQueryCancellable() {
     return isQueryCancellable;
   }
+
+  public QueryCommand setDisableDistribStats(boolean disableDistribStats) {
+    this.disableDistribStats = disableDistribStats;
+    return this;
+  }
+  public boolean isDisableDistribStats() {return disableDistribStats; }
 }
