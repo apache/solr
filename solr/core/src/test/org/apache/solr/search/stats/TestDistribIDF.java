@@ -289,9 +289,10 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     client.add(COLLECTION, doc);
 
     // distributed stats implicitly enabled by default
-    SolrQuery query = new SolrQuery(
+    SolrQuery query =
+        new SolrQuery(
             "q", "*:*",
-            "fl","id",
+            "fl", "id",
             "fq", "{!terms f=id}1,2",
             "debug", "track");
     QueryResponse rsp = client.query(COLLECTION, query);
