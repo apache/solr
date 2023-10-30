@@ -17,6 +17,7 @@
 
 plugins {
   id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+  id "org.openapi.generator" version "6.0.1"
 }
 
 apply plugin: 'java-library'
@@ -55,8 +56,24 @@ dependencies {
     testImplementation 'org.apache.lucene:lucene-test-framework'
 }
 
+// Ensure the OAS is available to other modules who want to generate code (i.e. solrj)
 artifacts {
     openapiSpec resolve.outputDir, {
         builtBy resolve
     }
+}
+
+// Non-Java client generation tasks below:
+
+task buildPythonClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  generatorName.set("python")
+  inputSpec.set("$openApiSpecFile")
+  outputDir.set("${buildDir}/generated/python")
+  packageName.set("solr")
+  generateApiTests.set(false)
+  generateModelTests.set(false)
+}
+
+tasks.withType(org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  dependsOn(resolve)
 }
