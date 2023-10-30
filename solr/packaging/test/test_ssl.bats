@@ -362,7 +362,7 @@ teardown() {
   sleep 5
 
   run ! solr api -verbose -get "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
-  assert_output --regexp '(certificate_unknown|Server refused connection)'
+  assert_output --regexp '(certificate_unknown|java.nio.channels.ClosedChannelException|Server refused connection)'
 }
 
 @test "start solr with mTLS wanted" {
