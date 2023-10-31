@@ -447,14 +447,12 @@ public class MiniSolrCloudCluster {
   /**
    * Start a new Solr instance
    *
-   * @param hostContext context path of Solr servers used by Jetty
    * @param extraServlets Extra servlets to be started by Jetty
    * @param extraRequestFilters extra filters to be started by Jetty
    * @return new Solr instance
    */
   public JettySolrRunner startJettySolrRunner(
       String name,
-      String hostContext,
       SortedMap<ServletHolder, String> extraServlets,
       SortedMap<Class<? extends Filter>, String> extraRequestFilters)
       throws Exception {
