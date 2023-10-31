@@ -97,7 +97,7 @@ Bug Fixes
 
 * SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
 
-* SOLR-17046: DenseVectorField w/ vectorDimension > 1024 now work automatically with _default configset, due to 
+* SOLR-17045: DenseVectorField w/ vectorDimension > 1024 now work automatically with _default configset, due to 
   implicit use of SchemaCodecFactory.  (hossman)
 
 Dependency Upgrades
