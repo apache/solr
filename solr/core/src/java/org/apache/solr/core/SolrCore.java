@@ -1589,13 +1589,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       factory = resourceLoader.newInstance(info, CodecFactory.class, true);
       factory.init(info.initArgs);
     } else {
-      factory =
-          new CodecFactory() {
-            @Override
-            public Codec getCodec() {
-              return Codec.getDefault();
-            }
-          };
+      factory = new SchemaCodecFactory();
+      factory.init(new NamedList<>());
     }
     if (factory instanceof SolrCoreAware) {
       // CodecFactory needs SolrCore before inform() is called on all registered
