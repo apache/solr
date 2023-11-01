@@ -23,7 +23,7 @@ import org.apache.solr.common.SolrException;
 
 public class PermissionTest extends SolrTestCaseJ4 {
 
-  public void testReservedPermissionName() {
+  public void testLoad() {
     // Valid, currently predefined permissions
     for (String name : Set.of("read", "zk-read")) {
       Permission.load(Map.of("name", name, "role", "admin"));
