@@ -16,14 +16,12 @@
  */
 package org.apache.solr.security;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.Map;
 import java.util.Set;
-import junit.framework.TestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 
-public class PermissionTest extends TestCase {
+public class PermissionTest extends SolrTestCaseJ4 {
 
   public void testReservedPermissionName() {
     for (String name : Set.of("metrics-history-read", "autoscaling-read", "autoscaling-write")) {
