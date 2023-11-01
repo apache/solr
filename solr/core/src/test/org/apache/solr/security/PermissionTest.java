@@ -24,12 +24,26 @@ import org.apache.solr.common.SolrException;
 public class PermissionTest extends SolrTestCaseJ4 {
 
   public void testReservedPermissionName() {
-    for (String name : Set.of("metrics-history-read", "autoscaling-read", "autoscaling-write")) {
+    // Valid, currently predefined permissions
+    for (String name : Set.of("read", "zk-read")) {
+      Permission.load(Map.of("name", name, "role", "admin"));
+    }
+    // Invalid custom permissions (some of which were old valid predefined)
+    for (String name :
+        Set.of("metrics-history-read", "autoscaling-read", "autoscaling-write", "invalid-custom")) {
       SolrException e =
           assertThrows(
               SolrException.class, () -> Permission.load(Map.of("name", name, "role", "admin")));
       assertTrue(
-          e.getMessage().contains(name + " is a reserved permission name that cannot be used."));
+          e.getMessage()
+              .contains(
+                  "Permission with name "
+                      + name
+                      + " is neither a pre-defined permission nor qualifies as a custom permission"));
+    }
+    // Valid custom permissions
+    for (String name : Set.of("valid-custom")) {
+      Permission.load(Map.of("name", name, "role", "admin", "path", "/foo"));
     }
   }
 }
