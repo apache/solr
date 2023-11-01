@@ -59,7 +59,7 @@ class Permission {
               SolrException.ErrorCode.BAD_REQUEST,
               s + " is not a valid key for the permission : " + name);
       }
-    } else if (customPermissionAdditionalKeys.stream().noneMatch(m.keySet()::contains)) {
+    } else if (customPermissionAdditionalKeys.stream().noneMatch(m::containsKey)) {
       // Custom permissions must contain one of the additional keys to be valid
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
