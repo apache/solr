@@ -82,18 +82,19 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     removeAllExistingCircuitBreakers();
   }
 
-  public void testCBAlwaysTrips() {
+  public void testCBAlwaysTripsWithCorrectCode() {
     removeAllExistingCircuitBreakers();
 
     CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
 
     h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
 
-    expectThrows(
+    SolrException ex = expectThrows(
         SolrException.class,
         () -> {
           h.query(req("name:\"john smith\""));
         });
+    assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS.code, ex.code());
   }
 
   public void testCBFakeMemoryPressure() throws Exception {
@@ -248,10 +249,6 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
         "//lst[@name='prepare']/double[@name='time']",
         "count(//lst[@name='process']/*)>0",
         "//lst[@name='process']/double[@name='time']");
-  }
-
-  public void testErrorCode() {
-    assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS, CircuitBreaker.ERROR_CODE);
   }
 
   private static void removeAllExistingCircuitBreakers() {
