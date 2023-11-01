@@ -480,6 +480,9 @@ Improvements
 * SOLR-16397: Unload core v2 endpoints have been updated to be more REST-ful.
   UNLOAD is now available at `POST /api/cores/coreName/unload` (Sanjay Dutt via Jason Gerlowski)
 
+* SOLR-16397: Swap core v2 endpoints have been updated to be more REST-ful.
+  SWAP is now available at `POST /api/cores/coreName/swap` (Sanjay Dutt via Jason Gerlowski)
+
 Optimizations
 ---------------------
 

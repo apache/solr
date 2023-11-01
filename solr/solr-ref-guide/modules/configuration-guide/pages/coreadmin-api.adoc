@@ -390,7 +390,31 @@ This can be used to swap new content into production.
 The prior core remains available and can be swapped back, if necessary.
 Each core will be known by the name of the other, after the swap.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-swap]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
 `admin/cores?action=SWAP&core=_core-name_&other=_other-core-name_`
+----
+====
+
+[example.tab-pane#v2coreadmin-reload]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+`curl -X POST http://localhost:8983/api/cores/_core-name_/swap -H 'Content-Type: application/json' -d '
+  {
+    "with": "_other-core-name_"
+  }
+'`
+----
+====
 
 [IMPORTANT]
 ====
