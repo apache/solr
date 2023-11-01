@@ -85,7 +85,7 @@ Improvements
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
   REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
 
-* SOLR-16907: Reserve some 8.x security permission names to avoid confusion when upgrading (janhoy, Uwe Schindler)
+* SOLR-16907: Fail when parsing an invalid custom permission definition from security.json (janhoy, Uwe Schindler)
 
 * SOLR-17046: SchemaCodecFactory is now the implicit default codec factory.  (hossman)
 
