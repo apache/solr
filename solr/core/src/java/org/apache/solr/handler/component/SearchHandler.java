@@ -357,6 +357,12 @@ public class SearchHandler extends RequestHandlerBase
    */
   protected boolean checkCircuitBreakers(
       SolrQueryRequest req, SolrQueryResponse rsp, ResponseBuilder rb) {
+    if (isInternalShardRequest(req)) {
+      if (log.isTraceEnabled()) {
+        log.trace("Internal request, skipping circuit breaker check");
+      }
+      return false;
+    }
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
     final CircuitBreakerRegistry circuitBreakerRegistry = req.getCore().getCircuitBreakerRegistry();

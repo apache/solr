@@ -52,6 +52,7 @@ public class NodeConfig {
   private final String nodeName;
 
   private final Path coreRootDirectory;
+  private final String coresLocatorClass;
 
   private final Path solrDataHome;
 
@@ -117,6 +118,7 @@ public class NodeConfig {
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
+      String coresLocatorClass,
       Path solrDataHome,
       Integer booleanQueryMaxClauseCount,
       Path configSetBaseDirectory,
@@ -153,6 +155,7 @@ public class NodeConfig {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
+    this.coresLocatorClass = coresLocatorClass;
     this.solrDataHome = solrDataHome;
     this.booleanQueryMaxClauseCount = booleanQueryMaxClauseCount;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -227,6 +230,10 @@ public class NodeConfig {
   /** Absolute. */
   public Path getCoreRootDirectory() {
     return coreRootDirectory;
+  }
+
+  public String getCoresLocatorClass() {
+    return this.coresLocatorClass;
   }
 
   /** Absolute. */
@@ -514,6 +521,7 @@ public class NodeConfig {
     // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
+    private String coresLocatorClass = DEFAULT_CORESLOCATORCLASS;
     private Path solrDataHome;
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
@@ -553,6 +561,8 @@ public class NodeConfig {
     // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
+    private static final String DEFAULT_CORESLOCATORCLASS =
+        "org.apache.solr.core.CorePropertiesLocator";
     private static final String DEFAULT_ADMINHANDLERCLASS =
         "org.apache.solr.handler.admin.CoreAdminHandler";
     private static final String DEFAULT_INFOHANDLERCLASS =
@@ -589,6 +599,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
       this.coreRootDirectory = solrHome.resolve(coreRootDirectory).normalize();
+      return this;
+    }
+
+    public NodeConfigBuilder setCoresLocatorClass(String coresLocatorClass) {
+      this.coresLocatorClass = coresLocatorClass;
       return this;
     }
 
@@ -678,6 +693,7 @@ public class NodeConfig {
     }
 
     // Remove in Solr 10.0
+
     @Deprecated
     public NodeConfigBuilder setTransientCacheSize(int transientCacheSize) {
       this.transientCacheSize = transientCacheSize;
@@ -802,6 +818,7 @@ public class NodeConfig {
       return new NodeConfig(
           nodeName,
           coreRootDirectory,
+          coresLocatorClass,
           solrDataHome,
           booleanQueryMaxClauseCount,
           configSetBaseDirectory,

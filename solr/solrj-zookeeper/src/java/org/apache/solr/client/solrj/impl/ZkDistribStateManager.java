@@ -140,7 +140,10 @@ public class ZkDistribStateManager implements DistribStateManager {
 
   @Override
   public String createData(String path, byte[] data, CreateMode mode)
-      throws NoSuchElementException, AlreadyExistsException, IOException, KeeperException,
+      throws NoSuchElementException,
+          AlreadyExistsException,
+          IOException,
+          KeeperException,
           InterruptedException {
     try {
       return zkClient.create(path, data, mode, true);
@@ -156,8 +159,12 @@ public class ZkDistribStateManager implements DistribStateManager {
 
   @Override
   public void removeData(String path, int version)
-      throws NoSuchElementException, BadVersionException, NotEmptyException, IOException,
-          KeeperException, InterruptedException {
+      throws NoSuchElementException,
+          BadVersionException,
+          NotEmptyException,
+          IOException,
+          KeeperException,
+          InterruptedException {
     try {
       zkClient.delete(path, version, true);
     } catch (KeeperException.NoNodeException e) {
@@ -174,7 +181,10 @@ public class ZkDistribStateManager implements DistribStateManager {
 
   @Override
   public void setData(String path, byte[] data, int version)
-      throws BadVersionException, NoSuchElementException, IOException, KeeperException,
+      throws BadVersionException,
+          NoSuchElementException,
+          IOException,
+          KeeperException,
           InterruptedException {
     try {
       zkClient.setData(path, data, version, true);
@@ -190,8 +200,12 @@ public class ZkDistribStateManager implements DistribStateManager {
 
   @Override
   public List<OpResult> multi(Iterable<Op> ops)
-      throws BadVersionException, AlreadyExistsException, NoSuchElementException, IOException,
-          KeeperException, InterruptedException {
+      throws BadVersionException,
+          AlreadyExistsException,
+          NoSuchElementException,
+          IOException,
+          KeeperException,
+          InterruptedException {
     try {
       return zkClient.multi(ops, true);
     } catch (KeeperException.NoNodeException e) {

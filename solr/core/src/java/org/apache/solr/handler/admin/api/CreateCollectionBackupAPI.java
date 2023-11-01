@@ -22,6 +22,7 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_CONFIGSET;
@@ -31,6 +32,7 @@ import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.COMMIT_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
+import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -166,6 +168,9 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     requestBody.incremental = params.getBool(BACKUP_INCREMENTAL);
     requestBody.backupConfigset = params.getBool(BACKUP_CONFIGSET);
     requestBody.maxNumBackupPoints = params.getInt(MAX_NUM_BACKUP_POINTS);
+    requestBody.extraProperties =
+        copyPrefixedPropertiesWithoutPrefix(params, new HashMap<>(), PROPERTY_PREFIX);
+
     requestBody.async = params.get(ASYNC);
 
     return requestBody;
@@ -192,6 +197,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     @JsonProperty public Boolean backupConfigset;
     @JsonProperty public Integer maxNumBackupPoints;
     @JsonProperty public String async;
+    @JsonProperty public Map<String, String> extraProperties;
   }
 
   public static class CreateCollectionBackupResponseBody
@@ -215,6 +221,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     @JsonProperty public Integer indexFileCount;
     @JsonProperty public Integer uploadedIndexFileCount;
     @JsonProperty public Double indexSizeMB;
+    @JsonProperty public Map<String, String> extraProperties;
 
     @JsonProperty("uploadedIndexFileMB")
     public Double uploadedIndexSizeMB;

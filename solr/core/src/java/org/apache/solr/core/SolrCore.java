@@ -1088,9 +1088,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
       solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
-      // init pluggable circuit breakers
-      initPlugins(null, CircuitBreaker.class);
-
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();
         recoveryStrategyBuilder = initRecoveryStrategyBuilder();
@@ -1114,6 +1111,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       // initialize core metrics
       initializeMetrics(solrMetricsContext, null);
+
+      // init pluggable circuit breakers, after metrics because some circuit breakers use metrics
+      initPlugins(null, CircuitBreaker.class);
 
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
@@ -1589,13 +1589,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
       factory = resourceLoader.newInstance(info, CodecFactory.class, true);
       factory.init(info.initArgs);
     } else {
-      factory =
-          new CodecFactory() {
-            @Override
-            public Codec getCodec() {
-              return Codec.getDefault();
-            }
-          };
+      factory = new SchemaCodecFactory();
+      factory.init(new NamedList<>());
     }
     if (factory instanceof SolrCoreAware) {
       // CodecFactory needs SolrCore before inform() is called on all registered
@@ -1763,6 +1758,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
     log.info("CLOSING SolrCore {}", this);
 
     ExecutorUtil.shutdownAndAwaitTermination(coreAsyncTaskExecutor);
+
+    // Close circuit breakers that may have background threads, before metrics because some circuit
+    // breakers use metrics
+    try {
+      getCircuitBreakerRegistry().close();
+    } catch (Throwable e) {
+      log.error("Exception closing circuit breakers", e);
+      if (e instanceof Error) {
+        throw (Error) e;
+      }
+    }
 
     // stop reporting metrics
     try {
@@ -3041,10 +3047,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
     try {
       m.put(
           "xlsx",
-          (QueryResponseWriter)
-              Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter")
-                  .getConstructor()
-                  .newInstance());
+          Class.forName("org.apache.solr.handler.extraction.XLSXResponseWriter")
+              .asSubclass(QueryResponseWriter.class)
+              .getDeclaredConstructor()
+              .newInstance());
     } catch (Exception e) {
       // don't worry; extraction module not in class path
     }

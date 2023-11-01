@@ -234,6 +234,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * for MIN/MAX, a sort string for SORT, "score" for SCORE). Will never be null.
      */
     public final String selectorText;
+
     /** The type for this selector, will never be null */
     public final GroupHeadSelectorType type;
 
@@ -540,7 +541,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           newInfos.add(fieldInfo);
         }
       }
-      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
+      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[0]));
       this.fieldInfos = infos;
     }
 
@@ -712,7 +713,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -803,7 +804,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -919,7 +920,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -993,7 +994,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -1196,7 +1197,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -1278,7 +1279,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -1443,7 +1444,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -1507,7 +1508,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -1553,6 +1554,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         delegateCollect();
       }
     }
+
     /** Immediately delegate the collection of the current doc */
     protected void delegateCollect() throws IOException {
       // ensure we have the 'correct' scorer
@@ -1587,11 +1589,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       // Deal with last group (if any)...
       maybeDelegateCollect();
 
-      super.finish();
+      super.complete();
     }
 
     /**
@@ -1774,6 +1776,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
   }
+
   /**
    * A block based score collector that uses a field's numeric value as the group ids
    *
@@ -2003,6 +2006,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
   }
+
   /**
    * A block based score collector that uses a field's numeric value as the group ids
    *
@@ -3387,9 +3391,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         public void purgeGroupsThatHaveBoostedDocs(
             final FixedBitSet collapsedSet,
             final IntProcedure removeGroupKey,
-            final Runnable resetNullGroupHead) {
-          return;
-        }
+            final Runnable resetNullGroupHead) {}
       };
     }
 
@@ -3532,12 +3534,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public void setScorer(Scorable s) throws IOException {
       inner.setScorer(s);
     }
+
     /**
      * @see SortFieldsCompare#setGroupValues
      */
     public void setGroupValues(int contextDoc) throws IOException {
       inner.setNullGroupValues(contextDoc);
     }
+
     /**
      * @see SortFieldsCompare#testAndSetGroupValues
      */

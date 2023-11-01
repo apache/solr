@@ -821,7 +821,7 @@ public class ZkController implements Closeable {
             .getReplicas(
                 rep ->
                     rep.getState() == Replica.State.ACTIVE
-                        && rep.getType() != Type.PULL
+                        && rep.getType().leaderEligible
                         && liveNodes.contains(rep.getNodeName()))
             .size();
 
@@ -1292,7 +1292,7 @@ public class ZkController implements Closeable {
             "Error registering SolrCore, replica is removed from clusterstate");
       }
 
-      if (replica.getType() != Type.PULL) {
+      if (replica.getType().leaderEligible) {
         getCollectionTerms(collection).register(cloudDesc.getShardId(), coreZkNodeName);
       }
 
@@ -1308,7 +1308,7 @@ public class ZkController implements Closeable {
       try {
         // If we're a preferred leader, insert ourselves at the head of the queue
         boolean joinAtHead = replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
-        if (replica.getType() != Type.PULL) {
+        if (replica.getType().leaderEligible) {
           joinElection(desc, afterExpiration, joinAtHead);
         } else if (replica.getType() == Type.PULL) {
           if (joinAtHead) {
@@ -1337,7 +1337,8 @@ public class ZkController implements Closeable {
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
       log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
       boolean isLeader = leaderUrl.equals(ourUrl);
-      assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
+      assert !isLeader || replica.getType().leaderEligible
+          : replica.getType().name() + " replica became leader!";
 
       try (SolrCore core = cc.getCore(desc.getName())) {
 
@@ -1399,7 +1400,7 @@ public class ZkController implements Closeable {
           publish(desc, Replica.State.ACTIVE);
         }
 
-        if (replica.getType() != Type.PULL) {
+        if (replica.getType().leaderEligible) {
           // the watcher is added to a set so multiple calls of this method will left only one
           // watcher
           shardTerms.addListener(
@@ -1737,13 +1738,14 @@ public class ZkController implements Closeable {
 
       // pull replicas are excluded because their terms are not considered
       if (state == Replica.State.RECOVERING
-          && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
+          && cd.getCloudDescriptor().getReplicaType().leaderEligible) {
         // state is used by client, state of replica can change from RECOVERING to DOWN without
         // needed to finish recovery by calling this we will know that a replica actually finished
         // recovery or not
         getShardTerms(collection, shardId).startRecovering(coreNodeName);
       }
-      if (state == Replica.State.ACTIVE && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
+      if (state == Replica.State.ACTIVE
+          && cd.getCloudDescriptor().getReplicaType().leaderEligible) {
         getShardTerms(collection, shardId).doneRecovering(coreNodeName);
       }
 
@@ -1832,7 +1834,7 @@ public class ZkController implements Closeable {
         zkStateReader.getClusterState().getCollectionOrNull(collection);
     Replica replica = (docCollection == null) ? null : docCollection.getReplica(coreNodeName);
 
-    if (replica == null || replica.getType() != Type.PULL) {
+    if (replica == null || replica.getType().leaderEligible) {
       ElectionContext context = electionContexts.remove(new ContextKey(collection, coreNodeName));
 
       if (context != null) {

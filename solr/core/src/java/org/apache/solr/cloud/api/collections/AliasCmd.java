@@ -31,7 +31,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.handler.admin.api.CreateCollectionAPI;
+import org.apache.solr.handler.admin.api.CreateCollection;
 
 /**
  * Common superclass for commands that maintain or manipulate aliases. In the routed alias parlance,
@@ -73,10 +73,9 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
     // a CollectionOperation reads params and produces a message (Map) that is supposed to be sent
     // to the Overseer. Although we could create the Map without it, there are a fair amount of
     // rules we don't want to reproduce.
-    final var createReqBody =
-        CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(createReqParams, true);
-    CreateCollectionAPI.populateDefaultsIfNecessary(ccc.getCoreContainer(), createReqBody);
-    final ZkNodeProps createMessage = CreateCollectionAPI.createRemoteMessage(createReqBody);
+    final var createReqBody = CreateCollection.createRequestBodyFromV1Params(createReqParams, true);
+    CreateCollection.populateDefaultsIfNecessary(ccc.getCoreContainer(), createReqBody);
+    final ZkNodeProps createMessage = CreateCollection.createRemoteMessage(createReqBody);
 
     NamedList<Object> results = new NamedList<>();
     try {

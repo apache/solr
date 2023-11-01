@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -66,9 +65,6 @@ public class ApiToolTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
-    String tmpFileLoc =
-        new File(cluster.getBaseDir().toFile().getAbsolutePath() + File.separator).getPath();
-
     UpdateRequest ur = new UpdateRequest();
     ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
 
@@ -90,7 +86,8 @@ public class ApiToolTest extends SolrCloudTestCase {
             cluster.getJettySolrRunner(0).getBaseUrl()
                 + "/"
                 + COLLECTION_NAME
-                + "/select?q=*:*&rows=1&fl=id&sort=id+asc");
+                + "/select?q=*:*&rows=1&fl=id&sort=id+asc",
+            null);
     // Fields that could be missed because of serialization
     assertFindInJson(response, "\"numFound\":1000,");
     // Correct formatting

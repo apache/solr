@@ -171,7 +171,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         "There should be one document because overwrite=true", 1, resp.getResults().getNumFound());
 
     new UpdateRequest()
-        .add(new SolrInputDocument(id, "1", "a_t", "hello1"), /* overwrite = */ false)
+        .add(new SolrInputDocument(id, "1", "a_t", "hello1"), /* overwrite= */ false)
         .add(new SolrInputDocument(id, "1", "a_t", "hello2"), false)
         .commit(cluster.getSolrClient(), "overwrite");
 

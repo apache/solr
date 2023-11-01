@@ -845,11 +845,13 @@ public class PhrasesIdentificationComponent extends SearchComponent {
 
     /** NOTE: Indexed phrases of length 1 are the (sole) individual terms of themselves */
     private final List<Phrase> individualIndexedTerms = new ArrayList<>(7);
+
     /**
      * NOTE: Indexed phrases of length less then the max indexed length are the (sole) largest
      * sub-phrases of themselves
      */
     private final List<Phrase> largestIndexedSubPhrases = new ArrayList<>(7);
+
     /** Phrases larger then this phrase which are indexed and fully contain it */
     private final List<Phrase> indexedSuperPhrases = new ArrayList<>(7);
 
@@ -897,6 +899,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       }
       return checksum;
     }
+
     /** The characters from the original input that corrispond with this Phrase */
     public CharSequence getSubSequence() {
       return subSequence;
@@ -909,6 +912,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     public List<Phrase> getIndividualIndexedTerms() {
       return individualIndexedTerms;
     }
+
     /**
      * Returns the list of (overlapping) sub phrases that have the largest possible size based on
      * the effective value of {@link PhrasesContextData#maxIndexedPositionLength}. NOTE: Indexed
@@ -918,6 +922,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     public List<Phrase> getLargestIndexedSubPhrases() {
       return largestIndexedSubPhrases;
     }
+
     /**
      * Returns all phrases larger then this phrase, which fully include this phrase, and are
      * indexed. NOTE: A Phrase is <em>never</em> the super phrase of itself.
@@ -930,6 +935,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     public int getPositionStart() {
       return position_start;
     }
+
     /** NOTE: positions start at '1' */
     public int getPositionEnd() {
       return position_end;
@@ -938,6 +944,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     public int getPositionLength() {
       return position_end - position_start;
     }
+
     /** Each set bit identifies a position filled by this Phrase */
     public BitSet getPositionsBitSet() {
       final BitSet result = new BitSet();
@@ -964,6 +971,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     public double getTotalScore() {
       return total_score;
     }
+
     /**
      * Returns the score for this Phrase in this given field. In the current implementation, the
      * only garuntee made regarding the range of possible values is that 0 (or less) means it is not
@@ -988,6 +996,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
       }
       return phrase_ttf.getOrDefault(field, 0L);
     }
+
     /**
      * Returns the number of documents that contain <em>all</em> of the {@link
      * #getIndividualIndexedTerms} that make up this Phrase, in the specified field. NOTE: behavior
@@ -997,6 +1006,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     public long getConjunctionDocCount(String field) {
       return subTerms_conjunctionCounts.getOrDefault(field, 0L);
     }
+
     /**
      * Returns the number of documents that contain this (indexed) Phrase <em>as term</em> in the
      * specified field. NOTE: behavior of calling this method is undefined unless one of the {@link

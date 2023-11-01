@@ -58,8 +58,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** solrconfig.xml file name, shared with other cursor related tests */
   public static final String TEST_SOLRCONFIG_NAME = "solrconfig-deeppaging.xml";
+
   /** schema.xml file name, shared with other cursor related tests */
   public static final String TEST_SCHEMAXML_NAME = "schema-sorts.xml";
+
   /** values from enumConfig.xml */
   public static final List<String> SEVERITY_ENUM_VALUES =
       List.of("Not Available", "Low", "Medium", "High", "Critical");
@@ -1115,9 +1117,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       if (null != previousFacets) {
         assertEquals(
             "Facets not the same as on previous page:\nprevious page facets: "
-                + Arrays.toString(facets.toArray(new Object[facets.size()]))
+                + Arrays.toString(facets.toArray(new Object[0]))
                 + "\ncurrent page facets: "
-                + Arrays.toString(previousFacets.toArray(new Object[previousFacets.size()])),
+                + Arrays.toString(previousFacets.toArray(new Object[0])),
             previousFacets,
             facets);
       }

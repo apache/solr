@@ -246,6 +246,7 @@ public class MiniSolrCloudCluster {
         false,
         formatZkServer);
   }
+
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
    * protected so as to discourage its usage. Ideally *new* functionality should use {@linkplain
@@ -342,7 +343,7 @@ public class MiniSolrCloudCluster {
   }
 
   private void waitForAllNodes(int numServers, int timeoutSeconds)
-      throws IOException, InterruptedException, TimeoutException {
+      throws InterruptedException, TimeoutException {
     log.info("waitForAllNodes: numServers={}", numServers);
 
     int numRunning;
@@ -673,7 +674,7 @@ public class MiniSolrCloudCluster {
                 IOUtils.closeQuietly(c);
               });
       solrClientByCollection.clear();
-      ;
+
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
@@ -692,6 +693,7 @@ public class MiniSolrCloudCluster {
       if (!externalZkServer) {
         zkServer.shutdown();
       }
+      resetRecordingFlag();
     }
   }
 
@@ -772,13 +774,6 @@ public class MiniSolrCloudCluster {
         .withConnectionTimeout(15000);
   }
 
-  private static String getHostContextSuitableForServletContext(String ctx) {
-    if (ctx == null || ctx.isEmpty()) ctx = "/solr";
-    if (ctx.endsWith("/")) ctx = ctx.substring(0, ctx.length() - 1);
-    if (!ctx.startsWith("/")) ctx = "/" + ctx;
-    return ctx;
-  }
-
   private Exception checkForExceptions(String message, Collection<Future<JettySolrRunner>> futures)
       throws InterruptedException {
     Exception parsed = new Exception(message);
@@ -819,6 +814,7 @@ public class MiniSolrCloudCluster {
     }
   }
 
+  // Currently not used ;-(
   public synchronized void injectChaos(Random random) throws Exception {
 
     // sometimes we restart one of the jetty nodes
@@ -948,11 +944,7 @@ public class MiniSolrCloudCluster {
           }
         }
       }
-      if (activeReplicas == expectedReplicas) {
-        return true;
-      }
-
-      return false;
+      return activeReplicas == expectedReplicas;
     };
   }
 
@@ -1152,7 +1144,6 @@ public class MiniSolrCloudCluster {
       return this;
     }
 
-    @SuppressWarnings("InvalidParam")
     /**
      * Force the cluster Collection and config state API execution as well as the cluster state
      * update strategy to be either Overseer based or distributed. <b>This method can be useful when
@@ -1187,6 +1178,7 @@ public class MiniSolrCloudCluster {
      *     <p>If {@code distributedCollectionConfigSetApi} is {@code true} then this parameter must
      *     be {@code true}.
      */
+    @SuppressWarnings("InvalidParam")
     public Builder withDistributedClusterStateUpdates(
         boolean distributedCollectionConfigSetApi, boolean distributedClusterStateUpdates) {
       useDistributedCollectionConfigSetExecution = distributedCollectionConfigSetApi;
@@ -1308,23 +1300,32 @@ public class MiniSolrCloudCluster {
       this.disableTraceIdGeneration = true;
       return this;
     }
+  }
 
-    /**
-     * Randomizes the tracing Span::isRecording check.
-     *
-     * <p>This will randomize the Span::isRecording check so we have better coverage of all methods
-     * that deal with span creation without having to enable otel module.
-     *
-     * <p>It only makes sense to call this if we are using the alwaysOn tracer, the OTEL tracer
-     * already has this flag turned on and randomizing it would risk not recording trace data.
-     *
-     * <p>Note. Tracing is not a SolrCloud only feature. this method is placed here for convenience
-     * only, any test can make use of this example for more complete coverage of the tracing
-     * mechanics.
-     */
-    private void injectRandomRecordingFlag() {
+  /**
+   * Randomizes the tracing Span::isRecording check.
+   *
+   * <p>This will randomize the Span::isRecording check so we have better coverage of all methods
+   * that deal with span creation without having to enable otel module.
+   *
+   * <p>It only makes sense to call this if we are using the alwaysOn tracer, the OTEL tracer
+   * already has this flag turned on and randomizing it would risk not recording trace data.
+   *
+   * <p>Note. Tracing is not a SolrCloud only feature. this method is placed here for convenience
+   * only, any test can make use of this example for more complete coverage of the tracing
+   * mechanics.
+   */
+  private static void injectRandomRecordingFlag() {
+    try {
       boolean isRecording = LuceneTestCase.rarely();
       TraceUtils.IS_RECORDING = (ignored) -> isRecording;
+    } catch (IllegalStateException e) {
+      // This can happen in benchmarks or other places that aren't in a randomized test
+      log.warn("Unable to inject random recording flag due to outside randomized context", e);
     }
+  }
+
+  private static void resetRecordingFlag() {
+    TraceUtils.IS_RECORDING = TraceUtils.DEFAULT_IS_RECORDING;
   }
 }

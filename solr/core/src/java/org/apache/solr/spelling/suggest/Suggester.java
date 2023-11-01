@@ -55,10 +55,13 @@ public class Suggester extends SolrSpellChecker {
 
   /** Location of the source data - either a path to a file, or null for the current IndexReader. */
   public static final String LOCATION = "sourceLocation";
+
   /** Fully-qualified class of the {@link Lookup} implementation. */
   public static final String LOOKUP_IMPL = "lookupImpl";
+
   /** Minimum frequency of terms to consider when building the dictionary. */
   public static final String THRESHOLD_TOKEN_FREQUENCY = "threshold";
+
   /**
    * Name of the location where to persist the dictionary. If this location is relative then the
    * data will be stored under the core's dataDir. If this is null the storing will be disabled.

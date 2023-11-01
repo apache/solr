@@ -95,7 +95,7 @@ public class JavaBinCodec implements PushWriter {
       SOLRDOCLST = 12,
       BYTEARR = 13,
       ITERATOR = 14,
-      /** this is a special tag signals an end. No value is associated with it */
+      /* this is a special tag signals an end. No value is associated with it */
       END = 15,
       SOLRINPUTDOC = 16,
       MAP_ENTRY_ITER = 17,
@@ -537,6 +537,7 @@ public class JavaBinCodec implements PushWriter {
     dis.readFully(arr);
     return arr;
   }
+
   // use this to ignore the writable interface because , child docs will ignore the fl flag
   // is it a good design?
   private boolean ignoreWritable = false;

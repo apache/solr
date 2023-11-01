@@ -331,6 +331,9 @@ public class SolrXmlConfig {
               case "configSetService":
                 builder.setConfigSetServiceClass(it.txt());
                 break;
+              case "coresLocator":
+                builder.setCoresLocatorClass(it.txt());
+                break;
               case "coreRootDirectory":
                 builder.setCoreRootDirectory(it.txt());
                 break;
@@ -728,7 +731,7 @@ public class SolrXmlConfig {
       PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
       configs.add(defaultPlugin);
     }
-    return configs.toArray(new PluginInfo[configs.size()]);
+    return configs.toArray(new PluginInfo[0]);
   }
 
   /**

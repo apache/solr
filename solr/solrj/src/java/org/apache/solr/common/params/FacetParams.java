@@ -59,6 +59,7 @@ public interface FacetParams {
    * (multi-value)
    */
   public static final String FACET_QUERY = FACET + ".query";
+
   /**
    * Any field whose terms the user wants to enumerate over for Facet Constraint Counts
    * (multi-value)
@@ -164,21 +165,25 @@ public interface FacetParams {
    * Any field whose terms the user wants to enumerate over for Facet Contraint Counts (multi-value)
    */
   public static final String FACET_DATE = FACET + ".date";
+
   /**
    * Date string indicating the starting point for a date facet range. Can be overridden on a per
    * field basis.
    */
   public static final String FACET_DATE_START = FACET_DATE + ".start";
+
   /**
    * Date string indicating the ending point for a date facet range. Can be overridden on a per
    * field basis.
    */
   public static final String FACET_DATE_END = FACET_DATE + ".end";
+
   /**
    * Date Math string indicating the interval of sub-ranges for a date facet range. Can be
    * overridden on a per field basis.
    */
   public static final String FACET_DATE_GAP = FACET_DATE + ".gap";
+
   /**
    * Boolean indicating how counts should be computed if the range between 'start' and 'end' is not
    * evenly divisible by 'gap'. If this value is true, then all counts of ranges involving the 'end'
@@ -192,6 +197,7 @@ public interface FacetParams {
    * <p>Can be overridden on a per field basis.
    */
   public static final String FACET_DATE_HARD_END = FACET_DATE + ".hardend";
+
   /**
    * String indicating what "other" ranges should be computed for a date facet range (multi-value).
    *
@@ -220,21 +226,25 @@ public interface FacetParams {
    * selected ranges.
    */
   public static final String FACET_RANGE = FACET + ".range";
+
   /**
    * Number indicating the starting point for a numerical range facet. Can be overridden on a per
    * field basis.
    */
   public static final String FACET_RANGE_START = FACET_RANGE + ".start";
+
   /**
    * Number indicating the ending point for a numerical range facet. Can be overridden on a per
    * field basis.
    */
   public static final String FACET_RANGE_END = FACET_RANGE + ".end";
+
   /**
    * Number indicating the interval of sub-ranges for a numerical facet range. Can be overridden on
    * a per field basis.
    */
   public static final String FACET_RANGE_GAP = FACET_RANGE + ".gap";
+
   /**
    * Boolean indicating how counts should be computed if the range between 'start' and 'end' is not
    * evenly divisible by 'gap'. If this value is true, then all counts of ranges involving the 'end'
@@ -248,6 +258,7 @@ public interface FacetParams {
    * <p>Can be overridden on a per field basis.
    */
   public static final String FACET_RANGE_HARD_END = FACET_RANGE + ".hardend";
+
   /**
    * String indicating what "other" ranges should be computed for a numerical range facet
    * (multi-value). Can be overridden on a per field basis.
@@ -410,6 +421,7 @@ public interface FacetParams {
             e);
       }
     }
+
     /**
      * Convinience method for parsing the param value according to the correct semantics and
      * applying the default of "LOWER"

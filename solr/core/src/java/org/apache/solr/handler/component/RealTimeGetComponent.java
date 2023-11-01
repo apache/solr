@@ -81,6 +81,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocValuesIteratorCache;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrDocumentFetcher;
@@ -238,6 +239,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
       boolean opennedRealtimeSearcher = false;
       BytesRefBuilder idBytes = new BytesRefBuilder();
+      DocValuesIteratorCache reuseDvIters = null;
       for (String idStr : reqIds.allIds) {
         fieldType.readableToIndexed(idStr, idBytes);
         // if _route_ is passed, id is a child doc.  TODO remove in SOLR-15064
@@ -348,7 +350,11 @@ public class RealTimeGetComponent extends SearchComponent {
             searcherInfo.getSearcher().doc(docid, rsp.getReturnFields().getLuceneFieldNames());
         SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
         SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
-        docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(true));
+        if (reuseDvIters == null) {
+          reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
+        }
+        docFetcher.decorateDocValueFields(
+            doc, docid, docFetcher.getNonStoredDVs(true), reuseDvIters);
         if (null != transformer) {
           if (null == resultContext) {
             // either first pass, or we've re-opened searcher - either way now we setContext
@@ -575,7 +581,11 @@ public class RealTimeGetComponent extends SearchComponent {
       if (!doc.containsKey(VERSION_FIELD)) {
         searcher
             .getDocFetcher()
-            .decorateDocValueFields(doc, docid, Collections.singleton(VERSION_FIELD));
+            .decorateDocValueFields(
+                doc,
+                docid,
+                Collections.singleton(VERSION_FIELD),
+                new DocValuesIteratorCache(searcher, false));
       }
 
       long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
@@ -1417,6 +1427,7 @@ public class RealTimeGetComponent extends SearchComponent {
   private static final class IdsRequested {
     /** An List (which may be empty but will never be null) of the uniqueKeys requested. */
     public final List<String> allIds;
+
     /**
      * true if the params provided by the user indicate that a single doc response structure should
      * be used. Value is meaningless if <code>ids</code> is empty.
