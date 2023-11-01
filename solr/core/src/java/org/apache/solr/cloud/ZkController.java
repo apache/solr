@@ -1237,25 +1237,24 @@ public class ZkController implements Closeable {
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:{}", nodePath);
     Map<NodeRoles.Role, String> roles = cc.nodeRoles.getRoles();
-    List<Op> ops = new ArrayList<>(roles.size() + 1);
-    ops.add(
-        Op.create(
-            nodePath,
+
+    try {
+      zkClient.create(nodePath, null, CreateMode.EPHEMERAL, true);
+    } catch (KeeperException.NodeExistsException e) {
+      // ignore , it's already there
+    }
+
+    for (Map.Entry<NodeRoles.Role, String> e : roles.entrySet()) {
+      try {
+        zkClient.create(
+            NodeRoles.getZNodeForRoleMode(e.getKey(), e.getValue()) + "/" + nodeName,
             null,
-            zkClient.getZkACLProvider().getACLsToAdd(nodePath),
-            CreateMode.EPHEMERAL));
-
-    // Create the roles node as well
-    roles.forEach(
-        (role, mode) ->
-            ops.add(
-                Op.create(
-                    NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName,
-                    null,
-                    zkClient.getZkACLProvider().getACLsToAdd(nodePath),
-                    CreateMode.EPHEMERAL)));
-
-    zkClient.multi(ops, true);
+            CreateMode.EPHEMERAL,
+            true);
+      } catch (KeeperException.NodeExistsException ex) {
+        // ignore , it already exists
+      }
+    }
   }
 
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {
