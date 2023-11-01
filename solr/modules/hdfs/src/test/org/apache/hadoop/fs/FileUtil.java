@@ -736,7 +736,7 @@ public class FileUtil {
             try (BufferedReader reader =
                      new BufferedReader(
                          new InputStreamReader(process.getInputStream(),
-                             Charset.forName("UTF-8")))) {
+                             StandardCharsets.UTF_8))) {
               String line;
               while((line = reader.readLine()) != null) {
                 LOG.debug(line);
@@ -759,7 +759,7 @@ public class FileUtil {
             try (BufferedReader reader =
                      new BufferedReader(
                          new InputStreamReader(process.getErrorStream(),
-                             Charset.forName("UTF-8")))) {
+                             StandardCharsets.UTF_8))) {
               String line;
               while((line = reader.readLine()) != null) {
                 LOG.debug(line);
