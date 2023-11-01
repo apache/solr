@@ -34,18 +34,27 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
+public class TestCircuitBreakers extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final CircuitBreaker dummyMemBreaker = new MemoryCircuitBreaker();
-  private static final CircuitBreaker dummyCBManager = new CircuitBreakerManager();
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    System.setProperty("filterCache.enabled", "false");
+    System.setProperty("queryResultCache.enabled", "false");
+    System.setProperty("documentCache.enabled", "true");
+
+    initCore("solrconfig-pluggable-circuitbreaker.xml", "schema.xml");
+    indexDocs();
+  }
 
   protected static void indexDocs() {
     removeAllExistingCircuitBreakers();
@@ -66,7 +75,6 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     super.tearDown();
     dummyMemBreaker.close();
-    dummyCBManager.close();
   }
 
   @After
@@ -242,13 +250,8 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
         "//lst[@name='process']/double[@name='time']");
   }
 
-  public void testErrorCode() throws Exception {
-    assertEquals(
-        SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-        CircuitBreaker.getErrorCode(List.of(dummyCBManager)));
-    assertEquals(
-        SolrException.ErrorCode.TOO_MANY_REQUESTS,
-        CircuitBreaker.getErrorCode(List.of(dummyMemBreaker)));
+  public void testErrorCode() {
+    assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS, CircuitBreaker.ERROR_CODE);
   }
 
   private static void removeAllExistingCircuitBreakers() {

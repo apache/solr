@@ -45,6 +45,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public abstract class CircuitBreaker implements NamedListInitializedPlugin, Closeable {
   // Only query requests are checked by default
+  public static final SolrException.ErrorCode ERROR_CODE = SolrException.ErrorCode.TOO_MANY_REQUESTS;
   private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
   private final List<SolrRequestType> SUPPORTED_TYPES =
       List.of(SolrRequestType.QUERY, SolrRequestType.UPDATE);
@@ -93,21 +94,5 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
 
   public Set<SolrRequestType> getRequestTypes() {
     return requestTypes;
-  }
-
-  /**
-   * Return the proper error code to use in exception. For legacy use of {@link CircuitBreaker} we
-   * return 503 for backward compatibility, else return 429.
-   *
-   * @deprecated Remove in 10.0
-   */
-  @Deprecated(since = "9.4")
-  public static SolrException.ErrorCode getErrorCode(List<CircuitBreaker> trippedCircuitBreakers) {
-    if (trippedCircuitBreakers != null
-        && trippedCircuitBreakers.stream().anyMatch(cb -> cb instanceof CircuitBreakerManager)) {
-      return SolrException.ErrorCode.SERVICE_UNAVAILABLE;
-    } else {
-      return SolrException.ErrorCode.TOO_MANY_REQUESTS;
-    }
   }
 }

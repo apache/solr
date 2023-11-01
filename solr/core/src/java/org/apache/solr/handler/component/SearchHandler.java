@@ -385,7 +385,7 @@ public class SearchHandler extends RequestHandlerBase
         rsp.add(STATUS, FAILURE);
         rsp.setException(
             new SolrException(
-                CircuitBreaker.getErrorCode(trippedCircuitBreakers),
+                CircuitBreaker.ERROR_CODE,
                 "Circuit Breakers tripped " + errorMessage));
         return true;
       }

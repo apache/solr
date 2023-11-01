@@ -37,14 +37,6 @@ A circuit breaker can register itself to trip for query requests and/or update r
 
 == Currently Supported Circuit Breakers
 
-[NOTE]
-====
-The legacy configuration syntax using `CircuitBreakerManager` is deprecated as of Solr 9.4, but will
-continue to work. The "CPU" circuit breaker used by this legacy plugin when configuring a `cpuThreshold`
-is actually the `LoadAverageCircuitBreaker` described below. Also, the `CircuitBreakerManager` will
-return a HTTP 503 code instead of the HTTP 429 code used by the new circuit breakers.
-====
-
 === JVM Heap Usage
 
 This circuit breaker tracks JVM heap memory usage and rejects incoming requests with a 429 error code if the heap usage exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx).
