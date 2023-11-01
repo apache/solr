@@ -225,7 +225,7 @@ public class ZkCLI implements CLIO {
         stdout.println(
             "zkcli.sh -zkhost localhost:9983 -cmd "
                 + PUT_FILE
-                + " /clusterprops.json /User/myuser/solr//clusterprops.json");
+                + " /clusterprops.json /User/myuser/solr/clusterprops.json");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /clusterprops.json");
         stdout.println(
             "zkcli.sh -zkhost localhost:9983 -cmd "
