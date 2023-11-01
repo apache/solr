@@ -45,7 +45,8 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public abstract class CircuitBreaker implements NamedListInitializedPlugin, Closeable {
   // Only query requests are checked by default
-  public static final SolrException.ErrorCode ERROR_CODE = SolrException.ErrorCode.TOO_MANY_REQUESTS;
+  public static final SolrException.ErrorCode ERROR_CODE =
+      SolrException.ErrorCode.TOO_MANY_REQUESTS;
   private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
   private final List<SolrRequestType> SUPPORTED_TYPES =
       List.of(SolrRequestType.QUERY, SolrRequestType.UPDATE);
