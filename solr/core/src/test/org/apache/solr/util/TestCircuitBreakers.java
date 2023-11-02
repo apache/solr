@@ -89,11 +89,12 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
 
     h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
 
-    SolrException ex = expectThrows(
-        SolrException.class,
-        () -> {
-          h.query(req("name:\"john smith\""));
-        });
+    SolrException ex =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              h.query(req("name:\"john smith\""));
+            });
     assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS.code, ex.code());
   }
 
