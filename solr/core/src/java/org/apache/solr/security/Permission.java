@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 
 class Permission {
@@ -59,8 +60,7 @@ class Permission {
               SolrException.ErrorCode.BAD_REQUEST,
               s + " is not a valid key for the permission : " + name);
       }
-    } else if (customPermissionAdditionalKeys.stream().noneMatch(m::containsKey)) {
-      // Custom permissions must contain one of the additional keys to be valid
+    } else if (!m.containsKey(CommonParams.PATH)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Permission with name "
