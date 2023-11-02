@@ -22,13 +22,13 @@ import java.util.Iterator;
 import java.util.Map;
 import org.apache.http.HttpRequest;
 
-/** An OpenTracing Carrier for injecting Span context through SolrRequest */
-public class SolrHttpRequestCarrier implements TextMap {
+/** An OpenTracing Carrier for injecting Span context through an Apache HttpRequest */
+public class SolrApacheHttpRequestCarrier implements TextMap {
 
-  private final HttpRequest solrRequest;
+  private final HttpRequest httpRequest;
 
-  public SolrHttpRequestCarrier(HttpRequest solrRequest) {
-    this.solrRequest = solrRequest;
+  public SolrApacheHttpRequestCarrier(HttpRequest httpRequest) {
+    this.httpRequest = httpRequest;
   }
 
   @Override
@@ -38,6 +38,6 @@ public class SolrHttpRequestCarrier implements TextMap {
 
   @Override
   public void put(String key, String value) {
-    solrRequest.setHeader(key, value);
+    httpRequest.setHeader(key, value);
   }
 }

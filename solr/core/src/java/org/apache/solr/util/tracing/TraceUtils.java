@@ -56,7 +56,7 @@ public class TraceUtils {
   public static void injectTraceContext(Request req, Span span) {
     Tracer tracer = GlobalTracer.get();
     if (span != null) {
-      tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrRequestCarrier(req));
+      tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrJettyRequestCarrier(req));
     }
   }
 
@@ -64,7 +64,7 @@ public class TraceUtils {
     Tracer tracer = GlobalTracer.get();
     Span span = tracer.activeSpan();
     if (span != null) {
-      tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrHttpRequestCarrier(req));
+      tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrApacheHttpRequestCarrier(req));
     }
   }
 
