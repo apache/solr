@@ -64,7 +64,8 @@ public class TraceUtils {
     Tracer tracer = GlobalTracer.get();
     Span span = tracer.activeSpan();
     if (span != null) {
-      tracer.inject(span.context(), Format.Builtin.HTTP_HEADERS, new SolrApacheHttpRequestCarrier(req));
+      tracer.inject(
+          span.context(), Format.Builtin.HTTP_HEADERS, new SolrApacheHttpRequestCarrier(req));
     }
   }
 
