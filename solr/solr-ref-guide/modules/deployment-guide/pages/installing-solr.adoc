@@ -109,8 +109,7 @@ See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.ado
 
 cross-dc-manager/::
 A standalone application, included under `bin/`, that manages Cross-Datacenter indexing across SolrClouds.
-// no-commit update when new page is added
-//See the section xref:deployment-guide:indexing-with-crossdc.adoc[] for more information.
+See the section xref:deployment-guide:cross-dc-replication.adoc[] for more information.
 *This is not included in the `slim` distribution.*
 
 docker/::

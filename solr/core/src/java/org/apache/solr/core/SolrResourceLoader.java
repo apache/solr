@@ -110,7 +110,9 @@ public class SolrResourceLoader
     "security.hadoop.",
     "handler.sql.",
     "hdfs.",
-    "hdfs.update."
+    "hdfs.update.",
+    "crossdc.handler.",
+    "crossdc.update.processor."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
   public static final String SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM =

@@ -109,7 +109,7 @@
   </query>
 
   <updateRequestProcessorChain  name="mirrorUpdateChain" default="true">
-    <processor class="org.apache.solr.crossdc.update.processor.MirroringUpdateRequestProcessorFactory">
+    <processor class="solr.MirroringUpdateRequestProcessorFactory">
       <bool name="enabled">${enabled:true}</bool>
       <bool name="indexUnmirrorableDocs">${indexUnmirrorableDocs:false}</bool>
       <str name="bootstrapServers">${bootstrapServers:}</str>
