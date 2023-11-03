@@ -96,6 +96,17 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
               h.query(req("name:\"john smith\""));
             });
     assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS.code, ex.code());
+
+    System.setProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, "503");
+    MockCircuitBreaker dummy = new MockCircuitBreaker(true); // Trigger constructor
+    ex =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              h.query(req("name:\"john smith\""));
+            });
+    assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, ex.code());
+    System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
   }
 
   public void testCBFakeMemoryPressure() throws Exception {

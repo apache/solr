@@ -44,19 +44,24 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * @lucene.experimental
  */
 public abstract class CircuitBreaker implements NamedListInitializedPlugin, Closeable {
+  public static final String SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE =
+      "solr.circuitbreaker.errorcode";
   // Only query requests are checked by default
-  public static final SolrException.ErrorCode ERROR_CODE =
-      SolrException.ErrorCode.TOO_MANY_REQUESTS;
   private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
   private final List<SolrRequestType> SUPPORTED_TYPES =
       List.of(SolrRequestType.QUERY, SolrRequestType.UPDATE);
+  private static SolrException.ErrorCode errorCode = SolrException.ErrorCode.TOO_MANY_REQUESTS;
 
   @Override
   public void init(NamedList<?> args) {
     SolrPluginUtils.invokeSetters(this, args);
   }
 
-  public CircuitBreaker() {}
+  public CircuitBreaker() {
+    if (System.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE) != null) {
+      setErrorCode(Integer.getInteger(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE));
+    }
+  }
 
   /** Check if circuit breaker is tripped. */
   public abstract boolean isTripped();
@@ -64,9 +69,28 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
   /** Get error message when the circuit breaker triggers */
   public abstract String getErrorMessage();
 
+  /**
+   * Get http error code, defaults to {@link SolrException.ErrorCode#TOO_MANY_REQUESTS} but can be
+   * configured
+   */
+  public static SolrException.ErrorCode getErrorCode() {
+    return errorCode;
+  }
+
   @Override
   public void close() throws IOException {
     // Nothing to do by default
+  }
+
+  /**
+   * Provide a generic way for any Circuit Breaker to set a different error code than the default
+   * 429. The integer number must be a valid SolrException.ErrorCode. Note that this is a shared
+   * static variable.
+   *
+   * @param errorCode integer value of http error code to use
+   */
+  public static void setErrorCode(int errorCode) {
+    CircuitBreaker.errorCode = SolrException.ErrorCode.getErrorCode(errorCode);
   }
 
   /**
