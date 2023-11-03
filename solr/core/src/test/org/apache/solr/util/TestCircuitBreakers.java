@@ -91,12 +91,12 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
 
     List.of(
-            SolrException.ErrorCode.TOO_MANY_REQUESTS.code,
+            -1,
             SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,
             SolrException.ErrorCode.BAD_REQUEST.code)
         .forEach(
             code -> {
-              if (code != SolrException.ErrorCode.TOO_MANY_REQUESTS.code) {
+              if (code > 0) {
                 System.setProperty(
                     CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, String.valueOf(code));
               }
