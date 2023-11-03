@@ -125,7 +125,7 @@ public class FileStoreAPI {
 
   public class FSWrite {
 
-    static final String TMP_ZK_NODE = "/packageStoreWriteInProgress";
+    static final String TMP_ZK_NODE = "/fileStoreWriteInProgress";
 
     @EndPoint(
         path = "/cluster/files/*",
@@ -260,14 +260,14 @@ public class FileStoreAPI {
       Map<String, byte[]> keys = fileStore.getKeys();
       if (keys == null || keys.isEmpty()) {
         throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "package store does not have any keys");
+            SolrException.ErrorCode.BAD_REQUEST, "File store does not have any keys");
       }
       CryptoKeys cryptoKeys = null;
       try {
         cryptoKeys = new CryptoKeys(keys);
       } catch (Exception e) {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Error parsing public keys in Package store");
+            SolrException.ErrorCode.SERVER_ERROR, "Error parsing public keys in file store");
       }
       for (String sig : sigs) {
         if (cryptoKeys.verify(sig, ByteBuffer.wrap(buf)) == null) {
