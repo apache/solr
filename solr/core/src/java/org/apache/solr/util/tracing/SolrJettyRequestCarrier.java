@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import org.eclipse.jetty.client.api.Request;
 
-/** An OpenTracing Carrier for injecting Span context through a Jetyy Request */
+/** An OpenTracing Carrier for injecting Span context through a Jetty Request */
 public class SolrJettyRequestCarrier implements TextMap {
 
   private final Request request;
