@@ -66,7 +66,7 @@ artifacts {
 // Non-Java client generation tasks below:
 
 task buildJSClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
-  generatorName.set("javascript-closure-angular")
+  generatorName.set("javascript")
   inputSpec.set("$openApiSpecFile")
   outputDir.set("${buildDir}/generated/js")
   packageName.set("solr")
