@@ -139,7 +139,8 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
         rsp.add(STATUS, FAILURE);
         rsp.setException(
             new SolrException(
-                CircuitBreaker.getErrorCode(), "Circuit Breakers tripped " + errorMessage));
+                CircuitBreaker.getExceptionErrorCode(),
+                "Circuit Breakers tripped " + errorMessage));
         return true;
       }
     }
