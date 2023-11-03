@@ -50,18 +50,13 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
   private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
   private final List<SolrRequestType> SUPPORTED_TYPES =
       List.of(SolrRequestType.QUERY, SolrRequestType.UPDATE);
-  private static SolrException.ErrorCode errorCode = SolrException.ErrorCode.TOO_MANY_REQUESTS;
 
   @Override
   public void init(NamedList<?> args) {
     SolrPluginUtils.invokeSetters(this, args);
   }
 
-  public CircuitBreaker() {
-    if (System.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE) != null) {
-      setErrorCode(Integer.getInteger(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE));
-    }
-  }
+  public CircuitBreaker() {}
 
   /** Check if circuit breaker is tripped. */
   public abstract boolean isTripped();
@@ -71,26 +66,17 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
 
   /**
    * Get http error code, defaults to {@link SolrException.ErrorCode#TOO_MANY_REQUESTS} but can be
-   * configured
+   * overridden with system property {@link #SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE}
    */
   public static SolrException.ErrorCode getErrorCode() {
-    return errorCode;
+    return SolrException.ErrorCode.getErrorCode(
+        Integer.getInteger(
+            SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, SolrException.ErrorCode.TOO_MANY_REQUESTS.code));
   }
 
   @Override
   public void close() throws IOException {
     // Nothing to do by default
-  }
-
-  /**
-   * Provide a generic way for any Circuit Breaker to set a different error code than the default
-   * 429. The integer number must be a valid SolrException.ErrorCode. Note that this is a shared
-   * static variable.
-   *
-   * @param errorCode integer value of http error code to use
-   */
-  public static void setErrorCode(int errorCode) {
-    CircuitBreaker.errorCode = SolrException.ErrorCode.getErrorCode(errorCode);
   }
 
   /**

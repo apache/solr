@@ -51,6 +51,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     System.setProperty("filterCache.enabled", "false");
     System.setProperty("queryResultCache.enabled", "false");
     System.setProperty("documentCache.enabled", "true");
+    System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
 
     initCore("solrconfig-pluggable-circuitbreaker.xml", "schema.xml");
     indexDocs();
@@ -89,23 +90,24 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
 
     h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
 
-    SolrException ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              h.query(req("name:\"john smith\""));
+    List.of(
+            SolrException.ErrorCode.TOO_MANY_REQUESTS.code,
+            SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,
+            SolrException.ErrorCode.BAD_REQUEST.code)
+        .forEach(
+            code -> {
+              if (code != SolrException.ErrorCode.TOO_MANY_REQUESTS.code) {
+                System.setProperty(
+                    CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, String.valueOf(code));
+              }
+              SolrException ex =
+                  expectThrows(
+                      SolrException.class,
+                      () -> {
+                        h.query(req("name:\"john smith\""));
+                      });
+              assertEquals(code == -1 ? 429 : code, ex.code());
             });
-    assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS.code, ex.code());
-
-    System.setProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, "503");
-    MockCircuitBreaker dummy = new MockCircuitBreaker(true); // Trigger constructor
-    ex =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              h.query(req("name:\"john smith\""));
-            });
-    assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, ex.code());
     System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
   }
 
