@@ -106,7 +106,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
                       () -> {
                         h.query(req("name:\"john smith\""));
                       });
-              assertEquals(code == -1 ? 429 : code, ex.code());
+              assertEquals(code == -1 ? SolrException.ErrorCode.TOO_MANY_REQUESTS.code : code, ex.code());
             });
     System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
   }
