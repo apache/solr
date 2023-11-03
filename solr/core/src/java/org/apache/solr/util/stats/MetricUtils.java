@@ -632,6 +632,7 @@ public class MetricUtils {
       }
     }
   }
+
   /**
    * Convert a {@link Gauge}.
    *

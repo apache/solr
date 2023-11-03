@@ -165,6 +165,7 @@ public class ReplicationHandler extends RequestHandlerBase
       generation = g;
       version = v;
     }
+
     /**
      * builds a CommitVersionInfo data for the specified IndexCommit. Will never be null, ut version
      * and generation may be zero if there are problems extracting them from the commit data
@@ -1804,11 +1805,10 @@ public class ReplicationHandler extends RequestHandlerBase
 
   public static final String LEADER_URL = "leaderUrl";
 
-  @Deprecated
   /**
-   * @deprecated: Only used for backwards compatibility. Use {@link #LEADER_URL}
+   * @deprecated Only used for backwards compatibility. Use {@link #LEADER_URL}
    */
-  public static final String LEGACY_LEADER_URL = "masterUrl";
+  @Deprecated public static final String LEGACY_LEADER_URL = "masterUrl";
 
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 
@@ -1817,11 +1817,11 @@ public class ReplicationHandler extends RequestHandlerBase
   // loss
   public static final String SKIP_COMMIT_ON_LEADER_VERSION_ZERO = "skipCommitOnLeaderVersionZero";
 
-  @Deprecated
   /**
-   * @deprecated: Only used for backwards compatibility. Use {@link
+   * @deprecated Only used for backwards compatibility. Use {@link
    *     #SKIP_COMMIT_ON_LEADER_VERSION_ZERO}
    */
+  @Deprecated
   public static final String LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO =
       "skipCommitOnMasterVersionZero";
 

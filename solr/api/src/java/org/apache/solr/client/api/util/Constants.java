@@ -22,5 +22,10 @@ public class Constants {
     /* Private ctor prevents instantiation */
   }
 
+  public static final String STORE_TYPE_PATH_PARAMETER = "storeType";
+  public static final String STORE_NAME_PATH_PARAMETER = "storeName";
+  public static final String STORE_PATH_PREFIX =
+      "/{" + STORE_TYPE_PATH_PARAMETER + ":cores|collections}/{" + STORE_NAME_PATH_PARAMETER + "}";
+
   public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }

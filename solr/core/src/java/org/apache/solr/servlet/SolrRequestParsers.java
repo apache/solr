@@ -290,6 +290,7 @@ public class SolrRequestParsers {
   private static HttpSolrCall getHttpSolrCall(HttpServletRequest req) {
     return req == null ? null : (HttpSolrCall) req.getAttribute(HttpSolrCall.class.getName());
   }
+
   /** Given a url-encoded query string (UTF-8), map it into solr params */
   public static MultiMapSolrParams parseQueryString(String queryString) {
     Map<String, String[]> map = new HashMap<>();

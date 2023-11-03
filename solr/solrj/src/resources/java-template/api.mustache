@@ -34,13 +34,26 @@ import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.ResponseParser;
+
+{{! Covers all top-level request/response model classes, but not necessarily any types nested in those classes }}
+{{#imports}}
+import {{import}};
+{{/imports}}
+
+{{! Imports any model types nested in request body POJOs }}
 {{#operations}}
 {{#operation}}
-{{#imports}}
-import {{modelPackage}}.{{.}};
-{{/imports}}
+{{#bodyParam}}
+{{#vars}}
+{{#isModel}}
+import {{modelPackage}}.{{dataType}};
+{{/isModel}}
+{{/vars}}
+{{/bodyParam}}
 {{/operation}}
+{{/operations}}
 
+{{#operations}}
 // WARNING: This class is generated from a Mustache template; any intended
 // changes should be made to the underlying template and not this file directly.
 
@@ -78,7 +91,7 @@ public class {{classname}} {
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
                   "{{{path}}}"{{#pathParams}}
-                    .replace("{" + "{{baseName}}" + "}", {{paramName}}){{/pathParams}}
+                    .replace("{" + "{{baseName}}" + "}", {{paramName}}{{#isEnumRef}}.name(){{/isEnumRef}}){{/pathParams}}
                 );
 
                 {{#requiredParams}}

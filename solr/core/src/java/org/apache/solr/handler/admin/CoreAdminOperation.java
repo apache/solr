@@ -58,6 +58,10 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.api.model.ListCoreSnapshotsResponse;
+import org.apache.solr.client.api.model.ReloadCoreRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.UnloadCoreRequestBody;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -71,7 +75,9 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
-import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshot;
+import org.apache.solr.handler.admin.api.ReloadCore;
+import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -118,14 +124,17 @@ public enum CoreAdminOperation implements CoreAdminOp {
       it -> {
         SolrParams params = it.req.getParams();
         String cname = params.required().get(CoreAdminParams.CORE);
-
-        boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
-        boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
-        boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
-        CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
-        it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
-
-        assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
+        final var unloadCoreRequestBody = new UnloadCoreRequestBody();
+        unloadCoreRequestBody.deleteIndex = params.getBool(CoreAdminParams.DELETE_INDEX, false);
+        unloadCoreRequestBody.deleteDataDir =
+            params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
+        unloadCoreRequestBody.deleteInstanceDir =
+            params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
+        UnloadCore unloadCoreAPI =
+            new UnloadCore(
+                it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
+        SolrJerseyResponse response = unloadCoreAPI.unloadCore(cname, unloadCoreRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
   RELOAD_OP(
       RELOAD,
@@ -133,7 +142,12 @@ public enum CoreAdminOperation implements CoreAdminOp {
         SolrParams params = it.req.getParams();
         String cname = params.required().get(CoreAdminParams.CORE);
 
-        it.handler.coreContainer.reload(cname);
+        ReloadCore reloadCoreAPI =
+            new ReloadCore(
+                it.req, it.rsp, it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker());
+        ReloadCoreRequestBody reloadCoreRequestBody = new ReloadCoreRequestBody();
+        SolrJerseyResponse response = reloadCoreAPI.reloadCore(cname, reloadCoreRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
   STATUS_OP(STATUS, new StatusOp()),
   SWAP_OP(
@@ -285,12 +299,10 @@ public enum CoreAdminOperation implements CoreAdminOp {
         final String coreName = params.required().get(CoreAdminParams.CORE);
 
         final CoreContainer coreContainer = it.handler.getCoreContainer();
-        final CoreSnapshotAPI coreSnapshotAPI =
-            new CoreSnapshotAPI(
-                it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
+        final CoreSnapshot coreSnapshotAPI =
+            new CoreSnapshot(it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
-        final CoreSnapshotAPI.ListSnapshotsResponse response =
-            coreSnapshotAPI.listSnapshots(coreName);
+        final ListCoreSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
 
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       });

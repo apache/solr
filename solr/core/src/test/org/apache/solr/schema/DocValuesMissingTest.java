@@ -133,6 +133,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testFloatSort() {
     checkSortMissingDefault("floatdv", "-1.3", "4.2");
   }
+
   /** dynamic float with default lucene sort (treats as 0) */
   @Test
   public void testDynFloatSort() {
@@ -144,6 +145,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testFloatSortMissingFirst() {
     checkSortMissingFirst("floatdv_missingfirst", "-1.3", "4.2");
   }
+
   /** dynamic float with sort missing always first */
   @Test
   public void testDynFloatSortMissingFirst() {
@@ -155,6 +157,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testFloatSortMissingLast() {
     checkSortMissingLast("floatdv_missinglast", "-1.3", "4.2");
   }
+
   /** dynamic float with sort missing always last */
   @Test
   public void testDynFloatSortMissingLast() {
@@ -166,6 +169,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testFloatMissingFunction() {
     checkSortMissingFunction("floatdv", "-1.3", "4.2");
   }
+
   /** dyanmic float function query based on missing */
   @Test
   public void testDynFloatMissingFunction() {
@@ -177,6 +181,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testFloatMissingFacet() {
     checkSortMissingFacet("floatdv", "-1.3", "4.2");
   }
+
   /** dynamic float missing facet count */
   @Test
   public void testDynFloatMissingFacet() {
@@ -188,6 +193,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testIntSort() {
     checkSortMissingDefault("intdv", "-1", "4");
   }
+
   /** dynamic int with default lucene sort (treats as 0) */
   @Test
   public void testDynIntSort() {
@@ -199,6 +205,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testIntSortMissingFirst() {
     checkSortMissingFirst("intdv_missingfirst", "-1", "4");
   }
+
   /** dynamic int with sort missing always first */
   @Test
   public void testDynIntSortMissingFirst() {
@@ -210,6 +217,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testIntSortMissingLast() {
     checkSortMissingLast("intdv_missinglast", "-1", "4");
   }
+
   /** dynamic int with sort missing always last */
   @Test
   public void testDynIntSortMissingLast() {
@@ -221,6 +229,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testIntMissingFunction() {
     checkSortMissingFunction("intdv", "-1", "4");
   }
+
   /** dynamic int function query based on missing */
   @Test
   public void testDynIntMissingFunction() {
@@ -232,6 +241,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testIntMissingFacet() {
     checkSortMissingFacet("intdv", "-1", "4");
   }
+
   /** dynamic int missing facet count */
   @Test
   public void testDynIntMissingFacet() {
@@ -243,6 +253,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testDoubleSort() {
     checkSortMissingDefault("doubledv", "-1.3", "4.2");
   }
+
   /** dynamic double with default lucene sort (treats as 0) */
   @Test
   public void testDynDoubleSort() {
@@ -254,6 +265,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testDoubleSortMissingFirst() {
     checkSortMissingFirst("doubledv_missingfirst", "-1.3", "4.2");
   }
+
   /** dynamic double with sort missing always first */
   @Test
   public void testDynDoubleSortMissingFirst() {
@@ -265,6 +277,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testDoubleSortMissingLast() {
     checkSortMissingLast("doubledv_missinglast", "-1.3", "4.2");
   }
+
   /** dynamic double with sort missing always last */
   @Test
   public void testDynDoubleSortMissingLast() {
@@ -276,6 +289,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testDoubleMissingFunction() {
     checkSortMissingFunction("doubledv", "-1.3", "4.2");
   }
+
   /** dyanmic double function query based on missing */
   @Test
   public void testDynDoubleMissingFunction() {
@@ -287,6 +301,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testDoubleMissingFacet() {
     checkSortMissingFacet("doubledv", "-1.3", "4.2");
   }
+
   /** dynamic double missing facet count */
   @Test
   public void testDynDoubleMissingFacet() {
@@ -298,6 +313,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testLongSort() {
     checkSortMissingDefault("longdv", "-1", "4");
   }
+
   /** dynamic long with default lucene sort (treats as 0) */
   @Test
   public void testDynLongSort() {
@@ -309,6 +325,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testLongSortMissingFirst() {
     checkSortMissingFirst("longdv_missingfirst", "-1", "4");
   }
+
   /** dynamic long with sort missing always first */
   @Test
   public void testDynLongSortMissingFirst() {
@@ -320,6 +337,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testLongSortMissingLast() {
     checkSortMissingLast("longdv_missinglast", "-1", "4");
   }
+
   /** dynamic long with sort missing always last */
   @Test
   public void testDynLongSortMissingLast() {
@@ -331,6 +349,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testLongMissingFunction() {
     checkSortMissingFunction("longdv", "-1", "4");
   }
+
   /** dynamic long function query based on missing */
   @Test
   public void testDynLongMissingFunction() {
@@ -342,6 +361,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testLongMissingFacet() {
     checkSortMissingFacet("longdv", "-1", "4");
   }
+
   /** dynamic long missing facet count */
   @Test
   public void testDynLongMissingFacet() {
@@ -353,6 +373,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testDateSort() {
     checkSortMissingDefault("datedv", "1900-12-31T23:59:59.999Z", "2005-12-31T23:59:59.999Z");
   }
+
   /** dynamic date with default lucene sort (treats as 1970) */
   @Test
   public void testDynDateSort() {
@@ -365,6 +386,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
     checkSortMissingFirst(
         "datedv_missingfirst", "1900-12-31T23:59:59.999Z", "2005-12-31T23:59:59.999Z");
   }
+
   /** dynamic date with sort missing always first */
   @Test
   public void testDynDateSortMissingFirst() {
@@ -378,6 +400,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
     checkSortMissingLast(
         "datedv_missinglast", "1900-12-31T23:59:59.999Z", "2005-12-31T23:59:59.999Z");
   }
+
   /** dynamic date with sort missing always last */
   @Test
   public void testDynDateSortMissingLast() {
@@ -390,6 +413,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testDateMissingFunction() {
     checkSortMissingFunction("datedv", "1900-12-31T23:59:59.999Z", "2005-12-31T23:59:59.999Z");
   }
+
   /** dynamic date function query based on missing */
   @Test
   public void testDynDateMissingFunction() {
@@ -401,6 +425,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testDateMissingFacet() {
     checkSortMissingFacet("datedv", "1900-12-31T23:59:59.999Z", "2005-12-31T23:59:59.999Z");
   }
+
   /** dynamic date missing facet count */
   @Test
   public void testDynDateMissingFacet() {
@@ -436,6 +461,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testStringSortMissingFirst() {
     checkSortMissingFirst("stringdv_missingfirst", "a", "z");
   }
+
   /** dynamic string with sort missing always first */
   @Test
   public void testDynStringSortMissingFirst() {
@@ -447,6 +473,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testStringSortMissingLast() {
     checkSortMissingLast("stringdv_missinglast", "a", "z");
   }
+
   /** dynamic string with sort missing always last */
   @Test
   public void testDynStringSortMissingLast() {
@@ -458,6 +485,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testStringMissingFunction() {
     checkSortMissingFunction("stringdv", "a", "z");
   }
+
   /** dynamic string function query based on missing */
   @Test
   public void testDynStringMissingFunction() {
@@ -518,6 +546,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testBoolSortMissingFirst() {
     checkSortMissingFirst("booldv_missingfirst", "false", "ture");
   }
+
   /** dynamic bool with sort missing always first */
   @Test
   public void testDynBoolSortMissingFirst() {
@@ -529,6 +558,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testBoolSortMissingLast() {
     checkSortMissingLast("booldv_missinglast", "false", "true");
   }
+
   /** dynamic bool with sort missing always last */
   @Test
   public void testDynBoolSortMissingLast() {
@@ -540,6 +570,7 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public void testBoolMissingFunction() {
     checkSortMissingFunction("booldv", "false", "true");
   }
+
   /** dynamic bool function query based on missing */
   @Test
   public void testDynBoolMissingFunction() {

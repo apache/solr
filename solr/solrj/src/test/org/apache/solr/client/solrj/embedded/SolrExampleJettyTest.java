@@ -66,6 +66,8 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
+    // For making raw requests...
+    HttpClient httpClient = HttpClientUtil.createClient(null);
     try (SolrClient client = getSolrClient()) {
       client.deleteByQuery("*:*");
       client.commit();
@@ -73,7 +75,6 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
       // two docs, one with uniqueKey, another without it
       String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-      HttpClient httpClient = getHttpClient(getCoreUrl());
       HttpPost post = new HttpPost(getRandomizedUpdateUri(getCoreUrl()));
       post.setHeader("Content-Type", "application/json");
       post.setEntity(
@@ -97,6 +98,8 @@ public class SolrExampleJettyTest extends SolrExampleTests {
       src = (String) doc.getFieldValue("_src_");
       m = (Map) fromJSONString(src);
       assertEquals("name2", m.get("name"));
+    } finally {
+      HttpClientUtil.close(httpClient);
     }
   }
 

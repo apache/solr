@@ -236,7 +236,7 @@ public abstract class ServletUtils {
     try (var scope = context.with(span).makeCurrent()) {
       assert scope != null; // prevent javac warning about scope being unused
       TraceUtils.setSpan(request, span);
-      TraceUtils.ifNotNoop(
+      TraceUtils.ifValidTraceId(
           span, s -> MDCLoggingContext.setTracerId(s.getSpanContext().getTraceId()));
       tracedExecution.run();
     } catch (ExceptionWhileTracing e) {

@@ -50,6 +50,7 @@ public class ZkConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ZkController zkController;
   private final SolrZkClient zkClient;
+
   /** ZkNode where named configs are stored */
   public static final String CONFIGS_ZKNODE = "/configs";
 
@@ -139,10 +140,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
     try {
-      Boolean existsSolrConfigXml =
-          zkClient.exists(CONFIGS_ZKNODE + "/" + configName + "/solrconfig.xml", true);
-      if (existsSolrConfigXml == null) return false;
-      return existsSolrConfigXml;
+      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Error checking whether config exists", SolrZkClient.checkInterrupted(e));

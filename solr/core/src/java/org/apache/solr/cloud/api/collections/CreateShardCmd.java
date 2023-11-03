@@ -32,6 +32,8 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonAdminParams;
@@ -70,20 +72,8 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     }
     DocCollection collection = clusterState.getCollection(collectionName);
 
-    int numNrtReplicas =
-        message.getInt(
-            NRT_REPLICAS,
-            message.getInt(
-                REPLICATION_FACTOR,
-                collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
-    int numPullReplicas = message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0));
-    int numTlogReplicas = message.getInt(TLOG_REPLICAS, collection.getInt(TLOG_REPLICAS, 0));
-
-    if (numNrtReplicas + numTlogReplicas <= 0) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
-    }
+    ReplicaCount numReplicas = getNumReplicas(collection, message);
+    numReplicas.validate();
 
     if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       // The message has been crafted by CollectionsHandler.CollectionOperation.CREATESHARD_OP and
@@ -114,11 +104,11 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
             SHARD_ID_PROP,
             sliceName,
             ZkStateReader.NRT_REPLICAS,
-            String.valueOf(numNrtReplicas),
+            String.valueOf(numReplicas.get(Replica.Type.NRT)),
             ZkStateReader.TLOG_REPLICAS,
-            String.valueOf(numTlogReplicas),
+            String.valueOf(numReplicas.get(Replica.Type.TLOG)),
             ZkStateReader.PULL_REPLICAS,
-            String.valueOf(numPullReplicas),
+            String.valueOf(numReplicas.get(Replica.Type.PULL)),
             CollectionHandlingUtils.CREATE_NODE_SET,
             message.getStr(CollectionHandlingUtils.CREATE_NODE_SET),
             CommonAdminParams.WAIT_FOR_FINAL_STATE,
@@ -169,5 +159,16 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     log.info("Finished create command on all shards for collection: {}", collectionName);
+  }
+
+  private static ReplicaCount getNumReplicas(DocCollection collection, ZkNodeProps message) {
+    return new ReplicaCount(
+        message.getInt(
+            NRT_REPLICAS,
+            message.getInt(
+                REPLICATION_FACTOR,
+                collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1)))),
+        message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0)),
+        message.getInt(TLOG_REPLICAS, collection.getInt(TLOG_REPLICAS, 0)));
   }
 }

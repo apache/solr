@@ -121,6 +121,7 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness(String dataDirectory, SolrConfig solrConfig, String schemaFile) {
     this(dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
   }
+
   /**
    * @param dataDirectory path for index data, will not be cleaned up
    * @param solrConfig solrconfig instance
@@ -175,7 +176,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public TestHarness(NodeConfig nodeConfig) {
-    this(nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
+    this(nodeConfig, new CorePropertiesLocator(nodeConfig));
   }
 
   /**
@@ -432,6 +433,7 @@ public class TestHarness extends BaseTestHarness {
     public Map<String, String> args = new HashMap<>();
 
     public LocalRequestFactory() {}
+
     /**
      * Creates a LocalSolrQueryRequest based on variable args; for historical reasons, this method
      * has some peculiar behavior:

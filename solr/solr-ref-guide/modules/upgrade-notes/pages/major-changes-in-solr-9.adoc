@@ -46,6 +46,9 @@ If you are planning to upgrade your cluster using a rolling upgrade model (upgra
 
 Rolling upgrades from Solr 8 to Solr 9 require upgrading from Solr 8.7 or newer. If you run an 8.x. version prior to 8.7 we recommend that you first upgrade to 8.11.
 
+Certain commands, like a restore of a collection, might not complete properly if performed *during* an upgrade.
+They may need to be re-attempted after.
+
 *PKI Authentication*
 
 Internode communication secured by PKI Authentication has changed formats. For detailed information, see
@@ -59,10 +62,14 @@ A rolling upgrade from Solr 8 to Solr 9 requires the following multiple restart 
 
 === Reindexing After Upgrade
 
-It is always strongly recommended that you fully reindex your documents after a major version upgrade. For details, see the xref:indexing-guide:reindexing.adoc[] section, which covers several strategies for how to reindex.
+It is always strongly recommended that you fully reindex your documents after a major version upgrade if collection was created in Solr 8. It is mandatory to reindex your documents if collection was created on Solr 7 or older. For details, see the xref:indexing-guide:reindexing.adoc[] section, which covers several strategies for how to reindex.
 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
+
+== Solr 9.5
+=== Curator upgraded to 5.5.0 and requires Zookeeper 3.5.x or higher
+xref:upgrade-notes:major-changes-in-solr-9.html#solr-8-2[Solr 8.2 recommended using Zookeeper 3.5.5] and now with Curator 5.5.0 requires https://curator.apache.org/docs/breaking-changes/[Zookeeper 3.5.x or higher]. This primarily affects users of `hadoop-auth`, but usage of Curator could affect other parts of Solr.
 
 == Solr 9.4
 === The Built-In Config Sets
@@ -79,6 +86,9 @@ Therefore, when using the default settings, nodes that were previously excluded 
 === Embedded Zookeeper
 * The Embedded Zookeeper can now be configured to listen to (or bind to) more hosts than just `localhost`,
 see the  xref:deployment-guide:securing-solr.adoc#network-configuration[Network Configuration documentation] for more information.
+
+=== Circuit Breaker
+* The Circuit Breakers are now pluggable, and you can define multiple circuit breakers including custom ones. The existing `CircuitBreakerManager` is deprecated, and users are encouraged to switch to the new plugins. While the old `CircuitBreakerManager` returned HTTP 503 when a circuit breaker was tripped, the new plugins return HTTP 429.
 
 === Security
 * Since Solr 8.4.1/8.5.0, the `solr.jetty.ssl.verifyClientHostName` sysProp and `SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` envVar have been used incorrectly.
@@ -97,6 +107,9 @@ To disable the always-on trace generation set the system property `solr.alwaysOn
 
 === Learning To Rank
 * The FieldValueFeature class now always uses DocValues when docValues=true is set. A LegacyFieldValueFeature class provides the prior behaviour of not using DocValues when the docValues=true and stored=true field attributes are both set.
+
+=== Other
+* From Solr 9.4 using Lucene 9.8 onwards `DelegatingCollector.finish` clashes with the super class's `LeafCollector.finish` method. Any custom component extending the `DelegatingCollector` needs to rename the `finish` method to `complete` to follow Solr's implementation.
 
 == Solr 9.3
 === Binary Releases

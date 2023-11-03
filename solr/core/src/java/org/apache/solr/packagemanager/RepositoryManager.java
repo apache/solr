@@ -26,6 +26,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -122,13 +123,13 @@ public class RepositoryManager {
     if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {
       packageManager.zkClient.create(
           PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes("UTF-8"),
+          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
           CreateMode.PERSISTENT,
           true);
     } else {
       packageManager.zkClient.setData(
           PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes("UTF-8"),
+          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
           true);
     }
 
@@ -155,7 +156,8 @@ public class RepositoryManager {
       throws UnsupportedEncodingException, KeeperException, InterruptedException {
     if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true)) {
       return new String(
-          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true), "UTF-8");
+          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true),
+          StandardCharsets.UTF_8);
     }
     return "[]";
   }
@@ -191,10 +193,11 @@ public class RepositoryManager {
       }
       String manifestJson = getMapper().writeValueAsString(release.manifest);
       String manifestSHA512 =
-          BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
+          BlobRepository.sha512Digest(
+              ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
       PackageUtils.postFile(
           solrClient,
-          ByteBuffer.wrap(manifestJson.getBytes("UTF-8")),
+          ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)),
           String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"),
           null);
 

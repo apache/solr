@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.containsString;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.hamcrest.MatcherAssert;
@@ -136,7 +137,7 @@ public class RestoreCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.backupId = 123;
     requestBody.repository = "someRepositoryName";
     requestBody.async = "someAsyncId";
-    final var createParams = new CreateCollectionAPI.CreateCollectionRequestBody();
+    final var createParams = new CreateCollectionRequestBody();
     requestBody.createCollectionParams = createParams;
     createParams.config = "someConfig";
     createParams.nrtReplicas = 123;

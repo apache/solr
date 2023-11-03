@@ -86,6 +86,7 @@ public interface CommonParams {
 
   /** "ping" value for SolrPing action */
   String PING = "ping";
+
   // SOLR-4228 end
 
   /** stylesheet to apply to XML results */
@@ -112,19 +113,23 @@ public interface CommonParams {
 
   /** {@link #DEBUG} value indicating an interest in debug output related to timing */
   String TIMING = "timing";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the results (explains)
    */
   String RESULTS = "results";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the Query (parsing,
    * etc.)
    */
   String QUERY = "query";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the distributed tracking
    */
   String TRACK = "track";
+
   /**
    * boolean indicating whether score explanations should structured (true), or plain text (false)
    */
