@@ -1,0 +1,161 @@
+= Cross Datacenter Replication
+
+Solr Cross DC is a simple cross-data-center fail-over solution for Apache Solr.
+
+== Overview
+
+Apache Solr CrossDC is a robust fail-over solution for Apache Solr, facilitating seamless replication of Solr updates across multiple data centers.
+It provides high availability and disaster recovery for your Solr clusters via three key components
+
+CrossDC Solr Module:: A suite of Solr plugins responsible for intercepting Solr requests in the source Solr instance, and then sending them to a distributed queue:
+  * `MirroringUpdateProcessor` plugin intercepts indexing updates,
+  * `MirroringCollectionsHandler` plugin intercepts collection admin requests,
+  * `MirroringConfigSetsHandler` plugin intercepts ConfigSet management requests.
+CrossDC Manager:: A separate application that pulls mirrored requests from the distributed queue and forwards them to a Solr cluster in the backup data center.
+Apache Kafka:: A distributed queue system that links the Module and Manager.
+
+== Setup Procedure
+
+Implementing the Solr CrossDC involves the following steps:
+
+. **Apache Kafka Cluster**: Ensure the availability of an Apache Kafka cluster. This acts as the distributed queue interconnecting data centers.
+. **CrossDC Solr Module**: Install this xref:configuration-guide:solr-modules.adoc[Solr Module] on each node in your Solr cluster (in both primary and backup data centers).
+    * Configure xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml] to reference the new `MirroringUpdateProcessor` and set it up with the Kafka cluster.
+    * Optionally configure the `solr.xml` to use `MirroringCollectionsHandler` and `MirroringConfigSetsHandler` if necessary.
+. **CrossDC Manager**: Install this application in the backup data center, then configure it to connect to both the Kafka and backup Solr clusters.
+
+== Detailed Configuration &amp; Startup
+
+=== CrossDC Solr Module
+
+==== Mirroring Updates
+
+. Install the `cross-dc` xref:configuration-guide:solr-modules.adoc[Solr Module].
+. Add the new UpdateProcessor in your xref:configuration-guide:config-sets.adoc[ConfigSet's] `solrconfig.xml`:
+[source,xml]
+----
+       <updateRequestProcessorChain  name="mirrorUpdateChain" default="true">
+       
+         <processor class="solr.MirroringUpdateRequestProcessorFactory">
+           <str name="bootstrapServers">${bootstrapServers:}</str>
+           <str name="topicName">${topicName:}</str>
+         </processor>
+       
+         <processor class="solr.LogUpdateProcessorFactory" />
+         <processor class="solr.RunUpdateProcessorFactory" />
+       </updateRequestProcessorChain>
+----
+       
+. Add an external version constraint UpdateProcessor to the update chain added to solrconfig.xml to accept user-provided update versions.
+   See the documentation for both xref:configuration-guide:update-request-processors.adoc#general-use-updateprocessorfactories[UpdateRequestProcessorFactories] and the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessor.html[DocBasedVersionConstraintsProcessor].
+[source,xml]
+----
+       <updateRequestProcessorChain  name="mirrorUpdateChain" default="true">
+
+         <processor class="solr.MirroringUpdateRequestProcessorFactory">
+           <str name="bootstrapServers">${bootstrapServers:}</str>
+           <str name="topicName">${topicName:}</str>
+         </processor>
+
+         <processor class="solr.DocBasedVersionConstraintsProcessorFactory">
+           <bool name="ignoreOldUpdates">true</bool>
+           <str name="versionField">my_version_l</str>
+           <str name="deleteVersionParam">del_version</str>
+         </processor>
+
+         <processor class="solr.LogUpdateProcessorFactory" />
+         <processor class="solr.RunUpdateProcessorFactory" />
+       </updateRequestProcessorChain>
+----
+. Start or restart your Solr clusters.
+
+==== Mirroring Collection Admin Requests
+Add the following line to `solr.xml`:
+[source,xml]
+----
+<solr>
+ <str name="collectionsHandler">solr.MirroringCollectionsHandler</str>
+…
+</solr>
+----
+
+In addition to the general properties that determine distributed queue parameters, this handler supports the following properties:
+
+`mirror.collections`:: comma-separated list of collections for which the admin commands will be mirrored. If this list is empty or the property is not set then admin commands for all collections will be mirrored.
+
+==== Mirroring ConfigSet Admin Requests
+Add the following line to `solr.xml`:
+[source,xml]
+----
+
+<solr>
+ <str name="configSetsHandler">solr.MirroringConfigSetsHandler</str>
+…
+</solr>
+----
+
+==== Configuration Properties for the CrossDC Solr Module:
+
+The required configuration properties are:
+
+`bootstrapServers`:: list of servers used to connect to the Kafka cluster
+`topicName`:: Kafka topicName used to indicate which Kafka queue the Solr updates will be pushed on
+
+Optional configuration properties:
+
+`batchSizeBytes`:: maximum batch size in bytes for the Kafka queue
+`bufferMemoryBytes`:: memory allocated by the MirroringURP in total for buffering
+`lingerMs`:: amount of time that the MirroringURP will wait to add to a batch
+`requestTimeout`:: request timeout for the MirroringURP
+`indexUnmirrorableDocs`:: if set to True, updates that are too large for the Kafka queue will still be indexed on the primary.
+`enableDataCompression`:: whether to use compression for data sent over the Kafka queue - can be none (default), gzip, snappy, lz4, or zstd
+`numRetries`:: Setting a value greater than zero will cause the MirroringURP to resend any record whose send fails with a potentially transient error.
+`retryBackoffMs`:: The amount of time to wait before attempting to retry a failed request to a given topic partition.
+`deliveryTimeoutMS`:: Updates sent to the Kafka queue will be failed before the number of retries has been exhausted if the timeout configured by delivery.timeout.ms expires first
+`maxRequestSizeBytes`:: The maximum size of a Kafka queue request in bytes - limits the number of requests that will be sent over the queue in a single batch.
+`mirrorCommits`:: if "true" then standalone commit requests will be mirrored, otherwise they will be processed only locally.
+
+=== CrossDC Manager
+
+. Start the Manager process using the included start script at `solr/cross-dc-manager/bin/cross-dc-manager` (or `cross-dc-manager.cmd` for Windows).
+    - The Manager can also be run via the docker image. The `cross-dc-manager` script will be found on the `$PATH`.
+. Configure the CrossDC Manager with Java system properties using the `JAVA_OPTS` environment variable.
+
+==== Configuration Properties for the CrossDC Manager:
+
+The required configuration properties are:
+
+`bootstrapServers`:: list of Kafka bootstrap servers.
+`topicName`:: Kafka topicName used to indicate which Kafka queue the Solr updates will be pushed to.
+This can be a comma separated list for the Manager if you would like to consume multiple topics.
+`zkConnectString`:: Zookeeper connection string used to connect to Solr.
+
+Optional configuration properties:
+
+`consumerProcessingThreads`:: The number of threads used by the manager to concurrently process updates from the Kafka queue.
+
+Optional configuration properties used when the manager must retry by putting updates back on the Kafka queue:
+
+`batchSizeBytes`:: maximum batch size in bytes for the Kafka queue
+`bufferMemoryBytes`:: memory allocated by the Manager in total for buffering
+`lingerMs`:: amount of time that the ProManagerducer will wait to add to a batch
+`requestTimeout`:: request timeout for the Manager
+`maxPollIntervalMs`:: the maximum delay between invocations of poll() when using consumer group management.
+
+=== Central Configuration Option
+
+Manage configuration centrally in Solr's Zookeeper cluster by placing a properties file called `crossdc.properties` in
+the root Solr Zookeeper znode, eg, `/solr/crossdc.properties`.
+The `bootstrapServers` and `topicName` properties can be included in this file.
+
+* For the CrossDC Solr Module, all crossdc configuration properties can be placed here.
+* For the CrossDC Manager application you can also configure all crossdc properties here, however you will need to set the `zkConnectString` as a system property so that the manager knows where to find the file.
+
+=== Disabling CrossDC via Configuration
+
+To make the Cross DC UpdateProcessor optional in a common `solrconfig.xml`, use the enabled attribute. Setting it to false turns the processor into a NOOP in the chain.
+
+== Limitations
+
+* Delete-By-Query converts to DeleteById, which can be much less efficient for queries matching large numbers of documents.
+ Forwarding a real Delete-By-Query could also be a reasonable option to add if it is not strictly reliant on not being reordered with other requests.
