@@ -107,6 +107,12 @@ A standalone application, included under `bin/`, that monitors Solr instances an
 See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc[] for more information.
 *This is not included in the `slim` distribution.*
 
+cross-dc-manager/::
+A standalone application, included under `bin/`, that manages Cross-Datacenter indexing across SolrClouds.
+// no-commit update when new page is added
+//See the section xref:deployment-guide:indexing-with-crossdc.adoc[] for more information.
+*This is not included in the `slim` distribution.*
+
 docker/::
 This contains a Dockerfile to build a Docker image from the binary distribution, that is compatible with the official image.
 This directory also contains the scripts needed when using Solr inside the Docker image, under the `scripts/` directory.

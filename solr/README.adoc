@@ -26,6 +26,9 @@ Benchmarking module for Solr.
 link:bin/[]::
 Scripts to start up, manage and interact with Solr instances.
 
+linkc:cross-dc-manager/[]::
+Contains a separate application to manage Cross-Datacenter indexing.
+
 link:core/[]::
 Base Solr code.
 
