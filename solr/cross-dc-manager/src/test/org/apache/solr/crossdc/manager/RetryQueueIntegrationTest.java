@@ -74,8 +74,8 @@ import java.util.Properties;
 
     kafkaCluster.createTopic(TOPIC, 1, 1);
 
-    System.setProperty("topicName", TOPIC);
-    System.setProperty("bootstrapServers", kafkaCluster.bootstrapServers());
+    System.setProperty("solr.crossdc.topicName", TOPIC);
+    System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
 
     baseDir1 = createTempDir();
     Path zkDir1 = baseDir1.resolve("zookeeper/server1/data");

@@ -63,9 +63,9 @@ public class Consumer {
         log.info("Consumer startup config properties before adding additional properties from Zookeeper={}",
                 SensitivePropRedactionUtils.flattenAndRedactForLogging(properties));
 
-        String zkConnectString = (String) properties.get("zkConnectString");
+        String zkConnectString = (String) properties.get(ZK_CONNECT_STRING);
         if (zkConnectString == null) {
-            throw new IllegalArgumentException("zkConnectString not specified for producer");
+            throw new IllegalArgumentException("solr.crossdc.zkConnectString not specified for producer");
         }
 
         try (SolrZkClient client = new SolrZkClient.Builder().withUrl(zkConnectString).withTimeout(15, TimeUnit.SECONDS).build()) {

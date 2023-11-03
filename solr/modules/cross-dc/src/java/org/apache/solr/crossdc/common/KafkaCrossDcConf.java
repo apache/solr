@@ -62,51 +62,51 @@ public class KafkaCrossDcConf extends CrossDcConf {
 
   public static final String DEFAULT_PORT = "8090";
 
-  private static final String DEFAULT_GROUP_ID = "SolrCrossDCConsumer";
+  private static final String DEFAULT_GROUP_ID = "SolrCrossDCManager";
 
   private static final String DEFAULT_MIRROR_COLLECTIONS = "";
 
   private static final String DEFAULT_MIRROR_COMMITS = "false";
 
-  public static final String TOPIC_NAME = "topicName";
+  public static final String TOPIC_NAME = "solr.crossdc.topicName";
 
-  public static final String DLQ_TOPIC_NAME = "dlqTopicName";
+  public static final String DLQ_TOPIC_NAME = "solr.crossdc.dlqTopicName";
 
-  public static final String MAX_ATTEMPTS = "maxAttempts";
+  public static final String MAX_ATTEMPTS = "solr.crossdc.maxAttempts";
 
-  public static final String BOOTSTRAP_SERVERS = "bootstrapServers";
+  public static final String BOOTSTRAP_SERVERS = "solr.crossdc.bootstrapServers";
 
-  public static final String BATCH_SIZE_BYTES = "batchSizeBytes";
+  public static final String BATCH_SIZE_BYTES = "solr.crossdc.batchSizeBytes";
 
-  public static final String BUFFER_MEMORY_BYTES = "bufferMemoryBytes";
+  public static final String BUFFER_MEMORY_BYTES = "solr.crossdc.bufferMemoryBytes";
 
-  public static final String LINGER_MS = "lingerMs";
+  public static final String LINGER_MS = "solr.crossdc.lingerMs";
 
-  public static final String REQUEST_TIMEOUT_MS = "requestTimeoutMS";
+  public static final String REQUEST_TIMEOUT_MS = "solr.crossdc.requestTimeoutMS";
 
-  public static final String MAX_REQUEST_SIZE_BYTES = "maxRequestSizeBytes";
+  public static final String MAX_REQUEST_SIZE_BYTES = "solr.crossdc.maxRequestSizeBytes";
 
-  public static final String ENABLE_DATA_COMPRESSION = "enableDataCompression";
+  public static final String ENABLE_DATA_COMPRESSION = "solr.crossdc.enableDataCompression";
 
-  public static final String INDEX_UNMIRRORABLE_DOCS = "indexUnmirrorableDocs";
+  public static final String INDEX_UNMIRRORABLE_DOCS = "solr.crossdc.indexUnmirrorableDocs";
 
-  public static final String SLOW_SUBMIT_THRESHOLD_MS = "slowSubmitThresholdMs";
+  public static final String SLOW_SUBMIT_THRESHOLD_MS = "solr.crossdc.slowSubmitThresholdMs";
 
-  public static final String NUM_RETRIES = "numRetries";
+  public static final String NUM_RETRIES = "solr.crossdc.numRetries";
 
-  public static final String RETRY_BACKOFF_MS = "retryBackoffMs";
+  public static final String RETRY_BACKOFF_MS = "solr.crossdc.retryBackoffMs";
 
-  public static final String CONSUMER_PROCESSING_THREADS = "consumerProcessingThreads";
+  public static final String CONSUMER_PROCESSING_THREADS = "solr.crossdc.consumerProcessingThreads";
 
-  public static final String DELIVERY_TIMEOUT_MS = "deliveryTimeoutMS";
+  public static final String DELIVERY_TIMEOUT_MS = "solr.crossdc.deliveryTimeoutMS";
 
-  public static final String FETCH_MIN_BYTES = "fetchMinBytes";
+  public static final String FETCH_MIN_BYTES = "solr.crossdc.fetchMinBytes";
 
-  public static final String FETCH_MAX_WAIT_MS = "fetchMaxWaitMS";
+  public static final String FETCH_MAX_WAIT_MS = "solr.crossdc.fetchMaxWaitMS";
 
-  public static final String MAX_POLL_RECORDS = "maxPollRecords";
+  public static final String MAX_POLL_RECORDS = "solr.crossdc.maxPollRecords";
 
-  public static final String FETCH_MAX_BYTES = "fetchMaxBytes";
+  public static final String FETCH_MAX_BYTES = "solr.crossdc.fetchMaxBytes";
 
   // The maximum delay between invocations of poll() when using consumer group management. This places
   // an upper bound on the amount of time that the consumer can be idle before fetching more records.
@@ -116,26 +116,26 @@ public class KafkaCrossDcConf extends CrossDcConf {
   // immediately reassigned. Instead, the consumer will stop sending heartbeats and partitions will be
   // reassigned after expiration of <code>session.timeout.ms</code>. This mirrors the behavior of a
   // static consumer which has shutdown.
-  public static final String MAX_POLL_INTERVAL_MS = "maxPollIntervalMs";
+  public static final String MAX_POLL_INTERVAL_MS = "solr.crossdc.maxPollIntervalMs";
 
-  public static final String SESSION_TIMEOUT_MS = "sessionTimeoutMs";
+  public static final String SESSION_TIMEOUT_MS = "solr.crossdc.sessionTimeoutMs";
 
-  public static final String MAX_PARTITION_FETCH_BYTES = "maxPartitionFetchBytes";
+  public static final String MAX_PARTITION_FETCH_BYTES = "solr.crossdc.maxPartitionFetchBytes";
 
-  public static final String ZK_CONNECT_STRING = "zkConnectString";
+  public static final String ZK_CONNECT_STRING = "solr.crossdc.zkConnectString";
 
-  public static final String MIRROR_COLLECTIONS = "mirror.collections";
+  public static final String MIRROR_COLLECTIONS = "solr.crossdc.mirrorCollections";
 
-  public static final String MIRROR_COMMITS = "mirrorCommits";
+  public static final String MIRROR_COMMITS = "solr.crossdc.mirrorCommits";
 
   public static final List<ConfigProperty> CONFIG_PROPERTIES;
   private static final Map<String, ConfigProperty> CONFIG_PROPERTIES_MAP;
 
   public static final List<ConfigProperty> SECURITY_CONFIG_PROPERTIES;
 
-  public static final String PORT = "port";
+  public static final String PORT = "solr.crossdc.manager.port";
 
-  public static final String GROUP_ID = "groupId";
+  public static final String GROUP_ID = "solr.crossdc.groupId";
 
   static {
     List<ConfigProperty> configProperties = new ArrayList<>(

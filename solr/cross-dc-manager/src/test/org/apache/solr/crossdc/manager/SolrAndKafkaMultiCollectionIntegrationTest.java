@@ -81,10 +81,10 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
     kafkaCluster.createTopic(TOPIC, 1, 1);
 
     // in this test we will count on collection properties for topicName and enabled=true
-    System.setProperty("enabled", "false");
-    // System.setProperty("topicName", TOPIC);
+    System.setProperty("solr.crossdc.enabled", "false");
+    // System.setProperty("solr.crossdc.topicName", TOPIC);
 
-    System.setProperty("bootstrapServers", kafkaCluster.bootstrapServers());
+    System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
 
     solrCluster1 = configureCluster(1).addConfig("conf",
@@ -105,8 +105,8 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
 
     // Update the collection property "enabled" to true
     CollectionProperties cp = new CollectionProperties(solrCluster1.getZkClient());
-    cp.setCollectionProperty(COLLECTION, "crossdc.enabled", "true");
-    cp.setCollectionProperty(COLLECTION, "crossdc.topicName", TOPIC);
+    cp.setCollectionProperty(COLLECTION, "solr.crossdc.enabled", "true");
+    cp.setCollectionProperty(COLLECTION, "solr.crossdc.topicName", TOPIC);
     // Reloading the collection
     CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(COLLECTION);
     reloadRequest.process(solrCluster1.getSolrClient());
@@ -188,8 +188,8 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
 
       // Update the collection property "enabled" to true
       CollectionProperties cp = new CollectionProperties(solrCluster1.getZkClient());
-      cp.setCollectionProperty(ALT_COLLECTION, "crossdc.enabled", "true");
-      cp.setCollectionProperty(ALT_COLLECTION, "crossdc.topicName", TOPIC);
+      cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.enabled", "true");
+      cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.topicName", TOPIC);
       // Reloading the collection
       CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(ALT_COLLECTION);
       reloadRequest.process(solrCluster1.getSolrClient());
@@ -242,8 +242,8 @@ public void testParallelUpdatesToMultiCollections() throws Exception {
 
     // Update the collection property "enabled" to true
     CollectionProperties cp = new CollectionProperties(solrCluster1.getZkClient());
-    cp.setCollectionProperty(ALT_COLLECTION, "crossdc.enabled", "true");
-    cp.setCollectionProperty(ALT_COLLECTION, "crossdc.topicName", TOPIC);
+    cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.enabled", "true");
+    cp.setCollectionProperty(ALT_COLLECTION, "solr.crossdc.topicName", TOPIC);
     // Reloading the collection
     CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(ALT_COLLECTION);
     reloadRequest.process(solrCluster1.getSolrClient());

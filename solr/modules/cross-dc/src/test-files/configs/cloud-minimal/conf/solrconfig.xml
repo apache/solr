@@ -110,10 +110,10 @@
 
   <updateRequestProcessorChain  name="mirrorUpdateChain" default="true">
     <processor class="solr.MirroringUpdateRequestProcessorFactory">
-      <bool name="enabled">${enabled:true}</bool>
-      <bool name="indexUnmirrorableDocs">${indexUnmirrorableDocs:false}</bool>
-      <str name="bootstrapServers">${bootstrapServers:}</str>
-      <str name="topicName">${topicName:}</str>
+      <bool name="enabled">${solr.crossdc.enabled:true}</bool>
+      <bool name="indexUnmirrorableDocs">${solr.crossdc.indexUnmirrorableDocs:false}</bool>
+      <str name="bootstrapServers">${solr.crossdc.bootstrapServers:}</str>
+      <str name="topicName">${solr.crossdc.topicName:}</str>
     </processor>
     <processor class="solr.LogUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />

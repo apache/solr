@@ -70,8 +70,8 @@ import java.util.Properties;
     kafkaCluster.createTopic(TOPIC1, 1, 1);
     kafkaCluster.createTopic(TOPIC2, 1, 1);
 
-    // System.setProperty("topicName", null);
-    // System.setProperty("bootstrapServers", null);
+    // System.setProperty("solr.crossdc.topicName", null);
+    // System.setProperty("solr.crossdc.bootstrapServers", null);
 
     Properties props = new Properties();
 
@@ -125,7 +125,7 @@ import java.util.Properties;
 
     System.setProperty(KafkaCrossDcConf.ZK_CONNECT_STRING, solrCluster1.getZkServer().getZkAddress());
     System.setProperty(KafkaCrossDcConf.TOPIC_NAME, TOPIC2);
-    System.setProperty("port", "8383");
+    System.setProperty(KafkaCrossDcConf.PORT, "8383");
     consumer2.start();
   }
 

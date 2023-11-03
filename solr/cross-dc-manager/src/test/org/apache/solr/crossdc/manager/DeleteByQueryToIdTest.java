@@ -69,16 +69,16 @@ import java.util.Properties;
 
     kafkaCluster.createTopic(TOPIC, 1, 1);
 
-    // System.setProperty("topicName", null);
-    // System.setProperty("bootstrapServers", null);
+    // System.setProperty("solr.crossdc.topicName", null);
+    // System.setProperty("solr.crossdc.bootstrapServers", null);
 
     Properties props = new Properties();
 
     solrCluster1 = configureCluster(1).addConfig("conf",
         getFile("configs/cloud-minimal/conf").toPath()).configure();
 
-    props.setProperty("topicName", TOPIC);
-    props.setProperty("bootstrapServers", kafkaCluster.bootstrapServers());
+    props.setProperty("solr.crossdc.topicName", TOPIC);
+    props.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     props.store(baos, "");

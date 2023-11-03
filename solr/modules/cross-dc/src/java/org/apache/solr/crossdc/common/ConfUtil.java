@@ -85,16 +85,16 @@ public class ConfUtil {
   public static void verifyProperties(Map<String, Object> properties) {
     if (properties.get(BOOTSTRAP_SERVERS) == null) {
       log.error(
-          "bootstrapServers not specified for producer in CrossDC configuration props={}",
+          "solr.crossdc.bootstrapServers not specified for producer in CrossDC configuration props={}",
           properties);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "bootstrapServers not specified in configuration");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "solr.crossdc.bootstrapServers not specified in configuration");
     }
 
     if (properties.get(TOPIC_NAME) == null) {
       log.error(
-          "topicName not specified for producer in CrossDC configuration props={}",
+          "solr.crossdc.topicName not specified for producer in CrossDC configuration props={}",
           properties);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "topicName not specified in configuration");
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "solr.crossdc.topicName not specified in configuration");
     }
   }
 }

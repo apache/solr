@@ -90,8 +90,8 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
 
     kafkaCluster.createTopic(TOPIC, 1, 1);
 
-    System.setProperty("topicName", TOPIC);
-    System.setProperty("bootstrapServers", kafkaCluster.bootstrapServers());
+    System.setProperty("solr.crossdc.topicName", TOPIC);
+    System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
 
     solrCluster1 = configureCluster(1).addConfig("conf",
@@ -174,7 +174,7 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
 
   public void testProducerToCloud() throws Exception {
     Properties properties = new Properties();
-    properties.put("bootstrap.servers", kafkaCluster.bootstrapServers());
+    properties.put("solr.crossdc.bootstrap.servers", kafkaCluster.bootstrapServers());
     properties.put("acks", "all");
     properties.put("retries", 1);
     properties.put("batch.size", 1);
@@ -236,7 +236,7 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
     // Create new primary+secondary collection where 'tooLarge' docs ARE indexed on the primary
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(ALT_COLLECTION, "conf", 1, 1)
-            .withProperty("indexUnmirrorableDocs", "true");
+            .withProperty("solr.crossdc.indexUnmirrorableDocs", "true");
     try {
       solrCluster1.getSolrClient().request(create);
       solrCluster2.getSolrClient().request(create);
