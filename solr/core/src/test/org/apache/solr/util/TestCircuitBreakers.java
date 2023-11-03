@@ -92,6 +92,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
 
     List.of(
             -1,
+            SolrException.ErrorCode.TOO_MANY_REQUESTS.code,
             SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,
             SolrException.ErrorCode.BAD_REQUEST.code)
         .forEach(
