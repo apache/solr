@@ -1,0 +1,112 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- Minimal solrconfig.xml with /select, /admin and /update only -->
+
+<config>
+
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <directoryFactory name="DirectoryFactory"
+                    class="${directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+
+  <indexConfig>
+    <mergePolicyFactory class="${mergePolicyFactory:org.apache.solr.index.TieredMergePolicyFactory}">
+      <int name="maxMergeAtOnce">${maxMergeAtOnce:10}</int>
+      <int name="segmentsPerTier">${segmentsPerTier:10}</int>
+      <double name="noCFSRatio">${noCFSRatio:.1}</double>
+    </mergePolicyFactory>
+
+    <useCompoundFile>${useCompoundFile:true}</useCompoundFile>
+
+    <ramBufferSizeMB>${ramBufferSizeMB:160}</ramBufferSizeMB>
+    <maxBufferedDocs>${maxBufferedDocs:250000}</maxBufferedDocs>     <!-- Force the common case to flush by doc count  -->
+    <!-- <ramPerThreadHardLimitMB>60</ramPerThreadHardLimitMB> -->
+
+    <!-- <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">
+      <int name="maxThreadCount">6</int>
+      <int name="maxMergeCount">8</int>
+      <bool name="ioThrottle">false</bool>
+    </mergeScheduler> -->
+
+    <writeLockTimeout>1000</writeLockTimeout>
+    <commitLockTimeout>10000</commitLockTimeout>
+
+    <!-- this sys property is not set by SolrTestCaseJ4 because almost all tests should
+         use the single process lockType for speed - but tests that explicitly need
+         to vary the lockType canset it as needed.
+    -->
+    <lockType>${lockType:single}</lockType>
+
+    <infoStream>${infostream:false}</infoStream>
+
+  </indexConfig>
+
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <commitWithin>
+      <softCommit>${commitwithin.softcommit:true}</softCommit>
+    </commitWithin>
+    <autoCommit>
+      <maxTime>${autoCommit.maxTime:60000}</maxTime>
+    </autoCommit>
+    <updateLog class="${ulog:solr.UpdateLog}" enable="${enable.update.log:true}"/>
+  </updateHandler>
+
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <str name="indent">true</str>
+      <str name="df">text</str>
+    </lst>
+
+  </requestHandler>
+
+  <query>
+    <queryResultCache
+            enabled="${queryResultCache.enabled:false}"
+            class="${queryResultCache.class:solr.CaffeineCache}"
+            size="${queryResultCache.size:0}"
+            initialSize="${queryResultCache.initialSize:0}"
+            autowarmCount="${queryResultCache.autowarmCount:0}"/>
+      <documentCache
+              enabled="${documentCache.enabled:false}"
+              class="${documentCache.class:solr.CaffeineCache}"
+              size="${documentCache.size:0}"
+              initialSize="${documentCache.initialSize:0}"
+              autowarmCount="${documentCache.autowarmCount:0}"/>
+      <filterCache
+              enabled ="${filterCache.enabled:false}"
+              class="${filterCache.class:solr.CaffeineCache}"
+              size="${filterCache.size:1}"
+              initialSize="${filterCache.initialSize:1}"
+              autowarmCount="${filterCache.autowarmCount:0}"
+              async="${filterCache.async:false}"/>
+    <cache name="myPerSegmentCache"
+           enabled="${myPerSegmentCache.enabled:false}"
+           class="${myPerSegmentCache.class:solr.CaffeineCache}"
+           size="${myPerSegmentCache.size:0}"
+           initialSize="${myPerSegmentCache.initialSize:0}"
+           autowarmCount="${myPerSegmentCache.autowarmCount:0}"/>
+  </query>
+
+</config>
+
