@@ -20,18 +20,22 @@ package org.apache.solr.util.stats;
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 
 /**
- * A HttpListenerFactory tracks metrics interesting to solr Inspired and partially copied from
- * dropwizard httpclient library
+ * A HttpListenerFactory tracking metrics and distributed tracing. The Metrics are inspired and
+ * partially copied from dropwizard httpclient library.
  */
 public class InstrumentedHttpListenerFactory implements SolrMetricProducer, HttpListenerFactory {
 
@@ -86,11 +90,23 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   public RequestResponseListener get() {
     return new RequestResponseListener() {
       Timer.Context timerContext;
+      Tracer tracer = GlobalTracer.get();
+      Span span;
+
+      @Override
+      public void onQueued(Request request) {
+        // do tracing onQueued because it's called from Solr's thread
+        span = tracer.activeSpan();
+        TraceUtils.injectTraceContext(request, span);
+      }
 
       @Override
       public void onBegin(Request request) {
         if (solrMetricsContext != null) {
           timerContext = timer(request).time();
+        }
+        if (span != null) {
+          span.log("Client Send"); // perhaps delayed a bit after the span started in enqueue
         }
       }
 
@@ -98,6 +114,9 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
       public void onComplete(Result result) {
         if (timerContext != null) {
           timerContext.stop();
+        }
+        if (result.isFailed() && span != null) {
+          span.log(result.toString()); // logs failure info and interesting stuff
         }
       }
     };
