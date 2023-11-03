@@ -65,8 +65,8 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
   public abstract String getErrorMessage();
 
   /**
-   * Get http error code, defaults to {@link SolrException.ErrorCode#TOO_MANY_REQUESTS} but can be
-   * overridden with system property {@link #SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE}
+   * Get http error code, defaults to 429 (TOO_MANY_REQUESTS) but can be overridden with system
+   * property {@link #SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE}
    */
   public static SolrException.ErrorCode getErrorCode() {
     return SolrException.ErrorCode.getErrorCode(
