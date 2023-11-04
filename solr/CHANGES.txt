@@ -85,6 +85,8 @@ Improvements
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
   REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
 
+* SOLR-17046: SchemaCodecFactory is now the implicit default codec factory.  (hossman)
+
 Optimizations
 ---------------------
 (No changes)
@@ -94,6 +96,9 @@ Bug Fixes
 * SOLR-6853: Allow '/' characters in the text managed by Managed Resources API. (Nikita Rusetskii via Eric Pugh)
 
 * SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
+
+* SOLR-17045: DenseVectorField w/ vectorDimension > 1024 now work automatically with _default configset, due to 
+  implicit use of SchemaCodecFactory.  (hossman)
 
 Dependency Upgrades
 ---------------------

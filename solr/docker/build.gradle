@@ -29,11 +29,12 @@ def isDistSlim = {String dist -> dist.toLowerCase(Locale.ROOT) == "slim"}
 def isImageSlim = { -> isDistSlim(dockerImageSolrDist) }
 def distToSuffix = {String dist -> isDistSlim(dist) ? "-slim" : ""}
 def dockerImageDistSuffix = "${ -> distToSuffix(dockerImageSolrDist)}"
+def dockerImageTagSuffix = "${ -> propertyOrEnvOrDefault("solr.docker.imageTagSuffix", "SOLR_DOCKER_IMAGE_TAG_SUFFIX", '')}"
 def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr") }"
 def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version + dockerImageDistSuffix) }"
-def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}") }"
+def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}${dockerImageTagSuffix}") }"
 def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre-jammy') }"
-def officialDockerImageName = {String dist -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}${distToSuffix(dist)}") }" }
+def officialDockerImageName = {String dist -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}${distToSuffix(dist)}${dockerImageTagSuffix}") }" }
 
 def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId','')) }"
 
@@ -182,7 +183,7 @@ task dockerBuild() {
     project.logger.lifecycle("\tID: \t${ -> dockerImageId }")
     project.logger.lifecycle("\tBase Image: \t${ -> baseDockerImage }")
     project.logger.lifecycle("\tSolr Version: \t${ -> project.version }")
-    project.logger.lifecycle("\tSolr Distribution: \t${dockerImageDistSuffix.isEmpty() ? "Full" : "Slim"}")
+    project.logger.lifecycle("\tSolr Distribution: \t${isImageSlim() ? "Slim" : "Full"}")
   }
 
   outputs.files(imageIdFile)
