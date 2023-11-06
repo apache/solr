@@ -185,4 +185,13 @@ public class TraceUtils {
       req.getSpan().setAttribute(TAG_CLASS, clazz);
     }
   }
+
+  public static Span startCollectionApiCommandSpan(
+      String name, String collection, boolean isAsync) {
+    Tracer tracer = getGlobalTracer();
+    SpanKind kind = isAsync ? SpanKind.PRODUCER : SpanKind.CLIENT;
+    SpanBuilder spanBuilder =
+        tracer.spanBuilder(name).setSpanKind(kind).setAttribute(TAG_DB, collection);
+    return spanBuilder.startSpan();
+  }
 }
