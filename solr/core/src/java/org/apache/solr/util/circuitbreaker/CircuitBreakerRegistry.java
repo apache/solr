@@ -32,6 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,12 +150,12 @@ public class CircuitBreakerRegistry implements Closeable {
   @VisibleForTesting
   public void deregisterAll() throws IOException {
     this.close();
-    globalCircuitBreakerMap.clear();
+    deregisterGlobal();
   }
 
   @VisibleForTesting
   public static void deregisterGlobal() {
-    globalCircuitBreakerMap.clear();
+    closeGlobal();
   }
 
   /**
@@ -198,43 +199,62 @@ public class CircuitBreakerRegistry implements Closeable {
   }
 
   public boolean isEnabled(SolrRequestType requestType) {
-    return getCombinedMap().containsKey(requestType);
+    return circuitBreakerMap.containsKey(requestType)
+        || globalCircuitBreakerMap.containsKey(requestType);
   }
 
   @Override
   public void close() throws IOException {
     synchronized (circuitBreakerMap) {
-      final AtomicInteger closeFailedCounter = new AtomicInteger(0);
-      circuitBreakerMap
-          .values()
-          .forEach(
-              list ->
-                  list.forEach(
-                      it -> {
-                        try {
-                          if (log.isDebugEnabled()) {
-                            log.debug(
-                                "Closed circuit breaker {} for request type(s) {}",
-                                it.getClass().getSimpleName(),
-                                it.getRequestTypes());
-                          }
-                          it.close();
-                        } catch (IOException e) {
-                          if (log.isErrorEnabled()) {
-                            log.error(
-                                String.format(
-                                    Locale.ROOT,
-                                    "Failed to close circuit breaker %s",
-                                    it.getClass().getSimpleName()),
-                                e);
-                          }
-                          closeFailedCounter.incrementAndGet();
-                        }
-                      }));
+      closeCircuitBreakers(
+          circuitBreakerMap.values().stream().flatMap(List::stream).collect(Collectors.toList()));
       circuitBreakerMap.clear();
-      if (closeFailedCounter.get() > 0) {
-        throw new IOException("Failed to close " + closeFailedCounter.get() + " circuit breakers");
-      }
+    }
+  }
+
+  private static void closeGlobal() {
+    synchronized (globalCircuitBreakerMap) {
+      closeCircuitBreakers(
+          globalCircuitBreakerMap.values().stream()
+              .flatMap(List::stream)
+              .collect(Collectors.toList()));
+      globalCircuitBreakerMap.clear();
+    }
+  }
+
+  /**
+   * Close a list of circuit breakers, tracing any failures.
+   *
+   * @throws SolrException if any CB fails to close
+   */
+  private static void closeCircuitBreakers(List<CircuitBreaker> breakers) {
+    final AtomicInteger closeFailedCounter = new AtomicInteger(0);
+    breakers.forEach(
+        it -> {
+          try {
+            if (log.isDebugEnabled()) {
+              log.debug(
+                  "Closed circuit breaker {} for request type(s) {}",
+                  it.getClass().getSimpleName(),
+                  it.getRequestTypes());
+            }
+            it.close();
+          } catch (IOException e) {
+            if (log.isErrorEnabled()) {
+              log.error(
+                  String.format(
+                      Locale.ROOT,
+                      "Failed to close circuit breaker %s",
+                      it.getClass().getSimpleName()),
+                  e);
+            }
+            closeFailedCounter.incrementAndGet();
+          }
+        });
+    if (closeFailedCounter.get() > 0) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed to close " + closeFailedCounter.get() + " circuit breakers");
     }
   }
 
@@ -242,7 +262,7 @@ public class CircuitBreakerRegistry implements Closeable {
    * Return a combined map of local and global circuit breaker maps, joining the two maps in a
    * streaming fashion
    */
-  public Map<SolrRequestType, List<CircuitBreaker>> getCombinedMap() {
+  private Map<SolrRequestType, List<CircuitBreaker>> getCombinedMap() {
     Map<SolrRequestType, List<CircuitBreaker>> combinedMap = new HashMap<>(circuitBreakerMap);
     globalCircuitBreakerMap.forEach(
         (k, v) ->
