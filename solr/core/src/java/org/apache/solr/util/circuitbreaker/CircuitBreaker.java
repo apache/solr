@@ -95,7 +95,7 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
           String.format(
               Locale.ROOT,
               "Invalid error code %s specified for circuit breaker system property %s.",
-              System.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE),
+              strCode,
               SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE));
     }
   }
