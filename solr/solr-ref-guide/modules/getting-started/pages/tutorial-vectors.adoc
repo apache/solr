@@ -25,8 +25,6 @@ This exercise will use the Films example that we looked at previously in Exercis
 === Getting Ready
 
 Make sure you have a running Solr, following the steps in xref:tutorial-films.adoc#restart-solr[].
-Make sure you've created the fields _name_ and _initial_release_date_ in  xref:tutorial-paramsets.adoc#create-a-new-collection[].
-Then go ahead to the next section.
 
 === Preparing for the Vector data
 
@@ -37,18 +35,37 @@ $ bin/solr create -c films
 
 Because we didn't specify a ConfigSet when we created the collection, we will use the `_default` ConfigSet.
 
-First we need to update our schema to add the vector field type.
+First we need to update our schema to add the vector field type, the field to hold the vector values and some supporting fields.
 
 [,console]
 ----
 $ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:application/json' --data-binary '{
   "add-field-type" : {
-    "name":"knn_vector",
+    "name":"knn_vector_10",
     "class":"solr.DenseVectorField",
     "vectorDimension":10,
     "similarityFunction":"cosine",
     "knnAlgorithm":"hnsw"
-  }
+  },
+  "add-field" : [
+      {
+        "name":"film_vector",
+        "type":"knn_vector_10",
+        "indexed":true,
+        "stored":true
+      },
+      {
+        "name":"name",
+        "type":"text_general",
+        "multiValued":false,
+        "stored":true
+      },
+      {
+        "name":"initial_release_date",
+        "type":"pdate",
+        "stored":true
+      }
+    ]  
 }'
 ----
 
@@ -90,37 +107,28 @@ be used as input vector for all the following example queries.
 [-0.1784, 0.0096, -0.1455, 0.4167, -0.1148, -0.0053, -0.0651, -0.0415, 0.0859, -0.1789]
 ```
 
+// Solr URL examples below all have [ and ] characters which, when used with Curl, causes encoding issues so just putting plain http links
+
 Search for the top 10 movies most similar to the target vector (KNN Query for recommendation):
 
-[,console]
-----
-$ curl 'http://localhost:8983/solr/films/query?q={!knn%20f=film_vector%20topK=10}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]'
-----
+       http://localhost:8983/solr/films/query?q={%21knn%20f=film_vector%20topK=10}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]'
 
 * Notice that among the results, there are some animation family movies, such as _Curious George_ and _Bambi_, which makes sense, since the target vector was created with two other animation family movies (_Finding Nemo_ and _Bee Movie_).
 * We also notice that among the results there are two movies that the person already watched. In the next example we will filter then out.
 
 Search for the top 10 movies most similar to the resulting vector, excluding the movies already watched (KNN query with Filter Query):
-[,console]
-----
-$ curl 'http://localhost:8983/solr/films/query?q={!knn%20f=film_vector%20topK=10}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&fq=-id:("%2Fen%2Ffinding_nemo"%20"%2Fen%2Fbee_movie"%20"%2Fen%2Fharry_potter_and_the_chamber_of_secrets_2002")'
-----  
+
+       http://localhost:8983/solr/films/query?q={!knn%20f=film_vector%20topK=10}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&fq=-id:("%2Fen%2Ffinding_nemo"%20"%2Fen%2Fbee_movie"%20"%2Fen%2Fharry_potter_and_the_chamber_of_secrets_2002")
 
   - Search for movies with "cinderella" in the name among the top 50 movies most similar to the target vector (KNN as Filter Query):
 
-[,console]
-----
-$ curl 'http://localhost:8983/solr/films/query?q=name:cinderella&fq={!knn%20f=film_vector%20topK=50}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]'
-----
+       http://localhost:8983/solr/films/query?q=name:cinderella&fq={!knn%20f=film_vector%20topK=50}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]
 
        * There are 3 "cinderella" movies in the index, but only 1 is among the top 50 most similar to the target vector (_Cinderella III: A Twist in Time_).
 
      - Search for movies with "animation" in the genre, and rerank the top 5 documents by combining (sum) the original query score with twice (2x) the similarity to the target vector (KNN with ReRanking):
 
-[,console]
-----
-$ curl 'http://localhost:8983/solr/films/query?q=genre:animation&rqq={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&rq={!rerank%20reRankQuery=$rqq%20reRankDocs=5%20reRankWeight=2}'
-----
+       http://localhost:8983/solr/films/query?q=genre:animation&rqq={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&rq={!rerank%20reRankQuery=$rqq%20reRankDocs=5%20reRankWeight=2}
 
        * To guarantee we calculate the vector similarity score for all the movies, we set `topK=10000`, a number higher than the total number of documents (`1100`).
 
@@ -129,24 +137,15 @@ $ curl 'http://localhost:8983/solr/films/query?q=genre:animation&rqq={!knn%20f=f
 
      - Search for "harry potter" movies, ranking the results by the similarity to the target vector instead of the lexical query score. Beside the `q` parameter, we define a "sub-query" named `q_vector`, that will calculate the similarity score between all the movies (since we set `topK=10000`). Then we use the sub-query parameter name as input for the `sort`, specifying that we want to rank descending according to the vector similarity score (`sort=$q_vector desc`):
 
-[,console]
-----
-$ curl 'http://localhost:8983/solr/films/query?q=name:"harry%20potter"&q_vector={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&sort=$q_vector%20desc'
-----
+       http://localhost:8983/solr/films/query?q=name:"harry%20potter"&q_vector={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&sort=$q_vector%20desc
 
      - Search for movies with "the" in the name, keeping the original lexical query ranking, but returning only movies with similarity to the target vector of 0.8 or higher. Like previously, we define the sub-query `q_vector`, but this time we use it as input for the `frange` filter, specifying that we want documents with at least 0.8 of vector similarity score:
 
-[,console]
-----
-$ curl 'http://localhost:8983/solr/films/query?q=name:the&q_vector={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&fq={!frange%20l=0.8}$q_vector'
-----
+       http://localhost:8983/solr/films/query?q=name:the&q_vector={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&fq={!frange%20l=0.8}$q_vector
 
      - Search for "batman" movies, ranking the results by combining 70% of the original lexical query score and 30% of the similarity to the target vector. Besides the `q` main query and the `q_vector` sub-query, we also specify the `q_lexical` query, which will hold the lexical score of the main `q` query. Then we specify a parameter variable called `score_combined`, which scales the lexical and similarity scores, applies the 0.7 and 0.3 weights, then sum the result. We set the `sort` parameter to order according the combined score, and also set the `fl` parameter so that we can view the intermediary and the combined score values in the response:
 
-[,console]
-----
-$ curl 'http://localhost:8983/solr/films/query?q=name:batman&q_lexical={!edismax%20v=$q}&q_vector={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&score_combined=sum(mul(scale($q_lexical,0,1),0.7),mul(scale($q_vector,0,1),0.3))&sort=$score_combined%20desc&fl=name,score,$q_lexical,$q_vector,$score_combined'
-----
+       http://localhost:8983/solr/films/query?q=name:batman&q_lexical={!edismax%20v=$q}&q_vector={!knn%20f=film_vector%20topK=10000}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]&score_combined=sum(mul(scale($q_lexical,0,1),0.7),mul(scale($q_vector,0,1),0.3))&sort=$score_combined%20desc&fl=name,score,$q_lexical,$q_vector,$score_combined
 
 
 === Exercise 5 Wrap Up
