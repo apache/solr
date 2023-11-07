@@ -58,9 +58,11 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.api.endpoint.SwapCoresApi;
 import org.apache.solr.client.api.model.ListCoreSnapshotsResponse;
 import org.apache.solr.client.api.model.ReloadCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SwapCoresRequestBody;
 import org.apache.solr.client.api.model.UnloadCoreRequestBody;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -77,6 +79,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.ReloadCore;
+import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -155,8 +158,14 @@ public enum CoreAdminOperation implements CoreAdminOp {
       it -> {
         final SolrParams params = it.req.getParams();
         final String cname = params.required().get(CoreAdminParams.CORE);
-        String other = params.required().get(CoreAdminParams.OTHER);
-        it.handler.coreContainer.swap(cname, other);
+        final var swapCoresRequestBody = new SwapCoresRequestBody();
+        swapCoresRequestBody.with = params.required().get(CoreAdminParams.OTHER);
+        ;
+        SwapCoresApi swapCoresApi =
+            new SwapCores(
+                it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
+        SolrJerseyResponse response = swapCoresApi.swapCores(cname, swapCoresRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
 
   RENAME_OP(

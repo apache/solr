@@ -14,5 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** Implementation of File Store. */
-package org.apache.solr.filestore;
+package org.apache.solr.client.api.model;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+public class SwapCoresRequestBody {
+  @Schema(description = "The name of the other core to be swapped.")
+  @JsonProperty
+  public String with;
+
+  @Schema(description = "Request ID to track this action which will be processed asynchronously.")
+  @JsonProperty
+  public String async;
+}

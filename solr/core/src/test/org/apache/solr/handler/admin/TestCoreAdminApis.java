@@ -59,12 +59,6 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
     assertEquals(fromJSONString("{schema : schema.xml}"), params[2]);
 
     TestCollectionAPIs.makeCall(
-        apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{swap:{with: core2}}");
-    params = calls.get("swap");
-    assertEquals("core1", params[0]);
-    assertEquals("core2", params[1]);
-
-    TestCollectionAPIs.makeCall(
         apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{rename:{to: core2}}");
     params = calls.get("rename");
     assertEquals("core1", params[0]);
@@ -83,14 +77,6 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
               in.put("create", invocationOnMock.getArguments());
               return null;
             });
-
-    doAnswer(
-            invocationOnMock -> {
-              in.put("swap", invocationOnMock.getArguments());
-              return null;
-            })
-        .when(mockCC)
-        .swap(any(String.class), any(String.class));
 
     doAnswer(
             invocationOnMock -> {
