@@ -188,6 +188,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   public Set<String> getUrlParamNames() {

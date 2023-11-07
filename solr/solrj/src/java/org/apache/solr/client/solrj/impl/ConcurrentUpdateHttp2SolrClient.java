@@ -149,6 +149,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
+    this.defaultCollection = builder.defaultCollection;
     this.pollQueueTimeMillis = builder.pollQueueTimeMillis;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
@@ -697,6 +698,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   public static class Builder {
     protected Http2SolrClient client;
     protected String baseSolrUrl;
+    protected String defaultCollection;
     protected int queueSize = 10;
     protected int threadCount;
     protected ExecutorService executorService;
@@ -784,6 +786,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
      */
     public Builder neverStreamDeletes() {
       this.streamDeletes = false;
+      return this;
+    }
+
+    /** Sets a default collection for collection-based requests. */
+    public Builder withDefaultCollection(String defaultCollection) {
+      this.defaultCollection = defaultCollection;
       return this;
     }
 
