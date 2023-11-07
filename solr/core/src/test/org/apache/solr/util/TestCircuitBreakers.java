@@ -84,12 +84,6 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
   }
 
   public void testCBAlwaysTripsWithCorrectCode() {
-    removeAllExistingCircuitBreakers();
-
-    CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
-
-    h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
-
     List.of(
             -1,
             SolrException.ErrorCode.TOO_MANY_REQUESTS.code,
@@ -97,10 +91,13 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
             SolrException.ErrorCode.BAD_REQUEST.code)
         .forEach(
             code -> {
+              removeAllExistingCircuitBreakers();
               if (code > 0) {
                 System.setProperty(
                     CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, String.valueOf(code));
               }
+              CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
+              h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
               SolrException ex =
                   expectThrows(
                       SolrException.class,
@@ -108,7 +105,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
                         h.query(req("name:\"john smith\""));
                       });
               assertEquals(
-                  code == -1 ? SolrException.ErrorCode.TOO_MANY_REQUESTS.code : code, ex.code());
+                  (code == -1) ? SolrException.ErrorCode.TOO_MANY_REQUESTS.code : code, ex.code());
             });
     System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
   }
