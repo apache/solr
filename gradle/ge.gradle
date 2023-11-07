@@ -14,5 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** Implementation of File Store. */
-package org.apache.solr.filestore;
+
+def isCIBuild = System.getenv().keySet().find { it ==~ /(?i)((JENKINS|HUDSON)(_\w+)?|CI)/ } != null
+
+gradleEnterprise {
+    server = "https://ge.apache.org"
+    buildScan {
+        capture { taskInputFiles = true }
+        uploadInBackground = !isCIBuild
+        publishAlways()
+        publishIfAuthenticated()
+        obfuscation {
+            ipAddresses { addresses -> addresses.collect { address -> "0.0.0.0"} }
+        }
+    }
+}
+
+buildCache {
+    local {
+        enabled = !isCIBuild
+    }
+
+    remote(gradleEnterprise.buildCache) {
+        enabled = false
+    }
+}
