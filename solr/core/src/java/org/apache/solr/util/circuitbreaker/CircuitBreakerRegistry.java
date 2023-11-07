@@ -234,7 +234,7 @@ public class CircuitBreakerRegistry implements Closeable {
           try {
             if (log.isDebugEnabled()) {
               log.debug(
-                  "Closed circuit breaker {} for request type(s) {}",
+                  "Closing circuit breaker {} for request type(s) {}",
                   it.getClass().getSimpleName(),
                   it.getRequestTypes());
             }
