@@ -76,6 +76,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     super.tearDown();
     dummyMemBreaker.close();
+    removeAllExistingCircuitBreakers();
   }
 
   @After
@@ -84,30 +85,49 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
   }
 
   public void testCBAlwaysTripsWithCorrectCode() {
-    List.of(
-            -1,
-            SolrException.ErrorCode.TOO_MANY_REQUESTS.code,
-            SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,
-            SolrException.ErrorCode.BAD_REQUEST.code)
-        .forEach(
-            code -> {
-              removeAllExistingCircuitBreakers();
-              if (code > 0) {
+    synchronized (this) {
+      List.of(
+              -1,
+              SolrException.ErrorCode.TOO_MANY_REQUESTS.code,
+              SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,
+              SolrException.ErrorCode.BAD_REQUEST.code)
+          .forEach(
+              code -> {
+                removeAllExistingCircuitBreakers();
+                if (code > 0) {
+                  System.setProperty(
+                      CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, String.valueOf(code));
+                }
+                CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
+                h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
+                SolrException ex =
+                    expectThrows(
+                        SolrException.class,
+                        () -> {
+                          h.query(req("name:\"john smith\""));
+                        });
+                assertEquals(
+                    (code == -1) ? SolrException.ErrorCode.TOO_MANY_REQUESTS.code : code,
+                    ex.code());
+                System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+              });
+    }
+  }
+
+  @SuppressWarnings("resource")
+  public void testCBAlwaysTripsInvalidErrorCodeSysProp() {
+    synchronized (this) {
+      List.of("foo", 123, 999, 888)
+          .forEach(
+              code -> {
                 System.setProperty(
                     CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, String.valueOf(code));
-              }
-              CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
-              h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
-              SolrException ex =
-                  expectThrows(
-                      SolrException.class,
-                      () -> {
-                        h.query(req("name:\"john smith\""));
-                      });
-              assertEquals(
-                  (code == -1) ? SolrException.ErrorCode.TOO_MANY_REQUESTS.code : code, ex.code());
-            });
-    System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+                SolrException ex =
+                    expectThrows(SolrException.class, () -> new MockCircuitBreaker(true));
+                assertTrue(ex.getMessage().contains("Invalid error code"));
+                System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+              });
+    }
   }
 
   public void testCBFakeMemoryPressure() throws Exception {
