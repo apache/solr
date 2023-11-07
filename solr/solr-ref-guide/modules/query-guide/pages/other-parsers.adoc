@@ -84,6 +84,7 @@ To avoid caching add either `cache=false` as local parameter, or `"cache":"false
 +
 The number of optional clauses that must match. By default, no optional clauses are necessary for a match
 (unless there are no required clauses). If this parameter is set, then the specified number of `should` clauses is required.
+If this parameter is not set, the usual rules about boolean queries still apply at search time - that is, a boolean query containing no required clauses must still match at least one optional clause.
 
 `excludeTags`::
 +
