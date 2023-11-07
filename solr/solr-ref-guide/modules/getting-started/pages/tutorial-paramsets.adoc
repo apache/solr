@@ -56,10 +56,17 @@ $ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicat
 }'
 ----
 
+[NOTE]
+====
+Without explicitly defining those field types, the _name_ field would have been guessed as a multi-valued string field type
+and _initial_release_date_ would have been guessed as a multi-valued `pdate` type.  It makes more sense with this
+particular data set domain to have the movie name be a single valued general full-text searchable field,
+and for the release date also to be single valued.
+====
 
 === Index the Data
 
-Now that we have updated our Schema, we need to index the sample film data, or, if you already had indexed it, then re-index it to take advantage of the two new field definitions we added.  
+Now that we have updated our Schema, we need to index the sample film data, or, if you already have indexed it, then re-index it to take advantage of the new field definitions we added.  
 Look back at the xref:tutorial-films.adoc#index-sample-film-data[] for the specific steps.
 
 === Let's get Searching!
@@ -68,38 +75,38 @@ Search for 'Batman':
 
 http://localhost:8983/solr/films/query?q=name:batman
 
-* If you get an error about the name field not existing, you haven't yet indexed the data
+* If you get an error about the name field not existing, you haven't yet indexed the data.
 * If you don't get an error, but zero results, chances are that the _name_ field schema type override wasn't set
   before indexing the data the first time (it ended up as a "string" type, requiring exact matching by case even).
   It's easiest to simply reset your environment and try again, ensuring that each step successfully executes.
 
 Show me all 'Super hero' movies:
 
-[source,curl,command,copy]
+[,console]
 ----
 $ curl 'http://localhost:8983/solr/films/query?q=*:*&fq=genre:"Superhero movie"'
 ----
 
 Let's see the distribution of genres across all the movies. See the facet section of the response for the counts:
 
-[source,curl,command,copy]
+[,console]
 ----
 $ curl 'http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre'
 ----
 
 === Time for relevancy tuning with ParamSets :
 
-Now that we can query our data, let's actually use the ParamSets.
+Now that we can query our data, let's actually use the ParamSets to organize our parameters into two experiments.
 
 Search for 'harry potter':
 
 http://localhost:8983/solr/films/query?q=name:harry%20potter
 
 Notice the very first result is the movie _Dumb &amp; Dumberer: When Harry Met Lloyd_?
-That is clearly not what we are looking for.  
+That is clearly not related to any Harry Potter movies.  
 
 Let's set up two relevancy algorithms, using our APIs, and then compare the quality of the results.
-Algorithm *A* will use the `dismax` and a `qf` parameters, and Algorithm *B* will use `dismax`, `qf` and a must match `mm` set to 100%.
+Algorithm *A* will specify using `dismax` and a `qf` parameter, while Algorithm *B* will use `dismax`, `qf` and a must match `mm` set to 100%.
 
 [,console]
 ----
@@ -120,21 +127,21 @@ curl http://localhost:8983/solr/films/config/params -X POST -H 'Content-type:app
 }'
 ----
 
-Now, search for 'harry potter' with Algorithm *A*:
+Search for 'harry potter' with Algorithm *A*:
 
 http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_a
 
-Now we are returning the five results, including the Harry Potter movies, however notice that we still have the _Dumb &amp; Dumberer: When Harry Met Lloyd_ movie coming back?   
+We are returning the five results, including the Harry Potter movies, however notice that we still have the _Dumb &amp; Dumberer: When Harry Met Lloyd_ movie coming back?   
 
 Search for 'harry potter' with Algorithm *B*:
 
 http://localhost:8983/solr/films/query?q=harry%20potter&useParams=algo_b
 
-We are now returning only the four Harry Potter movies, leading to more precise results!
-We can say that we believe Algorithm *B* is better then Algorithm *A*.  
-You can extend this to online A/B testing very easily to confirm with real users.
+We are returning only the four Harry Potter movies, leading to more precise results!
+We can say that we believe Algorithm *B* is better then Algorithm *A*, at least for this one query. 
+You can validate this hypothesis with online A/B testing to confirm with real users that Algorithm *B* is better overall.
 
 
 === Exercise 4 Wrap Up
 
-In this exercise, we used the Schema API to customize the fields that we needed, and then learned how to organize our query parameters into named groups of parameters called ParamSets that we created using the APIs.
+In this exercise, we used the Schema API to create the fields that we needed, and then learned how to organize our query parameters into named groups of parameters called ParamSets that we created using the APIs and used in queries.
