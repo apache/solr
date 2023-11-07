@@ -112,6 +112,16 @@ public class SolrCLI implements CLIO {
           .desc("Recurse (true|false), default is false.")
           .build();
 
+  public static final Option OPTION_CREDENTIALS =
+      Option.builder("u")
+          .longOpt("credentials")
+          .argName("credentials")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
+          .build();
+
   public static void exit(int exitStatus) {
     try {
       System.exit(exitStatus);
@@ -394,15 +404,44 @@ public class SolrCLI implements CLIO {
         && Arrays.asList(UNAUTHORIZED.code, FORBIDDEN.code).contains(((SolrException) exc).code()));
   }
 
-  public static SolrClient getSolrClient(String solrUrl) {
+  public static SolrClient getSolrClient(String solrUrl, String credentials, boolean barePath) {
     // today we require all urls to end in /solr, however in the future we will need to support the
-    // /api url end point instead.
+    // /api url end point instead.   Eventually we want to have this method always
+    // return a bare url, and then individual calls decide if they are /solr or /api
     // The /solr/ check is because sometimes a full url is passed in, like
     // http://localhost:8983/solr/films_shard1_replica_n1/.
-    if (!solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
+    if (!barePath && !solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
       solrUrl = solrUrl + "/solr";
     }
-    return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder(solrUrl)
+            .withMaxConnectionsPerHost(32)
+            .withOptionalBasicAuthCredentials(credentials);
+
+    return builder.build();
+  }
+
+  /**
+   * Helper method for all the places where we assume a /solr on the url.
+   *
+   * @param solrUrl The solr url that you want the client for
+   * @param credentials The username:password for basic auth.
+   * @return The SolrClient
+   */
+  public static SolrClient getSolrClient(String solrUrl, String credentials) {
+    return getSolrClient(solrUrl, credentials, false);
+  }
+
+  public static SolrClient getSolrClient(CommandLine cli, boolean barePath) throws Exception {
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    return getSolrClient(solrUrl, credentials, barePath);
+  }
+
+  public static SolrClient getSolrClient(CommandLine cli) throws Exception {
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    return getSolrClient(solrUrl, credentials, false);
   }
 
   private static final String JSON_CONTENT_TYPE = "application/json";
@@ -474,7 +513,7 @@ public class SolrCLI implements CLIO {
    */
   public static String normalizeSolrUrl(String solrUrl) {
     if (solrUrl != null) {
-      if (solrUrl.indexOf("/solr") > -1) { //
+      if (solrUrl.contains("/solr")) { //
         String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
         CLIO.out(
             "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
@@ -490,6 +529,7 @@ public class SolrCLI implements CLIO {
     }
     return solrUrl;
   }
+
   /**
    * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
    * ZooKeeper.
@@ -530,23 +570,13 @@ public class SolrCLI implements CLIO {
    * up from a running Solr instance based on the solrUrl option.
    */
   public static String getZkHost(CommandLine cli) throws Exception {
+
     String zkHost = cli.getOptionValue("zkHost");
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
 
-    String solrUrl = cli.getOptionValue("solrUrl");
-    if (solrUrl == null) {
-      solrUrl = getDefaultSolrUrl();
-      CLIO.getOutStream()
-          .println(
-              "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
-                  + solrUrl
-                  + ".");
-    }
-    solrUrl = normalizeSolrUrl(solrUrl);
-
-    try (var solrClient = getSolrClient(solrUrl)) {
+    try (SolrClient solrClient = getSolrClient(cli)) {
       // hit Solr to get system info
       NamedList<Object> systemInfo =
           solrClient.request(
@@ -569,9 +599,10 @@ public class SolrCLI implements CLIO {
     return zkHost;
   }
 
-  public static boolean safeCheckCollectionExists(String solrUrl, String collection) {
+  public static boolean safeCheckCollectionExists(
+      String solrUrl, String collection, String credentials) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(solrUrl)) {
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
       NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
       @SuppressWarnings("unchecked")
       List<String> collections = (List<String>) existsCheckResult.get("collections");
@@ -583,9 +614,9 @@ public class SolrCLI implements CLIO {
   }
 
   @SuppressWarnings("unchecked")
-  public static boolean safeCheckCoreExists(String solrUrl, String coreName) {
+  public static boolean safeCheckCoreExists(String solrUrl, String coreName, String credentials) {
     boolean exists = false;
-    try (var solrClient = getSolrClient(solrUrl)) {
+    try (var solrClient = getSolrClient(solrUrl, credentials)) {
       boolean wait = false;
       final long startWaitAt = System.nanoTime();
       do {

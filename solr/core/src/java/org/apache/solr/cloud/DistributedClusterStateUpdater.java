@@ -660,8 +660,10 @@ public class DistributedClusterStateUpdater {
    */
   public static class StateChangeRecorder {
     final List<Pair<MutatingCommand, ZkNodeProps>> mutations;
+
     /** The collection name for which are all recorded commands */
     final String collectionName;
+
     /**
      * {@code true} if recorded commands assume creation of the collection {@code state.json} file.
      * <br>

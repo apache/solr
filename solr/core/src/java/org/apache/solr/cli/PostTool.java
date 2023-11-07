@@ -95,7 +95,8 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc(
                 "sends application/json content as Solr commands to /update instead of /update/json/docs")
-            .build());
+            .build(),
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -132,11 +133,24 @@ public class PostTool extends ToolBase {
     boolean commit = cli.hasOption("commit");
     boolean optimize = cli.hasOption("optimize");
 
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+
     String[] args = cli.getArgs();
 
     SimplePostTool spt =
         new SimplePostTool(
-            mode, solrUrl, auto, type, format, recursive, delay, fileTypes, out, commit, optimize,
+            mode,
+            solrUrl,
+            credentials,
+            auto,
+            type,
+            format,
+            recursive,
+            delay,
+            fileTypes,
+            out,
+            commit,
+            optimize,
             args);
 
     spt.execute();

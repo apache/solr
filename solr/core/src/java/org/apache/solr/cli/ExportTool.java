@@ -126,11 +126,13 @@ public class ExportTool extends ToolBase {
             .hasArg()
             .required(false)
             .desc("Comma separated list of fields to export. By default all fields are fetched.")
-            .build());
+            .build(),
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   public abstract static class Info {
     String baseurl;
+    String credentials;
     String format;
     boolean compress;
     String query;
@@ -145,8 +147,9 @@ public class ExportTool extends ToolBase {
     CloudSolrClient solrClient;
     DocsSink sink;
 
-    public Info(String url) {
+    public Info(String url, String credentials) {
       setUrl(url);
+      setCredentials(credentials);
       setOutFormat(null, "jsonl", false);
     }
 
@@ -155,6 +158,10 @@ public class ExportTool extends ToolBase {
       baseurl = url.substring(0, idx);
       coll = url.substring(idx + 1);
       query = "*:*";
+    }
+
+    public void setCredentials(String credentials) {
+      this.credentials = credentials;
     }
 
     public void setLimit(String maxDocsStr) {
@@ -202,7 +209,13 @@ public class ExportTool extends ToolBase {
     abstract void exportDocs() throws Exception;
 
     void fetchUniqueKey() throws SolrServerException, IOException {
-      solrClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl)).build();
+      Http2SolrClient.Builder builder =
+          new Http2SolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
+
+      solrClient =
+          new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl))
+              .withInternalClientBuilder(builder)
+              .build();
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
@@ -234,7 +247,8 @@ public class ExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
-    Info info = new MultiThreadedRunner(url);
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    Info info = new MultiThreadedRunner(url, credentials);
     info.query = cli.getOptionValue("query", "*:*");
     info.setOutFormat(
         cli.getOptionValue("out"), cli.getOptionValue("format"), cli.hasOption("compress"));
@@ -491,8 +505,8 @@ public class ExportTool extends ToolBase {
     private final long startTime;
 
     @SuppressForbidden(reason = "Need to print out time")
-    public MultiThreadedRunner(String url) {
-      super(url);
+    public MultiThreadedRunner(String url, String credentials) {
+      super(url, credentials);
       startTime = System.currentTimeMillis();
     }
 
@@ -604,7 +618,7 @@ public class ExportTool extends ToolBase {
 
       boolean exportDocsFromCore() throws IOException, SolrServerException {
 
-        try (SolrClient client = new Http2SolrClient.Builder(baseurl).build()) {
+        try (SolrClient client = SolrCLI.getSolrClient(baseurl, credentials)) {
           expectedDocs = getDocCount(replica.getCoreName(), client, query);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();

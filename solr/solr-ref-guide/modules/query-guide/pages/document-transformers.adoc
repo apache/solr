@@ -187,7 +187,7 @@ It is likely to be removed in a future Solr release, so _if you find it has some
 
 When a `\_nest_path_` field is defined, the `childFilter` option supports an experimental syntax to combine a "path syntax" restriction with a more traditional filtering query.
 
-*This syntax is triggered by including a `/` seperated path structure prior to a query that includes a `:` character.*
+*This syntax is triggered by including a `/` separated path structure prior to a query that includes a `:` character.*
 
 When the "path" begins with a `/` character, it restricts matches to documents that have that exist "path" of nested pseudo-field documents, starting at the Root document of the block (even if the document being transformed is not a Root level document)
 

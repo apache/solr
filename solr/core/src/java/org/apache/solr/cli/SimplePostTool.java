@@ -112,6 +112,7 @@ public class SimplePostTool {
   int delay = 0;
   String fileTypes;
   URL solrUrl;
+  String credentials;
   OutputStream out = null;
   String type;
   String format;
@@ -256,10 +257,12 @@ public class SimplePostTool {
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       String user = null;
+      String credentials = null;
       if (url.getUserInfo() != null && url.getUserInfo().trim().length() > 0) {
         user = url.getUserInfo().split(":")[0];
       } else if (System.getProperty(BASIC_AUTH) != null) {
         user = System.getProperty(BASIC_AUTH).trim().split(":")[0];
+        credentials = System.getProperty(BASIC_AUTH).trim();
       }
       if (user != null) {
         info("Basic Authentication enabled, user=" + user);
@@ -290,7 +293,19 @@ public class SimplePostTool {
       boolean optimize = isOn(System.getProperty("optimize", DEFAULT_OPTIMIZE));
 
       return new SimplePostTool(
-          mode, url, auto, type, format, recursive, delay, fileTypes, out, commit, optimize, args);
+          mode,
+          url,
+          credentials,
+          auto,
+          type,
+          format,
+          recursive,
+          delay,
+          fileTypes,
+          out,
+          commit,
+          optimize,
+          args);
     } catch (MalformedURLException e) {
       fatal("System Property 'url' is not a valid URL: " + urlStr);
       return null;
@@ -316,6 +331,7 @@ public class SimplePostTool {
   public SimplePostTool(
       String mode,
       URL url,
+      String credentials,
       boolean auto,
       String type,
       String format,
@@ -328,6 +344,7 @@ public class SimplePostTool {
       String[] args) {
     this.mode = mode;
     this.solrUrl = url;
+    this.credentials = credentials;
     this.auto = auto;
     this.type = type;
     this.format = format;
@@ -1063,19 +1080,21 @@ public class SimplePostTool {
     return success;
   }
 
-  private static void basicAuth(HttpURLConnection urlc) throws Exception {
+  private void basicAuth(HttpURLConnection urlc) throws Exception {
     if (urlc.getURL().getUserInfo() != null) {
       String encoding =
           Base64.getEncoder().encodeToString(urlc.getURL().getUserInfo().getBytes(US_ASCII));
       urlc.setRequestProperty("Authorization", "Basic " + encoding);
-    } else if (System.getProperty(BASIC_AUTH) != null) {
-      String basicauth = System.getProperty(BASIC_AUTH).trim();
-      if (!basicauth.contains(":")) {
-        throw new Exception("System property '" + BASIC_AUTH + "' must be of format user:pass");
+    } else if (credentials != null) {
+      if (!credentials.contains(":")) {
+        throw new Exception("credentials '" + credentials + "' must be of format user:pass");
       }
+      // urlc.setRequestProperty(
+      //    "Authorization",
+      //    "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(UTF_8)));
       urlc.setRequestProperty(
           "Authorization",
-          "Basic " + Base64.getEncoder().encodeToString(basicauth.getBytes(UTF_8)));
+          "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(UTF_8)));
     }
   }
 

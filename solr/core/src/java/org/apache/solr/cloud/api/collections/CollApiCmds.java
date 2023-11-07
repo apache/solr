@@ -69,10 +69,13 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.SP
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -94,6 +97,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,7 +187,52 @@ public class CollApiCmds {
     }
 
     CollApiCmds.CollectionApiCommand getActionCommand(CollectionParams.CollectionAction action) {
-      return commandMap.get(action);
+      var command = commandMap.get(action);
+      if (command != null) {
+        return new TraceAwareCommand(commandMap.get(action));
+      } else {
+        return command;
+      }
+    }
+  }
+
+  public static class TraceAwareCommand implements CollectionApiCommand {
+
+    private final CollectionApiCommand command;
+    private final Context ctx =
+        TraceUtils.extractContext(null); // allows trace id to be generated if missing
+
+    public TraceAwareCommand(CollectionApiCommand command) {
+      this.command = command;
+    }
+
+    @Override
+    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+        throws Exception {
+      final Span localSpan;
+      final Context localContext;
+      if (Span.current().isRecording()) {
+        localSpan = null;
+        localContext = ctx;
+      } else {
+        String collection =
+            Optional.ofNullable(message.getStr(COLLECTION_PROP, message.getStr(NAME)))
+                .orElse("unknown");
+        boolean isAsync = message.containsKey(ASYNC);
+        localSpan =
+            TraceUtils.startCollectionApiCommandSpan(
+                command.getClass().getSimpleName(), collection, isAsync);
+        localContext = ctx.with(localSpan);
+      }
+
+      try (var scope = localContext.makeCurrent()) {
+        assert scope != null; // prevent javac warning about scope being unused
+        command.call(state, message, results);
+      } finally {
+        if (localSpan != null) {
+          localSpan.end();
+        }
+      }
     }
   }
 

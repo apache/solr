@@ -36,7 +36,7 @@ The `postlogs` command reads in Solr's log format and indexes it in a Solr colle
 
 ==== Healthcheck Parameters
 
-`-url <ADDRESS>`::
+`-url <address>`::
 +
 [%autowidth,frame=none]
 |===
@@ -46,7 +46,7 @@ The `postlogs` command reads in Solr's log format and indexes it in a Solr colle
 Address of the collection, example http://localhost:8983/solr/collection1/.
 +
 
-`-rootdir <DIRECTORY>`::
+`-rootdir <directory>`::
 +
 [%autowidth,frame=none]
 |===
@@ -55,6 +55,16 @@ Address of the collection, example http://localhost:8983/solr/collection1/.
 +
 File path to root of the logs directory: All files found under this directory (including sub-directories) will be indexed.
 If the path points to a single log file only that log file will be loaded.
+
+`-u <user:pass>` or `--credentials <user:pass>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password separated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 +
 *Example*: `bin/solr postlogs --url http://localhost:8983/solr/logs --rootdir /var/logs/solrlogs`
