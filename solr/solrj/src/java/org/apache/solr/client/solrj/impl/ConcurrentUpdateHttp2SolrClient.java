@@ -360,6 +360,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
+    if (collection == null) collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       request.setBasePath(basePath);
       return client.request(request, collection);
