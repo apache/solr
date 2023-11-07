@@ -20,8 +20,8 @@ package org.apache.solr.handler;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
-import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
+import static org.apache.solr.filestore.TestDistribFileStore.readFile;
+import static org.apache.solr.filestore.TestDistribFileStore.uploadKey;
 import static org.hamcrest.Matchers.containsString;
 
 import java.io.IOException;
@@ -52,9 +52,9 @@ import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.filestore.PackageStoreAPI;
-import org.apache.solr.filestore.TestDistribPackageStore;
-import org.apache.solr.filestore.TestDistribPackageStore.Fetcher;
+import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.TestDistribFileStore;
+import org.apache.solr.filestore.TestDistribFileStore.Fetcher;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.SolrPackageLoader;
@@ -173,7 +173,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
 
     // let's test the plugin
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         getPlugin("/plugin/my/plugin"), Map.of("/testkey", "testval"));
 
     // now remove the plugin
@@ -201,10 +201,10 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     // let's test the plugin
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         getPlugin("/my-random-name/my/plugin"), Map.of("/method.name", "m1"));
 
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         getPlugin("/my-random-prefix/their/plugin"), Map.of("/method.name", "m2"));
     // now remove the plugin
     postPlugin("{remove : my-random-name}").process(cluster.getSolrClient());
@@ -264,7 +264,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         getPlugin("hello/plugin"),
         Map.of(
             "/config/boolVal", "true", "/config/strVal", "Something", "/config/longVal", "1234"));
@@ -273,7 +273,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     postPlugin(singletonMap("update", p)).process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         getPlugin("hello/plugin"),
         Map.of("/config/boolVal", "true", "/config/strVal", cfg.strVal, "/config/longVal", "1234"));
 
@@ -295,7 +295,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     int version = phaser.getPhase();
 
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     TestPackages.postFileAndWait(
         cluster,
         "runtimecode/containerplugin.v.1.jar.bin",
@@ -343,14 +343,14 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     // verify the plugin creation
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         getPlugin("/cluster/plugin"),
         Map.of(
             "/plugin/myplugin/class", plugin.klass,
             "/plugin/myplugin/version", plugin.version));
     // let's test this now
     Callable<V2Response> invokePlugin = getPlugin("/plugin/my/path");
-    TestDistribPackageStore.assertResponseValues(invokePlugin, Map.of("/myplugin.version", "1.0"));
+    TestDistribFileStore.assertResponseValues(invokePlugin, Map.of("/myplugin.version", "1.0"));
 
     // now let's upload the jar file for version 2.0 of the plugin
     add.version = "2.0";
@@ -363,11 +363,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     // now verify if it is indeed updated
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         getPlugin("/cluster/plugin"),
         Map.of("/plugin/myplugin/class", plugin.klass, "/plugin/myplugin/version", "2.0"));
     // invoke the plugin and test thye output
-    TestDistribPackageStore.assertResponseValues(invokePlugin, Map.of("/myplugin.version", "2.0"));
+    TestDistribFileStore.assertResponseValues(invokePlugin, Map.of("/myplugin.version", "2.0"));
 
     plugin.name = "plugin2";
     plugin.klass = "mypkg:" + C5.class.getName();
@@ -530,7 +530,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + path + "?wt=javabin";
-      TestDistribPackageStore.assertResponseValues(1, new Fetcher(url, jettySolrRunner), expected);
+      TestDistribFileStore.assertResponseValues(1, new Fetcher(url, jettySolrRunner), expected);
     }
   }
 

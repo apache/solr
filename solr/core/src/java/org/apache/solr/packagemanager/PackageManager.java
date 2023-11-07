@@ -57,7 +57,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.filestore.DistribPackageStore;
+import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
@@ -168,7 +168,7 @@ public class PackageManager implements Closeable {
     filesToDelete.add(
         String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"));
     for (String filePath : filesToDelete) {
-      DistribPackageStore.deleteZKFileEntry(zkClient, filePath);
+      DistribFileStore.deleteZKFileEntry(zkClient, filePath);
       String path = "/api/cluster/files" + filePath;
       PackageUtils.printGreen("Deleting " + path);
       solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.DELETE, path));

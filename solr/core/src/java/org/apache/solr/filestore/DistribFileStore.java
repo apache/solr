@@ -54,7 +54,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
-import org.apache.solr.filestore.PackageStoreAPI.MetaData;
+import org.apache.solr.filestore.FileStoreAPI.MetaData;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -62,7 +62,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @NotThreadSafe
-public class DistribPackageStore implements PackageStore {
+public class DistribFileStore implements FileStore {
   static final long MAX_PKG_SIZE =
       Long.parseLong(System.getProperty("max.file.store.size", String.valueOf(100 * 1024 * 1024)));
 
@@ -75,7 +75,7 @@ public class DistribPackageStore implements PackageStore {
 
   private final Path solrHome;
 
-  public DistribPackageStore(CoreContainer coreContainer) {
+  public DistribFileStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     this.solrHome = Paths.get(this.coreContainer.getSolrHome());
   }
@@ -93,9 +93,9 @@ public class DistribPackageStore implements PackageStore {
     while (path.startsWith(File.separator)) { // Trim all leading slashes
       path = path.substring(1);
     }
-    var finalPath = getPackageStoreDirPath(solrHome).resolve(path);
+    var finalPath = getFileStoreDirPath(solrHome).resolve(path);
     // Guard against path traversal by asserting final path is sub path of filestore
-    if (!finalPath.normalize().startsWith(getPackageStoreDirPath(solrHome).normalize())) {
+    if (!finalPath.normalize().startsWith(getFileStoreDirPath(solrHome).normalize())) {
       throw new SolrException(BAD_REQUEST, "Illegal path " + path);
     }
     return finalPath;
@@ -125,7 +125,7 @@ public class DistribPackageStore implements PackageStore {
     }
 
     private void persistToFile(ByteBuffer data, ByteBuffer meta) throws IOException {
-      synchronized (DistribPackageStore.this) {
+      synchronized (DistribFileStore.this) {
         this.metaData = meta;
         this.fileData = data;
         _persistToFile(solrHome, path, data, meta);
@@ -217,7 +217,7 @@ public class DistribPackageStore implements PackageStore {
     }
 
     boolean fetchFromAnyNode() {
-      ArrayList<String> l = coreContainer.getPackageStoreAPI().shuffledNodes();
+      ArrayList<String> l = coreContainer.getFileStoreAPI().shuffledNodes();
       for (String liveNode : l) {
         try {
           String baseurl =
@@ -355,7 +355,7 @@ public class DistribPackageStore implements PackageStore {
     }
     tmpFiles.put(info.path, info);
 
-    List<String> nodes = coreContainer.getPackageStoreAPI().shuffledNodes();
+    List<String> nodes = coreContainer.getFileStoreAPI().shuffledNodes();
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
@@ -498,7 +498,7 @@ public class DistribPackageStore implements PackageStore {
   @Override
   public void delete(String path) {
     deleteLocal(path);
-    List<String> nodes = coreContainer.getPackageStoreAPI().shuffledNodes();
+    List<String> nodes = coreContainer.getFileStoreAPI().shuffledNodes();
     HttpClient client = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
     for (String node : nodes) {
       String baseUrl =
@@ -584,8 +584,8 @@ public class DistribPackageStore implements PackageStore {
     return file.charAt(0) == '.' && file.endsWith(".json");
   }
 
-  public static synchronized Path getPackageStoreDirPath(Path solrHome) {
-    var path = solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
+  public static synchronized Path getFileStoreDirPath(Path solrHome) {
+    var path = solrHome.resolve(FileStoreAPI.FILESTORE_DIRECTORY);
     if (!Files.exists(path)) {
       try {
         Files.createDirectories(path);
@@ -634,7 +634,7 @@ public class DistribPackageStore implements PackageStore {
   // reads local keys file
   private static Map<String, byte[]> _getKeys(Path solrHome) throws IOException {
     Map<String, byte[]> result = new HashMap<>();
-    Path keysDir = _getRealPath(PackageStoreAPI.KEYS_DIR, solrHome);
+    Path keysDir = _getRealPath(FileStoreAPI.KEYS_DIR, solrHome);
 
     File[] keyFiles = keysDir.toFile().listFiles();
     if (keyFiles == null) return result;
