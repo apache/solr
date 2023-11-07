@@ -29,12 +29,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
@@ -216,6 +219,30 @@ public class NodeConfig {
     final SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     initModules(loader, null);
     nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
+
+    // TODO: Only job of this block is to
+    //  delay starting a solr core to satisfy
+    //  ZkFailoverTest test case...
+    String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
+    if (StrUtils.isNotNullOrEmpty(zkHost)) {
+      int startUpZkTimeOut = 1000 * Integer.getInteger("waitForZk", 0);
+      if (startUpZkTimeOut == 0) {
+        startUpZkTimeOut = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+      }
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(zkHost)
+              .withTimeout(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
+              .withSolrClassLoader(loader)
+              .build()) {
+        zkClient.exists("/configs", true);
+      } catch (Exception e) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR, "Error occurred while testing zookeeper connection", e);
+      }
+    }
+
     return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
   }
 
