@@ -20,11 +20,12 @@
 [[exercise-5]]
 == Exercise 5: Using Vectors in Solr
 
-This exercise will use the Films example that we looked at previously in Exercise  4.
+This exercise will use the Films example that we looked at previously in Exercise 4.
 
 === Getting Ready
 
 Make sure you have a running Solr, following the steps in xref:tutorial-films.adoc#restart-solr[].
+Make sure you've created the fields _name_ and _initial_release_date_ in  xref:tutorial-paramsets.adoc#create-a-new-collection[].
 Then go ahead to the next section.
 
 === Preparing for the Vector data
@@ -84,43 +85,6 @@ Before making the queries, we define an example target vector, simulating a pers
 watched 3 movies: _Finding Nemo_, _Bee Movie_, and _Harry Potter and the Chamber of Secrets_. 
 We get the vector of each movie, then calculate the resulting average vector, which will 
 be used as input vector for all the following example queries.
-
-CAN WE DEMO A QUERY?
-
-q=name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"
-
-search(films,
-       qt="/select",
-       q="name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"",
-       fl="id,name,film_vector")
-
-       
-select(      
-  search(films,
-       qt="/select",
-       q="name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"",
-       fl="id,name,film_vector"),
-  film_vector
-  )
-
-  let(
-    a=matrix(array(1, 2), array(4, 5)),
-      b=scalarAdd(10, a)
-      )
-
-      let(
-        a=matrix(  
-
-  
-        
-select(      
-  search(films,
-        qt="/select",
-        q="name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"",
-        fl="id,name,film_vector"),
-  film_vector,
-  mult(film_vector, 10) as new_film_vector
-  )
         
 ```
 [-0.1784, 0.0096, -0.1455, 0.4167, -0.1148, -0.0053, -0.0651, -0.0415, 0.0859, -0.1789]
