@@ -78,9 +78,10 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin, Clos
 
   private static SolrException.ErrorCode resolveExceptionErrorCode() {
     int intCode = SolrException.ErrorCode.TOO_MANY_REQUESTS.code;
-    if (System.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE) != null) {
+    String strCode = System.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+    if (strCode != null) {
       try {
-        intCode = Integer.parseInt(System.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE));
+        intCode = Integer.parseInt(strCode);
       } catch (NumberFormatException nfe) {
         intCode = SolrException.ErrorCode.UNKNOWN.code;
       }
