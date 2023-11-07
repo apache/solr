@@ -22,6 +22,9 @@ Improvements
 
 * SOLR-16943: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient (Alex Deparvu, David Smiley)
 
+* SOLR-16397: Swap core v2 endpoints have been updated to be more REST-ful.
+  SWAP is now available at `POST /api/cores/coreName/swap` (Sanjay Dutt via Jason Gerlowski)
+
 Optimizations
 ---------------------
 (No changes)
