@@ -244,7 +244,7 @@ public class CircuitBreakerRegistry implements Closeable {
               log.error(
                   String.format(
                       Locale.ROOT,
-                      "Failed to close circuit breaker %s for request type(s) {}",
+                      "Failed to close circuit breaker %s for request type(s) %s",
                       it.getClass().getSimpleName(),
                       it.getRequestTypes()),
                   e);
