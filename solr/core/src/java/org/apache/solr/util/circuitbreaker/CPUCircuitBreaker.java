@@ -56,11 +56,6 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
   }
 
   @Override
-  public void init(NamedList<?> args) {
-    super.init(args);
-  }
-
-  @Override
   public boolean isTripped() {
     if (enabled == null) {
       double localSeenCPUUsage = calculateLiveCPUUsage();
