@@ -20,7 +20,6 @@ package org.apache.solr.util.circuitbreaker;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import java.lang.invoke.MethodHandles;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -38,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private Boolean enabled = null;
+  private boolean enabled = false;
   private double cpuUsageThreshold;
   private CoreContainer cc;
 
@@ -53,24 +52,11 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
   public CPUCircuitBreaker(CoreContainer coreContainer) {
     super();
     this.cc = coreContainer;
+    enableIfSupported();
   }
 
   @Override
   public boolean isTripped() {
-    if (enabled == null) {
-      double localSeenCPUUsage = calculateLiveCPUUsage();
-
-      if (localSeenCPUUsage < 0) {
-        String msg =
-            "Initialization failure for CPU circuit breaker. Unable to get 'systemCpuLoad', not supported by the JVM?";
-        if (log.isErrorEnabled()) {
-          log.error(msg);
-        }
-        enabled = false;
-      } else {
-        enabled = true;
-      }
-    }
     if (!enabled) {
       if (log.isDebugEnabled()) {
         log.debug("CPU circuit breaker is disabled due to initialization failure.");
@@ -142,5 +128,19 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
   @Override
   public void inform(SolrCore core) {
     this.cc = core.getCoreContainer();
+    enableIfSupported();
+  }
+
+  private void enableIfSupported() {
+    if (calculateLiveCPUUsage() < 0) {
+      String msg =
+          "Initialization failure for CPU circuit breaker. Unable to get 'systemCpuLoad', not supported by the JVM?";
+      if (log.isErrorEnabled()) {
+        log.error(msg);
+      }
+      enabled = false;
+    } else {
+      enabled = true;
+    }
   }
 }
