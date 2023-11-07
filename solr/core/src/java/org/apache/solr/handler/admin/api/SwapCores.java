@@ -43,9 +43,8 @@ public class SwapCores extends CoreAdminAPIBase implements SwapCoresApi {
   public SolrJerseyResponse swapCores(String coreName, final SwapCoresRequestBody requestBody)
       throws Exception {
     ensureRequiredParameterProvided("coreName", coreName);
-    if (requestBody == null || requestBody.with == null) {
-      ensureRequiredParameterProvided("with", null);
-    }
+    ensureRequiredRequestBodyProvided(requestBody);
+    ensureRequiredParameterProvided("with", requestBody.with);
     SolrJerseyResponse solrJerseyResponse = instantiateJerseyResponse(SolrJerseyResponse.class);
     return handlePotentiallyAsynchronousTask(
         solrJerseyResponse,
