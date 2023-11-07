@@ -66,14 +66,13 @@ public class CircuitBreakerRegistry implements Closeable {
 
   private static void initGlobal(CoreContainer coreContainer) {
     // Read system properties to register global circuit breakers for update and query:
-    // solr.circuitbreaker.update.cpu = 50
+    // Example: solr.circuitbreaker.update.cpu = 50
     System.getProperties().keySet().stream()
         .map(k -> SYSPROP_REGEX.matcher(k.toString()))
         .filter(Matcher::matches)
         .collect(Collectors.groupingBy(m -> m.group(2) + ":" + System.getProperty(m.group(0))))
         .forEach(
             (breakerAndValue, breakers) -> {
-              log.warn("Got entry {} for global circuit breaker", breakerAndValue);
               CircuitBreaker breaker;
               String[] breakerAndValueArr = breakerAndValue.split(":");
               switch (breakerAndValueArr[0]) {
