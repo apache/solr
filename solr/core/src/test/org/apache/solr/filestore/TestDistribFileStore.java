@@ -77,7 +77,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   }
 
   @Test
-  public void testPackageStoreManagement() throws Exception {
+  public void testFileStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
             .withJettyConfig(jetty -> jetty.enableV2(true))
