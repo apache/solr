@@ -107,6 +107,25 @@ be used as input vector for all the following example queries.
 [-0.1784, 0.0096, -0.1455, 0.4167, -0.1148, -0.0053, -0.0651, -0.0415, 0.0859, -0.1789]
 ```
 
+[NOTE]
+====
+Interested in calculating the vector using Solr's streaming capability?   Try out:
+```
+let(
+  a=select(      
+        search(films,
+          qt="/select",
+          q="name:"Finding Nemo" OR name:"Bee Movie" OR name:"Harry Potter and the Chamber of Secrets"",
+          fl="id,name,film_vector"),
+        film_vector),
+  b=col(a, film_vector),
+  m=matrix(valueAt(b, 0), valueAt(b, 1), valueAt(b, 2)),
+  average=scalarDivide(3, sumColumns(m))
+  )
+```
+====
+
+
 // Solr URL examples below all have [ and ] characters which, when used with Curl, causes encoding issues so just putting plain http links
 
 Search for the top 10 movies most similar to the target vector (KNN Query for recommendation):
