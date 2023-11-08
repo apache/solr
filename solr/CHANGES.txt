@@ -29,6 +29,8 @@ Improvements
 
 * SOLR-17011: Add tracing spans to internal collection commands (Alex Deparvu)
 
+* SOLR-17041: Make CommitTracker currentTlogSize lazy (Alex Deparvu)
+
 Optimizations
 ---------------------
 (No changes)
