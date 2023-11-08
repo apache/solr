@@ -34,7 +34,6 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
