@@ -31,9 +31,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.hamcrest.MatcherAssert;
@@ -114,6 +116,20 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
     }
   }
 
+  public void testGlobalCBAlwaysTrips() {
+    removeAllExistingCircuitBreakers();
+
+    CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
+
+    CircuitBreakerRegistry.registerGlobal(circuitBreaker);
+
+    expectThrows(
+        SolrException.class,
+        () -> {
+          h.query(req("name:\"john smith\""));
+        });
+  }
+
   @SuppressWarnings("resource")
   public void testCBAlwaysTripsInvalidErrorCodeSysProp() {
     synchronized (this) {
@@ -177,7 +193,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
   }
 
   public void testFakeCPUCircuitBreaker() {
-    CPUCircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(h.getCore());
+    CPUCircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(h.getCore().getCoreContainer());
     circuitBreaker.setThreshold(75);
 
     assertThatHighQueryLoadTrips(circuitBreaker, 5);
@@ -351,8 +367,8 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
   }
 
   private static class FakeCPUCircuitBreaker extends CPUCircuitBreaker {
-    public FakeCPUCircuitBreaker(SolrCore core) {
-      super(core);
+    public FakeCPUCircuitBreaker(CoreContainer coreContainer) {
+      super(coreContainer);
     }
 
     @Override
