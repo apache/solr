@@ -34,6 +34,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
@@ -43,8 +44,20 @@ import org.apache.solr.core.DirectoryFactory;
  * is exposed via a local file-system interface e.g. NFS).
  */
 public class LocalFileSystemRepository implements BackupRepository {
+  public static final String PARAM_SOLR_BACKUP_REPOSITORY_LOCALFS_ENABLED =
+      "solr.backup.repository.localfs.enabled";
 
   private NamedList<?> config = null;
+
+  public LocalFileSystemRepository() {
+    if (!Boolean.getBoolean(PARAM_SOLR_BACKUP_REPOSITORY_LOCALFS_ENABLED)) {
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE,
+          "LocalFileSystemRepository is disabled. Set -D"
+              + PARAM_SOLR_BACKUP_REPOSITORY_LOCALFS_ENABLED
+              + "=true to enable it.");
+    }
+  }
 
   @Override
   public void init(NamedList<?> args) {

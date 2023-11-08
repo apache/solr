@@ -113,6 +113,10 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     errorBackup(solrClient);
 
     errorRestore(solrClient);
+    System.clearProperty(LocalFileSystemRepository.PARAM_SOLR_BACKUP_REPOSITORY_LOCALFS_ENABLED);
+    errorWhenDisabled();
+    System.setProperty(
+        LocalFileSystemRepository.PARAM_SOLR_BACKUP_REPOSITORY_LOCALFS_ENABLED, "true");
   }
 
   private void errorRestore(CloudSolrClient solrClient) throws SolrServerException, IOException {
@@ -145,6 +149,16 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
       fail("This request should have failed since omitting repo, picks up default poisoned.");
     } catch (SolrException ex) {
       assertEquals(ErrorCode.SERVER_ERROR.code, ex.code());
+    }
+  }
+
+  private void errorWhenDisabled() {
+    try {
+      //noinspection resource
+      new LocalFileSystemRepository();
+      fail("Should not have been able to create LocalFileSystemRepository since its disabled.");
+    } catch (SolrException ex) {
+      assertEquals(ErrorCode.INVALID_STATE.code, ex.code());
     }
   }
 

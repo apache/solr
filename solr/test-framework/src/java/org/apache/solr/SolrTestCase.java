@@ -34,6 +34,7 @@ import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
@@ -119,6 +120,8 @@ public class SolrTestCase extends LuceneTestCase {
   public static void beforeSolrTestCase() {
     final String existingValue =
         System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+    System.setProperty(
+        LocalFileSystemRepository.PARAM_SOLR_BACKUP_REPOSITORY_LOCALFS_ENABLED, "true");
     if (null != existingValue) {
       log.info(
           "Test env includes configset dir system property '{}'='{}'",
