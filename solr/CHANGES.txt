@@ -87,7 +87,12 @@ Improvements
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
   REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
 
+* SOLR-16907: Fail when parsing an invalid custom permission definition from security.json (janhoy, Uwe Schindler)
+
 * SOLR-17046: SchemaCodecFactory is now the implicit default codec factory.  (hossman)
+
+* SOLR-16397: Swap core v2 endpoints have been updated to be more REST-ful.
+  SWAP is now available at `POST /api/cores/coreName/swap` (Sanjay Dutt via Jason Gerlowski)
 
 Optimizations
 ---------------------
@@ -99,7 +104,7 @@ Bug Fixes
 
 * SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
 
-* SOLR-17045: DenseVectorField w/ vectorDimension > 1024 now work automatically with _default configset, due to 
+* SOLR-17045: DenseVectorField w/ vectorDimension > 1024 now work automatically with _default configset, due to
   implicit use of SchemaCodecFactory.  (hossman)
 
 Dependency Upgrades
