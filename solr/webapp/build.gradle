@@ -26,6 +26,7 @@ configurations {
   war {}
   serverLib
   solrCore
+  generatedJSClient
 }
 
 dependencies {
@@ -34,6 +35,8 @@ dependencies {
   serverLib project(path: ":solr:server", configuration: "serverLib")
   solrCore project(":solr:core")
   implementation(configurations.solrCore - configurations.serverLib)
+
+  generatedJSClient project(path: ":solr:api", configuration: "jsClient")
 }
 
 war {
@@ -44,6 +47,20 @@ war {
   exclude "libs/angular-utf8-base.js"
   exclude "libs/angular.js"
   exclude "libs/chosen.jquery.js"
+
+  from (configurations.generatedJSClient, {
+    include "src/**"
+    eachFile {
+      it.path = it.path.replace("src", "solr")
+    }
+    includeEmptyDirs false
+    into "libs"
+  })
+
+  from (configurations.generatedJSClient, {
+    include "README.md"
+    into "libs/solr"
+  })
 }
 
 // Expose 'war' archive as an artifact so that it can be packaged in the distribution.
