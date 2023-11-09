@@ -994,14 +994,19 @@ public class HttpSolrCall {
   private void writeResponseWithTracing(
       QueryResponseWriter responseWriter, SolrQueryResponse solrResponse, String contentType)
       throws IOException {
-    String writerName = responseWriter.getClass().getSimpleName();
-    Span span = TraceUtils.startResponseWriterSpan(req, writerName, contentType);
-    try (var scope = span.makeCurrent()) {
-      assert scope != null; // prevent javac warning about scope being unused
+    if (Span.current().isRecording()) {
+      String writerName = responseWriter.getClass().getSimpleName();
+      Span span = TraceUtils.startResponseWriterSpan(req, writerName, contentType);
+      try (var scope = span.makeCurrent()) {
+        assert scope != null; // prevent javac warning about scope being unused
+        QueryResponseWriterUtil.writeQueryResponse(
+            response.getOutputStream(), responseWriter, solrReq, solrResponse, contentType);
+      } finally {
+        span.end();
+      }
+    } else {
       QueryResponseWriterUtil.writeQueryResponse(
           response.getOutputStream(), responseWriter, solrReq, solrResponse, contentType);
-    } finally {
-      span.end();
     }
   }
 

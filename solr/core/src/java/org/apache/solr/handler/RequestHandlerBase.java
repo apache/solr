@@ -247,13 +247,17 @@ public abstract class RequestHandlerBase
 
   private void handleRequestBodyWithTracing(SolrQueryRequest req, SolrQueryResponse rsp)
       throws Exception {
-    String handlerName = this.getClass().getSimpleName();
-    Span span = TraceUtils.startRequestHandlerSpan(req, handlerName);
-    try (var scope = span.makeCurrent()) {
-      assert scope != null; // prevent javac warning about scope being unused
+    if (Span.current().isRecording()) {
+      String handlerName = this.getClass().getSimpleName();
+      Span span = TraceUtils.startRequestHandlerSpan(req, handlerName);
+      try (var scope = span.makeCurrent()) {
+        assert scope != null; // prevent javac warning about scope being unused
+        handleRequestBody(req, rsp);
+      } finally {
+        span.end();
+      }
+    } else {
       handleRequestBody(req, rsp);
-    } finally {
-      span.end();
     }
   }
 
