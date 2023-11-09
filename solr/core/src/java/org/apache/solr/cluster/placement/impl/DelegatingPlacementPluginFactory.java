@@ -28,13 +28,18 @@ public final class DelegatingPlacementPluginFactory
   private volatile PlacementPluginFactory<? extends PlacementPluginConfig> delegate;
   // support for tests to make sure the update is completed
   private volatile Phaser phaser;
+  private final PlacementPluginFactory<?> defaultPlacementPluginFactory;
+
+  public DelegatingPlacementPluginFactory(PlacementPluginFactory<?> defaultPlacementPluginFactory) {
+    this.defaultPlacementPluginFactory = defaultPlacementPluginFactory;
+  }
 
   @Override
   public PlacementPlugin createPluginInstance() {
     if (delegate != null) {
       return delegate.createPluginInstance();
     } else {
-      return null;
+      return defaultPlacementPluginFactory.createPluginInstance();
     }
   }
 
