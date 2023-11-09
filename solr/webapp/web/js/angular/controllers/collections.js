@@ -202,8 +202,15 @@ solrAdminApp.controller('CollectionsController',
 
       $scope.deleteCollection = function() {
         if ($scope.collection.name == $scope.collectionDeleteConfirm) {
-            Collections.delete({name: $scope.collection.name}, function (data) {
-                $location.path("/~collections");
+            // TODO Currently doesn't work because of import/module problems
+            let deleteApi = new CollectionsApi();
+            deleteApi.deleteCollection($scope.collection.name, {}, function(error, data, response) {
+                if (error) {
+                    console.error(error);
+                } else {
+                    console.log('API called successfully. Returned data: ' + data); // TODO remove after debugging
+                    $location.path("/~collections")
+                }
             });
         } else {
             $scope.deleteMessage = "Collection names do not match.";
