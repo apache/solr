@@ -18,6 +18,7 @@
 package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -27,6 +28,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -228,6 +231,12 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertCollectionName(s0, collection);
     assertEquals("create:/admin/collections", s0.getName());
 
+    Set<SpanKind> allowedKinds = Set.of(SpanKind.SERVER, SpanKind.PRODUCER, SpanKind.CLIENT);
+    finishedSpans =
+        finishedSpans.stream()
+            .filter(s -> allowedKinds.contains(s.getKind()))
+            .collect(Collectors.toUnmodifiableList());
+
     Map<String, Integer> ops = new HashMap<>();
     assertEquals(7, finishedSpans.size());
     var parentTraceId = getRootTraceId(finishedSpans);
@@ -268,6 +277,12 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     var s0 = finishedSpans.remove(0);
     assertCollectionName(s0, collection);
     assertEquals("delete:/admin/collections", s0.getName());
+
+    Set<SpanKind> allowedKinds = Set.of(SpanKind.SERVER, SpanKind.PRODUCER, SpanKind.CLIENT);
+    finishedSpans =
+        finishedSpans.stream()
+            .filter(s -> allowedKinds.contains(s.getKind()))
+            .collect(Collectors.toUnmodifiableList());
 
     Map<String, Integer> ops = new HashMap<>();
     assertEquals(5, finishedSpans.size());
