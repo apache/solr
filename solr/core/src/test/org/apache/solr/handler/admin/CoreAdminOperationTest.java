@@ -167,23 +167,29 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRenameMissingCoreParamResultsIn400SolrException() {
+    final var coreAdminHandler = mock(CoreAdminHandler.class);
+    final var callInfo1 = new CoreAdminHandler.CallInfo(coreAdminHandler, mockRequest, null, null);
+
     final Map<String, String> params = new HashMap<>();
     params.put("other", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
     Exception ex =
-        expectThrows(Exception.class, () -> CoreAdminOperation.RENAME_OP.execute(callInfo));
+        expectThrows(Exception.class, () -> CoreAdminOperation.RENAME_OP.execute(callInfo1));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
 
   @Test
   public void testRenameMissingOtherParamResultsIn400SolrException() {
+    final var coreAdminHandler = mock(CoreAdminHandler.class);
+    final var callInfo1 = new CoreAdminHandler.CallInfo(coreAdminHandler, mockRequest, null, null);
+
     final Map<String, String> params = new HashMap<>();
     params.put("core", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
     Exception ex =
-        expectThrows(Exception.class, () -> CoreAdminOperation.RENAME_OP.execute(callInfo));
+        expectThrows(Exception.class, () -> CoreAdminOperation.RENAME_OP.execute(callInfo1));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
 

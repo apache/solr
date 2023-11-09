@@ -349,9 +349,19 @@ This parameter is required in v1, and part of the url in the v2 API.
 
 The `RENAME` action changes the name of a Solr core.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-rename]
+====
+[.tab-label]*V1 API*
+[source,bash]
+----
 `admin/cores?action=RENAME&core=_core-name_&other=_other-core-name_`
+----
+====
+--
 
-=== RENAME Parameters
+=== RENAME V1 API Parameters
 
 `core`::
 +
@@ -381,6 +391,40 @@ If the persistent attribute of `<solr>` is `true`, the new name will be written 
 +
 Request ID to track this action which will be processed asynchronously.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v2coreadmin-rename]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/_core-name_/rename -H 'Content-Type: application/json' -d '
+  {
+    "to": "_other-core-name_"
+  }
+'
+----
+====
+--
+=== RENAME V2 API Request Body Parameters
+`to`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The new name for the Solr core.
+If the persistent attribute of `<solr>` is `true`, the new name will be written to `solr.xml` as the `name` attribute of the `<core>` attribute.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be processed asynchronously.
 
 [[coreadmin-swap]]
 == SWAP
