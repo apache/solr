@@ -145,7 +145,7 @@ To enable and configure the CPU utilization based circuit breaker:
 .Global in `solr.in.sh`
 [source,bash]
 ----
-SOLR_CIRCUITBREAKER_QUERY_LOADAVG=75
+SOLR_CIRCUITBREAKER_QUERY_LOADAVG=8.0
 ----
 
 The triggering threshold is a floating point number matching load average.
@@ -179,8 +179,8 @@ This would prevent expensive bulk updates from impacting search. Note also the s
 .Global in `solr.in.sh`
 [source,bash]
 ----
-SOLR_CIRCUITBREAKER_QUERY_CPU=75
-SOLR_CIRCUITBREAKER_UPDATE_CPU=75
+SOLR_CIRCUITBREAKER_UPDATE_CPU=80
+SOLR_CIRCUITBREAKER_QUERY_CPU=95
 ----
 
 == Performance Considerations
