@@ -140,7 +140,9 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     System.clearProperty("solr.allowPaths");
 
     PluginInfo replicaPlacementFactoryConfig = cfg.getReplicaPlacementFactoryConfig();
-    assertEquals("org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory", replicaPlacementFactoryConfig.className);
+    assertEquals(
+        "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
+        replicaPlacementFactoryConfig.className);
     assertEquals(1, replicaPlacementFactoryConfig.initArgs.size());
     assertEquals(10, replicaPlacementFactoryConfig.initArgs.get("minimalFreeDiskGB"));
   }
