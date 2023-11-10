@@ -108,7 +108,7 @@ task generateJsClientBundle(type: NpxTask) {
   dependsOn tasks.setupJsBundleDir
 
   command = 'browserify'
-  args = ['dist/index.js', '-o', "${jsClientBundleDir}/index.js"]
+  args = ['dist/index.js', '-s', 'solrApi', '-o', "${jsClientBundleDir}/index.js"]
   workingDir = file(project.jsClientWorkspace)
 
 

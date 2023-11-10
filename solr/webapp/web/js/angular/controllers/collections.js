@@ -203,7 +203,7 @@ solrAdminApp.controller('CollectionsController',
       $scope.deleteCollection = function() {
         if ($scope.collection.name == $scope.collectionDeleteConfirm) {
             // TODO Currently doesn't work because of import/module problems
-            let deleteApi = new CollectionsApi();
+            let deleteApi = new solrApi.CollectionsApi();
             deleteApi.deleteCollection($scope.collection.name, {}, function(error, data, response) {
                 if (error) {
                     console.error(error);
