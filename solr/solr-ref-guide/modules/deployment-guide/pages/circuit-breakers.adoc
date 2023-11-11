@@ -34,7 +34,7 @@ circuit breaker thresholds are reached on some nodes. See the <<shards.tolerant 
 == Circuit Breaker Configurations
 Circuit breakers can be configured globally for the entire node, or for each collection individually, or a combination. Per-collection circit breakers take precedence over global circuit breakers.
 
-A circuit breaker can register itself to trip for query requests and/or update requests. A user may register multiple circuit breakers of the same type with different thresholds for each request type.
+A circuit breaker can register itself to be checked for query requests and/or update requests. A user may register multiple circuit breakers of the same type with different thresholds for each request type.
 
 === Global Circuit Breakers
 Circuit breakers can be configured globally using environment variables, e.g. in `solr.in.sh`, or system properties. The variables available are:
