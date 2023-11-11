@@ -32,7 +32,7 @@ Setting the `shards.tolerant=true` parameter on requests can help with graceful 
 circuit breaker thresholds are reached on some nodes. See the <<shards.tolerant Parameter>> for details.
 
 == Circuit Breaker Configurations
-Circuit breakers can be configured globally for the entire node, or for each collection individually, or a combination. Per-collection circit breakers take precedence over global circuit breakers.
+Circuit breakers can be configured globally for the entire node, or for each collection individually, or a combination. Per-collection circuit breakers are checked before global circuit breakers.
 
 A circuit breaker can register itself to be checked for query requests and/or update requests. A user may register multiple circuit breakers of the same type with different thresholds for each request type.
 
