@@ -80,7 +80,7 @@ To enable and configure the JVM heap usage based circuit breaker, add the follow
 .Global in `solr.in.sh`
 [source,bash]
 ----
-SOLR_CIRCUITBREAKER_QUERY_HEAP=75
+SOLR_CIRCUITBREAKER_QUERY_MEM=75
 ----
 
 The `threshold` is defined as a percentage of the max heap allocated to the JVM.
