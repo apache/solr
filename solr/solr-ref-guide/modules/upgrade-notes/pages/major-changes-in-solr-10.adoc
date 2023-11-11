@@ -45,4 +45,6 @@ has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_
 Please see `-Dsolr.redaction.system.pattern`, which allows users to provide a pattern to match sysProps that should be redacted for sensitive information,
 has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` instead.
 
+* The node configuration file `/solr.xml` can no longer be loaded from Zookeeper. Solr startup will fail if it is present.
+
 * The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please use individual Circuit Breaker plugins instead.

@@ -24,6 +24,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
@@ -376,7 +377,7 @@ public class ZkController implements Closeable {
             .withClosedCheck(cc::isShutDown)
             .withCompressor(compressor)
             .build();
-    // Refuse to start if ZK has a non empty /clusterstate.json
+    // Refuse to start if ZK has a non empty /clusterstate.json or a /solr.xml file
     checkNoOldClusterstate(zkClient);
 
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
@@ -529,12 +530,20 @@ public class ZkController implements Closeable {
 
   /**
    * Verifies if /clusterstate.json exists in Zookeepeer, and if it does and is not empty, refuses
-   * to start and outputs a helpful message regarding collection migration.
+   * to start and outputs a helpful message regarding collection migration. Also aborts if /solr.xml
+   * exists in zookeeper.
    *
    * <p>If /clusterstate.json exists and is empty, it is removed.
    */
   private void checkNoOldClusterstate(final SolrZkClient zkClient) throws InterruptedException {
     try {
+      if (zkClient.exists(UNSUPPORTED_SOLR_XML, true)) {
+        String message =
+            "solr.xml found in ZooKeeper. Loading solr.xml from ZooKeeper is no longer supported since Solr 10. "
+                + "Cannot start Solr. The file can be removed with command bin/solr zk rm /solr.xml -z host:port";
+        log.error(message);
+        throw new SolrException(ErrorCode.INVALID_STATE, message);
+      }
       if (!zkClient.exists(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, true)) {
         return;
       }
