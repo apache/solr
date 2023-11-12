@@ -770,10 +770,10 @@ public class PackageManager implements Closeable {
             PackageUtils.printGreen(response);
             String actualValue = null;
             try {
-              String jsonPath = PackageUtils.resolve(
+              String jsonPath =
+                  PackageUtils.resolve(
                       cmd.condition, pkg.parameterDefaults, overridesMap, systemParams);
-              actualValue =
-                      jsonPathResolve(response, jsonPath);
+              actualValue = jsonPathResolve(response, jsonPath);
             } catch (PathNotFoundException ex) {
               PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
               success = false;
@@ -820,13 +820,13 @@ public class PackageManager implements Closeable {
               PackageUtils.printGreen(response);
               String actualValue = null;
               try {
-                String jsonPath = PackageUtils.resolve(
+                String jsonPath =
+                    PackageUtils.resolve(
                         cmd.condition,
                         pkg.parameterDefaults,
                         collectionParameterOverrides,
                         systemParams);
-                actualValue =
-                        jsonPathResolve(response, jsonPath);
+                actualValue = jsonPathResolve(response, jsonPath);
               } catch (PathNotFoundException ex) {
                 PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
                 success = false;
@@ -855,13 +855,10 @@ public class PackageManager implements Closeable {
     return success;
   }
 
-  /**
-   * just adds problem XPath into {@link InvalidPathException} if occurs
-   * */
+  /** just adds problem XPath into {@link InvalidPathException} if occurs */
   private static String jsonPathResolve(String response, String jsonPath) {
     try {
-      return JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
-              .read(jsonPath);
+      return JsonPath.parse(response, PackageUtils.jsonPathConfiguration()).read(jsonPath);
     } catch (InvalidPathException ipe) {
       throw new InvalidPathException("Error in JSON Path:" + jsonPath, ipe);
     }
@@ -1106,8 +1103,7 @@ public class PackageManager implements Closeable {
       String version = null;
       try {
         String jsonPath = "$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "'])";
-        version =
-                jsonPathResolve(paramsJson, jsonPath);
+        version = jsonPathResolve(paramsJson, jsonPath);
       } catch (PathNotFoundException ex) {
         // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched
         // by the package manager.
