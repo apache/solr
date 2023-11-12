@@ -19,6 +19,7 @@ package org.apache.solr.packagemanager;
 
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
+import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import java.io.Closeable;
@@ -769,11 +770,10 @@ public class PackageManager implements Closeable {
             PackageUtils.printGreen(response);
             String actualValue = null;
             try {
+              String jsonPath = PackageUtils.resolve(
+                      cmd.condition, pkg.parameterDefaults, overridesMap, systemParams);
               actualValue =
-                  JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
-                      .read(
-                          PackageUtils.resolve(
-                              cmd.condition, pkg.parameterDefaults, overridesMap, systemParams));
+                      jsonPathResolve(response, jsonPath);
             } catch (PathNotFoundException ex) {
               PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
               success = false;
@@ -820,14 +820,13 @@ public class PackageManager implements Closeable {
               PackageUtils.printGreen(response);
               String actualValue = null;
               try {
+                String jsonPath = PackageUtils.resolve(
+                        cmd.condition,
+                        pkg.parameterDefaults,
+                        collectionParameterOverrides,
+                        systemParams);
                 actualValue =
-                    JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
-                        .read(
-                            PackageUtils.resolve(
-                                cmd.condition,
-                                pkg.parameterDefaults,
-                                collectionParameterOverrides,
-                                systemParams));
+                        jsonPathResolve(response, jsonPath);
               } catch (PathNotFoundException ex) {
                 PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
                 success = false;
@@ -854,6 +853,18 @@ public class PackageManager implements Closeable {
       }
     }
     return success;
+  }
+
+  /**
+   * just adds problem XPath into {@link InvalidPathException} if occurs
+   * */
+  private static String jsonPathResolve(String response, String jsonPath) {
+    try {
+      return JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
+              .read(jsonPath);
+    } catch (InvalidPathException ipe) {
+      throw new InvalidPathException("Error in JSON Path:" + jsonPath, ipe);
+    }
   }
 
   /**
@@ -1094,9 +1105,9 @@ public class PackageManager implements Closeable {
               new ModifiableSolrParams().add("omitHeader", "true"));
       String version = null;
       try {
+        String jsonPath = "$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "'])";
         version =
-            JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
-                .read("$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "'])");
+                jsonPathResolve(paramsJson, jsonPath);
       } catch (PathNotFoundException ex) {
         // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched
         // by the package manager.
