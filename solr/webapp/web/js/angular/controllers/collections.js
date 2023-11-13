@@ -215,7 +215,7 @@ solrAdminApp.controller('CollectionsController',
             alert("No collection selected.");
             return;
         }
-        CollectionsV2.reloadCollection($scope.collection, function(error, data,response) {
+        CollectionsV2.reloadCollection($scope.collection.name, function(error, data,response) {
            if (error) {
                $scope.reloadFailure = true;
                $timeout(function() {$scope.reloadFailure=false}, 1000);
