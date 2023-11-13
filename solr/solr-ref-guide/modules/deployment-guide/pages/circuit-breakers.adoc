@@ -29,7 +29,7 @@ It is up to the client to handle this error and potentially build retry logic as
 In a sharded collection, when a circuit breaker trips on one shard, the entire query will fail,
 even if the other shard requests succeed. This will multiply the failures seen by the end users.
 Setting the `shards.tolerant=true` parameter on requests can help with graceful degradation when
-circuit breaker thresholds are reached on some nodes. See the <<shards.tolerant Parameter>> for details.
+circuit breaker thresholds are reached on some nodes. See <<solrcloud-distributed-requests#shards-tolerant-parameter,`shards.tolerant`>> for details.
 
 == Circuit Breaker Configurations
 Circuit breakers can be configured globally for the entire node, or for each collection individually, or a combination. Per-collection circuit breakers are checked before global circuit breakers, and if there is a conflict, the per-collection circuit breaker takes precedence.
@@ -52,15 +52,12 @@ For example, you can enable a global CPU circuit breaker that rejects update req
 === Per Collection Circuit Breakers
 Circuit breakers are configured as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown in the below examples. By default, only search requests are affected.
 
-== Currently Supported Circuit Breakers
+[TIP]
+====
+HTTP error code from circuit breakers is configurable with java system property `solr.circuitbreaker.errorcode`.
+====
 
-[NOTE]
-====
-The legacy configuration syntax using `CircuitBreakerManager` is deprecated as of Solr 9.4, but will
-continue to work. The "CPU" circuit breaker used by this legacy plugin when configuring a `cpuThreshold`
-is actually the `LoadAverageCircuitBreaker` described below. Also, the `CircuitBreakerManager` will
-return a HTTP 503 code instead of the HTTP 429 code used by the new circuit breakers.
-====
+== Currently Supported Circuit Breakers
 
 === JVM Heap Usage
 

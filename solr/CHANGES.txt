@@ -43,6 +43,10 @@ Deprecation Removals
 
 * SOLR-16893: Remove bin/solr create_core and create_collection commands in favour of bin/solr create command.  (Eric Pugh)
 
+* SOLR-15959: Remove deprecated feature to load solr.xml from ZK (janhoy)
+
+* SOLR-16961: The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please use individual Circuit Breaker plugins instead. (janhoy)
+
 * SOLR-17042: Remove deprecated `V2RequestSupport` and associated `SolrRequest` methods `setUseV2` and `setUseBinaryV2`. (Jason Gerlowski)
 
 Dependency Upgrades
