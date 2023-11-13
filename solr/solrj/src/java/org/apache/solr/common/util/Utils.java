@@ -222,18 +222,18 @@ public class Utils {
   }
 
   /**
-   * @param indentSize The number of space characters to use as an indent (default 2). 0=newlines
+   * @param indentSize The number of space characters to use as an indent. 0=newlines
    *     but no spaces, -1=no indent at all.
    */
   public static byte[] toJSON(Object o, int indentSize) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    new JSONWriter(out, indentSize).write(o); // indentation by default
+    new JSONWriter(out, indentSize).write(o);
     return toUTF8(out);
   }
 
   /**
-   * @param indentSize The number of space characters to use as an indent (default 2). 0=newlines
+   * @param indentSize The number of space characters to use as an indent. 0=newlines
    *     but no spaces, -1=no indent at all.
    */
   public static String toJSONString(Object o, int indentSize) {
