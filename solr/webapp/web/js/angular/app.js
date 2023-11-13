@@ -56,8 +56,6 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ui.grid"
 ]);
 
-solrApi.ApiClient.instance.basePath = '/api'
-
 solrAdminApp.config([
   '$locationProvider', function($locationProvider) {
     $locationProvider.hashPrefix('');
