@@ -494,3 +494,62 @@ teardown() {
   run solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --regexp '(unable to find valid certification path to requested target|Server refused connection)'
 }
+
+@test "test keystore reload" {
+  # Create a keystore
+  export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
+  mkdir -p "$ssl_dir"
+  (
+    cd "$ssl_dir"
+    rm -f cert1.keystore.p12 cert1.pem cert2.keystore.p12 cert2.pem
+    # cert and keystore 1
+    keytool -genkeypair -alias cert1 -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore cert1.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
+    openssl pkcs12 -in cert1.keystore.p12 -out cert1.pem -passin pass:secret -passout pass:secret
+
+    # cert and keystore 2
+    keytool -genkeypair -alias cert2 -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore cert2.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
+    openssl pkcs12 -in cert2.keystore.p12 -out cert2.pem -passin pass:secret -passout pass:secret
+  )
+
+  # Set ENV_VARs so that Solr uses this keystore
+  export SOLR_SSL_ENABLED=true
+  export SOLR_SSL_KEY_STORE=$ssl_dir/cert1.keystore.p12
+  export SOLR_SSL_KEY_STORE_PASSWORD=secret
+  export SOLR_SSL_TRUST_STORE=$ssl_dir/cert1.keystore.p12
+  export SOLR_SSL_TRUST_STORE_PASSWORD=secret
+  export SOLR_SSL_NEED_CLIENT_AUTH=true
+  export SOLR_SSL_WANT_CLIENT_AUTH=false
+  export SOLR_HOST=localhost
+
+  solr start -c -a "-Dsolr.jetty.sslContext.reload.scanInterval=1"
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
+
+  run solr create -c test -s 2
+  assert_output --partial "Created collection 'test'"
+
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '"numFound":0'
+
+  run ! curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+
+  echo "Now run with cert 2"
+
+  export SOLR_SSL_KEY_STORE=$ssl_dir/cert2.keystore.p12
+  export SOLR_SSL_KEY_STORE_PASSWORD=secret
+  export SOLR_SSL_TRUST_STORE=$ssl_dir/cert2.keystore.p12
+  export SOLR_SSL_TRUST_STORE_PASSWORD=secret
+
+  run ! solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+
+  (
+    cd "$ssl_dir"
+    # Replace server keystore with client's
+    cp cert2.keystore.p12 cert1.keystore.p12
+  )
+  # Give some time for the server reload
+  sleep 5
+
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '"numFound":0'
+
+}
