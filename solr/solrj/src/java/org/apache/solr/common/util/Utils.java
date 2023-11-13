@@ -222,8 +222,8 @@ public class Utils {
   }
 
   /**
-   * @param indentSize The number of space characters to use as an indent. 0=newlines
-   *     but no spaces, -1=no indent at all.
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
    */
   public static byte[] toJSON(Object o, int indentSize) {
     if (o == null) return new byte[0];
@@ -233,8 +233,8 @@ public class Utils {
   }
 
   /**
-   * @param indentSize The number of space characters to use as an indent. 0=newlines
-   *     but no spaces, -1=no indent at all.
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
    */
   public static String toJSONString(Object o, int indentSize) {
     return new String(toJSON(o, indentSize), StandardCharsets.UTF_8);
