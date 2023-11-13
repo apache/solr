@@ -209,12 +209,12 @@ teardown() {
 
   run solr start -c
 
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
+
   export SOLR_SSL_KEY_STORE=
   export SOLR_SSL_KEY_STORE_PASSWORD=
   export SOLR_SSL_TRUST_STORE=
   export SOLR_SSL_TRUST_STORE_PASSWORD=
-
-  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
@@ -531,8 +531,6 @@ teardown() {
   assert_output --partial '"numFound":0'
 
   run ! curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
-
-  echo "Now run with cert 2"
 
   export SOLR_SSL_KEY_STORE=$ssl_dir/cert2.keystore.p12
   export SOLR_SSL_KEY_STORE_PASSWORD=secret
