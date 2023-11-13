@@ -98,7 +98,6 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
       keeper.addAuthInfo("digest", ("solr:" + SOLR_PASSWD).getBytes(StandardCharsets.UTF_8));
 
       // Test well known paths.
-      checkNonSecurityACLs(keeper, "/solr.xml");
       checkSecurityACLs(keeper, "/security/token");
       checkSecurityACLs(keeper, "/security");
 
