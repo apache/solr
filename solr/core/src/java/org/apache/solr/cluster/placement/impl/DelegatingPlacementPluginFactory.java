@@ -24,12 +24,18 @@ import org.apache.solr.cluster.placement.PlacementPluginFactory;
 
 /** Helper class to support dynamic reloading of plugin implementations. */
 public final class DelegatingPlacementPluginFactory
-    implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
+    implements PlacementPluginFactory<PlacementPluginConfig> {
   private volatile PlacementPluginFactory<? extends PlacementPluginConfig> delegate;
   // support for tests to make sure the update is completed
   private volatile Phaser phaser;
   private final PlacementPluginFactory<?> defaultPlacementPluginFactory;
 
+  /**
+   * Constructor.
+   *
+   * @param defaultPlacementPluginFactory A {@link PlacementPluginFactory} to use when no delegate
+   *     is defined.
+   */
   public DelegatingPlacementPluginFactory(PlacementPluginFactory<?> defaultPlacementPluginFactory) {
     this.defaultPlacementPluginFactory = defaultPlacementPluginFactory;
   }
@@ -40,6 +46,15 @@ public final class DelegatingPlacementPluginFactory
       return delegate.createPluginInstance();
     } else {
       return defaultPlacementPluginFactory.createPluginInstance();
+    }
+  }
+
+  @Override
+  public PlacementPluginConfig getConfig() {
+    if (delegate != null) {
+      return delegate.getConfig();
+    } else {
+      return defaultPlacementPluginFactory.getConfig();
     }
   }
 

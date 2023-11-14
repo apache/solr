@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.placement.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -37,14 +38,17 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Utility class to load the configured {@link PlacementPluginFactory} plugin and then keep it up to
- * date as the plugin configuration changes.
- */
+/** Utility class to work with {@link PlacementPluginFactory} plugins. */
 public class PlacementPluginFactoryLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String PLACEMENTPLUGIN_DEFAULT_SYSPROP = "solr.placementplugin.default";
 
+  @VisibleForTesting
+  static final String PLACEMENTPLUGIN_DEFAULT_SYSPROP = "solr.placementplugin.default";
+
+  /**
+   * Loads the {@link PlacementPluginFactory} configured in cluster plugins and then keep it up to
+   * date as the plugin configuration changes.
+   */
   public static void load(
       DelegatingPlacementPluginFactory pluginFactory, ContainerPluginsRegistry plugins) {
     ContainerPluginsRegistry.ApiInfo pluginFactoryInfo =
@@ -101,6 +105,7 @@ public class PlacementPluginFactoryLoader {
     plugins.registerListener(pluginListener);
   }
 
+  /** Returns the default {@link PlacementPluginFactory} configured in solr.xml. */
   public static PlacementPluginFactory<?> getDefaultPlacementPluginFactory(
       NodeConfig nodeConfig, SolrResourceLoader loader) {
     PluginInfo pluginInfo = nodeConfig.getReplicaPlacementFactoryConfig();
