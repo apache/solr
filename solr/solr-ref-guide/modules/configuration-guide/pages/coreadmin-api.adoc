@@ -393,6 +393,7 @@ Each core will be known by the name of the other, after the swap.
 [.dynamic-tabs]
 --
 [example.tab-pane#v1coreadmin-swap]
+--
 ====
 [.tab-label]*V1 API*
 
@@ -402,7 +403,7 @@ Each core will be known by the name of the other, after the swap.
 ----
 ====
 
-[example.tab-pane#v2coreadmin-reload]
+[example.tab-pane#v2coreadmin-swap]
 ====
 [.tab-label]*V2 API*
 
