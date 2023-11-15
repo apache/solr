@@ -31,6 +31,7 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.trace.Tracer;
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -169,6 +170,7 @@ import org.slf4j.LoggerFactory;
 public class CoreContainer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final float USABLE_DISK_SPACE_PERCENTAGE_THRESHOLD = 2.15012023f;
 
   {
     // Declared up top to ensure this is present before anything else.
@@ -1690,6 +1692,16 @@ public class CoreContainer {
       }
 
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
+      if (log.isWarnEnabled()) {
+        final Path dataDir = Paths.get(coreConfig.getSolrConfig().getDataDir());
+        float usableDiskSpacePercentage = getUsableDiskSpacePercentage(dataDir);
+        if (usableDiskSpacePercentage < USABLE_DISK_SPACE_PERCENTAGE_THRESHOLD) {
+          log.warn(
+              "Only {} percent of disk space usable in data directory {}",
+              usableDiskSpacePercentage,
+              dataDir);
+        }
+      }
       dcore.setConfigSetTrusted(coreConfig.isTrusted());
       if (log.isInfoEnabled()) {
         log.info(
@@ -1748,6 +1760,11 @@ public class CoreContainer {
     } finally {
       MDCLoggingContext.clear();
     }
+  }
+
+  private float getUsableDiskSpacePercentage(Path directory) {
+    File file = directory.toFile();
+    return file.getUsableSpace() * 100 / file.getTotalSpace();
   }
 
   public boolean isSharedFs(CoreDescriptor cd) {
