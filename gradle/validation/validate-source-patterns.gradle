@@ -77,12 +77,16 @@ allprojects {
         exclude "${it}/**"
       }
 
+
       // default excludes.
       exclude '/lucene/**'
       exclude '**/build/**'
       exclude '**/.idea/**'
       exclude '**/.gradle/**'
+
+      // Exclude Eclipse
       exclude '.metadata/**'
+      exclude '.settings/**'
 
       if (project == rootProject) {
         // ourselves :-)
