@@ -98,7 +98,7 @@ Improvements
 
 * SOLR-17041: Make CommitTracker currentTlogSize lazy (Alex Deparvu)
 
-* SOLR-16397: Rename core v2 endpoints have been updated to be more REST-ful.
+* SOLR-16397: The rename-core v2 endpoint has been updated to be more REST-ful.
   RENAME is now available at `POST /api/cores/coreName/rename` (Sanjay Dutt via Jason Gerlowski)
 
 Optimizations
