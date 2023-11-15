@@ -177,7 +177,7 @@ public enum CoreAdminOperation implements CoreAdminOp {
         final String cname = params.required().get(CoreAdminParams.CORE);
         final String name = params.required().get(CoreAdminParams.OTHER);
         final var renameCoreRequestBody = new RenameCoreRequestBody();
-        renameCoreRequestBody.to = params.get((CoreAdminParams.OTHER));
+        renameCoreRequestBody.to = name;
         final var renameCoreApi =
             new RenameCore(
                 it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
