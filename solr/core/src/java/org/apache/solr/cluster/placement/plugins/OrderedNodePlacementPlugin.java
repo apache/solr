@@ -403,7 +403,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   public abstract static class WeightedNode implements Comparable<WeightedNode> {
     private final Node node;
     private final Map<String, Map<String, Set<Replica>>> replicas;
-    private final Set<Replica> allReplicas; //a flattened list of all replicas, computing from the map could be costly
+
+    // a flattened list of all replicas, as computing from the map could be costly
+    private final Set<Replica> allReplicas;
 
     public WeightedNode(Node node) {
       this.node = node;
