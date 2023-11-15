@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public class RenameCoreRequestBody {
   @Schema(description = "The new name for the Solr core.")
-  @JsonProperty
+  @JsonProperty(required = true)
   public String to;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")

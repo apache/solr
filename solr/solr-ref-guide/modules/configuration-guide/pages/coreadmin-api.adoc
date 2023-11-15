@@ -361,36 +361,6 @@ The `RENAME` action changes the name of a Solr core.
 ====
 --
 
-=== RENAME V1 API Parameters
-
-`core`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-The name of the Solr core to be renamed.
-
-`other`::
-+
-[%autowidth,frame=none]
-|===
-s|Required |Default: none
-|===
-+
-The new name for the Solr core.
-If the persistent attribute of `<solr>` is `true`, the new name will be written to `solr.xml` as the `name` attribute of the `<core>` attribute.
-
-`async`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Request ID to track this action which will be processed asynchronously.
-
 [.dynamic-tabs]
 --
 [example.tab-pane#v2coreadmin-rename]
@@ -406,8 +376,8 @@ curl -X POST http://localhost:8983/api/cores/_core-name_/rename -H 'Content-Type
 ----
 ====
 --
-=== RENAME V2 API Request Body Parameters
-`to`::
+=== RENAME API Parameters
+`OTHER` (v1), `to` (v2)::
 +
 [%autowidth,frame=none]
 |===

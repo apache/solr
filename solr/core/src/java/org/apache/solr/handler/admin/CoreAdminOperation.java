@@ -58,7 +58,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.solr.client.api.endpoint.RenameCoreApi;
 import org.apache.solr.client.api.endpoint.SwapCoresApi;
 import org.apache.solr.client.api.model.ListCoreSnapshotsResponse;
 import org.apache.solr.client.api.model.ReloadCoreRequestBody;
@@ -175,10 +174,11 @@ public enum CoreAdminOperation implements CoreAdminOp {
       RENAME,
       it -> {
         SolrParams params = it.req.getParams();
-        final String cname = params.get(CoreAdminParams.CORE);
+        final String cname = params.required().get(CoreAdminParams.CORE);
+        final String name = params.required().get(CoreAdminParams.OTHER);
         final var renameCoreRequestBody = new RenameCoreRequestBody();
         renameCoreRequestBody.to = params.get((CoreAdminParams.OTHER));
-        RenameCoreApi renameCoreApi =
+        final var renameCoreApi =
             new RenameCore(
                 it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
         SolrJerseyResponse response = renameCoreApi.renameCore(cname, renameCoreRequestBody);
