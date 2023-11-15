@@ -105,6 +105,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HttpCookieStore;
+import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,6 +157,8 @@ public class Http2SolrClient extends SolrClient {
 
   final String basicAuthAuthorizationStr;
   private AuthenticationStoreHolder authenticationStore;
+
+  private KeyStoreScanner scanner;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     if (serverBaseUrl != null) {
@@ -235,6 +238,17 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory = getDefaultSslContextFactory();
     } else {
       sslContextFactory = builder.sslConfig.createClientContextFactory();
+    }
+
+    if (sslContextFactory != null
+        && sslContextFactory.getKeyStoreResource() != null
+        && builder.keyStoreReloadInterval > 0) {
+      scanner = new KeyStoreScanner(sslContextFactory);
+      try {
+        scanner.start();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
 
     ClientConnector clientConnector = new ClientConnector();
@@ -331,6 +345,15 @@ public class Http2SolrClient extends SolrClient {
     } finally {
       if (shutdownExecutor) {
         ExecutorUtil.shutdownAndAwaitTermination(executor);
+      }
+    }
+
+    if (scanner != null) {
+      try {
+        scanner.stop();
+      } catch (Exception e) {
+        // TODO
+        throw new RuntimeException(e);
       }
     }
 
@@ -1042,6 +1065,7 @@ public class Http2SolrClient extends SolrClient {
     private int proxyPort;
     private boolean proxyIsSocks4;
     private boolean proxyIsSecure;
+    private long keyStoreReloadInterval = 30;
 
     public Builder() {}
 
@@ -1055,6 +1079,11 @@ public class Http2SolrClient extends SolrClient {
       }
       if (connectionTimeoutMillis == null) {
         connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+      }
+
+      if (keyStoreReloadInterval > 0 && this.httpClient != null) {
+        log.warn("keyStoreReloadInterval can't be set when using external httpClient");
+        keyStoreReloadInterval = 0;
       }
 
       Http2SolrClient client = new Http2SolrClient(baseSolrUrl, this);
@@ -1205,6 +1234,23 @@ public class Http2SolrClient extends SolrClient {
      */
     public Builder withMaxConnectionsPerHost(int max) {
       this.maxConnectionsPerHost = max;
+      return this;
+    }
+
+    /**
+     * Set the scanning interval to check for updates in the Key Store used by this client. If the
+     * interval is 0 or less, then the Key Store Scanner is not created, and the client will not
+     * attempt to update key stores. The minimum value between checks is 1 second.
+     *
+     * @param interval Interval between checks
+     * @param unit The unit for the interval
+     * @return This builder
+     */
+    public Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
+      this.keyStoreReloadInterval = unit.toSeconds(interval);
+      if (this.keyStoreReloadInterval == 0 && interval > 0) {
+        this.keyStoreReloadInterval = 1;
+      }
       return this;
     }
 

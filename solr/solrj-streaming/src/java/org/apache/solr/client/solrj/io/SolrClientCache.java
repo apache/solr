@@ -53,6 +53,9 @@ public class SolrClientCache implements Closeable {
   private static final int minSocketTimeout =
       Math.max(Integer.getInteger(HttpClientUtil.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
 
+  private static final int keyStoreReloadInterval =
+      Integer.getInteger("solr.jetty.sslContext.reload.scanInterval", 30);
+
   private final Map<String, SolrClient> solrClients = new HashMap<>();
   private final HttpClient apacheHttpClient;
   private final Http2SolrClient http2SolrClient;
@@ -159,6 +162,7 @@ public class SolrClientCache implements Closeable {
       connTimeout = Math.max(idleTimeout, builder.getConnectionTimeout());
     }
     builder.withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS);
+    builder.withKeyStoreReloadInterval(keyStoreReloadInterval, TimeUnit.SECONDS);
     return builder;
   }
 

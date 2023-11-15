@@ -126,6 +126,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   // Configure if the threadpool favours fairness over throughput
   static final String INIT_FAIRNESS_POLICY = "fairnessPolicy";
 
+  // Determines how often to check for key store changes in the client
+  static final String KEY_STORE_RELOAD_PERIOD_SECS = "keyStoreReloadPeriodSecs";
+
   /** Get {@link ShardHandler} that uses the default http client. */
   @Override
   public ShardHandler getShardHandler() {
@@ -279,12 +282,20 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     int soTimeout =
         getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, HttpClientUtil.DEFAULT_SO_TIMEOUT, sb);
 
+    int keystoreReloadIntervalSecs =
+        getParameter(
+            args,
+            KEY_STORE_RELOAD_PERIOD_SECS,
+            Integer.getInteger("solr.jetty.sslContext.reload.scanInterval", 30),
+            sb);
+
     this.defaultClient =
         new Http2SolrClient.Builder()
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
+            .withKeyStoreReloadInterval(keystoreReloadIntervalSecs, TimeUnit.SECONDS)
             .build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBHttp2SolrClient.Builder(defaultClient).build();
