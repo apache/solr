@@ -38,6 +38,9 @@ allprojects {
             // Don't check under the project's build folder.
             exclude project.buildDir.name
 
+            // Exclude eclipse settings.
+            exclude ".settings"
+
             // Exclude any generated stuff.
             exclude "src/generated"
 
