@@ -449,21 +449,6 @@ public class MiniSolrCloudCluster {
    *
    * @param extraServlets Extra servlets to be started by Jetty
    * @param extraRequestFilters extra filters to be started by Jetty
-   * @return new Solr instance
-   */
-  public JettySolrRunner startJettySolrRunner(
-      String name,
-      SortedMap<ServletHolder, String> extraServlets,
-      SortedMap<Class<? extends Filter>, String> extraRequestFilters)
-      throws Exception {
-    return startJettySolrRunner(name, extraServlets, extraRequestFilters, null);
-  }
-
-  /**
-   * Start a new Solr instance
-   *
-   * @param extraServlets Extra servlets to be started by Jetty
-   * @param extraRequestFilters extra filters to be started by Jetty
    * @param sslConfig SSL configuration
    * @return new Solr instance
    */
