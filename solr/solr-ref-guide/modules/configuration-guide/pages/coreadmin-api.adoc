@@ -376,7 +376,7 @@ curl -X POST http://localhost:8983/api/cores/_core-name_/rename -H 'Content-Type
 ----
 ====
 --
-=== RENAME API Parameters
+=== RENAME Parameters
 `OTHER` (v1), `to` (v2)::
 +
 [%autowidth,frame=none]
