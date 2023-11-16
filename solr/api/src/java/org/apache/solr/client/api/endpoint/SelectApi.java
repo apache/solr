@@ -19,8 +19,11 @@ package org.apache.solr.client.api.endpoint;
 import static org.apache.solr.client.api.util.Constants.STORE_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import java.util.List;
+import java.util.Map;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -40,11 +43,18 @@ public interface SelectApi {
   @GET
   @StoreApiParameters
   @Operation(
-      summary = "Query a Solr core or collection, or otherwise inspect its contents.",
+      summary = "Query a Solr core or collection using individual query parameters",
       tags = {"querying"})
   SolrJerseyResponse query(
       @QueryParam("q") String query,
       @QueryParam("fq") List<String> filterQueries,
       @QueryParam("fl") String fieldList,
       @QueryParam("rows") Integer rows);
+
+  @POST
+  @StoreApiParameters
+  @Operation(
+      summary = "Query a Solr core or collection using the structured request DSL",
+      tags = {"querying"})
+  SolrJerseyResponse jsonQuery(@RequestBody Map<String, Object> structuredRequest);
 }
