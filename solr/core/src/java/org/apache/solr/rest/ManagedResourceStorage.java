@@ -421,11 +421,12 @@ public abstract class ManagedResourceStorage {
   /** Default storage implementation that uses JSON as the storage format for managed data. */
   public static class JsonStorage extends ManagedResourceStorage {
 
+    public static final int DEFAULT_INDENT_SIZE = 2;
     private final int indentSize;
 
     /** Uses 2 space characters as an indent. */
     public JsonStorage(StorageIO storageIO, SolrResourceLoader loader) {
-      this(storageIO, loader, 2);
+      this(storageIO, loader, DEFAULT_INDENT_SIZE);
     }
 
     /**

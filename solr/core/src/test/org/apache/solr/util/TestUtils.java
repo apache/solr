@@ -301,16 +301,37 @@ public class TestUtils extends SolrTestCaseJ4 {
         (Map<String, Object>) Utils.fromJSONString("{k2:v2, k1: {a:b, p:r, k21:{xx:yy}}}");
 
     assertEquals(
-        "{\"k2\":\"v2\",\"k1\":{\"a\":\"b\",\"p\":\"r\",\"k21\":{\"xx\":\"yy\"}}}",
-        new String(Utils.toJSON(object, -1), UTF_8));
-    String formatedJson =
         "{\n"
             + "  \"k2\":\"v2\",\n"
             + "  \"k1\":{\n"
             + "    \"a\":\"b\",\n"
             + "    \"p\":\"r\",\n"
-            + "    \"k21\":{\"xx\":\"yy\"}}}";
+            + "    \"k21\":{\"xx\":\"yy\"}}}",
+        new String(Utils.toJSON(object), UTF_8));
+  }
 
-    assertEquals(formatedJson, new String(Utils.toJSON(object), UTF_8));
+  @SuppressWarnings({"unchecked"})
+  public void testToJsonCompacted() {
+    Map<String, Object> object =
+        (Map<String, Object>) Utils.fromJSONString("{k2:v2, k1: {a:b, p:r, k21:{xx:yy}}}");
+
+    assertEquals(
+        "{\"k2\":\"v2\",\"k1\":{\"a\":\"b\",\"p\":\"r\",\"k21\":{\"xx\":\"yy\"}}}",
+        new String(Utils.toJSON(object, -1), UTF_8));
+  }
+
+  @SuppressWarnings({"unchecked"})
+  public void testToJsonNoIndent() {
+    Map<String, Object> object =
+        (Map<String, Object>) Utils.fromJSONString("{k2:v2, k1: {a:b, p:r, k21:{xx:yy}}}");
+
+    assertEquals(
+        "{\n"
+            + "\"k2\":\"v2\",\n"
+            + "\"k1\":{\n"
+            + "\"a\":\"b\",\n"
+            + "\"p\":\"r\",\n"
+            + "\"k21\":{\"xx\":\"yy\"}}}",
+        new String(Utils.toJSON(object, 0), UTF_8));
   }
 }
