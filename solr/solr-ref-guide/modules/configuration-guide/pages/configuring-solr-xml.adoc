@@ -654,6 +654,7 @@ A default xref:replica-placement-plugins.adoc[replica placement plugin] can be d
 </replicaPlacementFactory>
 ----
 
+The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `PlacementPluginFactory`.
 Sub-elements are specific to the implementation.
 
 === The <metrics> Element
