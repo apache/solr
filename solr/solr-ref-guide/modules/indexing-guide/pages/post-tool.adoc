@@ -19,7 +19,7 @@
 Solr includes a simple command line tool for POSTing various types of content to a Solr server.
 
 The tool is `bin/solr post`.
-The bin/solr post tool is a Unix shell script; for Windows (non-Cygwin) usage, see the section <<Post Tool Windows Support>> below.
+The bin/solr post tool is a Unix shell script; for Windows (non-Cygwin) usage,use `bin/solr.cmd post`.
 
 NOTE: This tool is meant for use by new users exploring Solr's capabilities, and is not intended as a robust solution to be used for indexing documents into production systems.
 
