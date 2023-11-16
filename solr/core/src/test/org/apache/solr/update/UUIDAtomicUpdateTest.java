@@ -116,6 +116,7 @@ public class UUIDAtomicUpdateTest extends SolrCloudTestCase {
 
     UpdateResponse updateResponse = cluster.getSolrClient().add(COLLECTION, doc);
     assertEquals(updateResponse.toString(), 0, updateResponse.getStatus());
+    assertEquals(updateResponse.toString(), NUM_REPLICAS, updateResponse.getResponseHeader().get("rf"));
   }
 
   private static void ensureFieldHasValues(
