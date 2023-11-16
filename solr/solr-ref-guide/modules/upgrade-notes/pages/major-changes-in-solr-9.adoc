@@ -68,7 +68,7 @@ Due to changes in Lucene 9, that isn't possible any more.
 === The Built-In Config Sets
 * The build in ConfigSets (`_default` and `sample_techproducts_configs`), now use a default `autoSoftCommit` time of 3 seconds,
 meaning that documents will be searchable within 3 seconds of uploading them.
-Please refer to the xref:configuration-guide:commits-transaction-logs.html#hard-commits-vs-soft-commits[Soft Commit documentation]
+Please refer to the xref:configuration-guide:commits-transaction-logs.adoc#hard-commits-vs-soft-commits[Soft Commit documentation]
 for more information on how this change will effect you.
 Upgrading existing clouds and use-cases that have custom configSets will not be affected by this change.
 
