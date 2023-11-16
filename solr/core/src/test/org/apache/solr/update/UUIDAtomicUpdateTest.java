@@ -23,7 +23,7 @@ public class UUIDAtomicUpdateTest extends SolrCloudTestCase {
   private static final String COMMITTED_DOC_ID = "1";
   private static final String UNCOMMITTED_DOC_ID = "2";
   private static final String COLLECTION = "collection1";
-  private static final int NUM_SHARDS = 2;
+  private static final int NUM_SHARDS = 1;
   private static final int NUM_REPLICAS = 2;
 
   private static String committedUuidAfter = UUID.randomUUID().toString();
@@ -63,6 +63,9 @@ public class UUIDAtomicUpdateTest extends SolrCloudTestCase {
     // update, assert
     atomicSetValue(COMMITTED_DOC_ID, "title_s", "CHANGED");
     ensureFieldHasValues(COMMITTED_DOC_ID, "title_s", "CHANGED");
+    final UpdateRequest committedRequest = new UpdateRequest();
+    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+    ensureFieldHasValues(COMMITTED_DOC_ID, "title_s", "CHANGED");
   }
 
   @Test
@@ -70,31 +73,36 @@ public class UUIDAtomicUpdateTest extends SolrCloudTestCase {
     // update, assert
     atomicSetValue(UNCOMMITTED_DOC_ID, "title_s", "CHANGED");
     ensureFieldHasValues(UNCOMMITTED_DOC_ID, "title_s", "CHANGED");
+    final UpdateRequest committedRequest = new UpdateRequest();
+    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "title_s", "CHANGED");
   }
 
   @Test
   public void testUpdateCommittedUUIDField() throws Exception {
     // update, assert
     atomicSetValue(COMMITTED_DOC_ID, "uuid", committedUuidAfter);
-    ensureFieldHasValues(COMMITTED_DOC_ID, "title_s", committedUuidAfter);
+    ensureFieldHasValues(COMMITTED_DOC_ID, "uuid", committedUuidAfter);
+    final UpdateRequest committedRequest = new UpdateRequest();
+    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+    ensureFieldHasValues(COMMITTED_DOC_ID, "uuid", committedUuidAfter);
   }
 
   @Test
   public void testUpdateUncommittedUUIDField() throws Exception {
     // update, assert
     atomicSetValue(UNCOMMITTED_DOC_ID, "uuid", uncommittedUuidAfter);
-    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "title_s", uncommittedUuidAfter);
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "uuid", uncommittedUuidAfter);
+    final UpdateRequest committedRequest = new UpdateRequest();
+    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "uuid", uncommittedUuidAfter);
   }
 
   @AfterClass
   public static void afterAll() throws Exception {
     final UpdateRequest committedRequest = new UpdateRequest();
+    committedRequest.deleteByQuery("*:*");
     committedRequest.commit(cluster.getSolrClient(), COLLECTION);
-    // assert both fields
-    ensureFieldHasValues(COMMITTED_DOC_ID, "title_s", "CHANGED");
-    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "title_s", "CHANGED");
-    ensureFieldHasValues(COMMITTED_DOC_ID, "title_s", committedUuidAfter);
-    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "title_s", uncommittedUuidAfter);
   }
 
   // TODO remove me.
@@ -112,28 +120,34 @@ public class UUIDAtomicUpdateTest extends SolrCloudTestCase {
 
   private static void ensureFieldHasValues(
       String identifyingDocId, String fieldName, Object... expectedValues) throws Exception {
-    final ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.set("id", identifyingDocId);
-    QueryRequest request = new QueryRequest(solrParams);
-    request.setPath("/get");
-    final QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION);
+    for (Boolean tf : new Boolean[] {true, false}) {
+      final ModifiableSolrParams solrParams = new ModifiableSolrParams();
+      solrParams.set("id", identifyingDocId);
+      solrParams.set("shards.preference", "replica.leader:" + tf);
+      QueryRequest request = new QueryRequest(solrParams);
+      request.setPath("/get");
+      final QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION);
 
-    final NamedList<Object> rawResponse = response.getResponse();
-    assertNotNull(rawResponse.get("doc"));
-    assertTrue(rawResponse.get("doc") instanceof SolrDocument);
-    final SolrDocument doc = (SolrDocument) rawResponse.get("doc");
-    final Collection<Object> valuesAfterUpdate = doc.getFieldValues(fieldName);
-    assertEquals(
-        "Expected field to have "
-            + expectedValues.length
-            + " values, but found "
-            + valuesAfterUpdate.size(),
-        expectedValues.length,
-        valuesAfterUpdate.size());
-    for (Object expectedValue : expectedValues) {
-      assertTrue(
-          "Expected value [" + expectedValue + "] was not found in field",
-          valuesAfterUpdate.contains(expectedValue));
+      final NamedList<Object> rawResponse = response.getResponse();
+      assertNotNull(rawResponse.get("doc"));
+      assertTrue(rawResponse.get("doc") instanceof SolrDocument);
+      final SolrDocument doc = (SolrDocument) rawResponse.get("doc");
+      final Collection<Object> valuesAfterUpdate = doc.getFieldValues(fieldName);
+      assertEquals(
+          "Expected field to have "
+              + expectedValues.length
+              + " values, but found "
+              + valuesAfterUpdate.size(),
+          expectedValues.length,
+          valuesAfterUpdate.size());
+      for (Object expectedValue : expectedValues) {
+        assertTrue(
+            "Expected value ["
+                + expectedValue
+                + "] was not found in field, but "
+                + valuesAfterUpdate,
+            valuesAfterUpdate.contains(expectedValue));
+      }
     }
   }
 }
