@@ -1,9 +1,11 @@
 package org.apache.solr.update;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -54,48 +56,43 @@ public class UuidAtomicUpdateTest extends SolrCloudTestCase {
         sdoc("id", UNCOMMITTED_DOC_ID, "title_s", "title_2", "uuid", uncommittedUuidBefore);
     final UpdateRequest uncommittedRequest = new UpdateRequest().add(uncommittedDoc);
     uncommittedRequest.process(cluster.getSolrClient(), COLLECTION);
-
-    // assert assigned
   }
 
   @Test
   public void testUpdateCommittedTextField() throws Exception {
-    // update, assert
     atomicSetValue(COMMITTED_DOC_ID, "title_s", "CHANGED");
     ensureFieldHasValues(COMMITTED_DOC_ID, "title_s", "CHANGED");
-    final UpdateRequest committedRequest = new UpdateRequest();
-    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+    commit();
     ensureFieldHasValues(COMMITTED_DOC_ID, "title_s", "CHANGED");
   }
 
   @Test
   public void testUpdateUncommittedTextField() throws Exception {
-    // update, assert
     atomicSetValue(UNCOMMITTED_DOC_ID, "title_s", "CHANGED");
     ensureFieldHasValues(UNCOMMITTED_DOC_ID, "title_s", "CHANGED");
-    final UpdateRequest committedRequest = new UpdateRequest();
-    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+    commit();
     ensureFieldHasValues(UNCOMMITTED_DOC_ID, "title_s", "CHANGED");
   }
 
   @Test
   public void testUpdateCommittedUuidField() throws Exception {
-    // update, assert
     atomicSetValue(COMMITTED_DOC_ID, "uuid", committedUuidAfter);
     ensureFieldHasValues(COMMITTED_DOC_ID, "uuid", committedUuidAfter);
-    final UpdateRequest committedRequest = new UpdateRequest();
-    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+    commit();
     ensureFieldHasValues(COMMITTED_DOC_ID, "uuid", committedUuidAfter);
   }
 
   @Test
   public void testUpdateUncommittedUuidField() throws Exception {
-    // update, assert
     atomicSetValue(UNCOMMITTED_DOC_ID, "uuid", uncommittedUuidAfter);
     ensureFieldHasValues(UNCOMMITTED_DOC_ID, "uuid", uncommittedUuidAfter);
+    commit();
+    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "uuid", uncommittedUuidAfter);
+  }
+
+  private static void commit() throws IOException, SolrServerException {
     final UpdateRequest committedRequest = new UpdateRequest();
     committedRequest.commit(cluster.getSolrClient(), COLLECTION);
-    ensureFieldHasValues(UNCOMMITTED_DOC_ID, "uuid", uncommittedUuidAfter);
   }
 
   @AfterClass
