@@ -18,24 +18,21 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * A {@link SolrJerseyResponse} which can accept any top-level properties.
- */
+/** A {@link SolrJerseyResponse} which can accept any top-level properties. */
 public class FlexibleSolrJerseyResponse extends SolrJerseyResponse {
 
-    private Map<String, Object> unknownFields = new HashMap<>();
+  private Map<String, Object> unknownFields = new HashMap<>();
 
-    @JsonAnyGetter
-    public Map<String, Object> unknownProperties() {
-        return unknownFields;
-    }
+  @JsonAnyGetter
+  public Map<String, Object> unknownProperties() {
+    return unknownFields;
+  }
 
-    @JsonAnySetter
-    public void setUnknownProperty(String field, Object value) {
-        unknownFields.put(field, value);
-    }
+  @JsonAnySetter
+  public void setUnknownProperty(String field, Object value) {
+    unknownFields.put(field, value);
+  }
 }

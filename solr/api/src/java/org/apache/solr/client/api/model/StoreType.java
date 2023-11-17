@@ -21,6 +21,7 @@ public enum StoreType {
   CORE("cores");
 
   private final String pathString;
+
   StoreType(String pathString) {
     this.pathString = pathString;
   }
