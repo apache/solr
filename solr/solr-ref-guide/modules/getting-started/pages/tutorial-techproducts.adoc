@@ -300,8 +300,8 @@ This is, again, default behavior.
 If you want to restrict the fields in the response, you can use the `fl` parameter, which takes a comma-separated list of field names.
 This is one of the available fields on the query form in the Admin UI.
 
-Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] agai
-Or, to specify it with curl:
+Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] again.
+Or, specify it with curl:
 
 [,console]
 ----
