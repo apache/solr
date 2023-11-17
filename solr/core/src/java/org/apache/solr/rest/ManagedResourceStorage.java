@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -423,9 +424,9 @@ public abstract class ManagedResourceStorage {
 
     private final int indentSize;
 
-    /** Uses 2 space characters as an indent. */
+    /** Uses {@link JSONWriter#DEFAULT_INDENT} space characters as an indent. */
     public JsonStorage(StorageIO storageIO, SolrResourceLoader loader) {
-      this(storageIO, loader, 2);
+      this(storageIO, loader, JSONWriter.DEFAULT_INDENT);
     }
 
     /**
