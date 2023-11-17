@@ -301,11 +301,9 @@ public abstract class FieldType extends FieldProperties {
     String val;
     try {
       val = toInternal(value.toString());
-    }
-    catch (SolrException se) {
-      throw se; // fall through BAD_REQUEST TODO test
-    }
-    catch (RuntimeException e) {
+    } catch (SolrException se) {
+      throw se; //  BAD_REQUEST to fall through
+    } catch (RuntimeException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Error while creating field '" + field + "' from value '" + value + "'",
