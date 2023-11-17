@@ -97,21 +97,29 @@ public class {{classname}} {
              {{#requiredParams}}{{^isBodyParam}}* @param {{paramName}} Path param - {{description}}{{/isBodyParam}}
              {{/requiredParams}}
              */
-            public {{operationIdCamelCase}}({{#requiredParams}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{/requiredParams}}) {
+            public {{operationIdCamelCase}}({{#allParams}}{{#required}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{#isBodyParam}}{{#vendorExtensions.x-genericEntity}}{{^-first}}, {{/-first}}{{{dataType}}} requestBody{{/vendorExtensions.x-genericEntity}}{{/isBodyParam}}{{/required}}{{/allParams}}) {
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
                   "{{{path}}}"{{#pathParams}}
-                    .replace("{" + "{{baseName}}" + "}", {{paramName}}{{#isEnumRef}}.name(){{/isEnumRef}}){{/pathParams}}
+                    .replace("{" + "{{baseName}}" + "}", {{paramName}}{{^isString}}.toString(){{/isString}}){{/pathParams}}
                 );
 
                 {{#requiredParams}}
+                {{#isBodyParam}}
+                {{#vendorExtensions.x-genericEntity}}
+                    this.requestBody = requestBody;
+                    addHeader("Content-type", "application/json");
+                {{/vendorExtensions.x-genericEntity}}
+                {{/isBodyParam}}
                 {{^isBodyParam}}
                     this.{{paramName}} = {{paramName}};
                 {{/isBodyParam}}
                 {{/requiredParams}}
                 {{#bodyParam}}
-                    this.requestBody = new {{baseName}}();
+                {{^vendorExtensions.x-genericEntity}}
+                    this.requestBody = new {{{dataType}}}();
                     addHeader("Content-type", "application/json");
+                {{/vendorExtensions.x-genericEntity}}
                 {{/bodyParam}}
             }
 
@@ -143,7 +151,13 @@ public class {{classname}} {
             {{/vars}}
 
             @Override
+            @SuppressWarnings("unchecked")
             public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+                {{#vendorExtensions.x-genericEntity}}
+                if (requestBody instanceof String) {
+                    return new RequestWriter.StringPayloadContentWriter((String) requestBody, expectedType);
+                }
+                {{/vendorExtensions.x-genericEntity}}
                 return new JacksonContentWriter(expectedType, requestBody);
             }
             {{/bodyParam}}

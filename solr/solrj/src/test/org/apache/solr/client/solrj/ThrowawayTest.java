@@ -14,19 +14,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.api.model;
-
-public enum StoreType {
-  COLLECTION("collections"),
-  CORE("cores");
-
-  private final String pathString;
-  StoreType(String pathString) {
-    this.pathString = pathString;
-  }
-
-  @Override
-  public String toString() {
-    return pathString;
-  }
+package org.apache.solr.client.solrj;public class ThrowawayTest {
 }

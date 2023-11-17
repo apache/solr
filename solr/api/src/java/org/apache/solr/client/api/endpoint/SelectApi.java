@@ -16,10 +16,16 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
 import static org.apache.solr.client.api.util.Constants.STORE_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.extensions.Extension;
+import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.GET;
@@ -27,6 +33,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.util.GenericRequestEntity;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
 /**
@@ -56,5 +63,9 @@ public interface SelectApi {
   @Operation(
       summary = "Query a Solr core or collection using the structured request DSL",
       tags = {"querying"})
-  SolrJerseyResponse jsonQuery(@RequestBody Map<String, Object> structuredRequest);
+  // TODO Find way to bundle the request-body annotations below for re-use on other similar endpoints.
+  SolrJerseyResponse jsonQuery(@Parameter(required = true)
+                               @RequestBody(required = true, extensions = {
+                                       @Extension(properties = {@ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")})
+                               }) InputStream structuredRequest);
 }
