@@ -45,6 +45,8 @@ Deprecation Removals
 
 * SOLR-15959: Remove deprecated feature to load solr.xml from ZK (janhoy)
 
+* SOLR-16961: The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please use individual Circuit Breaker plugins instead. (janhoy)
+
 * SOLR-17042: Remove deprecated `V2RequestSupport` and associated `SolrRequest` methods `setUseV2` and `setUseBinaryV2`. (Jason Gerlowski)
 
 Dependency Upgrades
@@ -96,7 +98,10 @@ Improvements
 
 * SOLR-17041: Make CommitTracker currentTlogSize lazy (Alex Deparvu)
 
-* SOLR-17050: Use compact JSON for Learning to Rank (LTR) feature and model storage. (Florin Babes, Christine Poerschke)
+* SOLR-16397: The rename-core v2 endpoint has been updated to be more REST-ful.
+  RENAME is now available at `POST /api/cores/coreName/rename` (Sanjay Dutt via Jason Gerlowski)
+
+* SOLR-17035: Add trace id to jetty thread names to improve debuggability via stack traces (Alex Deparvu)
 
 Optimizations
 ---------------------
