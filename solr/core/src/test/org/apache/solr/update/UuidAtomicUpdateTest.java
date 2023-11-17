@@ -118,7 +118,6 @@ public class UuidAtomicUpdateTest extends SolrCloudTestCase {
     committedRequest.commit(cluster.getSolrClient(), COLLECTION);
   }
 
-  // TODO remove me.
   private static void atomicSetValue(String docId, String fieldName, Object value)
       throws Exception {
     final SolrInputDocument doc = new SolrInputDocument();
