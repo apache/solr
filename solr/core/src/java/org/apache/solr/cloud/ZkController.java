@@ -19,9 +19,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
@@ -2380,10 +2378,9 @@ public class ZkController implements Closeable {
   public void rejoinShardLeaderElection(SolrParams params) {
 
     String collectionName = params.get(COLLECTION_PROP);
-    String shardId = params.get(SHARD_ID_PROP);
     String coreNodeName = params.get(CORE_NODE_NAME_PROP);
     String coreName = params.get(CORE_NAME_PROP);
-    String electionNode = params.get(ELECTION_NODE_PROP);
+    boolean rejoinAtHead = params.getBool(REJOIN_AT_HEAD_PROP, false);
 
     try {
       MDCLoggingContext.setCoreDescriptor(cc, cc.getCoreDescriptor(coreName));
@@ -2399,7 +2396,7 @@ public class ZkController implements Closeable {
 
       LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
 
-      elect.retryElection(prevContext, params.getBool(REJOIN_AT_HEAD_PROP, false));
+      elect.retryElection(prevContext, rejoinAtHead);
 
       try (SolrCore core = cc.getCore(coreName)) {
         Replica.Type replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
