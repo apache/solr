@@ -445,6 +445,21 @@ For example, the following line makes Solr use the `ExactStatsCache` implementat
 ----
 <statsCache class="org.apache.solr.search.stats.ExactStatsCache"/>
 ----
+When `ExactStatsCache`, `ExactSharedStatsCache` or `LRUStatsCache` implementations are enabled in `solrconfig.xml`, distributed calls to fetch global term stats apply to all queries.
+For queries that do not utilize distributed IDF for score calculation, for example
+
+[source,xml]
+----
+http://localhost:8987/solr/collection1/select?q=*%3A*&wt=json&fq={!terms f=id}id1,id2
+----
+When query param disableDistribStats is set to true, distributed stats is turned off at query time to reduce the overhead.
+
+[source,xml]
+----
+http://localhost:8987/solr/collection1/select?q=*%3A*&wt=json&fq={!terms f=id}id1,id2&disableDistribStats=true
+----
+
+
 
 == Avoiding Distributed Deadlock
 
