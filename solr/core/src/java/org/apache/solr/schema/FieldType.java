@@ -301,23 +301,18 @@ public abstract class FieldType extends FieldProperties {
     String val;
     try {
       val = toInternal(value.toString());
-    } catch (RuntimeException e) {
+    }
+    catch (SolrException se) {
+      throw se; // fall through BAD_REQUEST TODO test
+    }
+    catch (RuntimeException e) {
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, // TODO Seems wrong. It's BAD_REQUEST!
+          SolrException.ErrorCode.SERVER_ERROR,
           "Error while creating field '" + field + "' from value '" + value + "'",
           e);
     }
     if (val == null) return null;
 
-    /*org.apache.lucene.document.FieldType newType = new org.apache.lucene.document.FieldType();
-    newType.setTokenized(field.isTokenized());
-    newType.setStored(field.stored());
-    newType.setOmitNorms(field.omitNorms());
-    newType.setIndexOptions(field.indexed() ? getIndexOptions(field, val) : IndexOptions.NONE);
-    newType.setStoreTermVectors(field.storeTermVector());
-    newType.setStoreTermVectorOffsets(field.storeTermOffsets());
-    newType.setStoreTermVectorPositions(field.storeTermPositions());
-    newType.setStoreTermVectorPayloads(field.storeTermPayloads());*/
     return createField(field.getName(), val, field);
   }
 

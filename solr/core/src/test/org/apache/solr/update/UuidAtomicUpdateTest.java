@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class UUIDAtomicUpdateTest extends SolrCloudTestCase {
+public class UuidAtomicUpdateTest extends SolrCloudTestCase {
   private static final String COMMITTED_DOC_ID = "1";
   private static final String UNCOMMITTED_DOC_ID = "2";
   private static final String COLLECTION = "collection1";
@@ -79,7 +79,7 @@ public class UUIDAtomicUpdateTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testUpdateCommittedUUIDField() throws Exception {
+  public void testUpdateCommittedUuidField() throws Exception {
     // update, assert
     atomicSetValue(COMMITTED_DOC_ID, "uuid", committedUuidAfter);
     ensureFieldHasValues(COMMITTED_DOC_ID, "uuid", committedUuidAfter);
@@ -89,7 +89,7 @@ public class UUIDAtomicUpdateTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testUpdateUncommittedUUIDField() throws Exception {
+  public void testUpdateUncommittedUuidField() throws Exception {
     // update, assert
     atomicSetValue(UNCOMMITTED_DOC_ID, "uuid", uncommittedUuidAfter);
     ensureFieldHasValues(UNCOMMITTED_DOC_ID, "uuid", uncommittedUuidAfter);

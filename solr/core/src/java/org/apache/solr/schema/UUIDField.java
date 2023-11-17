@@ -94,15 +94,19 @@ public class UUIDField extends StrField {
   }
 
   @Override
-  public UUID toObject(IndexableField f) {
-    return UUID.fromString(toExternal(f));
+  public String toObject(IndexableField f) {
+    // it fails reading from stored field
+    // UUID.fromString(toExternal(f));
+    return toExternal(f);
   }
 
   @Override
   public Object toNativeType(Object val) {
-    if (val instanceof CharSequence) {
-      return UUID.fromString(val.toString());
-    }
+    // it fails reading from translog (perhaps) ??
+    //
+    //if (val instanceof CharSequence) {
+    //  return UUID.fromString(val.toString());
+    //}
     return val;
   }
 }
