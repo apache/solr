@@ -458,6 +458,10 @@ public class JettySolrRunner {
 
     gzipHandler.setMinGzipSize(23); // https://github.com/eclipse/jetty.project/issues/4191
     gzipHandler.setIncludedMethods("GET");
+    int gzipInflateSize = Integer.getInteger("jetty.gzip.inflateBufferSize", 0);
+    if (gzipInflateSize > 0) {
+      gzipHandler.setInflateBufferSize(gzipInflateSize);
+    }
 
     server.setHandler(gzipHandler);
   }
