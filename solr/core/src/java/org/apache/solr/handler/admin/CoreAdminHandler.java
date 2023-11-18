@@ -64,7 +64,7 @@ import org.apache.solr.handler.admin.api.OverseerOperationAPI;
 import org.apache.solr.handler.admin.api.PrepareCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
 import org.apache.solr.handler.admin.api.ReloadCore;
-import org.apache.solr.handler.admin.api.RenameCoreAPI;
+import org.apache.solr.handler.admin.api.RenameCore;
 import org.apache.solr.handler.admin.api.RequestApplyCoreUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestBufferUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestCoreCommandStatusAPI;
@@ -383,7 +383,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new RenameCoreAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MergeIndexesAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RequestCoreCommandStatusAPI(this)));
@@ -406,7 +405,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         RestoreCore.class,
         ReloadCore.class,
         UnloadCore.class,
-        SwapCores.class);
+        SwapCores.class,
+        RenameCore.class);
   }
 
   public interface CoreAdminOp {

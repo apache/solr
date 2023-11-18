@@ -138,6 +138,24 @@ public class TestModelManagerPersistence extends TestRerankBase {
   }
 
   @Test
+  public void testModelIsStoredCompact() throws Exception {
+    loadFeature("feature", ValueFeature.class.getName(), "test", "{\"value\":2}");
+    loadModel(
+        "test-model",
+        LinearModel.class.getName(),
+        new String[] {"feature"},
+        "test",
+        "{\"weights\":{\"feature\":1.0}}");
+
+    final String fstorecontent = Files.readString(fstorefile, StandardCharsets.UTF_8);
+    final String mstorecontent = Files.readString(mstorefile, StandardCharsets.UTF_8);
+    Object fStoreObject = Utils.fromJSONString(fstorecontent);
+    Object mStoreObject = Utils.fromJSONString(mstorecontent);
+    assertEquals(new String(Utils.toJSON(fStoreObject, -1)), fstorecontent);
+    assertEquals(new String(Utils.toJSON(mStoreObject, -1)), mstorecontent);
+  }
+
+  @Test
   public void testFilePersistence() throws Exception {
     // check whether models and features are empty
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");

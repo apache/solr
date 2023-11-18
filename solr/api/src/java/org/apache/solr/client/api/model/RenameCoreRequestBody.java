@@ -14,20 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.util;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-import org.junit.BeforeClass;
+public class RenameCoreRequestBody {
+  @Schema(description = "The new name for the Solr core.", required = true)
+  @JsonProperty
+  public String to;
 
-/** Tests the pluggable circuit breaker implementation. The actual tests are in base class. */
-public class TestCircuitBreaker extends BaseTestCircuitBreaker {
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    System.setProperty("filterCache.enabled", "false");
-    System.setProperty("queryResultCache.enabled", "false");
-    System.setProperty("documentCache.enabled", "true");
-
-    initCore("solrconfig-pluggable-circuitbreaker.xml", "schema.xml");
-    BaseTestCircuitBreaker.indexDocs();
-  }
+  @Schema(description = "Request ID to track this action which will be processed asynchronously.")
+  @JsonProperty
+  public String async;
 }

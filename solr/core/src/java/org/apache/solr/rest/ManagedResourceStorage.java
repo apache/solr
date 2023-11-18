@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -420,13 +421,11 @@ public abstract class ManagedResourceStorage {
 
   /** Default storage implementation that uses JSON as the storage format for managed data. */
   public static class JsonStorage extends ManagedResourceStorage {
-
-    public static final int DEFAULT_INDENT_SIZE = 2;
     private final int indentSize;
 
-    /** Uses 2 space characters as an indent. */
+    /** Uses {@link JSONWriter#DEFAULT_INDENT} space characters as an indent. */
     public JsonStorage(StorageIO storageIO, SolrResourceLoader loader) {
-      this(storageIO, loader, DEFAULT_INDENT_SIZE);
+      this(storageIO, loader, JSONWriter.DEFAULT_INDENT);
     }
 
     /**
