@@ -859,6 +859,8 @@ public class PackageManager implements Closeable {
   private static String jsonPathResolve(String response, String jsonPath) {
     try {
       return JsonPath.parse(response, PackageUtils.jsonPathConfiguration()).read(jsonPath);
+    } catch (PathNotFoundException pne) {
+      throw pne;
     } catch (InvalidPathException ipe) {
       throw new InvalidPathException("Error in JSON Path:" + jsonPath, ipe);
     }
@@ -1102,7 +1104,7 @@ public class PackageManager implements Closeable {
               new ModifiableSolrParams().add("omitHeader", "true"));
       String version = null;
       try {
-        String jsonPath = "$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "'])";
+        String jsonPath = "$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "']";
         version = jsonPathResolve(paramsJson, jsonPath);
       } catch (PathNotFoundException ex) {
         // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched

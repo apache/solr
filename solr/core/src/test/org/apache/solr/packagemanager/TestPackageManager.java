@@ -27,6 +27,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 public class TestPackageManager extends SolrCloudTestCase {
 
@@ -47,6 +48,7 @@ public class TestPackageManager extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
   }
 
+  @Test
   public void testWrongVerificationJPathIsThrown() throws IOException {
     SolrZkClient zkClient = cluster.getZkClient();
     URL baseURLV2 = cluster.getJettySolrRunner(0).getBaseURLV2();
@@ -62,18 +64,18 @@ public class TestPackageManager extends SolrCloudTestCase {
         plugin.verifyCommand.path = /*"/api*/
             "/collections/" + COLLECTION_NAME + "/config/requestHandler";
         plugin.verifyCommand.condition = "&[no_quotes_error_jpath]";
-        boolean verify =
-            manager.verify(
-                new SolrPackageInstance(
-                    "",
-                    "",
-                    "1.0",
-                    new SolrPackage.Manifest(),
-                    Collections.singletonList(plugin),
-                    Collections.emptyMap()),
-                Collections.singletonList(COLLECTION_NAME),
-                plugin.type.equals("cluster"),
-                new String[0]);
+        manager.verify(
+            new SolrPackageInstance(
+                "",
+                "",
+                "1.0",
+                new SolrPackage.Manifest(),
+                Collections.singletonList(plugin),
+                Collections.emptyMap()),
+            Collections.singletonList(COLLECTION_NAME),
+            plugin.type.equals("cluster"),
+            new String[0]);
+        fail();
       } catch (InvalidPathException e) {
         assertTrue(e.getMessage().contains("&[no_quotes_error_jpath]"));
       }
