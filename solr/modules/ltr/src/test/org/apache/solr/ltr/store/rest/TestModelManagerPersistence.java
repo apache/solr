@@ -37,6 +37,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class TestModelManagerPersistence extends TestRerankBase {
 
   @Before
@@ -151,8 +153,8 @@ public class TestModelManagerPersistence extends TestRerankBase {
     final String mstorecontent = Files.readString(mstorefile, StandardCharsets.UTF_8);
     Object fStoreObject = Utils.fromJSONString(fstorecontent);
     Object mStoreObject = Utils.fromJSONString(mstorecontent);
-    assertEquals(new String(Utils.toJSON(fStoreObject, -1)), fstorecontent);
-    assertEquals(new String(Utils.toJSON(mStoreObject, -1)), mstorecontent);
+    assertEquals(new String(Utils.toJSON(fStoreObject, -1), UTF_8), fstorecontent);
+    assertEquals(new String(Utils.toJSON(mStoreObject, -1), UTF_8), mstorecontent);
   }
 
   @Test
