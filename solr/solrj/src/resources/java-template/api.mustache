@@ -100,7 +100,12 @@ public class {{classname}} {
                 {{/isBodyParam}}
                 {{/requiredParams}}
                 {{#bodyParam}}
-                    this.requestBody = new {{baseName}}();
+                {{#isMap}}
+                    this.requestBody = new HashMap<>();
+                {{/isMap}}
+                {{^isMap}}
+                    this.requestBody = new {{{dataType}}}();
+                {{/isMap}}
                     addHeader("Content-type", "application/json");
                 {{/bodyParam}}
             }
