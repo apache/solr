@@ -105,6 +105,8 @@ Improvements
 
 * SOLR-17035: Add trace id to jetty thread names to improve debuggability via stack traces (Alex Deparvu)
 
+* SOLR-17050: Use compact JSON for Learning to Rank (LTR) feature and model storage. (Florin Babes, Christine Poerschke, Alessandro Benedetti)
+
 Optimizations
 ---------------------
 (No changes)
