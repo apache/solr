@@ -653,6 +653,21 @@ For configuring `stable` routing, the `hash` parameter implicitly defaults to a 
 The `dividend` parameter must be configured explicitly; there is no implicit default.
 If only `dividend` routing is desired, `hash` may be explicitly set to the empty string, entirely disabling implicit hash-based routing.
 
+=== The <replicaPlacementFactory> Element
+
+A default xref:replica-placement-plugins.adoc[replica placement plugin] can be defined in `solr.xml`.
+
+[source,xml]
+----
+<replicaPlacementFactory class="org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory">
+  <int name="minimalFreeDiskGB">10</int>
+  <int name="prioritizedFreeDiskGB">200</int>
+</replicaPlacementFactory>
+----
+
+The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `PlacementPluginFactory`.
+Sub-elements are specific to the implementation.
+
 === The <metrics> Element
 
 The `<metrics>` element in `solr.xml` allows you to customize the metrics reported by Solr.

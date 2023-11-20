@@ -78,6 +78,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("info handler class", "testInfoHandler", cfg.getInfoHandlerClass());
     assertEquals(
         "config set handler class", "testConfigSetsHandler", cfg.getConfigSetsHandlerClass());
+    assertEquals("cores locator class", "testCoresLocator", cfg.getCoresLocatorClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
     assertEquals("replay update threads", 100, cfg.getReplayUpdatesThreads());
     MatcherAssert.assertThat(
@@ -138,6 +139,13 @@ public class TestSolrXml extends SolrTestCaseJ4 {
                         .collect(Collectors.toSet())));
     assertTrue("hideStackTrace", cfg.hideStackTraces());
     System.clearProperty("solr.allowPaths");
+
+    PluginInfo replicaPlacementFactoryConfig = cfg.getReplicaPlacementFactoryConfig();
+    assertEquals(
+        "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
+        replicaPlacementFactoryConfig.className);
+    assertEquals(1, replicaPlacementFactoryConfig.initArgs.size());
+    assertEquals(10, replicaPlacementFactoryConfig.initArgs.get("minimalFreeDiskGB"));
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.

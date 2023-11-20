@@ -167,6 +167,8 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
+    configBuilder.setReplicaPlacementFactoryConfig(
+        getPluginInfo(root.get("replicaPlacementFactory")));
     configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
     configBuilder.setSolrProperties(loadProperties(root, substituteProperties));

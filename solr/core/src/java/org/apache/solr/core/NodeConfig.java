@@ -78,8 +78,8 @@ public class NodeConfig {
   private final Predicate<String> hiddenSysPropPattern;
 
   private final PluginInfo shardHandlerFactoryConfig;
-
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
+  private final PluginInfo replicaPlacementFactoryConfig;
 
   private final String configSetServiceClass;
 
@@ -133,6 +133,7 @@ public class NodeConfig {
       String sharedLibDirectory,
       PluginInfo shardHandlerFactoryConfig,
       UpdateShardHandlerConfig updateShardHandlerConfig,
+      PluginInfo replicaPlacementFactoryConfig,
       String coreAdminHandlerClass,
       Map<String, String> coreAdminHandlerActions,
       String collectionsAdminHandlerClass,
@@ -171,6 +172,7 @@ public class NodeConfig {
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
+    this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
     this.coreAdminHandlerActions = coreAdminHandlerActions;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
@@ -312,6 +314,10 @@ public class NodeConfig {
 
   public UpdateShardHandlerConfig getUpdateShardHandlerConfig() {
     return updateShardHandlerConfig;
+  }
+
+  public PluginInfo getReplicaPlacementFactoryConfig() {
+    return replicaPlacementFactoryConfig;
   }
 
   public int getCoreLoadThreadCount(boolean zkAware) {
@@ -608,6 +614,7 @@ public class NodeConfig {
     private String hiddenSysProps;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
+    private PluginInfo replicaPlacementFactoryConfig;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
@@ -717,6 +724,12 @@ public class NodeConfig {
     public NodeConfigBuilder setUpdateShardHandlerConfig(
         UpdateShardHandlerConfig updateShardHandlerConfig) {
       this.updateShardHandlerConfig = updateShardHandlerConfig;
+      return this;
+    }
+
+    public NodeConfigBuilder setReplicaPlacementFactoryConfig(
+        PluginInfo replicaPlacementFactoryConfig) {
+      this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
       return this;
     }
 
@@ -909,6 +922,7 @@ public class NodeConfig {
           sharedLibDirectory,
           shardHandlerFactoryConfig,
           updateShardHandlerConfig,
+          replicaPlacementFactoryConfig,
           coreAdminHandlerClass,
           coreAdminHandlerActions,
           collectionsAdminHandlerClass,

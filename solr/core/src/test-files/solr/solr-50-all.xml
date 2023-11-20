@@ -26,6 +26,7 @@
   <str name="sharedLib">testSharedLib</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="shareSchema">${shareSchema:true}</str>
+  <str name="coresLocator">testCoresLocator</str>
   <int name="transientCacheSize">66</int>
   <int name="replayUpdatesThreads">100</int>
   <int name="maxBooleanClauses">42</int>
@@ -66,6 +67,10 @@
     <int name="socketTimeout">${socketTimeout:100}</int>
     <int name="connTimeout">${connTimeout:110}</int>
   </shardHandlerFactory>
+
+  <replicaPlacementFactory class="org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory">
+    <int name="minimalFreeDiskGB">10</int>
+  </replicaPlacementFactory>
 
   <backup>
     <repository name="local" class="a.b.C" default="true"/>
