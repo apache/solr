@@ -111,6 +111,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     MatcherAssert.assertThat(
         cc.getPlacementPluginFactory().createPluginInstance(),
         instanceOf(SimplePlacementFactory.SimplePlacementPlugin.class));
+    cc.shutdown();
   }
 
   @Test
@@ -120,6 +121,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     MatcherAssert.assertThat(
         cc.getPlacementPluginFactory().createPluginInstance(),
         instanceOf(RandomPlacementFactory.RandomPlacementPlugin.class));
+    cc.shutdown();
   }
 
   @Test
@@ -138,6 +140,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         (AffinityPlacementConfig) cc.getPlacementPluginFactory().getConfig();
     assertEquals(config.minimalFreeDiskGB, 10);
     assertEquals(config.prioritizedFreeDiskGB, 200);
+    cc.shutdown();
   }
 
   @Test
