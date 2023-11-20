@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr.store.rest;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -36,8 +38,6 @@ import org.apache.solr.ltr.store.FeatureStore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class TestModelManagerPersistence extends TestRerankBase {
 
