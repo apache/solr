@@ -514,6 +514,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                 (shard, reps) -> {
                   if (reps.remove(replica)) {
                     hasReplica.set(true);
+                    allReplicas.remove(replica);
                   }
                   return reps.isEmpty() ? null : reps;
                 });
@@ -521,7 +522,6 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           });
       if (hasReplica.get()) {
         removeProjectedReplicaWeights(replica);
-        allReplicas.remove(replica);
       }
     }
 
