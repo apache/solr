@@ -140,7 +140,7 @@ public class TestModelManagerPersistence extends TestRerankBase {
   }
 
   @Test
-  public void testModelIsStoredCompact() throws Exception {
+  public void testFeaturesAndModelAreStoredCompact() throws Exception {
     loadFeature("feature", ValueFeature.class.getName(), "test", "{\"value\":2}");
     loadModel(
         "test-model",
