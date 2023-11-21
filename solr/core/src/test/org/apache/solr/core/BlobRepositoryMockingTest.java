@@ -71,7 +71,8 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     super.setUp();
     blobFetched = false;
     blobKey = "";
-    reset(mocks);
+    reset(mockContainer);
+    mapMock = new ConcurrentHashMap<>();
     repository =
         new BlobRepository(mockContainer) {
           @Override
@@ -117,8 +118,7 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    verify(mapMock).get("foo!");
-    verify(mapMock).put(eq("foo!"), any(BlobRepository.BlobContent.class));
+    assertTrue(mapMock.get("foo!") instanceof  BlobRepository.BlobContent);
   }
 
   @Test
@@ -151,15 +151,14 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
   @Test
   public void testCachedAlready() {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
-    when(mapMock.get("foo!"))
-        .thenReturn(new BlobRepository.BlobContent<BlobRepository>("foo!", blobData));
+    mapMock.put("foo!", new BlobRepository.BlobContent<BlobRepository>("foo!", blobData));
     BlobRepository.BlobContentRef<ByteBuffer> ref = repository.getBlobIncRef("foo!");
     assertEquals("", blobKey);
     assertFalse(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    verify(mapMock).get("foo!");
+    assertTrue(mapMock.get("foo!") instanceof  BlobRepository.BlobContent);
   }
 
   @Test
@@ -191,8 +190,6 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     assertTrue(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(PARSED, ref.blob.get());
-    verify(mockContainer).isZooKeeperAware();
-    verify(mapMock).get("foo!mocked");
-    verify(mapMock).put(eq("foo!mocked"), any(BlobRepository.BlobContent.class));
+    verify(mockContainer).isZooKeeperAware();assertTrue(mapMock.get("foo!mocked") instanceof  BlobRepository.BlobContent);
   }
 }
