@@ -53,9 +53,9 @@ public class TestGlobalCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   /**
-   * Index some docs and see that load avg is tripped.
-   * This test will not run on Windows, as it does not support load average.
-   * See <a href="https://issues.apache.org/jira/browse/SOLR-17082">SOLR-17082</a>
+   * Index some docs and see that load avg is tripped. This test will not run on Windows, as it does
+   * not support load average. See <a
+   * href="https://issues.apache.org/jira/browse/SOLR-17082">SOLR-17082</a>.
    */
   @Test
   public void testIndexingTripsLoadavgCb() {
