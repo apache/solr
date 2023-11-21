@@ -17,14 +17,18 @@
 
 package org.apache.solr.util;
 
+import org.apache.commons.exec.OS;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 
 /** Tests the pluggable circuit breaker implementation. The actual tests are in base class. */
+@DisabledOnOs(org.junit.jupiter.api.condition.OS.WINDOWS)
 public class TestGlobalCircuitBreaker extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setUpClass() throws Exception {
@@ -46,12 +50,13 @@ public class TestGlobalCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGloalCbRegistered() {
+  public void testGlobalCbRegistered() {
     assertEquals(1, CircuitBreakerRegistry.listGlobal().size());
   }
 
   @Test
-  public void testIndexingTripsCpuCb() {
+  public void testIndexingTripsLoadavgCb() {
+    Assume.assumeFalse(OS.isFamilyWindows());
     try {
       for (int i = 0; i < 100; i++) {
         assertU(adoc("name", "john smith", "id", "1"));
