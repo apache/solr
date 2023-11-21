@@ -25,10 +25,8 @@ import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 
 /** Tests the pluggable circuit breaker implementation. The actual tests are in base class. */
-@DisabledOnOs(org.junit.jupiter.api.condition.OS.WINDOWS)
 public class TestGlobalCircuitBreaker extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setUpClass() throws Exception {
