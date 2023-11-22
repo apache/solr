@@ -133,7 +133,7 @@ usually averaged over one minute. Some systems include processes waiting on IO i
 documentation for your system and JVM to understand this metric. For more information, see the
 https://en.wikipedia.org/wiki/Load_(computing)[Wikipedia page for Load],
 
-To enable and configure the CPU utilization based circuit breaker:
+To enable and configure the Load average circuit breaker:
 
 .Per collection in `solrconfig.xml`
 [source,xml]
@@ -151,6 +151,11 @@ SOLR_CIRCUITBREAKER_QUERY_LOADAVG=8.0
 
 The triggering threshold is a floating point number matching load average.
 The example circuit breaker above will trip when the load average is equal to or greater than 8.0.
+
+[NOTE]
+====
+The System Load Average Circuit breaker behavior is dependent on the operating system, and may not work on some operating systems like Microsoft Windows. See https://docs.oracle.com/en/java/javase/17/docs/api/java.management/java/lang/management/OperatingSystemMXBean.html#getSystemLoadAverage()[JavaDoc] for more.
+====
 
 == Advanced example
 
