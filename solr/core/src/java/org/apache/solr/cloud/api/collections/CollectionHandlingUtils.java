@@ -454,7 +454,7 @@ public class CollectionHandlingUtils {
     if (collName == null) {
       log.error("Operation {} failed", operation, e);
     } else {
-      log.error("Collection {}}, operation {} failed", collName, operation, e);
+      log.error("Collection {}, operation {} failed", collName, operation, e);
     }
   }
 
