@@ -27,6 +27,7 @@
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="shareSchema">${shareSchema:true}</str>
   <str name="coresLocator">testCoresLocator</str>
+  <str name="coreSorter">testCoreSorter</str>
   <int name="transientCacheSize">66</int>
   <int name="replayUpdatesThreads">100</int>
   <int name="maxBooleanClauses">42</int>
