@@ -31,7 +31,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.Before;
@@ -115,7 +114,7 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    assertTrue(mapMock.get("foo!") instanceof  BlobRepository.BlobContent);
+    assertTrue(mapMock.get("foo!") instanceof BlobRepository.BlobContent);
   }
 
   @Test
@@ -155,7 +154,9 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    assertTrue("Key was not mapped to a BlobContent instance.", mapMock.get("foo!") instanceof BlobRepository.BlobContent);
+    assertTrue(
+        "Key was not mapped to a BlobContent instance.",
+        mapMock.get("foo!") instanceof BlobRepository.BlobContent);
   }
 
   @Test
@@ -188,6 +189,6 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     assertNotNull(ref.blob);
     assertEquals(PARSED, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    assertTrue(mapMock.get("foo!mocked") instanceof  BlobRepository.BlobContent);
+    assertTrue(mapMock.get("foo!mocked") instanceof BlobRepository.BlobContent);
   }
 }
