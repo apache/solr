@@ -57,12 +57,6 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
     Object[] params = calls.get("create");
     assertEquals("hello", params[0]);
     assertEquals(fromJSONString("{schema : schema.xml}"), params[2]);
-
-    TestCollectionAPIs.makeCall(
-        apiBag, "/cores/core1", SolrRequest.METHOD.POST, "{rename:{to: core2}}");
-    params = calls.get("rename");
-    assertEquals("core1", params[0]);
-    assertEquals("core2", params[1]);
   }
 
   @SuppressWarnings({"unchecked"})

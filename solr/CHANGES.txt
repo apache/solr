@@ -84,6 +84,8 @@ New Features
 
 * SOLR-16974: Circuit Breakers can now be configured globally (janhoy, Christine Poerschke)
 
+* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
+
 Improvements
 ---------------------
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
@@ -99,6 +101,11 @@ Improvements
 * SOLR-17011: Add tracing spans to internal collection commands (Alex Deparvu)
 
 * SOLR-17041: Make CommitTracker currentTlogSize lazy (Alex Deparvu)
+
+* SOLR-16397: The rename-core v2 endpoint has been updated to be more REST-ful.
+  RENAME is now available at `POST /api/cores/coreName/rename` (Sanjay Dutt via Jason Gerlowski)
+
+* SOLR-17035: Add trace id to jetty thread names to improve debuggability via stack traces (Alex Deparvu)
 
 Optimizations
 ---------------------
