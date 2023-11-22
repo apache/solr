@@ -33,6 +33,7 @@ circuit breaker thresholds are reached on some nodes. See <<solrcloud-distribute
 
 == Circuit Breaker Configurations
 Circuit breakers can be configured globally for the entire node, or for each collection individually, or a combination. Per-collection circuit breakers are checked before global circuit breakers, and if there is a conflict, the per-collection circuit breaker takes precedence.
+Typically, any per-collection circuit breaker thresholds are set lower than global thresholds.
 
 A circuit breaker can register itself to be checked for query requests and/or update requests. A user may register circuit breakers of the same type with different thresholds for each request type.
 
