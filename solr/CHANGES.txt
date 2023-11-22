@@ -84,6 +84,8 @@ New Features
 
 * SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
 
+* SOLR-16959: Make the internal CoreSorter implementation configurable in solr.xml (Vincent Primault)
+
 Improvements
 ---------------------
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
