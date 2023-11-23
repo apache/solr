@@ -773,7 +773,7 @@ public class PackageManager implements Closeable {
               String jsonPath =
                   PackageUtils.resolve(
                       cmd.condition, pkg.parameterDefaults, overridesMap, systemParams);
-              actualValue = jsonPathResolve(response, jsonPath);
+              actualValue = jsonPathRead(response, jsonPath);
             } catch (PathNotFoundException ex) {
               PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
               success = false;
@@ -826,7 +826,7 @@ public class PackageManager implements Closeable {
                         pkg.parameterDefaults,
                         collectionParameterOverrides,
                         systemParams);
-                actualValue = jsonPathResolve(response, jsonPath);
+                actualValue = jsonPathRead(response, jsonPath);
               } catch (PathNotFoundException ex) {
                 PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
                 success = false;
@@ -856,7 +856,7 @@ public class PackageManager implements Closeable {
   }
 
   /** just adds problem XPath into {@link InvalidPathException} if occurs */
-  private static String jsonPathResolve(String response, String jsonPath) {
+  private static String jsonPathRead(String response, String jsonPath) {
     try {
       return JsonPath.parse(response, PackageUtils.jsonPathConfiguration()).read(jsonPath);
     } catch (PathNotFoundException pne) {
@@ -1104,8 +1104,9 @@ public class PackageManager implements Closeable {
               new ModifiableSolrParams().add("omitHeader", "true"));
       String version = null;
       try {
-        String jsonPath = "$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "']";
-        version = jsonPathResolve(paramsJson, jsonPath);
+        version =
+            jsonPathRead(
+                paramsJson, "$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "']");
       } catch (PathNotFoundException ex) {
         // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched
         // by the package manager.

@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,12 +36,7 @@ public class TestPackageManager extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("enable.packages", "true");
-    configureCluster(1)
-        .withJettyConfig(jetty -> jetty.enableV2(true))
-        .addConfig("conf", configset("conf3"))
-        .addConfig("conf1", configset("schema-package"))
-        .configure();
+    configureCluster(1).addConfig("conf", configset("conf3")).configure();
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
@@ -80,17 +74,6 @@ public class TestPackageManager extends SolrCloudTestCase {
         assertTrue(e.getMessage().contains("&[no_quotes_error_jpath]"));
       }
     }
-  }
-
-  @After
-  @Override
-  public void tearDown() throws Exception {
-    if (cluster != null) {
-      cluster.shutdown();
-    }
-    System.clearProperty("enable.packages");
-
-    super.tearDown();
   }
 
   private static class StubPackageManager extends PackageManager {
