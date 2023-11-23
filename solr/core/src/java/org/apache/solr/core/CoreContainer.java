@@ -170,7 +170,7 @@ import org.slf4j.LoggerFactory;
 public class CoreContainer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final float USABLE_DISK_SPACE_PERCENTAGE_THRESHOLD = 2.15012023f;
+  private static final float USABLE_DISK_SPACE_PERCENTAGE_THRESHOLD = 2f;
 
   {
     // Declared up top to ensure this is present before anything else.
@@ -1764,7 +1764,7 @@ public class CoreContainer {
 
   private float getUsableDiskSpacePercentage(Path directory) {
     File file = directory.toFile();
-    return file.getUsableSpace() * 100 / file.getTotalSpace();
+    return (float) file.getUsableSpace() * 100f / (float) file.getTotalSpace();
   }
 
   public boolean isSharedFs(CoreDescriptor cd) {
