@@ -902,13 +902,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
             comp.getElevationProvider(reader, core);
 
         // Make sure the boosts loaded properly
-        assertEquals(11, elevationProvider.size());
+        assertEquals(14, elevationProvider.size());
         assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
         assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
         assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
+        assertEquals(1, elevationProvider.getFqElevation("C:F1").elevatedIds.size());
+        assertEquals(2, elevationProvider.getFqElevation("C:F2").elevatedIds.size());
+        assertEquals(3, elevationProvider.getFqElevation("C:F3").elevatedIds.size());
         assertNull(elevationProvider.getElevationForQuery("xxxx"));
         assertNull(elevationProvider.getElevationForQuery("yyyy"));
         assertNull(elevationProvider.getElevationForQuery("zzzz"));
+        assertNull(elevationProvider.getFqElevation("c:f1"));
+        assertNull(elevationProvider.getFqElevation("c:f2"));
+        assertNull(elevationProvider.getFqElevation("c:f3"));
       }
 
       // Now test the same thing with a lowercase filter: 'lowerfilt'
@@ -921,13 +927,16 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         comp.inform(core);
         QueryElevationComponent.ElevationProvider elevationProvider =
             comp.getElevationProvider(reader, core);
-        assertEquals(11, elevationProvider.size());
+        assertEquals(14, elevationProvider.size());
         assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
         assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
         assertEquals(3, elevationProvider.getElevationForQuery("ZZZZ").elevatedIds.size());
         assertEquals(1, elevationProvider.getElevationForQuery("xxxx").elevatedIds.size());
         assertEquals(2, elevationProvider.getElevationForQuery("yyyy").elevatedIds.size());
         assertEquals(3, elevationProvider.getElevationForQuery("zzzz").elevatedIds.size());
+        assertEquals(1, elevationProvider.getFqElevation("c:f1").elevatedIds.size());
+        assertEquals(2, elevationProvider.getFqElevation("c:f2").elevatedIds.size());
+        assertEquals(3, elevationProvider.getFqElevation("c:f3").elevatedIds.size());
 
         assertEquals("xxxx", comp.analyzeQuery("XXXX"));
         assertEquals("xxxxyyyy", comp.analyzeQuery("XXXX YYYY"));
