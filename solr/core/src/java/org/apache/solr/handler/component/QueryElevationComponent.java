@@ -991,7 +991,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
      * Gets the elevation associated to the provided query.
      *
      * <p>By contract and by design, only one elevation may be associated to a given query (this can
-     * be safely verified by an assertion).
+     * be safely verified by an assertion).</p>
      *
      * @param queryString The query string (not {@link #analyzeQuery(String) analyzed} yet, this
      *     {@link ElevationProvider} is in charge of analyzing it).
