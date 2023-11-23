@@ -18,7 +18,6 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,7 +31,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,10 +40,10 @@ public class UuidAtomicUpdateTest extends SolrCloudTestCase {
   private static final String UNCOMMITTED_DOC_ID = "2";
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARDS = 1;
-  private static final int NUM_REPLICAS = 2;
+  private static final int NUM_REPLICAS = 2; // bug occurs only with replica
 
-  private static String committedUuidAfter = UUID.randomUUID().toString();
-  private static String uncommittedUuidAfter = UUID.randomUUID().toString();
+  private static final String committedUuidAfter = UUID.randomUUID().toString();
+  private static final String uncommittedUuidAfter = UUID.randomUUID().toString();
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -61,17 +59,17 @@ public class UuidAtomicUpdateTest extends SolrCloudTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
+    // wipe
+    new UpdateRequest().deleteByQuery("*:*").process(cluster.getSolrClient(), COLLECTION);
     String committedUuidBefore = UUID.randomUUID().toString();
     final SolrInputDocument committedDoc =
         sdoc("id", COMMITTED_DOC_ID, "title_s", "title_1", "uuid", committedUuidBefore);
-    final UpdateRequest committedRequest = new UpdateRequest().add(committedDoc);
-    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+    new UpdateRequest().add(committedDoc).commit(cluster.getSolrClient(), COLLECTION);
 
     String uncommittedUuidBefore = UUID.randomUUID().toString();
     final SolrInputDocument uncommittedDoc =
         sdoc("id", UNCOMMITTED_DOC_ID, "title_s", "title_2", "uuid", uncommittedUuidBefore);
-    final UpdateRequest uncommittedRequest = new UpdateRequest().add(uncommittedDoc);
-    uncommittedRequest.process(cluster.getSolrClient(), COLLECTION);
+    new UpdateRequest().add(uncommittedDoc).process(cluster.getSolrClient(), COLLECTION);
   }
 
   @Test
@@ -107,24 +105,14 @@ public class UuidAtomicUpdateTest extends SolrCloudTestCase {
   }
 
   private static void commit() throws IOException, SolrServerException {
-    final UpdateRequest committedRequest = new UpdateRequest();
-    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
-  }
-
-  @AfterClass
-  public static void afterAll() throws Exception {
-    final UpdateRequest committedRequest = new UpdateRequest();
-    committedRequest.deleteByQuery("*:*");
-    committedRequest.commit(cluster.getSolrClient(), COLLECTION);
+    new UpdateRequest().commit(cluster.getSolrClient(), COLLECTION);
   }
 
   private static void atomicSetValue(String docId, String fieldName, Object value)
       throws Exception {
     final SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", docId);
-    Map<String, Object> atomicUpdateRemoval = new HashMap<>(1);
-    atomicUpdateRemoval.put("set", value);
-    doc.setField(fieldName, atomicUpdateRemoval);
+    doc.setField(fieldName, Map.of("set", value));
 
     UpdateResponse updateResponse = cluster.getSolrClient().add(COLLECTION, doc);
     assertEquals(updateResponse.toString(), 0, updateResponse.getStatus());
