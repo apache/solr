@@ -225,10 +225,12 @@ public class ZkCLI implements CLIO {
         stdout.println(
             "zkcli.sh -zkhost localhost:9983 -cmd "
                 + PUT_FILE
-                + " /solr.xml /User/myuser/solr/solr.xml");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /solr.xml");
+                + " /clusterprops.json /User/myuser/solr/clusterprops.json");
+        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /clusterprops.json");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
+            "zkcli.sh -zkhost localhost:9983 -cmd "
+                + GET_FILE
+                + " /clusterprops.json clusterprops.json");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LS + " /solr/live_nodes");

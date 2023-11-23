@@ -64,7 +64,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new SwapCoresAPI(handler));
     apiBag.registerObject(new RenameCoreAPI(handler));
     apiBag.registerObject(new MergeIndexesAPI(handler));
     apiBag.registerObject(new SplitCoreAPI(handler));
@@ -74,17 +73,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     apiBag.registerObject(new RequestSyncShardAPI(handler));
     apiBag.registerObject(new RequestBufferUpdatesAPI(handler));
     apiBag.registerObject(new RequestCoreCommandStatusAPI(handler));
-  }
-
-  @Test
-  public void testSwapCoresAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName", "POST", "{\"swap\": {\"with\": \"otherCore\"}}");
-
-    assertEquals("swap", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals("otherCore", v1Params.get(OTHER));
   }
 
   @Test

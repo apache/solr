@@ -14,20 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.core;
 
-package org.apache.solr.util;
+import org.apache.lucene.codecs.Codec;
 
-import org.junit.BeforeClass;
+/**
+ * Simple factory for returning the Lucene default Codec
+ *
+ * @see Codec#getDefault
+ */
+public class LuceneDefaultCodecFactory extends CodecFactory {
 
-/** Tests the pluggable circuit breaker implementation. The actual tests are in base class. */
-public class TestCircuitBreaker extends BaseTestCircuitBreaker {
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    System.setProperty("filterCache.enabled", "false");
-    System.setProperty("queryResultCache.enabled", "false");
-    System.setProperty("documentCache.enabled", "true");
-
-    initCore("solrconfig-pluggable-circuitbreaker.xml", "schema.xml");
-    BaseTestCircuitBreaker.indexDocs();
+  @Override
+  public Codec getCodec() {
+    return Codec.getDefault();
   }
 }

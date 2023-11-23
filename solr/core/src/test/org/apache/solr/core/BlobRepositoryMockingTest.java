@@ -17,8 +17,6 @@
 
 package org.apache.solr.core;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -51,8 +49,6 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
   private ConcurrentHashMap<String, BlobRepository.BlobContent> mapMock =
       mock(ConcurrentHashMap.class);
 
-  private Object[] mocks = new Object[] {mockContainer, mapMock};
-
   BlobRepository repository;
   ByteBuffer blobData = ByteBuffer.wrap(BLOBSTR.getBytes(UTF8));
   boolean blobFetched = false;
@@ -71,7 +67,8 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     super.setUp();
     blobFetched = false;
     blobKey = "";
-    reset(mocks);
+    reset(mockContainer);
+    mapMock = new ConcurrentHashMap<>();
     repository =
         new BlobRepository(mockContainer) {
           @Override
@@ -101,7 +98,7 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
   public void testCloudOnly() {
     when(mockContainer.isZooKeeperAware()).thenReturn(false);
     try {
-      BlobRepository.BlobContentRef<ByteBuffer> ref = repository.getBlobIncRef("foo!");
+      repository.getBlobIncRef("foo!");
     } catch (SolrException e) {
       verify(mockContainer).isZooKeeperAware();
       throw e;
@@ -117,8 +114,7 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    verify(mapMock).get("foo!");
-    verify(mapMock).put(eq("foo!"), any(BlobRepository.BlobContent.class));
+    assertTrue(mapMock.get("foo!") instanceof BlobRepository.BlobContent);
   }
 
   @Test
@@ -151,15 +147,16 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
   @Test
   public void testCachedAlready() {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
-    when(mapMock.get("foo!"))
-        .thenReturn(new BlobRepository.BlobContent<BlobRepository>("foo!", blobData));
+    mapMock.put("foo!", new BlobRepository.BlobContent<BlobRepository>("foo!", blobData));
     BlobRepository.BlobContentRef<ByteBuffer> ref = repository.getBlobIncRef("foo!");
     assertEquals("", blobKey);
     assertFalse(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    verify(mapMock).get("foo!");
+    assertTrue(
+        "Key was not mapped to a BlobContent instance.",
+        mapMock.get("foo!") instanceof BlobRepository.BlobContent);
   }
 
   @Test
@@ -192,7 +189,6 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     assertNotNull(ref.blob);
     assertEquals(PARSED, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    verify(mapMock).get("foo!mocked");
-    verify(mapMock).put(eq("foo!mocked"), any(BlobRepository.BlobContent.class));
+    assertTrue(mapMock.get("foo!mocked") instanceof BlobRepository.BlobContent);
   }
 }

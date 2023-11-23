@@ -29,21 +29,18 @@ It is up to the client to handle this error and potentially build retry logic as
 In a sharded collection, when a circuit breaker trips on one shard, the entire query will fail,
 even if the other shard requests succeed. This will multiply the failures seen by the end users.
 Setting the `shards.tolerant=true` parameter on requests can help with graceful degradation when
-circuit breaker thresholds are reached on some nodes. See the <<shards.tolerant Parameter>> for details.
+circuit breaker thresholds are reached on some nodes. See the xref:deployment-guide:solrcloud-distributed-requests.adoc#shards-tolerant-parameter[`shards.tolerant` Parameter] for details.
 
 == Circuit Breaker Configurations
 All circuit breaker configurations are listed as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown below.
-A circuit breaker can register itself to trip for query requests and/or update requests. By default only search requests are affected. A user may register multiple circuit breakers of the same type with different thresholds for each request type.
+A circuit breaker can register itself to trip for query requests and/or update requests. By default, only search requests are affected. A user may register multiple circuit breakers of the same type with different thresholds for each request type.
+
+[TIP]
+====
+HTTP error code from circuit breakers is configurable with java system property `solr.circuitbreaker.errorcode`.
+====
 
 == Currently Supported Circuit Breakers
-
-[NOTE]
-====
-The legacy configuration syntax using `CircuitBreakerManager` is deprecated as of Solr 9.4, but will
-continue to work. The "CPU" circuit breaker used by this legacy plugin when configuring a `cpuThreshold`
-is actually the `LoadAverageCircuitBreaker` described below. Also, the `CircuitBreakerManager` will
-return a HTTP 503 code instead of the HTTP 429 code used by the new circuit breakers.
-====
 
 === JVM Heap Usage
 
@@ -101,7 +98,7 @@ usually averaged over one minute. Some systems include processes waiting on IO i
 documentation for your system and JVM to understand this metric. For more information, see the
 https://en.wikipedia.org/wiki/Load_(computing)[Wikipedia page for Load],
 
-To enable and configure the CPU utilization based circuit breaker:
+To enable and configure the Load average circuit breaker:
 
 [source,xml]
 ----
@@ -112,6 +109,11 @@ To enable and configure the CPU utilization based circuit breaker:
 
 The triggering threshold is a floating point number matching load average.
 The example circuit breaker above will trip when the load average is equal to or greater than 8.0.
+
+[NOTE]
+====
+The System Load Average Circuit breaker behavior is dependent on the operating system, and may not work on some operating systems like Microsoft Windows. See https://docs.oracle.com/en/java/javase/17/docs/api/java.management/java/lang/management/OperatingSystemMXBean.html#getSystemLoadAverage()[JavaDoc] for more.
+====
 
 == Advanced example
 
