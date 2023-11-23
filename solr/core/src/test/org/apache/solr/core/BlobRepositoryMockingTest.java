@@ -153,9 +153,7 @@ public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    assertNotNull(
-        "Key was not mapped to a BlobContent instance.",
-        blobStorage.get("foo!"));
+    assertNotNull("Key was not mapped to a BlobContent instance.", blobStorage.get("foo!"));
   }
 
   @Test
