@@ -65,6 +65,8 @@ Other Changes
   methods.  SolrJ users looking to make use of v2 APIs in their applications can use the SolrRequest implementations
   dedicated to that purpose. (Jason Gerlowski)
 
+* SOLR-17072: package CLI tool prints error JSONPath (Mikhail Khludnev)
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
