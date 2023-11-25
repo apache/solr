@@ -53,6 +53,9 @@ Bug Fixes
 * SOLR-17045: DenseVectorField w/ vectorDimension > 1024 now work automatically with _default configset, due to
   implicit use of SchemaCodecFactory.  (hossman)
 
+* SOLR-10653: When there's a UUIDField in the schema and atomic update touches another field
+  the error occurs when leader updates replica (Mikhail Khludnev)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
