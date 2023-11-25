@@ -1406,6 +1406,26 @@ if [ "${SOLR_ENABLE_STREAM_BODY:-false}" == "true" ]; then
   SCRIPT_SOLR_OPTS+=("-Dsolr.enableStreamBody=true")
 fi
 
+# Parse global circuit breaker env vars and convert to dot separated, lowercase properties
+if [ -n "${SOLR_CIRCUITBREAKER_UPDATE_CPU:-}" ]; then
+  SOLR_OPTS+=("-Dsolr.circuitbreaker.update.cpu=$SOLR_CIRCUITBREAKER_UPDATE_CPU")
+fi
+if [ -n "${SOLR_CIRCUITBREAKER_UPDATE_MEM:-}" ]; then
+  SOLR_OPTS+=("-Dsolr.circuitbreaker.update.mem=$SOLR_CIRCUITBREAKER_UPDATE_MEM")
+fi
+if [ -n "${SOLR_CIRCUITBREAKER_UPDATE_LOADAVG:-}" ]; then
+  SOLR_OPTS+=("-Dsolr.circuitbreaker.update.loadavg=$SOLR_CIRCUITBREAKER_UPDATE_LOADAVG")
+fi
+if [ -n "${SOLR_CIRCUITBREAKER_QUERY_CPU:-}" ]; then
+  SOLR_OPTS+=("-Dsolr.circuitbreaker.query.cpu=$SOLR_CIRCUITBREAKER_QUERY_CPU")
+fi
+if [ -n "${SOLR_CIRCUITBREAKER_QUERY_MEM:-}" ]; then
+  SOLR_OPTS+=("-Dsolr.circuitbreaker.query.mem=$SOLR_CIRCUITBREAKER_QUERY_MEM")
+fi
+if [ -n "${SOLR_CIRCUITBREAKER_QUERY_LOADAVG:-}" ]; then
+  SOLR_OPTS+=("-Dsolr.circuitbreaker.query.loadavg=$SOLR_CIRCUITBREAKER_QUERY_LOADAVG")
+fi
+
 : ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
 
 if [ ! -e "$SOLR_SERVER_DIR" ]; then

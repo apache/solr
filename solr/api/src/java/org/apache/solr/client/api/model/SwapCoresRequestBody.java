@@ -14,25 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.util;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-import org.junit.BeforeClass;
+public class SwapCoresRequestBody {
+  @Schema(description = "The name of the other core to be swapped.")
+  @JsonProperty
+  public String with;
 
-/**
- * Tests the original circuit breaker configuration format, which was not configurable.
- *
- * @deprecated Remove in 10.0
- */
-@Deprecated(since = "9.4")
-public class TestLegacyCircuitBreaker extends BaseTestCircuitBreaker {
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    System.setProperty("filterCache.enabled", "false");
-    System.setProperty("queryResultCache.enabled", "false");
-    System.setProperty("documentCache.enabled", "true");
-
-    initCore("solrconfig-legacy-circuitbreaker.xml", "schema.xml");
-    BaseTestCircuitBreaker.indexDocs();
-  }
+  @Schema(description = "Request ID to track this action which will be processed asynchronously.")
+  @JsonProperty
+  public String async;
 }
