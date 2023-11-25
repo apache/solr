@@ -1902,8 +1902,6 @@ if [ -n "${SOLR_CIRCUITBREAKER_QUERY_LOADAVG:-}" ]; then
   SOLR_OPTS+=("-Dsolr.circuitbreaker.query.loadavg=$SOLR_CIRCUITBREAKER_QUERY_LOADAVG")
 fi
 
-echo "SOLR_OPTS is now: ${SOLR_OPTS[*]}"
-
 : ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
 
 if [ ! -e "$SOLR_SERVER_DIR" ]; then

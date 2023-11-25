@@ -71,6 +71,9 @@ Due to changes in Lucene 9, that isn't possible any more.
 === Curator upgraded to 5.5.0 and requires Zookeeper 3.5.x or higher
 <<#solr-8-2,Solr 8.2 recommended using Zookeeper 3.5.5>> and now with Curator 5.5.0 requires https://curator.apache.org/docs/breaking-changes/[Zookeeper 3.5.x or higher]. This primarily affects users of `hadoop-auth`, but usage of Curator could affect other parts of Solr.
 
+=== Global Circuit Breakers
+* Circuit breakers can now be configured globally, not only per collection. See xref:deployment-guide:circuit-breakers.adoc[Configuring Circuit Breakers] for more information.
+
 == Solr 9.4
 === The Built-In Config Sets
 * The build in ConfigSets (`_default` and `sample_techproducts_configs`), now use a default `autoSoftCommit` time of 3 seconds,
