@@ -152,11 +152,6 @@ SOLR_CIRCUITBREAKER_QUERY_LOADAVG=8.0
 The triggering threshold is a floating point number matching load average.
 The example circuit breaker above will trip when the load average is equal to or greater than 8.0.
 
-[NOTE]
-====
-The System Load Average Circuit breaker behavior is dependent on the operating system, and may not work on some operating systems like Microsoft Windows. See https://docs.oracle.com/en/java/javase/17/docs/api/java.management/java/lang/management/OperatingSystemMXBean.html#getSystemLoadAverage()[JavaDoc] for more.
-====
-
 == Advanced example
 
 In this example we will prevent update requests above 80% CPU load, and prevent query requests above 95% CPU load. Supported request types are `query` and `update`.
