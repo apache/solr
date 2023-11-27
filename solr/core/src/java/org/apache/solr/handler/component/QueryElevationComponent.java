@@ -1007,7 +1007,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
      * @param filterQueryString the filter query string (will not be {@link #analyzeQuery(String) analyzed}).
      * @return The elevation associated with the filter query; or <code>null</code> if none.
      */
-    Elevation getFqElevation(String param);
+    Elevation getFqElevation(String filterQueryString);
     /** Gets the number of query elevations in this {@link ElevationProvider}. */
     @VisibleForTesting
     int size();
