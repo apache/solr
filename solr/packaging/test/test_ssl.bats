@@ -559,7 +559,6 @@ teardown() {
   # Give some time for the server reload
   sleep 6
 
-  # run ! solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=query2"
   run ! solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=query2"
 
   (
