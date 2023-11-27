@@ -78,6 +78,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * Multivalued string field suffixes that can be randomized for testing diff facet/join code paths
    */
   private static final String[] STR_FIELD_SUFFIXES = new String[] {"_ss", "_sds", "_sdsS"};
+
   /**
    * Multivalued int field suffixes that can be randomized for testing diff facet/join code paths
    */
@@ -85,6 +86,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
+
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 

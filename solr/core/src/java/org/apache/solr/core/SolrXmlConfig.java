@@ -95,22 +95,12 @@ public class SolrXmlConfig {
   }
 
   public static NodeConfig fromConfig(
-      Path solrHome,
-      Properties substituteProperties,
-      boolean fromZookeeper,
-      ConfigNode root,
-      SolrResourceLoader loader) {
+      Path solrHome, Properties substituteProperties, ConfigNode root, SolrResourceLoader loader) {
 
     checkForIllegalConfig(root);
 
-    // sanity check: if our config came from zookeeper, then there *MUST* be Node Properties that
-    // tell us what zkHost was used to read it (either via webapp context attribute, or that
-    // SolrDispatchFilter filled in for us from system properties)
-    assert ((!fromZookeeper)
-        || (null != substituteProperties && null != substituteProperties.getProperty(ZK_HOST)));
-
-    // Regardless of where/how we this XmlConfigFile was loaded from, if it contains a zkHost
-    // property, we're going to use that as our "default" and only *directly* check the system
+    // If solr.xml contains a zkHost property, we're going to use that as our "default" and only
+    // *directly* check the system
     // property if it's not specified.
     //
     // (checking the sys prop here is really just for tests that by-pass SolrDispatchFilter. In
@@ -167,6 +157,8 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
+    configBuilder.setReplicaPlacementFactoryConfig(
+        getPluginInfo(root.get("replicaPlacementFactory")));
     configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
     configBuilder.setSolrProperties(loadProperties(root, substituteProperties));
@@ -179,7 +171,6 @@ public class SolrXmlConfig {
     configBuilder.setHiddenSysProps(getHiddenSysProps(root.get("metrics")));
     configBuilder.setMetricsConfig(getMetricsConfig(root.get("metrics")));
     configBuilder.setCachesConfig(getCachesConfig(loader, root.get("caches")));
-    configBuilder.setFromZookeeper(fromZookeeper);
     configBuilder.setDefaultZkHost(defaultZkHost);
     configBuilder.setCoreAdminHandlerActions(coreAdminHandlerActions);
     return fillSolrSection(configBuilder, root);
@@ -222,11 +213,6 @@ public class SolrXmlConfig {
 
   public static NodeConfig fromInputStream(
       Path solrHome, InputStream is, Properties substituteProps) {
-    return fromInputStream(solrHome, is, substituteProps, false);
-  }
-
-  public static NodeConfig fromInputStream(
-      Path solrHome, InputStream is, Properties substituteProps, boolean fromZookeeper) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     if (substituteProps == null) {
       substituteProps = new Properties();
@@ -239,7 +225,6 @@ public class SolrXmlConfig {
         return fromConfig(
             solrHome,
             substituteProps,
-            fromZookeeper,
             new DataConfigNode(new DOMConfigNode(config.getDocument().getDocumentElement())),
             loader);
       }
@@ -748,7 +733,7 @@ public class SolrXmlConfig {
       PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
       configs.add(defaultPlugin);
     }
-    return configs.toArray(new PluginInfo[configs.size()]);
+    return configs.toArray(new PluginInfo[0]);
   }
 
   /**

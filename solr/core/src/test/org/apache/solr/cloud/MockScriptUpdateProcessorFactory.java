@@ -59,6 +59,7 @@ public class MockScriptUpdateProcessorFactory extends UpdateRequestProcessorFact
     public MockScriptUpdateRequestProcessor(UpdateRequestProcessor next) {
       super(next);
     }
+
     /**
      * @param cmd the update command in input containing the Document to classify
      * @throws IOException If there is a low-level I/O error

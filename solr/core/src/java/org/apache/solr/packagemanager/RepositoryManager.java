@@ -26,6 +26,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,7 +51,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.BlobRepository;
-import org.apache.solr.filestore.PackageStoreAPI;
+import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
@@ -122,13 +123,13 @@ public class RepositoryManager {
     if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {
       packageManager.zkClient.create(
           PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes("UTF-8"),
+          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
           CreateMode.PERSISTENT,
           true);
     } else {
       packageManager.zkClient.setData(
           PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes("UTF-8"),
+          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
           true);
     }
 
@@ -145,7 +146,7 @@ public class RepositoryManager {
     String solrHome = (String) systemInfo.get("solr_home");
 
     // put the public key into package store's trusted key store and request a sync.
-    String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
+    String path = FileStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Paths.get(solrHome));
     PackageUtils.getJsonStringFromUrl(
         solrClient, "/api/node/files" + path, new ModifiableSolrParams().add("sync", "true"));
@@ -155,7 +156,8 @@ public class RepositoryManager {
       throws UnsupportedEncodingException, KeeperException, InterruptedException {
     if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true)) {
       return new String(
-          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true), "UTF-8");
+          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true),
+          StandardCharsets.UTF_8);
     }
     return "[]";
   }
@@ -191,10 +193,11 @@ public class RepositoryManager {
       }
       String manifestJson = getMapper().writeValueAsString(release.manifest);
       String manifestSHA512 =
-          BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
+          BlobRepository.sha512Digest(
+              ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
       PackageUtils.postFile(
           solrClient,
-          ByteBuffer.wrap(manifestJson.getBytes("UTF-8")),
+          ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)),
           String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"),
           null);
 

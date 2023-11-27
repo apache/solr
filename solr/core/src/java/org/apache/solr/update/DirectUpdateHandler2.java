@@ -105,6 +105,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   protected final CommitTracker softCommitTracker;
 
   protected boolean commitWithinSoftCommit;
+
   /**
    * package access for testing
    *
@@ -378,13 +379,12 @@ public class DirectUpdateHandler2 extends UpdateHandler
       }
 
       if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-        long currentTlogSize = getCurrentTLogSize();
         if (commitWithinSoftCommit) {
-          commitTracker.addedDocument(-1, currentTlogSize);
+          commitTracker.addedDocument(-1, this::getCurrentTLogSize);
           softCommitTracker.addedDocument(cmd.commitWithin);
         } else {
           softCommitTracker.addedDocument(-1);
-          commitTracker.addedDocument(cmd.commitWithin, currentTlogSize);
+          commitTracker.addedDocument(cmd.commitWithin, this::getCurrentTLogSize);
         }
       }
 
@@ -483,8 +483,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
         commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
       }
 
-      long currentTlogSize = getCurrentTLogSize();
-      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
+      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(this::getCurrentTLogSize);
 
       if (softCommitTracker.getTimeUpperBound() > 0) {
         softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
@@ -645,7 +644,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       }
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[mergeReaders.size()]));
+        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[0]));
       } finally {
         iw.decref();
       }
@@ -1050,7 +1049,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       // skips uniqueKey and _root_
       List<IndexableField> fields = cmd.makeLuceneDocForInPlaceUpdate().getFields();
       log.debug("updateDocValues({})", cmd);
-      writer.updateDocValues(updateTerm, fields.toArray(new Field[fields.size()]));
+      writer.updateDocValues(updateTerm, fields.toArray(new Field[0]));
 
     } else { // more normal path
 

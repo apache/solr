@@ -42,6 +42,7 @@ public class Tuple implements Cloneable, MapWriter {
    * record from the stream, but it may contain metrics/aggregates gathered by underlying streams.
    */
   public boolean EOF;
+
   /**
    * When EXCEPTION field is true the Tuple marks an exception in the stream and the corresponding
    * "EXCEPTION" field contains a related message.

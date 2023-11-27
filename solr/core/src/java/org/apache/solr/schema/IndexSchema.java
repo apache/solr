@@ -161,6 +161,7 @@ public class IndexSchema {
 
   private Map<FieldType, PayloadDecoder> decoders =
       new HashMap<>(); // cache to avoid scanning token filters repeatedly, unnecessarily
+
   /** keys are all fields copied to, count is num of copyField directives that target them. */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
@@ -766,7 +767,7 @@ public class IndexSchema {
     // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
     // rather than Collections.sort() then converting to an array, since Collections.sort()
     // copies to an array first, then sets each collection member from the array.
-    DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[dynamicFieldList.size()]);
+    DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[0]);
     Arrays.sort(dFields);
 
     if (log.isTraceEnabled()) {

@@ -149,6 +149,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
   }
 
   private static final String poisoned = "poisoned";
+
   // let it go through collection handler, and break only when real thing is doing:
   // Restore/BackupCore
   public static class PoisonedRepository extends LocalFileSystemRepository {

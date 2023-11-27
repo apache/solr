@@ -23,9 +23,6 @@ import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CoreAdminParams.CORE;
 import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.OTHER;
 import static org.apache.solr.common.params.CoreAdminParams.RANGES;
@@ -67,9 +64,7 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new SwapCoresAPI(handler));
     apiBag.registerObject(new RenameCoreAPI(handler));
-    apiBag.registerObject(new UnloadCoreAPI(handler));
     apiBag.registerObject(new MergeIndexesAPI(handler));
     apiBag.registerObject(new SplitCoreAPI(handler));
     apiBag.registerObject(new RequestCoreRecoveryAPI(handler));
@@ -81,17 +76,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   }
 
   @Test
-  public void testSwapCoresAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName", "POST", "{\"swap\": {\"with\": \"otherCore\"}}");
-
-    assertEquals("swap", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals("otherCore", v1Params.get(OTHER));
-  }
-
-  @Test
   public void testRenameCoreAllParams() throws Exception {
     final SolrParams v1Params =
         captureConvertedV1Params(
@@ -100,27 +84,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals("rename", v1Params.get(ACTION));
     assertEquals("coreName", v1Params.get(CORE));
     assertEquals("otherCore", v1Params.get(OTHER));
-  }
-
-  @Test
-  public void testUnloadCoreAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName",
-            "POST",
-            "{"
-                + "\"unload\": {"
-                + "\"deleteIndex\": true, "
-                + "\"deleteDataDir\": true, "
-                + "\"deleteInstanceDir\": true, "
-                + "\"async\": \"someRequestId\"}}");
-
-    assertEquals("unload", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals(true, v1Params.getBool(DELETE_INDEX));
-    assertEquals(true, v1Params.getBool(DELETE_DATA_DIR));
-    assertEquals(true, v1Params.getBool(DELETE_INSTANCE_DIR));
-    assertEquals("someRequestId", v1Params.get(ASYNC));
   }
 
   @Test

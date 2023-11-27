@@ -60,6 +60,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return JSONResponseWriter.CONTENT_TYPE_JSON_UTF8;
   }
+
   // So we extend JSONWriter and override the relevant methods
 
   public static class WriterImpl extends JSONWriter {

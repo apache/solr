@@ -81,7 +81,7 @@ public class RandomizedTaggerTest extends TaggerTestCase {
     }
 
     // BUILD NAMES
-    buildNames(names.toArray(new String[names.size()]));
+    buildNames(names.toArray(new String[0]));
 
     // QUERY LOOP
     for (int tTries = 0; tTries < 10 * RANDOM_MULTIPLIER; tTries++) {
@@ -137,7 +137,7 @@ public class RandomizedTaggerTest extends TaggerTestCase {
     }
 
     // assert
-    assertTags(reqDoc(input), testTags.toArray(new TestTag[testTags.size()]));
+    assertTags(reqDoc(input), testTags.toArray(new TestTag[0]));
   }
 
   private String randomString() {

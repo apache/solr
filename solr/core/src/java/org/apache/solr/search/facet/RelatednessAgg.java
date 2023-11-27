@@ -514,11 +514,13 @@ public class RelatednessAgg extends AggValueSource {
      * @see #getRelatedness
      */
     private double relatedness = Double.NaN;
+
     /**
      * @see #computeDerivedValues
      * @see #getForegroundPopularity
      */
     private double fg_pop;
+
     /**
      * @see #computeDerivedValues
      * @see #getBackgroundPopularity
@@ -551,6 +553,7 @@ public class RelatednessAgg extends AggValueSource {
       fg_count += fgInc;
       bg_count += bgInc;
     }
+
     /**
      * Increment both the foreground &amp; background <em>sizes</em> for the current bucket,
      * reseting any derived values that may be cached
@@ -769,6 +772,7 @@ public class RelatednessAgg extends AggValueSource {
             + 0.2 * sigmoidHelper(z, 80, 50);
     return roundTo5Digits(result);
   }
+
   /**
    * Helper function for rounding/truncating relatedness &amp; popularity values to 5 decimal
    * digits, since these values are all probabilistic more then 5 digits aren't really relevant and

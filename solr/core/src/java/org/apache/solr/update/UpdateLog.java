@@ -25,8 +25,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -998,7 +998,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             entry
                 + " is not a partial doc"
                 + ", while looking for id="
-                + new String(id.bytes, Charset.forName("UTF-8")));
+                + new String(id.bytes, StandardCharsets.UTF_8));
       }
       // This update is an inplace update, get the partial doc. The input doc is always at last
       // position.
@@ -1343,9 +1343,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     copyOverOldUpdatesMeter.mark();
 
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams());
-    TransactionLog.LogReader logReader = oldTlog.getReader(0);
+    TransactionLog.LogReader logReader = null;
     Object o = null;
     try {
+      logReader = oldTlog.getReader(0);
       while ((o = logReader.next()) != null) {
         try {
           List<?> entry = (List<?>) o;
@@ -1921,10 +1922,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             recoveryInfo.positionOfStart,
             inSortedOrder);
         long lastStatusTime = System.nanoTime();
-        if (inSortedOrder) {
-          tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
-        } else {
-          tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+        try {
+          if (inSortedOrder) {
+            tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
+          } else {
+            tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+          }
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
         }
 
         // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
