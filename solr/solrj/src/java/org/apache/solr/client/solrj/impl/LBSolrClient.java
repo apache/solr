@@ -358,7 +358,7 @@ public abstract class LBSolrClient extends SolrClient {
       }
     }
     throw new SolrServerException(
-        "No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
+        "No live SolrServers available to handle this request:" + zombieServers.size(), ex);
   }
 
   /**
