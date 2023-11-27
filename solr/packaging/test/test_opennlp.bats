@@ -43,20 +43,13 @@ teardown() {
 # I also have dreams of incorporating this as code snippets in a Tutorial via the ascii doc tags
 # like we use for the SolrJ code snippets.  That way we know the snippets continue to work!
 @test "Check lifecycle of sentiment classification" {
-
-  pip install transformers onnx onnxruntime
-  python -m transformers.onnx -m nlptown/bert-base-multilingual-uncased-sentiment --feature sequence-classification ${SOLR_TIP}/models/sentiment
+  pip3 install transformers onnx onnxruntime torch
+  python3 -m transformers.onnx -m nlptown/bert-base-multilingual-uncased-sentiment --feature sequence-classification ${SOLR_TIP}/models/sentiment
   
   curl --insecure -o ${SOLR_TIP}/models/sentiment/vocab.txt https://huggingface.co/nlptown/bert-base-multilingual-uncased-sentiment/resolve/main/vocab.txt
   
-  # GPU versions is linux and windows only, not OSX.  So swap jars.
-  # Pending https://issues.apache.org/jira/browse/OPENNLP-1515
-  rm -f ${SOLR_TIP}/modules/analysis-extras/lib/onnxruntime_gpu-1.14.0.jar
-  curl --insecure -o ${SOLR_TIP}/modules/analysis-extras/lib/onnxruntime-1.14.0.jar https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime/1.14.0/onnxruntime-1.14.0.jar
-  
   run ls -alh ${SOLR_TIP}/modules/analysis-extras/lib  
   refute_output --partial "onnxruntime_gpu"
-  assert_output --partial "onnxruntime-1.14.0.jar"
   
     # Can't figure out magic policy stuff to allow loading ONNX, so disable security manager.
   export SOLR_SECURITY_MANAGER_ENABLED=false
