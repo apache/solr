@@ -25,16 +25,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.net.ssl.KeyManagerFactory;
@@ -95,12 +93,20 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   private static String jwtTokenWrongSignature;
   private static MockOAuth2Server mockOAuth2Server;
 
+  private static Path tempDir;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Setup an OAuth2 mock server with SSL
     Path p12Cert = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_certs.p12");
     pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
+
+    InetAddress loopbackAddr = InetAddress.getLoopbackAddress();
+    tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
+    Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
+    new KeystoreGenerator().generateKeystore(p12Cert, modifiedP12Cert, loopbackAddr.getHostName());
+    p12Cert = modifiedP12Cert;
 
     mockOAuth2Server = createMockOAuthServer(p12Cert, "secret");
     mockOAuth2Server.start();
@@ -115,6 +121,12 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   public static void afterClass() throws Exception {
     if (mockOAuth2Server != null) {
       mockOAuth2Server.shutdown();
+    }
+    if (tempDir != null) {
+      Files.walk(tempDir)
+              .sorted(Comparator.reverseOrder())
+              .map(Path::toFile)
+              .forEach(java.io.File::delete);
     }
   }
 
