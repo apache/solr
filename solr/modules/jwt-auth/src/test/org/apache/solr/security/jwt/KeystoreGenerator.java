@@ -31,10 +31,19 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.file.Path;
-import java.security.*;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -45,49 +54,64 @@ import java.util.Date;
 
 public class KeystoreGenerator {
 
-    private static final String PASS_PHRASE = "secret";
+  private static final String PASS_PHRASE = "secret";
 
-    public void generateKeystore(Path existingKeystore, Path newKeystore, String cn) {
-        KeyStore ks = null;
-        try(FileInputStream fis = new FileInputStream(existingKeystore.toFile())) {
-            ks = KeyStore.getInstance(KeyStore.getDefaultType());
-            ks.load(fis, PASS_PHRASE.toCharArray());
-            ks.setCertificateEntry(cn, selfSignCertificate(cn));
+  public void generateKeystore(Path existingKeystore, Path newKeystore, String cn) {
+    KeyStore ks = null;
+    try (FileInputStream fis = new FileInputStream(existingKeystore.toFile())) {
+      ks = KeyStore.getInstance(KeyStore.getDefaultType());
+      ks.load(fis, PASS_PHRASE.toCharArray());
+      ks.setCertificateEntry(cn, selfSignCertificate(cn));
 
-        } catch (KeyStoreException |CertificateException |NoSuchAlgorithmException | IOException e) {
-            throw new RuntimeException(e);
-        }
-        try (OutputStream fos = new FileOutputStream(newKeystore.toFile())) {
-            ks.store(fos, PASS_PHRASE.toCharArray());
-        } catch (CertificateException | KeyStoreException | IOException | NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
+    } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException e) {
+      throw new RuntimeException(e);
     }
-
-    private X509Certificate selfSignCertificate(String commonName) {
-        try {
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-            kpg.initialize(1024);
-            KeyPair kp = kpg.generateKeyPair();
-            Provider bcp = new BouncyCastleProvider();
-            Security.addProvider(bcp);
-
-            X500Name cn = new X500Name(new RDN[]{new RDN(new AttributeTypeAndValue(BCStyle.CN, new DERUTF8String(commonName)))});
-            X500Name issuer = new X500Name(new RDN[]{new RDN(new AttributeTypeAndValue(BCStyle.CN, new DERUTF8String("Solr Root CA")))});
-
-            Instant yesterday = LocalDate.now().minusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-            Instant oneYear = ZonedDateTime.ofInstant(yesterday, ZoneOffset.UTC).plusYears(1).toInstant();
-            BigInteger serial = new BigInteger(String.valueOf(yesterday.toEpochMilli()));
-
-            JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(issuer, serial,
-                    Date.from(yesterday), Date.from(oneYear), cn, kp.getPublic());
-            BasicConstraints basicConstraints = new BasicConstraints(true);
-            certBuilder.addExtension(Extension.basicConstraints, true, basicConstraints);
-
-            ContentSigner cs = new JcaContentSignerBuilder("SHA256WithRSA").build(kp.getPrivate());
-            return new JcaX509CertificateConverter().setProvider(bcp).getCertificate(certBuilder.build(cs));
-        } catch (CertificateException | CertIOException | NoSuchAlgorithmException | OperatorCreationException e) {
-            throw new RuntimeException(e);
-        }
+    try (OutputStream fos = new FileOutputStream(newKeystore.toFile())) {
+      ks.store(fos, PASS_PHRASE.toCharArray());
+    } catch (CertificateException | KeyStoreException | IOException | NoSuchAlgorithmException e) {
+      throw new RuntimeException(e);
     }
+  }
+
+  private X509Certificate selfSignCertificate(String commonName) {
+    try {
+      KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+      kpg.initialize(1024);
+      KeyPair kp = kpg.generateKeyPair();
+      Provider bcp = new BouncyCastleProvider();
+      Security.addProvider(bcp);
+
+      X500Name cn =
+          new X500Name(
+              new RDN[] {
+                new RDN(new AttributeTypeAndValue(BCStyle.CN, new DERUTF8String(commonName)))
+              });
+      X500Name issuer =
+          new X500Name(
+              new RDN[] {
+                new RDN(new AttributeTypeAndValue(BCStyle.CN, new DERUTF8String("Solr Root CA")))
+              });
+
+      Instant yesterday =
+          LocalDate.now(ZoneOffset.UTC).minusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+      Instant oneYear = ZonedDateTime.ofInstant(yesterday, ZoneOffset.UTC).plusYears(1).toInstant();
+      BigInteger serial = new BigInteger(String.valueOf(yesterday.toEpochMilli()));
+
+      JcaX509v3CertificateBuilder certBuilder =
+          new JcaX509v3CertificateBuilder(
+              issuer, serial, Date.from(yesterday), Date.from(oneYear), cn, kp.getPublic());
+      BasicConstraints basicConstraints = new BasicConstraints(true);
+      certBuilder.addExtension(Extension.basicConstraints, true, basicConstraints);
+
+      ContentSigner cs = new JcaContentSignerBuilder("SHA256WithRSA").build(kp.getPrivate());
+      return new JcaX509CertificateConverter()
+          .setProvider(bcp)
+          .getCertificate(certBuilder.build(cs));
+    } catch (CertificateException
+        | CertIOException
+        | NoSuchAlgorithmException
+        | OperatorCreationException e) {
+      throw new RuntimeException(e);
+    }
+  }
 }
