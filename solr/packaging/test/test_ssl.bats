@@ -29,6 +29,7 @@ teardown() {
   solr stop -all >/dev/null 2>&1
 }
 
+
 @test "start solr with ssl" {
   # Create a keystore
   export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
@@ -516,33 +517,47 @@ teardown() {
 
   # Set ENV_VARs so that Solr uses this keystore
   export SOLR_SSL_ENABLED=true
-  export SOLR_SSL_KEY_STORE=$ssl_dir/server1.keystore.p12
   export SOLR_SSL_KEY_STORE_PASSWORD=secret
-  export SOLR_SSL_TRUST_STORE=$ssl_dir/server1.keystore.p12
   export SOLR_SSL_TRUST_STORE_PASSWORD=secret
   export SOLR_SSL_NEED_CLIENT_AUTH=true
   export SOLR_SSL_WANT_CLIENT_AUTH=false
   export SOLR_HOST=localhost
 
+  # server1 will run on $SOLR_PORT and will use server1.keystore
+  export SOLR_SSL_KEY_STORE=$ssl_dir/server1.keystore.p12
+  export SOLR_SSL_TRUST_STORE=$ssl_dir/server1.keystore.p12
   solr start -c -a "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
+  # server2 will run on $SOLR2_PORT and will use server2.keystore. Initially, this is the same as server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server2.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server2.keystore.p12
   solr start -c -z localhost:${ZK_PORT} -p ${SOLR2_PORT} -a "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR2_PORT}/solr --timeout 5000
 
+  # "test" collection is two shards, meaning there must be communication between shards for queries (handled by http shard handler factory)
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
 
+  # "test-single-shard" is one shard and one replica, this means that one of the nodes will have to forward requests to the other
+  run solr create -c test-single-shard -s 1
+  assert_output --partial "Created collection 'test-single-shard'"
+
   run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":0'
-
   run solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '"numFound":0'
+
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=*:*"
+  assert_output --partial '"numFound":0'
+  run solr api -get "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=*:*"
   assert_output --partial '"numFound":0'
 
   run ! curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   run ! curl "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*"
+
+  run ! curl "https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=*:*"
+  run ! curl "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=*:*"
 
   export SOLR_SSL_KEY_STORE=$ssl_dir/cert2.keystore.p12
   export SOLR_SSL_KEY_STORE_PASSWORD=secret
@@ -559,6 +574,7 @@ teardown() {
   # Give some time for the server reload
   sleep 6
 
+  # Server 2 still uses the cert1, so this request should fail
   run ! solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=query2"
 
   (
@@ -575,4 +591,9 @@ teardown() {
   run solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=query3"
   assert_output --partial '"numFound":0'
 
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=query4"
+  assert_output --partial '"numFound":0'
+
+  run solr api -get "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=query4"
+  assert_output --partial '"numFound":0'
 }
