@@ -72,6 +72,8 @@ Other Changes
 
 * SOLR-17072: package CLI tool prints error JSONPath (Mikhail Khludnev)
 
+* SOLR-17078: The `train_and_upload_demo_model.py` script referenced in LTR documentation now uses Python3 (Jason Gerlowski)
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
