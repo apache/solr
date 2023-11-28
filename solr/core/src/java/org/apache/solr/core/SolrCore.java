@@ -64,6 +64,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 import org.apache.commons.io.file.PathUtils;
@@ -1332,18 +1333,29 @@ public class SolrCore implements SolrInfoBean, Closeable {
         true,
         "indexDir",
         Category.CORE.toString());
+
+    BooleanSupplier isNotOpen =
+        () -> {
+          // using isClosed() is insufficient and might result in deadlock due to metrics trying to
+          // open a new searcher during core init phase (when refCount == 1)
+          return getOpenCount() <= 1;
+        };
+
     parentContext.gauge(
-        () -> isClosed() ? parentContext.nullNumber() : getIndexSize(),
+        () -> isNotOpen.getAsBoolean() ? parentContext.nullNumber() : getIndexSize(),
         true,
         "sizeInBytes",
         Category.INDEX.toString());
     parentContext.gauge(
-        () -> isClosed() ? parentContext.nullNumber() : getSegmentCount(),
+        () -> isNotOpen.getAsBoolean() ? parentContext.nullNumber() : getSegmentCount(),
         true,
         "segments",
         Category.INDEX.toString());
     parentContext.gauge(
-        () -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getIndexSize()),
+        () ->
+            isNotOpen.getAsBoolean()
+                ? parentContext.nullString()
+                : NumberUtils.readableSize(getIndexSize()),
         true,
         "size",
         Category.INDEX.toString());
