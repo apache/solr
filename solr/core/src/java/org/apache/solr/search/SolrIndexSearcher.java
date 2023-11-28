@@ -1565,7 +1565,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               cmd.getSort(),
               flags,
               cmd.getMinExactCount(),
-              cmd.isDisableDistribStats());
+              cmd.isEnableDistribStats());
       if ((flags & NO_CHECK_QCACHE) == 0) {
         superset = queryResultCache.get(key);
 

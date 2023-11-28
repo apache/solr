@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.solr.common.params.CommonParams;
 
 /**
  * A query request command to avoid having to change the method signatures if we want to pass
@@ -39,7 +40,7 @@ public class QueryCommand {
   private long timeAllowed = -1;
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
-  private boolean disableDistribStats = false;
+  private boolean enableDistribStats = true;
 
   public CursorMark getCursorMark() {
     return cursorMark;
@@ -222,12 +223,11 @@ public class QueryCommand {
     return isQueryCancellable;
   }
 
-  public QueryCommand setDisableDistribStats(boolean disableDistribStats) {
-    this.disableDistribStats = disableDistribStats;
-    return this;
+  public void setEnableDistribStats(boolean enableDistribStats) {
+    this.enableDistribStats = enableDistribStats;
   }
 
-  public boolean isDisableDistribStats() {
-    return disableDistribStats;
+  public boolean isEnableDistribStats() {
+    return enableDistribStats;
   }
 }

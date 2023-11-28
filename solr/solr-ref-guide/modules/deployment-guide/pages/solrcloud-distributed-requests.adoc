@@ -452,11 +452,11 @@ For queries that do not utilize distributed IDF for score calculation, for examp
 ----
 http://localhost:8987/solr/collection1/select?q=*%3A*&wt=json&fq={!terms f=id}id1,id2
 ----
-When query param disableDistribStats is set to true, distributed stats is turned off at query time to reduce the overhead.
+When query param distrib.statsCache is set to false, distributed stats is turned off at query time to reduce the overhead.
 
 [source,xml]
 ----
-http://localhost:8987/solr/collection1/select?q=*%3A*&wt=json&fq={!terms f=id}id1,id2&disableDistribStats=true
+http://localhost:8987/solr/collection1/select?q=*%3A*&wt=json&fq={!terms f=id}id1,id2&distrib.statsCache=false
 ----
 
 

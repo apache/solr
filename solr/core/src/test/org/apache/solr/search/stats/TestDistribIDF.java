@@ -36,6 +36,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,12 +289,16 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     doc.addField(ShardParams._ROUTE_, "b");
     client.add(COLLECTION, doc);
 
+    try {
+      client.commit(COLLECTION);
+    } catch (SolrServerException | IOException e) {
+        log.error("Exception while committing", e);
+    }
     // distributed stats implicitly enabled by default
     SolrQuery query =
         new SolrQuery(
-            "q", "*:*",
-            "fl", "id",
-            "fq", "{!terms f=id}1,2",
+            "q", "cat:tv",
+            "fl", "id,score",
             "debug", "track");
     QueryResponse rsp = client.query(COLLECTION, query);
     NamedList<Object> track = (NamedList<Object>) rsp.getDebugMap().get("track");
@@ -301,14 +306,17 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     assertNotNull(track.get("PARSE_QUERY"));
 
     // distributed stats explicitly disabled
-    query.set(CommonParams.DISABLE_DISTRIB_STATS, "true");
+    query.set(CommonParams.DISTRIB_STATS_CACHE, "false");
+    query.set(CommonParams.Q, "*:*");
+    query.set(CommonParams.FQ, "{!terms f=id}1,2");
     rsp = client.query(COLLECTION, query);
     track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
     assertNull(track.get("PARSE_QUERY"));
 
     // distributed stats explicitly enabled
-    query.set(CommonParams.DISABLE_DISTRIB_STATS, "false");
+    query.set(CommonParams.DISTRIB_STATS_CACHE, "true");
+    query.set(CommonParams.Q, "cat:electronics");
     rsp = client.query(COLLECTION, query);
     track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
