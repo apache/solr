@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.solr.common.params.CommonParams;
 
 /**
  * A query request command to avoid having to change the method signatures if we want to pass
