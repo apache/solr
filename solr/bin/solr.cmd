@@ -98,6 +98,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   set SOLR_URL_SCHEME=https
   IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
     set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=ssl-reload"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.keyStoreReload.enabled=true"
   )
   IF DEFINED SOLR_SSL_KEY_STORE (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"

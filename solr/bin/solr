@@ -210,6 +210,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=https" "--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
   if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ]; then
     SOLR_JETTY_CONFIG+=("--module=ssl-reload")
+    SOLR_SSL_OPTS+=" -Dsolr.keyStoreReload.enabled=true"
   fi
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
