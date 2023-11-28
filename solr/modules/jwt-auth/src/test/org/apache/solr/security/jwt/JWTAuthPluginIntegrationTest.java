@@ -511,8 +511,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String wellKnown =
         mockOAuth2Server
             .wellKnownUrl("default")
-            .toString()
-            .replace(".localdomain", ""); // Use only 'localhost' to match our SSL cert
+            .toString();
     String pemCert =
         CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
             .replace("\\n", "\\\\n"); // Use literal \n to play well with JSON
