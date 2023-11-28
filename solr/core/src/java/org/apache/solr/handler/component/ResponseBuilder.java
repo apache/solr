@@ -524,6 +524,7 @@ public class ResponseBuilder {
   public void setEnableDistribStats(boolean isEnableDistribStats) {
     this.isEnableDistribStats = isEnableDistribStats;
   }
+
   public boolean isEnableDistribStats() {
     return isEnableDistribStats;
   }

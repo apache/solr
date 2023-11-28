@@ -734,7 +734,8 @@ public class QueryComponent extends SearchComponent {
 
   protected void createDistributedStats(ResponseBuilder rb) {
     StatsCache cache = rb.req.getSearcher().getStatsCache();
-    if (rb.isEnableDistribStats() && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
+    if (rb.isEnableDistribStats()
+        && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
             || rb.getSortSpec().includesScore())) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
       if (sreq != null) {

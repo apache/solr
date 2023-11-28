@@ -36,7 +36,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -292,7 +291,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     try {
       client.commit(COLLECTION);
     } catch (SolrServerException | IOException e) {
-        log.error("Exception while committing", e);
+      log.error("Exception while committing", e);
     }
     // distributed stats implicitly enabled by default
     SolrQuery query =

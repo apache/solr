@@ -293,9 +293,10 @@ public interface CommonParams {
    * Parameter to control the distributed term statistics request for current query when distributed
    * IDF is enabled in solrconfig
    *
-   * <p>Defaults to 'true' if not specified. Distributed stats request will be disabled by setting to 'false'
+   * <p>Defaults to 'true' if not specified. Distributed stats request will be disabled by setting
+   * to 'false'
    */
-  String DISTRIB_STATS_CACHE= "distrib.statsCache";
+  String DISTRIB_STATS_CACHE = "distrib.statsCache";
 
   /** Request Purpose parameter added to each internal shard request when using debug=track */
   String REQUEST_PURPOSE = "requestPurpose";
