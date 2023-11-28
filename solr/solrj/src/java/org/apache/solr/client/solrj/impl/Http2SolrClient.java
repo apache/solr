@@ -1090,7 +1090,9 @@ public class Http2SolrClient extends SolrClient {
         connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
       }
 
-      if (keyStoreReloadIntervalSecs != null && keyStoreReloadIntervalSecs > 0 && this.httpClient != null) {
+      if (keyStoreReloadIntervalSecs != null
+          && keyStoreReloadIntervalSecs > 0
+          && this.httpClient != null) {
         log.warn("keyStoreReloadInterval can't be set when using external httpClient");
         keyStoreReloadIntervalSecs = null;
       } else if (keyStoreReloadIntervalSecs == null
