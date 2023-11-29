@@ -246,6 +246,7 @@ public class Http2SolrClient extends SolrClient {
         && builder.keyStoreReloadIntervalSecs > 0) {
       scanner = new KeyStoreScanner(sslContextFactory);
       try {
+        scanner.setScanInterval((int) Math.min(builder.keyStoreReloadIntervalSecs, Integer.MAX_VALUE));
         scanner.start();
         if (log.isDebugEnabled()) {
           log.debug("Key Store Scanner started");
@@ -1093,7 +1094,7 @@ public class Http2SolrClient extends SolrClient {
       if (keyStoreReloadIntervalSecs != null
           && keyStoreReloadIntervalSecs > 0
           && this.httpClient != null) {
-        log.warn("keyStoreReloadInterval can't be set when using external httpClient");
+        log.warn("keyStoreReloadIntervalSecs can't be set when using external httpClient");
         keyStoreReloadIntervalSecs = null;
       } else if (keyStoreReloadIntervalSecs == null
           && this.httpClient == null
