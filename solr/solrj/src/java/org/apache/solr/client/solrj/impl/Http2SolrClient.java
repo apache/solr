@@ -246,7 +246,8 @@ public class Http2SolrClient extends SolrClient {
         && builder.keyStoreReloadIntervalSecs > 0) {
       scanner = new KeyStoreScanner(sslContextFactory);
       try {
-        scanner.setScanInterval((int) Math.min(builder.keyStoreReloadIntervalSecs, Integer.MAX_VALUE));
+        scanner.setScanInterval(
+            (int) Math.min(builder.keyStoreReloadIntervalSecs, Integer.MAX_VALUE));
         scanner.start();
         if (log.isDebugEnabled()) {
           log.debug("Key Store Scanner started");

@@ -85,6 +85,9 @@ New Features
 
 * SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
 
+* SOLR-16743: When using TLS, Solr can now auto-reload the keystore and truststore without the need to restart the process.
+  This is enabled by default when running with TLS and can be disabled or configured in solr.in.sh (Houston Putman, Tomás Fernández Löbbe)
+
 Improvements
 ---------------------
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
