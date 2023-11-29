@@ -280,7 +280,7 @@ copyTarball() {
       curl -o "$RC_FILE" "$SMOKE_RC_URL"
       pushd
     else
-      TARBALL=$(find . -regex '.*/solr-.*\.tgz' | grep -v slim)
+      TARBALL=$(find "$VCS_WORK" -regex '.*/solr-.*\.tgz' | grep -v slim)
       if [[ ! -f "$TARBALL" ]]; then
         echo "No solr tarball found try again with -r"; popd; exit 10;
       fi
