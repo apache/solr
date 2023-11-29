@@ -87,7 +87,7 @@ New Features
 
 Improvements
 ---------------------
-* SOLR-17053: Distributed search with shards.tolerant: if all shards fail, fail the request
+* SOLR-17053: Distributed search with shards.tolerant: if all shards fail, fail the request (Aparna Suresh)
 
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
   REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
