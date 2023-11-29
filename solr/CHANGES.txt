@@ -20,15 +20,12 @@ Improvements
 
 * SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
 
-* SOLR-17011: Add tracing spans to internal collection commands (Alex Deparvu)
-
 Optimizations
 ---------------------
 (No changes)
 
 Bug Fixes
 ---------------------
-
 
 Deprecation Removals
 ----------------------
@@ -44,6 +41,10 @@ Deprecation Removals
 * SOLR-16823: Remove backcompatiblity of -upconfig and -downconfig for bin/solr zk upconfig and downconfig commands.  (Eric Pugh)
 
 * SOLR-16893: Remove bin/solr create_core and create_collection commands in favour of bin/solr create command.  (Eric Pugh)
+
+* SOLR-15959: Remove deprecated feature to load solr.xml from ZK (janhoy)
+
+* SOLR-16961: The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please use individual Circuit Breaker plugins instead. (janhoy)
 
 * SOLR-17042: Remove deprecated `V2RequestSupport` and associated `SolrRequest` methods `setUseV2` and `setUseBinaryV2`. (Jason Gerlowski)
 
@@ -80,10 +81,30 @@ New Features
 * SOLR-17006: Collection creation & adding replicas: User-defined properties are persisted to state.json and
   applied to new replicas, available for use as property substitution in configuration files.  (Vincent Primault)
 
+* SOLR-16974: Circuit Breakers can now be configured globally (janhoy, Christine Poerschke)
+
+* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
+
 Improvements
 ---------------------
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
   REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
+
+* SOLR-16907: Fail when parsing an invalid custom permission definition from security.json (janhoy, Uwe Schindler)
+
+* SOLR-17046: SchemaCodecFactory is now the implicit default codec factory.  (hossman)
+
+* SOLR-16397: Swap core v2 endpoints have been updated to be more REST-ful.
+  SWAP is now available at `POST /api/cores/coreName/swap` (Sanjay Dutt via Jason Gerlowski)
+
+* SOLR-17011: Add tracing spans to internal collection commands (Alex Deparvu)
+
+* SOLR-17041: Make CommitTracker currentTlogSize lazy (Alex Deparvu)
+
+* SOLR-16397: The rename-core v2 endpoint has been updated to be more REST-ful.
+  RENAME is now available at `POST /api/cores/coreName/rename` (Sanjay Dutt via Jason Gerlowski)
+
+* SOLR-17035: Add trace id to jetty thread names to improve debuggability via stack traces (Alex Deparvu)
 
 Optimizations
 ---------------------
@@ -95,6 +116,12 @@ Bug Fixes
 
 * SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
 
+* SOLR-17045: DenseVectorField w/ vectorDimension > 1024 now work automatically with _default configset, due to
+  implicit use of SchemaCodecFactory.  (hossman)
+
+* SOLR-10653: When there's a UUIDField in the schema and atomic update touches another field
+  the error occurs when leader updates replica (Mikhail Khludnev)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
@@ -104,6 +131,10 @@ Dependency Upgrades
 Other Changes
 ---------------------
 * SOLR-17024: Remove support for the long-defunct "collectionDefaults" clusterprops key (Jason Gerlowski)
+
+* SOLR-17072: package CLI tool prints error JSONPath (Mikhail Khludnev)
+
+* SOLR-17078: The `train_and_upload_demo_model.py` script referenced in LTR documentation now uses Python3 (Jason Gerlowski)
 
 ==================  9.4.0 ==================
 New Features

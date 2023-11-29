@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.addExceptionToNamedList;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.logFailedOperation;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -42,7 +44,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
@@ -134,17 +135,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       String collName = message.getStr("collection");
       if (collName == null) collName = message.getStr(NAME);
 
-      if (collName == null) {
-        log.error("Operation {} failed", operation, e);
-      } else {
-        log.error("Collection {}}, operation {} failed", collName, operation, e);
-      }
-
-      results.add("Operation " + operation + " caused exception:", e);
-      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
-      nl.add("msg", e.getMessage());
-      nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
-      results.add("exception", nl);
+      logFailedOperation(operation, e, collName);
+      addExceptionToNamedList(operation, e, results);
     }
     return new OverseerSolrResponse(results);
   }

@@ -124,6 +124,9 @@ public class ZkStateReader implements SolrCloseable {
    */
   public static final String UNSUPPORTED_CLUSTER_STATE = "/clusterstate.json";
 
+  // This zookeeper file was allowed until Solr 10
+  public static final String UNSUPPORTED_SOLR_XML = "/solr.xml";
+
   public static final String CLUSTER_PROPS = "/clusterprops.json";
   public static final String COLLECTION_PROPS_ZKNODE = "collectionprops.json";
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";

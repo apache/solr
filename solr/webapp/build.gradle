@@ -26,6 +26,14 @@ configurations {
   war {}
   serverLib
   solrCore
+  generatedJSClient
+  generatedJSClientBundle
+}
+
+ext {
+  jsClientWorkspace = layout.buildDirectory.dir("jsClientWorkspace").get()
+  jsClientBundleDir = layout.buildDirectory.dir("jsClientBundle").get()
+  browserifyVersion = "17.0.0"
 }
 
 dependencies {
@@ -34,6 +42,77 @@ dependencies {
   serverLib project(path: ":solr:server", configuration: "serverLib")
   solrCore project(":solr:core")
   implementation(configurations.solrCore - configurations.serverLib)
+
+  generatedJSClient project(path: ":solr:api", configuration: "jsClient")
+  generatedJSClientBundle files(jsClientBundleDir) {
+    builtBy "generateJsClientBundle"
+  }
+}
+
+task syncJSClientSourceCode(type: Sync) {
+  group = 'Solr JS Client'
+  from configurations.generatedJSClient
+
+  into project.jsClientWorkspace
+}
+
+task jsClientDownloadDeps(type: NpmTask) {
+  group = 'Solr JS Client'
+  dependsOn tasks.syncJSClientSourceCode
+
+  args = ["install"]
+  workingDir = file(project.jsClientWorkspace)
+
+  inputs.dir("${jsClientWorkspace}/src")
+  inputs.file("${jsClientWorkspace}/package.json")
+  outputs.dir("${jsClientWorkspace}/node_modules")
+}
+
+task jsClientBuild(type: NpmTask) {
+  group = 'Solr JS Client'
+  dependsOn tasks.jsClientDownloadDeps
+
+  args = ["run", "build"]
+  workingDir = file(project.jsClientWorkspace)
+
+  inputs.dir("${jsClientWorkspace}/src")
+  inputs.file("${jsClientWorkspace}/package.json")
+  inputs.dir("${jsClientWorkspace}/node_modules")
+  outputs.dir("${jsClientWorkspace}/dist")
+}
+
+task downloadBrowserify(type: NpmTask) {
+  group = 'Build Dependency Download'
+  args = ["install", "browserify@${project.browserifyVersion}"]
+
+  inputs.property("browserify version", project.browserifyVersion)
+  outputs.dir("${project.nodeProjectDir}/node_modules/browserify")
+}
+
+task setupJsBundleDir(type: Sync) {
+  group = 'Solr JS Client'
+  dependsOn tasks.syncJSClientSourceCode
+
+  from configurations.generatedJSClient
+
+  include "README.md"
+  include "docs/**"
+
+  into project.jsClientBundleDir
+}
+
+task generateJsClientBundle(type: NpxTask) {
+  group = 'Solr JS Client'
+  dependsOn tasks.downloadBrowserify
+  dependsOn tasks.jsClientBuild
+  dependsOn tasks.setupJsBundleDir
+
+  command = 'browserify'
+  args = ['dist/index.js', '-s', 'solrApi', '-o', "${jsClientBundleDir}/index.js"]
+  workingDir = file(project.jsClientWorkspace)
+
+
+  outputs.dir("${jsClientBundleDir}")
 }
 
 war {
@@ -44,6 +123,10 @@ war {
   exclude "libs/angular-utf8-base.js"
   exclude "libs/angular.js"
   exclude "libs/chosen.jquery.js"
+
+  from (configurations.generatedJSClientBundle, {
+    into "libs/solr"
+  })
 }
 
 // Expose 'war' archive as an artifact so that it can be packaged in the distribution.

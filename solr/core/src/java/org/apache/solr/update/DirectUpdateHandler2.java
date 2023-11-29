@@ -379,13 +379,12 @@ public class DirectUpdateHandler2 extends UpdateHandler
       }
 
       if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-        long currentTlogSize = getCurrentTLogSize();
         if (commitWithinSoftCommit) {
-          commitTracker.addedDocument(-1, currentTlogSize);
+          commitTracker.addedDocument(-1, this::getCurrentTLogSize);
           softCommitTracker.addedDocument(cmd.commitWithin);
         } else {
           softCommitTracker.addedDocument(-1);
-          commitTracker.addedDocument(cmd.commitWithin, currentTlogSize);
+          commitTracker.addedDocument(cmd.commitWithin, this::getCurrentTLogSize);
         }
       }
 
@@ -484,8 +483,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
         commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
       }
 
-      long currentTlogSize = getCurrentTLogSize();
-      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
+      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(this::getCurrentTLogSize);
 
       if (softCommitTracker.getTimeUpperBound() > 0) {
         softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
