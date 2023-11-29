@@ -136,6 +136,9 @@ Other Changes
 
 * SOLR-17078: The `train_and_upload_demo_model.py` script referenced in LTR documentation now uses Python3 (Jason Gerlowski)
 
+* SOLR-17091: dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz file it was not expecting
+  cloud.sh has been updated to ignore the -slim.tgz version of the tarball.
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
