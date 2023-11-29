@@ -40,6 +40,10 @@ configurations {
         canBeConsumed = true
         canBeResolved = false
     }
+    pythonClient {
+        canBeConsumed = true
+        canBeResolved = false
+    }
 }
 
 resolve {
@@ -91,8 +95,11 @@ artifacts {
         builtBy resolve
     }
 
-    // Makes our Javascript client available to the Admin UI build
+    // Makes generated clients available to other build modules
     jsClient file(project.jsClientDir), {
         builtBy buildJSClient
+    }
+    pythonClient file(project.pythonClientDir), {
+        builtBy buildPythonClient
     }
 }
