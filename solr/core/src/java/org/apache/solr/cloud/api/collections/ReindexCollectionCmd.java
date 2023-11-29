@@ -339,9 +339,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       if (rf != null) {
         propMap.put(ZkStateReader.REPLICATION_FACTOR, rf);
       }
-      for (Replica.Type replicaType : numReplicas.keySet()) {
-        propMap.put(replicaType.numReplicasProperty, numReplicas.get(replicaType));
-      }
+      numReplicas.addParams(propMap);
       // create the target collection
       cmd = new ZkNodeProps(propMap);
       cmdResults = new NamedList<>();

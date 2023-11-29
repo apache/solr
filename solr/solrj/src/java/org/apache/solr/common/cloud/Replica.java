@@ -121,11 +121,11 @@ public class Replica extends ZkNodeProps implements MapWriter {
     PULL(false, CollectionAdminParams.PULL_REPLICAS);
 
     public final boolean leaderEligible;
-    public final String numReplicasProperty;
+    public final String numReplicasPropertyName;
 
-    Type(boolean leaderEligible, String numReplicasProperty) {
+    Type(boolean leaderEligible, String numReplicasPropertyName) {
       this.leaderEligible = leaderEligible;
-      this.numReplicasProperty = numReplicasProperty;
+      this.numReplicasPropertyName = numReplicasPropertyName;
     }
 
     public static Type get(String name) {
@@ -134,7 +134,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
     /**
      * Returns a default replica type. It is most notably used by the replica factor, which maps
-     * onto this replica type.
+     * onto this replica type. This replica type needs to be leader-eligible.
      */
     public static Type defaultType() {
       return NRT;

@@ -69,7 +69,7 @@ import org.apache.solr.response.SolrQueryResponse;
 @Path("/backups/{backupName}/restore")
 public class RestoreCollectionAPI extends BackupAPIBase {
 
-  private static final Set<String> CREATE_PARAM_ALLOWLIST = Set.copyOf(makeCreateParamAllowList());
+  private static final Set<String> CREATE_PARAM_ALLOWLIST = makeCreateParamAllowList();
 
   private static Set<String> makeCreateParamAllowList() {
     Set<String> params = CollectionUtil.newHashSet(7);

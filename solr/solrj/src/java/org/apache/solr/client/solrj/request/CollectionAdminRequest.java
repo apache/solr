@@ -130,7 +130,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
   private static void writeNumReplicas(ReplicaCount numReplicas, ModifiableSolrParams params) {
     for (Replica.Type replicaType : numReplicas.keySet()) {
-      params.add(replicaType.numReplicasProperty, String.valueOf(numReplicas.get(replicaType)));
+      params.add(replicaType.numReplicasPropertyName, String.valueOf(numReplicas.get(replicaType)));
     }
   }
 

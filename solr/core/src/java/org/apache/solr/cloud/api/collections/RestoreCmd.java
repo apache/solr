@@ -319,9 +319,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       // mostly true. Prevents autoCreated=true in the collection state.
       propMap.put("fromApi", "true");
       propMap.put(REPLICATION_FACTOR, numReplicas.get(Replica.Type.defaultType()));
-      for (Replica.Type replicaType : numReplicas.keySet()) {
-        propMap.put(replicaType.numReplicasProperty, numReplicas.get(replicaType));
-      }
+      numReplicas.addParams(propMap);
 
       // inherit settings from input API, defaulting to the backup's setting.  Ex: replicationFactor
       for (String collProp : CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.keySet()) {

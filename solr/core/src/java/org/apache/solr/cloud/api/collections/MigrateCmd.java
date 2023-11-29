@@ -307,7 +307,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             CREATE.toLower(),
             NAME,
             tempSourceCollectionName,
-            Replica.Type.defaultType().numReplicasProperty,
+            Replica.Type.defaultType().numReplicasPropertyName,
             1,
             CollectionHandlingUtils.NUM_SLICES,
             1,

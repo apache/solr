@@ -75,18 +75,20 @@ public final class ReplicaCount {
         Integer defaultCount =
             (null != collection)
                 ? collection.getInt(
-                    replicaType.numReplicasProperty,
+                    replicaType.numReplicasPropertyName,
                     collection.getInt(
                         CollectionAdminParams.REPLICATION_FACTOR, defaultReplicationFactor))
                 : defaultReplicationFactor;
         count =
             message.getInt(
-                replicaType.numReplicasProperty,
+                replicaType.numReplicasPropertyName,
                 message.getInt(CollectionAdminParams.REPLICATION_FACTOR, defaultCount));
       } else {
         Integer defaultCount =
-            (null != collection) ? collection.getInt(replicaType.numReplicasProperty, null) : null;
-        count = message.getInt(replicaType.numReplicasProperty, defaultCount);
+            (null != collection)
+                ? collection.getInt(replicaType.numReplicasPropertyName, null)
+                : null;
+        count = message.getInt(replicaType.numReplicasPropertyName, defaultCount);
       }
       replicaCount.put(replicaType, count);
     }
@@ -96,7 +98,7 @@ public final class ReplicaCount {
   public static ReplicaCount fromProps(Map<String, Object> props) {
     ReplicaCount replicaCount = new ReplicaCount();
     for (Replica.Type replicaType : Replica.Type.values()) {
-      Object value = props.get(replicaType.numReplicasProperty);
+      Object value = props.get(replicaType.numReplicasPropertyName);
       if (null != value) {
         replicaCount.put(replicaType, Integer.parseInt(value.toString()));
       }
@@ -125,6 +127,17 @@ public final class ReplicaCount {
   /** Returns the replica types for which a number of replicas was explicitely defined. */
   public Set<Replica.Type> keySet() {
     return countByType.keySet();
+  }
+
+  /**
+   * Add values for replica counts as integers to a properties map.
+   *
+   * @param propMap a properties map.
+   */
+  public void addParams(Map<String, Object> propMap) {
+    for (Map.Entry<Replica.Type, Integer> entry : countByType.entrySet()) {
+      propMap.put(entry.getKey().numReplicasPropertyName, entry.getValue());
+    }
   }
 
   /**

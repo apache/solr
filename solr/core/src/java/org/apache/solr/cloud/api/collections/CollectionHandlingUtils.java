@@ -122,7 +122,8 @@ public class CollectionHandlingUtils {
             null);
     for (Replica.Type replicaType : Replica.Type.values()) {
       propsAndDefaults.put(
-          replicaType.numReplicasProperty, replicaType == Replica.Type.defaultType() ? "1" : "0");
+          replicaType.numReplicasPropertyName,
+          replicaType == Replica.Type.defaultType() ? "1" : "0");
     }
     return propsAndDefaults;
   }
@@ -143,7 +144,7 @@ public class CollectionHandlingUtils {
   /** Returns names of properties that are used to specify a number of replicas of a given type. */
   public static Set<String> numReplicasProperties() {
     return Arrays.stream(Replica.Type.values())
-        .map(t -> t.numReplicasProperty)
+        .map(t -> t.numReplicasPropertyName)
         .collect(Collectors.toSet());
   }
 

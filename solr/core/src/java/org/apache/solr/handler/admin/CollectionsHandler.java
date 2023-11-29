@@ -1051,7 +1051,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             DocCollection.verifyProp(m, prop);
           }
           if (m.get(REPLICATION_FACTOR) != null) {
-            m.put(Replica.Type.defaultType().numReplicasProperty, m.get(REPLICATION_FACTOR));
+            m.put(Replica.Type.defaultType().numReplicasPropertyName, m.get(REPLICATION_FACTOR));
           }
           return m;
         }),

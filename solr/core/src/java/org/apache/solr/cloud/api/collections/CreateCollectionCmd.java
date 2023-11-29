@@ -99,7 +99,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   public CreateCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
     leaderEligibleReplicaTypes = CollectionHandlingUtils.leaderEligibleReplicaTypes();
-    ;
   }
 
   @Override
