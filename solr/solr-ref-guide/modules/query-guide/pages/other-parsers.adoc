@@ -369,7 +369,7 @@ The graph is built according to linkages between documents based on the terms fo
 
 Supported field types are point fields with docValues enabled, or string fields with `indexed=true` or `docValues=true`.
 
-TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}/sandbox/org/apache/lucene/sandbox/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`] for its performance characteristics so `indexed=true` will perform better for most use-cases.
+TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}/core/org/apache/lucene/document/SortedDocValuesField.html#newSlowSetQuery(java.lang.String,org.apache.lucene.util.BytesRef...)[`SortedDocValuesField.newSlowSetQuery()`] for its performance characteristics so `indexed=true` will perform better for most use-cases.
 
 === Graph Query Parameters
 

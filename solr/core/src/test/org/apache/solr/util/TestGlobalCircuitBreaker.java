@@ -17,10 +17,12 @@
 
 package org.apache.solr.util;
 
+import org.apache.commons.exec.OS;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -46,12 +48,18 @@ public class TestGlobalCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGloalCbRegistered() {
+  public void testGlobalCbRegistered() {
     assertEquals(1, CircuitBreakerRegistry.listGlobal().size());
   }
 
+  /**
+   * Index some docs and see that load avg is tripped. This test will not run on Windows, as it does
+   * not support load average. See <a
+   * href="https://issues.apache.org/jira/browse/SOLR-17082">SOLR-17082</a>.
+   */
   @Test
-  public void testIndexingTripsCpuCb() {
+  public void testIndexingTripsLoadavgCb() {
+    Assume.assumeFalse(OS.isFamilyWindows());
     try {
       for (int i = 0; i < 100; i++) {
         assertU(adoc("name", "john smith", "id", "1"));

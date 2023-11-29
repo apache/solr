@@ -37,7 +37,7 @@ Please refer to the Solr Reference Guide's section on [Learning To Rank](https:/
 
   `cd modules/ltr/example`
 
-  `python train_and_upload_demo_model.py -c config.json`
+  `python3 train_and_upload_demo_model.py -c config.json`
 
    This script deploys your features from `config.json` "solrFeaturesFile" to Solr.  Then it takes the relevance judged query
    document pairs of "userQueriesFile" and merges it with the features extracted from Solr into a training
