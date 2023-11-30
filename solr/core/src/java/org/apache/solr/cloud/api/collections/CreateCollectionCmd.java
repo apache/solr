@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -94,11 +93,9 @@ import org.slf4j.LoggerFactory;
 public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
-  private final EnumSet<Replica.Type> leaderEligibleReplicaTypes;
 
   public CreateCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
-    leaderEligibleReplicaTypes = CollectionHandlingUtils.leaderEligibleReplicaTypes();
   }
 
   @Override
@@ -590,12 +587,12 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
   private ReplicaCount getNumReplicas(ZkNodeProps message) {
     ReplicaCount numReplicas = ReplicaCount.fromMessage(message);
-    int numLeaderEligibleReplicas = numReplicas.count(leaderEligibleReplicaTypes);
-    if (numLeaderEligibleReplicas == 0 && !numReplicas.contains(Replica.Type.defaultType())) {
+    boolean hasLeaderEligibleReplica = numReplicas.hasLeaderReplica();
+    if (!hasLeaderEligibleReplica && !numReplicas.contains(Replica.Type.defaultType())) {
       // Ensure that there is at least one replica that can become leader if the user did
       // not force a replica count.
       numReplicas.put(Replica.Type.defaultType(), 1);
-    } else if (numLeaderEligibleReplicas == 0) {
+    } else if (!hasLeaderEligibleReplica) {
       // This can still fail if the user manually forced "0" replica counts.
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,

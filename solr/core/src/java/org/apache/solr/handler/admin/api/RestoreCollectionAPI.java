@@ -38,6 +38,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -53,7 +55,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
@@ -69,17 +70,15 @@ import org.apache.solr.response.SolrQueryResponse;
 @Path("/backups/{backupName}/restore")
 public class RestoreCollectionAPI extends BackupAPIBase {
 
-  private static final Set<String> CREATE_PARAM_ALLOWLIST = makeCreateParamAllowList();
-
-  private static Set<String> makeCreateParamAllowList() {
-    Set<String> params = CollectionUtil.newHashSet(7);
-    params.add(COLL_CONF);
-    params.add(REPLICATION_FACTOR);
-    params.add(CREATE_NODE_SET_PARAM);
-    params.add(CREATE_NODE_SET_SHUFFLE_PARAM);
-    params.addAll(CollectionHandlingUtils.numReplicasProperties());
-    return params;
-  }
+  private static final Set<String> CREATE_PARAM_ALLOWLIST =
+      Stream.concat(
+              CollectionHandlingUtils.numReplicasProperties().stream(),
+              Stream.of(
+                  COLL_CONF,
+                  REPLICATION_FACTOR,
+                  CREATE_NODE_SET_PARAM,
+                  CREATE_NODE_SET_SHUFFLE_PARAM))
+          .collect(Collectors.toUnmodifiableSet());
 
   @Inject
   public RestoreCollectionAPI(

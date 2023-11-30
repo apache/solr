@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -104,19 +103,17 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   public static final String STATE = "state";
   public static final String PHASE = "phase";
 
-  private static final List<String> COLLECTION_PARAMS = makeCollectionParams();
-
-  private static List<String> makeCollectionParams() {
-    List<String> collectionParams = new ArrayList<>(10);
-    collectionParams.add(ZkStateReader.CONFIGNAME_PROP);
-    collectionParams.add(ZkStateReader.NUM_SHARDS_PROP);
-    collectionParams.add(ZkStateReader.REPLICATION_FACTOR);
-    collectionParams.add("shards");
-    collectionParams.add(CollectionAdminParams.CREATE_NODE_SET_PARAM);
-    collectionParams.add(CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM);
-    collectionParams.addAll(CollectionHandlingUtils.numReplicasProperties());
-    return collectionParams;
-  }
+  private static final List<String> COLLECTION_PARAMS =
+      Stream.concat(
+              CollectionHandlingUtils.numReplicasProperties().stream(),
+              Stream.of(
+                  ZkStateReader.CONFIGNAME_PROP,
+                  ZkStateReader.NUM_SHARDS_PROP,
+                  ZkStateReader.REPLICATION_FACTOR,
+                  "shards",
+                  CollectionAdminParams.CREATE_NODE_SET_PARAM,
+                  CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM))
+          .collect(Collectors.toUnmodifiableList());
 
   private final CollectionCommandContext ccc;
 

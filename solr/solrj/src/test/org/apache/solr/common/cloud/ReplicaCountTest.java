@@ -133,6 +133,13 @@ public class ReplicaCountTest {
   }
 
   @Test
+  public void testHasLeaderReplica() {
+    assertTrue(ReplicaCount.of(Replica.Type.NRT, 1).hasLeaderReplica());
+    assertTrue(ReplicaCount.of(Replica.Type.TLOG, 1).hasLeaderReplica());
+    assertFalse(ReplicaCount.of(Replica.Type.PULL, 1).hasLeaderReplica());
+  }
+
+  @Test
   public void createFromProps() {
     ReplicaCount numReplicas =
         ReplicaCount.fromProps(

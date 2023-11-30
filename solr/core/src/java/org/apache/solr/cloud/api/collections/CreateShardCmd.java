@@ -22,13 +22,11 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.lang.invoke.MethodHandles;
-import java.util.EnumSet;
 import java.util.Map;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonAdminParams;
@@ -41,11 +39,9 @@ import org.slf4j.LoggerFactory;
 public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
-  private final EnumSet<Replica.Type> leaderEligibleReplicaTypes;
 
   public CreateShardCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
-    leaderEligibleReplicaTypes = CollectionHandlingUtils.leaderEligibleReplicaTypes();
   }
 
   @Override
@@ -71,7 +67,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     DocCollection collection = clusterState.getCollection(collectionName);
 
     ReplicaCount numReplicas = ReplicaCount.fromMessage(message, collection, 1);
-    if (numReplicas.count(leaderEligibleReplicaTypes) == 0) {
+    if (!numReplicas.hasLeaderReplica()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Unexpected number of replicas ("

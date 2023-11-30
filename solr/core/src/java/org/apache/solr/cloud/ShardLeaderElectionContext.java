@@ -47,11 +47,12 @@ import org.slf4j.LoggerFactory;
 
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final EnumSet<Replica.Type> leaderEligibleReplicaTypes =
+      CollectionHandlingUtils.leaderEligibleReplicaTypes();
 
   private final CoreContainer cc;
   private final SyncStrategy syncStrategy;
   private final DistributedClusterStateUpdater distributedClusterStateUpdater;
-  private final EnumSet<Replica.Type> leaderEligibleReplicaTypes;
 
   private volatile boolean isClosed = false;
 
@@ -67,7 +68,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     this.cc = cc;
     this.syncStrategy = new SyncStrategy(cc);
     this.distributedClusterStateUpdater = zkController.getDistributedClusterStateUpdater();
-    leaderEligibleReplicaTypes = CollectionHandlingUtils.leaderEligibleReplicaTypes();
   }
 
   @Override

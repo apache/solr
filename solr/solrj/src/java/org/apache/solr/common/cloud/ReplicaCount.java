@@ -18,7 +18,6 @@ package org.apache.solr.common.cloud;
 
 import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -175,7 +174,7 @@ public final class ReplicaCount {
    */
   public void writeProps(ModifiableSolrParams params) {
     for (Map.Entry<Replica.Type, Integer> entry : countByType.entrySet()) {
-      params.add(entry.getKey().numReplicasPropertyName, String.valueOf(entry.getValue()));
+      params.set(entry.getKey().numReplicasPropertyName, entry.getValue());
     }
   }
 
@@ -218,8 +217,10 @@ public final class ReplicaCount {
     return countByType.values().stream().reduce(Integer::sum).orElse(0);
   }
 
-  public int count(EnumSet<Replica.Type> replicaTypes) {
-    return replicaTypes.stream().mapToInt(this::get).sum();
+  /** Returns whether there is at least one replica which can be a leader. */
+  public boolean hasLeaderReplica() {
+    return countByType.entrySet().stream()
+        .anyMatch(e -> e.getKey().leaderEligible && e.getValue() > 0);
   }
 
   /**
