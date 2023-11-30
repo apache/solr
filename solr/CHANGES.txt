@@ -8,14 +8,10 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.5.0 ==================
 New Features
 ---------------------
-(No changes)
-
 * SOLR-17006: Collection creation & adding replicas: User-defined properties are persisted to state.json and
   applied to new replicas, available for use as property substitution in configuration files.  (Vincent Primault)
 
 * SOLR-16974: Circuit Breakers can now be configured globally (janhoy, Christine Poerschke)
-
-* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
 
 Improvements
 ---------------------
@@ -41,6 +37,10 @@ Improvements
   RENAME is now available at `POST /api/cores/coreName/rename` (Sanjay Dutt via Jason Gerlowski)
 
 * SOLR-17035: Add trace id to jetty thread names to improve debuggability via stack traces (Alex Deparvu)
+
+* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
+
+* SOLR-16959: Make the internal CoreSorter implementation configurable in solr.xml  (Vincent Primault)
 
 Optimizations
 ---------------------
