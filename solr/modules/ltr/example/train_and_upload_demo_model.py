@@ -8,8 +8,15 @@ import libsvm_formatter
 
 from optparse import OptionParser
 
-solrQueryUrl = ""
+import solr
+from solr.api import querying_api
 
+def setupSolrClient(host, port):
+    '''Configures the Solr client with the specified Solr host/port'''
+    solr_client_config = solr.Configuration(
+            host = "http://" + host + ":" + str(port) + "/api"
+    )
+    solr.Configuration.set_default(solr_client_config)
 
 def setupSolr(collection, host, port, featuresFile, featureStoreName):
     '''Sets up solr with the proper features for the test'''
@@ -46,48 +53,36 @@ def setupSolr(collection, host, port, featuresFile, featureStoreName):
     conn.close()
 
 
-def generateQueries(userQueriesFile, collection, requestHandler, solrFeatureStoreName, efiParams):
+def generateQueries(userQueriesFile, solrFeatureStoreName, efiParams):
         with open(userQueriesFile) as input:
-            solrQueryUrls = [] #A list of tuples with solrQueryUrl,solrQuery,docId,scoreForPQ,source
+            solrQueryInfo = [] #A list of tuples with solrQueryBody,queryText,docId,scoreForPQ,source
 
             for line in input:
                 line = line.strip();
                 searchText,docId,score,source = line.split("|");
-                solrQuery = generateHttpRequest(collection,requestHandler,solrFeatureStoreName,efiParams,searchText,docId)
-                solrQueryUrls.append((solrQuery,searchText,docId,score,source))
-
-        return solrQueryUrls;
-
-
-def generateHttpRequest(collection, requestHandler, solrFeatureStoreName, efiParams, searchText, docId):
-    global solrQueryUrl
-    if len(solrQueryUrl) < 1:
-        solrQueryUrl = "/".join([ "", "solr", collection, requestHandler ])
-        solrQueryUrl += ("?fl=" + ",".join([ "id", "score", "[features store="+solrFeatureStoreName+" "+efiParams+"]" ]))
-        solrQueryUrl += "&q="
-        solrQueryUrl = solrQueryUrl.replace(" ","+")
-        solrQueryUrl += urllib.parse.quote_plus("id:")
+                solrQueryBody = generateQueryBody(solrFeatureStoreName,efiParams,searchText,docId)
+                solrQueryInfo.append((solrQueryBody,searchText,docId,score,source))
+        return solrQueryInfo;
 
 
-    userQuery = urllib.parse.quote_plus(searchText.strip().replace("'","\\'").replace("/","\\\\/"))
-    solrQuery = solrQueryUrl + '"' + urllib.parse.quote_plus(docId) + '"' #+ solrQueryUrlEnd
-    solrQuery = solrQuery.replace("%24USERQUERY", userQuery).replace('$USERQUERY', urllib.parse.quote_plus("\\'" + userQuery + "\\'"))
+def generateQueryBody(solrFeatureStoreName, efiParams, searchText, docId):
+    concreteEfiParams = efiParams.replace("$USERQUERY", searchText.strip())
+    featuresTransformer = "[features store=" + solrFeatureStoreName + " " + concreteEfiParams + "]"
+    solrJsonParams = {
+            "query": "id:" + docId,
+            "fields": ["id", "score", featuresTransformer]
+    }
 
-    return solrQuery
+    return solrJsonParams
 
 
-def generateTrainingData(solrQueries, host, port):
+def generateTrainingData(solrQueries, host, port, coreName):
     '''Given a list of solr queries, yields a tuple of query , docId , score , source , feature vector for each query.
     Feature Vector is a list of strings of form "key=value"'''
-    conn = http.client.HTTPConnection(host, port)
-    headers = {"Connection":" keep-alive"}
-
     try:
-        for queryUrl,query,docId,score,source in solrQueries:
-            conn.request("GET", queryUrl, headers=headers)
-            r = conn.getresponse()
-            msg = r.read()
-            msgDict = json.loads(msg)
+        queryClient = querying_api.QueryingApi()
+        for solrQueryBody,query,docId,score,source in solrQueries:
+            msgDict = queryClient.json_query("cores", coreName, solrQueryBody)
             fv = ""
             docs = msgDict['response']['docs']
             if len(docs) > 0 and "[features]" in docs[0]:
@@ -101,18 +96,16 @@ def generateTrainingData(solrQueries, host, port):
                 print("ERROR FOR: " + docId);
                 print(msg)
                 continue;
-
-            if r.status == http.client.OK:
-                #print "http connection was ok for: " + queryUrl
-                yield(query,docId,score,source,fv.split(","));
-            else:
-                raise Exception("Status: {0} {1}\nResponse: {2}".format(r.status, r.reason, msg))
+            if msgDict.get("response_header") != None:
+                status = msgDict.get("response_header").get("status")
+                if status == 0:
+                    #print "http connection was ok for: " + queryUrl
+                    yield(query,docId,score,source,fv.split(","));
+                else:
+                    raise Exception("Status: {0} \nResponse: {2}".format(status, msgDict))
     except Exception as e:
         print(msg)
         print(e)
-
-    conn.close()
-
 
 def uploadModel(collection, host, port, modelFile, modelName):
     modelUrl = "/solr/" + collection + "/schema/model-store"
@@ -156,13 +149,14 @@ def main(argv=None):
         config = json.load(configFile)
 
         print("Uploading features ("+config["solrFeaturesFile"]+") to Solr")
+        setupSolrClient(config["host"], config["port"])
         setupSolr(config["collection"], config["host"], config["port"], config["solrFeaturesFile"], config["solrFeatureStoreName"])
 
         print("Converting user queries ("+config["userQueriesFile"]+") into Solr queries for feature extraction")
-        reRankQueries = generateQueries(config["userQueriesFile"], config["collection"], config["requestHandler"], config["solrFeatureStoreName"], config["efiParams"])
+        reRankQueries = generateQueries(config["userQueriesFile"], config["solrFeatureStoreName"], config["efiParams"])
 
         print("Running Solr queries to extract features")
-        fvGenerator = generateTrainingData(reRankQueries, config["host"], config["port"])
+        fvGenerator = generateTrainingData(reRankQueries, config["host"], config["port"], config["collection"])
         formatter = libsvm_formatter.LibSvmFormatter();
         formatter.processQueryDocFeatureVector(fvGenerator,config["trainingFile"]);
 
