@@ -31,7 +31,7 @@ Please refer to the Solr Reference Guide's section on [Learning To Rank](https:/
 
    Alternatively, leave the `config.json` file unchanged and create a soft-link to your `liblinear` directory e.g.
 
-  `ln -s /Users/YourNameHere/Downloads/liblinear-2.1 ./modules/ltr/example/liblinear`A
+  `ln -s /Users/YourNameHere/Downloads/liblinear-2.1 ./modules/ltr/example/liblinear`
 
 3. Prepare your Python3 environment to run the training script.
 
