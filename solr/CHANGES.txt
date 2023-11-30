@@ -83,8 +83,6 @@ New Features
 
 * SOLR-16974: Circuit Breakers can now be configured globally (janhoy, Christine Poerschke)
 
-* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
-
 * SOLR-16743: When using TLS, Solr can now auto-reload the keystore and truststore without the need to restart the process.
   This is enabled by default when running with TLS and can be disabled or configured in solr.in.sh (Houston Putman, Tomás Fernández Löbbe)
 
@@ -110,6 +108,10 @@ Improvements
   RENAME is now available at `POST /api/cores/coreName/rename` (Sanjay Dutt via Jason Gerlowski)
 
 * SOLR-17035: Add trace id to jetty thread names to improve debuggability via stack traces (Alex Deparvu)
+
+* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
+
+* SOLR-16959: Make the internal CoreSorter implementation configurable in solr.xml  (Vincent Primault)
 
 Optimizations
 ---------------------

@@ -79,6 +79,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals(
         "config set handler class", "testConfigSetsHandler", cfg.getConfigSetsHandlerClass());
     assertEquals("cores locator class", "testCoresLocator", cfg.getCoresLocatorClass());
+    assertEquals("core sorter class", "testCoreSorter", cfg.getCoreSorterClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
     assertEquals("replay update threads", 100, cfg.getReplayUpdatesThreads());
     MatcherAssert.assertThat(
