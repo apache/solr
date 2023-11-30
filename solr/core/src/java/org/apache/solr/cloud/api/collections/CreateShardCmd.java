@@ -111,7 +111,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
             message.getStr(CollectionHandlingUtils.CREATE_NODE_SET),
             CommonAdminParams.WAIT_FOR_FINAL_STATE,
             Boolean.toString(waitForFinalState));
-    numReplicas.addParams(addReplicasProps);
+    numReplicas.writeProps(addReplicasProps);
 
     CollectionHandlingUtils.addPropertyParams(message, addReplicasProps);
     if (async != null) {

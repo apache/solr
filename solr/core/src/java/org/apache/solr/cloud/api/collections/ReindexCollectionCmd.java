@@ -115,7 +115,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     collectionParams.add(CollectionAdminParams.CREATE_NODE_SET_PARAM);
     collectionParams.add(CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM);
     collectionParams.addAll(CollectionHandlingUtils.numReplicasProperties());
-    return List.copyOf(collectionParams);
+    return collectionParams;
   }
 
   private final CollectionCommandContext ccc;
@@ -339,7 +339,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       if (rf != null) {
         propMap.put(ZkStateReader.REPLICATION_FACTOR, rf);
       }
-      numReplicas.addParams(propMap);
+      numReplicas.writeProps(propMap);
       // create the target collection
       cmd = new ZkNodeProps(propMap);
       cmdResults = new NamedList<>();

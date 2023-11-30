@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 /** Tracks the number of replicas per replica type. This class is mutable. */
 public final class ReplicaCount {
@@ -61,8 +62,25 @@ public final class ReplicaCount {
     return fromMessage(message, collection, null);
   }
 
+  /**
+   * Creates a {@link ReplicaCount} from a message.
+   *
+   * <p>This method has a rich logic for defaulting parameters. A collection can optionally be
+   * provided as a fallback for all properties. Among all properties, replica factor is applied as
+   * the number of replicas for the default replica type. The default replica type can be provided
+   * as a property, or else comes from {@link Replica.Type#defaultType()}.
+   *
+   * <p>Not all capabilities apply on every call of this method. For example, the message may not
+   * contain any replication factor.
+   *
+   * @param message a message.
+   * @param collection an optional collection providing defaults.
+   * @param defaultReplicationFactor an additional optional default replica factor, if none is found
+   *     in the collection.
+   */
   public static ReplicaCount fromMessage(
       ZkNodeProps message, DocCollection collection, Integer defaultReplicationFactor) {
+    // Default replica type can be overridden by a property.
     Replica.Type defaultReplicaType =
         Replica.Type.valueOf(
             message
@@ -72,6 +90,8 @@ public final class ReplicaCount {
     for (Replica.Type replicaType : Replica.Type.values()) {
       final Integer count;
       if (replicaType == defaultReplicaType) {
+        // Number of replicas for the default replica type defaults to the replication factor.
+        // Replication factor can be overridden by a property, or a custom default.
         Integer defaultCount =
             (null != collection)
                 ? collection.getInt(
@@ -95,10 +115,18 @@ public final class ReplicaCount {
     return replicaCount;
   }
 
-  public static ReplicaCount fromProps(Map<String, Object> props) {
+  /**
+   * Creates a {@link ReplicaCount} from a properties map.
+   *
+   * <p>This method is much simpler than {@link #fromMessage}, as it only considers properties
+   * containing a number of replicas (and ignores other properties such as the replication factor).
+   *
+   * @param propMap a properties map
+   */
+  public static ReplicaCount fromProps(Map<String, Object> propMap) {
     ReplicaCount replicaCount = new ReplicaCount();
     for (Replica.Type replicaType : Replica.Type.values()) {
-      Object value = props.get(replicaType.numReplicasPropertyName);
+      Object value = propMap.get(replicaType.numReplicasPropertyName);
       if (null != value) {
         replicaCount.put(replicaType, Integer.parseInt(value.toString()));
       }
@@ -130,13 +158,24 @@ public final class ReplicaCount {
   }
 
   /**
-   * Add values for replica counts as integers to a properties map.
+   * Add properties for replica counts as integers to a properties map.
    *
    * @param propMap a properties map.
    */
-  public void addParams(Map<String, Object> propMap) {
+  public void writeProps(Map<String, Object> propMap) {
     for (Map.Entry<Replica.Type, Integer> entry : countByType.entrySet()) {
       propMap.put(entry.getKey().numReplicasPropertyName, entry.getValue());
+    }
+  }
+
+  /**
+   * Add properties for replica counts as integers to Solr parameters.
+   *
+   * @param params a set of modifiable Solr parameters.
+   */
+  public void writeProps(ModifiableSolrParams params) {
+    for (Map.Entry<Replica.Type, Integer> entry : countByType.entrySet()) {
+      params.add(entry.getKey().numReplicasPropertyName, String.valueOf(entry.getValue()));
     }
   }
 

@@ -128,12 +128,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     return SolrRequestType.ADMIN.toString();
   }
 
-  private static void writeNumReplicas(ReplicaCount numReplicas, ModifiableSolrParams params) {
-    for (Replica.Type replicaType : numReplicas.keySet()) {
-      params.add(replicaType.numReplicasPropertyName, String.valueOf(numReplicas.get(replicaType)));
-    }
-  }
-
   /**
    * Take the request specific basic auth creds on this admin request and propagate them to a
    * related request if does not already have credentials set, such as a
@@ -689,7 +683,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (properties != null) {
         addProperties(params, properties);
       }
-      writeNumReplicas(numReplicas, params);
+      numReplicas.writeProps(params);
       if (Boolean.TRUE.equals(perReplicaState)) {
         params.set(CollectionAdminParams.PER_REPLICA_STATE, perReplicaState);
       }
@@ -1381,7 +1375,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (replicationFactor != null) {
         params.set(CollectionAdminParams.REPLICATION_FACTOR, replicationFactor);
       }
-      writeNumReplicas(numReplicas, params);
+      numReplicas.writeProps(params);
       if (properties != null) {
         addProperties(params, properties);
       }
@@ -2591,7 +2585,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (properties != null) {
         addProperties(params, properties);
       }
-      writeNumReplicas(numReplicas, params);
+      numReplicas.writeProps(params);
       if (createNodeSet != null) {
         params.add(CREATE_NODE_SET_PARAM, createNodeSet);
       }
