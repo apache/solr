@@ -20,15 +20,12 @@ apply plugin: 'java-library'
 description = 'Learning to Rank Package'
 
 ext {
-  asdf = layout.projectDirectory.dir("example").dir("solrclient")
-  pythonClientBundleDir = layout.projectDirectory.dir("example/solrclient")
-
+  pythonClientCopyDir = layout.projectDirectory.dir("example/solrclient")
 }
 
 configurations {
   generatedPythonClient
-  // TODO Is 'bundle' really the right word here?
-  generatedPythonClientBundle
+  localPythonClientCopy
 }
 
 dependencies {
@@ -41,8 +38,8 @@ dependencies {
 
   // Used by example scripts
   generatedPythonClient project(path: ":solr:api", configuration: "pythonClient")
-  generatedPythonClientBundle files(pythonClientBundleDir) {
-    builtBy "syncPythonClientSourceCode"
+  localPythonClientCopy files(pythonClientCopyDir) {
+    builtBy "copyPythonClientToExample"
   }
 
   testImplementation('org.mockito:mockito-core', {
@@ -61,8 +58,8 @@ dependencies {
   testImplementation 'commons-io:commons-io'
 }
 
-task syncPythonClientSourceCode(type: Sync) {
+task copyPythonClientToExample(type: Sync) {
   group = "Solr Python Client"
   from configurations.generatedPythonClient
-  into project.pythonClientBundleDir
+  into project.pythonClientCopyDir
 }
