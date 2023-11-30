@@ -76,7 +76,7 @@ def generateQueryBody(solrFeatureStoreName, efiParams, searchText, docId):
     return solrJsonParams
 
 
-def generateTrainingData(solrQueries, host, port, coreName):
+def generateTrainingData(solrQueries, coreName):
     '''Given a list of solr queries, yields a tuple of query , docId , score , source , feature vector for each query.
     Feature Vector is a list of strings of form "key=value"'''
     try:
@@ -156,7 +156,7 @@ def main(argv=None):
         reRankQueries = generateQueries(config["userQueriesFile"], config["solrFeatureStoreName"], config["efiParams"])
 
         print("Running Solr queries to extract features")
-        fvGenerator = generateTrainingData(reRankQueries, config["host"], config["port"], config["collection"])
+        fvGenerator = generateTrainingData(reRankQueries, config["collection"])
         formatter = libsvm_formatter.LibSvmFormatter();
         formatter.processQueryDocFeatureVector(fvGenerator,config["trainingFile"]);
 
