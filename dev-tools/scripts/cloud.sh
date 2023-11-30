@@ -280,10 +280,11 @@ copyTarball() {
       curl -o "$RC_FILE" "$SMOKE_RC_URL"
       pushd
     else
-      if [[ ! -f $(ls "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz) ]]; then
+      TARBALL=$(find "$VCS_WORK" -regex '.*/solr-.*\.tgz' | grep -v slim)
+      if [[ ! -f "$TARBALL" ]]; then
         echo "No solr tarball found try again with -r"; popd; exit 10;
       fi
-      cp "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz ${CLUSTER_WD}
+      cp "$TARBALL" "${CLUSTER_WD}"
     fi
     pushd # back into cluster wd to unpack
     tar xzvf solr-*.tgz
