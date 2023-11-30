@@ -122,6 +122,8 @@ Bug Fixes
 * SOLR-10653: When there's a UUIDField in the schema and atomic update touches another field
   the error occurs when leader updates replica (Mikhail Khludnev)
 
+* SOLR-16952: In distributed i.e. multi-shard cloud mode returned dense vector 'fl' fields are now a list of numbers instead of strings. (Qais Qadri, Christine Poerschke)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
