@@ -115,6 +115,7 @@ public class DeleteTool extends ToolBase {
             .withInternalClientBuilder(
                 new Http2SolrClient.Builder()
                     .withIdleTimeout(30, TimeUnit.SECONDS)
+                    .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
                     .withConnectionTimeout(15, TimeUnit.SECONDS))
             .build()) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);

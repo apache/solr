@@ -13,6 +13,9 @@ New Features
 
 * SOLR-16974: Circuit Breakers can now be configured globally (janhoy, Christine Poerschke)
 
+* SOLR-16743: When using TLS, Solr can now auto-reload the keystore and truststore without the need to restart the process.
+  This is enabled by default when running with TLS and can be disabled or configured in solr.in.sh (Houston Putman, Tomás Fernández Löbbe)
+
 Improvements
 ---------------------
 * SOLR-17053: Distributed search with shards.tolerant: if all shards fail, fail the request (Aparna Suresh via David Smiley)

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -87,7 +88,8 @@ public class PostLogsTool extends ToolBase {
 
   public void runCommand(String baseUrl, String root) throws IOException {
 
-    Http2SolrClient.Builder builder = new Http2SolrClient.Builder(baseUrl);
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder(baseUrl).withKeyStoreReloadInterval(-1, TimeUnit.SECONDS);
     try (SolrClient client = builder.build()) {
       int rec = 0;
       UpdateRequest request = new UpdateRequest();

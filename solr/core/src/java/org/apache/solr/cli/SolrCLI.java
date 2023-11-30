@@ -438,7 +438,10 @@ public class SolrCLI implements CLIO {
   }
 
   public static SolrClient getSolrClient(String solrUrl) {
-    return new Http2SolrClient.Builder(solrUrl).withMaxConnectionsPerHost(32).build();
+    return new Http2SolrClient.Builder(solrUrl)
+        .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
+        .withMaxConnectionsPerHost(32)
+        .build();
   }
 
   private static final String JSON_CONTENT_TYPE = "application/json";
