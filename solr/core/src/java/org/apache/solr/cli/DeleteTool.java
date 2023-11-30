@@ -107,6 +107,7 @@ public class DeleteTool extends ToolBase {
         new Http2SolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(cli.getOptionValue(("credentials")));
 
     String zkHost = SolrCLI.getZkHost(cli);
