@@ -18,7 +18,7 @@ Improvements
 * SOLR-17053: Distributed search with shards.tolerant: if all shards fail, fail the request (Aparna Suresh via David Smiley)
 
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
-  REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
+  REQUESTAPPLYUPDATES call in Collection restore.  (Julia Maimone, David Smiley)
 
 * SOLR-16907: Fail when parsing an invalid custom permission definition from security.json (janhoy, Uwe Schindler)
 
