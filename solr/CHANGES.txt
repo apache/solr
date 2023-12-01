@@ -113,6 +113,8 @@ Improvements
 
 * SOLR-16959: Make the internal CoreSorter implementation configurable in solr.xml  (Vincent Primault)
 
+* SOLR-17094: Close objects contained inside an ObjectCache.  (Vincent Primault)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
