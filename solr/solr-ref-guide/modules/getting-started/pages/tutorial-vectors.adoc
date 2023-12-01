@@ -71,7 +71,7 @@ $ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicat
 
 === Now index the Films data with Vectors
 
-We have the vectors embedded in our `films.json` file, so lets index that data, taking advantage of our new schema field we just defined.
+We have the vectors embedded in our `films.json` file, so let's index that data, taking advantage of our new schema field we just defined.
 
 [.dynamic-tabs]
 --
