@@ -14,20 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.client.api.util;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import java.util.HashMap;
+import java.util.Map;
 
-public class Constants {
-  private Constants() {
-    /* Private ctor prevents instantiation */
+/** A {@link SolrJerseyResponse} which can accept any top-level properties. */
+public class FlexibleSolrJerseyResponse extends SolrJerseyResponse {
+
+  private Map<String, Object> unknownFields = new HashMap<>();
+
+  @JsonAnyGetter
+  public Map<String, Object> unknownProperties() {
+    return unknownFields;
   }
 
-  public static final String STORE_TYPE_PATH_PARAMETER = "storeType";
-  public static final String STORE_NAME_PATH_PARAMETER = "storeName";
-  public static final String STORE_PATH_PREFIX =
-      "/{" + STORE_TYPE_PATH_PARAMETER + ":cores|collections}/{" + STORE_NAME_PATH_PARAMETER + "}";
-
-  public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
-
-  public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  @JsonAnySetter
+  public void setUnknownProperty(String field, Object value) {
+    unknownFields.put(field, value);
+  }
 }

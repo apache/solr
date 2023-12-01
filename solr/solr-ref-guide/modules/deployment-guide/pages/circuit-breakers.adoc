@@ -32,8 +32,26 @@ Setting the `shards.tolerant=true` parameter on requests can help with graceful 
 circuit breaker thresholds are reached on some nodes. See the xref:deployment-guide:solrcloud-distributed-requests.adoc#shards-tolerant-parameter[`shards.tolerant` Parameter] for details.
 
 == Circuit Breaker Configurations
-All circuit breaker configurations are listed as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown below.
-A circuit breaker can register itself to trip for query requests and/or update requests. By default, only search requests are affected. A user may register multiple circuit breakers of the same type with different thresholds for each request type.
+Circuit breakers can be configured globally for the entire node, or for each collection individually, or a combination. Per-collection circuit breakers are checked before global circuit breakers, and if there is a conflict, the per-collection circuit breaker takes precedence.
+Typically, any per-collection circuit breaker thresholds are set lower than global thresholds.
+
+A circuit breaker can register itself to be checked for query requests and/or update requests. A user may register circuit breakers of the same type with different thresholds for each request type.
+
+=== Global Circuit Breakers
+Circuit breakers can be configured globally using environment variables, e.g. in `solr.in.sh`, or system properties. The variables available are:
+
+[options="header"]
+|===
+|Name |Environment Variable Name |System Property Name
+|JVM Heap Usage |`SOLR_CIRCUITBREAKER_QUERY_MEM`, `SOLR_CIRCUITBREAKER_UPDATE_MEM` |`solr.circuitbreaker.query.mem`, `solr.circuitbreaker.update.mem`
+|System CPU Usage |`SOLR_CIRCUITBREAKER_QUERY_CPU`, `SOLR_CIRCUITBREAKER_UPDATE_CPU` |`solr.circuitbreaker.query.cpu`, `solr.circuitbreaker.update.cpu`
+|System Load Average |`SOLR_CIRCUITBREAKER_QUERY_LOADAVG`, `SOLR_CIRCUITBREAKER_UPDATE_LOADAVG` |`solr.circuitbreaker.query.loadavg`, `solr.circuitbreaker.update.loadavg`
+|===
+
+For example, you can enable a global CPU circuit breaker that rejects update requests when above 95% CPU load, by setting the following environment variable: `SOLR_CIRCUITBREAKER_UPDATE_CPU=95`.
+
+=== Per Collection Circuit Breakers
+Circuit breakers are configured as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown in the below examples. By default, only search requests are affected.
 
 [TIP]
 ====
@@ -49,11 +67,18 @@ The main configuration for this circuit breaker is controlling the threshold per
 
 To enable and configure the JVM heap usage based circuit breaker, add the following:
 
+.Per collection in `solrconfig.xml`
 [source,xml]
 ----
 <circuitBreaker class="org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker">
  <double name="threshold">75</double>
 </circuitBreaker>
+----
+
+.Global in `solr.in.sh`
+[source,bash]
+----
+SOLR_CIRCUITBREAKER_QUERY_MEM=75
 ----
 
 The `threshold` is defined as a percentage of the max heap allocated to the JVM.
@@ -78,11 +103,18 @@ disabled and log an error message. An alternative can then be to use the <<syste
 
 To enable and configure the CPU utilization based circuit breaker:
 
+.Per collection in `solrconfig.xml`
 [source,xml]
 ----
 <circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker">
  <double  name="threshold">75</double>
 </circuitBreaker>
+----
+
+.Global in `solr.in.sh`
+[source,bash]
+----
+SOLR_CIRCUITBREAKER_QUERY_CPU=75
 ----
 
 The triggering threshold is defined in percent CPU usage. A value of "0" maps to 0% usage
@@ -98,8 +130,9 @@ usually averaged over one minute. Some systems include processes waiting on IO i
 documentation for your system and JVM to understand this metric. For more information, see the
 https://en.wikipedia.org/wiki/Load_(computing)[Wikipedia page for Load],
 
-To enable and configure the CPU utilization based circuit breaker:
+To enable and configure the Load average circuit breaker:
 
+.Per collection in `solrconfig.xml`
 [source,xml]
 ----
 <circuitBreaker class="org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker">
@@ -107,14 +140,26 @@ To enable and configure the CPU utilization based circuit breaker:
 </circuitBreaker>
 ----
 
+.Global in `solr.in.sh`
+[source,bash]
+----
+SOLR_CIRCUITBREAKER_QUERY_LOADAVG=8.0
+----
+
 The triggering threshold is a floating point number matching load average.
 The example circuit breaker above will trip when the load average is equal to or greater than 8.0.
+
+[NOTE]
+====
+The System Load Average Circuit breaker behavior is dependent on the operating system, and may not work on some operating systems like Microsoft Windows. See https://docs.oracle.com/en/java/javase/17/docs/api/java.management/java/lang/management/OperatingSystemMXBean.html#getSystemLoadAverage()[JavaDoc] for more.
+====
 
 == Advanced example
 
 In this example we will prevent update requests above 80% CPU load, and prevent query requests above 95% CPU load. Supported request types are `query` and `update`.
 This would prevent expensive bulk updates from impacting search. Note also the support for short-form class name.
 
+.Per collection in `solrconfig.xml`
 [source,xml]
 ----
 <config>
@@ -132,6 +177,13 @@ This would prevent expensive bulk updates from impacting search. Note also the s
    </arr>
   </circuitBreaker>
 </config>
+----
+
+.Global in `solr.in.sh`
+[source,bash]
+----
+SOLR_CIRCUITBREAKER_UPDATE_CPU=80
+SOLR_CIRCUITBREAKER_QUERY_CPU=95
 ----
 
 == Performance Considerations
