@@ -25,7 +25,7 @@ import static org.apache.solr.cloud.AbstractDigestZkACLAndCredentialsProvidersTe
 import static org.apache.solr.common.cloud.SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME;
 import static org.apache.solr.common.cloud.SolrZkClient.ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME;
 import static org.apache.solr.common.cloud.SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME;
-import static org.apache.solr.secret.zk.AWSSecretManagerCredentialsInjector.SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_VM_PARAM;
+import static org.apache.solr.secret.zk.AWSSecretManagerCredentialsInjector.AWS_SM_CREDENTIALS_SECRET_NAME_VM_PARAM;
 import static org.apache.solr.secret.zk.AWSSecretManagerCredentialsInjector.SecretMultiCredentials;
 
 import java.lang.invoke.MethodHandles;
@@ -49,7 +49,7 @@ public class AWSSecretCredentialsProviderTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String SECRET_NAME = "zkSecretCredentialSecretName";
+  private static final String SECRET_NAME = "AWS_SM_DEV_SECRET_NAME";
 
   private static final String SECRET_ALL_AND_READY_VALID_JSON =
       String.format(
@@ -107,7 +107,7 @@ public class AWSSecretCredentialsProviderTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReturnTheExpectedZkCredentials() {
-    System.setProperty(SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_VM_PARAM, SECRET_NAME);
+    System.setProperty(AWS_SM_CREDENTIALS_SECRET_NAME_VM_PARAM, SECRET_NAME);
     final List<ZkCredential> zkCredentials =
         List.of(
             new ZkCredential(ALL_USERNAME, ALL_PASSWORD, ZkCredential.Perms.ALL),
@@ -242,7 +242,7 @@ public class AWSSecretCredentialsProviderTest extends SolrTestCaseJ4 {
     System.clearProperty(ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
     System.clearProperty(ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
     System.clearProperty(ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME);
-    System.clearProperty(SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_VM_PARAM);
+    System.clearProperty(AWS_SM_CREDENTIALS_SECRET_NAME_VM_PARAM);
   }
 
   public static class AllAndReadonlyAWSSecretCredentialsProvider

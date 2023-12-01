@@ -35,11 +35,11 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueReques
 import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerException;
 
 public class AWSSecretManagerCredentialsInjector implements ZkCredentialsInjector {
-  public static final String SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_VM_PARAM =
-      "zkSecretCredentialSecretName";
-  private static final String SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_DEFAULT =
-      "zkCredentialsSecret";
-  private static final String SECRET_MANAGER_REGION = "zkCredentialsAWSSecretRegion";
+  public static final String AWS_SM_CREDENTIALS_SECRET_NAME_VM_PARAM =
+      "zkAWSSecretCredentialsSecretName";
+  private static final String AWS_SM_CREDENTIALS_REGION_VM_PARAM = "zkAWSSecretCredentialsRegion";
+  private static final String AWS_SM_CREDENTIALS_SECRET_NAME_DEFAULT =
+      "solr.zk.credentials.dev.secret";
 
   private final ObjectMapper mappers =
       SolrJacksonAnnotationInspector.createObjectMapper()
@@ -55,13 +55,13 @@ public class AWSSecretManagerCredentialsInjector implements ZkCredentialsInjecto
 
   public AWSSecretManagerCredentialsInjector() {
     String secretNameVmParam =
-        System.getProperties().getProperty(SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_VM_PARAM);
+        System.getProperties().getProperty(AWS_SM_CREDENTIALS_SECRET_NAME_VM_PARAM);
     secretName =
         StrUtils.isNotNullOrEmpty(secretNameVmParam)
             ? secretNameVmParam
-            : SECRET_CREDENTIAL_PROVIDER_SECRET_NAME_DEFAULT;
+            : AWS_SM_CREDENTIALS_SECRET_NAME_DEFAULT;
 
-    regionName = System.getProperties().getProperty(SECRET_MANAGER_REGION);
+    regionName = System.getProperties().getProperty(AWS_SM_CREDENTIALS_REGION_VM_PARAM);
   }
 
   @Override

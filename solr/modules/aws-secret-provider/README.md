@@ -49,8 +49,8 @@ This plugin uses the [default AWS credentials provider chain](https://docs.aws.a
 SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider \
 -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider \
 -DzkCredentialsInjector=org.apache.solr.secret.zk.AWSSecretManagerCredentialsInjector \
--DzkSecretCredentialSecretName=zkCredentialsSecret \
--DzkCredentialsAWSSecretRegion=us-west-2"
+-DzkAWSSecretCredentialsSecretName=YOUR_AWS_SM_SECRET_NAME \
+-DzkAWSSecretCredentialsRegion=us-west-2"
 SOLR_OPTS="$SOLR_OPTS $SOLR_ZK_CREDS_AND_ACLS"
 ```
 
@@ -61,8 +61,8 @@ REM Settings for ZK ACL
 set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ^
  -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider ^
  -DzkCredentialsInjector=org.apache.solr.secret.zk.AWSSecretManagerCredentialsInjector ^
- -DzkSecretCredentialSecretName=zkCredentialsSecret ^
- -DzkCredentialsAWSSecretRegion=us-west-2
+ -DzkAWSSecretCredentialsSecretName=YOUR_AWS_SM_SECRET_NAME ^
+ -DzkAWSSecretCredentialsRegion=us-west-2
 set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%
 ```
 
@@ -77,8 +77,8 @@ zkcli.sh
 SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider \
   -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider \ 
   -DzkCredentialsInjector=org.apache.solr.secret.zk.AWSSecretManagerCredentialsInjector \
-  -DzkSecretCredentialSecretName=zkCredentialsSecret \
-  -DzkCredentialsAWSSecretRegion=us-west-2"
+  -DzkAWSSecretCredentialsSecretName=YOUR_AWS_SM_SECRET_NAME \
+  -DzkAWSSecretCredentialsRegion=us-west-2"
 ```
 
 zkcli.bat
@@ -88,8 +88,8 @@ REM Settings for ZK ACL
 set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider ^
  -DzkCredentialsProvider=org.apache.solr.common.cloud.DigestZkCredentialsProvider ^
  -DzkCredentialsInjector=org.apache.solr.secret.zk.AWSSecretManagerCredentialsInjector ^
- -DzkSecretCredentialSecretName=zkCredentialsSecret ^
- -DzkCredentialsAWSSecretRegion=us-west-2
+ -DzkAWSSecretCredentialsSecretName=YOUR_AWS_SM_SECRET_NAME ^
+ -DzkAWSSecretCredentialsRegion=us-west-2
 ```
 
 - Restart Solr.

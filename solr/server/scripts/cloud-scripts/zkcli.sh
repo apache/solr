@@ -43,5 +43,5 @@ SOLR_DIR=$(dirname "$SOLR_SCRIPT")/../../..
 # SOLR_MODULES=aws-secret-provider
 
 PATH=$JAVA_HOME/bin:$PATH $JVM $SOLR_ZK_CREDS_AND_ACLS $ZKCLI_JVM_FLAGS -Dlog4j.configurationFile=$log4j_config -Dsolr.home=$solr_home \
--Dsolr.install.dir=$SOLR_DIR  -Dsolr.modules=$SOLR_MODULES -classpath "$sdir/../../solr-webapp/webapp/WEB-INF/lib/*:$sdir/../../lib/ext/*:$sdir/../../lib/*" org.apache.solr.cloud.ZkCLI ${1+"$@"}
+-Dsolr.install.dir="$SOLR_DIR" -Dsolr.modules="$SOLR_MODULES" -classpath "$sdir/../../solr-webapp/webapp/WEB-INF/lib/*:$sdir/../../lib/ext/*:$sdir/../../lib/*" org.apache.solr.cloud.ZkCLI ${1+"$@"}
 
