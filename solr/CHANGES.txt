@@ -83,12 +83,15 @@ New Features
 
 * SOLR-16974: Circuit Breakers can now be configured globally (janhoy, Christine Poerschke)
 
-* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
+* SOLR-16743: When using TLS, Solr can now auto-reload the keystore and truststore without the need to restart the process.
+  This is enabled by default when running with TLS and can be disabled or configured in solr.in.sh (Houston Putman, Tomás Fernández Löbbe)
 
 Improvements
 ---------------------
+* SOLR-17053: Distributed search with shards.tolerant: if all shards fail, fail the request (Aparna Suresh via David Smiley)
+
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
-  REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
+  REQUESTAPPLYUPDATES call in Collection restore.  (Julia Maimone, David Smiley)
 
 * SOLR-16907: Fail when parsing an invalid custom permission definition from security.json (janhoy, Uwe Schindler)
 
@@ -106,9 +109,14 @@ Improvements
 
 * SOLR-17035: Add trace id to jetty thread names to improve debuggability via stack traces (Alex Deparvu)
 
+* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
+
+* SOLR-16959: Make the internal CoreSorter implementation configurable in solr.xml  (Vincent Primault)
+
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
+  instead of the full list of cores. This list is potentially VERY long which was causing high CPU and memory usage.
 
 Bug Fixes
 ---------------------
@@ -137,6 +145,9 @@ Other Changes
 * SOLR-17072: package CLI tool prints error JSONPath (Mikhail Khludnev)
 
 * SOLR-17078: The `train_and_upload_demo_model.py` script referenced in LTR documentation now uses Python3 (Jason Gerlowski)
+
+* SOLR-17091: dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz file it was not expecting
+  cloud.sh has been updated to ignore the -slim.tgz version of the tarball.
 
 ==================  9.4.0 ==================
 New Features
