@@ -56,6 +56,7 @@ public class NodeConfig {
 
   private final Path coreRootDirectory;
   private final String coresLocatorClass;
+  private final String coreSorterClass;
 
   private final Path solrDataHome;
 
@@ -77,8 +78,8 @@ public class NodeConfig {
   private final Predicate<String> hiddenSysPropPattern;
 
   private final PluginInfo shardHandlerFactoryConfig;
-
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
+  private final PluginInfo replicaPlacementFactoryConfig;
 
   private final String configSetServiceClass;
 
@@ -122,12 +123,14 @@ public class NodeConfig {
       String nodeName,
       Path coreRootDirectory,
       String coresLocatorClass,
+      String coreSorterClass,
       Path solrDataHome,
       Integer booleanQueryMaxClauseCount,
       Path configSetBaseDirectory,
       String sharedLibDirectory,
       PluginInfo shardHandlerFactoryConfig,
       UpdateShardHandlerConfig updateShardHandlerConfig,
+      PluginInfo replicaPlacementFactoryConfig,
       String coreAdminHandlerClass,
       Map<String, String> coreAdminHandlerActions,
       String collectionsAdminHandlerClass,
@@ -159,12 +162,14 @@ public class NodeConfig {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.coresLocatorClass = coresLocatorClass;
+    this.coreSorterClass = coreSorterClass;
     this.solrDataHome = solrDataHome;
     this.booleanQueryMaxClauseCount = booleanQueryMaxClauseCount;
     this.configSetBaseDirectory = configSetBaseDirectory;
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
+    this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
     this.coreAdminHandlerActions = coreAdminHandlerActions;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
@@ -263,6 +268,10 @@ public class NodeConfig {
     return this.coresLocatorClass;
   }
 
+  public String getCoreSorterClass() {
+    return coreSorterClass;
+  }
+
   /** Absolute. */
   public Path getSolrDataHome() {
     return solrDataHome;
@@ -297,6 +306,10 @@ public class NodeConfig {
 
   public UpdateShardHandlerConfig getUpdateShardHandlerConfig() {
     return updateShardHandlerConfig;
+  }
+
+  public PluginInfo getReplicaPlacementFactoryConfig() {
+    return replicaPlacementFactoryConfig;
   }
 
   public int getCoreLoadThreadCount(boolean zkAware) {
@@ -549,6 +562,7 @@ public class NodeConfig {
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
     private String coresLocatorClass = DEFAULT_CORESLOCATORCLASS;
+    private String coreSorterClass = DEFAULT_CORESORTERCLASS;
     private Path solrDataHome;
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
@@ -557,6 +571,7 @@ public class NodeConfig {
     private String hiddenSysProps;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
+    private PluginInfo replicaPlacementFactoryConfig;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
@@ -590,6 +605,7 @@ public class NodeConfig {
 
     private static final String DEFAULT_CORESLOCATORCLASS =
         "org.apache.solr.core.CorePropertiesLocator";
+    private static final String DEFAULT_CORESORTERCLASS = "org.apache.solr.core.CoreSorter";
     private static final String DEFAULT_ADMINHANDLERCLASS =
         "org.apache.solr.handler.admin.CoreAdminHandler";
     private static final String DEFAULT_INFOHANDLERCLASS =
@@ -634,6 +650,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setCoreSorterClass(String coreSorterClass) {
+      this.coreSorterClass = coreSorterClass;
+      return this;
+    }
+
     public NodeConfigBuilder setSolrDataHome(String solrDataHomeString) {
       // keep it null unless explicitly set to non-empty value
       if (solrDataHomeString != null && !solrDataHomeString.isEmpty()) {
@@ -665,6 +686,12 @@ public class NodeConfig {
     public NodeConfigBuilder setUpdateShardHandlerConfig(
         UpdateShardHandlerConfig updateShardHandlerConfig) {
       this.updateShardHandlerConfig = updateShardHandlerConfig;
+      return this;
+    }
+
+    public NodeConfigBuilder setReplicaPlacementFactoryConfig(
+        PluginInfo replicaPlacementFactoryConfig) {
+      this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
       return this;
     }
 
@@ -846,12 +873,14 @@ public class NodeConfig {
           nodeName,
           coreRootDirectory,
           coresLocatorClass,
+          coreSorterClass,
           solrDataHome,
           booleanQueryMaxClauseCount,
           configSetBaseDirectory,
           sharedLibDirectory,
           shardHandlerFactoryConfig,
           updateShardHandlerConfig,
+          replicaPlacementFactoryConfig,
           coreAdminHandlerClass,
           coreAdminHandlerActions,
           collectionsAdminHandlerClass,

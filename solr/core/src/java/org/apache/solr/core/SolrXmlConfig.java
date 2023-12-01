@@ -157,6 +157,8 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
+    configBuilder.setReplicaPlacementFactoryConfig(
+        getPluginInfo(root.get("replicaPlacementFactory")));
     configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
     configBuilder.setSolrProperties(loadProperties(root, substituteProperties));
@@ -333,6 +335,9 @@ public class SolrXmlConfig {
                 break;
               case "coresLocator":
                 builder.setCoresLocatorClass(it.txt());
+                break;
+              case "coreSorter":
+                builder.setCoreSorterClass(it.txt());
                 break;
               case "coreRootDirectory":
                 builder.setCoreRootDirectory(it.txt());

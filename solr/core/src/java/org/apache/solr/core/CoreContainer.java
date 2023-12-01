@@ -248,6 +248,7 @@ public class CoreContainer {
   protected final SolrNodeKeyPair nodeKeyPair;
 
   protected final CoresLocator coresLocator;
+  private volatile CoreSorter coreSorter;
 
   private volatile String hostName;
 
@@ -292,8 +293,7 @@ public class CoreContainer {
           (r) -> this.runAsync(r));
 
   private volatile ClusterEventProducer clusterEventProducer;
-  private final DelegatingPlacementPluginFactory placementPluginFactory =
-      new DelegatingPlacementPluginFactory();
+  private DelegatingPlacementPluginFactory placementPluginFactory;
 
   private FileStoreAPI fileStoreAPI;
   private SolrPackageLoader packageLoader;
@@ -778,6 +778,10 @@ public class CoreContainer {
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
 
+    placementPluginFactory =
+        new DelegatingPlacementPluginFactory(
+            PlacementPluginFactoryLoader.getDefaultPlacementPluginFactory(cfg, loader));
+
     containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
@@ -1017,10 +1021,18 @@ public class CoreContainer {
             metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
             SolrMetricManager.mkName(
                 "coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
+
+    coreSorter =
+        loader.newInstance(
+            cfg.getCoreSorterClass(),
+            CoreSorter.class,
+            null,
+            new Class<?>[] {CoreContainer.class},
+            new Object[] {this});
     final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
-      cds = CoreSorter.sortCores(this, cds);
+      cds = coreSorter.sort(cds);
       checkForDuplicateCoreNames(cds);
       status |= CORE_DISCOVERY_COMPLETE;
 
@@ -1462,6 +1474,10 @@ public class CoreContainer {
 
   public CoresLocator getCoresLocator() {
     return coresLocator;
+  }
+
+  public CoreSorter getCoreSorter() {
+    return coreSorter;
   }
 
   protected SolrCore registerCore(
