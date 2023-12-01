@@ -130,6 +130,9 @@ Bug Fixes
 * SOLR-10653: When there's a UUIDField in the schema and atomic update touches another field
   the error occurs when leader updates replica (Mikhail Khludnev)
 
+* SOLR-17093: Collection restore API command now returns "requestid" when executed asynchronously like other APIs
+  (Tomás Fernández Löbbe)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
