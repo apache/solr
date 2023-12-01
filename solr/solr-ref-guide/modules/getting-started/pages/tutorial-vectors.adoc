@@ -101,7 +101,7 @@ $ bin/solr post -c films example\films\films.json
 Before making the queries, we define an example target vector, simulating a person that 
 watched 3 movies: _Finding Nemo_, _Bee Movie_, and _Harry Potter and the Chamber of Secrets_. 
 We get the vector of each movie, then calculate the resulting average vector, which will 
-be used as input vector for all the following example queries.
+be used as the input vector for all the following example queries.
         
 ```
 [-0.1784, 0.0096, -0.1455, 0.4167, -0.1148, -0.0053, -0.0651, -0.0415, 0.0859, -0.1789]
