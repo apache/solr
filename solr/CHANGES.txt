@@ -116,7 +116,8 @@ Improvements
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
-  instead of the full list of cores. This list is potentially VERY long which was causing high CPU and memory usage.
+  instead of the full list of cores.  This list is potentially as long as the number of cores.  When there are many
+  cores, this leads to high CPU and memory usage. (Gilles Bellaton, David Smiley)
 
 Bug Fixes
 ---------------------
