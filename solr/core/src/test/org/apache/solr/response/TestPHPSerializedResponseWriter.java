@@ -20,9 +20,12 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+
+import org.apache.lucene.document.*;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -92,6 +95,30 @@ public class TestPHPSerializedResponseWriter extends SolrTestCaseJ4 {
     assertEquals(
         "a:1:{s:8:\"response\";a:4:{s:8:\"numFound\";i:0;s:5:\"start\";i:0;s:13:\"numFoundExact\";b:1;s:4:\"docs\";a:2:{i:0;a:6:{s:2:\"id\";s:1:\"1\";s:5:\"data1\";s:5:\"hello\";s:5:\"data2\";i:42;s:5:\"data3\";b:1;s:5:\"data4\";a:2:{s:7:\"data4.1\";s:7:\"hashmap\";s:7:\"data4.2\";s:5:\"hello\";}s:5:\"data5\";a:3:{i:0;s:7:\"data5.1\";i:1;s:7:\"data5.2\";i:2;s:7:\"data5.3\";}}i:1;a:1:{s:2:\"id\";s:1:\"2\";}}}}",
         buf.toString());
+    req.close();
+  }
+
+  @Test
+  public void testLuceneDocument() throws IOException {
+    SolrQueryRequest req = req("q", "*:*");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    QueryResponseWriter w = new PHPSerializedResponseWriter();
+    StringWriter buf = new StringWriter();
+
+    Document d = new Document();
+
+    d.add(new StringField("id", "2", Field.Store.YES));
+    d.add(new TextField("name", "foo bar", Field.Store.YES));
+    d.add(new IntField("cost", 5, Field.Store.YES));
+
+    SimpleOrderedMap<Object> val = new SimpleOrderedMap<>();
+    val.add("lucene doc", d);
+    rsp.add("map", val);
+
+    w.write(buf, req, rsp);
+    assertEquals(
+            "a:1:{s:3:\"map\";a:1:{s:10:\"lucene doc\";a:3:{s:2:\"id\";s:1:\"2\";s:4:\"cost\";s:1:\"5\";s:4:\"name\";a:1:{s:7:\"foo bar\";}}}}",
+            buf.toString());
     req.close();
   }
 }
