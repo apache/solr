@@ -222,7 +222,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     KNOWN_TYPES.add(LongPointField.class);
     KNOWN_TYPES.add(DoublePointField.class);
     KNOWN_TYPES.add(FloatPointField.class);
-    KNOWN_TYPES.add(DenseVectorField.class); // DenseVectorField extends FloatPointField
+    // DenseVectorField extends FloatPointField but here we list DenseVectorField
+    // explicitly due to KNOWN_TYPES.contains use of the KNOWN_TYPES set
+    KNOWN_TYPES.add(DenseVectorField.class);
     KNOWN_TYPES.add(DatePointField.class);
     // We do not add UUIDField because UUID object is not a supported type in JavaBinCodec
     // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side
