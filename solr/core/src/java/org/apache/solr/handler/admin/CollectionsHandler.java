@@ -177,7 +177,7 @@ import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
 import org.apache.solr.handler.admin.api.CreateCollection;
-import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
+import org.apache.solr.handler.admin.api.CreateCollectionBackup;
 import org.apache.solr.handler.admin.api.CreateCollectionSnapshot;
 import org.apache.solr.handler.admin.api.CreateReplica;
 import org.apache.solr.handler.admin.api.CreateShard;
@@ -1065,7 +1065,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         BACKUP,
         (req, rsp, h) -> {
           final var response =
-              CreateCollectionBackupAPI.invokeFromV1Params(req, rsp, h.coreContainer);
+              CreateCollectionBackup.invokeFromV1Params(req, rsp, h.coreContainer);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1367,7 +1367,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         BalanceShardUniqueAPI.class,
         CreateAliasAPI.class,
         CreateCollection.class,
-        CreateCollectionBackupAPI.class,
+        CreateCollectionBackup.class,
         CreateShard.class,
         DeleteAlias.class,
         DeleteCollectionBackup.class,
