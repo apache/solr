@@ -366,7 +366,7 @@ public class SearchHandler extends RequestHandlerBase
       rsp.getToLog()
           .asShallowMap(false)
           .put("params", "{" + filteredParams + "}"); // replace "params" with the filtered version
-    } else {
+    } else if (rb.isDistrib) {
       // Then it is the first time this req hitting Solr - not a req distributed by another higher
       // level req.
       // We have to log the query here as
