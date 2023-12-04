@@ -113,12 +113,15 @@ Improvements
 
 * SOLR-16959: Make the internal CoreSorter implementation configurable in solr.xml  (Vincent Primault)
 
+* SOLR-17050: Use compact JSON for Learning to Rank (LTR) feature and model storage. (Florin Babes, Christine Poerschke, Alessandro Benedetti)
+
 * SOLR-17094: Close objects contained inside an ObjectCache.  (Vincent Primault)
 
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
-  instead of the full list of cores. This list is potentially VERY long which was causing high CPU and memory usage.
+  instead of the full list of cores.  This list is potentially as long as the number of cores.  When there are many
+  cores, this leads to high CPU and memory usage. (Gilles Bellaton, David Smiley)
 
 Bug Fixes
 ---------------------
@@ -131,6 +134,11 @@ Bug Fixes
 
 * SOLR-10653: When there's a UUIDField in the schema and atomic update touches another field
   the error occurs when leader updates replica (Mikhail Khludnev)
+
+* SOLR-17093: Collection restore API command now returns "requestid" when executed asynchronously like other APIs
+  (Tomás Fernández Löbbe)
+
+* SOLR-16952: In distributed i.e. multi-shard cloud mode returned dense vector 'fl' fields are now a list of numbers instead of strings. (Qais Qadri, Christine Poerschke)
 
 Dependency Upgrades
 ---------------------
