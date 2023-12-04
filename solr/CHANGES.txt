@@ -70,6 +70,8 @@ Bug Fixes
 
 * SOLR-16952: In distributed i.e. multi-shard cloud mode returned dense vector 'fl' fields are now a list of numbers instead of strings. (Qais Qadri, Christine Poerschke)
 
+* SOLR-17090: The v2 "delete alias" API no longer errantly returns a 405 status code (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
