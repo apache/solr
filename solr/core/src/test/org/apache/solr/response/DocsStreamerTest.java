@@ -33,14 +33,11 @@ public class DocsStreamerTest extends SolrTestCaseJ4 {
 
   public void testDenseVectorField() throws Exception {
     List<Float> values = Arrays.asList(1.1f, 2.2f, 3.3f, 4.4f);
-    List<String> dsValues =
-        Arrays.asList("1.1", "2.2", "3.3", "4.4"); // should be Float too, see SOLR-16952
-
     SchemaField sf = h.getCore().getLatestSchema().getField("vector");
     List<IndexableField> fields = sf.createFields(values);
     for (int idx = 1; idx < fields.size(); ++idx) {
       Object value = DocsStreamer.getValue(sf, fields.get(idx));
-      assertEquals(dsValues.get(idx - 1), value);
+      assertEquals(values.get(idx - 1), value);
     }
   }
 }
