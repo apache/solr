@@ -58,24 +58,24 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PackageStoreAPI {
+public class FileStoreAPI {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String PACKAGESTORE_DIRECTORY = "filestore";
+  public static final String FILESTORE_DIRECTORY = "filestore";
   public static final String TRUSTED_DIR = "_trusted_";
   public static final String KEYS_DIR = "/_trusted_/keys";
 
   private final CoreContainer coreContainer;
-  PackageStore packageStore;
+  FileStore fileStore;
   public final FSRead readAPI = new FSRead();
   public final FSWrite writeAPI = new FSWrite();
 
-  public PackageStoreAPI(CoreContainer coreContainer) {
+  public FileStoreAPI(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    packageStore = new DistribPackageStore(coreContainer);
+    fileStore = new DistribFileStore(coreContainer);
   }
 
-  public PackageStore getPackageStore() {
-    return packageStore;
+  public FileStore getFileStore() {
+    return fileStore;
   }
 
   /** get a list of nodes randomly shuffled * @lucene.internal */
@@ -91,13 +91,13 @@ public class PackageStoreAPI {
   public void validateFiles(List<String> files, boolean validateSignatures, Consumer<String> errs) {
     for (String path : files) {
       try {
-        PackageStore.FileType type = packageStore.getType(path, true);
-        if (type != PackageStore.FileType.FILE) {
+        FileStore.FileType type = fileStore.getType(path, true);
+        if (type != FileStore.FileType.FILE) {
           errs.accept("No such file: " + path);
           continue;
         }
 
-        packageStore.get(
+        fileStore.get(
             path,
             entry -> {
               if (entry.getMetaData().signatures == null
@@ -107,7 +107,7 @@ public class PackageStoreAPI {
               }
               if (validateSignatures) {
                 try {
-                  packageStore.refresh(KEYS_DIR);
+                  fileStore.refresh(KEYS_DIR);
                   validate(entry.meta.signatures, entry, false);
                 } catch (Exception e) {
                   log.error("Error validating package artifact", e);
@@ -125,7 +125,7 @@ public class PackageStoreAPI {
 
   public class FSWrite {
 
-    static final String TMP_ZK_NODE = "/packageStoreWriteInProgress";
+    static final String TMP_ZK_NODE = "/fileStoreWriteInProgress";
 
     @EndPoint(
         path = "/cluster/files/*",
@@ -146,12 +146,12 @@ public class PackageStoreAPI {
         if (coreContainer.getPackageLoader().getPackageAPI().isJarInuse(path)) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "jar in use, can't delete");
         }
-        PackageStore.FileType type = packageStore.getType(path, true);
-        if (type == PackageStore.FileType.NOFILE) {
+        FileStore.FileType type = fileStore.getType(path, true);
+        if (type == FileStore.FileType.NOFILE) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST, "Path does not exist: " + path);
         }
-        packageStore.delete(path);
+        fileStore.delete(path);
       } catch (SolrException e) {
         throw e;
       } catch (Exception e) {
@@ -173,7 +173,7 @@ public class PackageStoreAPI {
     public void deleteLocal(SolrQueryRequest req, SolrQueryResponse rsp) {
       String path = req.getPathTemplateValues().get("*");
       validateName(path, true);
-      packageStore.deleteLocal(path);
+      fileStore.deleteLocal(path);
     }
 
     @EndPoint(
@@ -203,11 +203,11 @@ public class PackageStoreAPI {
           byte[] buf = stream.getStream().readAllBytes();
           List<String> signatures = readSignatures(req, buf);
           MetaData meta = _createJsonMetaData(buf, signatures);
-          PackageStore.FileType type = packageStore.getType(path, true);
+          FileStore.FileType type = fileStore.getType(path, true);
           boolean[] returnAfter = new boolean[] {false};
-          if (type == PackageStore.FileType.FILE) {
+          if (type == FileStore.FileType.FILE) {
             // a file already exist at the same path
-            packageStore.get(
+            fileStore.get(
                 path,
                 fileEntry -> {
                   if (meta.equals(fileEntry.meta)) {
@@ -221,11 +221,11 @@ public class PackageStoreAPI {
                 true);
           }
           if (returnAfter[0]) return;
-          if (type != PackageStore.FileType.NOFILE) {
+          if (type != FileStore.FileType.NOFILE) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST, "Path already exists " + path);
           }
-          packageStore.put(new PackageStore.FileEntry(ByteBuffer.wrap(buf), meta, path));
+          fileStore.put(new FileStore.FileEntry(ByteBuffer.wrap(buf), meta, path));
           rsp.add(CommonParams.FILE, path);
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -251,23 +251,23 @@ public class PackageStoreAPI {
       String[] signatures = req.getParams().getParams("sig");
       if (signatures == null || signatures.length == 0) return null;
       List<String> sigs = Arrays.asList(signatures);
-      packageStore.refresh(KEYS_DIR);
+      fileStore.refresh(KEYS_DIR);
       validate(sigs, buf);
       return sigs;
     }
 
     private void validate(List<String> sigs, byte[] buf) throws SolrException, IOException {
-      Map<String, byte[]> keys = packageStore.getKeys();
+      Map<String, byte[]> keys = fileStore.getKeys();
       if (keys == null || keys.isEmpty()) {
         throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "package store does not have any keys");
+            SolrException.ErrorCode.BAD_REQUEST, "File store does not have any keys");
       }
       CryptoKeys cryptoKeys = null;
       try {
         cryptoKeys = new CryptoKeys(keys);
       } catch (Exception e) {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Error parsing public keys in Package store");
+            SolrException.ErrorCode.SERVER_ERROR, "Error parsing public keys in file store");
       }
       for (String sig : sigs) {
         if (cryptoKeys.verify(sig, ByteBuffer.wrap(buf)) == null) {
@@ -310,7 +310,7 @@ public class PackageStoreAPI {
       String pathCopy = path;
       if (req.getParams().getBool("sync", false)) {
         try {
-          packageStore.syncToAllNodes(path);
+          fileStore.syncToAllNodes(path);
           return;
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error getting file ", e);
@@ -325,7 +325,7 @@ public class PackageStoreAPI {
                 () -> {
                   log.debug("Downloading file {}", pathCopy);
                   try {
-                    packageStore.fetch(pathCopy, getFrom);
+                    fileStore.fetch(pathCopy, getFrom);
                   } catch (Exception e) {
                     log.error("Failed to download file: {}", pathCopy, e);
                   }
@@ -337,21 +337,21 @@ public class PackageStoreAPI {
         path = "";
       }
 
-      PackageStore.FileType typ = packageStore.getType(path, false);
-      if (typ == PackageStore.FileType.NOFILE) {
+      FileStore.FileType typ = fileStore.getType(path, false);
+      if (typ == FileStore.FileType.NOFILE) {
         rsp.add("files", Collections.singletonMap(path, null));
         return;
       }
-      if (typ == PackageStore.FileType.DIRECTORY) {
-        rsp.add("files", Collections.singletonMap(path, packageStore.list(path, null)));
+      if (typ == FileStore.FileType.DIRECTORY) {
+        rsp.add("files", Collections.singletonMap(path, fileStore.list(path, null)));
         return;
       }
       if (req.getParams().getBool("meta", false)) {
-        if (typ == PackageStore.FileType.FILE) {
+        if (typ == FileStore.FileType.FILE) {
           int idx = path.lastIndexOf('/');
           String fileName = path.substring(idx + 1);
           String parentPath = path.substring(0, path.lastIndexOf('/'));
-          List<PackageStore.FileDetails> l = packageStore.list(parentPath, s -> s.equals(fileName));
+          List<FileStore.FileDetails> l = fileStore.list(parentPath, s -> s.equals(fileName));
           rsp.add("files", Collections.singletonMap(path, l.isEmpty() ? null : l.get(0)));
           return;
         }
@@ -366,7 +366,7 @@ public class PackageStoreAPI {
         solrParams.add(CommonParams.WT, "json");
         req.setParams(SolrParams.wrapDefaults(solrParams, req.getParams()));
         try {
-          packageStore.get(
+          fileStore.get(
               path,
               it -> {
                 try {
@@ -391,7 +391,7 @@ public class PackageStoreAPI {
             FILE_STREAM,
             (SolrCore.RawWriter)
                 os ->
-                    packageStore.get(
+                    fileStore.get(
                         path,
                         it -> {
                           try {
@@ -481,22 +481,22 @@ public class PackageStoreAPI {
    * @param entry The file details
    * @param isFirstAttempt If there is a failure
    */
-  public void validate(List<String> sigs, PackageStore.FileEntry entry, boolean isFirstAttempt)
+  public void validate(List<String> sigs, FileStore.FileEntry entry, boolean isFirstAttempt)
       throws SolrException, IOException {
     if (!isFirstAttempt) {
       // we are retrying because last validation failed.
       // get all keys again and try again
-      packageStore.refresh(KEYS_DIR);
+      fileStore.refresh(KEYS_DIR);
     }
 
-    Map<String, byte[]> keys = packageStore.getKeys();
+    Map<String, byte[]> keys = fileStore.getKeys();
     if (keys == null || keys.isEmpty()) {
       if (isFirstAttempt) {
         validate(sigs, entry, false);
         return;
       }
       throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Packagestore does not have any public keys");
+          SolrException.ErrorCode.BAD_REQUEST, "Filestore does not have any public keys");
     }
     CryptoKeys cryptoKeys = null;
     try {

@@ -29,6 +29,7 @@ teardown() {
   solr stop -all >/dev/null 2>&1
 }
 
+
 @test "start solr with ssl" {
   # Create a keystore
   export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
@@ -112,8 +113,8 @@ teardown() {
   export SOLR_SSL_CHECK_PEER_NAME=true
 
   # This should fail the peername check
-  run ! solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
-  assert_output --partial 'Server refused connection'
+  run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --regexp '(No subject alternative DNS name matching localhost found|Server refused connection)'
 
   # Restart the server enabling the SNI hostcheck
   export SOLR_SSL_CHECK_PEER_NAME=false
@@ -151,8 +152,8 @@ teardown() {
   export SOLR_HOST=localhost
 
   solr start -c
-  solr auth enable -type basicAuth -credentials name:password
   solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
+  solr auth enable -type basicAuth -credentials name:password
 
   run curl -u name:password --basic --cacert "$ssl_dir/solr-ssl.pem" "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=test&numShards=2&replicationFactor=1&router.name=compositeId&wt=json"
   assert_output --partial '"status":0'
@@ -209,12 +210,12 @@ teardown() {
 
   run solr start -c
 
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
+
   export SOLR_SSL_KEY_STORE=
   export SOLR_SSL_KEY_STORE_PASSWORD=
   export SOLR_SSL_TRUST_STORE=
   export SOLR_SSL_TRUST_STORE_PASSWORD=
-
-  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
 
   run solr create -c test -s 2
   assert_output --partial "Created collection 'test'"
@@ -232,7 +233,7 @@ teardown() {
   export SOLR_SECURITY_MANAGER_ENABLED=true
   export SOLR_OPTS="-Djava.io.tmpdir=${test_tmp_dir}"
   export SOLR_LOG_LEVEL="DEBUG"
-  export SOLR_TOOL_OPTS="-Djava.io.tmpdir=${test_tmp_dir} -Djavax.net.debug=SSL,keymanager,trustmanager,ssl:handshake"
+  export SOLR_TOOL_OPTS="-Djava.io.tmpdir=${test_tmp_dir}" # To debug further use: -Djavax.net.debug=SSL,keymanager,trustmanager,ssl:handshake
 
   export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
   export server_ssl_dir="${ssl_dir}/server"
@@ -348,8 +349,8 @@ teardown() {
       export SOLR_SSL_CLIENT_KEY_STORE=
       export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 
-      run ! solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
-      assert_output --partial 'Server refused connection'
+      run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
+      assert_output --regexp '(bad_certificate|Server refused connection)'
     )
   )
 
@@ -361,8 +362,8 @@ teardown() {
   # We can't check if the server has come up, because we can't connect to it, so just wait
   sleep 5
 
-  run ! solr api -get "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
-  assert_output --partial 'Server refused connection'
+  run ! solr api -verbose -get "https://localhost:${SOLR3_PORT}/solr/test/select?q=*:*&rows=0"
+  assert_output --regexp '(certificate_unknown|java.nio.channels.ClosedChannelException|Server refused connection)'
 }
 
 @test "start solr with mTLS wanted" {
@@ -373,7 +374,7 @@ teardown() {
 
   export SOLR_SECURITY_MANAGER_ENABLED=true
   export SOLR_OPTS="-Djava.io.tmpdir=${test_tmp_dir}"
-  export SOLR_TOOL_OPTS="-Djava.io.tmpdir=${test_tmp_dir} -Djavax.net.debug=SSL,keymanager,trustmanager,ssl:handshake"
+  export SOLR_TOOL_OPTS="-Djava.io.tmpdir=${test_tmp_dir}" # To debug further use: -Djavax.net.debug=SSL,keymanager,trustmanager,ssl:handshake
 
   export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
   export server_ssl_dir="${ssl_dir}/server"
@@ -491,6 +492,120 @@ teardown() {
   export SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
 
   # TLS cannot work if a truststore and keystore are not provided (either Server or Client)
-  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
-  assert_output --partial 'Server refused connection'
+  run solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
+  assert_output --regexp '(unable to find valid certification path to requested target|Server refused connection)'
+}
+
+@test "test keystore reload" {
+  # Create a keystore
+  export ssl_dir="${BATS_TEST_TMPDIR}/ssl"
+  mkdir -p "$ssl_dir"
+  (
+    cd "$ssl_dir"
+    rm -f cert1.keystore.p12 cert1.pem cert2.keystore.p12 cert2.pem
+    # cert and keystore 1
+    keytool -genkeypair -alias cert1 -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore cert1.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
+    openssl pkcs12 -in cert1.keystore.p12 -out cert1.pem -passin pass:secret -passout pass:secret
+
+    # cert and keystore 2
+    keytool -genkeypair -alias cert2 -keyalg RSA -keysize 2048 -keypass secret -storepass secret -validity 9999 -keystore cert2.keystore.p12 -storetype PKCS12 -ext SAN=DNS:localhost,IP:127.0.0.1 -dname "CN=localhost, OU=Organizational Unit, O=Organization, L=Location, ST=State, C=Country"
+    openssl pkcs12 -in cert2.keystore.p12 -out cert2.pem -passin pass:secret -passout pass:secret
+
+    cp cert1.keystore.p12 server1.keystore.p12
+    cp cert1.keystore.p12 server2.keystore.p12
+  )
+
+  # Set ENV_VARs so that Solr uses this keystore
+  export SOLR_SSL_ENABLED=true
+  export SOLR_SSL_KEY_STORE_PASSWORD=secret
+  export SOLR_SSL_TRUST_STORE_PASSWORD=secret
+  export SOLR_SSL_NEED_CLIENT_AUTH=true
+  export SOLR_SSL_WANT_CLIENT_AUTH=false
+  export SOLR_HOST=localhost
+
+  # server1 will run on $SOLR_PORT and will use server1.keystore
+  export SOLR_SSL_KEY_STORE=$ssl_dir/server1.keystore.p12
+  export SOLR_SSL_TRUST_STORE=$ssl_dir/server1.keystore.p12
+  solr start -c -a "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
+  solr assert --started https://localhost:${SOLR_PORT}/solr --timeout 5000
+
+  # server2 will run on $SOLR2_PORT and will use server2.keystore. Initially, this is the same as server1.keystore
+  export SOLR_SSL_KEY_STORE=$ssl_dir/server2.keystore.p12
+  export SOLR_SSL_TRUST_STORE=$ssl_dir/server2.keystore.p12
+  solr start -c -z localhost:${ZK_PORT} -p ${SOLR2_PORT} -a "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
+  solr assert --started https://localhost:${SOLR2_PORT}/solr --timeout 5000
+
+  # "test" collection is two shards, meaning there must be communication between shards for queries (handled by http shard handler factory)
+  run solr create -c test -s 2
+  assert_output --partial "Created collection 'test'"
+
+  # "test-single-shard" is one shard and one replica, this means that one of the nodes will have to forward requests to the other
+  run solr create -c test-single-shard -s 1
+  assert_output --partial "Created collection 'test-single-shard'"
+
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '"numFound":0'
+  run solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '"numFound":0'
+
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=*:*"
+  assert_output --partial '"numFound":0'
+  run solr api -get "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=*:*"
+  assert_output --partial '"numFound":0'
+
+  run ! curl "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  run ! curl "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*"
+
+  run ! curl "https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=*:*"
+  run ! curl "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=*:*"
+
+  export SOLR_SSL_KEY_STORE=$ssl_dir/cert2.keystore.p12
+  export SOLR_SSL_KEY_STORE_PASSWORD=secret
+  export SOLR_SSL_TRUST_STORE=$ssl_dir/cert2.keystore.p12
+  export SOLR_SSL_TRUST_STORE_PASSWORD=secret
+
+  run ! solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+
+  (
+    cd "$ssl_dir"
+    # Replace server1 keystore with client's
+    cp cert2.keystore.p12 server1.keystore.p12
+  )
+  # Give some time for the server reload
+  sleep 6
+
+  run solr healthcheck -solrUrl https://localhost:${SOLR_PORT}
+
+  # Server 2 still uses the cert1, so this request should fail
+  run ! solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=query2"
+
+  run ! solr healthcheck -solrUrl https://localhost:${SOLR2_PORT}
+
+  (
+    cd "$ssl_dir"
+    # Replace server2 keystore with client's
+    cp cert2.keystore.p12 server2.keystore.p12
+  )
+  # Give some time for the server reload
+  sleep 6
+
+  run solr healthcheck -solrUrl https://localhost:${SOLR_PORT}
+  run solr healthcheck -solrUrl https://localhost:${SOLR2_PORT}
+
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=query3"
+  assert_output --partial '"numFound":0'
+
+  run solr api -get "https://localhost:${SOLR2_PORT}/solr/test/select?q=query3"
+  assert_output --partial '"numFound":0'
+
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test-single-shard/select?q=query4"
+  assert_output --partial '"numFound":0'
+
+  run solr api -get "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=query4"
+  assert_output --partial '"numFound":0'
+
+  run solr post -url https://localhost:${SOLR_PORT}/solr/test/update -commit ${SOLR_TIP}/example/exampledocs/books.csv
+
+  run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
+  assert_output --partial '"numFound":10'
 }

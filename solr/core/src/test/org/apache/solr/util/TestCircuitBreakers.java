@@ -31,21 +31,32 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
+public class TestCircuitBreakers extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final CircuitBreaker dummyMemBreaker = new MemoryCircuitBreaker();
-  private static final CircuitBreaker dummyCBManager = new CircuitBreakerManager();
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    System.setProperty("filterCache.enabled", "false");
+    System.setProperty("queryResultCache.enabled", "false");
+    System.setProperty("documentCache.enabled", "true");
+    System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+
+    initCore("solrconfig-pluggable-circuitbreaker.xml", "schema.xml");
+    indexDocs();
+  }
 
   protected static void indexDocs() {
     removeAllExistingCircuitBreakers();
@@ -66,7 +77,7 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     super.tearDown();
     dummyMemBreaker.close();
-    dummyCBManager.close();
+    removeAllExistingCircuitBreakers();
   }
 
   @After
@@ -74,18 +85,64 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
     removeAllExistingCircuitBreakers();
   }
 
-  public void testCBAlwaysTrips() {
+  public void testCBAlwaysTripsWithCorrectCode() {
+    synchronized (this) {
+      List.of(
+              -1,
+              SolrException.ErrorCode.TOO_MANY_REQUESTS.code,
+              SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,
+              SolrException.ErrorCode.BAD_REQUEST.code)
+          .forEach(
+              code -> {
+                removeAllExistingCircuitBreakers();
+                if (code > 0) {
+                  System.setProperty(
+                      CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, String.valueOf(code));
+                }
+                CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
+                h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
+                SolrException ex =
+                    expectThrows(
+                        SolrException.class,
+                        () -> {
+                          h.query(req("name:\"john smith\""));
+                        });
+                assertEquals(
+                    (code == -1) ? SolrException.ErrorCode.TOO_MANY_REQUESTS.code : code,
+                    ex.code());
+                System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+              });
+    }
+  }
+
+  public void testGlobalCBAlwaysTrips() {
     removeAllExistingCircuitBreakers();
 
     CircuitBreaker circuitBreaker = new MockCircuitBreaker(true);
 
-    h.getCore().getCircuitBreakerRegistry().register(circuitBreaker);
+    CircuitBreakerRegistry.registerGlobal(circuitBreaker);
 
     expectThrows(
         SolrException.class,
         () -> {
           h.query(req("name:\"john smith\""));
         });
+  }
+
+  @SuppressWarnings("resource")
+  public void testCBAlwaysTripsInvalidErrorCodeSysProp() {
+    synchronized (this) {
+      List.of("foo", 123, 999, 888)
+          .forEach(
+              code -> {
+                System.setProperty(
+                    CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE, String.valueOf(code));
+                SolrException ex =
+                    expectThrows(SolrException.class, () -> new MockCircuitBreaker(true));
+                assertTrue(ex.getMessage().contains("Invalid error code"));
+                System.clearProperty(CircuitBreaker.SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+              });
+    }
   }
 
   public void testCBFakeMemoryPressure() throws Exception {
@@ -135,7 +192,7 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   public void testFakeCPUCircuitBreaker() {
-    CPUCircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(h.getCore());
+    CPUCircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(h.getCore().getCoreContainer());
     circuitBreaker.setThreshold(75);
 
     assertThatHighQueryLoadTrips(circuitBreaker, 5);
@@ -242,15 +299,6 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
         "//lst[@name='process']/double[@name='time']");
   }
 
-  public void testErrorCode() throws Exception {
-    assertEquals(
-        SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-        CircuitBreaker.getErrorCode(List.of(dummyCBManager)));
-    assertEquals(
-        SolrException.ErrorCode.TOO_MANY_REQUESTS,
-        CircuitBreaker.getErrorCode(List.of(dummyMemBreaker)));
-  }
-
   private static void removeAllExistingCircuitBreakers() {
     try {
       h.getCore().getCircuitBreakerRegistry().deregisterAll();
@@ -318,8 +366,8 @@ public abstract class BaseTestCircuitBreaker extends SolrTestCaseJ4 {
   }
 
   private static class FakeCPUCircuitBreaker extends CPUCircuitBreaker {
-    public FakeCPUCircuitBreaker(SolrCore core) {
-      super(core);
+    public FakeCPUCircuitBreaker(CoreContainer coreContainer) {
+      super(coreContainer);
     }
 
     @Override

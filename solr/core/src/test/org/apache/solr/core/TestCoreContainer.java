@@ -846,6 +846,24 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testCustomCoreSorter() throws Exception {
+    String solrXml =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+            + "<solr>\n"
+            + "<str name=\"coreSorter\">org.apache.solr.core.TestCoreContainer$CustomCoreSorter</str>\n"
+            + "</solr>";
+    CoreContainer cc = init(solrXml);
+    assertTrue(cc.getCoreSorter() instanceof CustomCoreSorter);
+    cc.shutdown();
+  }
+
+  public static class CustomCoreSorter extends CoreSorter {
+    public CustomCoreSorter(CoreContainer cc) {
+      super(cc);
+    }
+  }
+
+  @Test
   public void testCoreInitFailuresFromEmptyContainer() throws Exception {
     // reused state
     Map<String, CoreContainer.CoreLoadFailure> failures = null;
