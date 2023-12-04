@@ -50,7 +50,6 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadStats;
-import org.apache.solr.util.ThreadStats.Usage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,9 +77,6 @@ public abstract class RequestHandlerBase
   private PluginInfo pluginInfo;
 
   private Boolean publishCpuTime = null;
-  private Counter totalTime = new Counter();
-  private Counter distribTotalTime = new Counter();
-  private Counter localTotalTime = new Counter();
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -258,13 +254,13 @@ public abstract class RequestHandlerBase
       metrics.totalTime.inc(elapsed);
 
       if (cpuStats != null) {
-        Optional<Usage> usage = cpuStats.getUsage();
-        if (usage.isPresent()) {
+        Optional<Long> cpuTime = cpuStats.getCpuTimeMs();
+        if (cpuTime.isPresent()) {
           NamedList<Object> header = rsp.getResponseHeader();
           if (header != null) {
-            header.add(ThreadStats.LOCAL_CPU_TIME, usage.get().cpuTimeMs);
+            header.add(ThreadStats.LOCAL_CPU_TIME, cpuTime.get());
           }
-          rsp.addToLog(ThreadStats.LOCAL_CPU_TIME, usage.get().cpuTimeMs);
+          rsp.addToLog(ThreadStats.LOCAL_CPU_TIME, cpuTime.get());
         }
       }
     }
