@@ -16,11 +16,9 @@
  */
 package org.apache.solr.search;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -730,7 +728,8 @@ public class ExtendedDismaxQParser extends QParser {
 
     int pos = 0;
     int end = s.length();
-    Deque<String> groupedFields = new ArrayDeque<>(); // field:(token1 token2)
+    // Don't use an ArrayDeque since null values are not supported
+    List<String> groupedFields = new ArrayList<>(); // field:(token1 token2)
 
     while (pos < end) {
       Clause clause = new Clause();
@@ -754,11 +753,7 @@ public class ExtendedDismaxQParser extends QParser {
 
       boolean implicitField = false;
       if (clause.field == null && !groupedFields.isEmpty()) {
-        clause.field = groupedFields.peek();
-        // ArrayDeque does not support null values, so we use empty strings.
-        if (clause.field.isEmpty()) {
-          clause.field = null;
-        }
+        clause.field = groupedFields.get(groupedFields.size() - 1);
         implicitField = true;
       }
 
@@ -778,7 +773,7 @@ public class ExtendedDismaxQParser extends QParser {
       } else if (s.charAt(pos) == '(') {
         // For a sequence of terms grouped with a field "field:(term1 term2)", keep
         // track of the field name so we can apply it to all the terms
-        groupedFields.push(implicitField || clause.field == null ? "" : clause.field);
+        groupedFields.add(implicitField ? null : clause.field);
       }
 
       char inString = 0;
@@ -877,7 +872,7 @@ public class ExtendedDismaxQParser extends QParser {
         } else if (!groupedFields.isEmpty()) {
           char lastChar = clause.hasWhitespace ? s.charAt(pos - 1) : ch;
           if (lastChar == ')') {
-            groupedFields.pop();
+            groupedFields.remove(groupedFields.size() - 1);
           }
         }
       }
