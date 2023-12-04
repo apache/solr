@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
@@ -30,47 +29,37 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.endpoint.BalanceShardUniqueApi;
+import org.apache.solr.client.api.model.BalanceShardUniqueRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * V2 API for insuring that a particular property is distributed evenly amongst the physical nodes
- * comprising a collection.
- *
- * <p>The new API (POST /v2/collections/collectionName/balance-shard-unique {...} ) is analogous to
- * the v1 /admin/collections?action=BALANCESHARDUNIQUE command.
+ * V2 API implementation for insuring that a particular property is distributed evenly amongst the
+ * physical nodes comprising a collection.
  */
-@Path("/collections/{collectionName}/balance-shard-unique")
-public class BalanceShardUniqueAPI extends AdminAPIBase {
+public class BalanceShardUnique extends AdminAPIBase implements BalanceShardUniqueApi {
   @Inject
-  public BalanceShardUniqueAPI(
+  public BalanceShardUnique(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse balanceShardUnique(
-      @PathParam("collectionName") String collectionName, BalanceShardUniqueRequestBody requestBody)
-      throws Exception {
+      String collectionName, BalanceShardUniqueRequestBody requestBody) throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
@@ -86,7 +75,7 @@ public class BalanceShardUniqueAPI extends AdminAPIBase {
         response,
         CollectionParams.CollectionAction.BALANCESHARDUNIQUE,
         remoteMessage,
-        requestBody.asyncId);
+        requestBody.async);
 
     return response;
   }
@@ -100,7 +89,7 @@ public class BalanceShardUniqueAPI extends AdminAPIBase {
     remoteMessage.put(PROPERTY_PROP, requestBody.property);
     insertIfNotNull(remoteMessage, ONLY_ACTIVE_NODES, requestBody.onlyActiveNodes);
     insertIfNotNull(remoteMessage, SHARD_UNIQUE, requestBody.shardUnique);
-    insertIfNotNull(remoteMessage, ASYNC, requestBody.asyncId);
+    insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
 
     return new ZkNodeProps(remoteMessage);
   }
@@ -110,7 +99,7 @@ public class BalanceShardUniqueAPI extends AdminAPIBase {
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse)
       throws Exception {
-    final var api = new BalanceShardUniqueAPI(coreContainer, solrQueryRequest, solrQueryResponse);
+    final var api = new BalanceShardUnique(coreContainer, solrQueryRequest, solrQueryResponse);
     final SolrParams params = solrQueryRequest.getParams();
     params.required().check(COLLECTION_PROP, PROPERTY_PROP);
 
@@ -119,23 +108,10 @@ public class BalanceShardUniqueAPI extends AdminAPIBase {
     requestBody.property = params.get(PROPERTY_PROP);
     requestBody.onlyActiveNodes = params.getBool(ONLY_ACTIVE_NODES);
     requestBody.shardUnique = params.getBool(SHARD_UNIQUE);
-    requestBody.asyncId = params.get(ASYNC);
+    requestBody.async = params.get(ASYNC);
 
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
         solrQueryResponse, api.balanceShardUnique(collection, requestBody));
-  }
-
-  public static class BalanceShardUniqueRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty(required = true)
-    public String property;
-
-    @JsonProperty(ONLY_ACTIVE_NODES)
-    public Boolean onlyActiveNodes;
-
-    @JsonProperty public Boolean shardUnique;
-
-    @JsonProperty(ASYNC)
-    public String asyncId;
   }
 
   private void validatePropertyToBalance(String prop, boolean shardUnique) {

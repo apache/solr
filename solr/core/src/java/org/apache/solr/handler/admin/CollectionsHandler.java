@@ -172,7 +172,7 @@ import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
-import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.BalanceShardUnique;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
@@ -1024,7 +1024,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     BALANCESHARDUNIQUE_OP(
         BALANCESHARDUNIQUE,
         (req, rsp, h) -> {
-          BalanceShardUniqueAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          BalanceShardUnique.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     REBALANCELEADERS_OP(
@@ -1363,7 +1363,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return List.of(
         CreateReplica.class,
         AddReplicaProperty.class,
-        BalanceShardUniqueAPI.class,
+        BalanceShardUnique.class,
         CreateAliasAPI.class,
         CreateCollection.class,
         CreateCollectionBackup.class,
