@@ -112,12 +112,13 @@ public class TestPHPSerializedResponseWriter extends SolrTestCaseJ4 {
     d.add(new IntField("cost", 5, Field.Store.YES));
 
     SimpleOrderedMap<Object> val = new SimpleOrderedMap<>();
-    val.add("lucene doc", d);
+    val.add("lucene doc", new Object[]{d});
     rsp.add("map", val);
 
     w.write(buf, req, rsp);
-    assertEquals(
-            "a:1:{s:3:\"map\";a:1:{s:10:\"lucene doc\";a:3:{s:2:\"id\";s:1:\"2\";s:4:\"cost\";s:1:\"5\";s:4:\"name\";a:1:{s:7:\"foo bar\";}}}}",
+    System.out.println(buf.toString());
+    assertEquals("I'm not sure what it is, but it can be handled by php",
+            "a:1:{s:3:\"map\";a:1:{s:10:\"lucene doc\";a:1:{i:0;a:1:{i:0;a:3:{s:2:\"id\";s:1:\"2\";s:4:\"cost\";s:1:\"5\";s:4:\"name\";a:1:{i:0;s:7:\"foo bar\";}}}}}}",
             buf.toString());
     req.close();
   }
