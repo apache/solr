@@ -14,37 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.DeleteCollectionSnapshotResponse;
+import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
+import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 
-@Path("/collections/{collName}/snapshots/{snapshotName}")
-public interface DeleteCollectionSnapshotApi {
-
-  /** This API is analogous to V1's (POST /solr/admin/collections?action=DELETESNAPSHOT) */
-  @DELETE
+/** V2 API definition for creating a collection-level snapshot. */
+@Path("/collections/{collName}/snapshots")
+public interface CreateCollectionSnapshotApi {
+  @POST
+  @Path("/{snapshotName}")
   @Operation(
-      summary = "Delete an existing collection-snapshot by name.",
+      summary = "Creates a new snapshot of the specified collection.",
       tags = {"collection-snapshots"})
-  DeleteCollectionSnapshotResponse deleteCollectionSnapshot(
+  CreateCollectionSnapshotResponse createCollectionSnapshot(
       @Parameter(description = "The name of the collection.", required = true)
           @PathParam("collName")
           String collName,
-      @Parameter(description = "The name of the snapshot to be deleted.", required = true)
+      @Parameter(description = "The name of the snapshot to be created.", required = true)
           @PathParam("snapshotName")
           String snapshotName,
-      @Parameter(description = "A flag that treats the collName parameter as a collection alias.")
-          @DefaultValue("false")
-          @QueryParam("followAliases")
-          boolean followAliases,
-      @QueryParam("async") String asyncId)
+      @RequestBody(description = "Contains user provided parameters", required = true)
+          CreateCollectionSnapshotRequestBody requestBody)
       throws Exception;
 }
