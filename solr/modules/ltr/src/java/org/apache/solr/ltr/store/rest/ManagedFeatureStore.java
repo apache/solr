@@ -85,6 +85,12 @@ public class ManagedFeatureStore extends ManagedResource
     super(resourceId, loader, storageIO);
   }
 
+  @Override
+  protected ManagedResourceStorage createStorage(
+      ManagedResourceStorage.StorageIO storageIO, SolrResourceLoader loader) throws SolrException {
+    return new ManagedResourceStorage.JsonStorage(storageIO, loader, -1);
+  }
+
   public Map<String, FeatureStore> getStores() {
     return stores;
   }
