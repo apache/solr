@@ -17,22 +17,19 @@
 package org.apache.solr.util;
 
 import com.sun.management.ThreadMXBean;
-
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
- 
+
 /**
  * Allows tracking information about the current thread using the JVM's built-in management bean
  * {@link java.lang.management.ThreadMXBean}.
- * 
- * Calling code should create an instance of this class when starting the operation, and then
- * can get the {@link Usage} at any time thereafter.
  *
+ * <p>Calling code should create an instance of this class when starting the operation, and then can
+ * get the {@link Usage} at any time thereafter.
  */
 public class ThreadStats {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -56,13 +53,11 @@ public class ThreadStats {
           threadBean.setThreadCpuTimeEnabled(true);
         }
         THREAD_MX_BEAN = threadBean;
-      }
-      else {
+      } else {
         log.info("Thread allocated memory is not supported.");
         THREAD_MX_BEAN = null;
       }
-    }
-    else {
+    } else {
       if (log.isInfoEnabled()) {
         log.info("Registered thread management bean is an unrecognized type: {}", bean.getClass());
       }
@@ -75,7 +70,7 @@ public class ThreadStats {
   private final long startCpuTimeNanos;
 
   /**
-   * Create an instance to track the current thread's usage of cpu and memory.  The usage information
+   * Create an instance to track the current thread's usage of cpu and memory. The usage information
    * can later be retrieved by any thread by calling {@link #getUsage()}.
    */
   public ThreadStats() {
@@ -88,20 +83,26 @@ public class ThreadStats {
       this.startCpuTimeNanos = UNSUPPORTED;
     }
   }
-  
+
   /**
-   * Get the usage information for the thread that created this {@link ThreadStats}.  The information will
-   * track the thread's activity since the creation of this {@link ThreadStats} instance, though individual
-   * metrics may be {@link #UNSUPPORTED} if the VM's tracking of them is disabled.
-   * 
-   * @return The usage information or an empty Optional if thread monitoring is unavailable in this VM.
+   * Get the usage information for the thread that created this {@link ThreadStats}. The information
+   * will track the thread's activity since the creation of this {@link ThreadStats} instance,
+   * though individual metrics may be {@link #UNSUPPORTED} if the VM's tracking of them is disabled.
+   *
+   * @return The usage information or an empty Optional if thread monitoring is unavailable in this
+   *     VM.
    */
   public Optional<Usage> getUsage() {
     if (THREAD_MX_BEAN != null) {
-      long allocatedBytes = this.startAllocatedBytes != UNSUPPORTED ?
-          THREAD_MX_BEAN.getThreadAllocatedBytes(threadId) - this.startAllocatedBytes : UNSUPPORTED;
-      long cpuTimeMs = this.startCpuTimeNanos != UNSUPPORTED ?
-          TimeUnit.NANOSECONDS.toMillis(THREAD_MX_BEAN.getThreadCpuTime(threadId) - this.startCpuTimeNanos) : UNSUPPORTED;
+      long allocatedBytes =
+          this.startAllocatedBytes != UNSUPPORTED
+              ? THREAD_MX_BEAN.getThreadAllocatedBytes(threadId) - this.startAllocatedBytes
+              : UNSUPPORTED;
+      long cpuTimeMs =
+          this.startCpuTimeNanos != UNSUPPORTED
+              ? TimeUnit.NANOSECONDS.toMillis(
+                  THREAD_MX_BEAN.getThreadCpuTime(threadId) - this.startCpuTimeNanos)
+              : UNSUPPORTED;
       return Optional.of(new Usage(allocatedBytes, cpuTimeMs));
     } else {
       return Optional.empty();

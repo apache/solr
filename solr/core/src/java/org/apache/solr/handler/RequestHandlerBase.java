@@ -25,12 +25,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
-
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -78,7 +76,7 @@ public abstract class RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PluginInfo pluginInfo;
-  
+
   private Boolean publishCpuTime = null;
   private Counter totalTime = new Counter();
   private Counter distribTotalTime = new Counter();
@@ -229,7 +227,7 @@ public abstract class RequestHandlerBase
     if (publishCpuTime) {
       cpuStats = new ThreadStats();
     }
-    
+
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
 
@@ -258,7 +256,7 @@ public abstract class RequestHandlerBase
     } finally {
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
-      
+
       if (cpuStats != null) {
         Optional<Usage> usage = cpuStats.getUsage();
         if (usage.isPresent()) {

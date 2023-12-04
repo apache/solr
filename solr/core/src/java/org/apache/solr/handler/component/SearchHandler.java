@@ -602,7 +602,7 @@ public class SearchHandler extends RequestHandlerBase
             for (SearchComponent c : components) {
               c.handleResponses(rb, srsp.getShardRequest());
             }
-            
+
             // Compute total CpuTime used by all shards.
             List<ShardResponse> responses = srsp.getShardRequest().responses;
             for (ShardResponse response : responses) {
@@ -610,7 +610,12 @@ public class SearchHandler extends RequestHandlerBase
                   && (response.getSolrResponse().getResponse() != null)
                   && (response.getSolrResponse().getResponse().get("responseHeader") != null)) {
                 @SuppressWarnings("unchecked")
-                SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) response.getSolrResponse().getResponse().get(SolrQueryResponse.RESPONSE_HEADER_KEY);
+                SimpleOrderedMap<Object> header =
+                    (SimpleOrderedMap<Object>)
+                        response
+                            .getSolrResponse()
+                            .getResponse()
+                            .get(SolrQueryResponse.RESPONSE_HEADER_KEY);
                 if (header != null) {
                   Long shardCpuTime = (Long) header.get(ThreadStats.LOCAL_CPU_TIME);
                   if (shardCpuTime != null) {
@@ -618,7 +623,7 @@ public class SearchHandler extends RequestHandlerBase
                   }
                 }
               }
-            }     
+            }
           }
         }
 
@@ -628,11 +633,11 @@ public class SearchHandler extends RequestHandlerBase
 
         // we are done when the next stage is MAX_VALUE
       } while (nextStage != Integer.MAX_VALUE);
-      
+
       if (publishCpuTime) {
         rsp.getResponseHeader().add(ThreadStats.SHARDS_CPU_TIME, totalShardCpuTime);
         rsp.addToLog(ThreadStats.SHARDS_CPU_TIME, totalShardCpuTime);
-      }   
+      }
     }
 
     // SOLR-5550: still provide shards.info if requested even for a short circuited distrib request
