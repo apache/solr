@@ -21,6 +21,8 @@ jobs:
       run: git -C /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}/solr checkout ${GITHUB_HEAD_REF} || echo "${GITHUB_HEAD_REF} not present on solr repo, staying at main"
       continue-on-error: true
     - name: Initialize, build, test
-      run: crave run --clean
+      run: |
+        cd /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}/solr
+        crave run --clean
     - name: Delete Clone
       run: crave clone destroy -y /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
