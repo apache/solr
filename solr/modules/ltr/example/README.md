@@ -37,7 +37,7 @@ Please refer to the Solr Reference Guide's section on [Learning To Rank](https:/
 
    `./gradlew solr:modules:ltr:syncPythonClientSourceCode`
 
-   `pushd solrclient && python3 setup.py install --user && popd`
+   `cd solr/modules/ltr/example/solrclient && python3 setup.py install --user && cd -`
 
    This installs a Python client used to talk to Solr, making it and its dependencies available to the training script used below.
 
