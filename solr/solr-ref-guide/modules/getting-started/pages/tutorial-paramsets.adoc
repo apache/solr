@@ -67,7 +67,30 @@ and for the release date also to be single valued.
 === Index the Data
 
 Now that we have updated our Schema, we need to index the sample film data, or, if you already have indexed it, then re-index it to take advantage of the new field definitions we added.  
-Look back at the xref:tutorial-films.adoc#index-sample-film-data[] for the specific steps.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#unixindexjson]
+====
+[.tab-label]*Linux/Mac*
+
+[,console]
+----
+$ bin/solr post -c films example/films/films.json
+
+----
+====
+
+[example.tab-pane#winindexjson]
+====
+[.tab-label]*Windows*
+
+[,console]
+----
+$ bin/solr post -c films example\films\films.json
+----
+====
+--
 
 === Let's get Searching!
 
