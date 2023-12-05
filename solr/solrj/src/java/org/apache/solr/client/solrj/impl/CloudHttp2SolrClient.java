@@ -138,6 +138,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     private int parallelCacheRefreshesLocks = 3;
     private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+    private boolean canUseZkACLs = true;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
@@ -187,6 +188,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       this.zkHosts = zkHosts;
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
+    }
+
+    /** Whether or not to use the default ZK ACLs when building a ZK Client. */
+    public Builder canUseZkACLs(boolean canUseZkACLs) {
+      this.canUseZkACLs = canUseZkACLs;
+      return this;
     }
 
     /**
@@ -405,7 +412,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
           throw new IllegalArgumentException(
               "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
         } else if (!zkHosts.isEmpty()) {
-          stateProvider = ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot);
+          stateProvider =
+              ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot, canUseZkACLs);
           if (stateProvider instanceof SolrZkClientTimeoutAware) {
             var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
             timeoutAware.setZkClientTimeout(zkClientTimeout);
