@@ -10,6 +10,9 @@ Bug Fixes
 ---------------------
 * SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
 
+* SOLR-17057: JSON Query regression: If "query" is specified with a String (not JSON structure),
+  "defType" should parse it.  Since 9.4 defType was ignored.  (David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
