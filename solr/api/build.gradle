@@ -26,6 +26,7 @@ description = 'API - Interfaces and classes used to represent Solrs APIs'
 
 ext {
     jsClientDir = "${buildDir}/generated/js"
+    pythonClientDir = "${buildDir}/generated/python"
     openApiSpecDir = "${buildDir}/generated/openapi"
     openApiSpecFile = "${project.openApiSpecDir}/openapi.json"
 }
@@ -36,6 +37,10 @@ configurations {
         canBeResolved = false
     }
     jsClient {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+    pythonClient {
         canBeConsumed = true
         canBeResolved = false
     }
@@ -62,11 +67,19 @@ dependencies {
 }
 
 // Non-Java client generation tasks below:
-
 task buildJSClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
   generatorName.set("javascript")
   inputSpec.set("$openApiSpecFile")
   outputDir.set("$jsClientDir")
+  packageName.set("solr")
+  generateApiTests.set(false)
+  generateModelTests.set(false)
+}
+
+task buildPythonClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  generatorName.set("python")
+  inputSpec.set("$openApiSpecFile")
+  outputDir.set("$pythonClientDir")
   packageName.set("solr")
   generateApiTests.set(false)
   generateModelTests.set(false)
@@ -82,8 +95,11 @@ artifacts {
         builtBy resolve
     }
 
-    // Makes our Javascript client available to the Admin UI build
+    // Makes generated clients available to other build modules
     jsClient file(project.jsClientDir), {
         builtBy buildJSClient
+    }
+    pythonClient file(project.pythonClientDir), {
+        builtBy buildPythonClient
     }
 }
