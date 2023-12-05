@@ -167,4 +167,4 @@ You can validate this hypothesis with online A/B testing to confirm with real us
 
 === Exercise 4 Wrap Up
 
-In this exercise, we used the Schema API to create the fields that we needed, and then learned how to organize our query parameters into named groups of parameters called ParamSets that we created using the APIs and used in queries.
+In this exercise, we used the Schema API to create the fields that we needed, and then learned how to organize our query parameters into named groups of parameters called ParamSets that we created using the Config API and subsequently referenced in queries.

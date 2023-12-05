@@ -25,6 +25,7 @@ This exercise will use the Films example that we looked at previously in Exercis
 === Getting Ready
 
 Make sure you have a running Solr, following the steps in xref:tutorial-films.adoc#restart-solr[].
+Then go ahead to the next section.
 
 === Preparing for the Vector data
 
@@ -109,7 +110,8 @@ be used as the input vector for all the following example queries.
 
 [NOTE]
 ====
-Interested in calculating the vector using Solr's streaming capability?   Try out:
+Interested in calculating the vector using Solr's xref:query-guide:streaming-expressions.adoc[streaming capability]?   
+Here is an example of a streaming expression that you can run via the Solr Admin Stream UI:
 ```
 let(
   a=select(      
@@ -123,12 +125,41 @@ let(
   average=scalarDivide(3, sumColumns(m))
   )
 ```
+
+The output is:
+```
+{
+  "result-set": {
+    "docs": [
+      {
+        "average": [
+          -0.17840398,
+          0.00960978666666667,
+          -0.14545916333333334,
+          0.41671050333333337,
+          -0.11476575433333332,
+          -0.005306495043333334,
+          -0.06507552800000001,
+          -0.041544396666666664,
+          0.085892911,
+          -0.1788737366666667
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 129
+      }
+    ]
+  }
+}
+```
+
 ====
 
 
 // Solr URL examples below all have [ and ] characters which, when used with Curl, causes encoding issues so just putting plain http links
 
-Search for the top 10 movies most similar to the target vector (KNN Query for recommendation):
+Search for the top 10 movies most similar to the target vector that we previously calculated (KNN Query for recommendation):
 
        'http://localhost:8983/solr/films/query?q={%21knn%20f=film_vector%20topK=10}[-0.1784,0.0096,-0.1455,0.4167,-0.1148,-0.0053,-0.0651,-0.0415,0.0859,-0.1789]'
 
@@ -152,7 +183,7 @@ Search for the top 10 movies most similar to the resulting vector, excluding the
        * To guarantee we calculate the vector similarity score for all the movies, we set `topK=10000`, a number higher than the total number of documents (`1100`).
 
    * It's possible to combine the vector similarity scores with other scores, by using Sub-query, 
-     Function Queries and Parameter Dereferencing Solr features:
+     xref:query-guide:function-queries.adoc[Function Queries] and xref:query-guide:local-params.adoc#parameter-dereferencing[Parameter Dereferencing] Solr features:
 
      - Search for "harry potter" movies, ranking the results by the similarity to the target vector instead of the lexical query score. Beside the `q` parameter, we define a "sub-query" named `q_vector`, that will calculate the similarity score between all the movies (since we set `topK=10000`). Then we use the sub-query parameter name as input for the `sort`, specifying that we want to rank descending according to the vector similarity score (`sort=$q_vector desc`):
 
@@ -169,4 +200,4 @@ Search for the top 10 movies most similar to the resulting vector, excluding the
 
 === Exercise 5 Wrap Up
 
-In this exercise, we used the Schema API to add the vector field, and then learned how to index and query Solr using the vector data structure.
+In this exercise, we used the Schema API to add the vector field, and then learned how to index and query Solr using vector data structure.
