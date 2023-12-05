@@ -95,8 +95,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public ElectionContext copy() {
-    return new ShardLeaderElectionContext(
-        leaderElector, shardId, collection, id, leaderProps, zkController, cc);
+    ShardLeaderElectionContext context =
+        new ShardLeaderElectionContext(
+            leaderElector, shardId, collection, id, leaderProps, zkController, cc);
+    context.leaderSeqPath = this.leaderSeqPath;
+    context.leaderZkNodeParentVersion = this.leaderZkNodeParentVersion;
+    return context;
   }
 
   /*

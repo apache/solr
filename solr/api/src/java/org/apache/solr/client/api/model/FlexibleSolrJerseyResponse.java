@@ -14,20 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.util;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.junit.BeforeClass;
+/** A {@link SolrJerseyResponse} which can accept any top-level properties. */
+public class FlexibleSolrJerseyResponse extends SolrJerseyResponse {
 
-/** Tests the pluggable circuit breaker implementation. The actual tests are in base class. */
-public class TestCircuitBreaker extends BaseTestCircuitBreaker {
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    System.setProperty("filterCache.enabled", "false");
-    System.setProperty("queryResultCache.enabled", "false");
-    System.setProperty("documentCache.enabled", "true");
+  private Map<String, Object> unknownFields = new HashMap<>();
 
-    initCore("solrconfig-pluggable-circuitbreaker.xml", "schema.xml");
-    BaseTestCircuitBreaker.indexDocs();
+  @JsonAnyGetter
+  public Map<String, Object> unknownProperties() {
+    return unknownFields;
+  }
+
+  @JsonAnySetter
+  public void setUnknownProperty(String field, Object value) {
+    unknownFields.put(field, value);
   }
 }

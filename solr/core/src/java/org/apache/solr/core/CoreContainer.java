@@ -105,7 +105,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
-import org.apache.solr.filestore.PackageStoreAPI;
+import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
@@ -246,6 +246,7 @@ public class CoreContainer {
   protected final SolrNodeKeyPair nodeKeyPair;
 
   protected final CoresLocator coresLocator;
+  private volatile CoreSorter coreSorter;
 
   private volatile String hostName;
 
@@ -290,10 +291,9 @@ public class CoreContainer {
           (r) -> this.runAsync(r));
 
   private volatile ClusterEventProducer clusterEventProducer;
-  private final DelegatingPlacementPluginFactory placementPluginFactory =
-      new DelegatingPlacementPluginFactory();
+  private DelegatingPlacementPluginFactory placementPluginFactory;
 
-  private PackageStoreAPI packageStoreAPI;
+  private FileStoreAPI fileStoreAPI;
   private SolrPackageLoader packageLoader;
 
   private final Set<Path> allowPaths;
@@ -714,8 +714,8 @@ public class CoreContainer {
     return packageLoader;
   }
 
-  public PackageStoreAPI getPackageStoreAPI() {
-    return packageStoreAPI;
+  public FileStoreAPI getFileStoreAPI() {
+    return fileStoreAPI;
   }
 
   public SolrCache<?, ?> getCache(String name) {
@@ -775,6 +775,10 @@ public class CoreContainer {
 
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
+
+    placementPluginFactory =
+        new DelegatingPlacementPluginFactory(
+            PlacementPluginFactoryLoader.getDefaultPlacementPluginFactory(cfg, loader));
 
     containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
     containerPluginsRegistry.registerListener(
@@ -837,9 +841,9 @@ public class CoreContainer {
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
 
-      packageStoreAPI = new PackageStoreAPI(this);
-      registerV2ApiIfEnabled(packageStoreAPI.readAPI);
-      registerV2ApiIfEnabled(packageStoreAPI.writeAPI);
+      fileStoreAPI = new FileStoreAPI(this);
+      registerV2ApiIfEnabled(fileStoreAPI.readAPI);
+      registerV2ApiIfEnabled(fileStoreAPI.writeAPI);
 
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
@@ -1015,10 +1019,18 @@ public class CoreContainer {
             metricManager.registry(SolrMetricManager.getRegistryName(SolrInfoBean.Group.node)),
             SolrMetricManager.mkName(
                 "coreLoadExecutor", SolrInfoBean.Category.CONTAINER.toString(), "threadPool"));
+
+    coreSorter =
+        loader.newInstance(
+            cfg.getCoreSorterClass(),
+            CoreSorter.class,
+            null,
+            new Class<?>[] {CoreContainer.class},
+            new Object[] {this});
     final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
-      cds = CoreSorter.sortCores(this, cds);
+      cds = coreSorter.sort(cds);
       checkForDuplicateCoreNames(cds);
       status |= CORE_DISCOVERY_COMPLETE;
 
@@ -1460,6 +1472,10 @@ public class CoreContainer {
 
   public CoresLocator getCoresLocator() {
     return coresLocator;
+  }
+
+  public CoreSorter getCoreSorter() {
+    return coreSorter;
   }
 
   protected SolrCore registerCore(

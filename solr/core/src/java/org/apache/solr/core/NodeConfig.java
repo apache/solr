@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
@@ -35,11 +34,11 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -57,6 +56,7 @@ public class NodeConfig {
 
   private final Path coreRootDirectory;
   private final String coresLocatorClass;
+  private final String coreSorterClass;
 
   private final Path solrDataHome;
 
@@ -78,8 +78,8 @@ public class NodeConfig {
   private final Predicate<String> hiddenSysPropPattern;
 
   private final PluginInfo shardHandlerFactoryConfig;
-
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
+  private final PluginInfo replicaPlacementFactoryConfig;
 
   private final String configSetServiceClass;
 
@@ -117,22 +117,20 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
-  // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper
-  // connection later. If it becomes necessary to track multiple potential sources in the future,
-  // replace this with an Enum
-  private final boolean fromZookeeper;
   private final String defaultZkHost;
 
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
       String coresLocatorClass,
+      String coreSorterClass,
       Path solrDataHome,
       Integer booleanQueryMaxClauseCount,
       Path configSetBaseDirectory,
       String sharedLibDirectory,
       PluginInfo shardHandlerFactoryConfig,
       UpdateShardHandlerConfig updateShardHandlerConfig,
+      PluginInfo replicaPlacementFactoryConfig,
       String coreAdminHandlerClass,
       Map<String, String> coreAdminHandlerActions,
       String collectionsAdminHandlerClass,
@@ -153,7 +151,6 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
-      boolean fromZookeeper,
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
@@ -165,12 +162,14 @@ public class NodeConfig {
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
     this.coresLocatorClass = coresLocatorClass;
+    this.coreSorterClass = coreSorterClass;
     this.solrDataHome = solrDataHome;
     this.booleanQueryMaxClauseCount = booleanQueryMaxClauseCount;
     this.configSetBaseDirectory = configSetBaseDirectory;
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
+    this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
     this.coreAdminHandlerActions = coreAdminHandlerActions;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
@@ -191,7 +190,6 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
     this.tracerConfig = tracerConfig;
-    this.fromZookeeper = fromZookeeper;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
@@ -218,23 +216,24 @@ public class NodeConfig {
   }
 
   /**
-   * Get the NodeConfig whether stored on disk, in ZooKeeper, etc. This may also be used by custom
-   * filters to load relevant configuration.
+   * Get the NodeConfig. This may also be used by custom filters to load relevant configuration.
    *
    * @return the NodeConfig
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
-    if (StrUtils.isNotNullOrEmpty(System.getProperty("solr.solrxml.location"))) {
-      log.warn(
-          "Solr property solr.solrxml.location is no longer supported. Will automatically load solr.xml from ZooKeeper if it exists");
-    }
     final SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     initModules(loader, null);
     nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
+
+    // TODO: Only job of this block is to
+    //  delay starting a solr core to satisfy
+    //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
     if (StrUtils.isNotNullOrEmpty(zkHost)) {
-      int startUpZkTimeOut = Integer.getInteger("waitForZk", 30);
-      startUpZkTimeOut *= 1000;
+      int startUpZkTimeOut = 1000 * Integer.getInteger("waitForZk", 0);
+      if (startUpZkTimeOut == 0) {
+        startUpZkTimeOut = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+      }
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkHost)
@@ -242,20 +241,11 @@ public class NodeConfig {
               .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
               .withSolrClassLoader(loader)
               .build()) {
-        if (zkClient.exists("/solr.xml", true)) {
-          log.info("solr.xml found in ZooKeeper. Loading...");
-          DeprecationLog.log(
-              "solrxml-zookeeper",
-              "Loading solr.xml from zookeeper is deprecated. See reference guide for details.");
-          byte[] data = zkClient.getData("/solr.xml", null, null, true);
-          return SolrXmlConfig.fromInputStream(
-              solrHome, new ByteArrayInputStream(data), nodeProperties, true);
-        }
+        zkClient.exists("/configs", true);
       } catch (Exception e) {
         throw new SolrException(
-            ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
+            ErrorCode.SERVER_ERROR, "Error occurred while testing zookeeper connection", e);
       }
-      log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
     }
 
     return SolrXmlConfig.fromSolrHome(solrHome, nodeProperties);
@@ -276,6 +266,10 @@ public class NodeConfig {
 
   public String getCoresLocatorClass() {
     return this.coresLocatorClass;
+  }
+
+  public String getCoreSorterClass() {
+    return coreSorterClass;
   }
 
   /** Absolute. */
@@ -312,6 +306,10 @@ public class NodeConfig {
 
   public UpdateShardHandlerConfig getUpdateShardHandlerConfig() {
     return updateShardHandlerConfig;
+  }
+
+  public PluginInfo getReplicaPlacementFactoryConfig() {
+    return replicaPlacementFactoryConfig;
   }
 
   public int getCoreLoadThreadCount(boolean zkAware) {
@@ -420,37 +418,6 @@ public class NodeConfig {
   }
 
   /**
-   * True if this node config was loaded from zookeeper
-   *
-   * @see #getDefaultZkHost
-   */
-  public boolean isFromZookeeper() {
-    return fromZookeeper;
-  }
-
-  /**
-   * This method returns the default "zkHost" value for this node -- either read from the system
-   * properties, or from the "extra" properties configured explicitly on the SolrDispatchFilter; or
-   * null if not specified.
-   *
-   * <p>This is the value that would have been used when attempting to locate the solr.xml in
-   * ZooKeeper (regardless of whether the file was actually loaded from ZK or from local disk)
-   *
-   * <p>(This value should only be used for "accounting" purposes to track where the node config
-   * came from if it <em>was</em> loaded from zk -- ie: to check if the chroot has already been
-   * applied. It may be different from the "zkHost" <em>configured</em> in the "cloud" section of
-   * the solr.xml, which should be used for all zk connections made by this node to participate in
-   * the cluster)
-   *
-   * @see #isFromZookeeper
-   * @see #getCloudConfig()
-   * @see CloudConfig#getZkHost()
-   */
-  public String getDefaultZkHost() {
-    return defaultZkHost;
-  }
-
-  /**
    * Extra file paths that will be allowed for core creation, in addition to SOLR_HOME,
    * SOLR_DATA_HOME and coreRootDir
    */
@@ -496,11 +463,6 @@ public class NodeConfig {
    */
   public String getModules() {
     return modules;
-  }
-
-  /** Returns the list of hidden system properties. The list values are regex expressions */
-  public Set<String> getHiddenSysProps() {
-    return hiddenSysProps;
   }
 
   /** Returns whether a given system property is hidden */
@@ -600,6 +562,7 @@ public class NodeConfig {
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
     private String coresLocatorClass = DEFAULT_CORESLOCATORCLASS;
+    private String coreSorterClass = DEFAULT_CORESORTERCLASS;
     private Path solrDataHome;
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
@@ -608,6 +571,7 @@ public class NodeConfig {
     private String hiddenSysProps;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
+    private PluginInfo replicaPlacementFactoryConfig;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
@@ -627,7 +591,6 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
-    private boolean fromZookeeper = false;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
@@ -642,6 +605,7 @@ public class NodeConfig {
 
     private static final String DEFAULT_CORESLOCATORCLASS =
         "org.apache.solr.core.CorePropertiesLocator";
+    private static final String DEFAULT_CORESORTERCLASS = "org.apache.solr.core.CoreSorter";
     private static final String DEFAULT_ADMINHANDLERCLASS =
         "org.apache.solr.handler.admin.CoreAdminHandler";
     private static final String DEFAULT_INFOHANDLERCLASS =
@@ -686,6 +650,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setCoreSorterClass(String coreSorterClass) {
+      this.coreSorterClass = coreSorterClass;
+      return this;
+    }
+
     public NodeConfigBuilder setSolrDataHome(String solrDataHomeString) {
       // keep it null unless explicitly set to non-empty value
       if (solrDataHomeString != null && !solrDataHomeString.isEmpty()) {
@@ -717,6 +686,12 @@ public class NodeConfig {
     public NodeConfigBuilder setUpdateShardHandlerConfig(
         UpdateShardHandlerConfig updateShardHandlerConfig) {
       this.updateShardHandlerConfig = updateShardHandlerConfig;
+      return this;
+    }
+
+    public NodeConfigBuilder setReplicaPlacementFactoryConfig(
+        PluginInfo replicaPlacementFactoryConfig) {
+      this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
       return this;
     }
 
@@ -814,11 +789,6 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setFromZookeeper(boolean fromZookeeper) {
-      this.fromZookeeper = fromZookeeper;
-      return this;
-    }
-
     public NodeConfigBuilder setDefaultZkHost(String defaultZkHost) {
       this.defaultZkHost = defaultZkHost;
       return this;
@@ -903,12 +873,14 @@ public class NodeConfig {
           nodeName,
           coreRootDirectory,
           coresLocatorClass,
+          coreSorterClass,
           solrDataHome,
           booleanQueryMaxClauseCount,
           configSetBaseDirectory,
           sharedLibDirectory,
           shardHandlerFactoryConfig,
           updateShardHandlerConfig,
+          replicaPlacementFactoryConfig,
           coreAdminHandlerClass,
           coreAdminHandlerActions,
           collectionsAdminHandlerClass,
@@ -929,7 +901,6 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
-          fromZookeeper,
           defaultZkHost,
           allowPaths,
           allowUrls,

@@ -26,8 +26,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 import org.apache.solr.client.api.endpoint.DeleteAliasApi;
 import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -51,9 +49,7 @@ public class DeleteAlias extends AdminAPIBase implements DeleteAliasApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse deleteAlias(
-      @PathParam("aliasName") String aliasName, @QueryParam("async") String asyncId)
-      throws Exception {
+  public SolrJerseyResponse deleteAlias(String aliasName, String asyncId) throws Exception {
     final AsyncJerseyResponse response = instantiateJerseyResponse(AsyncJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
 
