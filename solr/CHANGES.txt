@@ -160,7 +160,7 @@ Other Changes
 
 SOLR-16575: splitshard should honour createNodeSet (noble)
 
-* SOLR-16577: Always log core load issues (Haythem Khiri)
+* SOLR-16577: Encore core load failures are always logged. (Haythem Khiri, David Smiley)
 
 ==================  9.1.0 ==================
 
