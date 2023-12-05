@@ -70,12 +70,9 @@ public class ThreadStats {
   }
 
   /**
-   * Get the usage information for the thread that created this {@link ThreadStats}. The information
-   * will track the thread's activity since the creation of this {@link ThreadStats} instance,
-   * though individual metrics may be {@link #UNSUPPORTED} if the VM's tracking of them is disabled.
-   *
-   * @return The usage information or an empty Optional if thread monitoring is unavailable in this
-   *     VM.
+   * Get the cpu usage information for the thread that created this {@link ThreadStats}. The information
+   * will track the thread's cpu since the creation of this {@link ThreadStats} instance,
+   * if the VM's cpu tracking is disabled, returned value counr be {@link #UNSUPPORTED}
    */
   public Optional<Long> getCpuTimeMs() {
     if (THREAD_MX_BEAN != null) {
