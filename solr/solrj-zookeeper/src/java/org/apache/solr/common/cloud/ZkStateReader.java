@@ -403,11 +403,20 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
-    this.zkClient =
+    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, true);
+  }
+
+  public ZkStateReader(
+      String zkServerAddress,
+      int zkClientTimeout,
+      int zkClientConnectTimeout,
+      boolean canUseZkACLs) {
+    SolrZkClient.Builder builder =
         new SolrZkClient.Builder()
             .withUrl(zkServerAddress)
             .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
+            .withUseDefaultCredsAndACLs(canUseZkACLs)
             .withReconnectListener(
                 () -> {
                   // on reconnect, reload cloud info
@@ -423,8 +432,8 @@ public class ZkStateReader implements SolrCloseable {
                     log.error("Interrupted", e);
                     throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Interrupted", e);
                   }
-                })
-            .build();
+                });
+    this.zkClient = builder.build();
     this.closeClient = true;
     this.securityNodeWatcher = null;
 
