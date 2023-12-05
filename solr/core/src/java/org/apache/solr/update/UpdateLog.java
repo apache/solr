@@ -82,7 +82,6 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.LongSet;
 import org.apache.solr.util.OrderedExecutor;
-import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -222,7 +221,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   // This should only be used to initialize VersionInfo... the actual number of buckets may be
   // rounded up to a power of two.
   protected int numVersionBuckets;
-  protected Long maxVersionFromIndex = null;
   protected boolean existOldBufferLog = false;
 
   // keep track of deletes only... this is not updated on an add
@@ -1889,12 +1887,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
         if (finishing) {
-
-          // after replay, update the max from the index
-          log.info("Re-computing max version from index after log re-play.");
-          maxVersionFromIndex = null;
-          getMaxVersionFromIndex();
-
           versionInfo.unblockUpdates();
         }
 
@@ -2324,71 +2316,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       } catch (IOException e) {
         log.error("Could not clear old tlogs in {}", tlogPath);
       }
-    }
-  }
-
-  public Long getCurrentMaxVersion() {
-    return maxVersionFromIndex;
-  }
-
-  // this method is primarily used for unit testing and is not part of the public API for this class
-  Long getMaxVersionFromIndex() {
-    RefCounted<SolrIndexSearcher> newestSearcher =
-        (uhandler != null && uhandler.core != null) ? uhandler.core.getRealtimeSearcher() : null;
-    if (newestSearcher == null)
-      throw new IllegalStateException("No searcher available to lookup max version from index!");
-
-    try {
-      seedBucketsWithHighestVersion(newestSearcher.get());
-      return getCurrentMaxVersion();
-    } finally {
-      newestSearcher.decref();
-    }
-  }
-
-  /** Used to seed all version buckets with the max value of the version field in the index. */
-  protected Long seedBucketsWithHighestVersion(
-      SolrIndexSearcher newSearcher, VersionInfo versions) {
-    Long highestVersion = null;
-    final RTimer timer = new RTimer();
-
-    try (RecentUpdates recentUpdates = getRecentUpdates()) {
-      long maxVersionFromRecent = recentUpdates.getMaxRecentVersion();
-      long maxVersionFromIndex = versions.getMaxVersionFromIndex(newSearcher);
-
-      long maxVersion = Math.max(maxVersionFromIndex, maxVersionFromRecent);
-      if (maxVersion == 0L) {
-        maxVersion = versions.getNewClock();
-        log.info(
-            "Could not find max version in index or recent updates, using new clock {}",
-            maxVersion);
-      }
-
-      // seed all version buckets with the highest value from recent and index
-      versions.seedBucketsWithHighestVersion(maxVersion);
-
-      highestVersion = maxVersion;
-    } catch (IOException ioExc) {
-      log.warn("Failed to determine the max value of the version field due to: ", ioExc);
-    }
-
-    if (debug) {
-      log.debug(
-          "Took {}ms to seed version buckets with highest version {}",
-          timer.getTime(),
-          highestVersion);
-    }
-
-    return highestVersion;
-  }
-
-  public void seedBucketsWithHighestVersion(SolrIndexSearcher newSearcher) {
-    log.debug("Looking up max value of version field to seed version buckets");
-    versionInfo.blockUpdates();
-    try {
-      maxVersionFromIndex = seedBucketsWithHighestVersion(newSearcher, versionInfo);
-    } finally {
-      versionInfo.unblockUpdates();
     }
   }
 
