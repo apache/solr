@@ -33,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -97,8 +96,6 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   private static String jwtTokenWrongSignature;
   private static MockOAuth2Server mockOAuth2Server;
 
-  private static Path tempDir;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     // Setup an OAuth2 mock server with SSL
@@ -107,7 +104,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
     InetAddress loopbackAddr = InetAddress.getLoopbackAddress();
-    tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
+    Path tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
+    tempDir.toFile().deleteOnExit();
     Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
     new KeystoreGenerator().generateKeystore(p12Cert, modifiedP12Cert, loopbackAddr.getHostName());
     p12Cert = modifiedP12Cert;
@@ -122,21 +120,9 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (mockOAuth2Server != null) {
       mockOAuth2Server.shutdown();
-    }
-    if (tempDir != null) {
-      Files.walk(tempDir)
-          .sorted(Comparator.reverseOrder())
-          .forEach(
-              p -> {
-                try {
-                  Files.delete(p);
-                } catch (IOException e) {
-                  throw new RuntimeException(e);
-                }
-              });
     }
   }
 
