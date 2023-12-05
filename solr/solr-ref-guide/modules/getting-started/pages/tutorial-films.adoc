@@ -238,7 +238,7 @@ $ bin/post -c films example/films/films.json
 
 [,console]
 ----
-$ java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.json
+$ bin/solr post -c films example\films\films.json
 ----
 ====
 --
