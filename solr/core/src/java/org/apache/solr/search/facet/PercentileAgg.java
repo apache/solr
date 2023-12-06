@@ -523,6 +523,7 @@ public class PercentileAgg extends SimpleAggValueSource {
       } else {
         digest.add(subDigest);
       }
+      sortVal = null;
     }
 
     @Override

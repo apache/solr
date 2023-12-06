@@ -119,6 +119,7 @@ public class HLLAgg extends StrAggValueSource {
       } else {
         aggregate.union(subHLL);
       }
+      answer = -1;
     }
 
     private long getLong() {

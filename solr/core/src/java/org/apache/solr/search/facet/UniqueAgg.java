@@ -98,6 +98,7 @@ public class UniqueAgg extends StrAggValueSource {
       shardsMissingSum += unique - valsListed;
       shardsMissingMax = Math.max(shardsMissingMax, unique - valsListed);
       // TODO: somehow get & use the count in the bucket?
+      answer = -1;
     }
 
     private long getLong() {
