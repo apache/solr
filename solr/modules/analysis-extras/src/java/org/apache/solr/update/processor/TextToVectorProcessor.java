@@ -41,9 +41,9 @@ public class TextToVectorProcessor extends UpdateRequestProcessor {
   private static final String DEFAULT_INPUT_FIELDNAME = "name";
   private static final String DEFAULT_OUTPUT_FIELDNAME = "film_vector";
   private static final String DEFAULT_MODEL_FILE_NAME =
-      "/Users/cpoerschke/opennlp-dataonnx/sentence-transformers/model.onnx";
+      "/Users/cpoerschke/opennlp-data/onnx/sentence-transformers/model.onnx";
   private static final String DEFAULT_VOCAB_FILE_NAME =
-      "/Users/cpoerschke/opennlp-dataonnx/sentence-transformers/vocab.txt";
+      "/Users/cpoerschke/opennlp-data/onnx/sentence-transformers/vocab.txt";
 
   private String inputFieldname = DEFAULT_INPUT_FIELDNAME;
   private String outputFieldname = DEFAULT_OUTPUT_FIELDNAME;
