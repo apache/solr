@@ -121,7 +121,7 @@ Improvements
 
 * SOLR-16577: Encore core load failures are always logged. (Haythem Khiri, David Smiley)
 
-Optimizations]
+Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
   instead of the full list of cores.  This list is potentially as long as the number of cores.  When there are many
