@@ -9,13 +9,20 @@ jobs:
   test:
     name: Run Solr Tests using Crave.io resources
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - name: Get the Crave binary
-      run: curl -s https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s --
+    - name: Destroy previous clone
+      run: crave clone destroy -y /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER} || echo "Clone did not exist"
+      continue-on-error: true
+    - name: Crave clone sources
+      run: crave clone create --projectID 39 /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
+    - name: Checkout the correct branch
+      run: git -C /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}/solr checkout ${GITHUB_HEAD_REF} || echo "${GITHUB_HEAD_REF} not present on solr repo, staying at main"
+      continue-on-error: true
     - name: Initialize, build, test
-      run: ./crave run --clean
+      run: |
+        cd /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}/solr
+        crave run --clean
+    - name: Delete Clone
+      run: crave clone destroy -y /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}

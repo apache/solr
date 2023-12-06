@@ -20,6 +20,8 @@ Improvements
 
 * SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
 
+* SOLR-17077: When a shard rejoins leader election, leave previous election only once to save unneeded calls to Zookeeper. (Pierre Salagnac)
+
 Optimizations
 ---------------------
 (No changes)
@@ -83,12 +85,15 @@ New Features
 
 * SOLR-16974: Circuit Breakers can now be configured globally (janhoy, Christine Poerschke)
 
-* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
+* SOLR-16743: When using TLS, Solr can now auto-reload the keystore and truststore without the need to restart the process.
+  This is enabled by default when running with TLS and can be disabled or configured in solr.in.sh (Houston Putman, Tomás Fernández Löbbe)
 
 Improvements
 ---------------------
+* SOLR-17053: Distributed search with shards.tolerant: if all shards fail, fail the request (Aparna Suresh via David Smiley)
+
 * SOLR-16924: RESTORECORE now sets the UpdateLog to ACTIVE state instead of requiring a separate
-  REQUESTAPPLYUPDATES call in Collection restore.  (Julia Lamoine, David Smiley)
+  REQUESTAPPLYUPDATES call in Collection restore.  (Julia Maimone, David Smiley)
 
 * SOLR-16907: Fail when parsing an invalid custom permission definition from security.json (janhoy, Uwe Schindler)
 
@@ -106,9 +111,19 @@ Improvements
 
 * SOLR-17035: Add trace id to jetty thread names to improve debuggability via stack traces (Alex Deparvu)
 
+* SOLR-17079: Allow to declare replica placement plugins in solr.xml  (Vincent Primault)
+
+* SOLR-16959: Make the internal CoreSorter implementation configurable in solr.xml  (Vincent Primault)
+
+* SOLR-17050: Use compact JSON for Learning to Rank (LTR) feature and model storage. (Florin Babes, Christine Poerschke, Alessandro Benedetti)
+
+* SOLR-17094: Close objects contained inside an ObjectCache.  (Vincent Primault)
+
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
+  instead of the full list of cores.  This list is potentially as long as the number of cores.  When there are many
+  cores, this leads to high CPU and memory usage. (Gilles Bellaton, David Smiley)
 
 Bug Fixes
 ---------------------
@@ -122,6 +137,16 @@ Bug Fixes
 * SOLR-10653: When there's a UUIDField in the schema and atomic update touches another field
   the error occurs when leader updates replica (Mikhail Khludnev)
 
+* SOLR-17093: Collection restore API command now returns "requestid" when executed asynchronously like other APIs
+  (Tomás Fernández Löbbe)
+
+* SOLR-16952: In distributed i.e. multi-shard cloud mode returned dense vector 'fl' fields are now a list of numbers instead of strings. (Qais Qadri, Christine Poerschke)
+
+* SOLR-17090: The v2 "delete alias" API no longer errantly returns a 405 status code (Jason Gerlowski)
+
+* SOLR-17057: JSON Query regression: If "query" is specified with a String (not JSON structure),
+  "defType" should parse it.  Since 9.4 defType was ignored.  (David Smiley)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
@@ -133,6 +158,11 @@ Other Changes
 * SOLR-17024: Remove support for the long-defunct "collectionDefaults" clusterprops key (Jason Gerlowski)
 
 * SOLR-17072: package CLI tool prints error JSONPath (Mikhail Khludnev)
+
+* SOLR-17078: The `train_and_upload_demo_model.py` script referenced in LTR documentation now uses Python3 (Jason Gerlowski)
+
+* SOLR-17091: dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz file it was not expecting
+  cloud.sh has been updated to ignore the -slim.tgz version of the tarball.
 
 ==================  9.4.0 ==================
 New Features
