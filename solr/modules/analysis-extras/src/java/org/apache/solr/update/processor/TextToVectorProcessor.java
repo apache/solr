@@ -75,8 +75,6 @@ public class TextToVectorProcessor extends UpdateRequestProcessor {
     this.sentenceVectorsDL = sv;
   }
 
-  private void initParameters(SolrParams parameters) {}
-
   @Override
   public void processAdd(AddUpdateCommand command) throws IOException {
     final SolrInputDocument document = command.getSolrInputDocument();
@@ -85,21 +83,25 @@ public class TextToVectorProcessor extends UpdateRequestProcessor {
       final float[] vectors = getVectors(inputText);
       if (vectors != null) {
         if (!document.containsKey(this.outputFieldname)) {
-          log.info(
-              "for {}='{}' adding {}={}",
-              this.inputFieldname,
-              inputText,
-              this.outputFieldname,
-              vectors);
+          if (log.isInfoEnabled()) {
+            log.info(
+                "for {}='{}' adding {}={}",
+                this.inputFieldname,
+                inputText,
+                this.outputFieldname,
+                vectors);
+          }
           document.setField(this.outputFieldname, vectors);
         } else {
-          log.info(
-              "for {}='{}' would have changed {} from {} to {}",
-              this.inputFieldname,
-              inputText,
-              this.outputFieldname,
-              document.getFieldValue(this.outputFieldname),
-              vectors);
+          if (log.isInfoEnabled()) {
+            log.info(
+                "for {}='{}' would have changed {} from {} to {}",
+                this.inputFieldname,
+                inputText,
+                this.outputFieldname,
+                document.getFieldValue(this.outputFieldname),
+                vectors);
+          }
         }
       }
     }
