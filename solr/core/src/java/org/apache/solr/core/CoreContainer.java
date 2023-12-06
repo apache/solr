@@ -1040,31 +1040,32 @@ public class CoreContainer {
           solrCores.markCoreAsLoading(cd);
         }
         if (cd.isLoadOnStartup()) {
-          coreLoadExecutor.submit(
-              () -> {
-                SolrCore core;
-                try {
-                  if (zkSys.getZkController() != null) {
-                    zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
-                  }
-                  solrCores.waitAddPendingCoreOps(cd.getName());
-                  core = createFromDescriptor(cd, false, false);
-                } catch (Exception e) {
-                  log.error("SolrCore failed to load on startup", e);
-                  return null;
-                } finally {
-                  solrCores.removeFromPendingOps(cd.getName());
-                  if (asyncSolrCoreLoad) {
-                    solrCores.markCoreAsNotLoading(cd);
-                  }
-                }
-                try {
-                  zkSys.registerInZk(core, true, false);
-                } catch (RuntimeException e) {
-                  log.error("Error registering SolrCore", e);
-                }
-                return core;
-              });
+          futures.add(
+              coreLoadExecutor.submit(
+                  () -> {
+                    SolrCore core;
+                    try {
+                      if (zkSys.getZkController() != null) {
+                        zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+                      }
+                      solrCores.waitAddPendingCoreOps(cd.getName());
+                      core = createFromDescriptor(cd, false, false);
+                    } catch (Exception e) {
+                      log.error("SolrCore failed to load on startup", e);
+                      return null;
+                    } finally {
+                      solrCores.removeFromPendingOps(cd.getName());
+                      if (asyncSolrCoreLoad) {
+                        solrCores.markCoreAsNotLoading(cd);
+                      }
+                    }
+                    try {
+                      zkSys.registerInZk(core, true, false);
+                    } catch (RuntimeException e) {
+                      log.error("Error registering SolrCore", e);
+                    }
+                    return core;
+                  }));
         }
       }
 

@@ -119,7 +119,9 @@ Improvements
 
 * SOLR-17094: Close objects contained inside an ObjectCache.  (Vincent Primault)
 
-Optimizations
+* SOLR-16577: Encore core load failures are always logged. (Haythem Khiri, David Smiley)
+
+Optimizations]
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
   instead of the full list of cores.  This list is potentially as long as the number of cores.  When there are many
@@ -1117,8 +1119,6 @@ Other Changes
 * SOLR-16588: Fixed problem with default knn algorithm (Elia Porciani via Alessandro Benedetti)
 
 * SOLR-16480: ConfigSets now have an overridable allow-list for filetypes. (Houston Putman)
-
-* SOLR-16577: Encore core load failures are always logged. (Haythem Khiri, David Smiley)
 
 ==================  9.1.0 ==================
 
