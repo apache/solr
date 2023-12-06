@@ -35,6 +35,13 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
   }
 
   @Test
+  public void testTextToVector() throws Exception {
+    SolrInputDocument doc =
+        processAdd("text-to-vector", doc(f("id", "42"), f("name", "Hello World")));
+    assertEquals("TODO", "", doc.getFieldValue("film_vector"));
+  }
+
+  @Test
   public void testSimpleExtract() throws Exception {
     SolrInputDocument doc =
         processAdd(
