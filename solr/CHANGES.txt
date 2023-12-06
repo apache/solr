@@ -119,7 +119,7 @@ Improvements
 
 * SOLR-17094: Close objects contained inside an ObjectCache.  (Vincent Primault)
 
-* SOLR-16577: Encore core load failures are always logged. (Haythem Khiri, David Smiley)
+* SOLR-16577: Ensure core load failures are always logged. (Haythem Khiri, David Smiley)
 
 Optimizations
 ---------------------
