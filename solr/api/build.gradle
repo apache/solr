@@ -28,7 +28,7 @@ ext {
     jsClientDir = "${buildDir}/generated/js"
     pythonClientDir = "${buildDir}/generated/python"
     openApiSpecDir = "${buildDir}/generated/openapi"
-    openApiSpecFile = "${project.openApiSpecDir}/openapi.json"
+    openApiSpecFile = "${project.openApiSpecDir}/solr-${version}-openapi.json"
 }
 
 configurations {
@@ -50,6 +50,7 @@ resolve {
   classpath = sourceSets.main.runtimeClasspath
   resourcePackages = ["org.apache.solr.client.api.util", "org.apache.solr.client.api.endpoint"]
   outputDir = file(project.openApiSpecDir)
+  outputFileName = "solr-${version}-openapi"
   prettyPrint = true
 }
 
