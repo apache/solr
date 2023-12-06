@@ -224,6 +224,22 @@ public class TestJsonRequest extends SolrTestCaseHS {
         "response/numFound==2",
         "response/docs==[{id:'4', x:5.5}]");
 
+    // test defType will parse the query string
+    client.testJQ(
+        params(
+            "json",
+            "{\n"
+                + "    'query': '+all:NY',\n"
+                + "    'fields': '*',\n"
+                + "    'offset': 0,\n"
+                + "    'limit': 10,\n"
+                + "    'params': {\n"
+                + "        'defType': 'edismax',\n"
+                + "        'f.all.qf': 'id cat_s where_s'\n"
+                + "   }\n"
+                + "}"),
+        "response/numFound==2");
+
     // test offset/limit/sort/fields
     client.testJQ(
         params(
