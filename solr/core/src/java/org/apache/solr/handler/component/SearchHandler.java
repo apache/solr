@@ -598,7 +598,7 @@ public class SearchHandler extends RequestHandlerBase
                 boolean allShardsFailed = includesTopIdsPurpose && allResponsesHaveExceptions;
                 // if all shards fail, fail the request despite shards.tolerant
                 if (allShardsFailed) {
-                  throw (SolrException) srsp.getException();
+                  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
                 } else {
                   rsp.getResponseHeader()
                       .asShallowMap()
