@@ -100,6 +100,9 @@ grant {
   permission java.lang.RuntimePermission "loadLibrary.jaas";
   permission java.lang.RuntimePermission "loadLibrary.jaas_unix";
   permission java.lang.RuntimePermission "loadLibrary.jaas_nt";
+  // needed by ONNX integration (TODO: there is a cleaner way to handle this)
+  permission java.lang.RuntimePermission "loadLibrary.*"; // TODO: make more specific
+  permission java.io.FilePermission "/Users/cpoerschke/opennlp-data/onnx/sentence-transformers/vocab.txt", "read"; // TODO: remove when no longer used
   // needed by hadoop common RawLocalFileSystem for java nio getOwner
   permission java.lang.RuntimePermission "accessUserInformation";
   // needed by hadoop hdfs
