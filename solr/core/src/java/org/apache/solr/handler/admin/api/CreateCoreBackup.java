@@ -16,21 +16,14 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Optional;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import org.apache.solr.client.api.endpoint.CreateCoreBackupApi;
+import org.apache.solr.client.api.model.CreateCoreBackupRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
@@ -45,10 +38,9 @@ import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-@Path("/cores/{coreName}/backups")
-public class BackupCoreAPI extends CoreAdminAPIBase {
+public class CreateCoreBackup extends CoreAdminAPIBase implements CreateCoreBackupApi {
   @Inject
-  public BackupCoreAPI(
+  public CreateCoreBackup(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse,
@@ -61,14 +53,10 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
     return true;
   }
 
-  @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse createBackup(
-      @Parameter(description = "The name of the core.") @PathParam("coreName") String coreName,
-      @Schema(description = "The POJO for representing additional backup params.") @RequestBody
-          BackupCoreRequestBody backupCoreRequestBody)
-      throws Exception {
+      String coreName, CreateCoreBackupRequestBody backupCoreRequestBody) throws Exception {
     ensureRequiredParameterProvided("coreName", coreName);
     return handlePotentiallyAsynchronousTask(
         null,
@@ -142,41 +130,5 @@ public class BackupCoreAPI extends CoreAdminAPIBase {
                 exp);
           }
         });
-  }
-
-  public static class BackupCoreRequestBody extends SolrJerseyResponse {
-
-    @Schema(description = "The name of the repository to be used for backup.")
-    @JsonProperty("repository")
-    public String repository;
-
-    @Schema(description = "The path where the backup will be created")
-    @JsonProperty("location")
-    public String location;
-
-    @JsonProperty("shardBackupId")
-    public String shardBackupId;
-
-    @JsonProperty("prevShardBackupId")
-    public String prevShardBackupId;
-
-    @Schema(
-        description = "A descriptive name for the backup.  Only used by non-incremental backups.")
-    @JsonProperty("name")
-    public String backupName;
-
-    @Schema(
-        description =
-            "The name of the commit which was used while taking a snapshot using the CREATESNAPSHOT command.")
-    @JsonProperty("commitName")
-    public String commitName;
-
-    @Schema(description = "To turn on incremental backup feature")
-    @JsonProperty("incremental")
-    public Boolean incremental;
-
-    @Schema(description = "Request ID to track this action which will be processed asynchronously.")
-    @JsonProperty("async")
-    public String async;
   }
 }

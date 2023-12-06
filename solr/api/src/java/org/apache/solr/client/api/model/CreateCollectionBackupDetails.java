@@ -14,29 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.api.model;
 
-import static org.apache.solr.client.api.model.Constants.COLLECTION;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-import org.apache.solr.client.api.endpoint.DeleteCollectionSnapshotApi;
+import java.util.List;
+import java.util.Map;
 
-/**
- * The Response for {@link DeleteCollectionSnapshotApi#deleteCollectionSnapshot(String, String,
- * boolean, String)}
- */
-public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
-  @Schema(description = "The name of the collection.")
-  @JsonProperty(COLLECTION)
-  public String collection;
+public class CreateCollectionBackupDetails {
+  @JsonProperty public String collection;
+  @JsonProperty public Integer numShards;
+  @JsonProperty public Integer backupId;
+  @JsonProperty public String indexVersion;
+  @JsonProperty public String startTime;
+  @JsonProperty public String endTime;
+  @JsonProperty public Integer indexFileCount;
+  @JsonProperty public Integer uploadedIndexFileCount;
+  @JsonProperty public Double indexSizeMB;
+  @JsonProperty public Map<String, String> extraProperties;
 
-  @Schema(description = "The name of the snapshot to be deleted.")
-  @JsonProperty("snapshot")
-  public String snapshotName;
+  @JsonProperty("uploadedIndexFileMB")
+  public Double uploadedIndexSizeMB;
 
-  @Schema(description = "A flag that treats the collName parameter as a collection alias.")
-  @JsonProperty("followAliases")
-  public boolean followAliases;
+  @JsonProperty public List<String> shardBackupIds;
 }

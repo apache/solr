@@ -123,6 +123,8 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
+import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -170,13 +172,13 @@ import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
-import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.BalanceShardUnique;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
 import org.apache.solr.handler.admin.api.CreateCollection;
-import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
-import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
+import org.apache.solr.handler.admin.api.CreateCollectionBackup;
+import org.apache.solr.handler.admin.api.CreateCollectionSnapshot;
 import org.apache.solr.handler.admin.api.CreateReplica;
 import org.apache.solr.handler.admin.api.CreateShard;
 import org.apache.solr.handler.admin.api.DeleteAlias;
@@ -1022,7 +1024,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     BALANCESHARDUNIQUE_OP(
         BALANCESHARDUNIQUE,
         (req, rsp, h) -> {
-          BalanceShardUniqueAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          BalanceShardUnique.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     REBALANCELEADERS_OP(
@@ -1062,8 +1064,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     BACKUP_OP(
         BACKUP,
         (req, rsp, h) -> {
-          final var response =
-              CreateCollectionBackupAPI.invokeFromV1Params(req, rsp, h.coreContainer);
+          final var response = CreateCollectionBackup.invokeFromV1Params(req, rsp, h.coreContainer);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1114,16 +1115,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final String commitName = req.getParams().get(CoreAdminParams.COMMIT_NAME);
           final String asyncId = req.getParams().get(ASYNC);
 
-          final CreateCollectionSnapshotAPI createCollectionSnapshotAPI =
-              new CreateCollectionSnapshotAPI(h.coreContainer, req, rsp);
+          final CreateCollectionSnapshot createCollectionSnapshotAPI =
+              new CreateCollectionSnapshot(h.coreContainer, req, rsp);
 
-          final CreateCollectionSnapshotAPI.CreateSnapshotRequestBody requestBody =
-              new CreateCollectionSnapshotAPI.CreateSnapshotRequestBody();
+          final CreateCollectionSnapshotRequestBody requestBody =
+              new CreateCollectionSnapshotRequestBody();
           requestBody.followAliases = followAliases;
-          requestBody.asyncId = asyncId;
+          requestBody.async = asyncId;
 
-          final CreateCollectionSnapshotAPI.CreateSnapshotResponse createSnapshotResponse =
-              createCollectionSnapshotAPI.createSnapshot(
+          final CreateCollectionSnapshotResponse createSnapshotResponse =
+              createCollectionSnapshotAPI.createCollectionSnapshot(
                   extCollectionName, commitName, requestBody);
 
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, createSnapshotResponse);
@@ -1144,7 +1145,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               new DeleteCollectionSnapshot(h.coreContainer, req, rsp);
 
           final var deleteSnapshotResponse =
-              deleteCollectionSnapshotAPI.deleteSnapshot(
+              deleteCollectionSnapshotAPI.deleteCollectionSnapshot(
                   extCollectionName, commitName, followAliases, asyncId);
 
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteSnapshotResponse);
@@ -1362,10 +1363,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return List.of(
         CreateReplica.class,
         AddReplicaProperty.class,
-        BalanceShardUniqueAPI.class,
+        BalanceShardUnique.class,
         CreateAliasAPI.class,
         CreateCollection.class,
-        CreateCollectionBackupAPI.class,
+        CreateCollectionBackup.class,
         CreateShard.class,
         DeleteAlias.class,
         DeleteCollectionBackup.class,
@@ -1389,7 +1390,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListAliases.class,
         AliasProperty.class,
         ListCollectionSnapshotsAPI.class,
-        CreateCollectionSnapshotAPI.class,
+        CreateCollectionSnapshot.class,
         DeleteCollectionSnapshot.class);
   }
 
