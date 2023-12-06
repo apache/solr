@@ -1049,7 +1049,7 @@ public class CoreContainer {
                 core = createFromDescriptor(cd, false, false);
               } catch (Exception e) {
                 log.error("SolrCore failed to load on startup", e);
-                return null;
+                return;
               } finally {
                 solrCores.removeFromPendingOps(cd.getName());
                 if (asyncSolrCoreLoad) {
@@ -1061,7 +1061,6 @@ public class CoreContainer {
               } catch (RuntimeException e) {
                 log.error("Error registering SolrCore", e);
               }
-              return core;
             });
         }
       }
