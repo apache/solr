@@ -23,10 +23,10 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 // base class for facets that create a list of buckets that can be sorted
@@ -108,7 +108,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     } else {
       final String key = sort.sortVariable;
 
-      /**
+      /*
        * final FacetSortableMerger[] arr = new FacetSortableMerger[buckets.size()]; final int[]
        * index = new int[arr.length]; int start = 0; int nullStart = index.length; int i=0; for
        * (FacetBucket bucket : buckets.values()) { FacetMerger merger =
@@ -311,7 +311,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     // higher level (i.e. we'll be in someone's missing bucket?)
     // TODO: test with a sub-facet with a limit of 0 and something like a missing bucket
     if (leafBuckets != null || partialBuckets != null || skipBuckets != null) {
-      refinement = new HashMap<>(3);
+      refinement = CollectionUtil.newHashMap(3);
       if (leafBuckets != null) refinement.put("_l", leafBuckets);
       if (partialBuckets != null) refinement.put("_p", partialBuckets);
       if (skipBuckets != null) refinement.put("_s", skipBuckets);

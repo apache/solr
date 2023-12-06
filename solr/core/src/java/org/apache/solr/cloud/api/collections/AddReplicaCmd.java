@@ -37,13 +37,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -54,6 +52,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -63,6 +62,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.ShardHandler;
@@ -135,23 +135,21 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
 
-    Replica.Type replicaType =
-        Replica.Type.valueOf(
-            message
-                .getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name())
-                .toUpperCase(Locale.ROOT));
-    EnumMap<Replica.Type, Integer> replicaTypesVsCount = new EnumMap<>(Replica.Type.class);
-    replicaTypesVsCount.put(
-        Replica.Type.NRT, message.getInt(NRT_REPLICAS, replicaType == Replica.Type.NRT ? 1 : 0));
-    replicaTypesVsCount.put(
-        Replica.Type.TLOG, message.getInt(TLOG_REPLICAS, replicaType == Replica.Type.TLOG ? 1 : 0));
-    replicaTypesVsCount.put(
-        Replica.Type.PULL, message.getInt(PULL_REPLICAS, replicaType == Replica.Type.PULL ? 1 : 0));
-
-    int totalReplicas = 0;
-    for (Map.Entry<Replica.Type, Integer> entry : replicaTypesVsCount.entrySet()) {
-      totalReplicas += entry.getValue();
+    ReplicaCount numReplicas =
+        new ReplicaCount(
+            message.getInt(NRT_REPLICAS, 0),
+            message.getInt(TLOG_REPLICAS, 0),
+            message.getInt(PULL_REPLICAS, 0));
+    if (numReplicas.total() <= 0) {
+      Replica.Type replicaType =
+          Replica.Type.valueOf(
+              message
+                  .getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name())
+                  .toUpperCase(Locale.ROOT));
+      numReplicas.increment(replicaType);
     }
+
+    int totalReplicas = numReplicas.total();
     if (totalReplicas > 1) {
       if (node != null) {
         throw new SolrException(
@@ -173,7 +171,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
                 clusterState,
                 collectionName,
                 message,
-                replicaTypesVsCount,
+                numReplicas,
                 ccc.getCoreContainer())
             .stream()
             .map(
@@ -255,10 +253,10 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       CreateReplica createReplica)
       throws InterruptedException, KeeperException {
     if (!skipCreateReplicaInClusterState) {
-      ZkNodeProps props =
-          new ZkNodeProps(
+      Map<String, Object> replicaProps =
+          Utils.makeMap(
               Overseer.QUEUE_OPERATION,
-              ADDREPLICA.toLower(),
+              (Object) ADDREPLICA.toLower(),
               ZkStateReader.COLLECTION_PROP,
               collectionName,
               ZkStateReader.SHARD_ID_PROP,
@@ -274,8 +272,11 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
               ZkStateReader.REPLICA_TYPE,
               createReplica.replicaType.name());
       if (createReplica.coreNodeName != null) {
-        props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
+        replicaProps.put(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
       }
+      CollectionHandlingUtils.addPropertyParams(message, replicaProps);
+
+      ZkNodeProps props = new ZkNodeProps(replicaProps);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
@@ -342,6 +343,9 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     if (createReplica.coreNodeName != null) {
       params.set(CoreAdminParams.CORE_NODE_NAME, createReplica.coreNodeName);
     }
+    // Inherit user-defined properties from collection.
+    CollectionHandlingUtils.addPropertyParams(coll, params);
+    // Inherit user-defined properties from replica.
     CollectionHandlingUtils.addPropertyParams(message, params);
 
     return params;
@@ -362,7 +366,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     String coreNodeName = message.getStr(CoreAdminParams.CORE_NODE_NAME);
     Replica.Type replicaType = replicaPosition.type;
 
-    if (StringUtils.isBlank(coreName)) {
+    if (StrUtils.isBlank(coreName)) {
       coreName = message.getStr(CoreAdminParams.PROPERTY_PREFIX + CoreAdminParams.NAME);
     }
 
@@ -401,7 +405,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       ClusterState clusterState,
       String collectionName,
       ZkNodeProps message,
-      EnumMap<Replica.Type, Integer> replicaTypeVsCount,
+      ReplicaCount numReplicas,
       CoreContainer coreContainer)
       throws IOException, InterruptedException {
     boolean skipCreateReplicaInClusterState =
@@ -409,11 +413,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     boolean skipNodeAssignment = message.getBool(CollectionAdminParams.SKIP_NODE_ASSIGNMENT, false);
     String sliceName = message.getStr(SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
-
-    int numNrtReplicas = replicaTypeVsCount.get(Replica.Type.NRT);
-    int numPullReplicas = replicaTypeVsCount.get(Replica.Type.PULL);
-    int numTlogReplicas = replicaTypeVsCount.get(Replica.Type.TLOG);
-    int totalReplicas = numNrtReplicas + numPullReplicas + numTlogReplicas;
+    int totalReplicas = numReplicas.total();
 
     String node = message.getStr(CoreAdminParams.NODE);
     Object createNodeSetStr = message.get(CollectionHandlingUtils.CREATE_NODE_SET);
@@ -432,9 +432,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
               clusterState,
               collection.getName(),
               sliceName,
-              numNrtReplicas,
-              numTlogReplicas,
-              numPullReplicas,
+              numReplicas,
               createNodeSetStr,
               cloudManager,
               coreContainer);
@@ -452,9 +450,9 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       // the same node, but we've got to accommodate.
       positions = new ArrayList<>(totalReplicas);
       int i = 0;
-      for (Map.Entry<Replica.Type, Integer> entry : replicaTypeVsCount.entrySet()) {
-        for (int j = 0; j < entry.getValue(); j++) {
-          positions.add(new ReplicaPosition(collectionName, sliceName, i++, entry.getKey(), node));
+      for (Replica.Type type : Replica.Type.values()) {
+        for (int j = 0; j < numReplicas.get(type); j++) {
+          positions.add(new ReplicaPosition(collectionName, sliceName, i++, type, node));
         }
       }
     }

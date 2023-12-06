@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
 import org.apache.solr.SolrTestCaseJ4;
@@ -66,7 +67,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
+    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig());
     JettySolrRunner runnerPrimary = miniCluster.getJettySolrRunners().get(0);
     solrClientPrimary = new HttpSolrClient.Builder(runnerPrimary.getBaseUrl().toString()).build();
     JettySolrRunner runnerSecondary = miniCluster.getJettySolrRunners().get(1);
@@ -204,8 +205,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
                   Optional.empty())
               .withLBHttpSolrClientBuilder(
                   new LBHttpSolrClient.Builder()
-                      .withSocketTimeout(30000)
-                      .withConnectionTimeout(15000)
+                      .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+                      .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
                       .withResponseParser(client.getParser())
                       .withHttpSolrClientBuilder(
                           new HttpSolrClient.Builder().withKerberosDelegationToken(token)))
@@ -392,12 +393,13 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   @Test
   public void testZNodePaths() throws Exception {
     getDelegationToken(null, "bar", solrClientPrimary);
-    SolrZkClient zkClient = new SolrZkClient(miniCluster.getZkServer().getZkAddress(), 1000);
-    try {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(miniCluster.getZkServer().getZkAddress())
+            .withTimeout(1000, TimeUnit.MILLISECONDS)
+            .build()) {
       assertTrue(zkClient.exists("/security/zkdtsm", true));
       assertTrue(zkClient.exists("/security/token", true));
-    } finally {
-      zkClient.close();
     }
   }
 

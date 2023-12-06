@@ -19,9 +19,7 @@ package org.apache.solr.s3;
 import static org.hamcrest.Matchers.containsString;
 
 import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.Collections;
-import org.apache.commons.io.IOUtils;
+import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
@@ -34,7 +32,7 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
     pushContent("/foo", "my blob");
 
     try (InputStream stream = client.pullStream("/foo")) {
-      assertEquals("my blob", IOUtils.toString(stream, Charset.defaultCharset()));
+      assertEquals("my blob", new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
   }
 
@@ -70,11 +68,12 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
     pushContent("/override", "old content");
     pushContent("/override", "new content");
 
-    InputStream stream = client.pullStream("/override");
-    assertEquals(
-        "File contents should have been overridden",
-        "new content",
-        IOUtils.toString(stream, Charset.defaultCharset()));
+    try (InputStream stream = client.pullStream("/override")) {
+      assertEquals(
+          "File contents should have been overridden",
+          "new content",
+          new String(stream.readAllBytes(), StandardCharsets.UTF_8));
+    }
   }
 
   /** Check getting the length of a written file. */
@@ -103,7 +102,5 @@ public class S3ReadWriteTest extends AbstractS3ClientTest {
   public void testNotFound() {
     assertThrows(S3NotFoundException.class, () -> client.pullStream("/not-found"));
     assertThrows(S3NotFoundException.class, () -> client.length("/not-found"));
-    assertThrows(
-        S3NotFoundException.class, () -> client.delete(Collections.singleton("/not-found")));
   }
 }

@@ -323,13 +323,11 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   }
 
   private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
-    JettyConfig jc = buildJettyConfig("/solr");
+    JettyConfig jc = buildJettyConfig();
     jc = JettyConfig.builder(jc).build();
     solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome, jc);
     Path configDir = tmpSolrHome.resolve("collection1/conf");
     solrCluster.uploadConfigSet(configDir, "conf1");
-
-    solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
 
     createCollection(COLLECTION, "conf1", numShards, numReplicas);
     indexDocuments(COLLECTION);

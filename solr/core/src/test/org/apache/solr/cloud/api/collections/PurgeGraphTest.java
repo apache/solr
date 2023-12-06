@@ -199,7 +199,11 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
   private void createBackupIdFile(int backupId, String... shardNames) throws Exception {
     final BackupProperties createdProps =
         BackupProperties.create(
-            "someBackupName", "someCollectionName", "someExtCollectionName", "someConfigName");
+            "someBackupName",
+            "someCollectionName",
+            "someExtCollectionName",
+            "someConfigName",
+            null);
     for (String shardName : shardNames) {
       createdProps.putAndGetShardBackupIdFor(shardName, backupId);
     }

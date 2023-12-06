@@ -43,6 +43,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
@@ -77,6 +78,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * Multivalued string field suffixes that can be randomized for testing diff facet/join code paths
    */
   private static final String[] STR_FIELD_SUFFIXES = new String[] {"_ss", "_sds", "_sdsS"};
+
   /**
    * Multivalued int field suffixes that can be randomized for testing diff facet/join code paths
    */
@@ -84,6 +86,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
+
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
@@ -117,8 +120,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION_NAME).build();
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
@@ -189,12 +191,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
-    }
+    IOUtils.closeQuietly(CLOUD_CLIENT);
+
     for (SolrClient client : CLIENTS) {
-      client.close();
+      IOUtils.closeQuietly(client);
     }
     CLIENTS.clear();
   }

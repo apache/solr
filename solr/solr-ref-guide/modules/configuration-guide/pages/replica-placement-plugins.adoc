@@ -25,7 +25,8 @@ It can also enforce additional constraints on operations such as collection or r
 In earlier versions of Solr, this functionality was provided using either per-collection rules, or with the autoscaling framework.
 
 == Plugin Configuration
-Replica placement plugin configurations are maintained using the `/cluster/plugin` API.
+Replica placement plugin configurations are configured either xref:configuring-solr-xml.adoc#the-replicaplacementfactory-element[ in the `solr.xml` file], or using the `/cluster/plugin` API.
+Any plugin configured in `solr.xml` will be used as long as no replica placement plugin is defined as a cluster plugin.
 There can be only one cluster-wide plugin configuration at a time, and it uses a pre-defined plugin name: `.placement-plugin`.
 
 There are several placement plugins included in the Solr distribution.
@@ -34,7 +35,11 @@ The configuration entry may also contain a `config` element if the plugin implem
 
 == Placement Plugins Included with Solr
 The following placement plugins are available out-of-the-box in Solr 9.0.
-If no placement plugin is defined, Solr will default to using the <<#simpleplacementfactory,SimplePlacementPlugin>>.
+If no placement plugin is defined in cluster properties, Solr will default to using
+the plugin configured in system property `solr.placementplugin.default` or environment
+variable `SOLR_PLACEMENTPLUGIN_DEFAULT`. Supported values are `simple`, `random`, `affinity`
+and `minimizecores`. If no such property or environment variable is set,
+the <<#simpleplacementfactory,SimplePlacementPlugin>> is used.
 
 In order to use a plugin its configuration must be added using the `/cluster/plugin` API.
 For example, in order to use the `AffinityPlacementFactory` plugin the following command should be executed:
@@ -109,6 +114,7 @@ The autoscaling specification in the configuration linked above aimed to do the 
 It also supports additional per-collection constraints:
 
 * `withCollection` enforces the placement of co-located collections' replicas on the same nodes, and prevents deletions of collections and replicas that would break this constraint.
+* `withCollectionShards` same as above but also collocates shards. ie. shardN is placed at the same node where shardN from the referred collection is located. Note: keys of `withCollectionShards` should be disjoint with `withCollection` keys.
 * `collectionNodeType` limits the nodes eligible for placement to only those that match one or more of the specified node types.
 
 See below for more details on these constraints.
@@ -116,7 +122,7 @@ See below for more details on these constraints.
 Overall strategy of this plugin:
 
 * The set of nodes in the cluster is obtained.
-If `withCollection` is defined and applicable to the current collection then this candidate set is filtered so that only eligible nodes remain according to this constraint.
+If `withCollection` or `withCollectionShards` are defined and applicable to the current collection then this candidate set is filtered so that only eligible nodes remain according to this constraint.
 * The resulting node set is transformed into 3 independent sets (that can overlap) of nodes accepting each of the three replica types (NRT, TLOG, and PULL).
 * For each shard on which placing replicas is required and then for each replica type to place (starting with NRT, then TLOG, then PULL):
 ** The set of candidates nodes corresponding to the replica type is used and from that set are removed nodes that already have a replica (of any type) for that shard.
@@ -142,7 +148,7 @@ This plugin supports the following configuration parameters:
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `10` Gigabytes
+|Optional |Default: `5` Gigabytes
 |===
 +
 If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
@@ -169,6 +175,18 @@ The plugin will assume that the secondary collection replicas are already in pla
 +
 See the section <<withCollection constraint>> below.
 
+`withCollectionShards`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Same as `withCollection` but enforces a shard level constraint.
+eg. shardN of the primary collection (occurs in a key) is placed only on nodes where shardN of secondary collection (occurs as a value) resides.
+The same constraint is enforced on deleting when a replica of a secondary collection shardN is deleted. It prevents deletion if primary collection's shardN is collocated on certain node.
+Keys should be disjoint with `withCollection`.
++
 `collectionNodeType`::
 +
 [%autowidth,frame=none]
@@ -194,6 +212,7 @@ Please note that this may result in an empty set, and an exception - in this cas
 The plugin preserves this co-location by rejecting delete operation of secondary collections (or their replicas) if they are still in use on the nodes where primary replicas are located - requests to do so will be rejected with errors.
 In order to delete a secondary collection (or its replicas) from these nodes first the replicas of the primary collection must be removed from the co-located nodes, or the configuration must be changed to remove the
 co-location mapping for the primary collection.
+
 
 == Example Configurations
 This is a simple configuration that uses default values:

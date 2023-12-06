@@ -22,6 +22,7 @@
   <Set name="WantClientAuth"><Property name="solr.jetty.ssl.wantClientAuth" default="false"/></Set>
   <Set name="KeyStoreType"><Property name="solr.jetty.keystore.type" default="PKCS12"/></Set>
   <Set name="TrustStoreType"><Property name="solr.jetty.truststore.type" default="PKCS12"/></Set>
+  <Set name="EndpointIdentificationAlgorithm"><Property name="solr.jetty.ssl.verifyClientHostName"/></Set>
 
   <!-- =========================================================== -->
   <!-- Create a TLS specific HttpConfiguration based on the        -->
@@ -32,7 +33,14 @@
   <New id="sslHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
     <Arg><Ref refid="httpConfig"/></Arg>
     <Call name="addCustomizer">
-      <Arg><New class="org.eclipse.jetty.server.SecureRequestCustomizer"/></Arg>
+      <Arg>
+        <New class="org.eclipse.jetty.server.SecureRequestCustomizer">
+          <Arg name="sniRequired" type="boolean"><Property name="solr.jetty.ssl.sniRequired" default="false"/></Arg>
+          <Arg name="sniHostCheck" type="boolean"><Property name="solr.jetty.ssl.sniHostCheck" default="true"/></Arg>
+          <Arg name="stsMaxAgeSeconds" type="int"><Property name="solr.jetty.ssl.stsMaxAgeSeconds" default="-1"/></Arg>
+          <Arg name="stsIncludeSubdomains" type="boolean"><Property name="solr.jetty.ssl.stsIncludeSubdomains" default="false"/></Arg>
+        </New>
+      </Arg>
     </Call>
   </New>
 

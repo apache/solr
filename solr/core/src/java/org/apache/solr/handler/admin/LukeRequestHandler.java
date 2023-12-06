@@ -772,6 +772,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
         _buckets[idx] = buckets[idx];
       }
     }
+
     // TODO? should this be a list or a map?
     public NamedList<Integer> toNamedList() {
       NamedList<Integer> nl = new NamedList<>();
@@ -781,6 +782,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       return nl;
     }
   }
+
   /** Private internal class that counts up frequent terms */
   private static class TopTermQueue extends PriorityQueue<TopTermQueue.TermInfo> {
     static class TermInfo {

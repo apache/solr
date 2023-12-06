@@ -238,8 +238,8 @@ public class CollectionHandlingUtils {
 
     try (SolrClient client =
         new HttpSolrClient.Builder(url)
-            .withConnectionTimeout(30000)
-            .withSocketTimeout(120000)
+            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
             .build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
@@ -450,6 +450,26 @@ public class CollectionHandlingUtils {
     }
   }
 
+  static void logFailedOperation(final Object operation, final Exception e, final String collName) {
+    if (collName == null) {
+      log.error("Operation {} failed", operation, e);
+    } else {
+      log.error("Collection {}, operation {} failed", collName, operation, e);
+    }
+  }
+
+  /***
+   * Creates a SimpleOrderedMap with the exception details and adds it to the results
+   */
+  public static void addExceptionToNamedList(
+      final Object operation, final Exception e, final NamedList<Object> results) {
+    results.add("Operation " + operation + " caused exception:", e);
+    SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
+    nl.add("msg", e.getMessage());
+    nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
+    results.add("exception", nl);
+  }
+
   private static void addFailure(NamedList<Object> results, String key, Object value) {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
@@ -528,18 +548,19 @@ public class CollectionHandlingUtils {
               try {
                 Thread.sleep(1000);
               } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
               }
               break;
             }
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
-                "Invalid status request for requestId: "
+                "Invalid status request for requestId: '"
                     + requestId
-                    + ""
+                    + "' - '"
                     + srsp.getSolrResponse().getResponse().get("STATUS")
-                    + "retried "
+                    + "'. Retried "
                     + counter
-                    + "times");
+                    + " times");
           } else {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,

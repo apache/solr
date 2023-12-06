@@ -32,7 +32,7 @@ def configuringSettings = (rootProject instanceof org.gradle.api.initialization.
 // Accessor for -P properties from settings or at build time.
 BiFunction<String, String, String> resolvePropertyValue = { propertyName, defValue ->
   if (configuringSettings) {
-    return settings.startParameter.projectProperties.getOrDefault(propertyName, defValue)
+    return settings.ext.properties.getOrDefault(propertyName, defValue)
   } else {
     return project.properties.getOrDefault(propertyName, defValue)
   }
@@ -109,6 +109,12 @@ if (luceneDevRepo != null) {
 
     // Include Lucene repository as a composite and substitute module names.
     includeBuild(luceneDevRepo) {
+      // Explicitly specify project name; otherwise project name is determined by directory name.
+      // The name of included build should match the `rootProject.name` of lucene: "lucene-root"
+      // At build time (below) the included build is retrieved by name; subproject tests in IDE
+      // will also default to run against the root project name of the included build, so it's
+      // important to have the names match.
+      name = 'lucene-root'
       dependencySubstitution {
         all {  DependencySubstitution dependency ->
           if (dependency.requested instanceof ModuleComponentSelector) {
@@ -133,7 +139,7 @@ if (luceneDevRepo != null) {
     
     // replace luceneBaseVersionProvider by one evaluating the included build:
     configure(rootProject) {
-      def line = new File(gradle.includedBuild('lucene').projectDir, 'build.gradle').readLines("UTF-8").find { it =~ /\bbaseVersion\s*=\s*['"]/ }
+      def line = new File(gradle.includedBuild('lucene-root').projectDir, 'build.gradle').readLines("UTF-8").find { it =~ /\bbaseVersion\s*=\s*['"]/ }
       if (!line) {
         throw new GradleException('Cannot extract Lucene baseVersion from build.gradle file.')
       }

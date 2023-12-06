@@ -429,7 +429,7 @@ public class DOMUtil {
     int prev = 0;
     int pos;
     // search for the next instance of $ from the 'prev' position
-    while ((pos = value.indexOf("$", prev)) >= 0) {
+    while ((pos = value.indexOf('$', prev)) >= 0) {
 
       // if there was any text before this, add it as a fragment
       // TODO, this check could be modified to go if pos>prev;

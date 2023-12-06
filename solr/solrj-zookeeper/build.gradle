@@ -49,7 +49,6 @@ dependencies {
 
     testImplementation 'junit:junit'
     testImplementation 'commons-io:commons-io'
-    testImplementation 'com.google.guava:guava'
 
     permitTestUsedUndeclared project(':solr:solrj-zookeeper') // duh!
 }

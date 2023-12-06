@@ -96,7 +96,7 @@ public class AdminHandlersProxy {
       log.debug("Nodes requested: {}", nodes);
     }
     if (log.isDebugEnabled()) {
-      log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
+      log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
     }
 
     ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());

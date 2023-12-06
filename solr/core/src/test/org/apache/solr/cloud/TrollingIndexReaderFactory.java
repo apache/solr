@@ -113,7 +113,7 @@ public class TrollingIndexReaderFactory extends StandardIndexReaderFactory {
         new Predicate<StackTraceElement>() {
           @Override
           public boolean test(StackTraceElement trace) {
-            return trace.getClassName().indexOf(className) >= 0;
+            return trace.getClassName().contains(className);
           }
 
           @Override

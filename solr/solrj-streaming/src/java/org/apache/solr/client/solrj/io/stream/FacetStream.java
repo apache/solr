@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -27,8 +26,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -51,6 +48,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -87,8 +85,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   private boolean resortNeeded;
   private boolean serializeBucketSizeLimit;
 
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  protected transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
   protected transient TupleStream parallelizedStream;
   protected transient StreamContext context;
 
@@ -126,7 +124,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     String collectionName = factory.getValueOperand(expression, 0);
 
     if (collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = collectionName.replace("\"", "").replace(" ", "");
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -482,7 +480,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       sorts.add(buff.toString());
     }
 
-    return sorts.toArray(new String[sorts.size()]);
+    return sorts.toArray(new String[0]);
   }
 
   private void init(
@@ -646,7 +644,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   @Override
   public void setStreamContext(StreamContext context) {
     this.context = context;
-    cache = context.getSolrClientCache();
+    this.clientCache = context.getSolrClientCache();
   }
 
   @Override
@@ -656,17 +654,13 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
   @Override
   public void open() throws IOException {
-    if (cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      final List<String> hosts = new ArrayList<>();
-      hosts.add(zkHost);
-      cloudSolrClient =
-          new CloudLegacySolrClient.Builder(hosts, Optional.empty())
-              .withSocketTimeout(30000)
-              .withConnectionTimeout(15000)
-              .build();
+      doCloseCache = false;
     }
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
 
     // Parallelize the facet expression across multiple collections for an alias using plist if
     // possible
@@ -760,10 +754,8 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
   @Override
   public void close() throws IOException {
-    if (cache == null) {
-      if (cloudSolrClient != null) {
-        cloudSolrClient.close();
-      }
+    if (doCloseCache) {
+      clientCache.close();
     }
   }
 
@@ -1060,7 +1052,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
    * @return A mapping of fields produced by the rollup stream to their output name.
    */
   protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
-    Map<String, String> map = new HashMap<>(rollupMetrics.length * 2);
+    Map<String, String> map = CollectionUtil.newHashMap(rollupMetrics.length * 2);
     for (Bucket b : buckets) {
       String key = b.toString();
       map.put(key, key);

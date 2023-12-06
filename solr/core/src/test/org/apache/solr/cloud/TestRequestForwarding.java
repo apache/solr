@@ -34,7 +34,7 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig());
     solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
   }
 

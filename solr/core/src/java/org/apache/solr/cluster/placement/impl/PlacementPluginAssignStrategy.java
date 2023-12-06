@@ -18,13 +18,16 @@
 package org.apache.solr.cluster.placement.impl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.placement.BalanceRequest;
 import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
 import org.apache.solr.cluster.placement.PlacementContext;
@@ -35,9 +38,15 @@ import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.CollectionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** This assign strategy delegates placement computation to "plugin" code. */
 public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final PlacementPlugin plugin;
 
@@ -89,6 +98,54 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
   }
 
   @Override
+  public Map<Replica, String> computeReplicaBalancing(
+      SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
+      throws Assign.AssignmentException, IOException, InterruptedException {
+    PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);
+
+    BalanceRequest balanceRequest =
+        BalanceRequestImpl.create(placementContext.getCluster(), nodes, maxBalanceSkew);
+    try {
+      Map<org.apache.solr.cluster.Replica, Node> rawReplicaMovements =
+          plugin.computeBalancing(balanceRequest, placementContext).getReplicaMovements();
+      Map<Replica, String> replicaMovements = CollectionUtil.newHashMap(rawReplicaMovements.size());
+      for (Map.Entry<org.apache.solr.cluster.Replica, Node> movement :
+          rawReplicaMovements.entrySet()) {
+        Replica converted = findReplica(solrCloudManager, movement.getKey());
+        if (converted == null) {
+          throw new Assign.AssignmentException(
+              "Could not find replica when balancing: " + movement.getKey().toString());
+        }
+        replicaMovements.put(converted, movement.getValue().getName());
+      }
+      return replicaMovements;
+    } catch (PlacementException pe) {
+      throw new Assign.AssignmentException(pe);
+    }
+  }
+
+  private Replica findReplica(
+      SolrCloudManager solrCloudManager, org.apache.solr.cluster.Replica replica) {
+    DocCollection collection = null;
+    try {
+      collection =
+          solrCloudManager
+              .getClusterState()
+              .getCollection(replica.getShard().getCollection().getName());
+    } catch (IOException e) {
+      throw new Assign.AssignmentException(
+          "Could not load cluster state when balancing replicas", e);
+    }
+    if (collection != null) {
+      Slice slice = collection.getSlice(replica.getShard().getShardName());
+      if (slice != null) {
+        return slice.getReplica(replica.getReplicaName());
+      }
+    }
+    return null;
+  }
+
+  @Override
   public void verifyDeleteCollection(SolrCloudManager solrCloudManager, DocCollection collection)
       throws Assign.AssignmentException, IOException, InterruptedException {
     PlacementContext placementContext = new SimplePlacementContextImpl(solrCloudManager);
@@ -136,9 +193,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
             placementContext.getCluster().getCollection(assignRequest.collectionName),
             new HashSet<>(assignRequest.shardNames),
             nodes,
-            assignRequest.numNrtReplicas,
-            assignRequest.numTlogReplicas,
-            assignRequest.numPullReplicas);
+            assignRequest.numReplicas);
     final List<ReplicaPosition> replicaPositions = new ArrayList<>();
     ArrayList<Node> nodeList = new ArrayList<>(request.getTargetNodes());
     for (String shard : request.getShardNames()) {

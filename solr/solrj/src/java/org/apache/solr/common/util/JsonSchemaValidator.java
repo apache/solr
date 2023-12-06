@@ -167,7 +167,7 @@ class TypeValidator extends Validator<Object> {
 
   TypeValidator(Map<?, ?> schema, Object type) {
     super(schema, type);
-    types = new HashSet<>(1);
+    types = CollectionUtil.newHashSet(1);
     if (type instanceof List) {
       for (Object t : (List) type) {
         types.add(getType(t.toString()));
@@ -270,7 +270,7 @@ class RequiredValidator extends Validator<List<String>> {
                     + ").  This is a bug.");
             return false;
           }
-          String subprop = requiredProp.substring(requiredProp.indexOf(".") + 1);
+          String subprop = requiredProp.substring(requiredProp.indexOf('.') + 1);
           if (!validate(((Map) o).get(requiredProp), errs, Collections.singleton(subprop))) {
             return false;
           }

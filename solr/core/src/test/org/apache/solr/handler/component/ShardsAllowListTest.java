@@ -47,6 +47,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
    * clusters)
    */
   private static final String EXPLICIT_CLUSTER_KEY = "explicitCluster";
+
   /**
    * The cluster with this key will not include an explicit list of host allowed, will rely on
    * live_nodes
@@ -187,9 +188,9 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
           "Full URL without scheme",
           numDocs(
               "*:*",
-              getShardUrl("shard1", cluster).replaceAll("http://", "")
+              getShardUrl("shard1", cluster).replace("http://", "")
                   + ","
-                  + getShardUrl("shard2", cluster).replaceAll("http://", ""),
+                  + getShardUrl("shard2", cluster).replace("http://", ""),
               cluster),
           is(10));
 
@@ -250,8 +251,6 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
             implicitCluster,
             "distrib",
             "false",
-            "shard.url",
-            getShardUrl("shard2", explicitCluster),
             "shards.purpose",
             "64",
             "isShard",

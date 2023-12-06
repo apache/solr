@@ -18,6 +18,8 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -102,7 +104,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     makeRequest(handler, req("action", "enable"));
 
     assertTrue(healthcheckFile.exists());
-    assertNotNull(FileUtils.readFileToString(healthcheckFile, "UTF-8"));
+    assertNotNull(Files.readString(healthcheckFile.toPath(), StandardCharsets.UTF_8));
 
     // now verify that the handler response with success
 
@@ -167,7 +169,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testPingInClusterWithNoHealthCheck() throws Exception {
 
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
+        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 

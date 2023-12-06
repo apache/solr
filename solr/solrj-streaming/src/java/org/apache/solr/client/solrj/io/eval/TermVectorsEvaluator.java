@@ -115,7 +115,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
 
           if (excludes != null) {
             for (String exclude : excludes) {
-              if (term.indexOf(exclude) > -1) {
+              if (term.contains(exclude)) {
                 continue OUTER;
               }
             }

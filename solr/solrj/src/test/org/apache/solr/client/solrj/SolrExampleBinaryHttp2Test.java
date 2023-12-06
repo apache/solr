@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -37,8 +38,8 @@ public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new Http2SolrClient.Builder(getServerUrl())
-        .connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
+    return new Http2SolrClient.Builder(getCoreUrl())
+        .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
         .withRequestWriter(new BinaryRequestWriter())
         // where the magic happens
         .withResponseParser(new BinaryResponseParser())

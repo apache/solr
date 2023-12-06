@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -38,8 +39,8 @@ public class SolrExampleXMLHttp2Test extends SolrExampleTests {
   public SolrClient createNewSolrClient() {
 
     Http2SolrClient client =
-        new Http2SolrClient.Builder(getServerUrl())
-            .connectionTimeout(DEFAULT_CONNECTION_TIMEOUT)
+        new Http2SolrClient.Builder(getCoreUrl())
+            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withRequestWriter(new RequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build();

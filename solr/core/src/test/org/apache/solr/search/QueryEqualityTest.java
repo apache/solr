@@ -71,10 +71,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    * @see #testParserCoverage
    */
   private static boolean doAssertParserCoverage = false;
+
   /**
    * @see #testParserCoverage
    */
   private static final Set<String> qParsersTested = new HashSet<>();
+
   /**
    * @see #testParserCoverage
    */
@@ -908,6 +910,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("vector(foo_i,sum(4,bar_i))", "vector(foo_i, sum(4,bar_i))");
   }
 
+  public void testFuncKnnVector() throws Exception {
+    assertFuncEquals(
+        "vectorSimilarity(FLOAT32,COSINE,[1,2,3],[4,5,6])",
+        "vectorSimilarity(FLOAT32, COSINE, [1, 2, 3], [4, 5, 6])");
+
+    assertFuncEquals(
+        "vectorSimilarity(BYTE, EUCLIDEAN, bar_i, [4,5,6])",
+        "vectorSimilarity(BYTE, EUCLIDEAN, field(bar_i), [4, 5,  6])");
+  }
+
   public void testFuncQuery() throws Exception {
     SolrQueryRequest req = req("myQ", "asdf");
     try {
@@ -1064,6 +1076,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "exists(field('field_t'))",
           "exists(field($myField))");
       assertFuncEquals(req, "exists(query($myQ))", "exists(query({!lucene v=$myQ}))");
+    } finally {
+      req.close();
+    }
+  }
+
+  public void testFuncIsnan() throws Exception {
+    SolrQueryRequest req = req("num", "12.3456", "zero", "0");
+    try {
+      assertFuncEquals(req, "isnan(12.3456)", "isnan(12.3456)", "isnan($num)");
+      assertFuncEquals(req, "isnan(div(0,0))", "isnan(div($zero,$zero))");
     } finally {
       req.close();
     }

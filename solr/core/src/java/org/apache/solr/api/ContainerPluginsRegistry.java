@@ -47,6 +47,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -175,7 +176,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       log.error("Could not read plugins data", e);
       return;
     }
-    Map<String, PluginMetaHolder> newState = new HashMap<>(pluginInfos.size());
+    Map<String, PluginMetaHolder> newState = CollectionUtil.newHashMap(pluginInfos.size());
     for (Map.Entry<String, Object> e : pluginInfos.entrySet()) {
       try {
         newState.put(e.getKey(), new PluginMetaHolder((Map<String, Object>) e.getValue()));
@@ -258,9 +259,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   }
 
   private static String getActualPath(ApiInfo apiInfo, String path) {
-    path = path.replaceAll("\\$path-prefix", apiInfo.info.pathPrefix);
-    path = path.replaceAll("\\$plugin-name", apiInfo.info.name);
-    return path;
+    return path.replace("$path-prefix", Objects.requireNonNullElse(apiInfo.info.pathPrefix, ""))
+        .replace("$plugin-name", apiInfo.info.name);
   }
 
   private static Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
@@ -420,16 +420,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
       }
-      if (instance instanceof ConfigurablePlugin) {
-        Class<? extends MapWriter> c =
-            getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
-        if (c != null) {
-          Map<String, Object> original =
-              (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
-          holder.meta.config = mapper.readValue(Utils.toJSON(original), c);
-          ((ConfigurablePlugin<MapWriter>) instance).configure(holder.meta.config);
-        }
-      }
+      Map<String, Object> config =
+          (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
+      configure(instance, config, holder.meta);
       if (instance instanceof ResourceLoaderAware) {
         try {
           ((ResourceLoaderAware) instance).inform(pkgVersion.getLoader());
@@ -442,6 +435,24 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         holders.add(new ApiHolder((AnnotatedApi) api));
       }
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  public static MapWriter configure(Object instance, Map<String, Object> config, PluginMeta meta)
+      throws IOException {
+    if (instance instanceof ConfigurablePlugin) {
+      Class<? extends MapWriter> c =
+          getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
+      if (c != null) {
+        MapWriter configObj = mapper.readValue(Utils.toJSON(config), c);
+        if (null != meta) {
+          meta.config = configObj;
+        }
+        ((ConfigurablePlugin<MapWriter>) instance).configure(configObj);
+        return configObj;
+      }
+    }
+    return null;
   }
 
   /** Get the generic type of a {@link ConfigurablePlugin} */
@@ -482,7 +493,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
 
   public static Map<String, Diff> compareMaps(Map<String, ?> a, Map<String, ?> b) {
     if (a.isEmpty() && b.isEmpty()) return null;
-    Map<String, Diff> result = new HashMap<>(Math.max(a.size(), b.size()));
+    Map<String, Diff> result = CollectionUtil.newHashMap(Math.max(a.size(), b.size()));
     a.forEach(
         (k, v) -> {
           Object newVal = b.get(k);

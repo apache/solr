@@ -66,7 +66,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     server.setTheTickTime(1000);
     server.run();
 
-    zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+    zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(server.getZkAddress())
+            .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     zkStateReader = new ZkStateReader(zkClient);
     seqToThread = Collections.synchronizedMap(new HashMap<Integer, Thread>());
     zkClient.makePath("/collections/collection1", true);
@@ -106,7 +110,13 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     LeaderElector elector;
 
     public ElectorSetup(OnReconnect onReconnect) {
-      zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT, TIMEOUT, onReconnect);
+      zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(server.getZkAddress())
+              .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(TIMEOUT, TimeUnit.MILLISECONDS)
+              .withReconnectListener(onReconnect)
+              .build();
       zkStateReader = new ZkStateReader(zkClient);
       elector = new LeaderElector(zkClient);
       zkController = MockSolrSource.makeSimpleMock(null, zkStateReader, null);
@@ -248,8 +258,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     Thread.sleep(1000);
 
     String urlScheme = zkStateReader.getClusterProperty(URL_SCHEME, "http");
-    String url1 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr/1", urlScheme) + "/";
-    String url2 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr/2", urlScheme) + "/";
+    String url1 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/1/";
+    String url2 = Utils.getBaseUrlForNodeName("127.0.0.1:80_solr", urlScheme) + "/2/";
 
     assertEquals("original leader was not registered", url1, getLeaderUrl("collection2", "slice1"));
 
@@ -458,7 +468,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     if (at != -1) {
       leaderUrl = leaderUrl.substring(at + 3);
     }
-    return Integer.parseInt(leaderUrl.replaceAll("/", ""));
+    return Integer.parseInt(leaderUrl.replace("/", ""));
   }
 
   @Test

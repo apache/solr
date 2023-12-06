@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.response;
 
 import java.util.List;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.SpellCheckResponse.Collation;
@@ -25,6 +26,8 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
+import org.apache.solr.util.ExternalPaths;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,17 +37,26 @@ import org.junit.Test;
  * @since solr 1.3
  */
 public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
+  private static SolrClient client;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore();
+    solrClientTestRule.startSolr();
+
+    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
+
+    client = getSolrClient();
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    client = null;
   }
 
   static String field = "name";
 
   @Test
   public void testSpellCheckResponse() throws Exception {
-    getSolrClient();
     client.deleteByQuery("*:*");
     client.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
@@ -64,7 +76,6 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testSpellCheckResponse_Extended() throws Exception {
-    getSolrClient();
     client.deleteByQuery("*:*");
     client.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
@@ -104,7 +115,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testSpellCheckCollationResponse() throws Exception {
-    getSolrClient();
+
     client.deleteByQuery("*:*");
     client.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();

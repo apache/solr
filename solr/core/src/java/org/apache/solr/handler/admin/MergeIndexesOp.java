@@ -17,9 +17,9 @@
 
 package org.apache.solr.handler.admin;
 
-import com.google.common.collect.Lists;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -56,10 +56,10 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
     SolrQueryRequest wrappedReq = null;
     if (core == null) return;
 
-    List<SolrCore> sourceCores = Lists.newArrayList();
-    List<RefCounted<SolrIndexSearcher>> searchers = Lists.newArrayList();
+    List<SolrCore> sourceCores = new ArrayList<>();
+    List<RefCounted<SolrIndexSearcher>> searchers = new ArrayList<>();
     // stores readers created from indexDir param values
-    List<DirectoryReader> readersToBeClosed = Lists.newArrayList();
+    List<DirectoryReader> readersToBeClosed = new ArrayList<>();
     Map<Directory, Boolean> dirsToBeReleased = new HashMap<>();
 
     try {
@@ -106,7 +106,7 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
       if (readersToBeClosed.size() > 0) {
         readers = readersToBeClosed;
       } else {
-        readers = Lists.newArrayList();
+        readers = new ArrayList<>();
         for (SolrCore solrCore : sourceCores) {
           // record the searchers so that we can decref
           RefCounted<SolrIndexSearcher> searcher = solrCore.getSearcher();

@@ -104,13 +104,13 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   public void testLocalDirectoryFunctions() throws Exception {
     try (S3BackupRepository repo = getRepository()) {
 
-      URI path = new URI("/test");
+      URI path = new URI("/test/");
       repo.createDirectory(path);
       assertTrue(repo.exists(path));
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(path));
       assertEquals("No files should exist in dir yet", repo.listAll(path).length, 0);
 
-      URI subDir = new URI("/test/dir");
+      URI subDir = new URI("/test/dir/");
       repo.createDirectory(subDir);
       assertTrue(repo.exists(subDir));
       assertEquals(BackupRepository.PathType.DIRECTORY, repo.getPathType(subDir));

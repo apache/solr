@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -35,6 +34,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -54,6 +54,9 @@ import org.slf4j.LoggerFactory;
 /** A utility class with helpers for various signature and certificate tasks */
 public final class CryptoKeys {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final String CIPHER_ALGORITHM = "RSA/ECB/nopadding";
+
   private final Map<String, PublicKey> keys;
   private Exception exception;
 
@@ -62,7 +65,7 @@ public final class CryptoKeys {
     for (Map.Entry<String, byte[]> e : trustedKeys.entrySet()) {
       m.put(e.getKey(), getX509PublicKey(e.getValue()));
     }
-    this.keys = ImmutableMap.copyOf(m);
+    this.keys = Map.copyOf(m);
   }
 
   /** Try with all signatures and return the name of the signature that matched */
@@ -168,12 +171,12 @@ public final class CryptoKeys {
       throws InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
     Cipher rsaCipher;
     try {
-      rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
+      rsaCipher = Cipher.getInstance(CIPHER_ALGORITHM);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     rsaCipher.init(Cipher.DECRYPT_MODE, pubKey);
-    return rsaCipher.doFinal(buffer, 0, buffer.length);
+    return rsaCipher.doFinal(buffer);
   }
 
   public static boolean verifySha256(byte[] data, byte[] sig, PublicKey key)
@@ -242,6 +245,8 @@ public final class CryptoKeys {
     // into security.json. Also see SOLR-12103.
     private static final int DEFAULT_KEYPAIR_LENGTH = 2048;
 
+    private final int keySizeInBytes;
+
     /** Create an RSA key pair with newly generated keys. */
     public RSAKeyPair() {
       KeyPairGenerator keyGen;
@@ -253,6 +258,7 @@ public final class CryptoKeys {
       keyGen.initialize(DEFAULT_KEYPAIR_LENGTH);
       java.security.KeyPair keyPair = keyGen.genKeyPair();
       privateKey = keyPair.getPrivate();
+      keySizeInBytes = determineKeySizeInBytes(privateKey);
       publicKey = keyPair.getPublic();
       pubKeyStr = Base64.getEncoder().encodeToString(publicKey.getEncoded());
     }
@@ -277,6 +283,7 @@ public final class CryptoKeys {
             new PKCS8EncodedKeySpec(Base64.getMimeDecoder().decode(privateString));
         KeyFactory rsaFactory = KeyFactory.getInstance("RSA");
         privateKey = rsaFactory.generatePrivate(privateSpec);
+        keySizeInBytes = determineKeySizeInBytes(privateKey);
       } catch (NoSuchAlgorithmException e) {
         throw new AssertionError("JVM spec is required to support RSA", e);
       }
@@ -295,15 +302,29 @@ public final class CryptoKeys {
       return publicKey;
     }
 
+    private int determineKeySizeInBytes(PrivateKey privateKey) {
+      return ((RSAPrivateKey) privateKey).getModulus().bitLength() / Byte.SIZE;
+    }
+
+    // Used for testing
+    public int getKeySizeInBytes() {
+      return keySizeInBytes;
+    }
+
     public byte[] encrypt(ByteBuffer buffer) {
+      // This is necessary to pad the plaintext to match the exact size of the keysize in openj9.
+      // OpenJDK seems to do this padding internally, but OpenJ9 does not pad the byte input to
+      // the key size in bytes without padding. This only works with "RSA/ECB/nopadding".
+      byte[] paddedPlaintext = new byte[getKeySizeInBytes()];
+      buffer.get(paddedPlaintext, buffer.arrayOffset() + buffer.position(), buffer.limit());
+
       try {
         // This is better than nothing, but still not very secure
         // See:
         // https://crypto.stackexchange.com/questions/20085/which-attacks-are-possible-against-raw-textbook-rsa
-        Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
+        Cipher rsaCipher = Cipher.getInstance(CIPHER_ALGORITHM);
         rsaCipher.init(Cipher.ENCRYPT_MODE, privateKey);
-        return rsaCipher.doFinal(
-            buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.limit());
+        return rsaCipher.doFinal(paddedPlaintext);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }

@@ -22,7 +22,6 @@ import static org.apache.solr.core.PluginInfo.DEFAULTS;
 import static org.apache.solr.core.PluginInfo.INVARIANTS;
 import static org.apache.solr.core.RequestParams.USEPARAM;
 
-import com.google.common.collect.ImmutableMap;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -54,6 +53,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -114,8 +114,7 @@ public class SolrPluginUtils {
     purposes = Collections.unmodifiableMap(map);
   }
 
-  private static final MapSolrParams maskUseParams =
-      new MapSolrParams(ImmutableMap.<String, String>builder().put(USEPARAM, "").build());
+  private static final MapSolrParams maskUseParams = new MapSolrParams(Map.of(USEPARAM, ""));
 
   /**
    * Set default-ish params on a SolrQueryRequest.
@@ -278,6 +277,7 @@ public class SolrPluginUtils {
     }
     return debugInterests;
   }
+
   /**
    * Returns a NamedList containing many "standard" pieces of debugging information.
    *
@@ -467,6 +467,7 @@ public class SolrPluginUtils {
   public static Map<String, Float> parseFieldBoosts(String in) {
     return parseFieldBoosts(new String[] {in});
   }
+
   /**
    * Like <code>parseFieldBoosts(String)</code>, but parses all the strings in the provided array
    * (which may be null).
@@ -479,7 +480,7 @@ public class SolrPluginUtils {
     if (null == fieldLists || 0 == fieldLists.length) {
       return new HashMap<>();
     }
-    Map<String, Float> out = new HashMap<>(7);
+    Map<String, Float> out = CollectionUtil.newHashMap(7);
     for (String in : fieldLists) {
       if (null == in) {
         continue;
@@ -497,6 +498,7 @@ public class SolrPluginUtils {
     }
     return out;
   }
+
   /**
    * /** Like {@link #parseFieldBoosts}, but allows for an optional slop value prefixed by "~".
    *
@@ -625,7 +627,7 @@ public class SolrPluginUtils {
     int result = optionalClauseCount;
     spec = spec.trim();
 
-    if (-1 < spec.indexOf("<")) {
+    if (spec.contains("<")) {
       /* we have conditional spec(s) */
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {
@@ -825,7 +827,7 @@ public class SolrPluginUtils {
      * Where we store a map from field name we expect to see in our query string, to Alias object
      * containing the fields to use in our DisjunctionMaxQuery and the tiebreaker to use.
      */
-    protected Map<String, Alias> aliases = new HashMap<>(3);
+    protected Map<String, Alias> aliases = CollectionUtil.newHashMap(3);
 
     public DisjunctionMaxQueryParser(QParser qp, String defaultField) {
       super(qp, defaultField);
@@ -894,7 +896,7 @@ public class SolrPluginUtils {
   public static Sort getSort(SolrQueryRequest req) {
 
     String sort = req.getParams().get(CommonParams.SORT);
-    if (null == sort || sort.equals("")) {
+    if (null == sort || sort.isEmpty()) {
       return null;
     }
 

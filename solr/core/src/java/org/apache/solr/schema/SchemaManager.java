@@ -68,8 +68,7 @@ public class SchemaManager {
     this.req = req;
 
     // The default timeout is 10 minutes when no BaseSolrResource.UPDATE_TIMEOUT_SECS is specified
-    int defaultUpdateTimeOut = 600;
-
+    int defaultUpdateTimeOut = Integer.getInteger("solr.schemaUpdateTimeoutSeconds", 600);
     updateTimeOut =
         req.getParams().getInt(BaseSolrResource.UPDATE_TIMEOUT_SECS, defaultUpdateTimeOut);
 
@@ -509,7 +508,7 @@ public class SchemaManager {
         // use current schema
         return (ManagedIndexSchema) core.getLatestSchema();
       }
-      schemaResourceName = managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/") + 1);
+      schemaResourceName = managedSchemaPath.substring(managedSchemaPath.lastIndexOf('/') + 1);
       InputStream in = resourceLoader.openResource(schemaResourceName);
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();

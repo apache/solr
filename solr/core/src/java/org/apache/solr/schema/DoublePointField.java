@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
@@ -125,7 +126,11 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
       values[i] = parseDoubleFromUser(field.getName(), val);
       i++;
     }
-    return DoublePoint.newSetQuery(field.getName(), values);
+    if (field.hasDocValues()) {
+      return DoubleField.newSetQuery(field.getName(), values);
+    } else {
+      return DoublePoint.newSetQuery(field.getName(), values);
+    }
   }
 
   @Override

@@ -65,6 +65,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -619,8 +620,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       // Rebuild affected dynamic copy fields
       if (dynamicCopyFieldsToRebuild.size() > 0) {
-        newSchema.dynamicCopyFields =
-            newDynamicCopyFields.toArray(new DynamicCopy[newDynamicCopyFields.size()]);
+        newSchema.dynamicCopyFields = newDynamicCopyFields.toArray(new DynamicCopy[0]);
         for (DynamicCopy dynamicCopy : dynamicCopyFieldsToRebuild) {
           newSchema.registerCopyField(
               dynamicCopy.getRegex(), dynamicCopy.getDestFieldName(), dynamicCopy.getMaxChars());
@@ -751,8 +751,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       // This may trigger an exception, if one of the deleted dynamic fields was the only matching
       // source or target.
       if (dynamicCopyFieldsToRebuild.size() > 0) {
-        newSchema.dynamicCopyFields =
-            newDynamicCopyFields.toArray(new DynamicCopy[newDynamicCopyFields.size()]);
+        newSchema.dynamicCopyFields = newDynamicCopyFields.toArray(new DynamicCopy[0]);
         for (DynamicCopy dynamicCopy : dynamicCopyFieldsToRebuild) {
           newSchema.registerCopyField(
               dynamicCopy.getRegex(), dynamicCopy.getDestFieldName(), dynamicCopy.getMaxChars());
@@ -829,8 +828,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       // Rebuild affected dynamic copy fields
       if (dynamicCopyFieldsToRebuild.size() > 0) {
-        newSchema.dynamicCopyFields =
-            newDynamicCopyFields.toArray(new DynamicCopy[newDynamicCopyFields.size()]);
+        newSchema.dynamicCopyFields = newDynamicCopyFields.toArray(new DynamicCopy[0]);
         for (DynamicCopy dynamicCopy : dynamicCopyFieldsToRebuild) {
           newSchema.registerCopyField(
               dynamicCopy.getRegex(), dynamicCopy.getDestFieldName(), dynamicCopy.getMaxChars());
@@ -1149,7 +1147,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   private Map<String, List<CopyField>> cloneCopyFieldsMap(Map<String, List<CopyField>> original) {
-    Map<String, List<CopyField>> clone = new HashMap<>(original.size());
+    Map<String, List<CopyField>> clone = CollectionUtil.newHashMap(original.size());
     Iterator<Map.Entry<String, List<CopyField>>> iterator = original.entrySet().iterator();
     while (iterator.hasNext()) {
       Map.Entry<String, List<CopyField>> entry = iterator.next();
@@ -1283,8 +1281,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       // Rebuild affected dynamic copy fields
       if (dynamicCopyFieldsToRebuild.size() > 0) {
-        newSchema.dynamicCopyFields =
-            newDynamicCopyFields.toArray(new DynamicCopy[newDynamicCopyFields.size()]);
+        newSchema.dynamicCopyFields = newDynamicCopyFields.toArray(new DynamicCopy[0]);
         for (DynamicCopy dynamicCopy : dynamicCopyFieldsToRebuild) {
           newSchema.registerCopyField(
               dynamicCopy.getRegex(), dynamicCopy.getDestFieldName(), dynamicCopy.getMaxChars());

@@ -16,10 +16,10 @@
  */
 package org.apache.solr.search.function;
 
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,16 +44,11 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
   static long start = System.nanoTime();
 
-  void makeExternalFile(String field, String contents) {
+  void makeExternalFile(String field, String contents) throws IOException {
     String dir = h.getCore().getDataDir();
     String filename = dir + "/external_" + field + "." + (start++);
 
-    try (Writer out =
-        new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
-      out.write(contents);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    Files.writeString(Path.of(filename), contents, StandardCharsets.UTF_8);
   }
 
   void createIndex(String field, int... values) {
@@ -284,7 +279,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExternalFileFieldStringKeys() {
+  public void testExternalFileFieldStringKeys() throws IOException {
     clearIndex();
 
     final String extField = "foo_extfs";
@@ -298,7 +293,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExternalFileFieldNumericKey() {
+  public void testExternalFileFieldNumericKey() throws IOException {
     clearIndex();
 
     final String extField = "eff_trie";
@@ -1023,7 +1018,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
    * esoteric field names
    */
   @Test
-  public void testExternalFieldValueSourceParser() {
+  public void testExternalFieldValueSourceParser() throws IOException {
     clearIndex();
 
     String field = "CoMpleX fieldName _extf";
@@ -1169,6 +1164,21 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertJQ(
         req("q", "id:1", "fl", "t:not(testfunc(false)),f:not(true)"),
         "/response/docs/[0]=={'t':true, 'f':false}");
+
+    // test isnan operator
+    assertJQ(
+        req(
+            "q",
+            "id:1",
+            "fl",
+            "f1:isnan(12.3456)",
+            "fl",
+            "f2:isnan(0)",
+            "fl",
+            "t1:isnan(div(0,0))",
+            "fl",
+            "t2:isnan(sqrt(-1))"),
+        "/response/docs/[0]=={'f1':false, 'f2':false, 't1':true, 't2':true}");
 
     // test fields evaluated as booleans in wrapping functions
     assertJQ(

@@ -11,6 +11,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+
     steps:
     # Setup
     - uses: actions/checkout@v2
@@ -33,9 +36,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-precommit-
           ${{ runner.os }}-gradle-
-
-    - name: Initialize gradle settings
-      run: ./gradlew localSettings
 
     - name: Run gradle check (without tests)
       run: ./gradlew check -x test -Ptask.times=true

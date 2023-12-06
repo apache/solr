@@ -45,6 +45,7 @@ public class ShardDoc extends FieldDoc {
   // retrieval stage.
 
   public int positionInResponse;
+
   // the ordinal position in the merged response arraylist
 
   public ShardDoc(float score, Object[] fields, Object uniqueId, String shard) {

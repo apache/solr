@@ -75,8 +75,7 @@ Guide](https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.h
 
 
 ## Get Involved
-Please review the [Contributing to Solr Guide](https://cwiki.apache.org/confluence/display/solr/HowToContribute)
-for information on contributing.
+Please review [CONTRIBUTING.md](CONTRIBUTING.md) for information on contributing to the project.
 
 To get involved in the developer community:
 

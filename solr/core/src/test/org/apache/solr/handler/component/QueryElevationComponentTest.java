@@ -22,11 +22,10 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1260,18 +1259,18 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   // write an elevation config file to boost some docs
   private void writeElevationConfigFile(File file, String query, String... ids) throws Exception {
-    PrintWriter out =
-        new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
-    out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
-    out.println("<elevate>");
-    out.println("<query text=\"" + query + "\">");
-    for (String id : ids) {
-      out.println(" <doc id=\"" + id + "\"/>");
+    try (PrintWriter out =
+        new PrintWriter(Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8))) {
+      out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
+      out.println("<elevate>");
+      out.println("<query text=\"" + query + "\">");
+      for (String id : ids) {
+        out.println(" <doc id=\"" + id + "\"/>");
+      }
+      out.println("</query>");
+      out.println("</elevate>");
+      out.flush();
     }
-    out.println("</query>");
-    out.println("</elevate>");
-    out.flush();
-    out.close();
 
     if (log.isInfoEnabled()) {
       log.info("OUT: {}", file.getAbsolutePath());

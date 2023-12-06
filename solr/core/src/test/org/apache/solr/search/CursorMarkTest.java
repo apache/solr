@@ -253,7 +253,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
         } else if (fieldName.startsWith("bool")) {
           val = sf.getType().unmarshalSortValue(random().nextBoolean() ? "t" : "f");
         } else if (fieldName.startsWith("enum")) {
-          val = random().nextInt(CursorPagingTest.SEVERITY_ENUM_VALUES.length);
+          val = random().nextInt(CursorPagingTest.SEVERITY_ENUM_VALUES.size());
         } else if (fieldName.contains("collation")) {
           val = getRandomCollation(sf);
         } else {

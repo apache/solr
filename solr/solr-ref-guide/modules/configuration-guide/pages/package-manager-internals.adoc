@@ -46,7 +46,7 @@ Start all your nodes with the system property `-Denable.packages=true` to use th
 [source,bash]
 ----
 
-$ bin/solr -c -Denable.packages=true
+bin/solr -c -Denable.packages=true
 ----
 
 === Upload Your Keys
@@ -55,11 +55,11 @@ Package binaries must be signed with your private keys and ensure your public ke
 *Example*
 [source,bash]
 ----
-$ openssl genrsa -out my_key.pem 512
+openssl genrsa -out my_key.pem 512
 # create the public key in .der format
-$ openssl rsa -in my_key.pem -pubout -outform DER -out my_key.der
+openssl rsa -in my_key.pem -pubout -outform DER -out my_key.der
 # upload key to package store
-$ bin/solr package add-key my_key.der
+bin/solr package add-key my_key.der
 ----
 
 == Package Store
@@ -67,15 +67,15 @@ Package store is a distributed file store which can store arbitrary files in the
 
 * This is a fully replicated file system based repository.
 * It lives at <solr.home>/filestore on each Solr node.
-* Every entry  is a file + metadata.
-The metadata is named .<filename>.json.
+* Every entry is a file + metadata.
+The metadata is named `.<filename>.json`.
 * The metadata file contains the sha256, signatures of the file.
 * Users can’t create files starting with period (.).
 * It is agnostic of content type of files.
-You may store jars as well as other files..
+You may store jars as well as other files.
 
 === How Does the Package Store Work?
-When a file is uploaded to the PackageStore, the following is true:
+When a file is uploaded to the Package Store, the following is true:
 
 * It’s saved to the local file system.
 * It’s saved along with the metadata.
@@ -99,28 +99,28 @@ Use the following steps to upload a jar signed with your public key:
 +
 [source, bash,subs="attributes"]
 ----
-$ curl -o runtimelibs.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
+curl -o runtimelibs.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
 ----
 
 . Sign the jar with your private key:
 +
 [source, bash]
 ----
-$ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
+openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 ----
 
 . Upload your jar with signature, replacing the `sig` parameter with the output from the previous command:
 +
 [source, bash]
 ----
-$ curl --data-binary @runtimelibs.jar -X PUT  http://localhost:7574/api/cluster/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
+curl --data-binary @runtimelibs.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
 ----
 
 . Verify your jar upload:
 +
 [source, bash]
 ----
-$ curl http://localhost:7574/api/node/files/mypkg/1.0?omitHeader=true
+curl http://localhost:8983/api/node/files/mypkg/1.0?omitHeader=true
 ----
 +
 [source, json]
@@ -134,7 +134,7 @@ $ curl http://localhost:7574/api/node/files/mypkg/1.0?omitHeader=true
 ----
 
 == Packages
-A Package have the following attributes:
+A Package has the following attributes:
 
 * A unique name
 * One or more versions with the following attributes:
@@ -258,7 +258,7 @@ The same result can be achieved by editing your `solrconfig.xml` as well:
 +
 [source,bash]
 ----
-curl  http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d  '{
+curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d  '{
           "create-requesthandler": { "name": "/test",
           "class": "mypkg:org.apache.solr.core.RuntimeLibReqHandler" }}'
 ----
@@ -286,7 +286,7 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
 +
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
+curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 ----
 +
 [source,json]
@@ -307,18 +307,18 @@ Get a new version of the jar, sign and upload it:
 +
 [source, bash,subs="attributes"]
 ----
-$ curl -o runtimelibs3.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
+curl -o runtimelibs3.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
 
-$ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
+openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 
-$ curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/2.0/myplugins.jar?sig=<signature>
+curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/2.0/myplugins.jar?sig=<signature>
 ----
 
 . Verify it:
 +
 [source, bash]
 ----
-$ curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
+curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
 ----
 +
 [source, json]
@@ -335,7 +335,7 @@ $ curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
 +
 [source,bash]
 ----
-$ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
+curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
 {"add": {
          "package" : "mypkg",
          "version":"2.0",
@@ -346,7 +346,7 @@ $ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/j
 +
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
+curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
 ----
 +
 [source,json]
@@ -370,7 +370,7 @@ $ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?component
 +
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
+curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 ----
 +
 [source,json]
@@ -398,7 +398,7 @@ However, setting a per-collection property in `params.json` ensures that the ver
 
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/gettingstarted/config/params -H 'Content-type:application/json'  -d '{
+curl http://localhost:8983/solr/gettingstarted/config/params -H 'Content-type:application/json'  -d '{
   "set":{
     "PKG_VERSIONS":{
       "mypkg":"2.0"

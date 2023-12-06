@@ -45,9 +45,9 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     String v = "how now brown cow";
-    assertU(adoc("id", "1", "text", v, "text_np", v, "#foo_s", v));
+    assertU(adoc("id", "1", "new_id_s", "10", "text", v, "text_np", v, "#foo_s", v));
     v = "now cow";
-    assertU(adoc("id", "2", "text", v, "text_np", v));
+    assertU(adoc("id", "2", "new_id_s", "20", "text", v, "text_np", v));
     assertU(commit());
   }
 
@@ -89,6 +89,13 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         "*[count(//doc/str)=2] ",
         "*//doc[1]/str[1][.='1'] ",
         "*//doc[1]/str[2][.='1'] ");
+  }
+
+  public void testMovePk() {
+    assertQ(
+        req("q", "id:1", "fl", "old_id:id,id:new_id_s"),
+        "//*[@numFound='1'] ",
+        "*//doc[1]/arr[@name='id']/str[.='10'] ");
   }
 
   @Test

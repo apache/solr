@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -147,6 +148,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected volatile ChaosMonkey chaosMonkey;
 
   protected Map<String, CloudJettyRunner> shardToLeaderJetty = new ConcurrentHashMap<>();
+  protected Map<String, CloudSolrClient> solrClientByCollection = new ConcurrentHashMap<>();
   private static volatile boolean cloudInit;
   protected volatile boolean useJettyDataDir = true;
 
@@ -331,10 +333,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client =
-        getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 30000, 120000);
-    if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
-    return client;
+    return getCloudSolrClient(
+        zkServer.getZkAddress(), defaultCollection, random().nextBoolean(), 30000, 120000);
   }
 
   @Override
@@ -729,7 +729,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     JettyConfig jettyconfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
@@ -775,7 +774,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     JettyConfig jettyconfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
@@ -800,7 +798,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   /**
-   * Creates a JettySolrRunner with a socket proxy sitting infront of the Jetty server, which gives
+   * Creates a JettySolrRunner with a socket proxy sitting in front of the Jetty server, which gives
    * us the ability to simulate network partitions without having to fuss with IPTables.
    */
   public JettySolrRunner createProxiedJetty(
@@ -814,7 +812,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     JettyConfig jettyconfig =
         JettyConfig.builder()
-            .setContext(context)
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
@@ -1030,10 +1027,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected int sendDocsWithRetry(
-      List<SolrInputDocument> batch, int minRf, int maxRetries, int waitBeforeRetry)
+      String collectionName,
+      List<SolrInputDocument> batch,
+      int minRf,
+      int maxRetries,
+      int waitBeforeRetry)
       throws Exception {
     return sendDocsWithRetry(
-        cloudClient, cloudClient.getDefaultCollection(), batch, minRf, maxRetries, waitBeforeRetry);
+        cloudClient, collectionName, batch, minRf, maxRetries, waitBeforeRetry);
   }
 
   @SuppressWarnings("rawtypes")
@@ -1990,6 +1991,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
                       IOUtils.closeQuietly(c);
                     }));
 
+    customThreadPool.submit(
+        () ->
+            solrClientByCollection.values().parallelStream()
+                .forEach(
+                    c -> {
+                      IOUtils.closeQuietly(c);
+                    }));
+
     customThreadPool.submit(() -> IOUtils.closeQuietly(controlClientCloud));
 
     customThreadPool.submit(() -> IOUtils.closeQuietly(cloudClient));
@@ -1997,6 +2006,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ExecutorUtil.shutdownAndAwaitTermination(customThreadPool);
 
     coreClients.clear();
+    solrClientByCollection.clear();
 
     super.destroyServers();
   }
@@ -2160,6 +2170,33 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         configName);
   }
 
+  /**
+   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
+   * not wish to have any randomized behavior should use the {@link
+   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   */
+  public static CloudSolrClient getCloudSolrClient(
+      String zkHost,
+      String defaultCollection,
+      boolean shardLeadersOnly,
+      int connectionTimeoutMillis,
+      int socketTimeoutMillis) {
+    RandomizingCloudSolrClientBuilder builder =
+        new RandomizingCloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
+    if (shardLeadersOnly) {
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
+    }
+    if (defaultCollection != null) {
+      builder.withDefaultCollection(defaultCollection);
+    }
+    return builder
+        .withConnectionTimeout(connectionTimeoutMillis)
+        .withSocketTimeout(socketTimeoutMillis)
+        .build();
+  }
+
   @Override
   protected SolrClient createNewSolrClient(int port) {
     return createNewSolrClient(DEFAULT_COLLECTION, port);
@@ -2168,7 +2205,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrClient createNewSolrClient(String coreName, int port) {
     String baseUrl = buildUrl(port);
     String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-    return getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT, 60000);
+    return new HttpSolrClient.Builder(url)
+        .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
@@ -2269,8 +2309,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     synchronized (this) {
       if (commonCloudSolrClient == null) {
         commonCloudSolrClient =
-            getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), 5000, 120000);
-        commonCloudSolrClient.setDefaultCollection(DEFAULT_COLLECTION);
+            getCloudSolrClient(
+                zkServer.getZkAddress(), DEFAULT_COLLECTION, random().nextBoolean(), 5000, 120000);
         commonCloudSolrClient.connect();
         if (log.isInfoEnabled()) {
           log.info(
@@ -2281,6 +2321,26 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
     }
     return commonCloudSolrClient;
+  }
+
+  protected CloudSolrClient getSolrClient(String collectionName) {
+    return solrClientByCollection.computeIfAbsent(
+        collectionName,
+        k -> {
+          CloudSolrClient solrClient =
+              getCloudSolrClient(
+                  zkServer.getZkAddress(), collectionName, random().nextBoolean(), 5000, 120000);
+
+          solrClient.connect();
+          if (log.isInfoEnabled()) {
+            log.info(
+                "Created solrClient for collection {} with updatesToLeaders={} and parallelUpdates={}",
+                collectionName,
+                solrClient.isUpdatesToLeaders(),
+                solrClient.isParallelUpdates());
+          }
+          return solrClient;
+        });
   }
 
   public static String getUrlFromZk(ClusterState clusterState, String collection) {

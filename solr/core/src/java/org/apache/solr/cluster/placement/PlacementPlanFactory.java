@@ -39,6 +39,7 @@ public interface PlacementPlanFactory {
    * org.apache.solr.cloud.api.collections.CreateShardCmd}, {@link
    * org.apache.solr.cloud.api.collections.ReplaceNodeCmd}, {@link
    * org.apache.solr.cloud.api.collections.MoveReplicaCmd}, {@link
+   * org.apache.solr.cloud.api.collections.MigrateReplicasCmd}, {@link
    * org.apache.solr.cloud.api.collections.SplitShardCmd}, {@link
    * org.apache.solr.cloud.api.collections.RestoreCmd}, {@link
    * org.apache.solr.cloud.api.collections.MigrateCmd} as well as of {@link

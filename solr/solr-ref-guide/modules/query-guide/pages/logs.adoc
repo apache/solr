@@ -24,25 +24,51 @@ See the xref:math-start.adoc[] chapter to learn how to get started with visualiz
 
 == Loading
 
-The out-of-the-box Solr log format can be loaded into a Solr index using the `bin/postlogs` command line tool located in the `bin/` directory of the Solr distribution.
+The out-of-the-box Solr log format can be loaded into a Solr index using the `bin/solr postlogs` command line tool located in the `bin/` directory of the Solr distribution.
 
-NOTE: If working from the source distribution the
-distribution must first be built before `postlogs` can be run.
+=== Postlogs
 
-The `postlogs` script is designed to be run from the root directory of the Solr distribution.
+The `postlogs` command reads in Solr's log format and indexes it in a Solr collection.
 
-The `postlogs` script takes two parameters:
+`bin/solr postlogs [options]`
 
-* Solr base URL (with collection): `http://localhost:8983/solr/logs`
-* File path to root of the logs directory: All files found under this directory (including sub-directories) will be indexed.
+`bin/solr postlogs -help`
+
+==== Healthcheck Parameters
+
+`-url <address>`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+Address of the collection, example http://localhost:8983/solr/collection1/.
++
+
+`-rootdir <directory>`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+File path to root of the logs directory: All files found under this directory (including sub-directories) will be indexed.
 If the path points to a single log file only that log file will be loaded.
 
-Below is a sample execution of the `postlogs` tool:
+`-u <user:pass>` or `--credentials <user:pass>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password separated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-[source,text]
-----
-./bin/postlogs http://localhost:8983/solr/logs /var/logs/solrlogs
-----
++
+*Example*: `bin/solr postlogs --url http://localhost:8983/solr/logs --rootdir /var/logs/solrlogs`
+
 
 The example above will index all the log files under `/var/logs/solrlogs` to the `logs` collection found at the base url `http://localhost:8983/solr`.
 

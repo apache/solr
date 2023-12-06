@@ -419,7 +419,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     q = LegacyNumericRangeQuery.newDoubleRange("double", Double.NaN, Double.NaN, true, true);
     topDocs = s.search(q, 10);
     assertEquals(
-        "Score doc count", TestLegacyNumericUtils.DOUBLE_NANs.length, topDocs.scoreDocs.length);
+        "Score doc count", TestLegacyNumericUtils.DOUBLE_NANs.size(), topDocs.scoreDocs.length);
 
     r.close();
     dir.close();

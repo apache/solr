@@ -82,7 +82,10 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   private static SolrZkClient newSolrZkClient() {
     assertNotNull(ZK_SERVER_ADDR);
     // WTF is CloudConfigBuilder.DEFAULT_ZK_CLIENT_TIMEOUT private?
-    return new SolrZkClient(ZK_SERVER_ADDR, 15000);
+    return new SolrZkClient.Builder()
+        .withUrl(ZK_SERVER_ADDR)
+        .withTimeout(15000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   /** returns the true set of live nodes (currently in zk) as a sorted list */
@@ -243,6 +246,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       this.numNodesToAdd = numNodesToAdd;
       this.client = newSolrZkClient();
     }
+
     /** returns the number of nodes actually added w/o error */
     @Override
     public Integer call() {

@@ -17,17 +17,16 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.io.File;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.Locale;
 import java.util.Random;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
@@ -43,14 +42,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class JettyWebappTest extends SolrTestCaseJ4 {
   int port = 0;
-  static final String context = "/test";
 
   Server server;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    System.setProperty("solr.solr.home", SolrJettyTestBase.legacyExampleCollection1SolrHome());
+    System.setProperty("solr.solr.home", legacyExampleCollection1SolrHome());
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.tests.doContainerStreamCloseAssert", "false");
 
@@ -64,7 +62,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     // insecure: only use for tests!!!!
     server.setSessionIdManager(
         new DefaultSessionIdManager(server, new Random(random().nextLong())));
-    new WebAppContext(server, path, context);
+    new WebAppContext(server, path, "/solr");
 
     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory());
     connector.setIdleTimeout(1000 * 60 * 60);
@@ -89,19 +87,19 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   }
 
   public void testAdminUI() throws Exception {
-    // Currently not an extensive test, but it does fire up the JSP pages and make
-    // sure they compile ok
+    // Not an extensive test, but it does connect to Solr and verify the Admin ui shows up.
+    String adminPath = "http://127.0.0.1:" + port + "/solr/";
+    try (InputStream is = new URL(adminPath).openStream()) {
+      assertNotNull(is.readAllBytes()); // real error will be an exception
+    }
 
-    String adminPath = "http://127.0.0.1:" + port + context + "/";
-    byte[] bytes = IOUtils.toByteArray(new URL(adminPath).openStream());
-    assertNotNull(bytes); // real error will be an exception
-
-    HttpClient client = HttpClients.createDefault();
-    HttpRequestBase m = new HttpGet(adminPath);
-    HttpResponse response = client.execute(m, HttpClientUtil.createNewHttpClientRequestContext());
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    Header header = response.getFirstHeader("X-Frame-Options");
-    assertEquals("DENY", header.getValue().toUpperCase(Locale.ROOT));
-    m.releaseConnection();
+    try (CloseableHttpClient client = HttpClients.createDefault()) {
+      HttpRequestBase m = new HttpGet(adminPath);
+      HttpResponse response = client.execute(m, HttpClientUtil.createNewHttpClientRequestContext());
+      assertEquals(200, response.getStatusLine().getStatusCode());
+      Header header = response.getFirstHeader("X-Frame-Options");
+      assertEquals("DENY", header.getValue().toUpperCase(Locale.ROOT));
+      m.releaseConnection();
+    }
   }
 }

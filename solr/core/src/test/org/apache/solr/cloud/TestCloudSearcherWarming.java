@@ -99,8 +99,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 1, 1);
 
-    solrClient.setDefaultCollection(collectionName);
-
     String addListenerCommand =
         "{"
             + "'add-listener' : {'name':'newSearcherListener','event':'newSearcher', 'class':'"
@@ -112,10 +110,10 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
             + "}";
 
     ConfigRequest request = new ConfigRequest(addListenerCommand);
-    solrClient.request(request);
+    solrClient.request(request, collectionName);
 
-    solrClient.add(new SolrInputDocument("id", "1"));
-    solrClient.commit();
+    solrClient.add(collectionName, new SolrInputDocument("id", "1"));
+    solrClient.commit(collectionName);
 
     AtomicInteger expectedDocs = new AtomicInteger(1);
     AtomicReference<String> failingCoreNodeName = new AtomicReference<>();
@@ -158,8 +156,6 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     waitForState(
         "The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
 
-    solrClient.setDefaultCollection(collectionName);
-
     String addListenerCommand =
         "{"
             + "'add-listener' : {'name':'newSearcherListener','event':'newSearcher', 'class':'"
@@ -171,15 +167,15 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
             + "}";
 
     ConfigRequest request = new ConfigRequest(addListenerCommand);
-    solrClient.request(request);
+    solrClient.request(request, collectionName);
 
-    solrClient.add(new SolrInputDocument("id", "1"));
-    solrClient.commit();
+    solrClient.add(collectionName, new SolrInputDocument("id", "1"));
+    solrClient.commit(collectionName);
 
     AtomicInteger expectedDocs = new AtomicInteger(1);
     AtomicReference<String> failingCoreNodeName = new AtomicReference<>();
 
-    QueryResponse response = solrClient.query(new SolrQuery("*:*"));
+    QueryResponse response = solrClient.query(collectionName, new SolrQuery("*:*"));
     assertEquals(1, response.getResults().getNumFound());
 
     // reset
@@ -215,7 +211,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     // the newly created replica should become leader
     waitForState(
         "The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
-    // the above call is not enough because we want to assert that the down'ed replica is not active
+    // the above call is not enough because we want to assert that the downed replica is not active
     // but clusterShape will also return true if replica is not live -- which we don't want
     CollectionStatePredicate collectionStatePredicate =
         (liveNodes, collectionState) -> {
@@ -241,7 +237,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     log.info("Starting old node 1");
     cluster.startJettySolrRunner(oldNode);
     waitForState("", collectionName, clusterShape(1, 2));
-    // invoke statewatcher explicitly to avoid race condition where the assert happens before the
+    // invoke statewatcher explicitly to avoid race condition where the assertion happens before the
     // state watcher is invoked by ZkStateReader
     ZkStateReader.from(solrClient).registerCollectionStateWatcher(collectionName, stateWatcher);
     assertNull(
@@ -259,7 +255,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     coreNameRef.set(null);
     coreNodeNameRef.set(null);
     failingCoreNodeName.set(null);
-    // has to be higher than the twice the recovery wait pause between attempts plus some margin
+    // has to be higher than twice the recovery wait pause between attempts plus some margin
     sleepTime.set(14000);
 
     // inject failure
@@ -268,7 +264,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     log.info("Starting old node 2");
     cluster.startJettySolrRunner(oldNode);
     waitForState("", collectionName, clusterShape(1, 2));
-    // invoke statewatcher explicitly to avoid race condition when the assert happens before the
+    // invoke statewatcher explicitly to avoid race condition when the assertion happens before the
     // state watcher is invoked by ZkStateReader
     ZkStateReader.from(solrClient).registerCollectionStateWatcher(collectionName, stateWatcher);
     assertNull(
@@ -370,7 +366,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
         try {
           Thread.sleep(sleepTime.get());
         } catch (InterruptedException e) {
-          log.warn("newSearcher was interupdated", e);
+          log.warn("newSearcher was interrupted", e);
         }
         if (log.isInfoEnabled()) {
           log.info(

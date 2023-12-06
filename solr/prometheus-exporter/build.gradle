@@ -28,8 +28,16 @@ dependencies {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
 
-  implementation ('io.prometheus:simpleclient')
-  implementation ('io.prometheus:simpleclient_httpserver')
+  implementation ('io.prometheus:simpleclient', {
+    exclude group: "io.prometheus", module: "simpleclient_tracer_common"
+    exclude group: "io.prometheus", module: "simpleclient_tracer_otel"
+    exclude group: "io.prometheus", module: "simpleclient_tracer_otel_agent"
+  })
+  implementation ('io.prometheus:simpleclient_httpserver', {
+    exclude group: "io.prometheus", module: "simpleclient_tracer_common"
+    exclude group: "io.prometheus", module: "simpleclient_tracer_otel"
+    exclude group: "io.prometheus", module: "simpleclient_tracer_otel_agent"
+  })
   implementation ('net.thisptr:jackson-jq', {
     exclude group: "org.jruby.joni", module: "joni"
     exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
@@ -48,8 +56,8 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
+  testImplementation 'org.apache.lucene:lucene-test-framework'
 
-  testImplementation 'commons-io:commons-io'
   testImplementation 'org.apache.httpcomponents:httpclient'
   testImplementation 'org.apache.httpcomponents:httpcore'
 }

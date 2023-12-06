@@ -50,6 +50,7 @@ public class ZkConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final ZkController zkController;
   private final SolrZkClient zkClient;
+
   /** ZkNode where named configs are stored */
   public static final String CONFIGS_ZKNODE = "/configs";
 
@@ -101,9 +102,9 @@ public class ZkConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader)
-      throws IOException {
+  protected NamedList<Object> loadConfigSetFlags(SolrResourceLoader loader) throws IOException {
     try {
+      // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
       return ConfigSetProperties.readFromResourceLoader(loader, ".");
     } catch (Exception ex) {
       log.debug("No configSet flags", ex);
@@ -139,10 +140,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
     try {
-      Boolean existsSolrConfigXml =
-          zkClient.exists(CONFIGS_ZKNODE + "/" + configName + "/solrconfig.xml", true);
-      if (existsSolrConfigXml == null) return false;
-      return existsSolrConfigXml;
+      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Error checking whether config exists", SolrZkClient.checkInterrupted(e));
@@ -199,8 +197,12 @@ public class ZkConfigSetService extends ConfigSetService {
       throws IOException {
     String filePath = CONFIGS_ZKNODE + "/" + configName + "/" + fileName;
     try {
-      // if createNew is true then zkClient#makePath failOnExists is set to false
-      zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, !overwriteOnExists, true);
+      if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
+        log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
+      } else {
+        // if overwriteOnExists is true then zkClient#makePath failOnExists is set to false
+        zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, !overwriteOnExists, true);
+      }
     } catch (KeeperException.NodeExistsException nodeExistsException) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -327,9 +329,19 @@ public class ZkConfigSetService extends ConfigSetService {
 
   private void copyData(String fromZkFilePath, String toZkFilePath)
       throws KeeperException, InterruptedException {
-    log.debug("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
-    byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
-    zkClient.makePath(toZkFilePath, data, true);
+    if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fromZkFilePath)) {
+      log.warn(
+          "Skipping copy of file in ZK, as the source file is a forbidden type: {}",
+          fromZkFilePath);
+    } else if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(toZkFilePath)) {
+      log.warn(
+          "Skipping download of file from ZK, as the target file is a forbidden type: {}",
+          toZkFilePath);
+    } else {
+      log.debug("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
+      byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
+      zkClient.makePath(toZkFilePath, data, true);
+    }
   }
 
   public SolrCloudManager getSolrCloudManager() {

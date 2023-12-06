@@ -1,0 +1,105 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+  id 'io.swagger.core.v3.swagger-gradle-plugin' version '2.2.2'
+  id "org.openapi.generator" version "6.0.1"
+}
+
+apply plugin: 'java-library'
+
+description = 'API - Interfaces and classes used to represent Solrs APIs'
+
+ext {
+    jsClientDir = "${buildDir}/generated/js"
+    pythonClientDir = "${buildDir}/generated/python"
+    openApiSpecDir = "${buildDir}/generated/openapi"
+    openApiSpecFile = "${project.openApiSpecDir}/openapi.json"
+}
+
+configurations {
+    openapiSpec {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+    jsClient {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+    pythonClient {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+}
+
+resolve {
+  classpath = sourceSets.main.runtimeClasspath
+  resourcePackages = ["org.apache.solr.client.api.util", "org.apache.solr.client.api.endpoint"]
+  outputDir = file(project.openApiSpecDir)
+  prettyPrint = true
+}
+
+dependencies {
+    runtimeOnly 'org.slf4j:slf4j-api'
+    
+    implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+    api 'io.swagger.core.v3:swagger-annotations'
+    implementation 'org.semver4j:semver4j'
+
+    testImplementation project(':solr:test-framework')
+    testImplementation project(':solr:api')
+    testImplementation 'org.apache.lucene:lucene-test-framework'
+}
+
+// Non-Java client generation tasks below:
+task buildJSClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  generatorName.set("javascript")
+  inputSpec.set("$openApiSpecFile")
+  outputDir.set("$jsClientDir")
+  packageName.set("solr")
+  generateApiTests.set(false)
+  generateModelTests.set(false)
+}
+
+task buildPythonClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  generatorName.set("python")
+  inputSpec.set("$openApiSpecFile")
+  outputDir.set("$pythonClientDir")
+  packageName.set("solr")
+  generateApiTests.set(false)
+  generateModelTests.set(false)
+}
+
+tasks.withType(org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  dependsOn(resolve)
+}
+
+artifacts {
+    // Ensure the OAS is available to other modules who want to generate code (i.e. solrj)
+    openapiSpec resolve.outputDir, {
+        builtBy resolve
+    }
+
+    // Makes generated clients available to other build modules
+    jsClient file(project.jsClientDir), {
+        builtBy buildJSClient
+    }
+    pythonClient file(project.pythonClientDir), {
+        builtBy buildPythonClient
+    }
+}

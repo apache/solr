@@ -16,12 +16,12 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -72,8 +72,8 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = createTempDir().toFile();
-  private File schemaFile = null;
+  private final Path solrHomeDirectory = createTempDir();
+  private Path schemaFile = null;
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
@@ -83,17 +83,17 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    File changed = new File(solrHomeDirectory, "changed");
-    copyMinConf(changed, "name=changed");
+    Path changed = solrHomeDirectory.resolve("changed");
+    copyMinConf(changed.toFile(), "name=changed");
     // Overlay with my local schema
-    schemaFile = new File(new File(changed, "conf"), "schema.xml");
-    FileUtils.writeStringToFile(schemaFile, withWhich, StandardCharsets.UTF_8);
+    schemaFile = changed.resolve("conf").resolve("schema.xml");
+    Files.writeString(schemaFile, withWhich, StandardCharsets.UTF_8);
 
     String discoveryXml = "<solr></solr>";
-    File solrXml = new File(solrHomeDirectory, "solr.xml");
-    FileUtils.write(solrXml, discoveryXml, StandardCharsets.UTF_8);
+    Path solrXml = solrHomeDirectory.resolve("solr.xml");
+    Files.writeString(solrXml, discoveryXml, StandardCharsets.UTF_8);
 
-    final CoreContainer cores = new CoreContainer(solrHomeDirectory.toPath(), new Properties());
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory, new Properties());
     cores.load();
     return cores;
   }
@@ -125,7 +125,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
 
       // write the new schema out and make it current
-      FileUtils.writeStringToFile(schemaFile, withoutWhich, StandardCharsets.UTF_8);
+      Files.writeString(schemaFile, withoutWhich, StandardCharsets.UTF_8);
 
       IndexSchema iSchema =
           IndexSchemaFactory.buildIndexSchema("schema.xml", changed.getSolrConfig());

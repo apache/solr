@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.IdentityHashMap;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrRequestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +96,7 @@ public class QueryContext extends IdentityHashMap implements Closeable {
         try {
           hook.close();
         } catch (Exception e) {
-          SolrException.log(log, "Exception during close hook", e);
+          log.error("Exception during close hook", e);
         }
       }
     }

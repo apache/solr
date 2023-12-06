@@ -20,21 +20,19 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.hamcrest.core.StringContains.containsString;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import io.opentracing.noop.NoopTracerFactory;
-import io.opentracing.util.GlobalTracer;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -43,18 +41,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -81,27 +75,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.xpath.XPathExpressionException;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
-import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -120,7 +108,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
@@ -145,10 +133,13 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
+import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
+import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ErrorLogMuter;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -178,7 +169,6 @@ import org.xml.sax.SAXException;
  * which core is used when loading the schema and solrconfig.xml, simply invoke the {@link
  * #initCore(String, String, String, String)} method.
  */
-@SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 // ExtrasFS might be ok, the failures with e.g. nightly runs might be "normal"
 @SuppressFileSystems("ExtrasFS")
 @RandomizeSSL()
@@ -304,19 +294,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
-
-    System.setProperty(
-        "pkiHandlerPrivateKeyPath",
-        SolrTestCaseJ4.class
-            .getClassLoader()
-            .getResource("cryptokeys/priv_key512_pkcs8.pem")
-            .toExternalForm());
-    System.setProperty(
-        "pkiHandlerPublicKeyPath",
-        SolrTestCaseJ4.class
-            .getClassLoader()
-            .getResource("cryptokeys/pub_key512.der")
-            .toExternalForm());
+    System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
 
     System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
@@ -333,36 +311,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.setProperty(URL_SCHEME, HTTPS);
     }
 
-    resetGlobalTracer();
     ExecutorUtil.resetThreadLocalProviders();
-  }
-
-  /**
-   * GlobalTracer is initialized by org.apache.solr.core.TracerConfigurator by
-   * org.apache.solr.core.CoreContainer. Tests may need to reset it in the beginning of a test if it
-   * might have differing configuration from other tests in the same suite. It's also important to
-   * call {@link ExecutorUtil#resetThreadLocalProviders()}.
-   */
-  @SuppressForbidden(reason = "Hack to reset internal state of GlobalTracer")
-  public static void resetGlobalTracer() {
-    AccessController.doPrivileged(
-        (PrivilegedAction<Void>)
-            () -> {
-              try {
-                final Class<GlobalTracer> globalTracerClass = GlobalTracer.class;
-                final Field isRegistered = globalTracerClass.getDeclaredField("isRegistered");
-                isRegistered.setAccessible(true);
-                isRegistered.setBoolean(null, false);
-                final Field tracer = globalTracerClass.getDeclaredField("tracer");
-                tracer.setAccessible(true);
-                tracer.set(null, NoopTracerFactory.create());
-              } catch (NoSuchFieldException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-              }
-              return null;
-            });
-
-    assert GlobalTracer.isRegistered() == false;
   }
 
   @AfterClass
@@ -385,7 +334,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       resetFactory();
       coreName = DEFAULT_TEST_CORENAME;
     } finally {
-      ObjectReleaseTracker.clear();
       TestInjection.reset();
       initCoreDataDir = null;
       System.clearProperty("solr.v2RealPath");
@@ -420,11 +368,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * mocks and not real networking to simulate failure
    */
   public static final String DEAD_HOST_1 = "[::1]:4";
+
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
    */
   public static final String DEAD_HOST_2 = "[::1]:6";
+
   /**
    * a "dead" host, if you try to connect to it, it will likely fail fast please consider using
    * mocks and not real networking to simulate failure
@@ -487,6 +437,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   private static boolean changedFactory = false;
   private static String savedFactory;
+
   /** Use a different directory factory. Passing "null" sets to an FS-based factory */
   public static void useFactory(String factory) throws Exception {
     // allow calling more than once so a subclass can override a base class
@@ -540,15 +491,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return result;
   }
 
-  protected static JettyConfig buildJettyConfig(String context) {
-    return JettyConfig.builder()
-        .setContext(context)
-        .withSSLConfig(sslConfig.buildServerSSLConfig())
-        .build();
+  protected static JettyConfig buildJettyConfig() {
+    return JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
   }
 
-  protected static String buildUrl(final int port, final String context) {
-    return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + context;
+  protected static String buildUrl(final int port) {
+    return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + "/solr";
   }
 
   protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {
@@ -654,6 +602,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
     return dataDir;
   }
+
   /**
    * Counter for ensuring we don't ask {@link #createTempDir} to try and re-create the same dir
    * prefix over and over.
@@ -931,7 +880,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       // If the test case set up Zk, it should still have it as available,
       // otherwise the core close will just be unnecessarily delayed.
       CoreContainer cc = h.getCoreContainer();
-      if (!cc.getCores().isEmpty() && cc.isZooKeeperAware()) {
+      if (cc.getNumAllCores() > 0 && cc.isZooKeeperAware()) {
         try {
           cc.getZkController().getZkClient().exists("/", false);
         } catch (KeeperException e) {
@@ -1040,7 +989,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
-      SolrException.log(log, "REQUEST FAILED: " + req.getParamString(), e2);
+      log.error("REQUEST FAILED: {}", req.getParamString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }
   }
@@ -1079,6 +1028,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static String assertJQ(SolrQueryRequest req, String... tests) throws Exception {
     return assertJQ(req, JSONTestUtil.DEFAULT_DELTA, tests);
   }
+
   /**
    * Validates a query matches some JSON test expressions and closes the query. The text expression
    * is of the form path:JSON. The Noggit JSON parser used accepts single quoted strings and bare
@@ -1177,6 +1127,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       unIgnoreException(".");
     }
   }
+
   /**
    * Makes sure a query throws a SolrException with the listed response code and expected message
    *
@@ -1217,6 +1168,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static String optimize(String... args) {
     return TestHarness.optimize(args);
   }
+
   /**
    * @see TestHarness#commit
    */
@@ -1299,6 +1251,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static String delI(String id) {
     return TestHarness.deleteById(id);
   }
+
   /**
    * Generates a &lt;delete&gt;... XML string for an query
    *
@@ -2339,9 +2292,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.createDirectories(dstRoot.toPath());
     Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.toPath().resolve("solr.xml"));
   }
+
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
   // and copies the stock files in there.
 
+  /** Copies the test collection1 config into {@code dstRoot}/{@code collection}/conf */
+  @Deprecated // Instead use a basic config + whatever is needed or default config
   public static void copySolrHomeToTemp(File dstRoot, String collection) throws IOException {
     Path subHome = dstRoot.toPath().resolve(collection).resolve("conf");
     Files.createDirectories(subHome);
@@ -2367,6 +2323,41 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(top.resolve("solrconfig.xml"), subHome.resolve("solrconfig.xml"));
     Files.copy(top.resolve("stopwords.txt"), subHome.resolve("stopwords.txt"));
     Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
+  }
+
+  /** Creates a temp solr home using sample_techproducts_configs. Returns the home path. */
+  @Deprecated // Instead use a basic config + whatever is needed or default config
+  public static String legacyExampleCollection1SolrHome() {
+    String sourceHome = ExternalPaths.SOURCE_HOME;
+    if (sourceHome == null)
+      throw new IllegalStateException(
+          "No source home! Cannot create the legacy example solr home directory.");
+
+    try {
+      Path tempSolrHome = LuceneTestCase.createTempDir();
+      Path serverSolr = tempSolrHome.getFileSystem().getPath(sourceHome, "server", "solr");
+      Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
+
+      Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
+      Path collection1Dir = tempSolrHome.resolve("collection1");
+
+      DirectoryUtil.copyDirectoryContents(
+          sourceConfig.resolve("conf"), collection1Dir.resolve("conf"));
+
+      Properties props = new Properties();
+      props.setProperty("name", "collection1");
+      try (Writer writer =
+          new OutputStreamWriter(
+              Files.newOutputStream(collection1Dir.resolve("core.properties")),
+              StandardCharsets.UTF_8)) {
+        props.store(writer, null);
+      }
+      return tempSolrHome.toString();
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   public boolean compareSolrDocument(Object expected, Object actual) {
@@ -2605,32 +2596,23 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} class directly
-   */
-  public static CloudHttp2SolrClient getCloudHttp2SolrClient(MiniSolrCloudCluster cluster) {
-    return new RandomizingCloudHttp2SolrClientBuilder(cluster).build();
-  }
-
-  /**
-   * A variant of {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will
+   * A variant of {@link org.apache.solr.client.solrj.impl.CloudLegacySolrClient.Builder} that will
    * randomize some internal settings.
    */
   @Deprecated
-  public static class CloudSolrClientBuilder extends CloudLegacySolrClient.Builder {
+  public static class RandomizingCloudSolrClientBuilder extends CloudLegacySolrClient.Builder {
 
-    public CloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
+    public RandomizingCloudSolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
       randomizeCloudSolrClient();
     }
 
-    public CloudSolrClientBuilder(ClusterStateProvider stateProvider) {
+    public RandomizingCloudSolrClientBuilder(ClusterStateProvider stateProvider) {
       this.stateProvider = stateProvider;
       randomizeCloudSolrClient();
     }
 
-    public CloudSolrClientBuilder(MiniSolrCloudCluster cluster) {
+    public RandomizingCloudSolrClientBuilder(MiniSolrCloudCluster cluster) {
       if (random().nextBoolean()) {
         this.zkHosts.add(cluster.getZkServer().getZkAddress());
       } else {
@@ -2659,219 +2641,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
+   * This method creates a HttpClient from a URL.
+   *
+   * <p><b>WARNING:</b> if you use this method, the <code>HttpClient</code> returned is tracked by
+   * <code>ObjectReleaseTracker</code>. Your test will fail if you do not pass the <code>HttpClient
+   * </code> to {@link HttpClientUtil#close(HttpClient)} when you are done with it.
    */
-  public static CloudSolrClient getCloudSolrClient(String zkHost) {
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty()).build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
-  public static CloudSolrClient getCloudSolrClient(MiniSolrCloudCluster cluster) {
-    return new CloudSolrClientBuilder(cluster).build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
-  public static CloudSolrClient getCloudSolrClient(String zkHost, HttpClient httpClient) {
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .withHttpClient(httpClient)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
-  public static CloudSolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly) {
-    if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-          .sendUpdatesOnlyToShardLeaders()
-          .build();
-    }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
-        .build();
-  }
-
-  public static CloudSolrClientBuilder newCloudSolrClient(String zkHost) {
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty());
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
-  public static CloudSolrClient getCloudSolrClient(
-      String zkHost, boolean shardLeadersOnly, int socketTimeoutMillis) {
-    if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-          .sendUpdatesOnlyToShardLeaders()
-          .withSocketTimeout(socketTimeoutMillis)
-          .build();
-    }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
-        .withSocketTimeout(socketTimeoutMillis)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
-  public static CloudSolrClient getCloudSolrClient(
-      String zkHost,
-      boolean shardLeadersOnly,
-      int connectionTimeoutMillis,
-      int socketTimeoutMillis) {
-    if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-          .sendUpdatesOnlyToShardLeaders()
-          .withConnectionTimeout(connectionTimeoutMillis)
-          .withSocketTimeout(socketTimeoutMillis)
-          .build();
-    }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .sendUpdatesToAllReplicasInShard()
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
-  public static CloudSolrClient getCloudSolrClient(
-      String zkHost, boolean shardLeadersOnly, HttpClient httpClient) {
-    if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-          .withHttpClient(httpClient)
-          .sendUpdatesOnlyToShardLeaders()
-          .build();
-    }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
-   */
-  public static CloudSolrClient getCloudSolrClient(
-      String zkHost,
-      boolean shardLeadersOnly,
-      HttpClient httpClient,
-      int connectionTimeoutMillis,
-      int socketTimeoutMillis) {
-    if (shardLeadersOnly) {
-      return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-          .withHttpClient(httpClient)
-          .sendUpdatesOnlyToShardLeaders()
-          .withConnectionTimeout(connectionTimeoutMillis)
-          .withSocketTimeout(socketTimeoutMillis)
-          .build();
-    }
-    return new CloudSolrClientBuilder(Collections.singletonList(zkHost), Optional.empty())
-        .withHttpClient(httpClient)
-        .sendUpdatesToAllReplicasInShard()
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
-   */
-  public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(
-      String baseSolrUrl, int queueSize, int threadCount) {
-    return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
-        .withQueueSize(queueSize)
-        .withThreadCount(threadCount)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
-   */
-  public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(
-      String baseSolrUrl, int queueSize, int threadCount, int connectionTimeoutMillis) {
-    return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
-        .withQueueSize(queueSize)
-        .withThreadCount(threadCount)
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder} class directly
-   */
-  public static ConcurrentUpdateSolrClient getConcurrentUpdateSolrClient(
-      String baseSolrUrl, HttpClient httpClient, int queueSize, int threadCount) {
-    return new ConcurrentUpdateSolrClient.Builder(baseSolrUrl)
-        .withHttpClient(httpClient)
-        .withQueueSize(queueSize)
-        .withThreadCount(threadCount)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
-   */
-  public static LBHttpSolrClient getLBHttpSolrClient(HttpClient client, String... solrUrls) {
-    return new LBHttpSolrClient.Builder().withHttpClient(client).withBaseSolrUrls(solrUrls).build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
-   */
-  public static LBHttpSolrClient getLBHttpSolrClient(
-      HttpClient client, int connectionTimeoutMillis, int socketTimeoutMillis, String... solrUrls) {
-    return new LBHttpSolrClient.Builder()
-        .withHttpClient(client)
-        .withBaseSolrUrls(solrUrls)
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
-        .build();
-  }
-
-  /**
-   * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
-   * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder} class directly
-   */
-  public static LBHttpSolrClient getLBHttpSolrClient(String... solrUrls)
-      throws MalformedURLException {
-    return new LBHttpSolrClient.Builder().withBaseSolrUrls(solrUrls).build();
-  }
-
-  /** This method creates a HttpClient from a URL. */
   @Deprecated // We are migrating away from Apache HttpClient.
   public static HttpClient getHttpClient(String url) {
     return new HttpSolrClient.Builder(url).build().getHttpClient();
@@ -2879,88 +2654,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /**
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttp1SolrClient(String url) {
-    return new HttpSolrClient.Builder(url).build();
-  }
-
-  /**
-   * This method creates a basic Http2SolrClient. Tests that want to control the creation process
    * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
-   */
-  public static Http2SolrClient getHttp2SolrClient(String url) {
-    return new Http2SolrClient.Builder(url).build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttpSolrClient(
-      String url, HttpClient httpClient, ResponseParser responseParser, boolean compression) {
-    return new Builder(url)
-        .withHttpClient(httpClient)
-        .withResponseParser(responseParser)
-        .allowCompression(compression)
-        .build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttpSolrClient(
-      String url, HttpClient httpClient, ResponseParser responseParser) {
-    return new Builder(url).withHttpClient(httpClient).withResponseParser(responseParser).build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttpSolrClient(String url, HttpClient httpClient) {
-    return new Builder(url).withHttpClient(httpClient).build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttpSolrClient(
-      String url, HttpClient httpClient, int connectionTimeoutMillis) {
-    return new Builder(url)
-        .withHttpClient(httpClient)
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(String url) {
     return new HttpSolrClient.Builder(url).build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttpSolrClient(String url, int connectionTimeoutMillis) {
-    return new Builder(url).withConnectionTimeout(connectionTimeoutMillis).build();
-  }
-
-  /**
-   * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.impl.HttpSolrClient.Builder} class directly
-   */
-  public static HttpSolrClient getHttpSolrClient(
-      String url, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return new Builder(url)
-        .withConnectionTimeout(connectionTimeoutMillis)
-        .withSocketTimeout(socketTimeoutMillis)
-        .build();
   }
 
   /**

@@ -113,7 +113,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       String val2;
       String val3;
       try {
-        payload = payload.replaceAll("CACHENAME", cacheName);
+        payload = payload.replace("CACHENAME", cacheName);
         val1 = String.valueOf(10 * i + 1);
         payload = payload.replace("CACHEVAL1", val1);
         val2 = String.valueOf(10 * i + 2);

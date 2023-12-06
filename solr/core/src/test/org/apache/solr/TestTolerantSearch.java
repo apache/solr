@@ -19,6 +19,9 @@ package org.apache.solr;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -43,13 +46,15 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static String shard2;
 
   private static File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
-    setupJettyTestHome(workDir, "collection1");
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"),
-        new File(workDir, "/collection1/conf/solrconfig.xml"));
-    FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
-    return workDir;
+    Path workDir = createTempDir();
+    setupJettyTestHome(workDir.toFile(), "collection1");
+    Files.copy(
+        Path.of(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"),
+        workDir.resolve("collection1").resolve("conf").resolve("solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+    FileUtils.copyDirectory(
+        workDir.resolve("collection1").toFile(), workDir.resolve("collection2").toFile());
+    return workDir.toFile();
   }
 
   @BeforeClass
@@ -57,12 +62,12 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     systemSetPropertySolrDisableUrlAllowList("true");
     File solrHome = createSolrHome();
     createAndStartJetty(solrHome.getAbsolutePath());
-    String url = jetty.getBaseUrl().toString();
+    String url = getBaseUrl();
     collection1 = getHttpSolrClient(url + "/collection1");
     collection2 = getHttpSolrClient(url + "/collection2");
 
-    String urlCollection1 = jetty.getBaseUrl().toString() + "/" + "collection1";
-    String urlCollection2 = jetty.getBaseUrl().toString() + "/" + "collection2";
+    String urlCollection1 = getBaseUrl() + "/" + "collection1";
+    String urlCollection2 = getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
 
@@ -104,10 +109,6 @@ public class TestTolerantSearch extends SolrJettyTestBase {
       collection2.close();
       collection2 = null;
     }
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
     resetExceptionIgnores();
     systemClearPropertySolrDisableUrlAllowList();
   }
@@ -116,6 +117,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   public void testGetFieldsPhaseError() throws SolrServerException, IOException {
     BadResponseWriter.failOnGetFields = true;
     BadResponseWriter.failOnGetTopIds = false;
+    BadResponseWriter.failAllShards = false;
     SolrQuery query = new SolrQuery();
     query.setQuery("subject:batman OR subject:superman");
     query.addField("id");
@@ -165,6 +167,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   public void testGetTopIdsPhaseError() throws SolrServerException, IOException {
     BadResponseWriter.failOnGetTopIds = true;
     BadResponseWriter.failOnGetFields = false;
+    BadResponseWriter.failAllShards = false;
     SolrQuery query = new SolrQuery();
     query.setQuery("subject:batman OR subject:superman");
     query.addField("id");
@@ -211,10 +214,44 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     unIgnoreException("Dummy exception in BadResponseWriter");
   }
 
+  @SuppressWarnings("unchecked")
+  public void testAllShardsFail() throws SolrServerException, IOException {
+    BadResponseWriter.failOnGetTopIds = false;
+    BadResponseWriter.failOnGetFields = false;
+    BadResponseWriter.failAllShards = true;
+    SolrQuery query = new SolrQuery();
+    query.setQuery("subject:batman OR subject:superman");
+    query.addField("id");
+    query.addField("subject");
+    query.set("distrib", "true");
+    query.set("shards", shard1 + "," + shard2);
+    query.set(ShardParams.SHARDS_INFO, "true");
+    query.set("debug", "true");
+    query.set("stats", "true");
+    query.set("stats.field", "id");
+    query.set("mlt", "true");
+    query.set("mlt.fl", "title");
+    query.set("mlt.count", "1");
+    query.set("mlt.mintf", "0");
+    query.set("mlt.mindf", "0");
+    query.setHighlight(true);
+    query.addFacetField("id");
+    query.setFacet(true);
+
+    ignoreException("Dummy exception in BadResponseWriter");
+
+    expectThrows(SolrException.class, () -> collection1.query(query));
+
+    query.set(ShardParams.SHARDS_TOLERANT, "true");
+
+    expectThrows(SolrException.class, () -> collection1.query(query));
+  }
+
   public static class BadResponseWriter extends BinaryResponseWriter {
 
     private static boolean failOnGetFields = false;
     private static boolean failOnGetTopIds = false;
+    private static boolean failAllShards = false;
 
     public BadResponseWriter() {
       super();
@@ -237,6 +274,10 @@ public class TestTolerantSearch extends SolrJettyTestBase {
           && "subject:batman OR subject:superman".equals(req.getParams().get("q", ""))
           && req.getParams().get("ids") == null
           && req.getParams().getBool("isShard", false) == true) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Dummy exception in BadResponseWriter");
+      } else if (failAllShards) {
+        // fail on every shard
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Dummy exception in BadResponseWriter");
       }

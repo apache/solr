@@ -22,9 +22,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeoutAware;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
@@ -60,31 +62,11 @@ public class CloudLegacySolrClient extends CloudSolrClient {
    */
   protected CloudLegacySolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
-    if (builder.stateProvider == null) {
-      if (builder.zkHosts != null && builder.solrUrls != null) {
-        throw new IllegalArgumentException(
-            "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
-      }
-      if (builder.zkHosts != null) {
-        this.stateProvider =
-            ClusterStateProvider.newZkClusterStateProvider(builder.zkHosts, builder.zkChroot);
-      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
-        try {
-          this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
-        } catch (Exception e) {
-          throw new RuntimeException(
-              "Couldn't initialize a HttpClusterStateProvider (is/are the "
-                  + "Solr server(s), "
-                  + builder.solrUrls
-                  + ", down?)",
-              e);
-        }
-      } else {
-        throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
-      }
-    } else {
-      this.stateProvider = builder.stateProvider;
-    }
+    this.stateProvider = builder.stateProvider;
+    this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
+    this.defaultCollection = builder.defaultCollection;
+    this.collectionStateCache.timeToLiveMs =
+        TimeUnit.MILLISECONDS.convert(builder.timeToLiveSeconds, TimeUnit.SECONDS);
     this.clientIsInternal = builder.httpClient == null;
     this.shutdownLBHttpSolrServer = builder.loadBalancedSolrClient == null;
     if (builder.lbClientBuilder != null) {
@@ -102,14 +84,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
 
   private void propagateLBClientConfigOptions(Builder builder) {
     final LBHttpSolrClient.Builder lbBuilder = builder.lbClientBuilder;
-
-    if (builder.connectionTimeoutMillis != null) {
-      lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis);
-    }
-
-    if (builder.socketTimeoutMillis != null) {
-      lbBuilder.withSocketTimeout(builder.socketTimeoutMillis);
-    }
+    lbBuilder.withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+    lbBuilder.withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -172,12 +148,9 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       Builder cloudSolrClientBuilder, HttpClient httpClient) {
     final LBHttpSolrClient.Builder lbBuilder = new LBHttpSolrClient.Builder();
     lbBuilder.withHttpClient(httpClient);
-    if (cloudSolrClientBuilder.connectionTimeoutMillis != null) {
-      lbBuilder.withConnectionTimeout(cloudSolrClientBuilder.connectionTimeoutMillis);
-    }
-    if (cloudSolrClientBuilder.socketTimeoutMillis != null) {
-      lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis);
-    }
+    lbBuilder.withConnectionTimeout(
+        cloudSolrClientBuilder.connectionTimeoutMillis, TimeUnit.MILLISECONDS);
+    lbBuilder.withSocketTimeout(cloudSolrClientBuilder.socketTimeoutMillis, TimeUnit.MILLISECONDS);
     lbBuilder.withRequestWriter(new BinaryRequestWriter());
     lbBuilder.withResponseParser(new BinaryResponseParser());
 
@@ -194,7 +167,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
+    protected String defaultCollection;
+    protected long retryExpiryTimeNano =
+        TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
     protected ClusterStateProvider stateProvider;
+    private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
+    private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
 
     /** Constructor for use by subclasses. This constructor was public prior to version 9.0 */
     protected Builder() {}
@@ -267,9 +245,22 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     }
 
     /**
-     * Tells {@link Builder} that created clients should send updates only to shard leaders.
+     * Sets the cache ttl for DocCollection Objects cached.
      *
-     * <p>WARNING: This method currently has no effect. See SOLR-6312 for more information.
+     * @param seconds ttl value in seconds
+     */
+    public Builder withCollectionCacheTtl(int seconds) {
+      assert seconds > 0;
+      this.timeToLiveSeconds = seconds;
+      return this;
+    }
+
+    /**
+     * Tells {@link Builder} that created clients should be configured such that {@link
+     * CloudSolrClient#isUpdatesToLeaders} returns <code>true</code>.
+     *
+     * @see #sendUpdatesToAnyReplica
+     * @see CloudSolrClient#isUpdatesToLeaders
      */
     public Builder sendUpdatesOnlyToShardLeaders() {
       shardLeadersOnly = true;
@@ -277,12 +268,34 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     }
 
     /**
-     * Tells {@link Builder} that created clients should send updates to all replicas for a shard.
+     * Tells {@link Builder} that created clients should be configured such that {@link
+     * CloudSolrClient#isUpdatesToLeaders} returns <code>false</code>.
      *
-     * <p>WARNING: This method currently has no effect. See SOLR-6312 for more information.
+     * @see #sendUpdatesOnlyToShardLeaders
+     * @see CloudSolrClient#isUpdatesToLeaders
      */
-    public Builder sendUpdatesToAllReplicasInShard() {
+    public Builder sendUpdatesToAnyReplica() {
       shardLeadersOnly = false;
+      return this;
+    }
+
+    /**
+     * This method has no effect.
+     *
+     * <p>In older versions of Solr, this method was an incorrectly named equivilent to {@link
+     * #sendUpdatesToAnyReplica}, which had no effect because that setting was ignored in the
+     * created clients. When the underlying {@link CloudSolrClient} behavior was fixed, this method
+     * was modified to be an explicit No-Op, since the implied behavior of sending updates to
+     * <em>all</em> replicas has never been supported, and was never intended to be supported.
+     *
+     * @see #sendUpdatesOnlyToShardLeaders
+     * @see #sendUpdatesToAnyReplica
+     * @see CloudSolrClient#isUpdatesToLeaders
+     * @see <a href="https://issues.apache.org/jira/browse/SOLR-6312">SOLR-6312</a>
+     * @deprecated Never supported
+     */
+    @Deprecated
+    public Builder sendUpdatesToAllReplicasInShard() {
       return this;
     }
 
@@ -291,6 +304,9 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      *
      * <p>UpdateRequests whose leaders cannot be found will "fail fast" on the client side with a
      * {@link SolrException}
+     *
+     * @see #sendDirectUpdatesToAnyShardReplica
+     * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
      */
     public Builder sendDirectUpdatesToShardLeadersOnly() {
       directUpdatesToLeadersOnly = true;
@@ -303,6 +319,9 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      *
      * <p>Shard leaders are still preferred, but the created clients will fallback to using other
      * replicas if a leader cannot be found.
+     *
+     * @see #sendDirectUpdatesToShardLeadersOnly
+     * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
      */
     public Builder sendDirectUpdatesToAnyShardReplica() {
       directUpdatesToLeadersOnly = false;
@@ -324,11 +343,47 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       return this;
     }
 
+    /** Sets the default collection for request. */
+    public Builder withDefaultCollection(String collection) {
+      this.defaultCollection = collection;
+      return this;
+    }
+
+    /**
+     * Sets the Zk connection timeout
+     *
+     * @param zkConnectTimeout timeout value
+     * @param unit time unit
+     */
+    public Builder withZkConnectTimeout(int zkConnectTimeout, TimeUnit unit) {
+      this.zkConnectTimeout = Math.toIntExact(unit.toMillis(zkConnectTimeout));
+      return this;
+    }
+
+    /**
+     * Sets the Zk client session timeout
+     *
+     * @param zkClientTimeout timeout value
+     * @param unit time unit
+     */
+    public Builder withZkClientTimeout(int zkClientTimeout, TimeUnit unit) {
+      this.zkClientTimeout = Math.toIntExact(unit.toMillis(zkClientTimeout));
+      return this;
+    }
+
     /** Create a {@link CloudLegacySolrClient} based on the provided configuration. */
     public CloudLegacySolrClient build() {
       if (stateProvider == null) {
-        if (!zkHosts.isEmpty()) {
+        if (!zkHosts.isEmpty() && !solrUrls.isEmpty()) {
+          throw new IllegalArgumentException(
+              "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
+        } else if (!zkHosts.isEmpty()) {
           this.stateProvider = ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot);
+          if (stateProvider instanceof SolrZkClientTimeoutAware) {
+            var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
+            timeoutAware.setZkClientTimeout(zkClientTimeout);
+            timeoutAware.setZkConnectTimeout(zkConnectTimeout);
+          }
         } else if (!this.solrUrls.isEmpty()) {
           try {
             stateProvider = new HttpClusterStateProvider(solrUrls, httpClient);

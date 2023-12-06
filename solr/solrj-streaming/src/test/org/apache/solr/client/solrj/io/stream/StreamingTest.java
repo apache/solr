@@ -144,6 +144,20 @@ public class StreamingTest extends SolrCloudTestCase {
 
   private static final String id = "id";
 
+  // Update request shared by many of the tests
+  private final UpdateRequest helloDocsUpdateRequest =
+      new UpdateRequest()
+          .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+          .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+          .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+          .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+          .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+          .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+          .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+          .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+          .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+          .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
   @Before
   public void clearCollection() throws Exception {
     new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTIONORALIAS);
@@ -194,18 +208,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testNonePartitionKeys() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
@@ -412,18 +415,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testTrace() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -449,18 +441,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testReducerStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -527,18 +508,7 @@ public class StreamingTest extends SolrCloudTestCase {
   public void testZeroReducerStream() throws Exception {
 
     // Gracefully handle zero results
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -566,18 +536,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testParallelReducerStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -668,27 +627,15 @@ public class StreamingTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore
   public void testExceptionStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
-    // Test an error that comes originates from the /select handler
     try {
+      // Test an error that originates from the /select handler
       SolrParams sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
       CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
       ExceptionStream estream = new ExceptionStream(stream);
@@ -698,16 +645,45 @@ public class StreamingTest extends SolrCloudTestCase {
       assertTrue(t.EXCEPTION);
       assertTrue(t.getException().contains("sort param field can't be found: blah"));
 
-      // Test an error that comes originates from the /export handler
-      sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,score", "sort", "a_s asc", "qt", "/export");
+      sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "wt", "javabin");
       stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
       estream = new ExceptionStream(stream);
       estream.setStreamContext(streamContext);
       t = getTuple(estream);
       assertTrue(t.EOF);
       assertTrue(t.EXCEPTION);
-      // The /export handler will pass through a real exception.
-      assertTrue(t.getException().contains("undefined field:"));
+      assertTrue(t.getException().contains("sort param field can't be found: blah"));
+
+      // Test an error that originates from the /export handler
+      sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "qt", "/export");
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      estream = new ExceptionStream(stream);
+      estream.setStreamContext(streamContext);
+      t = getTuple(estream);
+      assertTrue(t.EOF);
+      assertTrue(t.EXCEPTION);
+      assertTrue(t.getException().contains("sort param field can't be found: blah"));
+
+      // Test an error that originates from the /export handler
+      sParamsA =
+          params(
+              "q",
+              "*:*",
+              "fl",
+              "a_s,a_i,a_f,blah",
+              "sort",
+              "blah asc",
+              "qt",
+              "/export",
+              "wt",
+              "javabin");
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      estream = new ExceptionStream(stream);
+      estream.setStreamContext(streamContext);
+      t = getTuple(estream);
+      assertTrue(t.EOF);
+      assertTrue(t.EXCEPTION);
+      assertTrue(t.getException().contains("sort param field can't be found: blah"));
     } finally {
       solrClientCache.close();
     }
@@ -717,18 +693,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Ignore
   public void testParallelExceptionStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     SolrParams sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
     CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
@@ -805,18 +770,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testStatsStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -874,18 +828,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testFacetStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -1699,18 +1642,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testRollupStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
@@ -1976,18 +1908,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testRollupWithNoParallel() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -2051,18 +1972,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testParallelRollupStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -2184,18 +2094,7 @@ public class StreamingTest extends SolrCloudTestCase {
   @Test
   public void testZeroParallelReducerStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
-        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
-        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
-        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
-        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
-        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
-        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
-        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+    helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();

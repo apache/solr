@@ -75,7 +75,7 @@ s|Required |Default: none
 The dimension of the dense vector to pass in.
 +
 Accepted values:
-Any integer < = `1024`.
+Any integer.
 
 `similarityFunction`::
 +
@@ -100,11 +100,7 @@ this similarity is intended as an optimized way to perform cosine similarity. In
 the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
 To use the following advanced parameters that customise the codec format
-and the hyper-parameter of the HNSW algorithm make sure you set this configuration in `solrconfig.xml`:
-[source,xml]
-<config>
-<codecFactory class="solr.SchemaCodecFactory"/>
-...
+and the hyper-parameter of the HNSW algorithm, make sure the xref:configuration-guide:codec-factory.adoc[Schema Codec Factory], is in use.
 
 Here's how `DenseVectorField` can be configured with the advanced hyper-parameters:
 
@@ -125,6 +121,18 @@ Here's how `DenseVectorField` can be configured with the advanced hyper-paramete
 Accepted values: `hnsw`.
 
 Please note that the `knnAlgorithm` accepted values may change in future releases.
+
+`vectorEncoding`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `FLOAT32`
+|===
++
+(advanced) Specifies the underlying encoding of the dense vector elements. This affects memory/disk impact for both the indexed and stored fields (if enabled)
++
+
+Accepted values: `FLOAT32`, `BYTE`.
 
 
 `hnswMaxConnections`::
@@ -287,6 +295,13 @@ In
 &q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
 
 The results are prefiltered by the fq=id:(1 2 3) and then only the documents from this subset are considered as candidates for the topK knn retrieval.
+
+If you want to run some of the filter queries as post-filters you can follow the standard approach for post-filtering in Apache Solr, using the cache and cost local parameters.
+
+e.g.
+
+[source,text]
+&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq={!frange cache=false l=0.99}$q
 ====
 
 

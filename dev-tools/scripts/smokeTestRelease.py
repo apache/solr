@@ -204,9 +204,9 @@ def checkAllJARs(topDir, gitRevision, version):
     for file in files:
       if file.lower().endswith('.jar'):
         if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.annotation-api-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.xml.bind-api-'))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))):
+            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
+            or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
+            or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
           print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
           continue
         fullPath = '%s/%s' % (root, file)
@@ -266,9 +266,12 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       raise RuntimeError('solr: artifact %s has wrong sigs: expected %s but got %s' % (artifact, expectedSigs, sigs))
 
   expected = ['solr-%s-src.tgz' % version,
-              'solr-%s.tgz' % version]
+              'solr-%s.tgz' % version,
+              'solr-%s-slim.tgz' % version]
 
   actual = [x[0] for x in artifacts]
+  expected.sort()
+  actual.sort()
   if expected != actual:
     raise RuntimeError('solr: wrong artifacts: expected %s but got %s' % (expected, actual))
 
@@ -535,12 +538,14 @@ def unpackAndVerify(java, tmpDir, artifact, gitRevision, version, testArgs):
   os.chdir(destDir)
   print('  unpack %s...' % artifact)
   unpackLogFile = '%s/solr-unpack-%s.log' % (tmpDir, artifact)
+  expected = artifact
   if artifact.endswith('.tar.gz') or artifact.endswith('.tgz'):
+    expected = artifact[:artifact.find('.t')]
+    expected = expected.replace("-src", "") # Remove when the src tgz subdirectory has "-src" appended
     run('tar xzf %s/%s' % (tmpDir, artifact), unpackLogFile)
 
   # make sure it unpacks to proper subdir
   l = os.listdir(destDir)
-  expected = 'solr-%s' % version
   if l != [expected]:
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
@@ -569,6 +574,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
   os.chdir(unpackPath)
   isSrc = artifact.find('-src') != -1
+  isSlim = artifact.find('-slim') != -1
 
   # Check text files in release
   print("  %s" % artifact)
@@ -576,7 +582,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   in_solr_folder = []
   if isSrc:
     in_solr_folder.extend(os.listdir(os.path.join(unpackPath, 'solr')))
-    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md'])
+    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md', 'CONTRIBUTING.md'])
     is_in_list(in_solr_folder, ['CHANGES.txt', 'README.adoc'])
   else:
     is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGES.txt'])
@@ -600,13 +606,15 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
     is_in_list(in_solr_folder, expected_src_solr_files)
     if len(in_solr_folder) > 0:
       raise RuntimeError('solr: unexpected files/dirs in artifact %s solr/ folder: %s' % (artifact, in_solr_folder))
+  elif isSlim:
+    is_in_list(in_root_folder, ['bin', 'docker', 'docs', 'example', 'licenses', 'server', 'lib'])
   else:
     is_in_list(in_root_folder, ['bin', 'modules', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server', 'lib'])
 
@@ -736,7 +744,7 @@ def testSolrExample(binaryDistPath, javaPath):
   print('      Running techproducts example on port 8983 from %s' % binaryDistPath)
   try:
     if not cygwin:
-      runExampleStatus = subprocess.call(['bin/solr','-e','techproducts'])
+      runExampleStatus = subprocess.call(['bin/solr','start','-e','techproducts'])
     else:
       runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e techproducts', shell=True)
 
@@ -748,7 +756,7 @@ def testSolrExample(binaryDistPath, javaPath):
     run('sh ./exampledocs/test_utf8.sh http://localhost:8983/solr/techproducts', 'utf8.log')
     print('      run query...')
     s = load('http://localhost:8983/solr/techproducts/select/?q=video')
-    if s.find('"numFound":3,"start":0') == -1:
+    if s.find('"numFound":3,') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
     s = load('http://localhost:8983/api/cores')
@@ -1122,11 +1130,14 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   else:
     # An ordinary release has a 'solr' sub folder
     for text, subURL in getDirEntries(baseURL):
-      if text.lower() == 'solr/':
+      if text.lower() == "solr/":
+        solrPath = subURL
+    for text, subURL in getDirEntries(solrPath):
+      if text.lower() == version + "/":
         solrPath = subURL
 
   if solrPath is None:
-    raise RuntimeError('could not find solr subdir')
+    raise RuntimeError("could not find solr/%s/ subdir" % version)
 
   print()
   print('Get KEYS...')
@@ -1147,6 +1158,7 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
   checkSigs(solrPath, version, tmpDir, isSigned, keysFile)
   if not downloadOnly:
     unpackAndVerify(java, tmpDir, 'solr-%s.tgz' % version, gitRevision, version, testArgs)
+    unpackAndVerify(java, tmpDir, 'solr-%s-slim.tgz' % version, gitRevision, version, testArgs)
     unpackAndVerify(java, tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs)
     print()
     print('Test Maven artifacts...')

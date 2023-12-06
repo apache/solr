@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
@@ -370,7 +368,7 @@ public class Grouping {
       searchWithTimeLimiter(filterQuery, allCollectors);
 
       if (allCollectors instanceof DelegatingCollector) {
-        ((DelegatingCollector) allCollectors).finish();
+        ((DelegatingCollector) allCollectors).complete();
       }
     }
 
@@ -387,8 +385,7 @@ public class Grouping {
     }
 
     if (!collectors.isEmpty()) {
-      Collector secondPhaseCollectors =
-          MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
+      Collector secondPhaseCollectors = MultiCollector.wrap(collectors.toArray(new Collector[0]));
       if (collectors.size() > 0) {
         if (cachedCollector != null) {
           if (cachedCollector.isCached()) {
@@ -411,7 +408,7 @@ public class Grouping {
           searchWithTimeLimiter(filterQuery, secondPhaseCollectors);
         }
         if (secondPhaseCollectors instanceof DelegatingCollector) {
-          ((DelegatingCollector) secondPhaseCollectors).finish();
+          ((DelegatingCollector) secondPhaseCollectors).complete();
         }
       }
     }
@@ -697,8 +694,13 @@ public class Grouping {
       }
 
       int len = docsGathered > offset ? docsGathered - offset : 0;
-      int[] docs = ArrayUtils.toPrimitive(ids.toArray(new Integer[ids.size()]));
-      float[] docScores = ArrayUtils.toPrimitive(scores.toArray(new Float[scores.size()]));
+      int[] docs = ids.stream().mapToInt(v -> v).toArray();
+
+      float[] docScores = new float[scores.size()];
+      // Convert scores Float to primitive docScores float
+      for (int i = 0; i < scores.size(); i++) {
+        docScores[i] = scores.get(i);
+      }
       DocSlice docSlice =
           new DocSlice(
               offset, len, docs, docScores, getMatches(), maxScore, TotalHits.Relation.EQUAL_TO);
@@ -848,7 +850,7 @@ public class Grouping {
           // TODO: currently, this path is called only for string field, so
           // should we just use fieldType.toObject(schemaField, group.groupValue) here?
           List<IndexableField> fields = schemaField.createFields(group.groupValue.utf8ToString());
-          if (CollectionUtils.isNotEmpty(fields)) {
+          if (fields != null && !fields.isEmpty()) {
             nl.add("groupValue", fieldType.toObject(fields.get(0)));
           } else {
             throw new SolrException(

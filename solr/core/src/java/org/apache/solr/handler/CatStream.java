@@ -40,7 +40,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.slf4j.Logger;
@@ -70,7 +70,7 @@ public class CatStream extends TupleStream implements Expressible {
     }
     final String filepathsWithoutSurroundingQuotes =
         stripSurroundingQuotesIfTheyExist(commaDelimitedFilepaths);
-    if (StringUtils.isEmpty(filepathsWithoutSurroundingQuotes)) {
+    if (StrUtils.isNullOrEmpty(filepathsWithoutSurroundingQuotes)) {
       throw new IllegalArgumentException("No filepaths provided to stream");
     }
 
@@ -196,7 +196,9 @@ public class CatStream extends TupleStream implements Expressible {
                     new GZIPInputStream(Files.newInputStream(currentFilePath.absolutePath)),
                     StandardCharsets.UTF_8));
       } else {
-        currentFileLines = FileUtils.lineIterator(currentFilePath.absolutePath.toFile(), "UTF-8");
+        currentFileLines =
+            FileUtils.lineIterator(
+                currentFilePath.absolutePath.toFile(), StandardCharsets.UTF_8.name());
       }
       if (currentFileLines.hasNext()) return true;
     }

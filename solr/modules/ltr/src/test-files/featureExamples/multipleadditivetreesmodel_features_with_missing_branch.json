@@ -1,0 +1,26 @@
+[
+    {
+        "name": "matchedTitle",
+        "class": "org.apache.solr.ltr.feature.SolrFeature",
+        "params": {
+            "q": "{!terms f=title}${user_query}"
+        }
+    },
+    {
+        "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
+        "params": {
+            "value": "1"
+        }
+    },
+    {
+        "name": "userDevice",
+        "class": "org.apache.solr.ltr.feature.ValueFeature",
+        "params": {
+            "value": "${user_device}",
+            "defaultValue": "NaN",
+            "required": false
+        }
+    }
+]
+

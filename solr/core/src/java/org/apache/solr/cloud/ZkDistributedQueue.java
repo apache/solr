@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +37,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -135,10 +134,8 @@ public class ZkDistributedQueue implements DistributedQueue {
       IsClosed higherLevelIsClosed) {
     this.dir = dir;
 
-    ZkCmdExecutor cmdExecutor =
-        new ZkCmdExecutor(zookeeper.getZkClientTimeout(), higherLevelIsClosed);
     try {
-      cmdExecutor.ensureExists(dir, zookeeper);
+      ZkMaintenanceUtils.ensureExists(dir, zookeeper);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     } catch (InterruptedException e) {
@@ -187,7 +184,9 @@ public class ZkDistributedQueue implements DistributedQueue {
    */
   @Override
   public byte[] peek(long wait) throws KeeperException, InterruptedException {
-    Preconditions.checkArgument(wait > 0);
+    if (wait < 0) {
+      throw new IllegalArgumentException("Wait must be greater than 0. Wait was " + wait);
+    }
     Timer.Context time;
     if (wait == Long.MAX_VALUE) {
       time = stats.time(dir + "_peek_wait_forever");

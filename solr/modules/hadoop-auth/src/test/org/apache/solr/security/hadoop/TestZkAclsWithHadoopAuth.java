@@ -98,13 +98,12 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
       keeper.addAuthInfo("digest", ("solr:" + SOLR_PASSWD).getBytes(StandardCharsets.UTF_8));
 
       // Test well known paths.
-      checkNonSecurityACLs(keeper, "/solr.xml");
       checkSecurityACLs(keeper, "/security/token");
       checkSecurityACLs(keeper, "/security");
 
       // Now test all ZK tree.
       String zkHost = cluster.getSolrClient().getClusterStateProvider().getQuorumHosts();
-      String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf("/")) : null;
+      String zkChroot = zkHost.contains("/") ? zkHost.substring(zkHost.indexOf('/')) : null;
       walkZkTree(keeper, zkChroot, "/");
     }
   }

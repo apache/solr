@@ -81,11 +81,56 @@ import org.apache.solr.common.util.Hash;
 public class CompositeIdRouter extends HashBasedRouter {
   public static final String NAME = "compositeId";
 
-  public static final String SEPARATOR = "!";
+  // TODO standardize naming: routeKey (probably) or shardKey or key; pick one.
+
+  /**
+   * This character separates a composite ID into a leading route key and the rest.
+   *
+   * <p>Importantly, it's also used at the end of a provided route key parameter (which appears in
+   * many places) to designate a hash range which translates to a list of slices. If a route key
+   * does not end with this character, then semantically the key points to a single slice that holds
+   * a doc with that ID.
+   */
+  public static final char SEPARATOR = '!';
 
   // separator used to optionally specify number of bits to allocate toward first part.
   public static final int bitsSeparator = '/';
   private int bits = 16;
+
+  /**
+   * Parse out the route key from {@code id} up to and including the {@link #SEPARATOR}, returning
+   * it's length. If no route key is detected then 0 is returned.
+   */
+  public int getRouteKeyWithSeparator(byte[] id, int idOffset, int idLength) {
+    final byte SEPARATOR_BYTE = (byte) CompositeIdRouter.SEPARATOR;
+    for (int i = 0; i < idLength; i++) {
+      byte b = id[idOffset + i];
+      if (b == SEPARATOR_BYTE) {
+        return i + 1;
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * Parse out the route key from {@code id}. It will not have the "bits" suffix or separator, if
+   * present. If there is no route key found then null is returned.
+   */
+  public String getRouteKeyNoSuffix(String id) {
+    int idx = id.indexOf(SEPARATOR);
+    if (idx <= 0) {
+      return null;
+    }
+    String part1 = id.substring(0, idx);
+    int commaIdx = part1.indexOf(bitsSeparator);
+    if (commaIdx > 0 && commaIdx + 1 < part1.length()) {
+      char ch = part1.charAt(commaIdx + 1);
+      if (ch >= '0' && ch <= '9') {
+        part1 = part1.substring(0, commaIdx);
+      }
+    }
+    return part1;
+  }
 
   @Override
   public int sliceHash(
@@ -132,6 +177,8 @@ public class CompositeIdRouter extends HashBasedRouter {
    * @return Range for given routeKey
    */
   public Range keyHashRange(String routeKey) {
+    routeKey = preprocessRouteKey(routeKey);
+
     if (routeKey.indexOf(SEPARATOR) < 0) {
       int hash = sliceHash(routeKey, null, null, null);
       return new Range(hash, hash);
@@ -146,6 +193,8 @@ public class CompositeIdRouter extends HashBasedRouter {
       // search across whole range
       return fullRange();
     }
+
+    shardKey = preprocessRouteKey(shardKey);
 
     if (shardKey.indexOf(SEPARATOR) < 0) {
       // shardKey is a simple id, so don't do a range
@@ -164,7 +213,8 @@ public class CompositeIdRouter extends HashBasedRouter {
       // TODO: this may need modification in the future when shard splitting could cause an overlap
       return collection.getActiveSlices();
     }
-    String id = shardKey;
+
+    String id = preprocessRouteKey(shardKey);
 
     if (shardKey.indexOf(SEPARATOR) < 0) {
       // shardKey is a simple id, so don't do a range
@@ -183,6 +233,14 @@ public class CompositeIdRouter extends HashBasedRouter {
     }
 
     return targetSlices;
+  }
+
+  /**
+   * Methods accepting a route key (shard key) can have this input preprocessed by a subclass before
+   * further analysis.
+   */
+  protected String preprocessRouteKey(String shardKey) {
+    return shardKey;
   }
 
   @Override
@@ -266,7 +324,7 @@ public class CompositeIdRouter extends HashBasedRouter {
   }
 
   /** Helper class to calculate parts, masks etc for an id. */
-  static class KeyParser {
+  protected static class KeyParser {
     String key;
     int[] numBits;
     int[] hashes;
@@ -333,7 +391,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       masks = getMasks();
     }
 
-    Range getRange() {
+    public Range getRange() {
       int lowerBound;
       int upperBound;
 
@@ -395,7 +453,7 @@ public class CompositeIdRouter extends HashBasedRouter {
       return masks;
     }
 
-    int getHash() {
+    public int getHash() {
       int result = hashes[0] & masks[0];
 
       for (int i = 1; i < pieces; i++) result = result | (hashes[i] & masks[i]);

@@ -99,7 +99,7 @@ public class SplitShardTest extends SolrCloudTestCase {
                 .getActiveSlices()
                 .size(),
         COLLECTION_NAME,
-        activeClusterShape(6, 7));
+        activeClusterShape(6, 6));
 
     try {
       splitShard =
@@ -163,7 +163,7 @@ public class SplitShardTest extends SolrCloudTestCase {
                 .getActiveSlices()
                 .size(),
         collectionName,
-        activeClusterShape(3, 4));
+        activeClusterShape(3, 3));
     DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collectionName);
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
@@ -176,20 +176,17 @@ public class SplitShardTest extends SolrCloudTestCase {
     assertEquals("wrong range in s1_1", expected1, delta1);
   }
 
-  CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
+  private CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, repFactor)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 1, repFactor);
 
-    CloudSolrClient client = cluster.getSolrClient();
-    client.setDefaultCollection(collectionName);
-    return client;
+    return cluster.getSolrClient();
   }
 
-  long getNumDocs(CloudSolrClient client) throws Exception {
-    String collectionName = client.getDefaultCollection();
+  long getNumDocs(CloudSolrClient client, String collectionName) throws Exception {
     DocCollection collection = client.getClusterState().getCollection(collectionName);
     Collection<Slice> slices = collection.getSlices();
 
@@ -200,7 +197,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       for (Replica replica : slice.getReplicas()) {
         SolrClient replicaClient =
             getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
-        long numFound = 0;
+        long numFound;
         try {
           numFound =
               replicaClient
@@ -219,7 +216,8 @@ public class SplitShardTest extends SolrCloudTestCase {
       totCount += lastReplicaCount;
     }
 
-    long cloudClientDocs = client.query(new SolrQuery("*:*")).getResults().getNumFound();
+    long cloudClientDocs =
+        client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(
         "Sum of shard count should equal distrib query doc count", totCount, cloudClientDocs);
     return totCount;
@@ -279,8 +277,7 @@ public class SplitShardTest extends SolrCloudTestCase {
           "Timed out waiting for sub shards to be active.",
           collectionName,
           activeClusterShape(
-              2,
-              3 * repFactor)); // 2 repFactor for the new split shards, 1 repFactor for old replicas
+              2, 2 * repFactor)); // parent shard replicas are ignored by activeClusterShape
 
       // make sure that docs were indexed during the split
       assertTrue(model.size() > docCount);
@@ -295,9 +292,9 @@ public class SplitShardTest extends SolrCloudTestCase {
       }
     }
 
-    client.commit(); // final commit is needed for visibility
+    client.commit(collectionName); // final commit is needed for visibility
 
-    long numDocs = getNumDocs(client);
+    long numDocs = getNumDocs(client, collectionName);
     if (numDocs != model.size()) {
       SolrDocumentList results =
           client
@@ -374,13 +371,13 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   @Test
   public void testLiveSplit() throws Exception {
-    // Debugging tips: if this fails, it may be easier to debug by lowering the number fo threads to
+    // Debugging tips: if this fails, it may be easier to debug by lowering the number of threads to
     // 1 and looping the test until you get another failure. You may need to further instrument
     // things like DistributedZkUpdateProcessor to display the cluster state for the collection,
-    // etc. Using more threads increases the chance to hit a concurrency bug, but too many threads
-    // can overwhelm single-threaded buffering replay after the low level index split and result in
-    // subShard leaders that can't catch up and become active (a known issue that still needs to be
-    // resolved.)
+    // etc. Using more threads increases the chance of hitting a concurrency bug, but too many
+    // threads can overwhelm single-threaded buffering replay after the low level index split and
+    // result in subShard leaders that can't catch up and become active (a known issue that still
+    // needs to be resolved.)
     doLiveSplitShard("livesplit1", 1, 4);
   }
 }

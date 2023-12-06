@@ -17,9 +17,9 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -153,6 +153,7 @@ class SimpleClusterAbstractionsImpl {
 
   static class SolrCollectionImpl implements SolrCollection {
     private final String collectionName;
+
     /** Map from {@link Shard#getShardName()} to {@link Shard} */
     private final Map<String, Shard> shards;
 
@@ -228,7 +229,7 @@ class SimpleClusterAbstractionsImpl {
      * of {@link Shard}'s, keyed by shard name ({@link Shard#getShardName()}).
      */
     static Map<String, Shard> getShards(SolrCollection solrCollection, Collection<Slice> slices) {
-      Map<String, Shard> shards = Maps.newHashMap();
+      Map<String, Shard> shards = new HashMap<>();
 
       for (Slice slice : slices) {
         String shardName = slice.getName();
@@ -355,7 +356,7 @@ class SimpleClusterAbstractionsImpl {
      */
     static Pair<Map<String, Replica>, Replica> getReplicas(
         Collection<org.apache.solr.common.cloud.Replica> sliceReplicas, Shard shard) {
-      Map<String, Replica> replicas = Maps.newHashMap();
+      Map<String, Replica> replicas = new HashMap<>();
       Replica leader = null;
 
       for (org.apache.solr.common.cloud.Replica sliceReplica : sliceReplicas) {

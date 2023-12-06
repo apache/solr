@@ -15,6 +15,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
+
     steps:
     # Setup
     - uses: actions/checkout@v2
@@ -34,7 +37,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-binsolr-
           ${{ runner.os }}-gradle-
-    - name: Initialize gradle settings
-      run: ./gradlew localSettings
     - name: Test the bin/solr script
       run: ./gradlew integrationTests
+    - name: Archive logs
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: logs
+        path: solr/packaging/build/test-output
+

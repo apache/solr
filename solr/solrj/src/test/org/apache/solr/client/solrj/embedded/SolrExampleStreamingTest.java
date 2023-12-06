@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -43,7 +44,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   @Override
   public SolrClient createNewSolrClient() {
     // smaller queue size hits locks more often
-    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getServerUrl())
+    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getCoreUrl())
         .withQueueSize(2)
         .withThreadCount(5)
         .withResponseParser(new XMLResponseParser())
@@ -55,14 +56,14 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     // SOLR-3903
     // TODO these failures are not the same as recorded by the client
     final List<Throwable> failures = new ArrayList<>();
-    final String serverUrl = jetty.getBaseUrl().toString() + "/collection1";
+    final String serverUrl = getCoreUrl();
     try (ConcurrentUpdateSolrClient concurrentClient =
         new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl)
             .withQueueSize(2)
             .withThreadCount(2)
             .build()) {
       int docId = 42;
-      for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
+      for (AbstractUpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
         for (boolean waitSearch : Arrays.asList(true, false)) {
           for (boolean waitFlush : Arrays.asList(true, false)) {
             UpdateRequest updateRequest = new UpdateRequest();

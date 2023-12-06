@@ -31,9 +31,41 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
+import org.junit.After;
 import org.junit.Test;
 
 public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
+  private SolrClient client;
+
+  @After
+  public void after() {
+    if (client != null) {
+      try {
+        client.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    client = null;
+  }
+
+  @Override
+  public SolrClient getSolrClient() {
+    if (client == null) {
+      client = createNewSolrClient();
+    }
+    return client;
+  }
+
+  /**
+   * Create a new solr client. If createJetty was called, a http implementation will be created,
+   * otherwise an embedded implementation will be created. Subclasses should override for other
+   * options.
+   */
+  @Override
+  public SolrClient createNewSolrClient() {
+    return getHttpSolrClient(getCoreUrl());
+  }
 
   /** query the example */
   @Test

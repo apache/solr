@@ -101,9 +101,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
             t = ((SolrServerException) t).getCause();
           }
           individualShardInfo.add("error", t.toString());
-          StringWriter trace = new StringWriter();
-          t.printStackTrace(new PrintWriter(trace));
-          individualShardInfo.add("trace", trace.toString());
+          if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+            StringWriter trace = new StringWriter();
+            t.printStackTrace(new PrintWriter(trace));
+            individualShardInfo.add("trace", trace.toString());
+          }
         } else {
           // summary for successful shard response is added down below
         }
@@ -213,11 +215,10 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
       final TopDocs mergedTopDocs;
       if (withinGroupSort.equals(Sort.RELEVANCE)) {
-        mergedTopDocs = TopDocs.merge(start, topN, topDocs.toArray(new TopDocs[topDocs.size()]));
+        mergedTopDocs = TopDocs.merge(start, topN, topDocs.toArray(new TopDocs[0]));
       } else {
         mergedTopDocs =
-            TopDocs.merge(
-                withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
+            TopDocs.merge(withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[0]));
       }
       rb.mergedQueryCommandResults.put(
           entry.getKey(), new QueryCommandResult(mergedTopDocs, mergedMatches, maxScore));

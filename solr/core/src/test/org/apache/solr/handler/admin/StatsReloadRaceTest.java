@@ -113,9 +113,9 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
 
     assertFalse(
         "expect status check w/o error, got:" + statusLog,
-        statusLog.contains(CoreAdminHandler.FAILED));
+        statusLog.contains(CoreAdminHandler.CoreAdminAsyncTracker.FAILED));
 
-    isCompleted = statusLog.contains(CoreAdminHandler.COMPLETED);
+    isCompleted = statusLog.contains(CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED);
     return isCompleted;
   }
 

@@ -81,6 +81,9 @@ dependencies {
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
 
   testImplementation 'commons-io:commons-io'
 
@@ -111,13 +114,13 @@ dependencies {
 // of the Hadoop Authentication module so we can avoid duplication of the test
 // resource files like schemas and SolrConfigs. This can be improved later by making
 // the test classes load the resources from core directories directly.
-task copySolrCoreTestResources(type: Copy) {
+tasks.register('copySolrCoreTestResources', Copy) {
   from(project(':solr:core').sourceSets.test.resources.srcDirs) {
     exclude '**/*.java'
   }
   into sourceSets.test.output.resourcesDir
 }
 
-tasks.processTestResources.configure {
+tasks.named('processTestResources').configure {
   dependsOn copySolrCoreTestResources
 }

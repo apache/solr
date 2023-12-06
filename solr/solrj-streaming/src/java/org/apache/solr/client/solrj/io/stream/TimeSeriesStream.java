@@ -25,11 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -71,8 +68,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
   private String zkHost;
   private SolrParams params;
   private String collection;
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
 
   public TimeSeriesStream(
       String zkHost,
@@ -93,7 +90,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
 
     if (collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = collectionName.replace("\"", "").replace(" ", "");
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -338,7 +335,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    cache = context.getSolrClientCache();
+    clientCache = context.getSolrClientCache();
   }
 
   @Override
@@ -348,12 +345,11 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
-    if (cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      final List<String> hosts = new ArrayList<>();
-      hosts.add(zkHost);
-      cloudSolrClient = new CloudLegacySolrClient.Builder(hosts, Optional.empty()).build();
+      doCloseCache = false;
     }
 
     String json = getJsonFacetString(field, metrics, start, end, gap);
@@ -364,6 +360,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       NamedList<?> response = cloudSolrClient.request(request, collection);
       getTuples(response, field, metrics);
     } catch (Exception e) {
@@ -373,8 +370,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (cache == null) {
-      cloudSolrClient.close();
+    if (doCloseCache) {
+      clientCache.close();
     }
   }
 

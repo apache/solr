@@ -59,13 +59,12 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf1", 1, 2)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    // TODO make this configurable on StoppableIndexingThread
-    cluster.getSolrClient().setDefaultCollection(COLLECTION);
 
     int maxDoc = atLeast(300);
 
     StoppableIndexingThread indexThread =
-        new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
+        new StoppableIndexingThread(
+            null, cluster.getSolrClient(COLLECTION), "1", true, maxDoc, 1, true);
     indexThread.start();
 
     // give some time to index...

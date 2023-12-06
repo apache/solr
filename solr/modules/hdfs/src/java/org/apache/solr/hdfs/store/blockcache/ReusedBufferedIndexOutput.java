@@ -32,10 +32,13 @@ public abstract class ReusedBufferedIndexOutput extends IndexOutput {
 
   /** position in the file of buffer */
   private long bufferStart = 0;
+
   /** end of valid bytes */
   private int bufferLength = 0;
+
   /** next byte to write */
   private int bufferPosition = 0;
+
   /** total length of the file */
   private long fileLength = 0;
 

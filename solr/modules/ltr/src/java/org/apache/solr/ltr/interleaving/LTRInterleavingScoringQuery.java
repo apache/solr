@@ -31,16 +31,11 @@ public class LTRInterleavingScoringQuery extends LTRScoringQuery {
     super(ltrScoringModel);
   }
 
-  public LTRInterleavingScoringQuery(LTRScoringModel ltrScoringModel, boolean extractAllFeatures) {
-    super(ltrScoringModel, extractAllFeatures);
-  }
-
   public LTRInterleavingScoringQuery(
       LTRScoringModel ltrScoringModel,
       Map<String, String[]> externalFeatureInfo,
-      boolean extractAllFeatures,
       LTRThreadModule ltrThreadMgr) {
-    super(ltrScoringModel, externalFeatureInfo, extractAllFeatures, ltrThreadMgr);
+    super(ltrScoringModel, externalFeatureInfo, ltrThreadMgr);
   }
 
   public Set<Integer> getPickedInterleavingDocIds() {

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
@@ -58,7 +59,7 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
                         + ":"
                         + server.getLocalPort()
                         + "/noOneThere")
-                .withSocketTimeout(1)
+                .withSocketTimeout(1, TimeUnit.MILLISECONDS)
                 .build()) {
       // Expecting an exception
       client.commit();
