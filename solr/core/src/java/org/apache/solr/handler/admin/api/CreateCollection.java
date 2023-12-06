@@ -369,9 +369,7 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
         case ROUTER_KEY:
           final var routerProperties =
               (CreateCollectionRouterProperties) v2MapVals.remove(ROUTER_KEY);
-          final Map<String, Object> routerPropertiesAsMap =
-              ((Utils.DelegateReflectWriter) Utils.getReflectWriter(routerProperties))
-                  .toMap(new HashMap<>());
+          final Map<String, Object> routerPropertiesAsMap = Utils.reflectToMap(routerProperties);
           flattenMapWithPrefix(
               routerPropertiesAsMap, v2MapVals, CollectionAdminParams.ROUTER_PREFIX);
           break;
@@ -406,8 +404,7 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
 
   public static void addToRemoteMessageWithPrefix(
       CreateCollectionRequestBody requestBody, Map<String, Object> remoteMessage, String prefix) {
-    final Map<String, Object> v1Params =
-        ((Utils.DelegateReflectWriter) Utils.getReflectWriter(requestBody)).toMap(new HashMap<>());
+    final Map<String, Object> v1Params = Utils.reflectToMap(requestBody);
     convertV2CreateCollectionMapToV1ParamMap(v1Params);
     for (Map.Entry<String, Object> v1Param : v1Params.entrySet()) {
       remoteMessage.put(prefix + v1Param.getKey(), v1Param.getValue());

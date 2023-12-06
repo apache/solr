@@ -1035,6 +1035,16 @@ public class Utils {
     }
   }
 
+  /**
+   * Produce a Map representation of the provided object using reflection to identify annotated
+   * fields.
+   *
+   * <p>The provided object is not required to be a {@link MapWriter}.
+   */
+  public static Map<String, Object> reflectToMap(Object toReflect) {
+    return ((Utils.DelegateReflectWriter) Utils.getReflectWriter(toReflect)).toMap(new HashMap<>());
+  }
+
   @SuppressWarnings({"unchecked", "rawtypes"})
   public static Map<String, Object> convertToMap(MapWriter m, Map<String, Object> map) {
     try {

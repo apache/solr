@@ -14,29 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.endpoint;
 
-package org.apache.solr.client.api.model;
-
-import static org.apache.solr.client.api.model.Constants.COLLECTION;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.apache.solr.client.api.endpoint.DeleteCollectionSnapshotApi;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import org.apache.solr.client.api.model.CreateCoreBackupRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 
-/**
- * The Response for {@link DeleteCollectionSnapshotApi#deleteCollectionSnapshot(String, String,
- * boolean, String)}
- */
-public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
-  @Schema(description = "The name of the collection.")
-  @JsonProperty(COLLECTION)
-  public String collection;
+@Path("/cores/{coreName}/backups")
+public interface CreateCoreBackupApi {
 
-  @Schema(description = "The name of the snapshot to be deleted.")
-  @JsonProperty("snapshot")
-  public String snapshotName;
-
-  @Schema(description = "A flag that treats the collName parameter as a collection alias.")
-  @JsonProperty("followAliases")
-  public boolean followAliases;
+  @POST
+  @Operation(
+      summary = "Creates a core-level backup",
+      tags = {"core-backups"})
+  SolrJerseyResponse createBackup(
+      @Parameter(description = "The name of the core.") @PathParam("coreName") String coreName,
+      @Schema(description = "Additional backup params")
+          CreateCoreBackupRequestBody backupCoreRequestBody)
+      throws Exception;
 }

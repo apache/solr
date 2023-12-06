@@ -17,13 +17,14 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.solr.client.api.model.CreateCoreBackupRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.backup.ShardBackupId;
-import org.apache.solr.handler.admin.api.BackupCoreAPI;
+import org.apache.solr.handler.admin.api.CreateCoreBackup;
 import org.apache.solr.handler.api.V2ApiUtils;
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
@@ -36,8 +37,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     final SolrParams params = it.req.getParams();
-    BackupCoreAPI.BackupCoreRequestBody backupCoreRequestBody =
-        new BackupCoreAPI.BackupCoreRequestBody();
+    CreateCoreBackupRequestBody backupCoreRequestBody = new CreateCoreBackupRequestBody();
     backupCoreRequestBody.repository = params.get(CoreAdminParams.BACKUP_REPOSITORY);
     backupCoreRequestBody.location = params.get(CoreAdminParams.BACKUP_LOCATION);
     // An optional parameter to describe the snapshot to be backed-up. If this
@@ -53,8 +53,8 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
           params.get(CoreAdminParams.PREV_SHARD_BACKUP_ID, null);
       backupCoreRequestBody.incremental = true;
     }
-    BackupCoreAPI backupCoreAPI =
-        new BackupCoreAPI(
+    CreateCoreBackup backupCoreAPI =
+        new CreateCoreBackup(
             it.handler.coreContainer, it.req, it.rsp, it.handler.coreAdminAsyncTracker);
     try {
       final var response = backupCoreAPI.createBackup(cname, backupCoreRequestBody);

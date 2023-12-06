@@ -14,29 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.api.model;
 
-import static org.apache.solr.client.api.model.Constants.COLLECTION;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.v3.oas.annotations.media.Schema;
-import org.apache.solr.client.api.endpoint.DeleteCollectionSnapshotApi;
 
-/**
- * The Response for {@link DeleteCollectionSnapshotApi#deleteCollectionSnapshot(String, String,
- * boolean, String)}
- */
-public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
-  @Schema(description = "The name of the collection.")
-  @JsonProperty(COLLECTION)
-  public String collection;
+public class BalanceShardUniqueRequestBody {
+  @JsonProperty(required = true)
+  public String property;
 
-  @Schema(description = "The name of the snapshot to be deleted.")
-  @JsonProperty("snapshot")
-  public String snapshotName;
+  public Boolean onlyActiveNodes;
 
-  @Schema(description = "A flag that treats the collName parameter as a collection alias.")
-  @JsonProperty("followAliases")
-  public boolean followAliases;
+  public Boolean shardUnique;
+
+  public String async;
 }
