@@ -24,8 +24,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import org.apache.solr.client.api.endpoint.DeleteCollectionSnapshotApi;
 
 /**
- * The Response for {@link DeleteCollectionSnapshotApi#deleteSnapshot(String, String, boolean,
- * String)}
+ * The Response for {@link DeleteCollectionSnapshotApi#deleteCollectionSnapshot(String, String,
+ * boolean, String)}
  */
 public class DeleteCollectionSnapshotResponse extends AsyncJerseyResponse {
   @Schema(description = "The name of the collection.")

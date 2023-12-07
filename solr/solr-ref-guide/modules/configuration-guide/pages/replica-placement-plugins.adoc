@@ -25,7 +25,8 @@ It can also enforce additional constraints on operations such as collection or r
 In earlier versions of Solr, this functionality was provided using either per-collection rules, or with the autoscaling framework.
 
 == Plugin Configuration
-Replica placement plugin configurations are maintained using the `/cluster/plugin` API.
+Replica placement plugin configurations are configured either xref:configuring-solr-xml.adoc#the-replicaplacementfactory-element[ in the `solr.xml` file], or using the `/cluster/plugin` API.
+Any plugin configured in `solr.xml` will be used as long as no replica placement plugin is defined as a cluster plugin.
 There can be only one cluster-wide plugin configuration at a time, and it uses a pre-defined plugin name: `.placement-plugin`.
 
 There are several placement plugins included in the Solr distribution.

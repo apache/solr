@@ -246,7 +246,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final ConfigSet configSet;
   // singleton listener for all packages used in schema
 
-  private final CircuitBreakerRegistry circuitBreakerRegistry = new CircuitBreakerRegistry();
+  private final CircuitBreakerRegistry circuitBreakerRegistry;
 
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
@@ -1072,6 +1072,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     final CountDownLatch latch = new CountDownLatch(1);
     try {
       this.coreContainer = coreContainer;
+      this.circuitBreakerRegistry = new CircuitBreakerRegistry(coreContainer);
       this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       this.name = Objects.requireNonNull(coreDescriptor.getName());
@@ -1198,10 +1199,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
             .initializeMetrics(solrMetricsContext, "directoryFactory");
       }
 
-      // seed version buckets with max from index during core initialization ... requires a
-      // searcher!
-      seedVersionBuckets();
-
       bufferUpdatesIfConstructing(coreDescriptor);
 
       this.ruleExpiryLock = new ReentrantLock();
@@ -1235,22 +1232,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     assert ObjectReleaseTracker.track(this);
-  }
-
-  public void seedVersionBuckets() {
-    UpdateHandler uh = getUpdateHandler();
-    if (uh != null && uh.getUpdateLog() != null) {
-      RefCounted<SolrIndexSearcher> newestSearcher = getRealtimeSearcher();
-      if (newestSearcher != null) {
-        try {
-          uh.getUpdateLog().seedBucketsWithHighestVersion(newestSearcher.get());
-        } finally {
-          newestSearcher.decref();
-        }
-      } else {
-        log.warn("No searcher available! Cannot seed version buckets with max from index.");
-      }
-    }
   }
 
   /** Set UpdateLog to buffer updates if the slice is in construction. */
@@ -3173,6 +3154,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
             type.getSimpleName() + "." + info.name, (SolrMetricProducer) o);
       }
       if (o instanceof CircuitBreaker) {
+        if (o instanceof SolrCoreAware) {
+          ((SolrCoreAware) o).inform(this);
+        }
         circuitBreakerRegistry.register((CircuitBreaker) o);
       }
       if (info.isDefault()) {

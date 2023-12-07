@@ -61,6 +61,7 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.SwapCoresApi;
 import org.apache.solr.client.api.model.ListCoreSnapshotsResponse;
 import org.apache.solr.client.api.model.ReloadCoreRequestBody;
+import org.apache.solr.client.api.model.RenameCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SwapCoresRequestBody;
 import org.apache.solr.client.api.model.UnloadCoreRequestBody;
@@ -79,6 +80,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.ReloadCore;
+import org.apache.solr.handler.admin.api.RenameCore;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -172,12 +174,15 @@ public enum CoreAdminOperation implements CoreAdminOp {
       RENAME,
       it -> {
         SolrParams params = it.req.getParams();
-        String name = params.required().get(CoreAdminParams.OTHER);
-        String cname = params.required().get(CoreAdminParams.CORE);
-
-        if (cname.equals(name)) return;
-
-        it.handler.coreContainer.rename(cname, name);
+        final String cname = params.required().get(CoreAdminParams.CORE);
+        final String name = params.required().get(CoreAdminParams.OTHER);
+        final var renameCoreRequestBody = new RenameCoreRequestBody();
+        renameCoreRequestBody.to = name;
+        final var renameCoreApi =
+            new RenameCore(
+                it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
+        SolrJerseyResponse response = renameCoreApi.renameCore(cname, renameCoreRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
 
   MERGEINDEXES_OP(MERGEINDEXES, new MergeIndexesOp()),

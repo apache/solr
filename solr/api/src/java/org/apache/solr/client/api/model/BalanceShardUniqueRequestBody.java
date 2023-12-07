@@ -14,25 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.util;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.junit.BeforeClass;
+public class BalanceShardUniqueRequestBody {
+  @JsonProperty(required = true)
+  public String property;
 
-/**
- * Tests the original circuit breaker configuration format, which was not configurable.
- *
- * @deprecated Remove in 10.0
- */
-@Deprecated(since = "9.4")
-public class TestLegacyCircuitBreaker extends BaseTestCircuitBreaker {
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    System.setProperty("filterCache.enabled", "false");
-    System.setProperty("queryResultCache.enabled", "false");
-    System.setProperty("documentCache.enabled", "true");
+  public Boolean onlyActiveNodes;
 
-    initCore("solrconfig-legacy-circuitbreaker.xml", "schema.xml");
-    BaseTestCircuitBreaker.indexDocs();
-  }
+  public Boolean shardUnique;
+
+  public String async;
 }

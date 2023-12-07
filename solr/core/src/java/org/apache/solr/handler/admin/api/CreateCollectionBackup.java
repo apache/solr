@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -35,45 +34,35 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import org.apache.solr.client.api.model.BackupDeletionData;
+import org.apache.solr.client.api.endpoint.CreateCollectionBackupApi;
+import org.apache.solr.client.api.model.CreateCollectionBackupRequestBody;
+import org.apache.solr.client.api.model.CreateCollectionBackupResponseBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.common.StringUtils;
 
-/**
- * V2 API for creating a new "backup" of a specified collection
- *
- * <p>This API is analogous to the v1 /admin/collections?action=BACKUP command.
- */
-@Path("/collections/{collectionName}/backups/{backupName}/versions")
-public class CreateCollectionBackupAPI extends BackupAPIBase {
+/** V2 API for creating a new "backup" of a specified collection */
+public class CreateCollectionBackup extends BackupAPIBase implements CreateCollectionBackupApi {
   private final ObjectMapper objectMapper;
 
   @Inject
-  public CreateCollectionBackupAPI(
+  public CreateCollectionBackup(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
@@ -82,13 +71,10 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     this.objectMapper = SolrJacksonMapper.getObjectMapper();
   }
 
-  @POST
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse createCollectionBackup(
-      @PathParam("collectionName") String collectionName,
-      @PathParam("backupName") String backupName,
-      CreateCollectionBackupRequestBody requestBody)
+      String collectionName, String backupName, CreateCollectionBackupRequestBody requestBody)
       throws Exception {
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
@@ -144,7 +130,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
 
   public static ZkNodeProps createRemoteMessage(
       String collectionName, String backupName, CreateCollectionBackupRequestBody requestBody) {
-    final Map<String, Object> remoteMessage = requestBody.toMap(new HashMap<>());
+    final Map<String, Object> remoteMessage = Utils.reflectToMap(requestBody);
     remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.BACKUP.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(NAME, backupName);
@@ -158,7 +144,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
   }
 
   public static CreateCollectionBackupRequestBody createRequestBodyFromV1Params(SolrParams params) {
-    var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
+    var requestBody = new CreateCollectionBackupRequestBody();
 
     requestBody.location = params.get(BACKUP_LOCATION);
     requestBody.repository = params.get(BACKUP_REPOSITORY);
@@ -183,49 +169,7 @@ public class CreateCollectionBackupAPI extends BackupAPIBase {
     final var backupName = req.getParams().get(NAME);
     final var requestBody = createRequestBodyFromV1Params(req.getParams());
 
-    final var createBackupApi = new CreateCollectionBackupAPI(coreContainer, req, rsp);
+    final var createBackupApi = new CreateCollectionBackup(coreContainer, req, rsp);
     return createBackupApi.createCollectionBackup(collectionName, backupName, requestBody);
-  }
-
-  public static class CreateCollectionBackupRequestBody implements JacksonReflectMapWriter {
-    @JsonProperty public String location;
-    @JsonProperty public String repository;
-    @JsonProperty public Boolean followAliases;
-    @JsonProperty public String backupStrategy;
-    @JsonProperty public String snapshotName;
-    @JsonProperty public Boolean incremental;
-    @JsonProperty public Boolean backupConfigset;
-    @JsonProperty public Integer maxNumBackupPoints;
-    @JsonProperty public String async;
-    @JsonProperty public Map<String, String> extraProperties;
-  }
-
-  public static class CreateCollectionBackupResponseBody
-      extends SubResponseAccumulatingJerseyResponse {
-    @JsonProperty("response")
-    public CollectionBackupDetails backupDataResponse;
-
-    @JsonProperty("deleted")
-    public List<BackupDeletionData> deleted;
-
-    @JsonProperty public String collection;
-  }
-
-  public static class CollectionBackupDetails implements JacksonReflectMapWriter {
-    @JsonProperty public String collection;
-    @JsonProperty public Integer numShards;
-    @JsonProperty public Integer backupId;
-    @JsonProperty public String indexVersion;
-    @JsonProperty public String startTime;
-    @JsonProperty public String endTime;
-    @JsonProperty public Integer indexFileCount;
-    @JsonProperty public Integer uploadedIndexFileCount;
-    @JsonProperty public Double indexSizeMB;
-    @JsonProperty public Map<String, String> extraProperties;
-
-    @JsonProperty("uploadedIndexFileMB")
-    public Double uploadedIndexSizeMB;
-
-    @JsonProperty public List<String> shardBackupIds;
   }
 }

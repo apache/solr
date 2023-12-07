@@ -144,10 +144,14 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       throw remoteResponse.getException();
     }
 
+    if (requestBody.async != null) {
+      response.requestId = requestBody.async;
+      return response;
+    }
+
     // Values fetched from remoteResponse may be null
     response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
     response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
-
     return response;
   }
 
