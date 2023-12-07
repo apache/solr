@@ -18,10 +18,23 @@
 package org.apache.solr.security.jwt;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
+import org.jose4j.http.Get;
+import org.jose4j.http.SimpleResponse;
+import org.jose4j.jwk.HttpsJwks;
+import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.jwk.JsonWebKeySet;
+import org.jose4j.lang.JoseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -35,17 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
-import org.jose4j.http.Get;
-import org.jose4j.http.SimpleResponse;
-import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
-import org.jose4j.lang.JoseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Holds information about an IdP (issuer), such as issuer ID, JWK url(s), keys etc */
 public class JWTIssuerConfig {
@@ -472,7 +474,7 @@ public class JWTIssuerConfig {
       if (trustedCerts != null) {
         Get getWithCustomTrust = new Get();
         getWithCustomTrust.setTrustedCertificates(trustedCerts);
-        if ("localhost".equals(jwksUrl.getHost())) {
+        if (InetAddress.getLoopbackAddress().getCanonicalHostName().equals(jwksUrl.getHost())) {
           getWithCustomTrust.setHostnameVerifier((hostname, session) -> true);
         }
         httpsJkws.setSimpleHttpGet(getWithCustomTrust);
@@ -525,7 +527,7 @@ public class JWTIssuerConfig {
           Get httpGet = new Get();
           if (trustedCerts != null) {
             httpGet.setTrustedCertificates(trustedCerts);
-            if ("localhost".equals(url.getHost())) {
+            if (InetAddress.getLoopbackAddress().getCanonicalHostName().equals(url.getHost())) {
               httpGet.setHostnameVerifier((hostname, session) -> true);
             }
           }

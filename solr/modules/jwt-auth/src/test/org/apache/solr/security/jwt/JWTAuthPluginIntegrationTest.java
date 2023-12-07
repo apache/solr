@@ -103,11 +103,12 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
-    InetAddress loopbackAddr = InetAddress.getLoopbackAddress();
     Path tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
     tempDir.toFile().deleteOnExit();
     Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
-    new KeystoreGenerator().generateKeystore(p12Cert, modifiedP12Cert, loopbackAddr.getHostName());
+    new KeystoreGenerator()
+        .generateKeystore(
+            p12Cert, modifiedP12Cert, InetAddress.getLoopbackAddress().getCanonicalHostName());
     p12Cert = modifiedP12Cert;
 
     mockOAuth2Server = createMockOAuthServer(p12Cert, "secret");
