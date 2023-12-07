@@ -18,8 +18,9 @@ jobs:
     - name: Crave clone sources
       run: crave clone create --projectID 39 /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
     - name: Checkout the correct branch
-      run: git -C /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}/solr checkout ${GITHUB_HEAD_REF} || echo "${GITHUB_HEAD_REF} not present on solr repo, staying at main"
-      continue-on-error: true
+      run: |
+        git -C /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}/solr fetch ${GITHUB_REF}:${GITHUB_REF}
+        git -C /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}/solr checkout ${GITHUB_REF}
     - name: Initialize, build, test
       run: |
         cd /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}/solr
