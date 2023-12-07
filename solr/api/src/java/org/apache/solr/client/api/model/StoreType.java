@@ -17,6 +17,17 @@
 package org.apache.solr.client.api.model;
 
 public enum StoreType {
-  COLLECTION,
-  CORE
+  COLLECTION("collections"),
+  CORE("cores");
+
+  private final String pathString;
+
+  StoreType(String pathString) {
+    this.pathString = pathString;
+  }
+
+  @Override
+  public String toString() {
+    return pathString;
+  }
 }

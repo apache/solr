@@ -55,9 +55,9 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
-import org.apache.solr.handler.admin.api.BackupCoreAPI;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
+import org.apache.solr.handler.admin.api.CreateCoreBackup;
 import org.apache.solr.handler.admin.api.InstallCoreData;
 import org.apache.solr.handler.admin.api.MergeIndexesAPI;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
@@ -401,7 +401,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     return List.of(
         CoreSnapshot.class,
         InstallCoreData.class,
-        BackupCoreAPI.class,
+        CreateCoreBackup.class,
         RestoreCore.class,
         ReloadCore.class,
         UnloadCore.class,

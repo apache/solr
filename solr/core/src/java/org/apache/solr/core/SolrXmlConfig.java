@@ -336,6 +336,9 @@ public class SolrXmlConfig {
               case "coresLocator":
                 builder.setCoresLocatorClass(it.txt());
                 break;
+              case "coreSorter":
+                builder.setCoreSorterClass(it.txt());
+                break;
               case "coreRootDirectory":
                 builder.setCoreRootDirectory(it.txt());
                 break;

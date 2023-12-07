@@ -196,8 +196,21 @@ The root of the core discovery tree, defaults to `$SOLR_HOME`.
 +
 This attribute does not need to be set.
 +
-If used, this attribute should be set to the FQN (Fully qualified name) of a class that implements `CoresLocator`, and you must provide a constructor with one parameter of type `org.apache.solr.core.NodeConfig`.
-For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>`.
+If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoresLocator`, and you must provide a constructor with one parameter of type `org.apache.solr.core.NodeConfig`.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom cores locator.
+
+`coreSorter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.core.CoreSorter`
+|===
++
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoreSorter`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
+This service is used when Solr is starting to prioritize which cores should be loaded first.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom core sorter.
 
 `managementPath`::
 +
