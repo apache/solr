@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -580,12 +581,7 @@ public class SearchHandler extends RequestHandlerBase
               // If things are not tolerant, abort everything and rethrow
               if (!tolerant) {
                 shardHandler1.cancelAll();
-                if (srsp.getException() instanceof SolrException) {
-                  throw (SolrException) srsp.getException();
-                } else {
-                  throw new SolrException(
-                      SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
-                }
+                throwSolrException(srsp.getException());
               } else {
                 // Check if the purpose includes 'PURPOSE_GET_TOP_IDS'
                 boolean includesTopIdsPurpose =
@@ -598,7 +594,7 @@ public class SearchHandler extends RequestHandlerBase
                 boolean allShardsFailed = includesTopIdsPurpose && allResponsesHaveExceptions;
                 // if all shards fail, fail the request despite shards.tolerant
                 if (allShardsFailed) {
-                  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
+                  throwSolrException(srsp.getException());
                 } else {
                   rsp.getResponseHeader()
                       .asShallowMap()
@@ -660,6 +656,15 @@ public class SearchHandler extends RequestHandlerBase
           pos != -1 ? rb.shortCircuitedURL.substring(pos + 3) : rb.shortCircuitedURL;
       shardInfo.add(shardInfoName, nl);
       rsp.getValues().add(ShardParams.SHARDS_INFO, shardInfo);
+    }
+  }
+
+  public static void throwSolrException(Throwable  shardResponseException) throws SolrException {
+    if (shardResponseException instanceof SolrException) {
+      throw (SolrException) shardResponseException;
+    } else {
+      throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, shardResponseException);
     }
   }
 
