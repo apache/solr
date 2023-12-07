@@ -40,6 +40,35 @@ import org.slf4j.LoggerFactory;
 public class SurroundQParserPlugin extends QParserPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String NAME = "surround";
+  private static final String MAX_BASIC_QUERIES_SYSTEM_PROP = "solr.maxBasicQueriesOverride";
+  private static final int MAX_BASIC_QUERIES_OVERRIDE = readMaxBasicQueriesOverride();
+
+  private static int readMaxBasicQueriesOverride() {
+    String maxBasicQueriesSystemProp = System.getProperty(MAX_BASIC_QUERIES_SYSTEM_PROP);
+    if (maxBasicQueriesSystemProp != null) {
+      try {
+        int maxBasicQueriesOverride = Integer.parseInt(maxBasicQueriesSystemProp);
+        if (maxBasicQueriesOverride > 0) {
+          log.info(
+              "maxBasicQueries with system property {} with value {}",
+              MAX_BASIC_QUERIES_SYSTEM_PROP,
+              maxBasicQueriesSystemProp);
+          return maxBasicQueriesOverride;
+        } else {
+          log.info(
+              "Ignoring system property {} value {} since it is non-positive",
+              MAX_BASIC_QUERIES_SYSTEM_PROP,
+              maxBasicQueriesSystemProp);
+        }
+      } catch (NumberFormatException e) {
+        log.warn(
+            "Invalid system property {} value {}",
+            MAX_BASIC_QUERIES_SYSTEM_PROP,
+            maxBasicQueriesSystemProp);
+      }
+    }
+    return -1; // -1 indicates no max basic queries override
+  }
 
   @Override
   public QParser createParser(
@@ -77,6 +106,11 @@ public class SurroundQParserPlugin extends QParserPlugin {
           this.maxBasicQueries = DEFMAXBASICQUERIES;
         }
       }
+
+      if (MAX_BASIC_QUERIES_OVERRIDE > 0) {
+        this.maxBasicQueries = MAX_BASIC_QUERIES_OVERRIDE;
+      }
+
       // ugh .. colliding ParseExceptions
       try {
         sq = org.apache.lucene.queryparser.surround.parser.QueryParser.parse(qstr);
