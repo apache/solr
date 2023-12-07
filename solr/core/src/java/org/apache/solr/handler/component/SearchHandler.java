@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -659,12 +658,11 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
-  public static void throwSolrException(Throwable  shardResponseException) throws SolrException {
+  private static void throwSolrException(Throwable shardResponseException) throws SolrException {
     if (shardResponseException instanceof SolrException) {
       throw (SolrException) shardResponseException;
     } else {
-      throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR, shardResponseException);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, shardResponseException);
     }
   }
 
