@@ -1526,20 +1526,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
 
   public void testBoolMMQuery() throws Exception {
     assertQueryEquals(
-            "lucene",
-            "{!bool should=foo_s:a should=foo_s:b}",
-            "{!bool should=foo_s:a should=foo_s:b mm=0}");
+        "lucene",
+        "{!bool should=foo_s:a should=foo_s:b}",
+        "{!bool should=foo_s:a should=foo_s:b mm=0}");
     assertQueryEquals(
-            "lucene",
-            "{!bool should=foo_s:a should=foo_s:b mm=1}",
-            "{!bool should=foo_s:a should=foo_s:b mm=1}");
+        "lucene",
+        "{!bool should=foo_s:a should=foo_s:b mm=1}",
+        "{!bool should=foo_s:a should=foo_s:b mm=1}");
     expectThrows(
-            AssertionError.class,
-            "queries should not have been equal",
-            () ->
-                    assertQueryEquals(
-                            "bool", "{!bool should=foo_s:a should=foo_s:b mm=1}",
-                            "{!bool should=foo_s:a should=foo_s:b}"));
+        AssertionError.class,
+        "queries should not have been equal",
+        () ->
+            assertQueryEquals(
+                "bool",
+                "{!bool should=foo_s:a should=foo_s:b mm=1}",
+                "{!bool should=foo_s:a should=foo_s:b}"));
   }
 
   public void testBoolQuery() throws Exception {
@@ -1548,9 +1549,9 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "{!bool must='{!lucene}foo_s:a' must='{!lucene}foo_s:b'}",
         "{!bool must='{!lucene}foo_s:b' must='{!lucene}foo_s:a'}");
     assertQueryEquals(
-            "bool",
-            "{!bool must='{!lucene}foo_s:a' must='{!lucene}foo_s:b'}",
-            "{!bool must='{!lucene}foo_s:b' must='{!lucene}foo_s:a'}");
+        "bool",
+        "{!bool must='{!lucene}foo_s:a' must='{!lucene}foo_s:b'}",
+        "{!bool must='{!lucene}foo_s:b' must='{!lucene}foo_s:a'}");
     assertQueryEquals(
         "bool",
         "{!bool must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' "

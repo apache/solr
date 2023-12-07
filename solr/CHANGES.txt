@@ -94,6 +94,8 @@ Improvements
 * SOLR-16397: Swap core v2 endpoints have been updated to be more REST-ful.
   SWAP is now available at `POST /api/cores/coreName/swap` (Sanjay Dutt via Jason Gerlowski)
 
+* SOLR-13748: introducing {!bool .. mm=2} (AndreyBozhko via Mikhail Khludnev)
+
 Optimizations
 ---------------------
 (No changes)
