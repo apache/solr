@@ -155,11 +155,26 @@ task assembleRelease(type: Sync) {
   from fullDistTarTask
   from slimDistTarTask
 
-  from tasks.computeChecksums
+  from(tasks.computeChecksums, {
+    exclude { it.file.getName().contains("openapi") }
+    //excludes ["**/*openapi.json.sha512"]
+  })
+  from(tasks.computeChecksums, {
+    include { it.file.getName().contains("openapi") }
+    //includes ["**/*openapi.json.sha512"]
+    into "openApi"
+  })
 
   // Conditionally, attach signatures of all the release archives.
   if (project.ext.withSignedArtifacts) {
-    from tasks.signReleaseArchives
+    from(tasks.signReleaseArchives, {
+      exclude { it.file.getName().contains("openapi") }
+    })
+
+    from(tasks.signReleaseArchives, {
+      include { it.file.getName().contains("openapi") }
+      into "openApi"
+    })
   }
 
   into releaseDir
