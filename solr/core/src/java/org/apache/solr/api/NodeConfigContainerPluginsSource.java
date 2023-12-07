@@ -70,9 +70,9 @@ public class NodeConfigContainerPluginsSource implements ContainerPluginsSource 
 
   private static Map<String, Object> readPlugins(final NodeConfig cfg) {
     Map<String, Object> pluginInfos = new HashMap<>();
-    PluginInfo[] clusterSingletonPlugins = cfg.getClusterSingletonPlugins();
-    if (clusterSingletonPlugins != null) {
-      Arrays.stream(clusterSingletonPlugins)
+    PluginInfo[] containerPlugins = cfg.getContainerPlugins();
+    if (containerPlugins != null) {
+      Arrays.stream(containerPlugins)
           .forEach(
               p -> {
                 Map<String, Object> pluginMap = new HashMap<>();

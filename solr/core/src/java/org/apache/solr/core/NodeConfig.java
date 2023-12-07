@@ -119,7 +119,7 @@ public class NodeConfig {
 
   private final PluginInfo containerPluginsSource;
 
-  private final PluginInfo[] clusterSingletonPlugins;
+  private final PluginInfo[] containerPlugins;
 
   private final String defaultZkHost;
 
@@ -156,7 +156,7 @@ public class NodeConfig {
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
       PluginInfo containerPluginsSource,
-      PluginInfo[] clusterSingletonPlugins,
+      PluginInfo[] containerPlugins,
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
@@ -197,7 +197,7 @@ public class NodeConfig {
     this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
     this.tracerConfig = tracerConfig;
     this.containerPluginsSource = containerPluginsSource;
-    this.clusterSingletonPlugins = clusterSingletonPlugins;
+    this.containerPlugins = containerPlugins;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
@@ -429,8 +429,8 @@ public class NodeConfig {
     return containerPluginsSource;
   }
 
-  public PluginInfo[] getClusterSingletonPlugins() {
-    return clusterSingletonPlugins;
+  public PluginInfo[] getContainerPlugins() {
+    return containerPlugins;
   }
 
   /**
@@ -608,7 +608,7 @@ public class NodeConfig {
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
     private PluginInfo containerPluginsSource;
-    private PluginInfo[] clusterSingletonPlugins;
+    private PluginInfo[] containerPlugins;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
@@ -812,8 +812,8 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setClusterSingletonPlugins(PluginInfo[] clusterSingletonPlugins) {
-      this.clusterSingletonPlugins = clusterSingletonPlugins;
+    public NodeConfigBuilder setContainerPlugins(PluginInfo[] containerPlugins) {
+      this.containerPlugins = containerPlugins;
       return this;
     }
 
@@ -930,7 +930,7 @@ public class NodeConfig {
           cachesConfig,
           tracerConfig,
           containerPluginsSource,
-          clusterSingletonPlugins,
+          containerPlugins,
           defaultZkHost,
           allowPaths,
           allowUrls,

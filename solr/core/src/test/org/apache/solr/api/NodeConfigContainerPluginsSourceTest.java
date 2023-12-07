@@ -17,6 +17,8 @@
 
 package org.apache.solr.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,10 +34,13 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.PermissionNameProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Tests that verify initialization of cluster singleton plugins that are declared in solr.xml */
+/** Tests that verify initialization of container plugins that are declared in solr.xml */
 public class NodeConfigContainerPluginsSourceTest extends SolrCloudTestCase {
 
   private static final String NODE_CONFIG_PLUGINS_SOURCE_XML =
@@ -57,7 +62,7 @@ public class NodeConfigContainerPluginsSourceTest extends SolrCloudTestCase {
   public void testOneClusterSingleton() {
     CoreContainer cc = newCoreContainer(solrXml(SingletonNoConfig.xmlConfig()));
     try {
-      assertEquals(1, cc.getNodeConfig().getClusterSingletonPlugins().length);
+      assertEquals(1, cc.getNodeConfig().getContainerPlugins().length);
 
       ContainerPluginsRegistry registry = cc.getContainerPluginsRegistry();
       registry.refresh();
@@ -89,7 +94,7 @@ public class NodeConfigContainerPluginsSourceTest extends SolrCloudTestCase {
                 SingletonNoConfig.xmlConfig(),
                 SingletonWithConfig.configXml(new SingletonConfig(cfgVal))));
     try {
-      assertEquals(2, cc.getNodeConfig().getClusterSingletonPlugins().length);
+      assertEquals(2, cc.getNodeConfig().getContainerPlugins().length);
 
       ContainerPluginsRegistry registry = cc.getContainerPluginsRegistry();
       registry.refresh();
@@ -118,7 +123,7 @@ public class NodeConfigContainerPluginsSourceTest extends SolrCloudTestCase {
    */
   @Test
   @SuppressWarnings({"unchecked"})
-  public void testClusterPluginsReadApi() throws Exception {
+  public void testContainerPluginsReadApi() throws Exception {
     V2Response rsp =
         new V2Request.Builder("/cluster/plugin").GET().build().process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
@@ -129,7 +134,7 @@ public class NodeConfigContainerPluginsSourceTest extends SolrCloudTestCase {
 
   /** Verify that the Edit Apis are not available for plugins declared in solr.xml */
   @Test
-  public void testClusterPluginsEditApi() throws Exception {
+  public void testContainerPluginsEditApi() throws Exception {
     PluginMeta meta = SingletonNoConfig.pluginMeta();
     V2Request req =
         new V2Request.Builder("/cluster/plugin")
@@ -147,12 +152,45 @@ public class NodeConfigContainerPluginsSourceTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testContainerPlugin() throws Exception {
+    CoreContainer cc = newCoreContainer(solrXml(ContainerPlugin.xmlConfig()));
+    ContainerPluginsRegistry registry = cc.getContainerPluginsRegistry();
+    registry.refresh();
+
+    ContainerPluginsRegistry.ApiInfo apiInfo = registry.getPlugin(ContainerPlugin.NAME);
+    assertNotNull(apiInfo);
+    assertEquals(ContainerPlugin.NAME, apiInfo.getInfo().name);
+    assertEquals(ContainerPlugin.class.getName(), apiInfo.getInfo().klass);
+  }
+
+  @EndPoint(
+      method = GET,
+      path = "/plugin/my/plugin",
+      permission = PermissionNameProvider.Name.COLL_READ_PERM)
+  public static class ContainerPlugin {
+    static final String NAME = "container.plugin";
+
+    @Command
+    public void read(SolrQueryRequest req, SolrQueryResponse rsp) {
+      rsp.add("testkey", "testval");
+    }
+
+    static String xmlConfig() {
+      return "<containerPlugin name=\""
+          + NAME
+          + "\" class=\""
+          + ContainerPlugin.class.getName()
+          + "\"/>";
+    }
+  }
+
   public static class SingletonNoConfig implements ClusterSingleton {
 
     static final String NAME = ".singleton-no-config";
 
     static String xmlConfig() {
-      return "<clusterSingleton name=\""
+      return "<containerPlugin name=\""
           + NAME
           + "\" class=\""
           + SingletonNoConfig.class.getName()
@@ -202,13 +240,13 @@ public class NodeConfigContainerPluginsSourceTest extends SolrCloudTestCase {
     static final String NAME = ".singleton-with-config";
 
     static String configXml(SingletonConfig config) {
-      return "<clusterSingleton name=\""
+      return "<containerPlugin name=\""
           + NAME
           + "\" class=\""
           + SingletonWithConfig.class.getName()
           + "\"><int name=\"cfgInt\">"
           + config.cfgInt
-          + "</int></clusterSingleton>";
+          + "</int></containerPlugin>";
     }
 
     private int cfgInt;
