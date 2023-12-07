@@ -49,7 +49,6 @@ public class BoolQParserPlugin extends QParserPlugin {
       protected BooleanQuery.Builder createBuilder() {
         BooleanQuery.Builder builder = super.createBuilder();
         builder.setMinimumNumberShouldMatch(localParams.getInt("mm", 0));
-        // nocommit SolrPluginUtils.setMinShouldMatch(builder, localParams.get("mm", "0"));
         return builder;
       }
 
