@@ -117,6 +117,10 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
+  private final PluginInfo containerPluginsSource;
+
+  private final PluginInfo[] clusterSingletonPlugins;
+
   private final String defaultZkHost;
 
   private NodeConfig(
@@ -151,6 +155,8 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
+      PluginInfo containerPluginsSource,
+      PluginInfo[] clusterSingletonPlugins,
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
@@ -190,6 +196,8 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
     this.tracerConfig = tracerConfig;
+    this.containerPluginsSource = containerPluginsSource;
+    this.clusterSingletonPlugins = clusterSingletonPlugins;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
@@ -417,6 +425,14 @@ public class NodeConfig {
     return tracerConfig;
   }
 
+  public PluginInfo getContainerPluginsSource() {
+    return containerPluginsSource;
+  }
+
+  public PluginInfo[] getClusterSingletonPlugins() {
+    return clusterSingletonPlugins;
+  }
+
   /**
    * Extra file paths that will be allowed for core creation, in addition to SOLR_HOME,
    * SOLR_DATA_HOME and coreRootDir
@@ -591,6 +607,8 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
+    private PluginInfo containerPluginsSource;
+    private PluginInfo[] clusterSingletonPlugins;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
@@ -789,6 +807,16 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setContainerPluginsSource(PluginInfo containerPluginsSource) {
+      this.containerPluginsSource = containerPluginsSource;
+      return this;
+    }
+
+    public NodeConfigBuilder setClusterSingletonPlugins(PluginInfo[] clusterSingletonPlugins) {
+      this.clusterSingletonPlugins = clusterSingletonPlugins;
+      return this;
+    }
+
     public NodeConfigBuilder setDefaultZkHost(String defaultZkHost) {
       this.defaultZkHost = defaultZkHost;
       return this;
@@ -901,6 +929,8 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
+          containerPluginsSource,
+          clusterSingletonPlugins,
           defaultZkHost,
           allowPaths,
           allowUrls,

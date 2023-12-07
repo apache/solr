@@ -165,6 +165,9 @@ public class SolrXmlConfig {
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
+    configBuilder.setContainerPluginsSource(getPluginInfo(root.get("containerPluginsSource")));
+    configBuilder.setClusterSingletonPlugins(
+        getClusterSingletonPluginInfos(root.getAll("clusterSingleton")));
     // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
     // <hiddenSysProps> is not provided under <solr>.
     // Remove this line in 10.0
@@ -644,6 +647,17 @@ public class SolrXmlConfig {
       configs[i] = new PluginInfo(c, "BackupRepositoryFactory", true, true);
     }
 
+    return configs;
+  }
+
+  private static PluginInfo[] getClusterSingletonPluginInfos(List<ConfigNode> nodes) {
+    if (nodes == null || nodes.isEmpty()) {
+      return new PluginInfo[0];
+    }
+    PluginInfo[] configs = new PluginInfo[nodes.size()];
+    for (int i = 0; i < nodes.size(); i++) {
+      configs[i] = getPluginInfo(nodes.get(i));
+    }
     return configs;
   }
 

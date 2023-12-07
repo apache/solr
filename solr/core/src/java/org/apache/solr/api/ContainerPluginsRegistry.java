@@ -39,7 +39,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Phaser;
-import java.util.function.Supplier;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -55,7 +54,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -66,7 +64,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class manages the container-level plugins and their Api-s. It is responsible for adding /
  * removing / replacing the plugins according to the updated configuration obtained from {@link
- * ContainerPluginsApi#plugins(Supplier)}.
+ * ContainerPluginsSource#plugins()}.
  *
  * <p>Plugins instantiated by this class may implement zero or more {@link Api}-s, which are then
  * registered in the CoreContainer {@link ApiBag}. They may be also post-processed for additional
@@ -84,6 +82,8 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
 
   private final CoreContainer coreContainer;
   private final ApiBag containerApiBag;
+
+  private final ContainerPluginsSource pluginsSource;
 
   private final Map<String, ApiInfo> currentPlugins = new HashMap<>();
 
@@ -117,9 +117,11 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
     listeners.remove(listener);
   }
 
-  public ContainerPluginsRegistry(CoreContainer coreContainer, ApiBag apiBag) {
+  public ContainerPluginsRegistry(
+      CoreContainer coreContainer, ApiBag apiBag, ContainerPluginsSource pluginsSource) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
+    this.pluginsSource = pluginsSource;
   }
 
   @Override
@@ -171,7 +173,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   public synchronized void refresh() {
     Map<String, Object> pluginInfos;
     try {
-      pluginInfos = ContainerPluginsApi.plugins(coreContainer.zkClientSupplier);
+      pluginInfos = pluginsSource.plugins();
     } catch (IOException e) {
       log.error("Could not read plugins data", e);
       return;
