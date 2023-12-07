@@ -92,7 +92,7 @@ tasks.withType(org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
 
 artifacts {
     // Ensure the OAS is available to other modules who want to generate code (i.e. solrj)
-    openapiSpec resolve.outputDir, {
+    openapiSpec file(openApiSpecFile), {
         builtBy resolve
     }
 

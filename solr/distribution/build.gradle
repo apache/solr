@@ -66,7 +66,6 @@ dependencies {
 
 def fullDistTarTask = rootProject.getTasksByName("fullDistTar", true)[0]
 def slimDistTarTask = rootProject.getTasksByName("slimDistTar", true)[0]
-def oasTask = rootProject.getTasksByName("resolve", true)[0]
 
 // Compute checksums for release archives.
 task computeChecksums(type: Checksum) {
@@ -76,12 +75,13 @@ task computeChecksums(type: Checksum) {
   [
       tasks.assembleSourceTgz,
       fullDistTarTask,
-      slimDistTarTask,
-      oasTask
+      slimDistTarTask
   ].each { dep ->
     dependsOn dep
     files += dep.outputs.files
   }
+  dependsOn configurations.openApiSpecFile
+  files += configurations.openApiSpecFile
 
   outputDir = file("${buildDir}/checksums")
 }
@@ -98,8 +98,11 @@ task signSourceTgz(type: Sign) {
   sign tasks.assembleSourceTgz.destination
 }
 task signOpenApiSpec(type: Sign) {
-  dependsOn oasTask
-  sign configurations.openApiSpecFile
+  dependsOn configurations.openApiSpecFile
+  // This is not an artifact, so we need to use "file" not "configuration" signing
+  doFirst {
+    sign configurations.openApiSpecFile.singleFile
+  }
 }
 
 task signReleaseArchives(type: Sync) {
@@ -135,7 +138,7 @@ task assembleRelease(type: Sync) {
   })
 
   from(configurations.openApiSpecFile, {
-    into "oas"
+    into "openApi"
   })
 
   from(configurations.docker, {
