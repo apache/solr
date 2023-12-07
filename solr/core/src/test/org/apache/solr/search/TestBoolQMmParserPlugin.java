@@ -28,7 +28,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestBoolQParserPlugin extends SolrTestCaseJ4 {
+public class TestBoolQMmParserPlugin extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {

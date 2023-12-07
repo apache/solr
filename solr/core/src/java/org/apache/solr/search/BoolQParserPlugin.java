@@ -20,11 +20,13 @@ package org.apache.solr.search;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.FiltersQParser;
+import org.apache.solr.util.SolrPluginUtils;
 
 /**
  * Create a boolean query from sub queries. Sub queries can be marked as {@code must}, {@code
@@ -45,6 +47,14 @@ public class BoolQParserPlugin extends QParserPlugin {
       }
 
       @Override
+      protected BooleanQuery.Builder createBuilder() {
+        BooleanQuery.Builder builder = super.createBuilder();
+        builder.setMinimumNumberShouldMatch(localParams.getInt("mm", 0));
+        //SolrPluginUtils.setMinShouldMatch(builder, localParams.get("mm", "0"));
+        return builder;
+      }
+
+      @Override
       protected Query unwrapQuery(Query query, BooleanClause.Occur occur) {
         if (occur == BooleanClause.Occur.FILTER) {
           if (!(query instanceof ExtendedQuery) || (((ExtendedQuery) query).getCache())) {
@@ -56,11 +66,6 @@ public class BoolQParserPlugin extends QParserPlugin {
           }
         }
         return query;
-      }
-
-      @Override
-      protected int minShouldMatch() {
-        return localParams.getInt("mm", 0);
       }
 
       @Override

@@ -57,15 +57,16 @@ public class FiltersQParser extends QParser {
 
     exclude(clauses.keySet());
 
-    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    BooleanQuery.Builder builder = createBuilder();
     for (Map.Entry<QParser, Occur> clause : clauses.entrySet()) {
       builder.add(unwrapQuery(clause.getKey().getQuery(), clause.getValue()), clause.getValue());
     }
-
-    builder.setMinimumNumberShouldMatch(minShouldMatch());
-
     // what about empty query?
     return builder.build();
+  }
+
+  protected BooleanQuery.Builder createBuilder() {
+    return new BooleanQuery.Builder();
   }
 
   protected Query unwrapQuery(Query query, BooleanClause.Occur occur) {
@@ -74,10 +75,6 @@ public class FiltersQParser extends QParser {
 
   protected Query wrapSubordinateClause(Query subordinate) throws SyntaxError {
     return subordinate;
-  }
-
-  protected int minShouldMatch() {
-    return 0;
   }
 
   protected Query noClausesQuery() throws SyntaxError {
