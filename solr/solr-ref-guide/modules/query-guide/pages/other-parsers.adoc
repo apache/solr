@@ -75,6 +75,17 @@ However, unlike `must`, the score of filter queries is ignored.
 Also, these queries are cached in filter cache.
 To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
 
+`mm`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+The number of optional clauses that must match. By default, no optional clauses are necessary for a match
+(unless there are no required clauses). If this parameter is set, then the specified number of `should` clauses is required.
+If this parameter is not set, the usual rules about boolean queries still apply at search time - that is, a boolean query containing no required clauses must still match at least one optional clause.
+
 `excludeTags`::
 +
 [%autowidth,frame=none]
@@ -95,6 +106,11 @@ See explanation below.
 [source,text]
 ----
 {!bool filter=foo should=bar}
+----
+
+[source,text]
+----
+{!bool should=foo should=bar should=qux mm=2}
 ----
 
 Parameters might also be multivalue references.
@@ -369,7 +385,7 @@ The graph is built according to linkages between documents based on the terms fo
 
 Supported field types are point fields with docValues enabled, or string fields with `indexed=true` or `docValues=true`.
 
-TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}/sandbox/org/apache/lucene/sandbox/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`] for its performance characteristics so `indexed=true` will perform better for most use-cases.
+TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}/core/org/apache/lucene/document/SortedDocValuesField.html#newSlowSetQuery(java.lang.String,org.apache.lucene.util.BytesRef...)[`SortedDocValuesField.newSlowSetQuery()`] for its performance characteristics so `indexed=true` will perform better for most use-cases.
 
 === Graph Query Parameters
 

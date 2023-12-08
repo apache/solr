@@ -18,10 +18,10 @@ package org.apache.solr.common.cloud;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import org.apache.solr.common.SolrException;
+import java.util.Map;
+import java.util.Set;
 import org.junit.Test;
 
 /** Unit tests for {@link ReplicaCount}. */
@@ -117,19 +117,6 @@ public class ReplicaCountTest {
   }
 
   @Test
-  public void testValidate() {
-    ReplicaCount replicaCountNrtOnly = ReplicaCount.of(Replica.Type.NRT, 1);
-    replicaCountNrtOnly.validate(); // Should not throw
-
-    ReplicaCount replicaCountPullOnly = ReplicaCount.of(Replica.Type.PULL, 1);
-    Throwable t = assertThrows(SolrException.class, replicaCountPullOnly::validate);
-    assertEquals(
-        "Unexpected number of replicas (nrt=0, tlog=0, pull=1), there must "
-            + "be at least one leader-eligible replica",
-        t.getMessage());
-  }
-
-  @Test
   public void testGetLeaderType() {
     // With only 1 NRT, NRT should be returned.
     ReplicaCount replicaCount = ReplicaCount.of(Replica.Type.NRT, 1);
@@ -143,5 +130,90 @@ public class ReplicaCountTest {
     // With only 1 TLOG, TLOG should now be returned.
     replicaCount.decrement(Replica.Type.NRT);
     assertEquals(Replica.Type.TLOG, replicaCount.getLeaderType());
+  }
+
+  @Test
+  public void testHasLeaderReplica() {
+    assertTrue(ReplicaCount.of(Replica.Type.NRT, 1).hasLeaderReplica());
+    assertTrue(ReplicaCount.of(Replica.Type.TLOG, 1).hasLeaderReplica());
+    assertFalse(ReplicaCount.of(Replica.Type.PULL, 1).hasLeaderReplica());
+  }
+
+  @Test
+  public void createFromProps() {
+    ReplicaCount numReplicas =
+        ReplicaCount.fromProps(
+            Map.of("nrtReplicas", "1", "tlogReplicas", "2", "pullReplicas", "3"));
+    assertEquals(ReplicaCount.of(1, 2, 3), numReplicas);
+
+    numReplicas =
+        ReplicaCount.fromProps(Map.of("nrtReplicas", 1, "tlogReplicas", 2, "pullReplicas", 3));
+    assertEquals(ReplicaCount.of(1, 2, 3), numReplicas);
+
+    numReplicas = ReplicaCount.fromProps(Map.of("tlogReplicas", 1));
+    assertEquals(Set.of(Replica.Type.TLOG), numReplicas.keySet());
+  }
+
+  @Test
+  public void createFromMessage() {
+    ReplicaCount numReplicas =
+        ReplicaCount.fromMessage(
+            new ZkNodeProps(Map.of("nrtReplicas", "1", "tlogReplicas", "2", "pullReplicas", "3")));
+    assertEquals(ReplicaCount.of(1, 2, 3), numReplicas);
+
+    numReplicas =
+        ReplicaCount.fromMessage(
+            new ZkNodeProps(Map.of("nrtReplicas", 1, "tlogReplicas", 2, "pullReplicas", 3)));
+    assertEquals(ReplicaCount.of(1, 2, 3), numReplicas);
+
+    numReplicas = ReplicaCount.fromMessage(new ZkNodeProps(Map.of("tlogReplicas", 1)));
+    assertEquals(Set.of(Replica.Type.TLOG), numReplicas.keySet());
+  }
+
+  @Test
+  public void createFromMessageWithReplicationFactor() {
+    // "replicationFactor" in message
+    ReplicaCount numReplicas =
+        ReplicaCount.fromMessage(
+            new ZkNodeProps(Map.of("replicationFactor", 10, "tlogReplicas", 2, "pullReplicas", 3)));
+    assertEquals(ReplicaCount.of(10, 2, 3), numReplicas);
+
+    // "replicationFactor" and "type" in message
+    numReplicas =
+        ReplicaCount.fromMessage(
+            new ZkNodeProps(
+                Map.of(
+                    "type", "tlog", "replicationFactor", 10, "nrtReplicas", 1, "pullReplicas", 3)));
+    assertEquals(ReplicaCount.of(1, 10, 3), numReplicas);
+  }
+
+  @Test
+  public void createFromMessageWithDefaultReplicationFactor() {
+    // default replication factor specified
+    ReplicaCount numReplicas =
+        ReplicaCount.fromMessage(
+            new ZkNodeProps(Map.of("tlogReplicas", 2, "pullReplicas", 3)), null, 10);
+    assertEquals(ReplicaCount.of(10, 2, 3), numReplicas);
+
+    // default replication factor specified and "type" in message
+    numReplicas =
+        ReplicaCount.fromMessage(
+            new ZkNodeProps(Map.of("type", "tlog", "nrtReplicas", 1, "pullReplicas", 3)), null, 10);
+    assertEquals(ReplicaCount.of(1, 10, 3), numReplicas);
+  }
+
+  @Test
+  public void createFromMessageWithCollection() {
+    DocCollection collection =
+        DocCollection.create(
+            "coll",
+            Map.of(),
+            Map.of("nrtReplicas", 1, "tlogReplicas", 2, "pullReplicas", 3),
+            null,
+            1,
+            null);
+    ReplicaCount numReplicas =
+        ReplicaCount.fromMessage(new ZkNodeProps(Map.of("tlogReplicas", 1)), collection);
+    assertEquals(ReplicaCount.of(1, 1, 3), numReplicas);
   }
 }

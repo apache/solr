@@ -217,8 +217,27 @@ public class Utils {
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    new JSONWriter(out, 2).write(o); // indentation by default
+    new JSONWriter(out, JSONWriter.DEFAULT_INDENT).write(o); // indentation by default
     return toUTF8(out);
+  }
+
+  /**
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
+   */
+  public static byte[] toJSON(Object o, int indentSize) {
+    if (o == null) return new byte[0];
+    CharArr out = new CharArr();
+    new JSONWriter(out, indentSize).write(o);
+    return toUTF8(out);
+  }
+
+  /**
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
+   */
+  public static String toJSONString(Object o, int indentSize) {
+    return new String(toJSON(o, indentSize), StandardCharsets.UTF_8);
   }
 
   public static String toJSONString(Object o) {
@@ -1012,6 +1031,16 @@ public class Utils {
         // No-op - if the object has no 'unknownProperties' method, then nothing needs to be done.
       }
     }
+  }
+
+  /**
+   * Produce a Map representation of the provided object using reflection to identify annotated
+   * fields.
+   *
+   * <p>The provided object is not required to be a {@link MapWriter}.
+   */
+  public static Map<String, Object> reflectToMap(Object toReflect) {
+    return ((Utils.DelegateReflectWriter) Utils.getReflectWriter(toReflect)).toMap(new HashMap<>());
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

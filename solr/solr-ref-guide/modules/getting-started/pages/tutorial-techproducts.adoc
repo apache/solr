@@ -164,8 +164,8 @@ We'll use this tool for the indexing examples below.
 
 You'll need a command shell to run some of the following examples, rooted in the Solr install directory; the shell from where you launched Solr works just fine.
 
-NOTE: Currently the `bin/post` tool does not have a comparable Windows script, but the underlying Java program invoked is available.
-We'll show examples below for Windows, but you can also see the section xref:indexing-guide:post-tool.adoc#post-tool-windows-support[Post Tool Windows Support].
+NOTE: Currently the `bin/post` tool does not have a comparable Windows script, but the `bin/solr post` command is available on Windows.
+See the section xref:indexing-guide:post-tool.adoc[] for more information.
 
 The data we will index is in the `example/exampledocs` directory.
 The documents are in a mix of document formats (JSON, CSV, etc.), and fortunately we can index them all at once:
@@ -300,8 +300,8 @@ This is, again, default behavior.
 If you want to restrict the fields in the response, you can use the `fl` parameter, which takes a comma-separated list of field names.
 This is one of the available fields on the query form in the Admin UI.
 
-Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] agai
-Or, to specify it with curl:
+Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] again.
+Or, specify it with curl:
 
 [,console]
 ----

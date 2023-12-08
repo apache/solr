@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-configure([project(":solr:packaging"), project(":solr:solr-ref-guide")]) {
+configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(":solr:webapp")]) {
     apply plugin: "com.github.node-gradle.node"
 
     ext {

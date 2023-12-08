@@ -100,11 +100,7 @@ this similarity is intended as an optimized way to perform cosine similarity. In
 the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
 To use the following advanced parameters that customise the codec format
-and the hyper-parameter of the HNSW algorithm make sure you set this configuration in `solrconfig.xml`:
-[source,xml]
-<config>
-<codecFactory class="solr.SchemaCodecFactory"/>
-...
+and the hyper-parameter of the HNSW algorithm, make sure the xref:configuration-guide:codec-factory.adoc[Schema Codec Factory], is in use.
 
 Here's how `DenseVectorField` can be configured with the advanced hyper-parameters:
 
