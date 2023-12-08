@@ -97,6 +97,8 @@ Improvements
 
 * SOLR-16907: Fail when parsing an invalid custom permission definition from security.json (janhoy, Uwe Schindler)
 
+* SOLR-13748: Add support for mm (min should match) parameter to bool query parser (Andrey Bozhko)
+
 * SOLR-17046: SchemaCodecFactory is now the implicit default codec factory.  (hossman)
 
 * SOLR-16397: Swap core v2 endpoints have been updated to be more REST-ful.
