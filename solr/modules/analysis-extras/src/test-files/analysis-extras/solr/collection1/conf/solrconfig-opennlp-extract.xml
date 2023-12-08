@@ -25,6 +25,11 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
+  <updateRequestProcessorChain name="text-to-vector">
+    <processor class="solr.TextToVectorProcessorFactory">
+    </processor>
+  </updateRequestProcessorChain>
+
   <updateRequestProcessorChain name="extract-single">
     <processor class="solr.OpenNLPExtractNamedEntitiesUpdateProcessorFactory">
       <str name="modelFile">en-test-ner.bin</str>
