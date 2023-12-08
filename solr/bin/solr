@@ -626,11 +626,19 @@ function jetty_port() {
 # run a Solr command-line tool using the SolrCLI class;
 # useful for doing cross-platform work from the command-line using Java
 function run_tool() {
+  # Expand SOLR_MODULES and add to classpath
+  SOLR_MODULES_EXTENDED=""
+  if [[ -n "${SOLR_MODULES:-}" ]] ; then
+    SCRIPT_SOLR_OPTS+=("-Dsolr.modules=$SOLR_MODULES")
+    for module in ${SOLR_MODULES//,/ }; do
+      SOLR_MODULES_EXTENDED="${SOLR_MODULES_EXTENDED}:${SOLR_TIP}/modules/${module}/lib/*"
+    done
+  fi
 
   # shellcheck disable=SC2086
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} ${SOLR_TOOL_OPTS:-} -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
-    -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
+    -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*${SOLR_MODULES_EXTENDED}" \
     org.apache.solr.cli.SolrCLI "$@"
 
   return $?

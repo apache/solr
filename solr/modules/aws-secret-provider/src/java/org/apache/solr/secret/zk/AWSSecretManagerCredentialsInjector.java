@@ -35,11 +35,9 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueReques
 import software.amazon.awssdk.services.secretsmanager.model.SecretsManagerException;
 
 public class AWSSecretManagerCredentialsInjector implements ZkCredentialsInjector {
-  public static final String AWS_SM_CREDENTIALS_SECRET_NAME_VM_PARAM =
-      "zkAWSSecretCredentialsSecretName";
-  private static final String AWS_SM_CREDENTIALS_REGION_VM_PARAM = "zkAWSSecretCredentialsRegion";
-  private static final String AWS_SM_CREDENTIALS_SECRET_NAME_DEFAULT =
-      "solr.zk.credentials.dev.secret";
+  public static final String AWS_SM_CREDENTIALS_SECRET_NAME_VM_PARAM = "zkCredentialsAWSSecretName";
+  private static final String AWS_SM_CREDENTIALS_REGION_VM_PARAM = "zkCredentialsAWSRegion";
+  private static final String AWS_SM_CREDENTIALS_SECRET_NAME_DEFAULT = "solr.zk.credentials.secret";
 
   private final ObjectMapper mappers =
       SolrJacksonAnnotationInspector.createObjectMapper()
