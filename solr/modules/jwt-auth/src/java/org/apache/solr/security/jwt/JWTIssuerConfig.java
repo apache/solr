@@ -532,7 +532,7 @@ public class JWTIssuerConfig {
           Get httpGet = new Get();
           if (trustedCerts != null) {
             httpGet.setTrustedCertificates(trustedCerts);
-            //disableHostVerificationIfLocalhost(url, httpGet);
+            disableHostVerificationIfLocalhost(url, httpGet);
           }
           SimpleResponse resp = httpGet.get(url.toString());
           return parse(new ByteArrayInputStream(resp.getBody().getBytes(StandardCharsets.UTF_8)));
