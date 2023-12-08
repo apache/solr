@@ -123,6 +123,8 @@ Improvements
 
 * SOLR-16577: Ensure core load failures are always logged. (Haythem Khiri, David Smiley)
 
+* SOLR-17063: Do not retain log param references in LogWatcher (Michael Gibney)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
