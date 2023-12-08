@@ -121,6 +121,9 @@ Improvements
 
 * SOLR-17094: Close objects contained inside an ObjectCache.  (Vincent Primault)
 
+* SOLR-16397: The MERGEINDEXES v2 endpoint has been updated to be more REST-ful.
+  MERGEINDEXES is now available at `POST /api/cores/coreName/merge-indices` (Sanjay Dutt via Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
