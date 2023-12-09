@@ -19,6 +19,7 @@ package org.apache.solr.packagemanager;
 
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
+import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import java.io.Closeable;
@@ -57,7 +58,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.filestore.DistribPackageStore;
+import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
@@ -168,7 +169,7 @@ public class PackageManager implements Closeable {
     filesToDelete.add(
         String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"));
     for (String filePath : filesToDelete) {
-      DistribPackageStore.deleteZKFileEntry(zkClient, filePath);
+      DistribFileStore.deleteZKFileEntry(zkClient, filePath);
       String path = "/api/cluster/files" + filePath;
       PackageUtils.printGreen("Deleting " + path);
       solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.DELETE, path));
@@ -769,11 +770,10 @@ public class PackageManager implements Closeable {
             PackageUtils.printGreen(response);
             String actualValue = null;
             try {
-              actualValue =
-                  JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
-                      .read(
-                          PackageUtils.resolve(
-                              cmd.condition, pkg.parameterDefaults, overridesMap, systemParams));
+              String jsonPath =
+                  PackageUtils.resolve(
+                      cmd.condition, pkg.parameterDefaults, overridesMap, systemParams);
+              actualValue = jsonPathRead(response, jsonPath);
             } catch (PathNotFoundException ex) {
               PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
               success = false;
@@ -820,14 +820,13 @@ public class PackageManager implements Closeable {
               PackageUtils.printGreen(response);
               String actualValue = null;
               try {
-                actualValue =
-                    JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
-                        .read(
-                            PackageUtils.resolve(
-                                cmd.condition,
-                                pkg.parameterDefaults,
-                                collectionParameterOverrides,
-                                systemParams));
+                String jsonPath =
+                    PackageUtils.resolve(
+                        cmd.condition,
+                        pkg.parameterDefaults,
+                        collectionParameterOverrides,
+                        systemParams);
+                actualValue = jsonPathRead(response, jsonPath);
               } catch (PathNotFoundException ex) {
                 PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
                 success = false;
@@ -854,6 +853,17 @@ public class PackageManager implements Closeable {
       }
     }
     return success;
+  }
+
+  /** just adds problem XPath into {@link InvalidPathException} if occurs */
+  private static String jsonPathRead(String response, String jsonPath) {
+    try {
+      return JsonPath.parse(response, PackageUtils.jsonPathConfiguration()).read(jsonPath);
+    } catch (PathNotFoundException pne) {
+      throw pne;
+    } catch (InvalidPathException ipe) {
+      throw new InvalidPathException("Error in JSON Path:" + jsonPath, ipe);
+    }
   }
 
   /**
@@ -1095,8 +1105,8 @@ public class PackageManager implements Closeable {
       String version = null;
       try {
         version =
-            JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
-                .read("$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "'])");
+            jsonPathRead(
+                paramsJson, "$['response'].['params'].['PKG_VERSIONS'].['" + packageName + "']");
       } catch (PathNotFoundException ex) {
         // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched
         // by the package manager.

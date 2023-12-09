@@ -182,6 +182,7 @@
 # Override Key/Trust Store types if necessary
 #SOLR_SSL_KEY_STORE_TYPE=PKCS12
 #SOLR_SSL_TRUST_STORE_TYPE=PKCS12
+#SOLR_SSL_RELOAD_ENABLED=true
 
 # Uncomment if you want to override previously defined SSL values for HTTP client
 # otherwise keep them commented and the above values will automatically be set for HTTP clients

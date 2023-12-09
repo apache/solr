@@ -107,6 +107,7 @@ public final class LogListener implements Closeable, AutoCloseable {
    * @see #createName
    */
   private static final AtomicInteger ID_GEN = new AtomicInteger(0);
+
   /** generate a unique name for each instance to use in it's own lifecycle logging */
   private static String createName(final Level level) {
     return MethodHandles.lookup().lookupClass().getSimpleName()
@@ -120,10 +121,12 @@ public final class LogListener implements Closeable, AutoCloseable {
   public static LogListener error() {
     return error("");
   }
+
   /** Listens for ERROR log messages for the specified logger */
   public static LogListener error(final Class<?> logger) {
     return error(logger.getName());
   }
+
   /** Listens for ERROR log messages for the specified logger */
   public static LogListener error(final String logger) {
     return create(Level.ERROR, logger);
@@ -133,10 +136,12 @@ public final class LogListener implements Closeable, AutoCloseable {
   public static LogListener warn() {
     return warn("");
   }
+
   /** Listens for WARN log messages for the specified logger */
   public static LogListener warn(final Class<?> logger) {
     return warn(logger.getName());
   }
+
   /** Listens for WARN log messages for the specified logger */
   public static LogListener warn(final String logger) {
     return create(Level.WARN, logger);
@@ -146,10 +151,12 @@ public final class LogListener implements Closeable, AutoCloseable {
   public static LogListener info() {
     return info("");
   }
+
   /** Listens for INFO log messages for the specified logger */
   public static LogListener info(final Class<?> logger) {
     return info(logger.getName());
   }
+
   /** Listens for INFO log messages for the specified logger */
   public static LogListener info(final String logger) {
     return create(Level.INFO, logger);
@@ -159,10 +166,12 @@ public final class LogListener implements Closeable, AutoCloseable {
   public static LogListener debug() {
     return debug("");
   }
+
   /** Listens for DEBUG log messages for the specified logger */
   public static LogListener debug(final Class<?> logger) {
     return debug(logger.getName());
   }
+
   /** Listens for DEBUG log messages for the specified logger */
   public static LogListener debug(final String logger) {
     return create(Level.DEBUG, logger);

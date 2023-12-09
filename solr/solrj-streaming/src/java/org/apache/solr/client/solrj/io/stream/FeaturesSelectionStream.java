@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -33,8 +34,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -54,9 +53,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 /**
  * @since 6.2.0
@@ -77,7 +74,6 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
 
   protected transient SolrClientCache clientCache;
   private transient boolean doCloseCache;
-  protected transient ExecutorService executorService;
 
   public FeaturesSelectionStream(
       String zkHost,
@@ -262,10 +258,6 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     } else {
       doCloseCache = false;
     }
-
-    this.executorService =
-        ExecutorUtil.newMDCAwareCachedThreadPool(
-            new SolrNamedThreadFactory("FeaturesSelectionStream"));
   }
 
   @Override
@@ -304,9 +296,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
     }
   }
 
-  private List<Future<NamedList<?>>> callShards(List<String> baseUrls) throws IOException {
-
-    List<Future<NamedList<?>>> futures = new ArrayList<>();
+  private Collection<NamedList<?>> callShards(List<String> baseUrls) throws IOException {
+    List<FeaturesSelectionCall> tasks = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       FeaturesSelectionCall lc =
           new FeaturesSelectionCall(
@@ -317,22 +308,15 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
               this.positiveLabel,
               this.numTerms,
               this.clientCache);
-
-      Future<NamedList<?>> future = executorService.submit(lc);
-      futures.add(future);
+      tasks.add(lc);
     }
-
-    return futures;
+    return submitAllAndAwaitAggregatingExceptions(tasks, "FeaturesSelectionStream");
   }
 
   @Override
   public void close() throws IOException {
     if (doCloseCache) {
       clientCache.close();
-    }
-
-    if (executorService != null) {
-      executorService.shutdown();
     }
   }
 
@@ -359,8 +343,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible 
         Map<String, Long> docFreqs = new HashMap<>();
 
         long numDocs = 0;
-        for (Future<NamedList<?>> getTopTermsCall : callShards(getShardUrls())) {
-          NamedList<?> resp = getTopTermsCall.get();
+        for (NamedList<?> resp : callShards(getShardUrls())) {
 
           @SuppressWarnings({"unchecked"})
           NamedList<Double> shardTopTerms = (NamedList<Double>) resp.get("featuredTerms");

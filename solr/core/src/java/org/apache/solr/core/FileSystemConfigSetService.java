@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FileSystemConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** .metadata.json hidden file where metadata is stored */
   public static final String METADATA_FILE = ".metadata.json";
 
@@ -80,8 +81,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
-    Path solrConfigXmlFile = getConfigDir(configName).resolve("solrconfig.xml");
-    return Files.exists(solrConfigXmlFile);
+    return Files.exists(getConfigDir(configName));
   }
 
   @Override

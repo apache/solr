@@ -55,10 +55,13 @@ public abstract class StatsCache implements PluginInfoInitialized {
   // TODO: decouple use in response from use in request context for these keys
   /** Map of terms and {@link TermStats}. */
   public static final String TERM_STATS_KEY = "solr.stats.term";
+
   /** Value of {@link CollectionStats}. */
   public static final String COL_STATS_KEY = "solr.stats.col";
+
   /** List of terms in the query. */
   public static final String TERMS_KEY = "solr.stats.terms";
+
   /** List of fields in the query. */
   public static final String FIELDS_KEY = "solr.stats.fields";
 

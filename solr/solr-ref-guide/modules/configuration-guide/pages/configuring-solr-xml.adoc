@@ -23,10 +23,8 @@ For details on how to configure `core.properties`, see the section xref:core-dis
 
 == Defining solr.xml
 
-You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`) or optionally in ZooKeeper when using SolrCloud. If `$SOLR_HOME/solr.xml` is not found, Solr will use the default `solr.xml` file.
-
-WARNING: Loading `solr.xml` from Zookeeper is deprecated, and will not be supported in a future version.
-Being the node config of Solr, this file must be available at early startup and also be allowed to differ between nodes.
+You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`).
+If `$SOLR_HOME/solr.xml` is not found, Solr will use the default `solr.xml` file.
 
 The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and looks like this:
 
@@ -95,7 +93,7 @@ The tables below list the child nodes of each XML element in `solr.xml`.
 +
 This attribute does not need to be set.
 +
-If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter which the type is `org.apache.solr.core.CoreContainer`.
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
 For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
 If this attribute isn't set, Solr uses the default `configSetService`, with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
@@ -188,6 +186,31 @@ The default value is equal to the number of processors.
 |===
 +
 The root of the core discovery tree, defaults to `$SOLR_HOME`.
+
+`coresLocator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.core.CorePropertiesLocator`
+|===
++
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoresLocator`, and you must provide a constructor with one parameter of type `org.apache.solr.core.NodeConfig`.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom cores locator.
+
+`coreSorter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.core.CoreSorter`
+|===
++
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoreSorter`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
+This service is used when Solr is starting to prioritize which cores should be loaded first.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom core sorter.
 
 `managementPath`::
 +
@@ -631,6 +654,21 @@ For configuring `stable` routing, the `hash` parameter implicitly defaults to a 
 +
 The `dividend` parameter must be configured explicitly; there is no implicit default.
 If only `dividend` routing is desired, `hash` may be explicitly set to the empty string, entirely disabling implicit hash-based routing.
+
+=== The <replicaPlacementFactory> Element
+
+A default xref:replica-placement-plugins.adoc[replica placement plugin] can be defined in `solr.xml`.
+
+[source,xml]
+----
+<replicaPlacementFactory class="org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory">
+  <int name="minimalFreeDiskGB">10</int>
+  <int name="prioritizedFreeDiskGB">200</int>
+</replicaPlacementFactory>
+----
+
+The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `PlacementPluginFactory`.
+Sub-elements are specific to the implementation.
 
 === The <metrics> Element
 

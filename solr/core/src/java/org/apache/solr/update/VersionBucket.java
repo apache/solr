@@ -24,20 +24,12 @@ import java.util.concurrent.TimeUnit;
 // TODO: could also store highest possible in the transaction log after a commit.
 // Or on a new index, just scan "version" for the max?
 /**
- * @lucene.internal
- */
-/**
  * The default implementation which uses the intrinsic object monitor. It uses less memory but
  * ignores the <code>lockTimeoutMs</code>.
+ *
+ * @lucene.internal
  */
 public class VersionBucket {
-  public long highest;
-
-  public void updateHighest(long val) {
-    if (highest != 0) {
-      highest = Math.max(highest, Math.abs(val));
-    }
-  }
 
   @FunctionalInterface
   public interface CheckedFunction<T, R> {

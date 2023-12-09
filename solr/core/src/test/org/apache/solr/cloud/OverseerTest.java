@@ -1831,7 +1831,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   private SolrZkClient electNewOverseer(String address)
-      throws InterruptedException, KeeperException, NoSuchFieldException, SecurityException,
+      throws InterruptedException,
+          KeeperException,
+          NoSuchFieldException,
+          SecurityException,
           IllegalAccessException {
     SolrZkClient zkClient =
         new SolrZkClient.Builder()
@@ -1876,7 +1879,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
   private ZkController createMockZkController(
       String zkAddress, SolrZkClient zkClient, ZkStateReader reader)
-      throws InterruptedException, NoSuchFieldException, SecurityException, SessionExpiredException,
+      throws InterruptedException,
+          NoSuchFieldException,
+          SecurityException,
+          SessionExpiredException,
           IllegalAccessException {
     ZkController zkController = mock(ZkController.class);
 

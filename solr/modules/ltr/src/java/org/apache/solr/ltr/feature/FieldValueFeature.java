@@ -130,6 +130,17 @@ public class FieldValueFeature extends Feature {
     }
 
     /**
+     * Override this method in sub classes that wish to use not an absolute time but an interval
+     * such as document age or remaining shelf life relative to a specific date or relative to now.
+     *
+     * @param val value of the field
+     * @return value after transformation
+     */
+    protected long readNumericDocValuesDate(long val) {
+      return val;
+    }
+
+    /**
      * Return a FeatureScorer that uses docValues or storedFields if no docValues are present
      *
      * @param context the segment this FeatureScorer is working with
@@ -261,6 +272,8 @@ public class FieldValueFeature extends Feature {
         } else if (NumberType.DOUBLE.equals(numberType)) {
           // handle double value conversion
           return (float) Double.longBitsToDouble(docValues.longValue());
+        } else if (NumberType.DATE.equals(numberType)) {
+          return readNumericDocValuesDate(docValues.longValue());
         }
         // just take the long value
         return docValues.longValue();

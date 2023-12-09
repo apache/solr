@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
+
 /**
  * Used to request notification when the core is closed.
  *

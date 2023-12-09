@@ -18,9 +18,10 @@ package org.apache.solr.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_DEF;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.NUM_SHARDS_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import java.io.ByteArrayOutputStream;
@@ -287,8 +288,50 @@ public class TestUtils extends SolrTestCaseJ4 {
         Utils.mergeJson(
             sink,
             (Map<String, Object>)
-                Utils.fromJSONString("collectionDefaults:{numShards:3 , nrtReplicas:2}")));
-    assertEquals(3L, Utils.getObjectByPath(sink, true, List.of(COLLECTION_DEF, NUM_SHARDS_PROP)));
-    assertEquals(2L, Utils.getObjectByPath(sink, true, List.of(COLLECTION_DEF, NRT_REPLICAS)));
+                Utils.fromJSONString("defaults: {collection: {numShards:3 , nrtReplicas:2}}")));
+    assertEquals(
+        3L, Utils.getObjectByPath(sink, true, List.of(DEFAULTS, COLLECTION_PROP, NUM_SHARDS_PROP)));
+    assertEquals(
+        2L, Utils.getObjectByPath(sink, true, List.of(DEFAULTS, COLLECTION_PROP, NRT_REPLICAS)));
+  }
+
+  @SuppressWarnings({"unchecked"})
+  public void testToJson() {
+    Map<String, Object> object =
+        (Map<String, Object>) Utils.fromJSONString("{k2:v2, k1: {a:b, p:r, k21:{xx:yy}}}");
+
+    assertEquals(
+        "{\n"
+            + "  \"k2\":\"v2\",\n"
+            + "  \"k1\":{\n"
+            + "    \"a\":\"b\",\n"
+            + "    \"p\":\"r\",\n"
+            + "    \"k21\":{\"xx\":\"yy\"}}}",
+        new String(Utils.toJSON(object), UTF_8));
+  }
+
+  @SuppressWarnings({"unchecked"})
+  public void testToJsonCompacted() {
+    Map<String, Object> object =
+        (Map<String, Object>) Utils.fromJSONString("{k2:v2, k1: {a:b, p:r, k21:{xx:yy}}}");
+
+    assertEquals(
+        "{\"k2\":\"v2\",\"k1\":{\"a\":\"b\",\"p\":\"r\",\"k21\":{\"xx\":\"yy\"}}}",
+        new String(Utils.toJSON(object, -1), UTF_8));
+  }
+
+  @SuppressWarnings({"unchecked"})
+  public void testToJsonNoIndent() {
+    Map<String, Object> object =
+        (Map<String, Object>) Utils.fromJSONString("{k2:v2, k1: {a:b, p:r, k21:{xx:yy}}}");
+
+    assertEquals(
+        "{\n"
+            + "\"k2\":\"v2\",\n"
+            + "\"k1\":{\n"
+            + "\"a\":\"b\",\n"
+            + "\"p\":\"r\",\n"
+            + "\"k21\":{\"xx\":\"yy\"}}}",
+        new String(Utils.toJSON(object, 0), UTF_8));
   }
 }

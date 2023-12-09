@@ -25,12 +25,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.KnnByteVectorField;
 import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.ByteVectorValues;
-import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
@@ -75,11 +74,13 @@ public class DenseVectorField extends FloatPointField {
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
   private String knnAlgorithm;
+
   /**
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
    * candidates are connected to the new node. See {@link HnswGraph} for more details.
    */
   private int hnswMaxConn;
+
   /**
    * This parameter is coupled with the hnsw algorithm. The number of candidate neighbors to track
    * while searching the graph for each newly inserted node. See {@link HnswGraph} for details.
@@ -194,24 +195,24 @@ public class DenseVectorField extends FloatPointField {
 
     switch (vectorEncoding) {
       case FLOAT32:
-        if (dimension > FloatVectorValues.MAX_DIMENSIONS) {
+        if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS) {
           if (log.isWarnEnabled()) {
             log.warn(
                 "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
                 dimension,
                 field.getName(),
-                FloatVectorValues.MAX_DIMENSIONS);
+                KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
           }
         }
         break;
       case BYTE:
-        if (dimension > ByteVectorValues.MAX_DIMENSIONS) {
+        if (dimension > KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS) {
           if (log.isWarnEnabled()) {
             log.warn(
                 "The vector dimension {} specified for field {} exceeds the current Lucene default max dimension of {}. It's un-tested territory, extra caution and benchmarks are recommended for production systems.",
                 dimension,
                 field.getName(),
-                ByteVectorValues.MAX_DIMENSIONS);
+                KnnVectorsFormat.DEFAULT_MAX_DIMENSIONS);
           }
         }
         break;

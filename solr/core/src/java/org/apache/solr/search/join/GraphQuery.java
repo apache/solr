@@ -62,12 +62,16 @@ public class GraphQuery extends Query {
 
   /** The inital node matching query */
   private Query q;
+
   /** the field with the node id */
   private String fromField;
+
   /** the field containing the edge ids */
   private String toField;
+
   /** A query to apply while traversing the graph to filter out edges */
   private Query traversalFilter;
+
   /** The max depth to traverse the graph, -1 means no limit. */
   private int maxDepth = -1;
 
@@ -293,6 +297,7 @@ public class GraphQuery extends Query {
 
     final DocIdSetIterator iter;
     final float score;
+
     // graph query scorer constructor with iterator
     public GraphScorer(Weight w, DocIdSetIterator iter, float score) throws IOException {
       super(w);

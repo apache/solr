@@ -34,16 +34,39 @@ import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.request.RequestWriter.ContentWriter;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.ResponseParser;
+
+{{! Covers all top-level request/response model classes, but not necessarily any types nested in those classes }}
+{{#imports}}
+import {{import}};
+{{/imports}}
+
+{{! Imports any model types nested in request body POJOs }}
 {{#operations}}
 {{#operation}}
-{{#imports}}
-import {{modelPackage}}.{{.}};
-{{/imports}}
+{{#bodyParam}}
+{{#vars}}
+{{#isModel}}
+import {{modelPackage}}.{{dataType}};
+{{/isModel}}
+{{/vars}}
+{{/bodyParam}}
 {{/operation}}
+{{/operations}}
 
+{{#operations}}
 // WARNING: This class is generated from a Mustache template; any intended
 // changes should be made to the underlying template and not this file directly.
 
+/**
+ * Experimental SolrRequest's and SolrResponse's for {{classVarName}}, generated from an OAS.
+ *
+ * <p>See individual request and response classes for more detailed and relevant information.
+ *
+ * <p>All SolrRequest implementations rely on v2 APIs which may require a SolrClient configured to
+ * use the '/api' path prefix, instead of '/solr'.
+ *
+ * @lucene.experimental
+ */
 public class {{classname}} {
 
     {{#operation}}
@@ -74,21 +97,29 @@ public class {{classname}} {
              {{#requiredParams}}{{^isBodyParam}}* @param {{paramName}} Path param - {{description}}{{/isBodyParam}}
              {{/requiredParams}}
              */
-            public {{operationIdCamelCase}}({{#requiredParams}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{/requiredParams}}) {
+            public {{operationIdCamelCase}}({{#allParams}}{{#required}}{{^isBodyParam}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/isBodyParam}}{{#isBodyParam}}{{#vendorExtensions.x-genericEntity}}{{^-first}}, {{/-first}}{{{dataType}}} requestBody{{/vendorExtensions.x-genericEntity}}{{/isBodyParam}}{{/required}}{{/allParams}}) {
                 super(
                   SolrRequest.METHOD.valueOf("{{httpMethod}}"),
                   "{{{path}}}"{{#pathParams}}
-                    .replace("{" + "{{baseName}}" + "}", {{paramName}}){{/pathParams}}
+                    .replace("{" + "{{baseName}}" + "}", {{paramName}}{{^isString}}.toString(){{/isString}}){{/pathParams}}
                 );
 
                 {{#requiredParams}}
+                {{#isBodyParam}}
+                {{#vendorExtensions.x-genericEntity}}
+                    this.requestBody = requestBody;
+                    addHeader("Content-type", "application/json");
+                {{/vendorExtensions.x-genericEntity}}
+                {{/isBodyParam}}
                 {{^isBodyParam}}
                     this.{{paramName}} = {{paramName}};
                 {{/isBodyParam}}
                 {{/requiredParams}}
                 {{#bodyParam}}
-                    this.requestBody = new {{baseName}}();
+                {{^vendorExtensions.x-genericEntity}}
+                    this.requestBody = new {{{dataType}}}();
                     addHeader("Content-type", "application/json");
+                {{/vendorExtensions.x-genericEntity}}
                 {{/bodyParam}}
             }
 
@@ -120,7 +151,13 @@ public class {{classname}} {
             {{/vars}}
 
             @Override
+            @SuppressWarnings("unchecked")
             public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+                {{#vendorExtensions.x-genericEntity}}
+                if (requestBody instanceof String) {
+                    return new RequestWriter.StringPayloadContentWriter((String) requestBody, expectedType);
+                }
+                {{/vendorExtensions.x-genericEntity}}
                 return new JacksonContentWriter(expectedType, requestBody);
             }
             {{/bodyParam}}
@@ -136,7 +173,8 @@ public class {{classname}} {
               final ModifiableSolrParams params = new ModifiableSolrParams();
               {{#queryParams}}
               if ({{paramName}} != null) {
-                  params.add("{{baseName}}", {{paramName}}{{^isString}}.toString(){{/isString}});
+                  {{#isArray}}{{paramName}}.stream().forEach(v -> params.add("{{baseName}}", v{{^items.isString}}.toString(){{/items.isString}}));{{/isArray}}
+                  {{^isArray}}params.add("{{baseName}}", {{paramName}}{{^isString}}.toString(){{/isString}});{{/isArray}}
               }
               {{/queryParams}}
               return params;

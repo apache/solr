@@ -82,11 +82,11 @@ public class ZkStateReader implements SolrCloseable {
   // if this flag equals to false and the replica does not exist in cluster state, set state op
   // become no op (default is true)
   public static final String FORCE_SET_STATE_PROP = Replica.ReplicaStateProps.FORCE_SET_STATE;
+
   /** SolrCore name. */
   public static final String CORE_NAME_PROP = "core";
 
   public static final String COLLECTION_PROP = "collection";
-  public static final String ELECTION_NODE_PROP = "election_node";
   public static final String SHARD_ID_PROP = "shard";
   public static final String REPLICA_PROP = "replica";
   public static final String SHARD_RANGE_PROP = "shard_range";
@@ -115,12 +115,16 @@ public class ZkStateReader implements SolrCloseable {
   public static final String ROLES = "/roles.json";
 
   public static final String ALIASES = "/aliases.json";
+
   /**
    * This ZooKeeper file is no longer used starting with Solr 9 but keeping the name around to check
    * if it is still present and non empty (in case of upgrade from previous Solr version). It used
    * to contain collection state for all collections in the cluster.
    */
   public static final String UNSUPPORTED_CLUSTER_STATE = "/clusterstate.json";
+
+  // This zookeeper file was allowed until Solr 10
+  public static final String UNSUPPORTED_SOLR_XML = "/solr.xml";
 
   public static final String CLUSTER_PROPS = "/clusterprops.json";
   public static final String COLLECTION_PROPS_ZKNODE = "collectionprops.json";
@@ -139,11 +143,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CONFIGS_ZKNODE = "/configs";
   public static final String CONFIGNAME_PROP = "configName";
 
-  /**
-   * @deprecated use {@link org.apache.solr.common.params.CollectionAdminParams#DEFAULTS} instead.
-   */
-  @Deprecated public static final String COLLECTION_DEF = "collectionDefaults";
-
   public static final String URL_SCHEME = "urlScheme";
   public static final String HTTP = "http";
   public static final String HTTPS = "https";
@@ -151,7 +150,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private static final String SOLR_ENVIRONMENT = "environment";
 
-  public static final String REPLICA_TYPE = "type";
+  public static final String REPLICA_TYPE = CollectionAdminParams.REPLICA_TYPE;
 
   public static final String CONTAINER_PLUGINS = "plugin";
 
@@ -936,7 +935,6 @@ public class ZkStateReader implements SolrCloseable {
   /** Get shard leader properties, with retry if none exist. */
   public Replica getLeaderRetry(String collection, String shard, int timeout)
       throws InterruptedException {
-    AtomicReference<DocCollection> coll = new AtomicReference<>();
     AtomicReference<Replica> leader = new AtomicReference<>();
     try {
       waitForState(
@@ -945,7 +943,6 @@ public class ZkStateReader implements SolrCloseable {
           TimeUnit.MILLISECONDS,
           (n, c) -> {
             if (c == null) return false;
-            coll.set(c);
             Replica l = getLeader(n, c, shard);
             if (l != null) {
               log.debug("leader found for {}/{} to be {}", collection, shard, l);
@@ -1136,6 +1133,7 @@ public class ZkStateReader implements SolrCloseable {
         loadClusterProperties();
       };
 
+  @SuppressWarnings("unchecked")
   private void loadClusterProperties() {
     try {
       while (true) {
@@ -1143,10 +1141,7 @@ public class ZkStateReader implements SolrCloseable {
           byte[] data =
               zkClient.getData(
                   ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
-          @SuppressWarnings("unchecked")
-          Map<String, Object> properties = (Map<String, Object>) Utils.fromJSON(data);
-          this.clusterProperties =
-              ClusterProperties.convertCollectionDefaultsToNestedFormat(properties);
+          this.clusterProperties = (Map<String, Object>) Utils.fromJSON(data);
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {
@@ -1802,6 +1797,18 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
+    // Check predicate against known clusterState before trying to add watchers
+    if (clusterState != null) {
+      Set<String> liveNodes = clusterState.getLiveNodes();
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      if (liveNodes != null && docCollection != null) {
+        if (predicate.matches(liveNodes, docCollection)) {
+          log.debug("Found {} directly in clusterState", predicate);
+          return;
+        }
+      }
+    }
+
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
@@ -1855,12 +1862,23 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
+    // Check predicate against known clusterState before trying to add watchers
+    if (clusterState != null) {
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      if (docCollection != null) {
+        if (predicate.test(docCollection)) {
+          log.debug("Found {} directly in clusterState", predicate);
+          return docCollection;
+        }
+      }
+    }
+
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
-    AtomicReference<DocCollection> docCollection = new AtomicReference<>();
+    AtomicReference<DocCollection> docCollectionReference = new AtomicReference<>();
     DocCollectionWatcher watcher =
         (c) -> {
-          docCollection.set(c);
+          docCollectionReference.set(c);
           boolean matches = predicate.test(c);
           if (matches) latch.countDown();
 
@@ -1875,8 +1893,8 @@ public class ZkStateReader implements SolrCloseable {
             "Timeout waiting to see state for collection="
                 + collection
                 + " :"
-                + docCollection.get());
-      return docCollection.get();
+                + docCollectionReference.get());
+      return docCollectionReference.get();
     } finally {
       removeDocCollectionWatcher(collection, watcher);
       waitLatches.remove(latch);
