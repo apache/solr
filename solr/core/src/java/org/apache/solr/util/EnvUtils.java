@@ -138,8 +138,7 @@ public class EnvUtils {
                 entry -> entry.getKey().toString(),
                 entry -> entry.getValue().toString(),
                 (e1, e2) -> e1,
-                TreeMap::new
-                ));
+                TreeMap::new));
   }
 
   /** Get a property as string */
@@ -231,11 +230,11 @@ public class EnvUtils {
   }
 
   /**
-   * Re-reads environment variables and updates the internal map.
+   * Re-reads environment variables and updates the internal map. Mainly for internal and test use.
    *
    * @param overwrite if true, overwrite existing system properties with environment variables
    */
-  public static synchronized void init(boolean overwrite) {
+  static synchronized void init(boolean overwrite) {
     // Convert eligible environment variables to system properties
     for (String key : ENV.keySet().toArray(String[]::new)) {
       if (key.startsWith("SOLR_") || CUSTOM_MAPPINGS.containsKey(key)) {
