@@ -42,6 +42,7 @@ import org.apache.solr.common.util.Utils;
 public class EnvUtils {
   private static final SortedMap<String, String> ENV = new TreeMap<>(System.getenv());
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
+  private static Map<String, String> camelCaseToDotsMap = new HashMap<>();
   private static boolean initialized = false;
 
   static {
@@ -174,7 +175,14 @@ public class EnvUtils {
   }
 
   private static String camelCaseToDotSeparated(String key) {
-    return String.join(".", key.split("(?=[A-Z])")).replace("..", ".").toLowerCase(Locale.ROOT);
+    if (camelCaseToDotsMap.containsKey(key)) {
+      return camelCaseToDotsMap.get(key);
+    } else {
+      String converted =
+          String.join(".", key.split("(?=[A-Z])")).replace("..", ".").toLowerCase(Locale.ROOT);
+      camelCaseToDotsMap.put(key, converted);
+      return converted;
+    }
   }
 
   /** Get property as integer */
