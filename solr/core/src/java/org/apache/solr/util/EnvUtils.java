@@ -151,9 +151,24 @@ public class EnvUtils {
    * Get a property as string with a fallback value. All other getProp* methods use this.
    *
    * @param key property key, which treats 'camelCase' the same as 'camel.case'
+   * @param defaultValue fallback value if property is not found
    */
   public static String getProp(String key, String defaultValue) {
-    ensureInitialized(); // Avoid race condition with init()
+    return getProp(key, defaultValue, false);
+  }
+
+  /**
+   * Get a property as string with a fallback value. All other getProp* methods use this.
+   *
+   * @param key property key, which treats 'camelCase' the same as 'camel.case'
+   * @param defaultValue fallback value if property is not found
+   * @param waitForInit if true, wait for initialization to complete before returning. When calling
+   *     from init(), this should be false to avoid a deadlock.
+   */
+  public static String getProp(String key, String defaultValue, boolean waitForInit) {
+    if (waitForInit) {
+      ensureInitialized(); // Avoid race condition with init()
+    }
     String value = getPropWithCamelCaseFallback(key);
     return value != null ? value : defaultValue;
   }
@@ -244,11 +259,11 @@ public class EnvUtils {
    */
   static synchronized void init(boolean overwrite) {
     // Convert eligible environment variables to system properties
-    for (String key : ENV.keySet().toArray(String[]::new)) {
+    for (String key : ENV.keySet()) {
       if (key.startsWith("SOLR_") || CUSTOM_MAPPINGS.containsKey(key)) {
         String sysPropKey = envNameToSyspropName(key);
         // Existing system properties take precedence
-        if (!sysPropKey.isBlank() && (overwrite || getProp(sysPropKey) == null)) {
+        if (!sysPropKey.isBlank() && (overwrite || getProp(sysPropKey, null, false) == null)) {
           setProp(sysPropKey, ENV.get(key));
         }
       }
