@@ -37,7 +37,8 @@ public class EnvUtilsTest extends SolrTestCase {
             "SOLR_LONG", "1234567890",
             "SOLR_COMMASEP", "one,two, three",
             "SOLR_JSON_LIST", "[\"one\", \"two\", \"three\"]",
-            "SOLR_ALWAYS_ON_TRACE_ID", "true"));
+            "SOLR_ALWAYS_ON_TRACE_ID", "true",
+            "SOLR_STR_WITH_NEWLINE", "foo\nbar,baz"));
     EnvUtils.init(true);
   }
 
@@ -59,6 +60,7 @@ public class EnvUtilsTest extends SolrTestCase {
     assertEquals(List.of("one", "two", "three"), EnvUtils.getEnvAsList("SOLR_COMMASEP"));
     assertEquals(List.of("one", "two", "three"), EnvUtils.getEnvAsList("SOLR_JSON_LIST"));
     assertEquals(List.of("fallback"), EnvUtils.getEnvAsList("SOLR_MISSING", List.of("fallback")));
+    assertEquals(List.of("foo\nbar", "baz"), EnvUtils.getEnvAsList("SOLR_STR_WITH_NEWLINE"));
   }
 
   @Test
