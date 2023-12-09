@@ -132,11 +132,14 @@ public class EnvUtils {
   /** Get all Solr system properties as a sorted map */
   public static SortedMap<String, String> getProps() {
     ensureInitialized();
-    SortedMap<String, String> props = new TreeMap<>();
-    for (String key : System.getProperties().stringPropertyNames()) {
-      props.put(key, System.getProperty(key));
-    }
-    return props;
+    return System.getProperties().entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                entry -> entry.getKey().toString(),
+                entry -> entry.getValue().toString(),
+                (e1, e2) -> e1,
+                TreeMap::new
+                ));
   }
 
   /** Get a property as string */
