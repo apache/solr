@@ -44,12 +44,6 @@ import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.FAILED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.RUNNING;
-import static org.apache.solr.handler.admin.CoreAdminHandler.OPERATION_RESPONSE;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_MESSAGE;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
 import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
@@ -81,6 +75,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.ReloadCore;
 import org.apache.solr.handler.admin.api.RenameCore;
+import org.apache.solr.handler.admin.api.RequestCoreCommandStatus;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -242,34 +237,15 @@ public enum CoreAdminOperation implements CoreAdminOp {
   REQUESTSTATUS_OP(
       REQUESTSTATUS,
       it -> {
-        SolrParams params = it.req.getParams();
-        String requestId = params.required().get(CoreAdminParams.REQUESTID);
+        final var params = it.req.getParams();
+        final String requestId = params.required().get(CoreAdminParams.REQUESTID);
         log().info("Checking request status for : " + requestId);
 
-        final CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
-            it.handler.getCoreAdminAsyncTracker();
-        if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(requestId)) {
-          it.rsp.add(RESPONSE_STATUS, RUNNING);
-        } else if (coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
-          it.rsp.add(RESPONSE_STATUS, COMPLETED);
-          it.rsp.add(
-              RESPONSE_MESSAGE,
-              coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
-          it.rsp.add(
-              OPERATION_RESPONSE,
-              coreAdminAsyncTracker
-                  .getRequestStatusMap(COMPLETED)
-                  .get(requestId)
-                  .getOperationRspObject());
-        } else if (coreAdminAsyncTracker.getRequestStatusMap(FAILED).containsKey(requestId)) {
-          it.rsp.add(RESPONSE_STATUS, FAILED);
-          it.rsp.add(
-              RESPONSE_MESSAGE,
-              coreAdminAsyncTracker.getRequestStatusMap(FAILED).get(requestId).getRspObject());
-        } else {
-          it.rsp.add(RESPONSE_STATUS, "notfound");
-          it.rsp.add(RESPONSE_MESSAGE, "No task found in running, completed or failed tasks");
-        }
+        final var requestCoreCommandStatusApi =
+            new RequestCoreCommandStatus(
+                it.handler.coreContainer, it.handler.coreAdminAsyncTracker, it.req, it.rsp);
+        final SolrJerseyResponse response = requestCoreCommandStatusApi.getCommandStatus(requestId);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
 
   OVERSEEROP_OP(
