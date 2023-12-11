@@ -16,6 +16,11 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Map;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
@@ -23,7 +28,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.jersey.InjectionFactories;
-import org.apache.solr.jersey.NotFoundExceptionMapper;
 import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -32,10 +36,8 @@ import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.process.internal.RequestScoped;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 /** Test for {@link RequestCoreCommandStatus}. */
 public class RequestCoreCommandStatusTest extends JerseyTest {
@@ -44,7 +46,7 @@ public class RequestCoreCommandStatusTest extends JerseyTest {
 
   private CoreAdminHandler.CoreAdminAsyncTracker.TaskObject taskObject;
 
-  private static SolrQueryRequest solrQueryRequest;
+  private SolrQueryRequest solrQueryRequest;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -107,62 +109,56 @@ public class RequestCoreCommandStatusTest extends JerseyTest {
   }
 
   public void resetMocks() {
-    coreContainer = Mockito.mock(CoreContainer.class);
-    coreAdminAsyncTracker = Mockito.mock(CoreAdminHandler.CoreAdminAsyncTracker.class);
+    coreContainer = mock(CoreContainer.class);
+    coreAdminAsyncTracker = mock(CoreAdminHandler.CoreAdminAsyncTracker.class);
     taskObject = new CoreAdminHandler.CoreAdminAsyncTracker.TaskObject(null, null, false, null);
-    solrQueryRequest = Mockito.mock(SolrQueryRequest.class);
+    solrQueryRequest = mock(SolrQueryRequest.class);
   }
 
   @Test
   public void testRequestStatusCoreCommandTaskNotFound() {
-    var taskNotFound = "NOTFOUND-1";
+    final var taskNotFound = "NOTFOUND-1";
     final Response response =
         target("/cores/command-status/" + taskNotFound).request("application/json").get();
     final var responseStr = response.readEntity(String.class);
-    System.out.println(responseStr);
-    Assert.assertTrue(200 == response.getStatus());
-    Assert.assertTrue(responseStr.contains("notfound"));
+    assertTrue(SC_OK == response.getStatus());
+    assertTrue(responseStr.contains("notfound"));
   }
 
   @Test
   public void testRequestStatusCoreCommand_ForRunningTask() {
-    var runningTaskId = "RUNNING-1";
-    Mockito.when(
-            coreAdminAsyncTracker.getRequestStatusMap(
-                CoreAdminHandler.CoreAdminAsyncTracker.RUNNING))
+    final var runningTaskId = "RUNNING-1";
+    when(coreAdminAsyncTracker.getRequestStatusMap(CoreAdminHandler.CoreAdminAsyncTracker.RUNNING))
         .thenReturn(Map.of(runningTaskId, taskObject));
     final Response response =
         target("/cores/command-status/" + runningTaskId).request("application/json").get();
     final var responseStr = response.readEntity(String.class);
-    Assert.assertTrue(200 == response.getStatus());
-    Assert.assertTrue(responseStr.contains("running"));
+    assertTrue(SC_OK == response.getStatus());
+    assertTrue(responseStr.contains("running"));
   }
 
   @Test
   public void testRequestStatusCoreCommand_ForCompletedTask() {
-    var completedTaskId = "COMPLETED-1";
-    Mockito.when(
-            coreAdminAsyncTracker.getRequestStatusMap(
-                CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED))
+    final var completedTaskId = "COMPLETED-1";
+    when(coreAdminAsyncTracker.getRequestStatusMap(
+            CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED))
         .thenReturn(Map.of(completedTaskId, taskObject));
     final Response response =
         target("/cores/command-status/" + completedTaskId).request("application/json").get();
     final var responseStr = response.readEntity(String.class);
-    Assert.assertTrue(200 == response.getStatus());
-    Assert.assertTrue(responseStr.contains("completed"));
+    assertTrue(SC_OK == response.getStatus());
+    assertTrue(responseStr.contains("completed"));
   }
 
   @Test
   public void testRequestStatusCoreCommand_ForFailedTask() {
-    var failedTaskId = "FAILED-1";
-    Mockito.when(
-            coreAdminAsyncTracker.getRequestStatusMap(
-                CoreAdminHandler.CoreAdminAsyncTracker.FAILED))
+    final var failedTaskId = "FAILED-1";
+    when(coreAdminAsyncTracker.getRequestStatusMap(CoreAdminHandler.CoreAdminAsyncTracker.FAILED))
         .thenReturn(Map.of(failedTaskId, taskObject));
     final Response response =
         target("/cores/command-status/" + failedTaskId).request("application/json").get();
     final var responseStr = response.readEntity(String.class);
-    Assert.assertTrue(200 == response.getStatus());
-    Assert.assertTrue(responseStr.contains("failed"));
+    assertTrue(SC_OK == response.getStatus());
+    assertTrue(responseStr.contains("failed"));
   }
 }
