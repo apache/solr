@@ -61,6 +61,8 @@ dependencies {
   testImplementation 'com.fasterxml.jackson.core:jackson-databind'
   permitTestUnusedDeclared 'com.fasterxml.jackson.core:jackson-databind'
 
+  testImplementation 'org.bouncycastle:bcpkix-jdk15on'
+  testImplementation 'org.bouncycastle:bcprov-jdk15on'
   testImplementation 'com.nimbusds:nimbus-jose-jwt'
   testImplementation 'com.squareup.okhttp3:mockwebserver'
   testImplementation 'com.squareup.okhttp3:okhttp'
