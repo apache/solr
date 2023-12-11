@@ -290,6 +290,10 @@ public class EnvUtils {
         : envName.toLowerCase(Locale.ROOT).replace("_", ".");
   }
 
+  /**
+   * Convert a string to a List<String>. If the string is a JSON array, it will be parsed as such.
+   * String splitting uses "splitSmart" which supports backslash escaped characters.
+   */
   @SuppressWarnings("unchecked")
   private static List<String> stringValueToList(String string) {
     if (string.startsWith("[") && string.endsWith("]")) {
