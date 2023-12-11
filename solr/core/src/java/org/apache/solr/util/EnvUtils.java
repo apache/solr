@@ -130,7 +130,9 @@ public class EnvUtils {
     ENV.putAll(env);
   }
 
-  /** Get all Solr system properties as a sorted map */
+  /**
+   * Get all Solr system properties as a sorted map. It will block until initialization is complete.
+   */
   public static SortedMap<String, String> getProps() {
     ensureInitialized();
     return System.getProperties().entrySet().stream()
@@ -142,18 +144,29 @@ public class EnvUtils {
                 TreeMap::new));
   }
 
-  /** Get a property as string */
+  /** Get a property as string. It will block until initialization is complete. */
   public static String getProp(String key) {
     return getProp(key, null);
   }
 
   /**
-   * Get a property as string with a fallback value. All other getProp* methods use this.
+   * Get a property as string with a fallback value. It will block until initialization is complete.
    *
    * @param key property key, which treats 'camelCase' the same as 'camel.case'
    * @param defaultValue fallback value if property is not found
    */
   public static String getProp(String key, String defaultValue) {
+    return getProp(key, defaultValue, true);
+  }
+
+  /**
+   * Get a property as string with a fallback value, without waiting for initialization. This method
+   * is intended used internally during initialization.
+   *
+   * @param key property key, which treats 'camelCase' the same as 'camel.case'
+   * @param defaultValue fallback value if property is not found
+   */
+  private static String getPropNonBlocking(String key, String defaultValue) {
     return getProp(key, defaultValue, false);
   }
 
@@ -165,7 +178,7 @@ public class EnvUtils {
    * @param waitForInit if true, wait for initialization to complete before returning. When calling
    *     from init(), this should be false to avoid a deadlock.
    */
-  public static String getProp(String key, String defaultValue, boolean waitForInit) {
+  private static String getProp(String key, String defaultValue, boolean waitForInit) {
     if (waitForInit) {
       ensureInitialized(); // Avoid race condition with init()
     }
@@ -263,7 +276,7 @@ public class EnvUtils {
       if (key.startsWith("SOLR_") || CUSTOM_MAPPINGS.containsKey(key)) {
         String sysPropKey = envNameToSyspropName(key);
         // Existing system properties take precedence
-        if (!sysPropKey.isBlank() && (overwrite || getProp(sysPropKey, null, false) == null)) {
+        if (!sysPropKey.isBlank() && (overwrite || getPropNonBlocking(sysPropKey, null) == null)) {
           setProp(sysPropKey, ENV.get(key));
         }
       }
