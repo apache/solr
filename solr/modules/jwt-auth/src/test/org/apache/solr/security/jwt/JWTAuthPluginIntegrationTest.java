@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -102,6 +103,14 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
+    Path tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
+    tempDir.toFile().deleteOnExit();
+    Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
+    new KeystoreGenerator()
+        .generateKeystore(
+            p12Cert, modifiedP12Cert, InetAddress.getLoopbackAddress().getCanonicalHostName());
+    p12Cert = modifiedP12Cert;
+
     mockOAuth2Server = createMockOAuthServer(p12Cert, "secret");
     mockOAuth2Server.start();
     mockOAuthToken =
@@ -112,7 +121,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (mockOAuth2Server != null) {
       mockOAuth2Server.shutdown();
     }
