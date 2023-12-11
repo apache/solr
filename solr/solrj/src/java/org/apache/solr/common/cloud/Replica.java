@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -103,30 +104,40 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * support NRT (soft commits) and RTG. Any {@link Type#NRT} replica can become a leader. A shard
      * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    NRT(true),
+    NRT(true, CollectionAdminParams.NRT_REPLICAS),
     /**
      * Writes to transaction log, but not to index, uses replication. Any {@link Type#TLOG} replica
      * can become leader (by first applying all local transaction log elements). If a replica is of
      * type {@link Type#TLOG} but is also the leader, it will behave as a {@link Type#NRT}. A shard
      * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    TLOG(true),
+    TLOG(true, CollectionAdminParams.TLOG_REPLICAS),
     /**
      * Doesn’t index or writes to transaction log. Just replicates from {@link Type#NRT} or {@link
      * Type#TLOG} replicas. {@link Type#PULL} replicas can’t become shard leaders (i.e., if there
      * are only pull replicas in the collection at some point, updates will fail same as if there is
      * no leaders, queries continue to work), so they don’t even participate in elections.
      */
-    PULL(false);
+    PULL(false, CollectionAdminParams.PULL_REPLICAS);
 
     public final boolean leaderEligible;
+    public final String numReplicasPropertyName;
 
-    Type(boolean b) {
-      this.leaderEligible = b;
+    Type(boolean leaderEligible, String numReplicasPropertyName) {
+      this.leaderEligible = leaderEligible;
+      this.numReplicasPropertyName = numReplicasPropertyName;
     }
 
     public static Type get(String name) {
       return StrUtils.isNullOrEmpty(name) ? NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
+    }
+
+    /**
+     * Returns a default replica type. It is most notably used by the replica factor, which maps
+     * onto this replica type. This replica type needs to be leader-eligible.
+     */
+    public static Type defaultType() {
+      return NRT;
     }
   }
 
