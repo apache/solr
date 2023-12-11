@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
+/** Request body for endpoints {@link org.apache.solr.client.api.endpoint.MergeIndexesApi} */
 public class MergeIndexesRequestBody {
   @Schema(description = "Multi-valued, directories that would be merged.")
   @JsonProperty

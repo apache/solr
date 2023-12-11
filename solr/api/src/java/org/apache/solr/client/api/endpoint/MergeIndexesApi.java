@@ -25,6 +25,15 @@ import javax.ws.rs.PathParam;
 import org.apache.solr.client.api.model.MergeIndexesRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 
+/**
+ * V2 API for merging one or more indexes(either from multiple Solr cores or multiple index
+ * directories) to another index.
+ *
+ * <p>The new API (POST /api/cores/coreName/merge-indices {...}) is equivalent to the v1
+ * /admin/cores?action=mergeindexes command.
+ *
+ * @see MergeIndexesRequestBody
+ */
 @Path("/cores/{coreName}/merge-indices")
 public interface MergeIndexesApi {
   @POST

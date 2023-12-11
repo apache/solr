@@ -38,10 +38,12 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -49,6 +51,14 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implementation of V2 API interface {@link MergeIndexesApi} for merging one or more indexes to
+ * another index.
+ *
+ * @see MergeIndexesApi
+ * @see MergeIndexesRequestBody
+ * @see CoreAdminAPIBase
+ */
 public class MergeIndexes extends CoreAdminAPIBase implements MergeIndexesApi {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,6 +73,7 @@ public class MergeIndexes extends CoreAdminAPIBase implements MergeIndexesApi {
   }
 
   @Override
+  @PermissionName(PermissionNameProvider.Name.CORE_EDIT_PERM)
   public SolrJerseyResponse mergeIndexes(String coreName, MergeIndexesRequestBody requestBody)
       throws Exception {
     ensureRequiredParameterProvided("coreName", coreName);
