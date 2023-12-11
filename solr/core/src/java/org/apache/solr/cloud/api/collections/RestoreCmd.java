@@ -18,12 +18,9 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -139,11 +136,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         new NamedList<>(), shardHandler, true, "Could not restore core");
   }
 
-  private int getInt(ZkNodeProps message, String propertyName, Integer count, int defaultValue) {
-    Integer value = message.getInt(propertyName, count);
-    return value != null ? value : defaultValue;
-  }
-
   /** Encapsulates the parsing and access for common parameters restore parameters and values */
   private static class RestoreContext implements Closeable {
 
@@ -226,22 +218,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
 
     private RestoreOnANewCollection(ZkNodeProps message, DocCollection backupCollectionState) {
       this.message = message;
-
-      int numNrtReplicas;
-      if (message.get(REPLICATION_FACTOR) != null) {
-        numNrtReplicas = message.getInt(REPLICATION_FACTOR, 0);
-      } else if (message.get(NRT_REPLICAS) != null) {
-        numNrtReplicas = message.getInt(NRT_REPLICAS, 0);
-      } else {
-        // replicationFactor and nrtReplicas is always in sync after SOLR-11676
-        // pick from cluster state of the backed up collection
-        numNrtReplicas = backupCollectionState.getReplicationFactor();
-      }
-      this.numReplicas =
-          new ReplicaCount(
-              numNrtReplicas,
-              getInt(message, TLOG_REPLICAS, backupCollectionState.getNumTlogReplicas(), 0),
-              getInt(message, PULL_REPLICAS, backupCollectionState.getNumPullReplicas(), 0));
+      this.numReplicas = ReplicaCount.fromMessage(message, backupCollectionState);
     }
 
     public void process(NamedList<Object> results, RestoreContext rc) throws Exception {
@@ -341,10 +318,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
       // mostly true. Prevents autoCreated=true in the collection state.
       propMap.put("fromApi", "true");
-      propMap.put(REPLICATION_FACTOR, numReplicas.get(Replica.Type.NRT));
-      propMap.put(NRT_REPLICAS, numReplicas.get(Replica.Type.NRT));
-      propMap.put(TLOG_REPLICAS, numReplicas.get(Replica.Type.TLOG));
-      propMap.put(PULL_REPLICAS, numReplicas.get(Replica.Type.PULL));
+      propMap.put(REPLICATION_FACTOR, numReplicas.get(Replica.Type.defaultType()));
+      numReplicas.writeProps(propMap);
 
       // inherit settings from input API, defaulting to the backup's setting.  Ex: replicationFactor
       for (String collProp : CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.keySet()) {
@@ -550,7 +525,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
 
           for (int i = 1; i < totalReplicasPerShard; i++) {
             Replica.Type typeToCreate = null;
-            for (Replica.Type type : Replica.Type.values()) {
+            for (Replica.Type type : numReplicas.keySet()) {
               if (createdReplicas.get(type) < numReplicas.get(type)) {
                 createdReplicas.increment(type);
                 typeToCreate = type;
