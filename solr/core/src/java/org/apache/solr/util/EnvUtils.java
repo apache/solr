@@ -291,7 +291,7 @@ public class EnvUtils {
   }
 
   /**
-   * Convert a string to a List<String>. If the string is a JSON array, it will be parsed as such.
+   * Convert a string to a `List<String>`. If the string is a JSON array, it will be parsed as such.
    * String splitting uses "splitSmart" which supports backslash escaped characters.
    */
   @SuppressWarnings("unchecked")
