@@ -33,21 +33,6 @@ public class PlacementRequestImpl implements PlacementRequest {
   private final Set<Node> targetNodes;
   private final ReplicaCount numReplicas;
 
-  @Deprecated
-  public PlacementRequestImpl(
-      SolrCollection solrCollection,
-      Set<String> shardNames,
-      Set<Node> targetNodes,
-      int countNrtReplicas,
-      int countTlogReplicas,
-      int countPullReplicas) {
-    this(
-        solrCollection,
-        shardNames,
-        targetNodes,
-        new ReplicaCount(countNrtReplicas, countTlogReplicas, countPullReplicas));
-  }
-
   public PlacementRequestImpl(
       SolrCollection solrCollection,
       Set<String> shardNames,
