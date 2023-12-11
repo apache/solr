@@ -64,6 +64,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 import org.apache.commons.io.file.PathUtils;
@@ -1343,10 +1344,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
         "size",
         Category.INDEX.toString());
 
-    // using isClosed() might result in deadlock due to metrics trying to open a new searcher during
-    // core init phase (when refCount == 1)
+    // using only isClosed() might result in deadlock due to metrics trying to eagerly open a
+    // new searcher during core init phase
+    BooleanSupplier isNotOpen =
+        () -> {
+          boolean isPreSearcherInit = newSearcherCounter.getCount() == 0;
+          return isPreSearcherInit || isClosed();
+        };
+
     parentContext.gauge(
-        () -> getOpenCount() <= 1 ? parentContext.nullNumber() : getSegmentCount(),
+        () -> isNotOpen.getAsBoolean() ? parentContext.nullNumber() : getSegmentCount(),
         true,
         "segments",
         Category.INDEX.toString());
