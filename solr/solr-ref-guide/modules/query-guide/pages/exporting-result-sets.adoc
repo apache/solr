@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The `/export` request handler allows a fully sorted result set to be streamed out of Solr using a special xref:query-re-ranking.adoc[rank query parser] and xef:response-writers.adoc[response writer].
+The `/export` request handler allows a fully sorted result set to be streamed out of Solr using a special xref:query-re-ranking.adoc[rank query parser] and xref:response-writers.adoc[response writer].
 These have been specifically designed to work together to handle scenarios that involve sorting and exporting millions of records.
 
 This feature uses a stream sorting technique that begins to send records within milliseconds and continues to stream results until the entire result set has been sorted and exported.
