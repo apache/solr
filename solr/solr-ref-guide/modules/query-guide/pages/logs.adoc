@@ -18,7 +18,7 @@
 
 This section of the user guide provides an introduction to Solr log analytics.
 
-NOTE: This is an appendix of the xref::math-expressions.adoc[Visual Guide to Streaming Expressions and Math Expressions].
+NOTE: This is an appendix of the xref:math-expressions.adoc[Visual Guide to Streaming Expressions and Math Expressions].
 All the functions described below are covered in detail in the guide.
 See the xref:math-start.adoc[] chapter to learn how to get started with visualizations and Apache Zeppelin.
 
@@ -84,7 +84,7 @@ By looking at this sample we can quickly learn about the *fields* available in t
 === Time Period
 
 Each log record contains a time stamp in the `date_dt` field.
-Its often useful to understand what time period the logs cover and how many log records have been indexed.
+It's often useful to understand what time period the logs cover and how many log records have been indexed.
 
 The `stats` function can be run to display this information.
 
@@ -134,7 +134,7 @@ The example below breaks this down further by adding a query on the `type_s` fie
 
 image::math-expressions/logs-time-series2.png[]
 
-Notice the query activity accounts for more then half of the burst of log records between 21:27 and 21:52.
+Notice the query activity accounts for more than half of the burst of log records between 21:27 and 21:52.
 But the query activity does not account for the large spike in log activity that follows.
 
 We can account for that spike by changing the search to include only *update*, *commit*, and *deleteByQuery* records in the logs.
@@ -195,7 +195,7 @@ Scatter plots can be used to visualize random samples of the `qtime_i`
 field.
 The example below demonstrates a scatter plot of 500 random samples from the `ptest1` collection of log records.
 
-In this example, `qtime_i` is plotted on the y-axis and the x-axis is simply a sequence to spread the query times out across the plot.
+In this example, `qtime_i` is plotted on the y-axis, and the x-axis is simply a sequence to spread the query times out across the plot.
 
 NOTE: The `x` field is included in the field list.
 The `random` function automatically generates a sequence for the x-axis when `x` is included in the field list.
@@ -286,18 +286,18 @@ image::math-expressions/qtime-series.png[]
 
 == Performance Troubleshooting
 
-If query analysis determines that queries are not performing as expected then log analysis can also be used to troubleshoot the cause of the slowness.
+If query analysis determines that queries are not performing as expected, then log analysis can also be used to troubleshoot the cause of the slowness.
 The section below demonstrates several approaches for locating the source of query slowness.
 
 === Slow Nodes
 
 In a distributed search the final search performance is only as fast as the slowest responding shard in the cluster.
-Therefore one slow node can be responsible for slow overall search time.
+Therefore, one slow node can be responsible for slow overall search time.
 
 The fields `core_s`, `replica_s` and `shard_s` are available in the log records.
 These fields allow average query time to be calculated by *core*, *replica* or *shard*.
 
-The `core_s` field is particularly useful as its the most granular element and the naming convention often includes the collection, shard and replica information.
+The `core_s` field is particularly useful as it's the most granular element and the naming convention often includes the collection, shard and replica information.
 
 The example below uses the `facet` function to calculate `avg(qtime_i)` by core.
 

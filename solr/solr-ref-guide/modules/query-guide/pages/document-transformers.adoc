@@ -137,7 +137,7 @@ Note that this transformer can be used even when the query used to match the res
 q=book_title:Solr&fl=id,[child childFilter=doc_type:chapter limit=100]
 ----
 
-If the documents involved include a `\_nest_path_` field, then it is used to re-create the hierarchical structure of the descendent documents using the original pseudo-field names the documents were indexed with, otherwise the descendent documents are returned as a flat list of xref:indexing-guide:indexing-nested-documents#indexing-anonymous-children[anonymous children].
+If the documents involved include a `\_nest_path_` field, then it is used to re-create the hierarchical structure of the descendent documents using the original pseudo-field names the documents were indexed with, otherwise the descendent documents are returned as a flat list of xref:indexing-guide:indexing-nested-documents.adoc#indexing-anonymous-children[anonymous children].
 
 `childFilter`::
 +
@@ -281,7 +281,7 @@ fl=id,source_s:[json]&wt=json
 This transformer executes a separate query per transforming document passing document fields as an input for subquery parameters.
 It's usually used with `{!join}` and `{!parent}` query parsers, and is intended to be an improvement for `[child]`.
 
-* It must be given an unique name: `fl=*,children:[subquery]`
+* It must be given a unique name: `fl=*,children:[subquery]`
 * There might be a few of them, e.g., `fl=*,sons:[subquery],daughters:[subquery]`.
 * Every `[subquery]` occurrence adds a field into a result document with the given name, the value of this field is a document list, which is a result of executing subquery using document fields as an input.
 * Subquery will use the `/select` search handler by default, and will return an error if `/select` is not configured.
@@ -391,7 +391,7 @@ If subquery collection has a different unique key field name (such as `foo_id` i
 [source,plain]
 foo.fl=id:foo_id&foo.distrib.singlePass=true
 
-Otherwise you'll get `NullPointerException` from `QueryComponent.mergeIds`.
+Otherwise, you'll get `NullPointerException` from `QueryComponent.mergeIds`.
 ====
 
 
@@ -414,7 +414,7 @@ In a sense this double-storage between docValues and stored-value storage isn't 
 === [features] - LTRFeatureLoggerTransformerFactory
 
 The "LTR" prefix stands for xref:learning-to-rank.adoc[].
-This transformer returns the values of features and it can be used for feature extraction and feature logging.
+This transformer returns the values of features, and it can be used for feature extraction and feature logging.
 
 [source,plain]
 ----
@@ -428,4 +428,4 @@ This will return the values of the features in the `yourFeatureStore` store.
 fl=id,[features]&rq={!ltr model=yourModel}
 ----
 
-If you use `[features]` together with an Learning-To-Rank reranking query then the values of the features in the reranking model (`yourModel`) will be returned.
+If you use `[features]` together with a Learning-To-Rank reranking query then the values of the features in the reranking model (`yourModel`) will be returned.
