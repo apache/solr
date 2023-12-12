@@ -64,7 +64,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 import org.apache.commons.io.file.PathUtils;
@@ -1343,17 +1342,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
         true,
         "size",
         Category.INDEX.toString());
-
-    // using only isClosed() might result in deadlock due to metrics trying to eagerly open a
-    // new searcher during core init phase
-    BooleanSupplier isNotOpen =
-        () -> {
-          boolean isPreSearcherInit = newSearcherCounter.getCount() == 0;
-          return isPreSearcherInit || isClosed();
-        };
-
     parentContext.gauge(
-        () -> isNotOpen.getAsBoolean() ? parentContext.nullNumber() : getSegmentCount(),
+        () -> isReady() ? getSegmentCount() : parentContext.nullNumber(),
         true,
         "segments",
         Category.INDEX.toString());
@@ -1907,6 +1897,18 @@ public class SolrCore implements SolrInfoBean, Closeable {
   /** Whether this core is closed. */
   public boolean isClosed() {
     return refCount.get() <= 0;
+  }
+
+  /**
+   * Whether this core is ready. Sometimes using {@link #isClosed()} might result in a deadlock due
+   * to the caller trying to eagerly open a new searcher via {@link #withSearcher(IOFunction)}
+   * during core init phase.
+   *
+   * <p>Like for example concurrently polling metrics collection via the registered gauges in {@link
+   * #initializeMetrics(SolrMetricsContext, String)}
+   */
+  public boolean isReady() {
+    return !isClosed() && newSearcherCounter.getCount() > 0;
   }
 
   private Collection<CloseHook> closeHooks = null;
