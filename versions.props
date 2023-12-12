@@ -52,6 +52,7 @@ org.apache.tika:*=1.28.5
 org.apache.tomcat:annotations-api=6.0.53
 org.apache.zookeeper:*=3.9.1
 org.bitbucket.b_c:jose4j=0.9.4
+org.bouncycastle:bcpkix-jdk18on=1.77
 org.carrot2:carrot2-core=4.5.1
 org.codehaus.woodstox:stax2-api=4.2.2
 org.eclipse.jetty*:*=10.0.18
