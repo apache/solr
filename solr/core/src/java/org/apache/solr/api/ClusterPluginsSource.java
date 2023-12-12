@@ -20,10 +20,11 @@ package org.apache.solr.api;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
+import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 
 /** A source for Container Plugin configurations */
-public interface ContainerPluginsSource {
+public interface ClusterPluginsSource {
 
   /**
    * Get the Container Plugins Read Api for this plugin source
@@ -40,7 +41,12 @@ public interface ContainerPluginsSource {
    */
   ContainerPluginsApi.Edit getEditApi();
 
-  /** Get the Container plugin configurations from this source */
+  /**
+   * Get a map of container plugin configurations from this source, where keys are plugin names and
+   * values are {@link PluginMeta} plugin metadata.
+   *
+   * @return An immutable map of plugin configurations
+   */
   Map<String, Object> plugins() throws IOException;
 
   /**

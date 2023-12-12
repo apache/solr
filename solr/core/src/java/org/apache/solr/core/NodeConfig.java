@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.api.NodeConfigClusterPluginsSource;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -117,9 +118,9 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
-  private final PluginInfo containerPluginsSource;
+  private final PluginInfo clusterPluginsSource;
 
-  private final PluginInfo[] containerPlugins;
+  private final PluginInfo[] clusterSingletonPlugins;
 
   private final String defaultZkHost;
 
@@ -155,8 +156,8 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
-      PluginInfo containerPluginsSource,
-      PluginInfo[] containerPlugins,
+      PluginInfo clusterPluginsSource,
+      PluginInfo[] clusterSingletonPlugins,
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
@@ -196,8 +197,8 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
     this.tracerConfig = tracerConfig;
-    this.containerPluginsSource = containerPluginsSource;
-    this.containerPlugins = containerPlugins;
+    this.clusterPluginsSource = clusterPluginsSource;
+    this.clusterSingletonPlugins = clusterSingletonPlugins;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
@@ -218,6 +219,17 @@ public class NodeConfig {
     }
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
+
+    if (this.clusterSingletonPlugins != null
+        && this.clusterSingletonPlugins.length > 0
+        && (this.clusterPluginsSource == null
+            || !NodeConfigClusterPluginsSource.class
+                .getName()
+                .equals(this.clusterPluginsSource.className))) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "clusterSingleton section found in solr.xml but clusterPluginsSource is not NodeConfigClusterPluginsSource");
+    }
 
     setupSharedLib();
     initModules();
@@ -425,12 +437,12 @@ public class NodeConfig {
     return tracerConfig;
   }
 
-  public PluginInfo getContainerPluginsSource() {
-    return containerPluginsSource;
+  public PluginInfo getClusterPluginsSource() {
+    return clusterPluginsSource;
   }
 
-  public PluginInfo[] getContainerPlugins() {
-    return containerPlugins;
+  public PluginInfo[] getClusterSingletonPlugins() {
+    return clusterSingletonPlugins;
   }
 
   /**
@@ -607,8 +619,8 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
-    private PluginInfo containerPluginsSource;
-    private PluginInfo[] containerPlugins;
+    private PluginInfo clusterPluginsSource;
+    private PluginInfo[] clusterSingletonPlugins;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
@@ -807,13 +819,13 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setContainerPluginsSource(PluginInfo containerPluginsSource) {
-      this.containerPluginsSource = containerPluginsSource;
+    public NodeConfigBuilder setClusterPluginsSource(PluginInfo clusterPluginsSource) {
+      this.clusterPluginsSource = clusterPluginsSource;
       return this;
     }
 
-    public NodeConfigBuilder setContainerPlugins(PluginInfo[] containerPlugins) {
-      this.containerPlugins = containerPlugins;
+    public NodeConfigBuilder setClusterSingletonPlugins(PluginInfo[] clusterSingletonPlugins) {
+      this.clusterSingletonPlugins = clusterSingletonPlugins;
       return this;
     }
 
@@ -929,8 +941,8 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
-          containerPluginsSource,
-          containerPlugins,
+          clusterPluginsSource,
+          clusterSingletonPlugins,
           defaultZkHost,
           allowPaths,
           allowUrls,

@@ -76,4 +76,9 @@
     <repository name="local" class="a.b.C" default="true"/>
   </backup>
 
+  <clusterPluginsSource class="org.apache.solr.api.NodeConfigClusterPluginsSource"/>
+
+  <clusterSingleton name="testSingleton1" class="my.singleton.class"/>
+  <clusterSingleton name="testSingleton2" class="my.other.singleton.class"/>
+
 </solr>

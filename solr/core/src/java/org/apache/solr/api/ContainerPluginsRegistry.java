@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class manages the container-level plugins and their Api-s. It is responsible for adding /
  * removing / replacing the plugins according to the updated configuration obtained from {@link
- * ContainerPluginsSource#plugins()}.
+ * ClusterPluginsSource#plugins()}.
  *
  * <p>Plugins instantiated by this class may implement zero or more {@link Api}-s, which are then
  * registered in the CoreContainer {@link ApiBag}. They may be also post-processed for additional
@@ -83,7 +83,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   private final CoreContainer coreContainer;
   private final ApiBag containerApiBag;
 
-  private final ContainerPluginsSource pluginsSource;
+  private final ClusterPluginsSource pluginsSource;
 
   private final Map<String, ApiInfo> currentPlugins = new HashMap<>();
 
@@ -118,7 +118,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
   }
 
   public ContainerPluginsRegistry(
-      CoreContainer coreContainer, ApiBag apiBag, ContainerPluginsSource pluginsSource) {
+      CoreContainer coreContainer, ApiBag apiBag, ClusterPluginsSource pluginsSource) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
     this.pluginsSource = pluginsSource;

@@ -18,7 +18,6 @@
 package org.apache.solr.api;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -31,23 +30,19 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * The plugin configurations are stored and retrieved from the ZooKeeper cluster properties This
- * supports mutable configurations, and management via the /cluster/plugin APIs
+ * The plugin configurations are stored and retrieved from the ZooKeeper cluster properties, stored
+ * at the {@link ZkStateReader#CONTAINER_PLUGINS} location This supports mutable configurations, and
+ * management via the /cluster/plugin APIs
  */
-public class ZkContainerPluginsSource implements ContainerPluginsSource {
+public class ZkClusterPluginsSource implements ClusterPluginsSource {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final String PLUGIN = ZkStateReader.CONTAINER_PLUGINS;
   private final Supplier<SolrZkClient> zkClientSupplier;
 
   private final ContainerPluginsApi api;
 
-  public ZkContainerPluginsSource(CoreContainer coreContainer) {
+  public ZkClusterPluginsSource(CoreContainer coreContainer) {
     this.zkClientSupplier = coreContainer.zkClientSupplier;
     this.api = new ContainerPluginsApi(coreContainer, this);
   }
@@ -77,8 +72,10 @@ public class ZkContainerPluginsSource implements ContainerPluginsSource {
       Map<String, Object> clusterPropsJson =
           (Map<String, Object>)
               Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
-      return (Map<String, Object>)
-          clusterPropsJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>());
+      return Map.copyOf(
+          (Map<String, Object>)
+              clusterPropsJson.computeIfAbsent(
+                  ZkStateReader.CONTAINER_PLUGINS, o -> new LinkedHashMap<>()));
     } catch (KeeperException.NoNodeException e) {
       return new LinkedHashMap<>();
     } catch (KeeperException | InterruptedException e) {
@@ -104,9 +101,10 @@ public class ZkContainerPluginsSource implements ContainerPluginsSource {
                 Map<String, Object> pluginsModified =
                     modifier.apply(
                         (Map<String, Object>)
-                            rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
+                            rawJson.computeIfAbsent(
+                                ZkStateReader.CONTAINER_PLUGINS, o -> new LinkedHashMap<>()));
                 if (pluginsModified == null) return null;
-                rawJson.put(PLUGIN, pluginsModified);
+                rawJson.put(ZkStateReader.CONTAINER_PLUGINS, pluginsModified);
                 return Utils.toJSON(rawJson);
               });
     } catch (KeeperException | InterruptedException e) {

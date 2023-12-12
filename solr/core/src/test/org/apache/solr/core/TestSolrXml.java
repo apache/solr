@@ -146,6 +146,18 @@ public class TestSolrXml extends SolrTestCaseJ4 {
         replicaPlacementFactoryConfig.className);
     assertEquals(1, replicaPlacementFactoryConfig.initArgs.size());
     assertEquals(10, replicaPlacementFactoryConfig.initArgs.get("minimalFreeDiskGB"));
+
+    PluginInfo clusterPluginSource = cfg.getClusterPluginsSource();
+    assertEquals(
+        "org.apache.solr.api.NodeConfigClusterPluginsSource", clusterPluginSource.className);
+
+    PluginInfo cs1 = cfg.getClusterSingletonPlugins()[0];
+    assertEquals("testSingleton1", cs1.name);
+    assertEquals("my.singleton.class", cs1.className);
+
+    PluginInfo cs2 = cfg.getClusterSingletonPlugins()[1];
+    assertEquals("testSingleton2", cs2.name);
+    assertEquals("my.other.singleton.class", cs2.className);
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
@@ -482,5 +494,43 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
     assertEquals("Multiple instances of backup section found in solr.xml", thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonHasNoName() {
+    String solrXml =
+        "<solr><clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/><clusterSingleton class=\"k1\"/></solr>";
+    RuntimeException thrown =
+        assertThrows(RuntimeException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "java.lang.RuntimeException: clusterSingleton: missing mandatory attribute 'name'",
+        thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonHasDuplicateName() {
+    String solrXml =
+        "<solr><clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/><clusterSingleton name=\"a\" class=\"k1\"/><clusterSingleton name=\"a\" class=\"k2\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "Multiple clusterSingleton sections with name 'a' found in solr.xml", thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonHasNoClass() {
+    String solrXml =
+        "<solr><clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/><clusterSingleton name=\"a\"/></solr>";
+    RuntimeException thrown =
+        assertThrows(RuntimeException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "java.lang.RuntimeException: clusterSingleton: missing mandatory attribute 'class'",
+        thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonWithWrongPluginsSource() {
+    String solrXml = "<solr><clusterSingleton name=\"a\" class=\"k1\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "clusterSingleton section found in solr.xml but clusterPluginsSource is not NodeConfigClusterPluginsSource",
+        thrown.getMessage());
   }
 }

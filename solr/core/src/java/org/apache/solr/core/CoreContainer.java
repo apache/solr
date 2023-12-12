@@ -64,9 +64,9 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.api.ClusterPluginsSource;
+import org.apache.solr.api.ClusterPluginsSourceConfigurator;
 import org.apache.solr.api.ContainerPluginsRegistry;
-import org.apache.solr.api.ContainerPluginsSource;
-import org.apache.solr.api.ContainerPluginsSourceConfigurator;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -731,7 +731,7 @@ public class CoreContainer {
   }
 
   private void registerV2ApiIfEnabled(Object apiObject) {
-    if (containerHandlers.getApiBag() == null) {
+    if (apiObject == null || containerHandlers.getApiBag() == null) {
       return;
     }
 
@@ -773,9 +773,9 @@ public class CoreContainer {
     }
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
-    ContainerPluginsSource pluginsSource =
-        ContainerPluginsSourceConfigurator.loadContainerPluginsSource(
-            this, loader, cfg.getContainerPluginsSource());
+    ClusterPluginsSource pluginsSource =
+        ClusterPluginsSourceConfigurator.loadClusterPluginsSource(
+            this, loader, cfg.getClusterPluginsSource());
     containerPluginsRegistry =
         new ContainerPluginsRegistry(this, containerHandlers.getApiBag(), pluginsSource);
 
@@ -1104,13 +1104,8 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       containerPluginsRegistry.refresh();
       getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
-      if (pluginsSource.getReadApi() != null) {
-        registerV2ApiIfEnabled(pluginsSource.getReadApi());
-      }
-
-      if (pluginsSource.getEditApi() != null) {
-        registerV2ApiIfEnabled(pluginsSource.getEditApi());
-      }
+      registerV2ApiIfEnabled(pluginsSource.getReadApi());
+      registerV2ApiIfEnabled(pluginsSource.getEditApi());
 
       // initialize the placement plugin factory wrapper
       // with the plugin configuration from the registry

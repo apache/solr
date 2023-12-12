@@ -40,6 +40,7 @@ import javax.management.MBeanServer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -165,9 +166,9 @@ public class SolrXmlConfig {
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
-    configBuilder.setContainerPluginsSource(getPluginInfo(root.get("containerPluginsSource")));
-    configBuilder.setContainerPlugins(
-        getClusterSingletonPluginInfos(root.getAll("containerPlugin")));
+    configBuilder.setClusterPluginsSource(getPluginInfo(root.get("clusterPluginsSource")));
+    configBuilder.setClusterSingletonPlugins(
+        getClusterSingletonPluginInfos(root.getAll("clusterSingleton")));
     // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
     // <hiddenSysProps> is not provided under <solr>.
     // Remove this line in 10.0
@@ -654,11 +655,28 @@ public class SolrXmlConfig {
     if (nodes == null || nodes.isEmpty()) {
       return new PluginInfo[0];
     }
-    PluginInfo[] configs = new PluginInfo[nodes.size()];
-    for (int i = 0; i < nodes.size(); i++) {
-      configs[i] = getPluginInfo(nodes.get(i));
+
+    List<PluginInfo> plugins =
+        nodes.stream()
+            .map(n -> new PluginInfo(n, n.name(), true, true))
+            .collect(Collectors.toList());
+
+    // Cluster plugin names must be unique
+    Set<String> names = CollectionUtil.newHashSet(nodes.size());
+    Set<String> duplicateNames =
+        plugins.stream()
+            .filter(p -> !names.add(p.name))
+            .map(p -> p.name)
+            .collect(Collectors.toSet());
+    if (!duplicateNames.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Multiple clusterSingleton sections with name '"
+              + String.join("', '", duplicateNames)
+              + "' found in solr.xml");
     }
-    return configs;
+
+    return plugins.toArray(new PluginInfo[nodes.size()]);
   }
 
   private static MetricsConfig getMetricsConfig(ConfigNode metrics) {

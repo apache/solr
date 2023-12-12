@@ -17,7 +17,6 @@
 package org.apache.solr.api;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
@@ -25,47 +24,43 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Loads the {@link ContainerPluginsSource} depending on the declared implementation. The default
- * implementation is {@link ZkContainerPluginsSource}, but can be overridden by a system property,
- * or by declaring the implementation class in solr.xml
+ * Loads the {@link ClusterPluginsSource} depending on the declared implementation. The default
+ * implementation is {@link ZkClusterPluginsSource}, but can be overridden by a system property, or
+ * by declaring the implementation class in solr.xml
  */
-public class ContainerPluginsSourceConfigurator implements NamedListInitializedPlugin {
+public class ClusterPluginsSourceConfigurator implements NamedListInitializedPlugin {
 
   private static final String DEFAULT_CLASS_NAME =
-      System.getProperty("solr.containerPluginsSource", ZkContainerPluginsSource.class.getName());
+      System.getProperty("solr.clusterPluginsSource", ZkClusterPluginsSource.class.getName());
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static ContainerPluginsSource loadContainerPluginsSource(
+  public static ClusterPluginsSource loadClusterPluginsSource(
       CoreContainer cc, SolrResourceLoader loader, PluginInfo info) {
-    ContainerPluginsSource containerPluginsSource;
+    ClusterPluginsSource clusterPluginsSource;
     if (info != null && info.isEnabled()) {
-      containerPluginsSource = newInstance(loader, info.className, cc);
+      clusterPluginsSource = newInstance(loader, info.className, cc);
       if (info.initArgs != null) {
         Map<String, Object> config = new HashMap<>();
         info.initArgs.toMap(config);
         try {
-          ContainerPluginsRegistry.configure(containerPluginsSource, config, null);
+          ContainerPluginsRegistry.configure(clusterPluginsSource, config, null);
         } catch (IOException e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR, "Invalid " + info.type + " configuration", e);
         }
       }
     } else {
-      containerPluginsSource = newInstance(loader, DEFAULT_CLASS_NAME, cc);
+      clusterPluginsSource = newInstance(loader, DEFAULT_CLASS_NAME, cc);
     }
-    return containerPluginsSource;
+    return clusterPluginsSource;
   }
 
-  private static ContainerPluginsSource newInstance(
+  private static ClusterPluginsSource newInstance(
       SolrResourceLoader loader, String className, CoreContainer cc) {
     return loader.newInstance(
         className,
-        ContainerPluginsSource.class,
+        ClusterPluginsSource.class,
         new String[0],
         new Class<?>[] {CoreContainer.class},
         new Object[] {cc});

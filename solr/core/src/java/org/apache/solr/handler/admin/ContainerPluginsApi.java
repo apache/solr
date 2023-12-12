@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.ContainerPluginsRegistry;
-import org.apache.solr.api.ContainerPluginsSource;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -47,15 +47,15 @@ public class ContainerPluginsApi {
   public static final String PLUGIN = "plugin";
 
   private final CoreContainer coreContainer;
-  private final ContainerPluginsSource pluginsSource;
+  private final ClusterPluginsSource pluginsSource;
 
   public final Read readAPI = new Read();
   public final Edit editAPI = new Edit();
 
   public ContainerPluginsApi(
-      CoreContainer coreContainer, ContainerPluginsSource containerPluginsSource) {
+      CoreContainer coreContainer, ClusterPluginsSource clusterPluginsSource) {
     this.coreContainer = coreContainer;
-    this.pluginsSource = containerPluginsSource;
+    this.pluginsSource = clusterPluginsSource;
   }
 
   /** API for reading the current plugin configurations. */

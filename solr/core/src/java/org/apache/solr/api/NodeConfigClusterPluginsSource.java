@@ -31,13 +31,13 @@ import org.apache.solr.handler.admin.ContainerPluginsApi;
  * Plugin configurations that are defined in solr.xml. This supports immutable deployments, and the
  * /cluster/plugin Edit APIs are not available
  */
-public class NodeConfigContainerPluginsSource implements ContainerPluginsSource {
+public class NodeConfigClusterPluginsSource implements ClusterPluginsSource {
 
   private final Map<String, Object> plugins;
 
   private final ContainerPluginsApi api;
 
-  public NodeConfigContainerPluginsSource(final CoreContainer cc) {
+  public NodeConfigClusterPluginsSource(final CoreContainer cc) {
     api = new ContainerPluginsApi(cc, this);
     plugins = Map.copyOf(readPlugins(cc.getNodeConfig()));
   }
@@ -70,9 +70,9 @@ public class NodeConfigContainerPluginsSource implements ContainerPluginsSource 
 
   private static Map<String, Object> readPlugins(final NodeConfig cfg) {
     Map<String, Object> pluginInfos = new HashMap<>();
-    PluginInfo[] containerPlugins = cfg.getContainerPlugins();
-    if (containerPlugins != null) {
-      Arrays.stream(containerPlugins)
+    PluginInfo[] clusterSingletons = cfg.getClusterSingletonPlugins();
+    if (clusterSingletons != null) {
+      Arrays.stream(clusterSingletons)
           .forEach(
               p -> {
                 Map<String, Object> pluginMap = new HashMap<>();
