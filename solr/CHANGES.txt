@@ -19,6 +19,10 @@ Dependency Upgrades
 ---------------------
 (No changes)
 
+Other Changes
+---------------------
+* SOLR-16949: Restrict certain file types from being uploaded to or downloaded from Config Sets (janhoy, Houston Putman)
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
