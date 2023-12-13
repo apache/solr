@@ -412,7 +412,7 @@ Note that the `Version` value is `"2"`, which means the plugin is updated.
 
 The default version used in any collection is always the latest.
 However, setting a per-collection property in `params.json` ensures that the collection uses the same
-package version (i.e., version *2.0*), irrespective of any versions larger than *2.0* that may be added to Solr
+package version (i.e., version *2.0*), irrespective of any versions later than *2.0* that may be added to Solr
 at a later point.
 
 [source,bash]
