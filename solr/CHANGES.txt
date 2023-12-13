@@ -169,6 +169,8 @@ Other Changes
 * SOLR-17091: dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz file it was not expecting
   cloud.sh has been updated to ignore the -slim.tgz version of the tarball.
 
+* SOLR-16949: Restrict certain file types from being uploaded to or downloaded from Config Sets (janhoy, Houston Putman)
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
