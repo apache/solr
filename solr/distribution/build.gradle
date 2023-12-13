@@ -157,11 +157,9 @@ task assembleRelease(type: Sync) {
 
   from(tasks.computeChecksums, {
     exclude { it.file.getName().contains("openapi") }
-    //excludes ["**/*openapi.json.sha512"]
   })
   from(tasks.computeChecksums, {
     include { it.file.getName().contains("openapi") }
-    //includes ["**/*openapi.json.sha512"]
     into "openApi"
   })
 
