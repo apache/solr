@@ -1899,16 +1899,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return refCount.get() <= 0;
   }
 
-  /**
-   * Whether this core is ready. Sometimes using {@link #isClosed()} might result in a deadlock due
-   * to the caller trying to eagerly open a new searcher via {@link #withSearcher(IOFunction)}
-   * during core init phase.
-   *
-   * <p>Like for example concurrently polling metrics collection via the registered gauges in {@link
-   * #initializeMetrics(SolrMetricsContext, String)}
-   */
+  /** Returns true if the core is ready for use. It is not initializing or closing/closed. */
   public boolean isReady() {
-    return !isClosed() && newSearcherCounter.getCount() > 0;
+    return !isClosed() && newSearcherCounter != null && newSearcherCounter.getCount() > 0;
   }
 
   private Collection<CloseHook> closeHooks = null;
@@ -2119,6 +2112,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * because it might be closed soon after this method returns; it really depends.
    */
   public <R> R withSearcher(IOFunction<SolrIndexSearcher, R> lambda) throws IOException {
+    assert isReady();
     final RefCounted<SolrIndexSearcher> refCounted = getSearcher();
     try {
       return lambda.apply(refCounted.get());
