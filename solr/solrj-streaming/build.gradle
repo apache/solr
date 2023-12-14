@@ -46,3 +46,8 @@ dependencies {
 
   permitTestUsedUndeclared project(':solr:solrj-streaming') // duh!
 }
+
+test {
+  systemProperty "solr.log.dir", "stuff"
+  systemProperty "log4j2.debug", "true"
+}
