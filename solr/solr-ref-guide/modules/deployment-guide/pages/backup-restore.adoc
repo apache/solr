@@ -418,11 +418,14 @@ LocalFileSystemRepository accepts the following configuration option:
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Required |Default: none
 |===
 +
 A valid file path (accessible to Solr locally) to use for backup storage and retrieval.
-Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands
+Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands.
+When a user does provide a `location` parameter in their Backup or Restore API command, the path must be a subpath of the repository's `location`.
++
+Note: this location should be included in the configured xref:configuration-guide:configuring-solr-xml.adoc#the-solr-element[solr.xml's "allowPaths"].
 
 An example configuration using this property can be found below.
 
