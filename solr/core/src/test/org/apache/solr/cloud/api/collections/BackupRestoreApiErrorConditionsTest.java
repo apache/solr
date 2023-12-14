@@ -54,6 +54,9 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
     String local =
         "<backup>"
             + "<repository  name=\"local\" class=\"org.apache.solr.core.backup.repository.LocalFileSystemRepository\">"
+            + "  <str name=\"location\">"
+            + validBackupLocation
+            + "</str>\n"
             + "</repository>"
             + "</backup>";
     solrXml = solrXml.replace("</solr>", local + "</solr>");
