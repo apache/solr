@@ -171,6 +171,9 @@ Other Changes
 
 * SOLR-16949: Restrict certain file types from being uploaded to or downloaded from Config Sets (janhoy, Houston Putman)
 
+* SOLR-16880: Solr now produces an OpenAPI Specification artifact on releases ("solr-openapi-x.y.z.json") that covers
+  Solr's v2 APIs. (Jason Gerlowski, Houston Putman)
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
