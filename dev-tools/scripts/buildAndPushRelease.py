@@ -30,8 +30,7 @@ import xml.etree.ElementTree as ET
 import scriptutil
 
 LOG = '/tmp/release.log'
-# NOCOMMIT
-dev_mode = True
+dev_mode = False
 
 def log(msg):
   f = open(LOG, mode='ab')
