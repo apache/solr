@@ -294,6 +294,8 @@ public class CoreContainer {
   private SolrPackageLoader packageLoader;
 
   private final Set<Path> allowPaths;
+  // These paths do not allow write-access
+  private final List<Path> protectedPaths;
 
   private final AllowListUrlChecker allowListUrlChecker;
 
@@ -430,6 +432,7 @@ public class CoreContainer {
       }
     }
     this.allowPaths = allowPathBuilder.build();
+    this.protectedPaths = config.getProtectedDirectories();
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
   }
@@ -657,6 +660,7 @@ public class CoreContainer {
     distributedCollectionCommandRunner = Optional.empty();
     allowPaths = null;
     allowListUrlChecker = null;
+    protectedPaths = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -1643,6 +1647,34 @@ public class CoreContainer {
   @VisibleForTesting
   public Set<Path> getAllowPaths() {
     return allowPaths;
+  }
+
+  /**
+   * Checks that the given path is not protected (i.e. can accept writes). Protected paths generally
+   * contain library directories that Solr loads jars and classes from.
+   *
+   * @param pathToAssert path to check
+   * @throws SolrException if path is contained inside a library folder
+   */
+  public void assertPathNotProtected(Path pathToAssert) throws SolrException {
+    pathToAssert = pathToAssert.toAbsolutePath();
+    List<Path> protectedPathWithCores =
+        new ArrayList<>(protectedPaths.size() + solrCores.getNumAllCores());
+    protectedPathWithCores.addAll(protectedPaths);
+    solrCores.getCoreDescriptors().stream()
+        .map(CoreDescriptor::getInstanceDir)
+        .map(p -> p.resolve("lib").toAbsolutePath())
+        .forEach(protectedPathWithCores::add);
+
+    for (Path path : protectedPathWithCores) {
+      if (pathToAssert.startsWith(path)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Path "
+                + pathToAssert
+                + " cannot be used to write files, since it is contained within a protected folder");
+      }
+    }
   }
 
   /** Gets the URLs checker based on the {@code allowUrls} configuration of solr.xml. */

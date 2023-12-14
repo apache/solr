@@ -104,6 +104,7 @@ public class SnapShooter {
     this.snapshotName = snapshotName;
     if ("file".equals(location.getScheme())) {
       solrCore.getCoreContainer().assertPathAllowed(Paths.get(location));
+      solrCore.getCoreContainer().assertPathNotProtected(Paths.get(location));
     }
     if (snapshotName != null) {
       directoryName = "snapshot." + snapshotName;

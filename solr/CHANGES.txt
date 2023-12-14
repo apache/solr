@@ -124,6 +124,8 @@ Improvements
 
 * SOLR-17063: Do not retain log param references in LogWatcher (Michael Gibney)
 
+* SOLR-17104: Protect lib directories so that Solr can not write to them. (Houston Putman)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
