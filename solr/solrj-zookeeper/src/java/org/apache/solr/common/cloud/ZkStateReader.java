@@ -150,7 +150,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private static final String SOLR_ENVIRONMENT = "environment";
 
-  public static final String REPLICA_TYPE = "type";
+  public static final String REPLICA_TYPE = CollectionAdminParams.REPLICA_TYPE;
 
   public static final String CONTAINER_PLUGINS = "plugin";
 

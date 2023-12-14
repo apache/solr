@@ -22,7 +22,7 @@
 The `search` function searches a SolrCloud collection and emits a stream of tuples that match the query.
 This is very similar to a standard Solr query, and uses many of the same parameters.
 
-This expression allows you to specify a request hander using the `qt` parameter.
+This expression allows you to specify a request handler using the `qt` parameter.
 By default, the `/select` handler is used.
 The `/select` handler can be used for simple rapid prototyping of expressions.
 For production, however, you will most likely want to use the `/export` handler which is designed to `sort` and `export` entire result sets.
@@ -316,7 +316,7 @@ After the model is retrieved it can be used by the xref:stream-decorator-referen
 
 A single model tuple is fetched and returned based on the *id* parameter.
 The model is retrieved by matching the *id* parameter with a model name in the index.
-If more then one iteration of the named model is stored in the index, the highest iteration is selected.
+If more than one iteration of the named model is stored in the index, the highest iteration is selected.
 
 === Caching with model
 
@@ -399,12 +399,12 @@ The foreground and background counts are global for the collection.
 * `limit`: (Optional, Default 20) The max number of terms to return.
 * `minDocFreq`: (Optional, Defaults to 5 documents) The minimum number of documents the term must appear in on a shard.
 This is a float value.
-If greater then 1.0 then it's considered the absolute number of documents.
-If less then 1.0 it's treated as a percentage of documents.
+If greater than 1.0 then it's considered the absolute number of documents.
+If less than 1.0 it's treated as a percentage of documents.
 * `maxDocFreq`: (Optional, Defaults to 30% of documents) The maximum number of documents the term can appear in on a shard.
 This is a float value.
-If greater then 1.0 then it's considered the absolute number of documents.
-If less then 1.0 it's treated as a percentage of documents.
+If greater than 1.0 then it's considered the absolute number of documents.
+If less than 1.0 it's treated as a percentage of documents.
 * `minTermLength`: (Optional, Default 4) The minimum length of the term to be considered significant.
 
 === significantTerms Syntax
@@ -420,7 +420,7 @@ significantTerms(collection1,
                  minTermLength="5")
 ----
 
-In the example above the `significantTerms` function is querying `collection1` and returning at most 50 significant terms from the `authors` field that appear in 10 or more documents but not more then 20% of the corpus.
+In the example above the `significantTerms` function is querying `collection1` and returning at most 50 significant terms from the `authors` field that appear in 10 or more documents but not more than 20% of the corpus.
 
 == shortestPath
 
