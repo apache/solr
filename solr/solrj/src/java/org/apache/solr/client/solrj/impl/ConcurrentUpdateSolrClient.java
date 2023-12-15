@@ -119,6 +119,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
     this.pollQueueTimeMillis = builder.pollQueueTime;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+    this.defaultCollection = builder.defaultCollection;
 
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
@@ -487,6 +488,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
+    if (collection == null) collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       return client.request(request, collection);
     }

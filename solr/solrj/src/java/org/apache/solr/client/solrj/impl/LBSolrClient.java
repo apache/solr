@@ -616,6 +616,7 @@ public abstract class LBSolrClient extends SolrClient {
     final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
     int numServersTried = 0;
     Map<String, ServerWrapper> justFailed = null;
+    if (collection == null) collection = defaultCollection;
 
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(request);
