@@ -1350,9 +1350,51 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    try {
-      assertQueryEquals(
-          "knn", "{!knn f=vector}[1.0,2.0,3.0,4.0]", "{!knn f=vector v=[1.0,2.0,3.0,4.0]}");
+    try (SolrQueryRequest req0 = req()) {
+      final String qvec = "[1.0,2.0,3.0,4.0]";
+      // no filters
+      final Query fqNull =
+          assertQueryEqualsAndReturn(
+              "knn",
+              req0,
+              "{!knn f=vector}" + qvec,
+              "{!knn f=vector fq=''}" + qvec,
+              "{!knn f=vector v=" + qvec + "}");
+
+      try (SolrQueryRequest req1 = req("fq", "{!tag=t1}id:1", "xxx", "id:1")) {
+        // either global fq, or (same) fq as localparam
+        final Query fqOne =
+            assertQueryEqualsAndReturn(
+                "knn",
+                req1,
+                "{!knn f=vector}" + qvec,
+                "{!knn f=vector includeTags=t1}" + qvec,
+                "{!knn f=vector fq='id:1'}" + qvec,
+                "{!knn f=vector fq=$xxx}" + qvec,
+                "{!knn f=vector v=" + qvec + "}");
+        QueryUtils.checkUnequal(fqNull, fqOne);
+
+        try (SolrQueryRequest req2 = req("fq", "{!tag=t2}id:2", "xxx", "id:1", "yyy", "")) {
+          // override global fq with local param to use different filter
+          final Query fqOneOverride =
+              assertQueryEqualsAndReturn(
+                  "knn",
+                  req2,
+                  "{!knn f=vector fq='id:1'}" + qvec,
+                  "{!knn f=vector fq=$xxx}" + qvec);
+          QueryUtils.checkEqual(fqOne, fqOneOverride);
+
+          // override global fq with local param to use no filters
+          final Query fqNullOverride =
+              assertQueryEqualsAndReturn(
+                  "knn",
+                  req2,
+                  "{!knn f=vector fq=''}" + qvec,
+                  "{!knn f=vector excludeTags=t2}" + qvec,
+                  "{!knn f=vector fq=$yyy}" + qvec);
+          QueryUtils.checkEqual(fqNull, fqNullOverride);
+        }
+      }
     } finally {
       delQ("id:0");
       assertU(commit());
@@ -1364,12 +1406,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    * for coverage sanity checking
    *
    * @see #testParserCoverage
-   * @see #assertQueryEquals
+   * @see #assertQueryEqualsAndReturn
    */
   protected void assertQueryEquals(final String defType, final String... inputs) throws Exception {
     SolrQueryRequest req = req(new String[] {"df", "text"});
     try {
-      assertQueryEquals(defType, req, inputs);
+      assertQueryEqualsAndReturn(defType, req, inputs);
     } finally {
       req.close();
     }
@@ -1379,12 +1421,33 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    * NOTE: defType is not only used to pick the parser, but, if non-null it is also to record the
    * parser being tested for coverage sanity checking
    *
+   * @see #testParserCoverage
+   * @see #assertQueryEqualsAndReturn
+   */
+  protected void assertQueryEquals(
+      final String defType, final SolrQueryRequest req, final String... inputs) throws Exception {
+    assertQueryEqualsAndReturn(defType, req, inputs);
+  }
+
+  /**
+   * Parses a set of input strings in the context of a request, making various assertions about the
+   * resulting Query objects, including that they must all be equals.
+   *
+   * <p>Returns one of the (all equal) Query objects so it may be used in other comparisons with
+   * other Query objects, possibly parsed in the context of different requests.
+   *
+   * <p>NOTE: defType is not only used to pick the parser, but, if non-null it is also to record the
+   * parser being tested for coverage sanity checking.
+   *
    * @see QueryUtils#check
    * @see QueryUtils#checkEqual
    * @see #testParserCoverage
    */
-  protected void assertQueryEquals(
+  protected Query assertQueryEqualsAndReturn(
       final String defType, final SolrQueryRequest req, final String... inputs) throws Exception {
+
+    assertTrue(
+        "At least one input string for parsing must be passed to this method", 0 < inputs.length);
 
     if (null != defType) qParsersTested.add(defType);
 
@@ -1409,6 +1472,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         QueryUtils.checkEqual(query1, query2);
       }
     }
+    return queries[0];
   }
 
   /**

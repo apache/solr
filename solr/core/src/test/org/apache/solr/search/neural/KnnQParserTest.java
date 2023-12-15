@@ -26,6 +26,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -453,6 +455,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   @Test
   public void knnQueryUsedInFilters_shouldFilterResultsBeforeTheQueryExecution() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    // topK=4 -> 1,4,2,10
     assertQ(
         req(
             CommonParams.Q,
@@ -460,43 +464,377 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "fq",
             "{!knn f=vector topK=4}" + vectorToSearch,
             "fq",
-            "id:(4 20)",
+            "id:(4 20 9)",
             "fl",
             "id"),
         "//result[@numFound='1']",
         "//result/doc[1]/str[@name='id'][.='4']");
+
+    // topK=4 w/localparam fq -> 1,4,7,9
+    assertQ(
+        req(
+            CommonParams.Q,
+            "id:(3 4 9 2)",
+            "fq",
+            "{!knn f=vector topK=4 fq='id:(1 4 7 8 9)'}" + vectorToSearch,
+            "fq",
+            "id:(4 20 9)",
+            "fl",
+            "id"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='4']",
+        "//result/doc[2]/str[@name='id'][.='9']");
+
+    for (String fq :
+        Arrays.asList(
+            "{!knn f=vector topK=5 includeTags=xxx}" + vectorToSearch,
+            "{!knn f=vector topK=5 excludeTags=xxx}" + vectorToSearch)) {
+      assertQEx(
+          "fq={!knn...} incompatible with include/exclude localparams",
+          "used as a filter does not support",
+          req("q", "*:*", "fq", fq),
+          SolrException.ErrorCode.BAD_REQUEST);
+    }
   }
 
   @Test
-  public void knnQueryWithFilterQuery_shouldPerformKnnSearchInPreFilteredResults() {
-    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+  public void knnQueryAsSubQuery() {
+    final SolrParams common = params("fl", "id", "vec", "[1.0, 2.0, 3.0, 4.0]");
+    final String filt = "id:(2 4 7 9 8 20 3)";
 
+    // When knn parser is a subquery, it should not pre-filter on any global fq params
+    // topK -> 1,4,2,10,3 -> fq -> 4,2,3
     assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=10}" + vectorToSearch,
-            "fq",
-            "id:(1 2 7 20)",
-            "fl",
-            "id"),
+        req(common, "fq", filt, "q", "*:* AND {!knn f=vector topK=5 v=$vec}"),
         "//result[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='2']",
-        "//result/doc[3]/str[@name='id'][.='7']");
-
+        "//result/doc[3]/str[@name='id'][.='3']");
+    // topK -> 1,4,2,10,3 + '8' -> fq -> 4,2,3,8
     assertQ(
-        req(
-            CommonParams.Q,
-            "{!knn f=vector topK=4}" + vectorToSearch,
-            "fq",
-            "id:(3 4 9 2)",
-            "fl",
-            "id"),
+        req(common, "fq", filt, "q", "id:8^=0.01 OR {!knn f=vector topK=5 v=$vec}"),
         "//result[@numFound='4']",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='2']",
         "//result/doc[3]/str[@name='id'][.='3']",
+        "//result/doc[4]/str[@name='id'][.='8']");
+
+    // knn subquery should still accept `fq` local param
+    // filt -> topK -> 4,2,3,7,9
+    assertQ(
+        req(common, "q", "*:* AND {!knn f=vector topK=5 fq='" + filt + "' v=$vec}"),
+        "//result[@numFound='5']",
+        "//result/doc[1]/str[@name='id'][.='4']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='3']",
+        "//result/doc[4]/str[@name='id'][.='7']",
+        "//result/doc[5]/str[@name='id'][.='9']");
+
+    // knn subquery should still accept `fq` local param, and not pre-filter on any global fq params
+    // filt -> topK -> 4,2,3,7,9 -> fq -> 3,9
+    assertQ(
+        req(
+            common,
+            "fq",
+            "id:(1 9 20 3 5 6 8)",
+            "q",
+            "*:* AND {!knn f=vector topK=5 fq='" + filt + "' v=$vec}"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='3']",
+        "//result/doc[2]/str[@name='id'][.='9']");
+    // filt -> topK -> 4,2,3,7,9 + '8' -> fq -> 8,3,9
+    assertQ(
+        req(
+            common,
+            "fq",
+            "id:(1 9 20 3 5 6 8)",
+            "q",
+            "id:8^=100 OR {!knn f=vector topK=5 fq='" + filt + "' v=$vec}"),
+        "//result[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='3']",
+        "//result/doc[3]/str[@name='id'][.='9']");
+
+    for (String knn :
+        Arrays.asList(
+            "{!knn f=vector topK=5 includeTags=xxx v=$vec}",
+            "{!knn f=vector topK=5 excludeTags=xxx v=$vec}")) {
+      assertQEx(
+          "knn as subquery incompatible with include/exclude localparams",
+          "used as a sub-query does not support",
+          req(common, "q", "*:* OR " + knn),
+          SolrException.ErrorCode.BAD_REQUEST);
+    }
+  }
+
+  @Test
+  public void knnQueryWithFilterQuery_shouldPerformKnnSearchInPreFilteredResults() {
+    final String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    final SolrParams common = params("fl", "id");
+
+    { // these requests should be equivilent
+      final String filt = "id:(1 2 7 20)";
+      for (SolrQueryRequest req :
+          Arrays.asList(
+              req(common, "q", "{!knn f=vector topK=10}" + vectorToSearch, "fq", filt),
+              req(common, "q", "{!knn f=vector fq=\"" + filt + "\" topK=10}" + vectorToSearch),
+              req(
+                  common,
+                  "q",
+                  "{!knn f=vector fq=$my_filt topK=10}" + vectorToSearch,
+                  "my_filt",
+                  filt))) {
+        assertQ(
+            req,
+            "//result[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.='1']",
+            "//result/doc[2]/str[@name='id'][.='2']",
+            "//result/doc[3]/str[@name='id'][.='7']");
+      }
+    }
+
+    { // these requests should be equivilent
+      final String fx = "id:(3 4 9 2 1 )"; // 1 & 10 dropped from intersection
+      final String fy = "id:(3 4 9 2 10)";
+      for (SolrQueryRequest req :
+          Arrays.asList(
+              req(common, "q", "{!knn f=vector topK=4}" + vectorToSearch, "fq", fx, "fq", fy),
+              req(
+                  common,
+                  "q",
+                  "{!knn f=vector fq=\"" + fx + "\" fq=\"" + fy + "\" topK=4}" + vectorToSearch),
+              req(
+                  common,
+                  "q",
+                  "{!knn f=vector fq=$fx fq=$fy topK=4}" + vectorToSearch,
+                  "fx",
+                  fx,
+                  "fy",
+                  fy),
+              req(
+                  common,
+                  "q",
+                  "{!knn f=vector fq=$multi_filt topK=4}" + vectorToSearch,
+                  "multi_filt",
+                  fx,
+                  "multi_filt",
+                  fy))) {
+        assertQ(
+            req,
+            "//result[@numFound='4']",
+            "//result/doc[1]/str[@name='id'][.='4']",
+            "//result/doc[2]/str[@name='id'][.='2']",
+            "//result/doc[3]/str[@name='id'][.='3']",
+            "//result/doc[4]/str[@name='id'][.='9']");
+      }
+    }
+
+    assertQEx(
+        "knn fq localparm incompatible with include/exclude localparams",
+        "does not support combining fq localparam with either",
+        // shouldn't matter if global fq w/tag even exists, usage is an error
+        req("q", "{!knn f=vector fq='id:1' includeTags=xxx}" + vectorToSearch),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "knn fq localparm incompatible with include/exclude localparams",
+        "does not support combining fq localparam with either",
+        // shouldn't matter if global fq w/tag even exists, usage is an error
+        req("q", "{!knn f=vector fq='id:1' excludeTags=xxx}" + vectorToSearch),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void knnQueryWithFilterQuery_localParamOverridesGlobalFilters() {
+    final String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    // trivial case: empty fq localparam means no pre-filtering
+    assertQ(
+        req(
+            "q", "{!knn f=vector fq='' topK=5}" + vectorToSearch,
+            "fq", "-id:4",
+            "fl", "id"),
+        "//result[@numFound='4']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='2']",
+        "//result/doc[3]/str[@name='id'][.='10']",
+        "//result/doc[4]/str[@name='id'][.='3']");
+
+    // localparam prefiltering, global fqs applied independently
+    assertQ(
+        req(
+            "q", "{!knn f=vector fq='id:(3 4 9 2 7 8)' topK=5}" + vectorToSearch,
+            "fq", "-id:4",
+            "fl", "id"),
+        "//result[@numFound='4']",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='3']",
+        "//result/doc[3]/str[@name='id'][.='7']",
         "//result/doc[4]/str[@name='id'][.='9']");
+  }
+
+  @Test
+  public void knnQueryWithFilterQuery_localParamIncludeExcludeTags() {
+    final String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+    final SolrParams common =
+        params(
+            "fl", "id",
+            "fq", "{!tag=xx,aa}id:(5 6 7 8 9 10)",
+            "fq", "{!tag=yy,aa}id:(1 2 3 4 5 6 7)");
+
+    // These req's are equivilent: pre-filter everything
+    // So only 7,6,5 are viable for topK=5
+    for (SolrQueryRequest req :
+        Arrays.asList(
+            // default behavior is all fq's pre-filter,
+            req(common, "q", "{!knn f=vector topK=5}" + vectorToSearch),
+            // diff ways of explicitly requesting both fq params
+            req(common, "q", "{!knn f=vector includeTags=aa topK=5}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector includeTags=aa excludeTags='' topK=5}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector includeTags=aa excludeTags=bogus topK=5}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector includeTags=xx includeTags=yy topK=5}" + vectorToSearch),
+            req(common, "q", "{!knn f=vector includeTags=xx,yy,bogus topK=5}" + vectorToSearch))) {
+      assertQ(
+          req,
+          "//result[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='7']",
+          "//result/doc[2]/str[@name='id'][.='5']",
+          "//result/doc[3]/str[@name='id'][.='6']");
+    }
+
+    // These req's are equivilent: pre-filter nothing
+    // So 1,4,2,10,3,7 are the topK=6
+    // Only 7 matches both of the the regular fq params
+    for (SolrQueryRequest req :
+        Arrays.asList(
+            // explicit local empty fq
+            req(common, "q", "{!knn f=vector fq='' topK=6}" + vectorToSearch),
+            // diff ways of explicitly including none of the global fq params
+            req(common, "q", "{!knn f=vector includeTags='' topK=6}" + vectorToSearch),
+            req(common, "q", "{!knn f=vector includeTags=bogus topK=6}" + vectorToSearch),
+            // diff ways of explicitly excluding all of the global fq params
+            req(common, "q", "{!knn f=vector excludeTags=aa topK=6}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector includeTags=aa excludeTags=aa topK=6}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector includeTags=aa excludeTags=xx,yy topK=6}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector includeTags=xx,yy excludeTags=aa topK=6}" + vectorToSearch),
+            req(common, "q", "{!knn f=vector excludeTags=xx,yy topK=6}" + vectorToSearch),
+            req(common, "q", "{!knn f=vector excludeTags=aa topK=6}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector excludeTags=xx excludeTags=yy topK=6}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector excludeTags=xx excludeTags=yy,bogus topK=6}" + vectorToSearch),
+            req(common, "q", "{!knn f=vector excludeTags=xx,yy,bogus topK=6}" + vectorToSearch))) {
+      assertQ(req, "//result[@numFound='1']", "//result/doc[1]/str[@name='id'][.='7']");
+    }
+
+    // These req's are equivilent: prefilter only the 'yy' fq
+    // So 1,4,2,3,7 are in the topK=5.
+    // Only 7 matches the regular 'xx' fq param
+    for (SolrQueryRequest req :
+        Arrays.asList(
+            // diff ways of only using the 'yy' filter
+            req(common, "q", "{!knn f=vector includeTags=yy,bogus topK=5}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector includeTags=yy excludeTags='' topK=5}" + vectorToSearch),
+            req(common, "q", "{!knn f=vector excludeTags=xx,bogus topK=5}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector includeTags=yy excludeTags=xx topK=5}" + vectorToSearch),
+            req(
+                common,
+                "q",
+                "{!knn f=vector includeTags=aa excludeTags=xx topK=5}" + vectorToSearch))) {
+      assertQ(req, "//result[@numFound='1']", "//result/doc[1]/str[@name='id'][.='7']");
+    }
+  }
+
+  @Test
+  public void knnQueryWithMultiSelectFaceting_excludeTags() {
+    // NOTE: faceting on id is not very realistic,
+    // but it confirms what we care about re:filters w/o needing extra fields.
+    final String facet_xpath = "//lst[@name='facet_fields']/lst[@name='id']/int";
+    final String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    final SolrParams common =
+        params(
+            "fl", "id",
+            "indent", "true",
+            "q", "{!knn f=vector topK=5 excludeTags=facet_click v=$vec}",
+            "vec", vectorToSearch,
+            // mimicing "inStock:true"
+            "fq", "-id:(2 3)",
+            "facet", "true",
+            "facet.mincount", "1",
+            "facet.field", "{!ex=facet_click}id");
+
+    // initial query, with basic pre-filter and facet counts
+    assertQ(
+        req(common),
+        "//result[@numFound='5']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='4']",
+        "//result/doc[3]/str[@name='id'][.='10']",
+        "//result/doc[4]/str[@name='id'][.='7']",
+        "//result/doc[5]/str[@name='id'][.='5']",
+        "*[count(" + facet_xpath + ")=5]",
+        facet_xpath + "[@name='1'][.='1']",
+        facet_xpath + "[@name='4'][.='1']",
+        facet_xpath + "[@name='10'][.='1']",
+        facet_xpath + "[@name='7'][.='1']",
+        facet_xpath + "[@name='5'][.='1']");
+
+    // drill down on a single facet constraint
+    // multi-select means facet counts shouldn't change
+    // (this proves the knn isn't pre-filtering on the 'facet_click' fq)
+    assertQ(
+        req(common, "fq", "{!tag=facet_click}id:(4)"),
+        "//result[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='4']",
+        "*[count(" + facet_xpath + ")=5]",
+        facet_xpath + "[@name='1'][.='1']",
+        facet_xpath + "[@name='4'][.='1']",
+        facet_xpath + "[@name='10'][.='1']",
+        facet_xpath + "[@name='7'][.='1']",
+        facet_xpath + "[@name='5'][.='1']");
+
+    // drill down on an additional facet constraint
+    // multi-select means facet counts shouldn't change
+    // (this proves the knn isn't pre-filtering on the 'facet_click' fq)
+    assertQ(
+        req(common, "fq", "{!tag=facet_click}id:(4 5)"),
+        "//result[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.='4']",
+        "//result/doc[2]/str[@name='id'][.='5']",
+        "*[count(" + facet_xpath + ")=5]",
+        facet_xpath + "[@name='1'][.='1']",
+        facet_xpath + "[@name='4'][.='1']",
+        facet_xpath + "[@name='10'][.='1']",
+        facet_xpath + "[@name='7'][.='1']",
+        facet_xpath + "[@name='5'][.='1']");
   }
 
   @Test
