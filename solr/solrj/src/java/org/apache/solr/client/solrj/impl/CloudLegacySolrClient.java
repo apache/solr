@@ -167,7 +167,6 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
-    protected String defaultCollection;
     protected long retryExpiryTimeNano =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
     protected ClusterStateProvider stateProvider;
@@ -340,12 +339,6 @@ public class CloudLegacySolrClient extends CloudSolrClient {
      */
     public Builder withParallelUpdates(boolean parallelUpdates) {
       this.parallelUpdates = parallelUpdates;
-      return this;
-    }
-
-    /** Sets the default collection for request. */
-    public Builder withDefaultCollection(String collection) {
-      this.defaultCollection = collection;
       return this;
     }
 
