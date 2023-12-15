@@ -22,6 +22,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -119,6 +120,8 @@ public class NodeConfig {
 
   private final String defaultZkHost;
 
+  private final List<Path> sharedLibPaths;
+
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
@@ -211,7 +214,8 @@ public class NodeConfig {
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
 
-    setupSharedLib();
+    sharedLibPaths = getSharedLibPaths();
+    setupSharedLibDirs(sharedLibPaths);
     initModules();
   }
 
@@ -434,8 +438,9 @@ public class NodeConfig {
     return hideStackTraces;
   }
 
-  // Configures SOLR_HOME/lib to the shared class loader
-  private void setupSharedLib() {
+  // Configures the list of shared libs, including SOLR_INSTALL/lib, SOLR_HOME/lib and the
+  // configured sharedLib
+  private List<Path> getSharedLibPaths() {
     // Always add $SOLR_HOME/lib to the shared resource loader
     Set<String> libDirs = new LinkedHashSet<>();
     libDirs.add("lib");
@@ -455,7 +460,32 @@ public class NodeConfig {
       libDirs.addAll(sharedLibs);
     }
 
-    addFoldersToSharedLib(libDirs);
+    List<Path> libDirPaths = new ArrayList<>(libDirs.size());
+    for (String libDir : libDirs) {
+      libDirPaths.add(getSolrHome().resolve(libDir).toAbsolutePath());
+    }
+    return libDirPaths;
+  }
+
+  // Get the list of protected directories, that cannot have files created within them
+  public List<Path> getProtectedDirectories() {
+    List<Path> protectedDirectories = new ArrayList<>(sharedLibPaths.size() + 4);
+
+    // Start with the shared lib directories
+    protectedDirectories.addAll(sharedLibPaths);
+
+    if (getSolrInstallDir() != null) {
+      // Add in modules and tools
+      protectedDirectories.add(ModuleUtils.getModulesPath(getSolrInstallDir()).toAbsolutePath());
+      protectedDirectories.add(getSolrInstallDir().resolve("prometheus-exporter").toAbsolutePath());
+
+      // Add in server library folders
+      protectedDirectories.add(
+          getSolrInstallDir().resolve("server").resolve("lib").toAbsolutePath());
+      protectedDirectories.add(
+          getSolrInstallDir().resolve("server").resolve("solr-webapp").toAbsolutePath());
+    }
+    return protectedDirectories;
   }
 
   /**
@@ -480,11 +510,10 @@ public class NodeConfig {
   }
 
   // Finds every jar in each folder and adds it to shardLib, then reloads Lucene SPI
-  private void addFoldersToSharedLib(Set<String> libDirs) {
+  private void setupSharedLibDirs(List<Path> libPaths) {
     boolean modified = false;
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
-    for (String libDir : libDirs) {
-      Path libPath = getSolrHome().resolve(libDir);
+    for (Path libPath : libPaths) {
       if (Files.exists(libPath)) {
         try {
           loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));

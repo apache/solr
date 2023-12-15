@@ -79,6 +79,7 @@ public class CreateCoreBackup extends CoreAdminAPIBase implements CreateCoreBack
             if (Boolean.TRUE.equals(backupCoreRequestBody.incremental)) {
               if ("file".equals(locationUri.getScheme())) {
                 core.getCoreContainer().assertPathAllowed(Paths.get(locationUri));
+                core.getCoreContainer().assertPathNotProtected(Paths.get(locationUri));
               }
               ensureRequiredParameterProvided("shardBackupId", backupCoreRequestBody.shardBackupId);
               final ShardBackupId shardBackupId =

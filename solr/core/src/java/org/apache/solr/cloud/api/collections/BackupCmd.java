@@ -25,6 +25,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -202,6 +203,11 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The backup directory already exists: " + backupNamePath);
+    }
+
+    if ("file".equals(location.getScheme())) {
+      ccc.getCoreContainer().assertPathAllowed(Paths.get(backupNamePath));
+      ccc.getCoreContainer().assertPathNotProtected(Paths.get(backupNamePath));
     }
 
     if (!repository.exists(backupNamePath)) {
