@@ -420,16 +420,9 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
       }
-      if (instance instanceof ConfigurablePlugin) {
-        Class<? extends MapWriter> c =
-            getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
-        if (c != null) {
-          Map<String, Object> original =
-              (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
-          holder.meta.config = mapper.readValue(Utils.toJSON(original), c);
-          ((ConfigurablePlugin<MapWriter>) instance).configure(holder.meta.config);
-        }
-      }
+      Map<String, Object> config =
+          (Map<String, Object>) holder.original.getOrDefault("config", Collections.emptyMap());
+      configure(instance, config, holder.meta);
       if (instance instanceof ResourceLoaderAware) {
         try {
           ((ResourceLoaderAware) instance).inform(pkgVersion.getLoader());
@@ -442,6 +435,24 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
         holders.add(new ApiHolder((AnnotatedApi) api));
       }
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  public static MapWriter configure(Object instance, Map<String, Object> config, PluginMeta meta)
+      throws IOException {
+    if (instance instanceof ConfigurablePlugin) {
+      Class<? extends MapWriter> c =
+          getConfigClass((ConfigurablePlugin<? extends MapWriter>) instance);
+      if (c != null) {
+        MapWriter configObj = mapper.readValue(Utils.toJSON(config), c);
+        if (null != meta) {
+          meta.config = configObj;
+        }
+        ((ConfigurablePlugin<MapWriter>) instance).configure(configObj);
+        return configObj;
+      }
+    }
+    return null;
   }
 
   /** Get the generic type of a {@link ConfigurablePlugin} */

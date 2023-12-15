@@ -150,7 +150,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
    * See {@link AffinityPlacementFactory} for instructions on how to configure a cluster to use this
    * plugin and details on what the plugin does.
    */
-  static class AffinityPlacementPlugin extends OrderedNodePlacementPlugin {
+  public static class AffinityPlacementPlugin extends OrderedNodePlacementPlugin {
 
     private final long minimalFreeDiskGB;
 

@@ -135,7 +135,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             Set.of(solrCollection.shards().iterator().next().getShardName()),
             new HashSet<>(liveNodes),
-            new ReplicaCount(1, 0, 0));
+            ReplicaCount.of(1, 0, 0));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
 
@@ -180,7 +180,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             solrCollection.getShardNames(),
             new HashSet<>(liveNodes),
-            new ReplicaCount(2, 2, 2));
+            ReplicaCount.of(2, 2, 2));
 
     PlacementPlan pp =
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
@@ -207,7 +207,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             solrCollection.getShardNames(),
             new HashSet<>(liveNodes),
-            new ReplicaCount(7, 0, 0));
+            ReplicaCount.of(7, 0, 0));
     pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     assertEquals(21, pp.getReplicaPlacements().size()); // 3 shards, 7 replicas each
     placements = new HashSet<>();
@@ -230,7 +230,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
               solrCollection,
               solrCollection.getShardNames(),
               new HashSet<>(liveNodes),
-              new ReplicaCount(8, 0, 0));
+              ReplicaCount.of(8, 0, 0));
       plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
       fail("Placing 8 replicas should not be possible given only 7 nodes have enough space");
     } catch (PlacementException e) {
@@ -276,7 +276,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             solrCollection.getShardNames(),
             new HashSet<>(liveNodes),
-            new ReplicaCount(1, 1, 0));
+            ReplicaCount.of(1, 1, 0));
 
     // The replicas must be placed on the most appropriate nodes, i.e. those that do not already
     // have a replica for the shard and then on the node with the lowest number of cores. NRT are
@@ -388,7 +388,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             solrCollection.getShardNames(),
             new HashSet<>(liveNodes),
-            new ReplicaCount(2, 1, 0));
+            ReplicaCount.of(2, 1, 0));
     PlacementPlan pp =
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     // Shard 1: The NRT's should go to the med cores node on AZ2 and low core on az3 (even though a
@@ -414,7 +414,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             solrCollection.getShardNames(),
             new HashSet<>(liveNodes),
-            new ReplicaCount(0, 0, 2));
+            ReplicaCount.of(0, 0, 2));
     pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     // Shard 1: Given node AZ3_TLOGPULL is taken by the TLOG replica, the PULL should go to
     // AZ1_TLOGPULL_LOWFREEDISK and AZ2_TLOGPULL
@@ -479,7 +479,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
               solrCollection,
               solrCollection.getShardNames(),
               new HashSet<>(liveNodes),
-              new ReplicaCount(countNrtToPlace, 0, 0));
+              ReplicaCount.of(countNrtToPlace, 0, 0));
       PlacementPlan pp =
           plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
       verifyPlacements(
@@ -524,7 +524,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             Set.of(solrCollection.iterator().next().getShardName()),
             new HashSet<>(liveNodes),
-            new ReplicaCount(0, 0, 1));
+            ReplicaCount.of(0, 0, 1));
 
     PlacementPlan pp =
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
@@ -543,7 +543,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             Set.of(it.next().getShardName()),
             new HashSet<>(liveNodes),
-            new ReplicaCount(0, 0, 1));
+            ReplicaCount.of(0, 0, 1));
     pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     expectedPlacements = Set.of("2 PULL 0");
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
@@ -582,7 +582,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
                 .map(Shard::getShardName)
                 .collect(Collectors.toSet()),
             cluster.getLiveNodes(),
-            new ReplicaCount(2, 2, 2));
+            ReplicaCount.of(2, 2, 2));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     // 2 shards, 6 replicas
@@ -654,7 +654,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
                 .map(Shard::getShardName)
                 .collect(Collectors.toSet()),
             cluster.getLiveNodes(),
-            new ReplicaCount(2, 2, 2));
+            ReplicaCount.of(2, 2, 2));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     // 2 shards, 6 replicas
@@ -733,7 +733,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
                 .map(Shard::getShardName)
                 .collect(Collectors.toSet()),
             cluster.getLiveNodes(),
-            new ReplicaCount(1, 0, 1));
+            ReplicaCount.of(1, 0, 1));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(4, pp.getReplicaPlacements().size());
@@ -782,7 +782,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
                 .map(Set::of)
                 .orElseGet(Collections::emptySet),
             cluster.getLiveNodes(),
-            new ReplicaCount(0, 1, 1));
+            ReplicaCount.of(0, 1, 1));
 
     assertThrows(
         PlacementException.class,
@@ -797,7 +797,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
                 .map(Shard::getShardName)
                 .collect(Collectors.toSet()),
             cluster.getLiveNodes(),
-            new ReplicaCount(0, 1, 1));
+            ReplicaCount.of(0, 1, 1));
 
     assertThrows(
         PlacementException.class,
@@ -854,7 +854,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             primaryCollection,
             Set.of("shard1", "shard2"),
             cluster.getLiveNodes(),
-            new ReplicaCount(1, 0, 0));
+            ReplicaCount.of(1, 0, 0));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(2, pp.getReplicaPlacements().size());
@@ -868,7 +868,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     placementRequest =
         new PlacementRequestImpl(
-            primaryCollection, Set.of("shard1"), cluster.getLiveNodes(), new ReplicaCount(3, 0, 0));
+            primaryCollection, Set.of("shard1"), cluster.getLiveNodes(), ReplicaCount.of(3, 0, 0));
     try {
       pp = plugin.computePlacement(placementRequest, placementContext);
       fail("should generate 'Not enough eligible nodes' failure here");
@@ -918,7 +918,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             primaryCollection,
             shuffle(Arrays.asList("shard2", "shard1")),
             shuffle(cluster.getLiveNodes()),
-            new ReplicaCount(1, 0, 0));
+            ReplicaCount.of(1, 0, 0));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(2, pp.getReplicaPlacements().size());
@@ -946,7 +946,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     placementRequest =
         new PlacementRequestImpl(
-            primaryCollection, Set.of("shard3"), cluster.getLiveNodes(), new ReplicaCount(1, 0, 0));
+            primaryCollection, Set.of("shard3"), cluster.getLiveNodes(), ReplicaCount.of(1, 0, 0));
     try {
       pp = plugin.computePlacement(placementRequest, placementContext);
       fail("should generate 'has no replicas on eligible nodes' failure here");
@@ -1181,7 +1181,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             collection,
             Set.of("shard1"),
             placementContext.getCluster().getLiveNodes(),
-            new ReplicaCount(3, 0, 0));
+            ReplicaCount.of(3, 0, 0));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals("expected 3 placements: " + pp, 3, pp.getReplicaPlacements().size());
@@ -1209,7 +1209,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             collection,
             Set.of("shard1"),
             placementContext.getCluster().getLiveNodes(),
-            new ReplicaCount(6, 0, 0));
+            ReplicaCount.of(6, 0, 0));
 
     pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals("expected 6 placements: " + pp, 6, pp.getReplicaPlacements().size());
@@ -1236,7 +1236,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             collection,
             Set.of("shard1"),
             placementContext.getCluster().getLiveNodes(),
-            new ReplicaCount(6, 0, 0));
+            ReplicaCount.of(6, 0, 0));
     pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals("expected 6 placements: " + pp, 6, pp.getReplicaPlacements().size());
     nodeNamesByType.clear();
@@ -1353,7 +1353,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             solrCollection.getShardNames(),
             new HashSet<>(liveNodes),
-            new ReplicaCount(nrtReplicas, tlogReplicas, pullReplicas));
+            ReplicaCount.of(nrtReplicas, tlogReplicas, pullReplicas));
 
     long start = System.nanoTime();
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
@@ -1444,7 +1444,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
               solrCollection,
               Set.of(solrCollection.shards().iterator().next().getShardName()),
               new HashSet<>(liveNodes),
-              new ReplicaCount(1, 0, 0));
+              ReplicaCount.of(1, 0, 0));
 
       PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
 
@@ -1459,7 +1459,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
               solrCollection,
               Set.of(solrCollection.shards().iterator().next().getShardName()),
               new HashSet<>(liveNodes),
-              new ReplicaCount(2, 0, 0));
+              ReplicaCount.of(2, 0, 0));
 
       PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
 
@@ -1529,7 +1529,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
               solrCollection,
               Set.of(solrCollection.shards().iterator().next().getShardName()),
               new HashSet<>(liveNodes),
-              new ReplicaCount(1, 0, 0));
+              ReplicaCount.of(1, 0, 0));
 
       PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
 
@@ -1544,7 +1544,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
               solrCollection,
               Set.of(solrCollection.shards().iterator().next().getShardName()),
               new HashSet<>(liveNodes),
-              new ReplicaCount(2, 0, 0));
+              ReplicaCount.of(2, 0, 0));
 
       PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
 
@@ -1588,7 +1588,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
               solrCollection,
               Set.of(solrCollection.shards().iterator().next().getShardName()),
               new HashSet<>(liveNodes),
-              new ReplicaCount(1, 0, 0));
+              ReplicaCount.of(1, 0, 0));
 
       PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
 

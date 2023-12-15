@@ -416,6 +416,7 @@ public class SolrCLI implements CLIO {
     Http2SolrClient.Builder builder =
         new Http2SolrClient.Builder(solrUrl)
             .withMaxConnectionsPerHost(32)
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
 
     return builder.build();

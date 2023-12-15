@@ -349,7 +349,30 @@ This parameter is required in v1, and part of the url in the v2 API.
 
 The `RENAME` action changes the name of a Solr core.
 
-`admin/cores?action=RENAME&core=_core-name_&other=_other-core-name_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-rename]
+====
+[.tab-label]*V1 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/solr/admin/cores?action=RENAME&core=currentCoreName&other=newCoreName"
+----
+====
+
+[example.tab-pane#v2coreadmin-rename]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/currentCoreName/rename -H 'Content-Type: application/json' -d '
+  {
+    "to": "newCoreName"
+  }
+'
+----
+====
+--
 
 === RENAME Parameters
 
@@ -360,9 +383,10 @@ The `RENAME` action changes the name of a Solr core.
 s|Required |Default: none
 |===
 +
-The name of the Solr core to be renamed.
+The name of an existing Solr core to rename.
+Specified as a query parameter if making a v1 request, or as a path parameter if using the v2 API.
 
-`other`::
+`other` (v1), `to` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -370,6 +394,7 @@ s|Required |Default: none
 |===
 +
 The new name for the Solr core.
+Specified as a query parameter if making a v1 request, or as a property in the request body if using the v2 API.
 If the persistent attribute of `<solr>` is `true`, the new name will be written to `solr.xml` as the `name` attribute of the `<core>` attribute.
 
 `async`::
@@ -381,7 +406,6 @@ If the persistent attribute of `<solr>` is `true`, the new name will be written 
 +
 Request ID to track this action which will be processed asynchronously.
 
-
 [[coreadmin-swap]]
 == SWAP
 
@@ -390,7 +414,32 @@ This can be used to swap new content into production.
 The prior core remains available and can be swapped back, if necessary.
 Each core will be known by the name of the other, after the swap.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#v1coreadmin-swap]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
 `admin/cores?action=SWAP&core=_core-name_&other=_other-core-name_`
+----
+====
+
+[example.tab-pane#v2coreadmin-swap]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/_core-name_/swap -H 'Content-Type: application/json' -d '
+  {
+    "with": "_other-core-name_"
+  }
+'
+----
+====
+--
 
 [IMPORTANT]
 ====

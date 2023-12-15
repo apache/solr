@@ -51,7 +51,7 @@ public class DeleteCollectionSnapshot extends AdminAPIBase implements DeleteColl
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public DeleteCollectionSnapshotResponse deleteSnapshot(
+  public DeleteCollectionSnapshotResponse deleteCollectionSnapshot(
       String collName, String snapshotName, boolean followAliases, String asyncId)
       throws Exception {
     final var response = instantiateJerseyResponse(DeleteCollectionSnapshotResponse.class);

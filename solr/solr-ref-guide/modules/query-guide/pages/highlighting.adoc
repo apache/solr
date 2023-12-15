@@ -330,7 +330,7 @@ If you don't go out of your way to configure the other options below, the highli
 +
 The benefit of this approach is that your index won't grow larger with any extra data that isn't strictly necessary for highlighting.
 +
-The down side is that highlighting speed is roughly linear with the amount of text to process, with a large factor being the complexity of your analysis chain.
+The downside is that highlighting speed is roughly linear with the amount of text to process, with a large factor being the complexity of your analysis chain.
 +
 For "short" text, this is a good choice.
 Or maybe it's not short but you're prioritizing a smaller index and indexing speed over highlighting performance.
@@ -366,7 +366,7 @@ The Unified Highlighter supports these following additional parameters to the on
 |===
 +
 By default, the Unified Highlighter will usually pick the right offset source (see above).
-However it may be ambiguous such as during a migration from one offset source to another that hasn't completed.
+However, it may be ambiguous such as during a migration from one offset source to another that hasn't completed.
 +
 The offset source can be explicitly configured to one of: `ANALYSIS`, `POSTINGS`, `POSTINGS_WITH_TERM_VECTORS`, or `TERM_VECTORS`.
 
@@ -587,7 +587,7 @@ If set to `false`, or if there is no match in the alternate field either, the al
 |===
 +
 Selects a formatter for the highlighted output.
-Currently the only legal value is `simple`, which surrounds a highlighted term with a customizable pre- and post-text snippet.
+Currently, the only legal value is `simple`, which surrounds a highlighted term with a customizable pre- and post-text snippet.
 
 `hl.simple.pre`, `hl.simple.post`::
 +

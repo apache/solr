@@ -49,6 +49,8 @@ public interface CollectionAdminParams {
 
   String REPLICATION_FACTOR = "replicationFactor";
 
+  String REPLICA_TYPE = "type";
+
   /**
    * A parameter which specifies if the provided list of Solr nodes (via {@linkplain
    * #CREATE_NODE_SET_PARAM}) should be shuffled before being used.
