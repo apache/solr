@@ -240,16 +240,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return request(request, processor, null);
   }
 
-  private String resolveCollectionForRequest(SolrRequest<?> request, String explicitCollection) {
-    if (request.getCollection() != null) {
-      return request.getCollection();
-    } else if (explicitCollection != null) {
-      return explicitCollection;
-    } else {
-      return defaultCollection;
-    }
-  }
-
   public NamedList<Object> request(
       final SolrRequest<?> request, final ResponseParser processor, String collection)
       throws SolrServerException, IOException {
