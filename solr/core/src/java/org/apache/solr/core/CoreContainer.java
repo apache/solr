@@ -62,6 +62,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
@@ -237,7 +238,7 @@ public class CoreContainer {
       ExecutorUtil.newMDCAwareCachedThreadPool(
           new SolrNamedThreadFactory("coreContainerWorkExecutor"));
 
-  private final OrderedExecutor replayUpdatesExecutor;
+  private final OrderedExecutor<BytesRef> replayUpdatesExecutor;
 
   protected volatile LogWatcher<?> logging = null;
 
@@ -419,7 +420,7 @@ public class CoreContainer {
     this.containerProperties = new Properties(config.getSolrProperties());
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
     this.replayUpdatesExecutor =
-        new OrderedExecutor(
+        new OrderedExecutor<>(
             cfg.getReplayUpdatesThreads(),
             ExecutorUtil.newMDCAwareCachedThreadPool(
                 cfg.getReplayUpdatesThreads(), // thread count
@@ -720,7 +721,7 @@ public class CoreContainer {
     return tracer;
   }
 
-  public OrderedExecutor getReplayUpdatesExecutor() {
+  public OrderedExecutor<BytesRef> getReplayUpdatesExecutor() {
     return replayUpdatesExecutor;
   }
 

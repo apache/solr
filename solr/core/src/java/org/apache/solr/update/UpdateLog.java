@@ -223,14 +223,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected final int numDeletesByQueryToKeep = 100;
   protected int numRecordsToKeep;
   protected int maxNumLogsToKeep;
-  // This should only be used to initialize VersionInfo... the actual number of buckets may be
-  // rounded up to a power of two.
-  protected int numVersionBuckets;
   protected boolean existOldBufferLog = false;
 
   // keep track of deletes only... this is not updated on an add
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes =
       new OldDeletesLinkedHashMap(this.numDeletesToKeep);
+
+  private UpdateLocks updateLocks;
 
   /** Holds the query and the version for a DeleteByQuery command */
   public static class DBQ {
@@ -331,16 +330,16 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     return versionInfo;
   }
 
+  public UpdateLocks getLocks() {
+    return updateLocks;
+  }
+
   public int getNumRecordsToKeep() {
     return numRecordsToKeep;
   }
 
   public int getMaxNumLogsToKeep() {
     return maxNumLogsToKeep;
-  }
-
-  public int getNumVersionBuckets() {
-    return numVersionBuckets;
   }
 
   protected static int objToInt(Object obj, int def) {
@@ -381,19 +380,20 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
     maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
-    numVersionBuckets = objToInt(info.initArgs.get("numVersionBuckets"), 65536);
-    if (numVersionBuckets <= 0)
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Number of version buckets must be greater than 0!");
+    if (info.initArgs.get("numVersionBuckets") != null) {
+      log.warn("numVersionBuckets is obsolete");
+    }
+
+    int timeoutMs =
+        objToInt(info.initArgs.get("versionBucketLockTimeoutMs"), UpdateLocks.DEFAULT_TIMEOUT);
+    updateLocks = new UpdateLocks(timeoutMs);
 
     log.info(
-        "Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={} numVersionBuckets={}",
+        "Initializing UpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={}",
         dataDir,
         defaultSyncLevel,
         numRecordsToKeep,
-        maxNumLogsToKeep,
-        numVersionBuckets);
+        maxNumLogsToKeep);
   }
 
   private final AtomicBoolean initialized = new AtomicBoolean();
@@ -443,7 +443,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             getTlogDir(),
             id);
       }
-      versionInfo.reload();
       core.getCoreMetricManager()
           .registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
 
@@ -464,7 +463,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     usableForChildDocs = core.getLatestSchema().isUsableForChildDocs();
 
     try {
-      versionInfo = new VersionInfo(this, numVersionBuckets);
+      versionInfo = new VersionInfo(this);
     } catch (SolrException e) {
       log.error("Unable to use updateLog: ", e);
       throw new SolrException(
@@ -1373,7 +1372,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
     LogReplayer replayer = new LogReplayer(recoverLogs, false);
 
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       state = State.REPLAYING;
 
@@ -1383,7 +1382,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       deleteByQueries.clear();
       oldDeletes.clear();
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
 
     // At this point, we are guaranteed that any new updates coming in will see the state as
@@ -1409,11 +1408,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
     LogReplayer replayer = new LogReplayer(Collections.singletonList(tlog), false, true);
 
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       state = State.REPLAYING;
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
 
     return cs.submit(replayer, recoveryInfo);
@@ -1427,7 +1426,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @param cuc any updates that have version larger than the version of cuc will be copied over
    */
   public void copyOverBufferingUpdates(CommitUpdateCommand cuc) {
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       synchronized (this) {
         state = State.ACTIVE;
@@ -1440,7 +1439,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         dropBufferTlog();
       }
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
   }
 
@@ -1451,7 +1450,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * @param cuc any updates that have version larger than the version of cuc will be copied over
    */
   public void commitAndSwitchToNewTlog(CommitUpdateCommand cuc) {
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       synchronized (this) {
         if (tlog == null) {
@@ -1465,7 +1464,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
       }
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
   }
 
@@ -1888,7 +1887,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     // block all updates to eliminate race conditions
     // reading state and acting on it in the distributed update processor
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       if (state != State.ACTIVE && state != State.BUFFERING) {
         // we don't currently have support for handling other states
@@ -1906,13 +1905,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       state = State.BUFFERING;
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
   }
 
   /** Returns true if we were able to drop buffered updates and return to the ACTIVE state */
   public boolean dropBufferedUpdates() {
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       if (state != State.BUFFERING) return false;
 
@@ -1924,7 +1923,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       state = State.ACTIVE;
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
     return true;
   }
@@ -1946,7 +1945,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     // block all updates to eliminate race conditions
     // reading state and acting on it in the update processor
-    versionInfo.blockUpdates();
+    updateLocks.blockUpdates();
     try {
       cancelApplyBufferUpdate = false;
       if (state != State.BUFFERING) return null;
@@ -1962,7 +1961,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       state = State.APPLYING_BUFFERED;
     } finally {
-      versionInfo.unblockUpdates();
+      updateLocks.unblockUpdates();
     }
 
     if (ExecutorUtil.isShutdown(recoveryExecutor)) {
@@ -2048,7 +2047,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
         if (finishing) {
-          versionInfo.unblockUpdates();
+          updateLocks.unblockUpdates();
         }
 
         // clean up in case we hit some unexpected exception and didn't get
@@ -2100,7 +2099,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                   return proc;
                 });
 
-        OrderedExecutor executor =
+        OrderedExecutor<BytesRef> executor =
             inSortedOrder ? null : req.getCoreContainer().getReplayUpdatesExecutor();
         AtomicInteger pendingTasks = new AtomicInteger(0);
         AtomicReference<SolrException> exceptionOnExecuteUpdate = new AtomicReference<>();
@@ -2147,7 +2146,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 // after we've finished this recovery.
                 // NOTE: our own updates won't be blocked since the thread holding a write lock can
                 // lock a read lock.
-                versionInfo.blockUpdates();
+                updateLocks.blockUpdates();
                 finishing = true;
                 o = tlogReader.next();
               } else {
@@ -2309,34 +2308,27 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     }
 
-    private Integer getBucketHash(UpdateCommand cmd) {
+    private BytesRef getIndexedId(UpdateCommand cmd) {
       if (cmd instanceof AddUpdateCommand) {
-        BytesRef idBytes = ((AddUpdateCommand) cmd).getIndexedId();
-        if (idBytes == null) return null;
-        return DistributedUpdateProcessor.bucketHash(idBytes);
+        return ((AddUpdateCommand) cmd).getIndexedId();
       }
-
       if (cmd instanceof DeleteUpdateCommand) {
-        BytesRef idBytes = ((DeleteUpdateCommand) cmd).getIndexedId();
-        if (idBytes == null) return null;
-        return DistributedUpdateProcessor.bucketHash(idBytes);
+        return ((DeleteUpdateCommand) cmd).getIndexedId();
       }
-
       return null;
     }
 
     private void execute(
         UpdateCommand cmd,
-        OrderedExecutor executor,
+        OrderedExecutor<BytesRef> executor,
         AtomicInteger pendingTasks,
         ThreadLocal<UpdateRequestProcessor> procTl,
         AtomicReference<SolrException> exceptionHolder) {
       assert cmd instanceof AddUpdateCommand || cmd instanceof DeleteUpdateCommand;
 
       if (executor != null) {
-        // by using the same hash as DUP, independent updates can avoid waiting for same bucket
         executor.execute(
-            getBucketHash(cmd),
+            getIndexedId(cmd),
             () -> {
               try {
                 // fail fast

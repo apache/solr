@@ -20,11 +20,8 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -33,18 +30,16 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 
+/**
+ * Related to the {@code _version_} field, in connection with the {@link UpdateLog}.
+ *
+ * @lucene.internal
+ */
 public class VersionInfo {
-  private static final String SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS =
-      "bucketVersionLockTimeoutMs";
 
   private final UpdateLog ulog;
-  private final int numBuckets;
-  private volatile VersionBucket[] buckets;
-  private final Object bucketsSync = new Object();
-  private final SchemaField versionField;
-  final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
-  private final int versionBucketLockTimeoutMs;
+  private final SchemaField versionField;
 
   /**
    * Gets and returns the {@link org.apache.solr.common.params.CommonParams#VERSION_FIELD} from the
@@ -82,45 +77,14 @@ public class VersionInfo {
     return sf;
   }
 
-  public VersionInfo(UpdateLog ulog, int nBuckets) {
+  public VersionInfo(UpdateLog ulog) {
     this.ulog = ulog;
     IndexSchema schema = ulog.uhandler.core.getLatestSchema();
     versionField = getAndCheckVersionField(schema);
-    versionBucketLockTimeoutMs =
-        ulog.uhandler
-            .core
-            .getSolrConfig()
-            .get("updateHandler")
-            .get("versionBucketLockTimeoutMs")
-            .intVal(
-                Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
-    numBuckets = BitUtil.nextHighestPowerOfTwo(nBuckets);
   }
-
-  public int getVersionBucketLockTimeoutMs() {
-    return versionBucketLockTimeoutMs;
-  }
-
-  public void reload() {}
 
   public SchemaField getVersionField() {
     return versionField;
-  }
-
-  public void lockForUpdate() {
-    lock.readLock().lock();
-  }
-
-  public void unlockForUpdate() {
-    lock.readLock().unlock();
-  }
-
-  public void blockUpdates() {
-    lock.writeLock().lock();
-  }
-
-  public void unblockUpdates() {
-    lock.writeLock().unlock();
   }
 
   /*
@@ -170,42 +134,6 @@ public class VersionInfo {
       vclock = result;
       return vclock;
     }
-  }
-
-  public long getOldClock() {
-    synchronized (clockSync) {
-      return vclock;
-    }
-  }
-
-  public void updateClock(long clock) {
-    synchronized (clockSync) {
-      vclock = Math.max(vclock, clock);
-    }
-  }
-
-  public VersionBucket bucket(int hash) {
-    // If this is a user provided hash, it may be poor in the right-hand bits.
-    // Make sure high bits are moved down, since only the low bits will matter.
-    // int h = hash + (hash >>> 8) + (hash >>> 16) + (hash >>> 24);
-    // Assume good hash codes for now.
-    int slot = hash & (numBuckets - 1);
-    if (buckets == null) {
-      synchronized (bucketsSync) {
-        if (buckets == null) {
-          buckets = createVersionBuckets();
-        }
-      }
-    }
-    return buckets[slot];
-  }
-
-  private VersionBucket[] createVersionBuckets() {
-    VersionBucket[] buckets = new VersionBucket[numBuckets];
-    for (int i = 0; i < buckets.length; i++) {
-      buckets[i] = versionBucketLockTimeoutMs > 0 ? new TimedVersionBucket() : new VersionBucket();
-    }
-    return buckets;
   }
 
   public Long lookupVersion(BytesRef idBytes) {
