@@ -259,6 +259,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private Counter newSearcherCounter;
   private Counter newSearcherMaxReachedCounter;
   private Counter newSearcherOtherErrorsCounter;
+  private volatile boolean newSearcherReady = false;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -1901,7 +1902,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   /** Returns true if the core is ready for use. It is not initializing or closing/closed. */
   public boolean isReady() {
-    return !isClosed() && newSearcherCounter != null && newSearcherCounter.getCount() > 0;
+    return !isClosed() && newSearcherReady;
   }
 
   private Collection<CloseHook> closeHooks = null;
@@ -2710,7 +2711,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       if (!success) {
         newSearcherOtherErrorsCounter.inc();
-        ;
         synchronized (searcherLock) {
           onDeckSearchers--;
 
@@ -2740,6 +2740,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // we want to do this after we decrement onDeckSearchers so another thread
       // doesn't increment first and throw a false warning.
       openSearcherLock.unlock();
+      newSearcherReady = true;
     }
   }
 
