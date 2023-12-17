@@ -213,12 +213,11 @@ public class FileSystemConfigSetService extends ConfigSetService {
                     "Not including uploading file to config, as it is a forbidden type: {}",
                     file.getFileName());
               } else {
-                if (!FileTypeMagicUtil.isFileForbiddenInConfigset(Files.newInputStream(file))) {
+                if (!FileTypeMagicUtil.isFileForbiddenInConfigset(file)) {
                   Files.copy(
                       file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
                 } else {
-                  String mimeType =
-                      FileTypeMagicUtil.INSTANCE.guessMimeType(Files.newInputStream(file));
+                  String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(file);
                   log.warn(
                       "Not copying file {}, as it matched the MAGIC signature of a forbidden mime type {}",
                       file.getFileName(),
