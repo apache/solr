@@ -77,8 +77,17 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  protected long aliveCheckIntervalMillis =
-      TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
+  //Boolean parameter to make zombie ping checks configurable. If true, zombie ping checks are enabled.
+  // If false, zombieServers are monitored to check for servers that have spent at least minZombieReleaseTimeMillis as zombies and release them
+  protected boolean enableZombiePingChecks = false;
+
+  //Time interval that aliveCheckExecutor thread is scheduled to run periodically with
+  protected long zombieCheckIntervalMillis;
+
+  //min time a server is regarded to be in zombie state before being released to the alive set. This param is relevant if enableZombiePingChecks = false
+  protected long minZombieReleaseTimeMillis = TimeUnit.MILLISECONDS.convert(10, TimeUnit.SECONDS);
+
+
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
@@ -106,6 +115,8 @@ public abstract class LBSolrClient extends SolrClient {
     // and move to the zombie list when unavailable.  When they become available again,
     // they move back to the alive list.
     boolean standard = true;
+
+    long remainingTime;
 
     int failedPings = 0;
 
@@ -437,11 +448,18 @@ public abstract class LBSolrClient extends SolrClient {
   protected Exception addZombie(String serverStr, Exception e) {
     ServerWrapper wrapper = createServerWrapper(serverStr);
     wrapper.standard = false;
+    wrapper.remainingTime = minZombieReleaseTimeMillis;
     zombieServers.put(serverStr, wrapper);
     startAliveCheckExecutor();
     return e;
   }
 
+  /**
+   * Thread that runs periodically at fixed intervals (determined by enableZombiePingChecks). If enableZombiePingChecks=true,
+   * dead servers are pinged at fixed intervals( zombieCheckIntervalMillis) to check if they are alive.
+   * If enableZombiePingChecks=false, no pings are issued against dead servers, but instead zombieServers is monitored every zombieCheckIntervalMillis
+   * to identify servers that spent minZombieReleaseTimeMillis before being released
+   */
   private void startAliveCheckExecutor() {
     // double-checked locking, but it's OK because we don't *do* anything with aliveCheckExecutor
     // if it's not null.
@@ -453,8 +471,8 @@ public abstract class LBSolrClient extends SolrClient {
                   new SolrNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
               getAliveCheckRunner(new WeakReference<>(this)),
-              this.aliveCheckIntervalMillis,
-              this.aliveCheckIntervalMillis,
+              this.zombieCheckIntervalMillis,
+              this.zombieCheckIntervalMillis,
               TimeUnit.MILLISECONDS);
         }
       }
@@ -465,11 +483,31 @@ public abstract class LBSolrClient extends SolrClient {
     return () -> {
       LBSolrClient lb = lbRef.get();
       if (lb != null && lb.zombieServers != null) {
-        for (Object zombieServer : lb.zombieServers.values()) {
-          lb.checkAZombieServer((ServerWrapper) zombieServer);
-        }
+        ZombieAction zombieAction = lb.enableZombiePingChecks ? LBSolrClient::checkAZombieServer : LBSolrClient::reduceRemainingZombieTime;
+        lb.zombieServers.values().forEach(zombieServer -> zombieAction.perform(lb, zombieServer));
       }
     };
+  }
+
+  @FunctionalInterface
+  private interface ZombieAction {
+    void perform(LBSolrClient lb, ServerWrapper zombieServer);
+  }
+
+  private void reduceRemainingZombieTime(ServerWrapper wrapper) {
+    if(wrapper == null){
+      return;
+    }
+    if (wrapper.remainingTime == 0) {
+      //evict from zombieServers, add to aliveServers
+      zombieServers.remove(wrapper.getBaseUrl());
+      wrapper.failedPings = 0;
+      if (wrapper.standard) {
+        addToAlive(wrapper);
+      }
+    } else {
+      wrapper.remainingTime = Math.max(0, (wrapper.remainingTime - minZombieReleaseTimeMillis));
+    }
   }
 
   public ResponseParser getParser() {

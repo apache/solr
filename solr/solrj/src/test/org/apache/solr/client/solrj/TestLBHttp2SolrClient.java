@@ -199,7 +199,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     }
   }
 
-  public void testReliabilityWithZombieLivenessChecks() throws Exception {
+  public void testReliabilityWithZombiePingChecks() throws Exception {
     String[] solrUrls = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
       solrUrls[i] = solr[i].getUrl();
@@ -222,7 +222,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     }
   }
 
-  public void testReliabilityWithoutZombieLivesnessChecks() throws Exception {
+  public void testReliabilityWithoutZombiePingChecks() throws Exception {
     String[] solrUrls = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
       solrUrls[i] = solr[i].getUrl();
