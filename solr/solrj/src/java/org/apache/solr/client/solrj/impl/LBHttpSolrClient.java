@@ -93,7 +93,7 @@ public class LBHttpSolrClient extends LBSolrClient {
     this.soTimeoutMillis = builder.socketTimeoutMillis;
     this.parser = builder.responseParser;
     this.enableZombiePingChecks = builder.enableZombiePingChecks;
-	this.zombieCheckIntervalMillis = builder.enableZombiePingChecks? builder.zombiePingIntervalMillis: builder.zombieStateMonitoringIntervalMillis;
+    this.zombieCheckIntervalMillis = builder.enableZombiePingChecks? builder.zombiePingIntervalMillis: builder.zombieStateMonitoringIntervalMillis;
     this.minZombieReleaseTimeMillis = builder.minZombieReleaseTimeMillis;
     for (String baseUrl : builder.baseSolrUrls) {
       urlToClient.put(baseUrl, makeSolrClient(baseUrl));

@@ -267,7 +267,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
     //If enableZombiePingChecks=false, zombieServers are monitored every zombieStateMonitoringIntervalMillis before releasing them
     private long zombieStateMonitoringIntervalMillis =
-            TimeUnit.MILLISECONDS.convert( 5, TimeUnit.SECONDS); //5 sec between checks
+            TimeUnit.MILLISECONDS.convert(5, TimeUnit.SECONDS); //5 sec between checks
 
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
