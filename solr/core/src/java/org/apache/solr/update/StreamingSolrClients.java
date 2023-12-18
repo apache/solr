@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.update.SolrCmdDistributor.SolrError;
 import org.eclipse.jetty.client.api.Response;
 import org.slf4j.Logger;
@@ -71,7 +72,10 @@ public class StreamingSolrClients {
       // reordered on a greater scale since the current behavior is to only increase the number of
       // connections/Runners when the queue is more than half full.
       client =
-          new ErrorReportingConcurrentUpdateSolrClient.Builder(url, httpClient, req, errors)
+          new ErrorReportingConcurrentUpdateSolrClient.Builder(
+                  req.node.getBaseUrl(), httpClient, req, errors)
+              .withDefaultCollection(
+                  StrUtils.isNotBlank(req.node.getCoreName()) ? req.node.getCoreName() : null)
               .withQueueSize(100)
               .withThreadCount(runnerCount)
               .withExecutorService(updateExecutor)
