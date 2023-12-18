@@ -30,9 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.*;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
@@ -129,7 +127,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
         new LBHttpSolrClient.Builder()
             .withHttpClient(httpClient)
             .withBaseSolrUrls(solrUrls)
-            .setAliveCheckInterval(500)
+            .setEnableZombiePingChecks(true)
+            .setZombiePingIntervalMillis(500)
             .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       Set<String> names = new HashSet<>();
@@ -176,7 +175,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
         new LBHttpSolrClient.Builder()
             .withHttpClient(httpClient)
             .withBaseSolrUrls(solrUrls)
-            .setAliveCheckInterval(500)
+            .setEnableZombiePingChecks(true)
+            .setZombiePingIntervalMillis(500)
             .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       QueryResponse resp = null;
@@ -216,7 +216,8 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
             .withBaseSolrUrls(solrUrls)
             .withConnectionTimeout(500, TimeUnit.MILLISECONDS)
             .withSocketTimeout(500, TimeUnit.MILLISECONDS)
-            .setAliveCheckInterval(500)
+            .setEnableZombiePingChecks(true)
+            .setZombiePingIntervalMillis(500)
             .build()) {
 
       // Kill a server and test again

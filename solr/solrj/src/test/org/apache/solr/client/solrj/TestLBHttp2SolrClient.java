@@ -126,10 +126,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     for (int i = 0; i < solr.length; i++) {
       solrUrls[i] = solr[i].getUrl();
     }
-    try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
-            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (LBHttp2SolrClient client = createSolrClient(true,  solrUrls)) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       Set<String> names = new HashSet<>();
       QueryResponse resp = null;
@@ -175,10 +172,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     for (int i = 0; i < 2; i++) {
       solrUrls[i] = solr[i].getUrl();
     }
-    try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
-            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (LBHttp2SolrClient client = createSolrClient(true, solrUrls)) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       QueryResponse resp = null;
       solr[0].jetty.stop();
@@ -205,16 +199,37 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     }
   }
 
-  public void testReliability() throws Exception {
+  public void testReliabilityWithZombieLivenessChecks() throws Exception {
     String[] solrUrls = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
       solrUrls[i] = solr[i].getUrl();
     }
 
     try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
-            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
-            .build()) {
+                 createSolrClient(true, solrUrls)) {
+
+      // Kill a server and test again
+      solr[1].jetty.stop();
+      solr[1].jetty = null;
+
+      // query the servers
+      for (String ignored : solrUrls) client.query(new SolrQuery("*:*"));
+
+      // Start the killed server once again
+      solr[1].startJetty();
+      // Wait for the alive check to complete
+      waitForServer(30, client, 3, solr[1].name);
+    }
+  }
+
+  public void testReliabilityWithoutZombieLivesnessChecks() throws Exception {
+    String[] solrUrls = new String[solr.length];
+    for (int i = 0; i < solr.length; i++) {
+      solrUrls[i] = solr[i].getUrl();
+    }
+
+    try (LBHttp2SolrClient client =
+        createSolrClient(false, solrUrls)) {
 
       // Kill a server and test again
       solr[1].jetty.stop();
@@ -247,6 +262,13 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
 
       Thread.sleep(500);
     }
+  }
+
+  private LBHttp2SolrClient createSolrClient(boolean enableZombieChecks, String...solrUrls) {
+    LBHttp2SolrClient client = getLBHttp2SolrClient(httpClient, solrUrls);
+
+    return enableZombieChecks ? new LBHttp2SolrClient.Builder(httpClient, solrUrls).setEnableZombiePingChecks(true).setZombiePingIntervalMillis(500).build():
+            new LBHttp2SolrClient.Builder(httpClient, solrUrls).setEnableZombiePingChecks(false).setZombieStateMonitoringIntervalMillis(500).setMinZombieReleaseTimeMillis(TimeUnit.MILLISECONDS.convert(2, TimeUnit.SECONDS)).build();
   }
 
   private static class SolrInstance {
