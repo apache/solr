@@ -218,8 +218,8 @@ public class QueryUtils {
       if (filterQuery == null || filterQuery instanceof MatchAllDocsQuery) {
         return scoreQuery;
       } else if(scoreQuery instanceof KnnVectorQuery) {
-        //return new KnnVectorQuery, setting KnnVectorQuery.filter with filterQuery
-        return null;
+        KnnVectorQuery knn = (KnnVectorQuery) scoreQuery;
+        return new KnnVectorQuery(knn.getField(), knn.getTargetCopy(), knn.getK(), filterQuery);
       }
       else {
         return new BooleanQuery.Builder()
