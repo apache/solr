@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map.Entry;
 import net.jcip.annotations.NotThreadSafe;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -35,6 +34,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrConfig;
@@ -217,7 +217,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
         final String managedSchemaPath = lookupZKManagedSchemaPath();
         managedSchemaResourceName =
-            managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/") + 1); // not loving this
+            managedSchemaPath.substring(managedSchemaPath.lastIndexOf('/') + 1); // not loving this
         Stat stat = new Stat();
         try {
           // Attempt to load the managed schema
@@ -360,9 +360,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
               "Error checking for the existence of the non-managed schema {}", resourceName, e);
         }
       } else { // Config is not in ZooKeeper
-        InputStream nonManagedSchemaInputStream = null;
-        try {
-          nonManagedSchemaInputStream = loader.openResource(resourceName);
+        try (InputStream nonManagedSchemaInputStream = loader.openResource(resourceName)) {
           if (null != nonManagedSchemaInputStream) {
             exists = true;
           }
@@ -371,8 +369,6 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         } catch (IOException e) {
           throw new RuntimeException(e);
           // This is expected when the non-managed schema does not exist
-        } finally {
-          IOUtils.closeQuietly(nonManagedSchemaInputStream);
         }
       }
       if (exists) {

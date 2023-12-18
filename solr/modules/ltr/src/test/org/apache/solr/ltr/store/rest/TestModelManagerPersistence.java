@@ -107,18 +107,33 @@ public class TestModelManagerPersistence extends TestRerankBase {
 
     assertJDelete(ManagedFeatureStore.REST_END_POINT + "/test2", "/responseHeader/status==0");
     assertJDelete(ManagedModelStore.REST_END_POINT + "/test-model2", "/responseHeader/status==0");
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2", "/features/==[]");
+    // check for exception
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/test2",
+        "/error/msg=='Missing feature store: test2'");
+    // check that the deleted feature store is not inappropriately added again to the feature store
+    // list
+    assertJQ(ManagedFeatureStore.REST_END_POINT, "/featureStores==['test', 'test1']");
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/[0]/name=='test-model'");
     restTestHarness.reload();
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test2", "/features/==[]");
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/test2",
+        "/error/msg=='Missing feature store: test2'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT, "/featureStores==['test', 'test1']");
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/[0]/name=='test-model'");
 
     assertJDelete(ManagedModelStore.REST_END_POINT + "/test-model", "/responseHeader/status==0");
     assertJDelete(ManagedFeatureStore.REST_END_POINT + "/test1", "/responseHeader/status==0");
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test1", "/features/==[]");
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/test1",
+        "/error/msg=='Missing feature store: test1'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT, "/featureStores==['test']");
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
     restTestHarness.reload();
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/test1", "/features/==[]");
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/test1",
+        "/error/msg=='Missing feature store: test1'");
+    assertJQ(ManagedFeatureStore.REST_END_POINT, "/featureStores==['test']");
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
   }
 
@@ -128,7 +143,7 @@ public class TestModelManagerPersistence extends TestRerankBase {
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
     assertJQ(
         ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-        "/features/==[]");
+        "/error/msg=='Missing feature store: " + FeatureStore.DEFAULT_FEATURE_STORE_NAME + "'");
 
     // load models and features from files
     loadFeatures("features-linear.json");
@@ -172,14 +187,14 @@ public class TestModelManagerPersistence extends TestRerankBase {
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
     assertJQ(
         ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-        "/features/==[]");
+        "/error/msg=='Missing feature store: " + FeatureStore.DEFAULT_FEATURE_STORE_NAME + "'");
 
     // check persistence after reload
     restTestHarness.reload();
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
     assertJQ(
         ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-        "/features/==[]");
+        "/error/msg=='Missing feature store: " + FeatureStore.DEFAULT_FEATURE_STORE_NAME + "'");
 
     // check persistence after restart
     jetty.stop();
@@ -187,7 +202,7 @@ public class TestModelManagerPersistence extends TestRerankBase {
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
     assertJQ(
         ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-        "/features/==[]");
+        "/error/msg=='Missing feature store: " + FeatureStore.DEFAULT_FEATURE_STORE_NAME + "'");
   }
 
   private static void doWrapperModelPersistenceChecks(
@@ -214,7 +229,9 @@ public class TestModelManagerPersistence extends TestRerankBase {
 
     // check whether models and features are empty
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FS_NAME, "/features/==[]");
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/" + FS_NAME,
+        "/error/msg=='Missing feature store: " + FS_NAME + "'");
 
     // setup features
     loadFeature(
@@ -260,7 +277,9 @@ public class TestModelManagerPersistence extends TestRerankBase {
     restTestHarness.delete(ManagedModelStore.REST_END_POINT + "/" + modelName);
     restTestHarness.delete(ManagedFeatureStore.REST_END_POINT + "/" + FS_NAME);
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + FS_NAME, "/features/==[]");
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/" + FS_NAME,
+        "/error/msg=='Missing feature store: " + FS_NAME + "'");
 
     // NOTE: we don't test the persistence of the deletion here because it's tested in
     // testFilePersistence
@@ -330,6 +349,8 @@ public class TestModelManagerPersistence extends TestRerankBase {
 
     assertJDelete(
         ManagedFeatureStore.REST_END_POINT + "/" + featureStoreName, "/responseHeader/status==0");
-    assertJQ(ManagedFeatureStore.REST_END_POINT + "/" + featureStoreName, "/features/==[]");
+    assertJQ(
+        ManagedFeatureStore.REST_END_POINT + "/" + featureStoreName,
+        "/error/msg=='Missing feature store: " + featureStoreName + "'");
   }
 }

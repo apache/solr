@@ -627,7 +627,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         log.info("Only one config set found in zk - using it: {}", configName);
       }
     }
-    return "".equals(configName) ? null : configName;
+    return configName != null && configName.isEmpty() ? null : configName;
   }
 
   /** Copies the _default configset to the specified configset name (overwrites if pre-existing) */

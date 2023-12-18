@@ -165,7 +165,7 @@ public class FieldValueFeature extends Feature {
     /** A FeatureScorer that reads the stored value for a field */
     public class FieldValueFeatureScorer extends FeatureScorer {
 
-      LeafReaderContext context = null;
+      private final LeafReaderContext context;
 
       public FieldValueFeatureScorer(
           FeatureWeight weight, LeafReaderContext context, DocIdSetIterator itr) {

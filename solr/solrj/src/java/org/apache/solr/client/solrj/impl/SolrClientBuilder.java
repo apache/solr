@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.impl;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.Configurable;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -34,8 +36,10 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   protected ResponseParser responseParser;
   protected RequestWriter requestWriter;
   protected boolean useMultiPartPost;
-  protected Long connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(15, TimeUnit.SECONDS);
-  protected Long socketTimeoutMillis = TimeUnit.MILLISECONDS.convert(120, TimeUnit.SECONDS);
+  protected int connectionTimeoutMillis = 15000; // 15 seconds
+  private boolean connectionTimeoutMillisUpdate = false;
+  protected int socketTimeoutMillis = 120000; // 120 seconds
+  private boolean socketTimeoutMillisUpdate = false;
   protected boolean followRedirects = false;
   protected Set<String> urlParamNames;
 
@@ -45,6 +49,17 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   /** Provides a {@link HttpClient} for the builder to use when creating clients. */
   public B withHttpClient(HttpClient httpClient) {
     this.httpClient = httpClient;
+
+    if (this.httpClient instanceof Configurable) {
+      RequestConfig conf = ((Configurable) httpClient).getConfig();
+      // only update values that were not already manually changed
+      if (!connectionTimeoutMillisUpdate && conf.getConnectTimeout() > 0) {
+        this.connectionTimeoutMillis = conf.getConnectTimeout();
+      }
+      if (!socketTimeoutMillisUpdate && conf.getSocketTimeout() > 0) {
+        this.socketTimeoutMillis = conf.getSocketTimeout();
+      }
+    }
     return getThis();
   }
 
@@ -88,7 +103,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    *
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getConnectTimeout()}
    *
-   * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
+   * @deprecated Please use {@link #withConnectionTimeout(int, TimeUnit)}
    */
   @Deprecated(since = "9.2")
   public B withConnectionTimeout(int connectionTimeoutMillis) {
@@ -102,12 +117,13 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    *
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getConnectTimeout()}
    */
-  public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
+  public B withConnectionTimeout(int connectionTimeout, TimeUnit unit) {
     if (connectionTimeout < 0) {
       throw new IllegalArgumentException("connectionTimeout must be a non-negative integer.");
     }
-
-    this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
+    this.connectionTimeoutMillis =
+        Math.toIntExact(TimeUnit.MILLISECONDS.convert(connectionTimeout, unit));
+    connectionTimeoutMillisUpdate = true;
     return getThis();
   }
 
@@ -117,7 +133,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    *
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getSocketTimeout()}
    *
-   * <p>* @deprecated Please use {@link #withSocketTimeout(long, TimeUnit)}
+   * <p>* @deprecated Please use {@link #withSocketTimeout(int, TimeUnit)}
    */
   @Deprecated(since = "9.2")
   public B withSocketTimeout(int socketTimeoutMillis) {
@@ -131,12 +147,12 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
    *
    * <p>For valid values see {@link org.apache.http.client.config.RequestConfig#getSocketTimeout()}
    */
-  public B withSocketTimeout(long socketTimeout, TimeUnit unit) {
+  public B withSocketTimeout(int socketTimeout, TimeUnit unit) {
     if (socketTimeout < 0) {
       throw new IllegalArgumentException("socketTimeout must be a non-negative integer.");
     }
-
-    this.socketTimeoutMillis = TimeUnit.MILLISECONDS.convert(socketTimeout, unit);
+    this.socketTimeoutMillis = Math.toIntExact(TimeUnit.MILLISECONDS.convert(socketTimeout, unit));
+    socketTimeoutMillisUpdate = true;
     return getThis();
   }
 }

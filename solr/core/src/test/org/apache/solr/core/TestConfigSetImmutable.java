@@ -16,11 +16,12 @@
  */
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
@@ -43,19 +44,19 @@ public class TestConfigSetImmutable extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    File tmpConfDir = new File(tmpSolrHome, confDir);
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    Path tmpSolrHome = createTempDir();
+    Path tmpConfDir = tmpSolrHome.resolve(confDir);
+    PathUtils.copyDirectory(Path.of(TEST_HOME()), tmpSolrHome);
     // make the ConfigSet immutable
-    FileUtils.write(
-        new File(tmpConfDir, "configsetprops.json"),
+    Files.writeString(
+        tmpConfDir.resolve("configsetprops.json"),
         new StringBuilder("{\"immutable\":\"true\"}"),
         StandardCharsets.UTF_8);
 
     System.setProperty("managed.schema.mutable", "true");
 
     createJettyAndHarness(
-        tmpSolrHome.getAbsolutePath(),
+        tmpSolrHome.toAbsolutePath().toString(),
         "solrconfig-schemaless.xml",
         "schema-rest.xml",
         "/solr",

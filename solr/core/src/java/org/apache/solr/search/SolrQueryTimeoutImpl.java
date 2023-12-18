@@ -45,7 +45,6 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
     return timeoutAt.get();
   }
 
-  @Override
   public boolean isTimeoutEnabled() {
     return getTimeoutAtNs() != null;
   }
@@ -91,5 +90,18 @@ public class SolrQueryTimeoutImpl implements QueryTimeout {
   @Override
   public String toString() {
     return "timeoutAt: " + getTimeoutAtNs() + " (System.nanoTime(): " + nanoTime() + ")";
+  }
+
+  /** Internal impl for speed only used when we know there's a timeout enabled. */
+  QueryTimeout makeLocalImpl() {
+    assert isTimeoutEnabled();
+    return new QueryTimeout() {
+      final long timeoutAt = getTimeoutAtNs();
+
+      @Override
+      public boolean shouldExit() {
+        return timeoutAt - nanoTime() < 0L;
+      }
+    };
   }
 }

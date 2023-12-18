@@ -24,7 +24,6 @@ import static org.apache.solr.response.RawResponseWriter.CONTENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
@@ -892,9 +891,9 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     Map<String, Object> mapDiff = (Map<String, Object>) fieldsDiff.get("updated");
     assertEquals(
         Arrays.asList(
-            ImmutableMap.of(
+            Map.of(
                 "omitTermFreqAndPositions", true, "useDocValuesAsStored", true, "docValues", true),
-            ImmutableMap.of(
+            Map.of(
                 "omitTermFreqAndPositions",
                 false,
                 "useDocValuesAsStored",

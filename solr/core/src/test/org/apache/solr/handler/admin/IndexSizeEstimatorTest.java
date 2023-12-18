@@ -149,7 +149,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          storedFieldsReader.visitDocument(docId, visitor);
+          storedFieldsReader.document(docId, visitor);
         }
       }
     } finally {

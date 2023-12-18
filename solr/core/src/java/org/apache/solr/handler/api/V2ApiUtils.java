@@ -17,12 +17,16 @@
 
 package org.apache.solr.handler.api;
 
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.common.params.CommonParams.WT;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /** Utilities helpful for common V2 API declaration tasks. */
@@ -79,6 +83,22 @@ public class V2ApiUtils {
   public static void squashIntoNamedList(
       NamedList<Object> destination, JacksonReflectMapWriter mw) {
     squashIntoNamedList(destination, mw, false);
+  }
+
+  public static String getMediaTypeFromWtParam(
+      SolrQueryRequest solrQueryRequest, String defaultMediaType) {
+    final String wtParam = solrQueryRequest.getParams().get(WT);
+    if (wtParam == null) return "application/json";
+
+    // The only currently-supported response-formats for JAX-RS v2 endpoints.
+    switch (wtParam) {
+      case "xml":
+        return "application/xml";
+      case "javabin":
+        return BINARY_CONTENT_TYPE_V2;
+      default:
+        return defaultMediaType;
+    }
   }
 
   private static void squashIntoNamedList(

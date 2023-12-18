@@ -50,7 +50,6 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.PushWriter;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
@@ -61,6 +60,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.BoolField;
@@ -175,22 +175,20 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                       singletonList(singletonMap("EXCEPTION", e.getMessage()))));
         });
     if (logException) {
-      SolrException.log(log, e);
+      log.error("Exception", e);
     }
   }
 
   @Override
   public void write(OutputStream os) throws IOException {
-    try {
-      _write(os);
-    } finally {
-
-    }
+    _write(os);
   }
 
   private void _write(OutputStream os) throws IOException {
     QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
-    if (rw instanceof BinaryResponseWriter) {
+    if (rw instanceof JacksonJsonWriter) {
+      writer = ((JacksonJsonWriter) rw).getWriter(os, req, res);
+    } else if (rw instanceof BinaryResponseWriter) {
       // todo add support for other writers after testing
       writer = new JavaBinCodec(os, null);
     } else {
@@ -372,8 +370,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         Thread.currentThread().interrupt();
       }
       throw t;
-    } finally {
-
     }
   }
 
@@ -439,27 +435,21 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                 log.debug("--- writer interrupted");
                 break;
               }
-              try {
-                for (int i = 0; i <= buffer.outDocsIndex; ++i) {
-                  // we're using the raw writer here because there's no potential
-                  // reduction in the number of output items, unlike when using
-                  // streaming expressions
-                  final SortDoc currentDoc = buffer.outDocs[i];
-                  writer.add((MapWriter) ew -> writeDoc(currentDoc, leaves, ew, fieldWriters));
-                }
-              } finally {
+              for (int i = 0; i <= buffer.outDocsIndex; ++i) {
+                // we're using the raw writer here because there's no potential
+                // reduction in the number of output items, unlike when using
+                // streaming expressions
+                final SortDoc currentDoc = buffer.outDocs[i];
+                writer.add((MapWriter) ew -> writeDoc(currentDoc, leaves, ew, fieldWriters));
               }
               // log.debug("--- writer exchanging from {}", buffer);
-              try {
-                long startExchangeBuffers = System.nanoTime();
-                buffers.exchangeBuffers();
-                long endExchangeBuffers = System.nanoTime();
-                if (log.isDebugEnabled()) {
-                  log.debug(
-                      "Waited for reader thread {}:",
-                      Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
-                }
-              } finally {
+              long startExchangeBuffers = System.nanoTime();
+              buffers.exchangeBuffers();
+              long endExchangeBuffers = System.nanoTime();
+              if (log.isDebugEnabled()) {
+                log.debug(
+                    "Waited for reader thread {}:",
+                    Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
               }
               buffer = buffers.getOutputBuffer();
               // log.debug("--- writer got {}", buffer);
@@ -825,8 +815,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       } catch (Exception e) {
         log.error("Segment Iterator Error:", e);
         throw new IOException(e);
-      } finally {
-
       }
     }
   }

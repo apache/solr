@@ -74,7 +74,6 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
@@ -150,8 +149,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private final boolean internalClient;
 
   private volatile Set<String> urlParamNames = Set.of();
-  private volatile Integer connectionTimeout;
-  private volatile Integer soTimeout;
+  private final int connectionTimeout;
+  private final int soTimeout;
 
   /** Use the builder to create this client */
   protected HttpSolrClient(Builder builder) {
@@ -169,13 +168,14 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       this.internalClient = false;
       this.followRedirects = builder.followRedirects;
       this.httpClient = builder.httpClient;
-
     } else {
       this.internalClient = true;
       this.followRedirects = builder.followRedirects;
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, followRedirects);
       params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, builder.compression);
+      params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, builder.connectionTimeoutMillis);
+      params.set(HttpClientUtil.PROP_SO_TIMEOUT, builder.socketTimeoutMillis);
       httpClient = HttpClientUtil.createClient(params);
     }
 
@@ -185,18 +185,10 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     this.parser = builder.responseParser;
     this.invariantParams = builder.invariantParams;
-    this.connectionTimeout = Math.toIntExact(builder.connectionTimeoutMillis);
-    this.soTimeout = Math.toIntExact(builder.socketTimeoutMillis);
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
-  }
-
-  /**
-   * @deprecated use {@link #getUrlParamNames()}
-   */
-  @Deprecated
-  public Set<String> getQueryParams() {
-    return getUrlParamNames();
   }
 
   public Set<String> getUrlParamNames() {
@@ -204,20 +196,23 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   }
 
   /**
-   * Expert Method
+   * Returns the connection timeout, and should be based on httpClient overriding the solrClient.
+   * For unit testing.
    *
-   * @param urlParamNames set of param keys to only send via the query string Note that the param
-   *     will be sent as a query string if the key is part of this Set or the SolrRequest's query
-   *     params.
-   *     <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
-   *     multiple threads simultaneously. To avoid this, use {@link
-   *     Builder#withTheseParamNamesInTheUrl(Set)}.
-   * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-   * @deprecated use {@link Builder#withTheseParamNamesInTheUrl(Set)} instead
+   * @return the connection timeout
    */
-  @Deprecated
-  public void setQueryParams(Set<String> urlParamNames) {
-    this.urlParamNames = urlParamNames;
+  int getConnectionTimeout() {
+    return this.connectionTimeout;
+  }
+
+  /**
+   * Returns the socket timeout, and should be based on httpClient overriding the solrClient. For
+   * unit testing.
+   *
+   * @return the socket timeout
+   */
+  int getSocketTimeout() {
+    return this.soTimeout;
   }
 
   /**
@@ -574,12 +569,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
         HttpClientUtil.createDefaultRequestConfigBuilder();
-    if (soTimeout != null) {
-      requestConfigBuilder.setSocketTimeout(soTimeout);
-    }
-    if (connectionTimeout != null) {
-      requestConfigBuilder.setConnectTimeout(connectionTimeout);
-    }
+    requestConfigBuilder.setSocketTimeout(soTimeout);
+    requestConfigBuilder.setConnectTimeout(connectionTimeout);
+
     if (followRedirects != null) {
       requestConfigBuilder.setRedirectsEnabled(followRedirects);
     }
@@ -812,89 +804,13 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return baseUrl;
   }
 
-  /**
-   * Change the base-url used when sending requests to Solr.
-   *
-   * <p>Two different paths can be specified as a part of this URL:
-   *
-   * <p>1) A path pointing directly at a particular core
-   *
-   * <pre>
-   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr/core1");
-   *   QueryResponse resp = httpSolrClient.query(new SolrQuery("*:*"));
-   * </pre>
-   *
-   * Note that when a core is provided in the base URL, queries and other requests can be made
-   * without mentioning the core explicitly. However, the client can only send requests to that
-   * core.
-   *
-   * <p>2) The path of the root Solr path ("/solr")
-   *
-   * <pre>
-   *   httpSolrClient.setBaseURL("http://my-solr-server:8983/solr");
-   *   QueryResponse resp = httpSolrClient.query("core1", new SolrQuery("*:*"));
-   * </pre>
-   *
-   * In this case the client is more flexible and can be used to send requests to any cores. The
-   * cost of this is that the core must be specified on each request.
-   *
-   * <p>{@link SolrClient} setters can be unsafe when the involved {@link SolrClient} is used in
-   * multiple threads simultaneously.
-   *
-   * @deprecated use {@link Builder} instead
-   */
-  @Deprecated
-  public void setBaseURL(String baseUrl) {
-    this.baseUrl = baseUrl;
-  }
-
   public ResponseParser getParser() {
     return parser;
-  }
-
-  /**
-   * Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @param parser Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   * @deprecated use {@link Builder#withResponseParser(ResponseParser)} instead
-   */
-  @Deprecated
-  public void setParser(ResponseParser parser) {
-    this.parser = parser;
   }
 
   /** Return the HttpClient this instance uses. */
   public HttpClient getHttpClient() {
     return httpClient;
-  }
-
-  /**
-   * Configure whether the client should follow redirects or not.
-   *
-   * <p>This defaults to false under the assumption that if you are following a redirect to get to a
-   * Solr installation, something is configured wrong somewhere.
-   *
-   * @deprecated use {@link Builder#withFollowRedirects(boolean)} Redirects(boolean)} instead
-   */
-  @Deprecated
-  public void setFollowRedirects(boolean followRedirects) {
-    this.followRedirects = followRedirects;
-  }
-
-  /**
-   * Choose the {@link RequestWriter} to use.
-   *
-   * <p>By default, {@link BinaryRequestWriter} is used.
-   *
-   * <p>Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @deprecated use {@link Builder#withRequestWriter(RequestWriter)} instead
-   */
-  @Deprecated
-  public void setRequestWriter(RequestWriter requestWriter) {
-    this.requestWriter = requestWriter;
   }
 
   /** Close the {@link HttpClientConnectionManager} from the internal client. */
@@ -907,18 +823,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   public boolean isUseMultiPartPost() {
     return useMultiPartPost;
-  }
-
-  /**
-   * Set the multipart connection properties
-   *
-   * <p>Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @deprecated use {@link Builder#allowMultiPartPost(Boolean)} instead
-   */
-  @Deprecated
-  public void setUseMultiPartPost(boolean useMultiPartPost) {
-    this.useMultiPartPost = useMultiPartPost;
   }
 
   /**

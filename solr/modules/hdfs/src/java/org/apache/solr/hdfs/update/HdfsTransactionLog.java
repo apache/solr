@@ -19,7 +19,6 @@ package org.apache.solr.hdfs.update;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +29,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
@@ -196,7 +196,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
     synchronized (this) {
       globalStringList = (List<String>) header.get("strings");
-      globalStringMap = new HashMap<>(globalStringList.size());
+      globalStringMap = CollectionUtil.newHashMap(globalStringList.size());
       for (int i = 0; i < globalStringList.size(); i++) {
         globalStringMap.put(globalStringList.get(i), i + 1);
       }

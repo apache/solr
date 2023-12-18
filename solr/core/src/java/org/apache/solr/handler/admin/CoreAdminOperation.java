@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.BACK
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATESNAPSHOT;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.DELETESNAPSHOT;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INSTALLCOREDATA;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.LISTSNAPSHOTS;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.MERGEINDEXES;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.OVERSEEROP;
@@ -57,7 +58,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -66,6 +66,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -273,6 +274,7 @@ public enum CoreAdminOperation implements CoreAdminOp {
       }),
   BACKUPCORE_OP(BACKUPCORE, new BackupCoreOp()),
   RESTORECORE_OP(RESTORECORE, new RestoreCoreOp()),
+  INSTALLCOREDATA_OP(INSTALLCOREDATA, new InstallCoreDataOp()),
   CREATESNAPSHOT_OP(CREATESNAPSHOT, new CreateSnapshotOp()),
   DELETESNAPSHOT_OP(DELETESNAPSHOT, new DeleteSnapshotOp()),
   @SuppressWarnings({"unchecked"})
@@ -335,11 +337,11 @@ public enum CoreAdminOperation implements CoreAdminOp {
           info.add("instanceDir", desc.getInstanceDir());
           // None of the following are guaranteed to be present in a not-yet-loaded core.
           String tmp = desc.getDataDir();
-          if (StringUtils.isNotBlank(tmp)) info.add("dataDir", tmp);
+          if (StrUtils.isNotBlank(tmp)) info.add("dataDir", tmp);
           tmp = desc.getConfigName();
-          if (StringUtils.isNotBlank(tmp)) info.add("config", tmp);
+          if (StrUtils.isNotBlank(tmp)) info.add("config", tmp);
           tmp = desc.getSchemaName();
-          if (StringUtils.isNotBlank(tmp)) info.add("schema", tmp);
+          if (StrUtils.isNotBlank(tmp)) info.add("schema", tmp);
           info.add("isLoaded", "false");
         }
       } else {

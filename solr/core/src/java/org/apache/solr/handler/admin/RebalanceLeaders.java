@@ -38,7 +38,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -51,6 +50,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -127,9 +127,6 @@ class RebalanceLeaders {
 
   void execute() throws KeeperException, InterruptedException {
     DocCollection dc = checkParams();
-    if (log.isInfoEnabled()) {
-      log.info("Rebalancing leaders for collection {}", dc.getName());
-    }
 
     int max = req.getParams().getInt(MAX_AT_ONCE_PROP, Integer.MAX_VALUE);
     if (max <= 0) max = Integer.MAX_VALUE;
@@ -142,9 +139,7 @@ class RebalanceLeaders {
     for (Slice slice : dc.getSlices()) {
       ensurePreferredIsLeader(slice);
       if (asyncRequests.size() == max) {
-        log.info(
-            "Max number '{}' of election queue movements requested, waiting for some to complete.",
-            max);
+        log.info("Queued {} leader reassignments, waiting for some to complete.", max);
         keepGoing = waitAsyncRequests(maxWaitSecs, false);
         if (keepGoing == false) {
           break; // If we've waited longer than specified, don't continue to wait!
@@ -152,14 +147,13 @@ class RebalanceLeaders {
       }
     }
     if (keepGoing == true) {
-      log.info("Waiting for all election queue movements to complete");
       keepGoing = waitAsyncRequests(maxWaitSecs, true);
     }
     if (keepGoing == true) {
-      log.info("All election queue movements completed.");
+      log.info("All leader reassignments completed.");
     } else {
       log.warn(
-          "Exceeded specified timeout of '{}' while waiting for election queue movements to complete",
+          "Exceeded specified timeout of '{}' all leaders may not have been reassigned'",
           maxWaitSecs);
     }
 
@@ -181,7 +175,7 @@ class RebalanceLeaders {
     req.getParams().required().check(COLLECTION_PROP);
 
     collectionName = req.getParams().get(COLLECTION_PROP);
-    if (StringUtils.isBlank(collectionName)) {
+    if (StrUtils.isBlank(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           String.format(
@@ -203,8 +197,6 @@ class RebalanceLeaders {
   // Once we've done all the fiddling with the queues, check on the way out to see if all the active
   // preferred leaders that we intended to change are in fact the leaders.
   private void checkLeaderStatus() throws InterruptedException, KeeperException {
-    log.info("Waiting for all leader reassignments to complete");
-    long startTime = System.nanoTime();
     for (int idx = 0; pendingOps.size() > 0 && idx < 600; ++idx) {
       ClusterState clusterState = coreContainer.getZkController().getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -218,12 +210,6 @@ class RebalanceLeaders {
                 // Record for return that the leader changed successfully
                 pendingOps.remove(slice.getName());
                 addToSuccesses(slice, replica);
-                if (log.isDebugEnabled()) {
-                  log.debug(
-                      "Preferred leader replica {} is the leader of shard {}",
-                      replica.getName(),
-                      slice.getName());
-                }
                 break;
               }
             }
@@ -234,13 +220,6 @@ class RebalanceLeaders {
       coreContainer.getZkController().getZkStateReader().forciblyRefreshAllClusterStateSlow();
     }
     addAnyFailures();
-    if (log.isInfoEnabled()) {
-      log.info(
-          "Finished waiting {} ms for leader reassignments with {} pending ops {}",
-          TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime),
-          pendingOps.size(),
-          pendingOps);
-    }
   }
 
   // The process is:
@@ -253,47 +232,25 @@ class RebalanceLeaders {
   // node in the leader election queue is removed and the only remaining node watching it is
   // triggered to become leader.
   private void ensurePreferredIsLeader(Slice slice) throws KeeperException, InterruptedException {
-    if (log.isInfoEnabled()) {
-      log.info("Ensuring preferred leader is leader for shard {}", slice.getName());
-    }
     for (Replica replica : slice.getReplicas()) {
       // Tell the replica to become the leader if we're the preferred leader AND active AND not the
       // leader already
       if (replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false) == false) {
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "Replica {} of shard {} is not preferred leader", replica.getName(), slice.getName());
-        }
         continue;
       }
       // OK, we are the preferred leader, are we the actual leader?
       if (replica.getBool(LEADER_PROP, false)) {
         // We're a preferred leader, but we're _also_ the leader, don't need to do anything.
         addAlreadyLeaderToResults(slice, replica);
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "Replica {} of shard {} is preferred leader and already leader",
-              replica.getName(),
-              slice.getName());
-        }
         return; // already the leader, do nothing.
       }
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
       // We're the preferred leader, but someone else is leader. Only become leader if we're active.
       if (replica.isActive(zkStateReader.getClusterState().getLiveNodes()) == false) {
         addInactiveToResults(slice, replica);
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "Replica {} of shard {} is preferred leader but not active",
-              replica.getName(),
-              slice.getName());
-        }
         return; // Don't try to become the leader if we're not active!
       }
 
-      if (log.isDebugEnabled()) {
-        log.debug("Getting the sorted election nodes for shard {}", slice.getName());
-      }
       List<String> electionNodes =
           OverseerTaskProcessor.getSortedElectionNodes(
               zkStateReader.getZkClient(),
@@ -316,12 +273,6 @@ class RebalanceLeaders {
       String firstWatcher = electionNodes.get(1);
 
       if (LeaderElector.getNodeName(firstWatcher).equals(replica.getName()) == false) {
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "Re-enqueue replica {} to become the first watcher in election for shard {}",
-              replica.getName(),
-              slice.getName());
-        }
         makeReplicaFirstWatcher(slice, replica);
       }
 
@@ -329,31 +280,10 @@ class RebalanceLeaders {
       // to check at the end
       pendingOps.put(slice.getName(), replica.getName());
       String leaderElectionNode = electionNodes.get(0);
-      Replica leaderReplica = slice.getReplica(LeaderElector.getNodeName(leaderElectionNode));
-      String coreName = leaderReplica.getStr(CORE_NAME_PROP);
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Move replica {} node {} core {} at the end of the election queue for shard {}",
-            leaderReplica.getName(),
-            leaderElectionNode,
-            coreName,
-            slice.getName());
-      }
+      String coreName =
+          slice.getReplica(LeaderElector.getNodeName(leaderElectionNode)).getStr(CORE_NAME_PROP);
       rejoinElectionQueue(slice, leaderElectionNode, coreName, false);
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Waiting for replica {} node {} change in the election queue for shard {}",
-            leaderReplica.getName(),
-            leaderElectionNode,
-            slice.getName());
-      }
       waitForNodeChange(slice, leaderElectionNode);
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Preferred leader {} is now the first in line for leader election for shard {}",
-            replica.getName(),
-            slice.getName());
-      }
 
       return; // Done with this slice, skip the rest of the replicas.
     }
@@ -489,13 +419,6 @@ class RebalanceLeaders {
   // that any requeueing we've done has happened.
   int waitForNodeChange(Slice slice, String electionNode)
       throws InterruptedException, KeeperException {
-    if (log.isDebugEnabled()) {
-      log.debug(
-          "Waiting for node {} to rejoin the election queue for shard {}",
-          electionNode,
-          slice.getName());
-    }
-    long startTime = System.nanoTime();
     String nodeName = LeaderElector.getNodeName(electionNode);
     int oldSeq = LeaderElector.getSeq(electionNode);
     for (int idx = 0; idx < 600; ++idx) {
@@ -514,9 +437,6 @@ class RebalanceLeaders {
       TimeUnit.MILLISECONDS.sleep(100);
       zkStateReader.forciblyRefreshAllClusterStateSlow();
     }
-    log.warn(
-        "Timeout waiting for node change after {} ms",
-        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
     return -1;
   }
 

@@ -52,7 +52,7 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
     if (GlobalTracer.isRegistered()) {
       // ideally we would furthermore check that it's not a no-op impl either but
       //  GlobalTracer.get() always returns a GlobalTracer implementing Tracer that delegates
-      //  to the real Tracer (that may or may not be a No-Op impl.
+      //  to the real Tracer (that may or may not be a No-Op impl).
       ExecutorUtil.addThreadLocalProvider(new TracerConfigurator.SpanThreadLocalProvider());
     }
 

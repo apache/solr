@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -63,11 +62,11 @@ public class MergeIndexesAPI {
         CoreAdminParams.CoreAdminAction.MERGEINDEXES.name().toLowerCase(Locale.ROOT));
     v1Params.put(
         CoreAdminParams.CORE, obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE));
-    if (!CollectionUtils.isEmpty(v2Body.indexDir)) {
-      v1Params.put("indexDir", v2Body.indexDir.toArray(new String[v2Body.indexDir.size()]));
+    if (v2Body.indexDir != null && !v2Body.indexDir.isEmpty()) {
+      v1Params.put("indexDir", v2Body.indexDir.toArray(new String[0]));
     }
-    if (!CollectionUtils.isEmpty(v2Body.srcCore)) {
-      v1Params.put("srcCore", v2Body.srcCore.toArray(new String[v2Body.srcCore.size()]));
+    if (v2Body.srcCore != null && !v2Body.srcCore.isEmpty()) {
+      v1Params.put("srcCore", v2Body.srcCore.toArray(new String[0]));
     }
     // V1 API uses 'update.chain' instead of 'updateChain'.
     if (v2Body.updateChain != null) {

@@ -25,6 +25,9 @@ For details on how to configure `core.properties`, see the section xref:core-dis
 
 You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`) or optionally in ZooKeeper when using SolrCloud. If `$SOLR_HOME/solr.xml` is not found, Solr will use the default `solr.xml` file.
 
+WARNING: Loading `solr.xml` from Zookeeper is deprecated, and will not be supported in a future version.
+Being the node config of Solr, this file must be available at early startup and also be allowed to differ between nodes.
+
 The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and looks like this:
 
 [source,xml]
@@ -77,6 +80,7 @@ Unless the `-DzkHost` or `-DzkRun` are specified at startup time, this section i
 
 == Solr.xml Parameters
 
+[#the-solr-element]
 === The <solr> Element
 
 There are no attributes that you can specify in the `<solr>` tag, which is the root element of `solr.xml`.
@@ -301,6 +305,22 @@ This is the same system property used in the `_default` configset for the xref:c
 ----
 <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 ----
+
+[#hiddenSysProps]
+`hiddenSysProps`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+Comma-separated list of regex patterns to match sysProps that should be redacted to hide sensitive information.
++
+The allow-list can also be configured with the `solr.hiddenSysProps` system property,
+or via the `SOLR_HIDDEN_SYS_PROPS` environment variable.
++
+By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It will also hide any sysProp that contains
+"password" or "secret" in it.
 
 === The <solrcloud> Element
 

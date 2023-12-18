@@ -127,7 +127,7 @@ public class SolrCores {
                 try {
                   core.close();
                 } catch (Throwable e) {
-                  SolrException.log(log, "Error shutting down core", e);
+                  log.error("Error shutting down core", e);
                   if (e instanceof Error) {
                     throw (Error) e;
                   }

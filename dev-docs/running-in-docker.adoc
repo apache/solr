@@ -20,6 +20,11 @@ The task will output the image name to use at the end of the build.
 
 `./gradlew docker`
 
+Or if you want to test with the "slim" Solr distribution:
+
+`./gradlew docker -Psolr.docker.dist=slim`
+
+
 For more info on building an image, run:
 
 `./gradlew helpDocker`

@@ -158,17 +158,19 @@ public class BackupProperties {
     return properties.getProperty(BackupManager.INDEX_VERSION_PROP);
   }
 
-  public Map<Object, Object> getDetails() {
-    Map<Object, Object> result = new HashMap<>(properties);
+  public Map<String, Object> getDetails() {
+    final Map<String, Object> result = new HashMap<>();
+    properties.entrySet().stream()
+        .forEach(entry -> result.put(entry.getKey().toString(), entry.getValue()));
     result.remove(BackupManager.BACKUP_NAME_PROP);
     result.remove(BackupManager.COLLECTION_NAME_PROP);
     result.put("indexSizeMB", Double.valueOf(properties.getProperty("indexSizeMB")));
     result.put("indexFileCount", Integer.valueOf(properties.getProperty("indexFileCount")));
 
     Map<String, String> shardBackupIds = new HashMap<>();
-    Iterator<Object> keyIt = result.keySet().iterator();
+    Iterator<String> keyIt = result.keySet().iterator();
     while (keyIt.hasNext()) {
-      String key = keyIt.next().toString();
+      String key = keyIt.next();
       if (key.endsWith(".md")) {
         shardBackupIds.put(key.substring(0, key.length() - 3), properties.getProperty(key));
         keyIt.remove();

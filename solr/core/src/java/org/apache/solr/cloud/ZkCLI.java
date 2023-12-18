@@ -21,11 +21,12 @@ import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
@@ -40,14 +41,18 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
+import org.apache.solr.cli.CLIO;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
+import org.apache.solr.common.util.Compressor;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.CLIO;
+import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrXmlConfig;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.xml.sax.SAXException;
@@ -234,6 +239,9 @@ public class ZkCLI implements CLIO {
       // start up a tmp zk server first
       String zkServerAddress = line.getOptionValue(ZKHOST);
       String solrHome = line.getOptionValue(SOLRHOME);
+      if (StrUtils.isNullOrEmpty(solrHome)) {
+        solrHome = System.getProperty("solr.home");
+      }
 
       String solrPort = null;
       if (line.hasOption(RUNZK)) {
@@ -256,16 +264,46 @@ public class ZkCLI implements CLIO {
         zkServer.parseConfig();
         zkServer.start();
       }
-      SolrZkClient zkClient = null;
-      try {
-        zkClient =
-            new SolrZkClient.Builder()
-                .withUrl(zkServerAddress)
-                .withTimeout(30000, TimeUnit.MILLISECONDS)
-                .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
-                .withReconnectListener(() -> {})
-                .build();
 
+      int minStateByteLenForCompression = -1;
+      Compressor compressor = new ZLibCompressor();
+
+      if (solrHome != null) {
+        try {
+          Path solrHomePath = Paths.get(solrHome);
+          Properties props = new Properties();
+          props.put(SolrXmlConfig.ZK_HOST, zkServerAddress);
+          NodeConfig nodeConfig = NodeConfig.loadNodeConfig(solrHomePath, props);
+          minStateByteLenForCompression =
+              nodeConfig.getCloudConfig().getMinStateByteLenForCompression();
+          String stateCompressorClass = nodeConfig.getCloudConfig().getStateCompressorClass();
+          if (StrUtils.isNotNullOrEmpty(stateCompressorClass)) {
+            Class<? extends Compressor> compressionClass =
+                Class.forName(stateCompressorClass).asSubclass(Compressor.class);
+            compressor = compressionClass.getDeclaredConstructor().newInstance();
+          }
+        } catch (SolrException e) {
+          // Failed to load solr.xml
+          stdout.println(
+              "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If you intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
+        } catch (ClassNotFoundException
+            | NoSuchMethodException
+            | InstantiationException
+            | IllegalAccessException
+            | InvocationTargetException e) {
+          stdout.println("Unable to find or instantiate compression class: " + e.getMessage());
+          System.exit(1);
+        }
+      }
+
+      try (SolrZkClient zkClient =
+          new SolrZkClient.Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(30000, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+              .withReconnectListener(() -> {})
+              .withCompressor(compressor)
+              .build()) {
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {
             stdout.println("-" + SOLRHOME + " is required for " + BOOTSTRAP);
@@ -334,9 +372,9 @@ public class ZkCLI implements CLIO {
           }
 
           StringBuilder sb = new StringBuilder();
-          String path = argList.get(0).toString();
+          String path = argList.get(0);
           zkClient.printLayout(path == null ? "/" : path, 0, sb);
-          stdout.println(sb.toString());
+          stdout.println(sb);
 
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLEAR)) {
           List<String> arglist = line.getArgList();
@@ -344,14 +382,14 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + CLEAR + " requires one arg - the path to clear");
             System.exit(1);
           }
-          zkClient.clean(arglist.get(0).toString());
+          zkClient.clean(arglist.get(0));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(MAKEPATH)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
-          zkClient.makePath(arglist.get(0).toString(), true);
+          zkClient.makePath(arglist.get(0), true);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 2) {
@@ -359,16 +397,16 @@ public class ZkCLI implements CLIO {
                 "-" + PUT + " requires two args - the path to create and the data string");
             System.exit(1);
           }
-          String path = arglist.get(0).toString();
+          String path = arglist.get(0);
+          byte[] data = arglist.get(1).getBytes(StandardCharsets.UTF_8);
+          if (shouldCompressData(data, path, minStateByteLenForCompression)) {
+            // state.json should be compressed before being put to ZK
+            data = compressor.compressBytes(data, data.length / 10);
+          }
           if (zkClient.exists(path, true)) {
-            zkClient.setData(
-                path, arglist.get(1).toString().getBytes(StandardCharsets.UTF_8), true);
+            zkClient.setData(path, data, true);
           } else {
-            zkClient.create(
-                path,
-                arglist.get(1).toString().getBytes(StandardCharsets.UTF_8),
-                CreateMode.PERSISTENT,
-                true);
+            zkClient.create(path, data, CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT_FILE)) {
           List<String> arglist = line.getArgList();
@@ -380,25 +418,24 @@ public class ZkCLI implements CLIO {
             System.exit(1);
           }
 
-          String path = arglist.get(0).toString();
-          InputStream is = new FileInputStream(arglist.get(1).toString());
-          try {
-            if (zkClient.exists(path, true)) {
-              zkClient.setData(path, IOUtils.toByteArray(is), true);
-            } else {
-              zkClient.create(path, IOUtils.toByteArray(is), CreateMode.PERSISTENT, true);
-            }
-          } finally {
-            IOUtils.closeQuietly(is);
+          String path = arglist.get(0);
+          byte[] data = Files.readAllBytes(Path.of(arglist.get(1)));
+          if (shouldCompressData(data, path, minStateByteLenForCompression)) {
+            // state.json should be compressed before being put to ZK
+            data = compressor.compressBytes(data, data.length / 10);
           }
-
+          if (zkClient.exists(path, true)) {
+            zkClient.setData(path, data, true);
+          } else {
+            zkClient.create(path, data, CreateMode.PERSISTENT, true);
+          }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + GET + " requires one arg - the path to get");
             System.exit(1);
           }
-          byte[] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
+          byte[] data = zkClient.getData(arglist.get(0), null, null, true);
           stdout.println(new String(data, StandardCharsets.UTF_8));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET_FILE)) {
           List<String> arglist = line.getArgList();
@@ -407,15 +444,15 @@ public class ZkCLI implements CLIO {
                 "-" + GET_FILE + "requires two args - the path to get and the file to save it to");
             System.exit(1);
           }
-          byte[] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
-          FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
+          byte[] data = zkClient.getData(arglist.get(0), null, null, true);
+          Files.write(Path.of(arglist.get(1)), data);
         } else if (line.getOptionValue(CMD).equals(UPDATEACLS)) {
           List<String> arglist = line.getArgList();
           if (arglist.size() != 1) {
             stdout.println("-" + UPDATEACLS + " requires one arg - the path to update");
             System.exit(1);
           }
-          zkClient.updateACLs(arglist.get(0).toString());
+          zkClient.updateACLs(arglist.get(0));
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLUSTERPROP)) {
           if (!line.hasOption(NAME)) {
             stdout.println("-" + NAME + " is required for " + CLUSTERPROP);
@@ -442,12 +479,20 @@ public class ZkCLI implements CLIO {
         if (solrPort != null) {
           zkServer.stop();
         }
-        if (zkClient != null) {
-          zkClient.close();
-        }
       }
     } catch (ParseException exp) {
       stdout.println("Unexpected exception:" + exp.getMessage());
     }
+  }
+
+  private static boolean shouldCompressData(
+      byte[] data, String path, int minStateByteLenForCompression) {
+    if (path.endsWith("state.json")
+        && minStateByteLenForCompression > -1
+        && data.length > minStateByteLenForCompression) {
+      // state.json should be compressed before being put to ZK
+      return true;
+    }
+    return false;
   }
 }

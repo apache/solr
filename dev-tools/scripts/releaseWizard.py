@@ -102,6 +102,7 @@ def expand_jinja(text, vars=None):
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
         'release_version_refguide': state.get_refguide_release() ,
+        'release_version_jira': state.get_jira_release(),
         'state': state,
         'gpg_key' : state.get_gpg_key(),
         'gradle_cmd' : 'gradlew.bat' if is_windows() else './gradlew',
@@ -603,6 +604,13 @@ class ReleaseState:
 
     def get_refguide_release(self):
         return "%s_%s" % (self.release_version_major, self.release_version_minor)
+
+    def get_jira_release(self):
+        if self.release_type == 'major' or self.release_type == 'minor':
+            return "%s.%s" % (self.release_version_major, self.release_version_minor)
+        if self.release_type == 'bugfix':
+            return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix)
+        return None
 
     def get_java_home(self):
         return self.get_java_home_for_version(self.release_version)

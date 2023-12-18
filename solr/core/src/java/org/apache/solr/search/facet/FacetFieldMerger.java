@@ -19,9 +19,9 @@ package org.apache.solr.search.facet;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 // TODO: refactor more out to base class
@@ -185,7 +185,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     // same "missing" status as this facet, so no need to set it again
     Map<String, Object> bucketRefinement = bucket.getRefinement(mcontext, tagsWithPartial);
     if (bucketRefinement != null) {
-      refinement = refinement == null ? new HashMap<>(2) : refinement;
+      refinement = refinement == null ? CollectionUtil.newHashMap(2) : refinement;
       refinement.put(label, bucketRefinement);
     }
     return refinement;

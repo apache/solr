@@ -205,8 +205,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
                   Optional.empty())
               .withLBHttpSolrClientBuilder(
                   new LBHttpSolrClient.Builder()
-                      .withSocketTimeout(30000)
-                      .withConnectionTimeout(15000)
+                      .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+                      .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
                       .withResponseParser(client.getParser())
                       .withHttpSolrClientBuilder(
                           new HttpSolrClient.Builder().withKerberosDelegationToken(token)))

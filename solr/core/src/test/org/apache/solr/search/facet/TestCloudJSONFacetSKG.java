@@ -43,6 +43,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
@@ -143,8 +144,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION_NAME).build();
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
@@ -241,12 +241,10 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
-    }
+    IOUtils.closeQuietly(CLOUD_CLIENT);
+
     for (SolrClient client : CLIENTS) {
-      client.close();
+      IOUtils.closeQuietly(client);
     }
     CLIENTS.clear();
   }

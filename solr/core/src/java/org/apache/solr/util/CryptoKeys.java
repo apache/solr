@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -66,7 +65,7 @@ public final class CryptoKeys {
     for (Map.Entry<String, byte[]> e : trustedKeys.entrySet()) {
       m.put(e.getKey(), getX509PublicKey(e.getValue()));
     }
-    this.keys = ImmutableMap.copyOf(m);
+    this.keys = Map.copyOf(m);
   }
 
   /** Try with all signatures and return the name of the signature that matched */

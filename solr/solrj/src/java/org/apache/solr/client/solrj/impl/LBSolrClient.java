@@ -439,24 +439,6 @@ public abstract class LBSolrClient extends SolrClient {
     return e;
   }
 
-  /**
-   * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
-   * this to set that interval
-   *
-   * @param aliveCheckIntervalMillis time in milliseconds
-   * @deprecated use {@link LBHttpSolrClient.Builder#setAliveCheckInterval(int)} instead
-   */
-  @Deprecated
-  public void setAliveCheckInterval(int aliveCheckIntervalMillis) {
-    if (aliveCheckIntervalMillis <= 0) {
-      throw new IllegalArgumentException(
-          "Alive check interval must be "
-              + "positive, specified value = "
-              + aliveCheckIntervalMillis);
-    }
-    this.aliveCheckIntervalMillis = aliveCheckIntervalMillis;
-  }
-
   private void startAliveCheckExecutor() {
     // double-checked locking, but it's OK because we don't *do* anything with aliveCheckExecutor
     // if it's not null.
@@ -489,30 +471,6 @@ public abstract class LBSolrClient extends SolrClient {
 
   public ResponseParser getParser() {
     return parser;
-  }
-
-  /**
-   * Changes the {@link ResponseParser} that will be used for the internal SolrServer objects.
-   *
-   * @param parser Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   * @deprecated Pass in a configured {@link SolrClient} instead
-   */
-  @Deprecated
-  public void setParser(ResponseParser parser) {
-    this.parser = parser;
-  }
-
-  /**
-   * Changes the {@link RequestWriter} that will be used for the internal SolrServer objects.
-   *
-   * @param requestWriter Default RequestWriter, used to encode requests sent to the server.
-   * @deprecated Pass in a configured {@link SolrClient} instead
-   */
-  @Deprecated
-  public void setRequestWriter(RequestWriter requestWriter) {
-    this.requestWriter = requestWriter;
   }
 
   public RequestWriter getRequestWriter() {

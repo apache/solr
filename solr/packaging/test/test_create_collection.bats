@@ -41,15 +41,27 @@ teardown() {
 @test "create collection" {
   run solr create_collection -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
+  assert_output --partial "assuming solrUrl is http://localhost:8983/solr"
+}
+
+@test "create collection using solrUrl" {
+  run solr create_collection -c COLL_NAME -solrUrl http://localhost:8983/solr
+  assert_output --partial "Created collection 'COLL_NAME'"  
+  refute_output --partial "assuming solrUrl is http://localhost:8983/solr"
+}
+
+@test "create collection using Zookeeper" {
+  run solr create_collection -c COLL_NAME -zkHost localhost:9983
+  assert_output --partial "Created collection 'COLL_NAME'"
 }
 
 @test "reject d option with invalid config dir" {
-  run ! solr create_collection -c COLL_NAME -d /asdf
+  run ! solr create_collection -c COLL_NAME -d /asdf  -solrUrl http://localhost:8983/solr
   assert_output --partial "Specified configuration directory /asdf not found!"
 }
 
 @test "accept d option with builtin config" {
-  run solr create_collection -c COLL_NAME -d sample_techproducts_configs
+  run solr create_collection -c COLL_NAME -d sample_techproducts_configs -solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME'"
 }
 
@@ -59,34 +71,34 @@ teardown() {
   test -d $source_configset_dir
   cp -r "${source_configset_dir}" "${dest_configset_dir}"
 
-  run solr create_collection -c COLL_NAME -d "${dest_configset_dir}"
+  run solr create_collection -c COLL_NAME -d "${dest_configset_dir}" -solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME'"
 }
 
 @test "accept n option as config name" {
-  run solr create_collection -c COLL_NAME -n other_conf_name
+  run solr create_collection -c COLL_NAME -n other_conf_name -solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "config-set 'other_conf_name'"
 }
 
 @test "allow config reuse when n option specifies same config" {
-  run -0 solr create_collection -c COLL_NAME_1 -n shared_config
+  run -0 solr create_collection -c COLL_NAME_1 -n shared_config -solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME_1'"
   assert_output --partial "config-set 'shared_config'"
 
-  run -0 solr create_collection -c COLL_NAME_2 -n shared_config
+  run -0 solr create_collection -c COLL_NAME_2 -n shared_config -solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME_2'"
   assert_output --partial "config-set 'shared_config'"
 }
 
 @test "create multisharded collections when s provided" {
-  run -0 solr create_collection -c COLL_NAME -s 2
+  run -0 solr create_collection -c COLL_NAME -s 2 -solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "2 shard(s)"
 }
 
 @test "create replicated collections when rf provided" {
-  run -0 solr create_collection -c COLL_NAME -rf 2
+  run -0 solr create_collection -c COLL_NAME -rf 2 -solrUrl http://localhost:8983/solr
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "2 replica(s)"
 }

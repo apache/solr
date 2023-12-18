@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -231,7 +230,7 @@ public class TestHarness extends BaseTestHarness {
 
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
-      return ImmutableList.of(
+      return List.of(
           new CoreDescriptor(
               coreName,
               cc.getCoreRootDirectory().resolve(coreName),

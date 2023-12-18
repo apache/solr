@@ -17,15 +17,15 @@
 package org.apache.solr.schema;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -86,7 +86,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void testUpgrade() throws Exception {
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
     assertTrue(managedSchemaFile.exists());
-    String managedSchema = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchema = Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertTrue(managedSchema.contains("DO NOT EDIT"));
     File upgradedOriginalSchemaFile = new File(tmpConfDir, "schema-minimal.xml.bak");
     assertTrue(upgradedOriginalSchemaFile.exists());
@@ -101,7 +101,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome.getPath());
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
     assertTrue(managedSchemaFile.exists());
-    String managedSchema = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchema = Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertTrue(managedSchema.contains("DO NOT EDIT"));
     File upgradedOriginalSchemaFile = new File(tmpConfDir, "schema-minimal.xml.bak");
     assertTrue(upgradedOriginalSchemaFile.exists());
@@ -183,7 +183,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(
@@ -210,7 +210,8 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
         tmpSolrHome.getPath());
 
     assertTrue(managedSchemaFile.exists());
-    String managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchemaContents =
+        Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertFalse(managedSchemaContents.contains("\"new_field\""));
 
     Map<String, Object> options = new HashMap<>();
@@ -223,9 +224,9 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     h.getCore().setLatestSchema(newSchema);
 
     assertTrue(managedSchemaFile.exists());
-    FileInputStream stream = new FileInputStream(managedSchemaFile);
-    managedSchemaContents = IOUtils.toString(stream, "UTF-8");
-    stream.close(); // Explicitly close so that Windows can delete this file
+    try (InputStream stream = Files.newInputStream(managedSchemaFile.toPath())) {
+      managedSchemaContents = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+    }
     assertTrue(
         managedSchemaContents.contains(
             "<field name=\"new_field\" type=\"string\" stored=\"false\"/>"));
@@ -244,7 +245,8 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
         tmpSolrHome.getPath());
 
     assertTrue(managedSchemaFile.exists());
-    String managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchemaContents =
+        Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertFalse(managedSchemaContents.contains("\"new_field\""));
 
     clearIndex();
@@ -257,7 +259,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(
@@ -314,7 +316,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(
@@ -355,7 +357,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(
@@ -396,7 +398,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     } catch (Exception e) {
       for (Throwable t = e; t != null; t = t.getCause()) {
         // short circuit out if we found what we expected
-        if (t.getMessage() != null && -1 != t.getMessage().indexOf(errString)) return;
+        if (t.getMessage() != null && t.getMessage().contains(errString)) return;
       }
       // otherwise, rethrow it, possibly completely unrelated
       throw new SolrException(
@@ -483,7 +485,8 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
         tmpSolrHome.getPath());
 
     assertTrue(managedSchemaFile.exists());
-    String managedSchemaContents = FileUtils.readFileToString(managedSchemaFile, "UTF-8");
+    String managedSchemaContents =
+        Files.readString(managedSchemaFile.toPath(), StandardCharsets.UTF_8);
     assertFalse(managedSchemaContents.contains("\"new_field\""));
 
     Map<String, Object> options = new HashMap<>();
@@ -502,9 +505,9 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     initCore();
 
     assertTrue(managedSchemaFile.exists());
-    FileInputStream stream = new FileInputStream(managedSchemaFile);
-    managedSchemaContents = IOUtils.toString(stream, "UTF-8");
-    stream.close(); // Explicitly close so that Windows can delete this file
+    try (InputStream stream = Files.newInputStream(managedSchemaFile.toPath())) {
+      managedSchemaContents = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+    }
     assertTrue(
         managedSchemaContents.contains(
             "<field name=\"new_field\" type=\"string\" stored=\"false\"/>"));

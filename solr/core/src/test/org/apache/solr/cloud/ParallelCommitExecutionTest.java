@@ -43,8 +43,8 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
-  /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  /** A collection specific client for operations at the cloud level */
+  private static CloudSolrClient COLLECTION_CLIENT;
 
   private static int expectCount;
 
@@ -73,16 +73,15 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
+    waitForRecoveriesToFinish(COLLECTION_CLIENT);
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
+    if (null != COLLECTION_CLIENT) {
+      COLLECTION_CLIENT.close();
+      COLLECTION_CLIENT = null;
     }
   }
 
@@ -96,7 +95,7 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
   @Test
   public void testParallelOk() throws Exception {
     initSyncVars();
-    CLOUD_CLIENT.commit(true, true);
+    COLLECTION_CLIENT.commit(true, true);
     assertEquals(0, countdown.getCount());
     assertEquals(expectCount, countup.get());
   }

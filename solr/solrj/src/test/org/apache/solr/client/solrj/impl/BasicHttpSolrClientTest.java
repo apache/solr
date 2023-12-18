@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -208,8 +209,10 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (SolrClient client =
-        getHttpSolrClient(
-            jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)) {
+        new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/slow/foo")
+            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(2000, TimeUnit.MILLISECONDS)
+            .build()) {
       SolrServerException e =
           expectThrows(SolrServerException.class, () -> client.query(q, METHOD.GET));
       assertTrue(e.getMessage().contains("Timeout"));
@@ -575,7 +578,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertNull(DebugServlet.headers.toString(), DebugServlet.headers.get("Accept-Encoding"));
     }
 
-    try (SolrClient client = getHttpSolrClient(clientUrl, null, null, true)) {
+    try (SolrClient client = new HttpSolrClient.Builder(clientUrl).allowCompression(true).build()) {
       try {
         client.query(q);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -583,7 +586,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertNotNull(DebugServlet.headers.get("Accept-Encoding"));
     }
 
-    try (SolrClient client = getHttpSolrClient(clientUrl, null, null, false)) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(clientUrl).allowCompression(false).build()) {
       try {
         client.query(q);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -648,7 +652,10 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testGetRawStream() throws SolrServerException, IOException {
     CloseableHttpClient client = HttpClientUtil.createClient(null);
     try (SolrClient solrClient =
-        getHttpSolrClient(jetty.getBaseUrl().toString() + "/collection1", client, null); ) {
+        new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/collection1")
+            .withHttpClient(client)
+            .withResponseParser(null)
+            .build(); ) {
 
       QueryRequest req = new QueryRequest();
       NamedList<?> response = solrClient.request(req);
@@ -763,7 +770,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       if (values != null) {
         for (String value : values) {
           boolean shouldBeInQueryString =
-              client.getQueryParams().contains(name)
+              client.getUrlParamNames().contains(name)
                   || (request.getQueryParams() != null && request.getQueryParams().contains(name));
           assertEquals(
               shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));

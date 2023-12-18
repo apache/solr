@@ -16,11 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
-import com.google.common.base.MoreObjects;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -98,7 +98,7 @@ public class HighlightComponent extends SearchComponent
       rb.setNeedDocList(true);
       String hlq = params.get(HighlightParams.Q);
       String hlparser =
-          MoreObjects.firstNonNull(
+          Objects.requireNonNullElse(
               params.get(HighlightParams.QPARSER),
               params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE));
       if (hlq != null) {

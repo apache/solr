@@ -88,6 +88,13 @@ An equivalent configuration using system properties would be:
 SOLR_OPTS=-Dotel.exporter.otlp.endpoint=my-remote-collector:4317 -Dotel.traces.sampler=parentbased_traceidratio -Dotel.traces.sampler.arg=0.1
 ----
 
+To add custom tags to the trace, use `OTEL_RESOURCE_ATTRIBUTES`:
+
+[source,bash]
+----
+OTEL_RESOURCE_ATTRIBUTES="application=OnlineBanking,exampleKey=exampleValue"
+----
+
 Consult the https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/[OTEL documentation] for details on all the configuration options.
 This version of Solr uses https://github.com/open-telemetry/opentelemetry-java/tree/v{dep-version-opentelemetry}[OpenTelemetry SDK v{dep-version-opentelemetry}].
 

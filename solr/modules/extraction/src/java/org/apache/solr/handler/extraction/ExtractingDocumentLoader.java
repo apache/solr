@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -147,9 +146,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         metadata.add(HttpHeaders.CONTENT_TYPE, stream.getContentType());
       }
 
-      InputStream inputStream = null;
-      try {
-        inputStream = stream.getStream();
+      try (InputStream inputStream = stream.getStream()) {
         metadata.add(ExtractingMetadataConstants.STREAM_NAME, stream.getName());
         metadata.add(ExtractingMetadataConstants.STREAM_SOURCE_INFO, stream.getSourceInfo());
         metadata.add(ExtractingMetadataConstants.STREAM_SIZE, String.valueOf(stream.getSize()));
@@ -246,8 +243,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         }
       } catch (SAXException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } finally {
-        IOUtils.closeQuietly(inputStream);
       }
     } else {
       throw new SolrException(

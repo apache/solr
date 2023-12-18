@@ -22,12 +22,12 @@ import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
@@ -56,8 +56,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
       // define the port where MockGraphite is running
       System.setProperty("mock-graphite-port", String.valueOf(mock.port));
       String solrXml =
-          FileUtils.readFileToString(
-              Paths.get(home.toString(), "solr-graphitereporter.xml").toFile(), "UTF-8");
+          Files.readString(home.resolve("solr-graphitereporter.xml"), StandardCharsets.UTF_8);
       NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
       CoreContainer cc =
           createCoreContainer(

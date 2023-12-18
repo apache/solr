@@ -64,6 +64,56 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.3
+=== Binary Releases
+* Solr now comes with two xref:deployment-guide:installing-solr.adoc#available-solr-packages[binary releases] and xref:deployment-guide:solr-in-docker.adoc#available-images[docker images], **full** and **slim**.
+The xref:deployment-guide:installing-solr.adoc#available-solr-packages[Installing Solr] page provides information on what is included in each.
+Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site for information on how to download these offerings.
+
+=== Shard Management
+* Solr now provides an xref:deployment-guide:shard-management.adoc#installsharddata["Install Shard"] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
+
+=== Solr CLI
+* The `bin/solr -i` and `bin/solr -info` options were removed in favour of the `bin/solr status` command.
+
+=== Security
+* Use of `stream.file`, `stream.url` and `stream.body` params are no longer enabled via configuration in solrconfig.xml, nor dynamic equivalents with the config API.
+Older configuration now does nothing.
+Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
+
+* The method for specifying sysProps that contain sensitive information has been streamlined.
+Now the sysProp `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` are available to provide a comma-separated
+list of patterns to match sysProps that should be hidden or redacted.
+Please see the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[hiddenSysProps section] for more information.
++
+The sysProp `-Dsolr.redaction.system.pattern` has been deprecated, use the above options instead.
++
+The `<hiddenSysProps>` solr.xml element under `<metrics>` has been deprecated.
+Instead, use the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[<hiddenSysProps>] tag under `<solr>`, which accepts a comma-separated string.
+
+
+=== Official Docker Image
+* The customization of the Official Solr Dockerfile has been changed.
+The customization options `SOLR_DOWNLOAD_URL`, `SOLR_CLOSER_URL`, `SOLR_DIST_URL` and `SOLR_ARCHIVE_URL`, have been removed.
+The only way to specify a custom location for the Solr binaries is through `SOLR_DOWNLOAD_SERVER`.
+If the server URL contains `apache.org`, then the Dockerfile will check gpg signature files.
+If the server URL does not contain `apache.org`, then the gpg signature checking will be skipped.
++
+It is still strongly recommended to use the Dockerfile included in the Solr binary TGZs if you want to build Solr images with custom versions of Solr.
+The custom version of Solr will include this Dockerfile when it is built.
+
+=== Deletion of unknown cores is now disabled by default
+ * When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper.
+Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files.
+As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[Unknown core deletion].
+
+=== v2 API 
+* Solr's experimental "v2" API has seen a number of improvements in the 9.3 release.
++
+It is now approaching parity with the functionality offered by Solr's v1 API.  In particular 9.3 adds v2 "CRUD" endpoints for interacting with alias properties and collection snapshots.  Several lower-level "replication" APIs now also offer v2 equivalents.
++
+Additionally, the v2 API as a whole is being redesigned to be more REST-ful and intuitive.  To this end, 9.3 introduces backwards-incompatible changes to the v2 shard, replica, and backup creation and deletion APIs.  A number of lower-level "command" APIs have also been tweaked, including: collection reloading, collection renaming, "force leader", "balance shard unique", and all of Solr's "log level" and "log watcher" APIs.  Clients using Solr's v2 endpoints should check their usage against the full list of modified APIs in CHANGES.txt prior to upgrading.  Details on each are available in the 9.3 reference guide.
+
 == Solr 9.2
 === Upgrade to Jetty 10.x
 * Solr upgraded to Jetty 10.x from 9.x due to Jetty 9.x is now end of life. Jetty 10.x has a Java 11 minimum and matches Solr 9 minimum Java version. Jetty logging has been replaced with slf4j again matching Solr. See https://webtide.com/jetty-10-and-11-have-arrived/ for additional Jetty 10.x highlights.
@@ -74,13 +124,17 @@ This is an improvement to the binary release artifact, but Jetty does not allow 
 The `server/contexts/solr-jetty-context.xml` now explicitly removes these restrictions, allowing Solr to share these "server" jars which now live in `server/lib/ext`.
 * The "Transient Cores" feature is now deprecated.
 
+=== SSL Configuration
+* When using Solr (or SolrJ) with an SSL-enabled Solr cluster using HTTP2, the default `-Dsolr.ssl.checkPeerName` value is now *true*.
+This is what has been documented in xref:deployment-guide:enabling-ssl.adoc#start-solrcloud[Enabling SSL], and matches the functionality of the original `HttpSolrClient`.
+
 === Tracing
 * A new `opentelemetry` module is added, with support for OTEL tracing in `OTLP` format using gRPC.
-  At the same time, the `jaegertracer-configurator` module is deprecated for removal in Solr 10.
-  Users should start migrating to the new module to prepare for a smooth transition.
 
 === Docker
-* The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal).
+* The OS version of the official Docker image and provided Dockerfile has been upgraded to Ubuntu 22 (jammy) from Ubuntu 20 (focal). Solr's Docker image now requires Docker engine version 20.10.10 or newer.
+
+TIP: Users who cannot upgrade their Docker engine will need to specify the docker commandline option `--security-opt seccomp=unconfined` when starting the container.
 
 === Streaming Expressions
 * Streaming Expressions have been moved out of Solrj core into its own module called `solrj-streaming`.
@@ -89,6 +143,10 @@ of Solr. Streaming expressions sent to the /stream handler will still operate ex
 External clients using streaming expression classes will need to update their depenencies to reference
 the `solrj-streaming` artifacts under the `org.apache.solr` groupId.
 
+=== Deprecations
+* Loading solr.xml from Zookeeper is deprecated. See xref:configuration-guide:configuring-solr-xml.adoc[Configuring solr.xml].
+* The Analytics Component has been deprecated. Consider using xref:query-guide:json-facet-api.adoc[JSON Facet API] as a substitute. Please notify the project if there's functionality you need that isn't currently covered by JSON facets.
+* The `jaegertracer-configurator` module is deprecated for removal in Solr 10. Users should start migrating to the new `opentelemetry` module.
 
 == Solr 9.1.1
 * Solr no longer accepts all file types for configSets. Please see xref:configuration-guide:config-sets.adoc#forbidden-file-types[ConfigSet Forbidden File Types] for more information.
@@ -103,6 +161,13 @@ If you use ZooKeeper coordinates to create a `CloudSolrClient`, you will need to
 If you use SolrJ's Maven POM to depend on SolrJ, then this should happen automatically through transitive resolution.
 Instead of depending on ZooKeeper, consider migrating to use of specifying a list of Solr URLs in the client's builder.
 Not only does this reduce dependencies, but it improves security by being able to limit ZooKeeper access.
+
+=== Zookeeper
+Zookeeper Credentials support now follows a new paradigm.
+Old classes, such as `VMParamsAllAndReadonlyDigestZkACLProvider` and `VMParamsSingleSetCredentialsDigestZkCredentialsProvider`, are deprecated but still supported until at least `10.0`.
+Users are encouraged to upgrade to the non-deprecated classes before the next major version release.
+Please refer to xref:deployment-guide:zookeeper-access-control.adoc#solr-to-zookeeper-acls-workflow[] for more information.
+
 
 == Solr 9.0
 === Querying and Indexing
@@ -142,7 +207,7 @@ Administrators that need Solr exposed more broadly can change the `SOLR_JETTY_HO
 If you rely upon the previous behavior, then you can change the `clientPortAddress` in `solr/server/solr/zoo.cfg`
 * Jetty low level request-logging in NCSA format is now enabled by default, with a retention of 3 days worth of logs.
 This may require some more disk space for logs than was the case in version 8.x. See xref:deployment-guide:configuring-logging.adoc[Configuring Logging] for how to change this.
-* Hadoop authentication support has been moved to the new `hadoop-auth` module. Existing Solr configurations do not need any Hadoop authentication related changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
+* Hadoop authentication support has been moved to the new `hadoop-auth` module. Users need to add the module `hadoop-auth` to classpath. The plugins has also changed package name to `org.apache.solr.security.hadoop`, but can still be loaded as shortform `class="solr.HadoopAuthPlugin"`, `class="solr.ConfigurableInternodeAuthHadoopPlugin"` or `class="solr.KerberosPlugin"`  - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 * xref:deployment-guide:jwt-authentication-plugin.adoc[JWTAuthPlugin] has been moved to a module. Users need to add the module `jwt-auth` to classpath. The plugin has also
 changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
 * Dependency updates - A lot of dependency updates removes several security issues from dependencies, and thus make Solr more secure.

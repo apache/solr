@@ -20,10 +20,10 @@ package org.apache.solr.util.stats;
 import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
@@ -61,7 +61,8 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
         return mkName(schemeHostPort + "." + methodNameString(request), scope);
       };
 
-  public static final Map<String, NameStrategy> KNOWN_METRIC_NAME_STRATEGIES = new HashMap<>(3);
+  public static final Map<String, NameStrategy> KNOWN_METRIC_NAME_STRATEGIES =
+      CollectionUtil.newHashMap(3);
 
   static {
     KNOWN_METRIC_NAME_STRATEGIES.put("queryLessURLAndMethod", QUERYLESS_URL_AND_METHOD);

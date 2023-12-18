@@ -21,7 +21,9 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -112,8 +114,11 @@ public class HdfsWriteToMultipleCollectionsTest extends AbstractBasicDistributed
     List<CloudSolrClient> cloudClients = new ArrayList<>();
     List<StoppableIndexingThread> threads = new ArrayList<>();
     for (int i = 0; i < cnt; i++) {
-      CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress());
-      client.setDefaultCollection(ACOLLECTION + i);
+      CloudSolrClient client =
+          new RandomizingCloudSolrClientBuilder(
+                  Collections.singletonList(zkServer.getZkAddress()), Optional.empty())
+              .withDefaultCollection(ACOLLECTION + i)
+              .build();
       cloudClients.add(client);
       StoppableIndexingThread indexThread =
           new StoppableIndexingThread(null, client, "1", true, docCount, 1, true);

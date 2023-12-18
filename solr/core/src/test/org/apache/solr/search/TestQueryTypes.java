@@ -109,7 +109,7 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
       // wrap in spaces sometimes if space separated
       final String separator =
           f.equals("v_s") ? "" : "separator=' '"; // use space separated when field isn't v_s
-      String vMod = !separator.equals("") && random().nextBoolean() ? " " + v + " " : v;
+      String vMod = !separator.isEmpty() && random().nextBoolean() ? " " + v + " " : v;
       assertQ(req("q", "{!terms " + separator + " f=" + f + "}" + vMod), "//result[@numFound='1']");
 
       // lucene range

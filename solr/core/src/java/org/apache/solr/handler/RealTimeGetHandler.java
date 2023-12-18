@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -53,7 +52,7 @@ public class RealTimeGetHandler extends SearchHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return Lists.newArrayList(AnnotatedApi.getApis(new RealTimeGetAPI(this)));
+    return List.copyOf(AnnotatedApi.getApis(new RealTimeGetAPI(this)));
   }
 
   @Override

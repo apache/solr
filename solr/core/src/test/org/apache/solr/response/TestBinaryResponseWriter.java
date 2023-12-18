@@ -27,6 +27,7 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cli.SimplePostTool;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -38,7 +39,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.search.SolrReturnFields;
-import org.apache.solr.util.SimplePostTool;
 import org.junit.BeforeClass;
 
 /**

@@ -170,36 +170,24 @@ public class SolrCmdDistributor implements Closeable {
     this.errors.clear();
     for (SolrError err : resubmitList) {
       if (err.req.node instanceof ForwardNode) {
-        SolrException.log(
-            SolrCmdDistributor.log,
-            "forwarding update to "
-                + err.req.node.getUrl()
-                + " failed - retrying ... retries: "
-                + err.req.retries
-                + "/"
-                + err.req.node.getMaxRetries()
-                + ". "
-                + err.req.cmd.toString()
-                + " params:"
-                + err.req.uReq.getParams()
-                + " rsp:"
-                + err.statusCode,
+        SolrCmdDistributor.log.error(
+            "forwarding update to {} failed - retrying ... retries: {}/{}. {} params: {} rsp: {}",
+            err.req.node.getUrl(),
+            err.req.retries,
+            err.req.node.getMaxRetries(),
+            err.req.cmd,
+            err.req.uReq.getParams(),
+            err.statusCode,
             err.e);
       } else {
-        SolrException.log(
-            SolrCmdDistributor.log,
-            "FROMLEADER request to "
-                + err.req.node.getUrl()
-                + " failed - retrying ... retries: "
-                + err.req.retries
-                + "/"
-                + err.req.node.getMaxRetries()
-                + ". "
-                + err.req.cmd.toString()
-                + " params:"
-                + err.req.uReq.getParams()
-                + " rsp:"
-                + err.statusCode,
+        SolrCmdDistributor.log.error(
+            "FROMLEADER request to {} failed - retrying ... retries: {}/{}. {} params: {} rsp: {}",
+            err.req.node.getUrl(),
+            err.req.retries,
+            err.req.node.getMaxRetries(),
+            err.req.cmd,
+            err.req.uReq.getParams(),
+            err.statusCode,
             err.e);
       }
       submit(err.req, false);
@@ -341,7 +329,7 @@ public class SolrCmdDistributor implements Closeable {
         req.uReq.setBasePath(req.node.getUrl());
         clients.getHttpClient().request(req.uReq);
       } catch (Exception e) {
-        SolrException.log(log, e);
+        log.error("Exception making request", e);
         SolrError error = new SolrError();
         error.e = e;
         error.req = req;
@@ -383,7 +371,7 @@ public class SolrCmdDistributor implements Closeable {
       SolrClient solrClient = clients.getSolrClient(req);
       solrClient.request(req.uReq);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Exception making request", e);
       SolrError error = new SolrError();
       error.e = e;
       error.req = req;

@@ -62,7 +62,7 @@ In order to install packages into Solr, one has to add a repository hosting the 
 
 [source,bash]
 ----
-$ bin/solr package add-repo <name-of-repo> <repo-url>
+$ bin/solr package add-repo <repository-name> <repository-url>
 ----
 
 NOTE: Do not add repositories that you don't trust or control.
@@ -84,7 +84,7 @@ To list packages available for installation from added repositories:
 $ bin/solr package list-available
 ----
 
-To install a package:
+To install a package, coping over the artifacts from the repository into Solr's internal package store and setting up classloader for this package to be used:
 
 [source,bash]
 ----
@@ -99,11 +99,10 @@ There are two ways to do this: either use the CLI's `deploy` command or manually
 
 ==== deploy Command
 
-If the package author states support for it, the package can be deployed with the CLI's `deploy` command:
-
+If the package author states support for it, the package can be deployed with the CLI's `deploy` command.
 [source,bash]
 ----
-$ bin/solr package deploy <package-name>:[version] -collections <collection1>[,<collection2>,...]
+$ bin/solr package deploy <package-name>:[version] -collections <collection1>[,<collection2>,...] [-p <param1>=<val1> -p <param2>=<val2> ...
 ----
 
 or
@@ -111,6 +110,13 @@ or
 [source,bash]
 ----
 $ bin/solr package deploy <package-name>:[version] -cluster
+----
+
+If the package accepts parameters for its setup commands, they can be specified (as per package documentation):
+
+[source,bash]
+----
+$ bin/solr package deploy <snipped...> -p <param1>=<val1> -p <param2>=<val2>
 ----
 
 The author may want you to confirm deployment of a package via a prompt.
@@ -196,8 +202,10 @@ or
 
 [source,bash]
 ----
-$ bin/solr package deploy <package-name> -cluster
+$ bin/solr package deploy <package-name>:<package-version> -cluster
 ----
+
+Both package name and version are required.
 
 == Security
 

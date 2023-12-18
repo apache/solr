@@ -20,13 +20,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,7 +219,7 @@ public class SolrInputDocumentReader extends Reader {
    */
   public static String asString(Reader reader) {
     try {
-      return IOUtils.toString(reader);
+      return StrUtils.stringFromReader(reader);
     } catch (IOException e) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Failed reading doc content from reader", e);
@@ -229,12 +227,9 @@ public class SolrInputDocumentReader extends Reader {
   }
 
   protected static String[] getStringFields(SolrInputDocument doc) {
-    Iterable<SolrInputField> iterable = () -> doc.iterator();
-    List<String> strFields =
-        StreamSupport.stream(iterable.spliterator(), false)
-            .filter(f -> f.getFirstValue() instanceof String)
-            .map(SolrInputField::getName)
-            .collect(Collectors.toList());
-    return strFields.toArray(new String[0]);
+    return StreamSupport.stream(doc.spliterator(), false)
+        .filter(f -> f.getFirstValue() instanceof String)
+        .map(SolrInputField::getName)
+        .toArray(String[]::new);
   }
 }

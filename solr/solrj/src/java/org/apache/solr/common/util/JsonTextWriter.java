@@ -18,7 +18,6 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +26,11 @@ import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 
 public interface JsonTextWriter extends TextWriter {
+  @SuppressWarnings("MutablePublicArray")
   char[] hexdigits = {
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
   };
+
   String JSON_NL_MAP = "map";
   String JSON_NL_FLAT = "flat";
   String JSON_NL_ARROFARR = "arrarr";
@@ -343,7 +344,7 @@ public interface JsonTextWriter extends TextWriter {
     // Disad: this is ambiguous with a real single value that happens to be an array
     //
     // Both of these mappings have ambiguities.
-    HashMap<String, Integer> repeats = new HashMap<>(4);
+    Map<String, Integer> repeats = CollectionUtil.newHashMap(4);
 
     boolean first = true;
     for (int i = 0; i < sz; i++) {

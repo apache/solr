@@ -19,6 +19,9 @@ package org.apache.solr;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -43,13 +46,15 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static String shard2;
 
   private static File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
-    setupJettyTestHome(workDir, "collection1");
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"),
-        new File(workDir, "/collection1/conf/solrconfig.xml"));
-    FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
-    return workDir;
+    Path workDir = createTempDir();
+    setupJettyTestHome(workDir.toFile(), "collection1");
+    Files.copy(
+        Path.of(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"),
+        workDir.resolve("collection1").resolve("conf").resolve("solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+    FileUtils.copyDirectory(
+        workDir.resolve("collection1").toFile(), workDir.resolve("collection2").toFile());
+    return workDir.toFile();
   }
 
   @BeforeClass

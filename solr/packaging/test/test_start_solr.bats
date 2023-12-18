@@ -28,7 +28,7 @@ teardown() {
   solr stop -all >/dev/null 2>&1
 }
 
-@test "SOLR11740 check f" {
+@test "SOLR-11740 check 'solr stop' connection" {
   solr start
   solr start -p 7574
   solr assert --started http://localhost:8983/solr --timeout 5000

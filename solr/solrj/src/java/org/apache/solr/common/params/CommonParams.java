@@ -69,6 +69,8 @@ public interface CommonParams {
 
   int ROWS_DEFAULT = 10;
 
+  String INDENT = "indent";
+
   // SOLR-4228 start
   /** handler value for SolrPing */
   String PING_HANDLER = "/admin/ping";

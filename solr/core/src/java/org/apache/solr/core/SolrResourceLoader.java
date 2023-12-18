@@ -224,7 +224,7 @@ public class SolrResourceLoader
           "Added {} libs to classloader, from paths: {}",
           urls.size(),
           urls.stream()
-              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
+              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf('/')))
               .sorted()
               .distinct()
               .collect(Collectors.toList()));
@@ -812,7 +812,7 @@ public class SolrResourceLoader
         SolrCoreAware.class,
         new Class<?>[] {
           // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-          // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+          // VIA RUNTIME APIS -- UNTIL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
           CodecFactory.class,
           DirectoryFactory.class,
           ManagedIndexSchemaFactory.class,
@@ -828,7 +828,7 @@ public class SolrResourceLoader
         ResourceLoaderAware.class,
         new Class<?>[] {
           // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-          // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+          // VIA RUNTIME APIS -- UNTIL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
           // evaluate if this must go into schemaResourceLoaderComponents
           CharFilterFactory.class,
           TokenFilterFactory.class,
@@ -918,7 +918,7 @@ public class SolrResourceLoader
   }
 
   /**
-   * Create a n instance of a class using an appropriate {@link SolrResourceLoader} depending on the
+   * Create an instance of a class using an appropriate {@link SolrResourceLoader} depending on the
    * package of that class
    *
    * @param registerCoreReloadListener register a listener for the package and reload the core if

@@ -267,7 +267,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
               new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
       overseer.close();
       ElectionContext ec =
-          new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
+          new OverseerElectionContext(zkClient, overseer, address.replace("/", "_"));
       overseerElector.setup(ec);
       overseerElector.joinElection(ec, false);
     }

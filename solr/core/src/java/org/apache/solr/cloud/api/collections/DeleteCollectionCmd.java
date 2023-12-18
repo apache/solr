@@ -218,10 +218,10 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
           }
         }
       } catch (InterruptedException e) {
-        SolrException.log(log, "Cleaning up collection in zk was interrupted:" + collection, e);
+        log.error("Cleaning up collection in zk was interrupted: {}", collection, e);
         Thread.currentThread().interrupt();
       } catch (KeeperException e) {
-        SolrException.log(log, "Problem cleaning up collection in zk:" + collection, e);
+        log.error("Problem cleaning up collection in zk: {}", collection, e);
       }
     }
   }

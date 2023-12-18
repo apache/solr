@@ -252,11 +252,12 @@ public abstract class RequestHandlerBase
       }
     }
 
-    SolrException.log(log, e);
     metrics.numErrors.mark();
     if (isClientError) {
+      log.error("Client exception", e);
       metrics.numClientErrors.mark();
     } else {
+      log.error("Server exception", e);
       metrics.numServerErrors.mark();
     }
   }

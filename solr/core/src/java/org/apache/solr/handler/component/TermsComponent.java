@@ -42,6 +42,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermsParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -455,7 +456,7 @@ public class TermsComponent extends SearchComponent {
     public boolean stats;
 
     public TermsHelper() {
-      fieldmap = new HashMap<>(5);
+      fieldmap = CollectionUtil.newHashMap(5);
     }
 
     public void init(SolrParams params) {
@@ -465,7 +466,7 @@ public class TermsComponent extends SearchComponent {
         for (String field : fields) {
           // TODO: not sure 128 is the best starting size
           // It use it because that is what is used for facets
-          fieldmap.put(field, new HashMap<String, TermsResponse.Term>(128));
+          fieldmap.put(field, CollectionUtil.newHashMap(128));
         }
       }
     }

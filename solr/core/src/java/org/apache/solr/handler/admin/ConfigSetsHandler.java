@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.configsets.UploadConfigSetFileAPI.FILEPATH_PLACEHOLDER;
 
-import com.google.common.collect.Maps;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -113,7 +112,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
             new DelegatingSolrQueryRequest(req) {
               @Override
               public Map<String, String> getPathTemplateValues() {
-                final Map<String, String> templateValsByName = Maps.newHashMap();
+                final Map<String, String> templateValsByName = new HashMap<>();
 
                 templateValsByName.put(
                     UploadConfigSetAPI.CONFIGSET_NAME_PLACEHOLDER,

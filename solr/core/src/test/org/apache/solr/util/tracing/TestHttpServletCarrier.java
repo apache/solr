@@ -21,13 +21,14 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.commons.collections4.IteratorUtils;
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
@@ -38,29 +39,27 @@ public class TestHttpServletCarrier extends SolrTestCaseJ4 {
   public void test() {
     SolrTestCaseJ4.assumeWorkingMockito();
     HttpServletRequest req = mock(HttpServletRequest.class);
-    MultiValuedMap<String, String> headers = new HashSetValuedHashMap<>();
-    headers.put("a", "a");
-    headers.put("a", "b");
-    headers.put("a", "c");
-    headers.put("b", "a");
-    headers.put("b", "b");
-    headers.put("c", "a");
+    Map<String, Set<String>> headers =
+        Map.of(
+            "a", Set.of("a", "b", "c"),
+            "b", Set.of("a", "b"),
+            "c", Set.of("a"));
 
-    when(req.getHeaderNames()).thenReturn(IteratorUtils.asEnumeration(headers.keySet().iterator()));
+    when(req.getHeaderNames()).thenReturn(Collections.enumeration(headers.keySet()));
     when(req.getHeaders(anyString()))
         .thenAnswer(
             (Answer<Enumeration<String>>)
                 inv -> {
                   String key = inv.getArgument(0);
-                  return IteratorUtils.asEnumeration(headers.get(key).iterator());
+                  return Collections.enumeration(headers.get(key));
                 });
 
     HttpServletCarrier servletCarrier = new HttpServletCarrier(req);
     Iterator<Map.Entry<String, String>> it = servletCarrier.iterator();
-    MultiValuedMap<String, String> resultBack = new HashSetValuedHashMap<>();
+    Map<String, Set<String>> resultBack = new HashMap<>();
     while (it.hasNext()) {
       Map.Entry<String, String> entry = it.next();
-      resultBack.put(entry.getKey(), entry.getValue());
+      resultBack.computeIfAbsent(entry.getKey(), k -> new HashSet<>()).add(entry.getValue());
     }
     assertEquals(headers, resultBack);
   }

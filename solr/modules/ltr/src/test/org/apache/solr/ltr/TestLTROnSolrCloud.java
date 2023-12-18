@@ -329,8 +329,6 @@ public class TestLTROnSolrCloud extends TestRerankBase {
     Path configDir = tmpSolrHome.resolve("collection1/conf");
     solrCluster.uploadConfigSet(configDir, "conf1");
 
-    solrCluster.getSolrClient().setDefaultCollection(COLLECTION);
-
     createCollection(COLLECTION, "conf1", numShards, numReplicas);
     indexDocuments(COLLECTION);
     for (JettySolrRunner solrRunner : solrCluster.getJettySolrRunners()) {

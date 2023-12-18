@@ -92,6 +92,9 @@ public class AddReplicaPropertyAPI extends AdminAPIBase {
               required = true)
           AddReplicaPropertyRequestBody requestBody)
       throws Exception {
+    if (requestBody == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
+    }
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);

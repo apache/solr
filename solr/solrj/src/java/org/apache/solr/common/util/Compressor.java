@@ -45,4 +45,15 @@ public interface Compressor {
    * @return compressed bytes
    */
   byte[] compressBytes(byte[] data);
+
+  /**
+   * Compresses bytes into compressed bytes using the compression implementation
+   *
+   * @param data the input uncompressed data to be compressed
+   * @param initialBufferCapacity the initial capacity of the buffer storing the compressed data. It
+   *     depends on the data type and the caller may know the expected average compression factor.
+   *     If this initial capacity is smaller than 16, the buffer capacity will be 16 anyway.
+   * @return compressed bytes
+   */
+  byte[] compressBytes(byte[] data, int initialBufferCapacity);
 }

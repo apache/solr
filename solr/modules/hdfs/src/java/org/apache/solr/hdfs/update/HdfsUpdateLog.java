@@ -189,11 +189,11 @@ public class HdfsUpdateLog extends UpdateLog {
       Path f = new Path(hdfsTlogDir, oldLogName);
       try {
         oldLog = new HdfsTransactionLog(fs, f, null, true, tlogDfsReplication);
-        addOldLog(oldLog, false); // don't remove old logs on startup since more
-        // than one may be uncapped.
+        // don't remove old logs on startup since more than one may be uncapped.
+        addOldLog(oldLog, false);
       } catch (Exception e) {
         INIT_FAILED_LOGS_COUNT.incrementAndGet();
-        SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
+        log.error("Failure to open existing log file (non fatal) {}", f, e);
         try {
           fs.delete(f, false);
         } catch (IOException e1) {
@@ -428,7 +428,7 @@ public class HdfsUpdateLog extends UpdateLog {
   // state = State.ACTIVE;
   // operationFlags &= ~FLAG_GAP;
   // } catch (IOException e) {
-  // SolrException.log(log,"Error attempting to roll back log", e);
+  // log.error("Error attempting to roll back log", e);
   // return false;
   // }
   // finally {

@@ -16,16 +16,29 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.common.params.CommonParams.ACTION;
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE_V2;
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.ClusterAPI.wrapParams;
+import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.common.cloud.ZkStateReader;
+import java.util.HashMap;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -35,26 +48,64 @@ import org.apache.solr.response.SolrQueryResponse;
  * <p>This API (DELETE /v2/collections/collectionName) is equivalent to the v1
  * /admin/collections?action=DELETE command.
  */
-public class DeleteCollectionAPI {
+@Path("collections/")
+public class DeleteCollectionAPI extends AdminAPIBase {
 
-  private final CollectionsHandler collectionsHandler;
-
-  public DeleteCollectionAPI(CollectionsHandler collectionsHandler) {
-    this.collectionsHandler = collectionsHandler;
+  @Inject
+  public DeleteCollectionAPI(
+      CoreContainer coreContainer,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
+    super(coreContainer, solrQueryRequest, solrQueryResponse);
   }
 
-  @EndPoint(
-      path = {"/c/{collection}", "/collections/{collection}"},
-      method = DELETE,
-      permission = COLL_EDIT_PERM)
-  public void deleteCollection(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req =
-        wrapParams(
-            req,
-            ACTION,
-            CollectionParams.CollectionAction.DELETE.toString(),
-            NAME,
-            req.getPathTemplateValues().get(ZkStateReader.COLLECTION_PROP));
-    collectionsHandler.handleRequestBody(req, rsp);
+  @DELETE
+  @Path("{collectionName}")
+  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @PermissionName(COLL_EDIT_PERM)
+  public SubResponseAccumulatingJerseyResponse deleteCollection(
+      @PathParam("collectionName") String collectionName,
+      @QueryParam("followAliases") Boolean followAliases,
+      @QueryParam("async") String asyncId)
+      throws Exception {
+    final SubResponseAccumulatingJerseyResponse response =
+        instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
+
+    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, followAliases, asyncId);
+    final SolrResponse remoteResponse =
+        CollectionsHandler.submitCollectionApiCommand(
+            coreContainer,
+            coreContainer.getDistributedCollectionCommandRunner(),
+            remoteMessage,
+            CollectionParams.CollectionAction.DELETE,
+            DEFAULT_COLLECTION_OP_TIMEOUT);
+    if (remoteResponse.getException() != null) {
+      throw remoteResponse.getException();
+    }
+
+    if (asyncId != null) {
+      response.requestId = asyncId;
+      return response;
+    }
+
+    // Values fetched from remoteResponse may be null
+    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
+    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+
+    return response;
+  }
+
+  public static ZkNodeProps createRemoteMessage(
+      String collectionName, Boolean followAliases, String asyncId) {
+    final Map<String, Object> remoteMessage = new HashMap<>();
+
+    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower());
+    remoteMessage.put(NAME, collectionName);
+    if (followAliases != null) remoteMessage.put(FOLLOW_ALIASES, followAliases);
+    if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
+
+    return new ZkNodeProps(remoteMessage);
   }
 }

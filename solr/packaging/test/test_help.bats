@@ -21,6 +21,17 @@ setup() {
   common_clean_setup
 }
 
+@test "solr help flag prints help" {
+  run -1 solr -help
+  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  refute_output --partial 'ERROR'
+}
+@test "solr with no flags prints help" {
+  run -1 solr
+  assert_output --partial 'Usage: solr COMMAND OPTIONS'
+  refute_output --partial 'ERROR'
+}
+
 @test "start help flag prints help" {
   run solr start -help
   assert_output --partial 'Usage: solr start'
@@ -40,36 +51,38 @@ setup() {
 }
 
 @test "status help flag prints help" {
-  skip "Currently the status -help flag doesn't return nice help text!"
+  run solr status -help
+  assert_output --partial 'usage: status'
+  refute_output --partial 'ERROR'
 }
 
 @test "healthcheck help flag prints help" {
   run solr healthcheck -help
-  assert_output --partial 'Usage: solr healthcheck'
+  assert_output --partial 'usage: healthcheck'
   refute_output --partial 'ERROR'
 }
 
 @test "create help flag prints help" {
   run solr create -help
-  assert_output --partial 'Usage: solr create'
+  assert_output --partial 'usage: create'
   refute_output --partial 'ERROR'
 }
 
 @test "createcore help flag prints help" {
   run solr create_core -help
-  assert_output --partial 'Usage: solr create_core'
+  assert_output --partial 'usage: create_core'
   refute_output --partial 'ERROR'
 }
 
 @test "createcollection help flag prints help" {
   run solr create_collection -help
-  assert_output --partial 'Usage: solr create_collection'
+  assert_output --partial 'usage: create_collection'
   refute_output --partial 'ERROR'
 }
 
 @test "delete help flag prints help" {
   run solr delete -help
-  assert_output --partial 'Usage: solr delete'
+  assert_output --partial 'usage: delete'
   refute_output --partial 'ERROR'
 }
 
@@ -90,5 +103,13 @@ setup() {
 }
 
 @test "assert help flag prints help" {
-  skip "Currently the assert -help flag doesn't return nice help text!"
+  run solr assert -help
+  assert_output --partial 'usage: assert'
+  refute_output --partial 'ERROR'
+}
+
+@test "post help flag prints help" {
+  run solr post -help
+  assert_output --partial 'usage: post'
+  refute_output --partial 'ERROR'
 }

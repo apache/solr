@@ -335,6 +335,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
     return l;
   }
 
+  @SuppressWarnings("UnusedLabel")
   @Override
   public void open() throws IOException {
 

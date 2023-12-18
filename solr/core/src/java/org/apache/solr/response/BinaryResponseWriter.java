@@ -18,6 +18,8 @@ package org.apache.solr.response;
 
 import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +31,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.TotalHits;
@@ -196,14 +197,21 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       }
       Resolver resolver = new Resolver(req, rsp.getReturnFields());
 
-      ByteArrayOutputStream out = new ByteArrayOutputStream();
-      try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
-        jbc.setWritableDocFields(resolver).marshal(rsp.getValues(), out);
-      }
+      try (var out =
+          new ByteArrayOutputStream() {
+            ByteArrayInputStream toInputStream() {
+              return new ByteArrayInputStream(buf, 0, count);
+            }
+          }) {
+        try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
+          jbc.setWritableDocFields(resolver).marshal(rsp.getValues(), out);
+        }
 
-      InputStream in = out.toInputStream();
-      try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
-        return (NamedList<Object>) jbc.unmarshal(in);
+        try (InputStream in = out.toInputStream()) {
+          try (JavaBinCodec jbc = new JavaBinCodec(resolver)) {
+            return (NamedList<Object>) jbc.unmarshal(in);
+          }
+        }
       }
     } catch (Exception ex) {
       throw new RuntimeException(ex);

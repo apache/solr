@@ -26,7 +26,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class TraceUtils {
 
   public static void setDbInstance(SolrQueryRequest req, String coreOrColl) {
-    if (coreOrColl != null) {
+    if (req != null && coreOrColl != null) {
       ifNotNoop(req.getSpan(), (span) -> span.setTag(Tags.DB_INSTANCE, coreOrColl));
     }
   }

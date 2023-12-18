@@ -65,7 +65,6 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     collection = getSaferTestName();
-    cluster.getSolrClient().setDefaultCollection(collection);
   }
 
   @Override
@@ -82,7 +81,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collection, 1, 2);
 
     UpdateResponse updateResponse =
-        new UpdateRequest().add("id", "1").commit(cluster.getSolrClient(), null);
+        new UpdateRequest().add("id", "1").commit(cluster.getSolrClient(), collection);
     assertEquals(0, updateResponse.getStatus());
 
     Replica oldLeader = corruptLeader(collection);
@@ -112,7 +111,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         getNonLeader(shard).getNodeName());
 
     // Check that we can continue indexing after this
-    updateResponse = new UpdateRequest().add("id", "2").commit(cluster.getSolrClient(), null);
+    updateResponse = new UpdateRequest().add("id", "2").commit(cluster.getSolrClient(), collection);
     assertEquals(0, updateResponse.getStatus());
     try (SolrClient followerClient = new HttpSolrClient.Builder(oldLeader.getCoreUrl()).build()) {
       QueryResponse queryResponse = new QueryRequest(new SolrQuery("*:*")).process(followerClient);

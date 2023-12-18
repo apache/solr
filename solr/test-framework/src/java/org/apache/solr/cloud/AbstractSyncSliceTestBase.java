@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -104,7 +105,10 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
     String baseUrl = shardToJetty.get(SHARD1).get(2).jetty.getBaseUrl().toString();
 
     // we only set the connect timeout, not so timeout
-    try (SolrClient baseClient = getHttpSolrClient(baseUrl, 30000)) {
+    try (SolrClient baseClient =
+        new HttpSolrClient.Builder(baseUrl)
+            .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
       baseClient.request(request);
     }
 

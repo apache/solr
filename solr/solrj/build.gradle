@@ -62,6 +62,8 @@ dependencies {
   testImplementation 'org.hamcrest:hamcrest'
 
   testImplementation 'commons-io:commons-io'
+  testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+  testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
 
   testImplementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
@@ -74,10 +76,12 @@ dependencies {
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
   testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl", {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
   testImplementation 'org.apache.commons:commons-lang3'
-  testImplementation 'com.google.guava:guava'
   testImplementation 'io.dropwizard.metrics:metrics-core'
 }

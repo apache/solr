@@ -26,6 +26,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -51,105 +52,106 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @Test
   public void testConcurrentQueries() throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
-    client.setDefaultCollection(FIRST_COLLECTION);
+    try (CloudSolrClient client =
+        cluster.basicSolrClientBuilder().withDefaultCollection(FIRST_COLLECTION).build()) {
 
-    CollectionAdminRequest.createCollection(FIRST_COLLECTION, 1, 1).process(client);
-    cluster.waitForActiveCollection(FIRST_COLLECTION, 1, 1);
+      CollectionAdminRequest.createCollection(FIRST_COLLECTION, 1, 1).process(client);
+      cluster.waitForActiveCollection(FIRST_COLLECTION, 1, 1);
 
-    SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
+      SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
 
-    RateLimiterConfig rateLimiterConfig =
-        new RateLimiterConfig(
-            SolrRequest.SolrRequestType.QUERY,
-            true,
-            1,
-            DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
-            5 /* allowedRequests */,
-            true /* isSlotBorrowing */);
-    // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes its
-    // parent here
-    RateLimitManager.Builder builder =
-        new MockBuilder(
-            null /* dummy SolrZkClient */, new MockRequestRateLimiter(rateLimiterConfig));
-    RateLimitManager rateLimitManager = builder.build();
+      RateLimiterConfig rateLimiterConfig =
+          new RateLimiterConfig(
+              SolrRequest.SolrRequestType.QUERY,
+              true,
+              1,
+              DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
+              5 /* allowedRequests */,
+              true /* isSlotBorrowing */);
+      // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes
+      // its parent here
+      RateLimitManager.Builder builder =
+          new MockBuilder(
+              null /* dummy SolrZkClient */, new MockRequestRateLimiter(rateLimiterConfig));
+      RateLimitManager rateLimitManager = builder.build();
 
-    solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
+      solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
 
-    int numDocs = TEST_NIGHTLY ? 10000 : 100;
+      int numDocs = TEST_NIGHTLY ? 10000 : 100;
 
-    processTest(client, numDocs, 350 /* number of queries */);
+      processTest(client, numDocs, 350 /* number of queries */);
 
-    MockRequestRateLimiter mockQueryRateLimiter =
-        (MockRequestRateLimiter)
-            rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
+      MockRequestRateLimiter mockQueryRateLimiter =
+          (MockRequestRateLimiter)
+              rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
 
-    assertEquals(350, mockQueryRateLimiter.incomingRequestCount.get());
+      assertEquals(350, mockQueryRateLimiter.incomingRequestCount.get());
 
-    assertTrue(mockQueryRateLimiter.acceptedNewRequestCount.get() > 0);
-    assertTrue(
-        (mockQueryRateLimiter.acceptedNewRequestCount.get()
-                == mockQueryRateLimiter.incomingRequestCount.get()
-            || mockQueryRateLimiter.rejectedRequestCount.get() > 0));
-    assertEquals(
-        mockQueryRateLimiter.incomingRequestCount.get(),
-        mockQueryRateLimiter.acceptedNewRequestCount.get()
-            + mockQueryRateLimiter.rejectedRequestCount.get());
+      assertTrue(mockQueryRateLimiter.acceptedNewRequestCount.get() > 0);
+      assertTrue(
+          (mockQueryRateLimiter.acceptedNewRequestCount.get()
+                  == mockQueryRateLimiter.incomingRequestCount.get()
+              || mockQueryRateLimiter.rejectedRequestCount.get() > 0));
+      assertEquals(
+          mockQueryRateLimiter.incomingRequestCount.get(),
+          mockQueryRateLimiter.acceptedNewRequestCount.get()
+              + mockQueryRateLimiter.rejectedRequestCount.get());
+    }
   }
 
   @Nightly
   public void testSlotBorrowing() throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
-    client.setDefaultCollection(SECOND_COLLECTION);
+    try (CloudSolrClient client =
+        cluster.basicSolrClientBuilder().withDefaultCollection(SECOND_COLLECTION).build()) {
 
-    CollectionAdminRequest.createCollection(SECOND_COLLECTION, 1, 1).process(client);
-    cluster.waitForActiveCollection(SECOND_COLLECTION, 1, 1);
+      CollectionAdminRequest.createCollection(SECOND_COLLECTION, 1, 1).process(client);
+      cluster.waitForActiveCollection(SECOND_COLLECTION, 1, 1);
 
-    SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
+      SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
 
-    RateLimiterConfig queryRateLimiterConfig =
-        new RateLimiterConfig(
-            SolrRequest.SolrRequestType.QUERY,
-            true,
-            1,
-            DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
-            5 /* allowedRequests */,
-            true /* isSlotBorrowing */);
-    RateLimiterConfig indexRateLimiterConfig =
-        new RateLimiterConfig(
-            SolrRequest.SolrRequestType.UPDATE,
-            true,
-            1,
-            DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
-            5 /* allowedRequests */,
-            true /* isSlotBorrowing */);
-    // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes its
-    // parent
-    RateLimitManager.Builder builder =
-        new MockBuilder(
-            null /*dummy SolrZkClient */,
-            new MockRequestRateLimiter(queryRateLimiterConfig),
-            new MockRequestRateLimiter(indexRateLimiterConfig));
-    RateLimitManager rateLimitManager = builder.build();
+      RateLimiterConfig queryRateLimiterConfig =
+          new RateLimiterConfig(
+              SolrRequest.SolrRequestType.QUERY,
+              true,
+              1,
+              DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
+              5 /* allowedRequests */,
+              true /* isSlotBorrowing */);
+      RateLimiterConfig indexRateLimiterConfig =
+          new RateLimiterConfig(
+              SolrRequest.SolrRequestType.UPDATE,
+              true,
+              1,
+              DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS,
+              5 /* allowedRequests */,
+              true /* isSlotBorrowing */);
+      // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes
+      // its parent
+      RateLimitManager.Builder builder =
+          new MockBuilder(
+              null /*dummy SolrZkClient */,
+              new MockRequestRateLimiter(queryRateLimiterConfig),
+              new MockRequestRateLimiter(indexRateLimiterConfig));
+      RateLimitManager rateLimitManager = builder.build();
 
-    solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
+      solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
 
-    int numDocs = 10000;
+      int numDocs = 10000;
 
-    processTest(client, numDocs, 400 /* Number of queries */);
+      processTest(client, numDocs, 400 /* Number of queries */);
 
-    MockRequestRateLimiter mockIndexRateLimiter =
-        (MockRequestRateLimiter)
-            rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE);
+      MockRequestRateLimiter mockIndexRateLimiter =
+          (MockRequestRateLimiter)
+              rateLimitManager.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE);
 
-    assertTrue(
-        "Incoming slots borrowed count did not match. Expected > 0  incoming "
-            + mockIndexRateLimiter.borrowedSlotCount.get(),
-        mockIndexRateLimiter.borrowedSlotCount.get() > 0);
+      assertTrue(
+          "Incoming slots borrowed count did not match. Expected > 0  incoming "
+              + mockIndexRateLimiter.borrowedSlotCount.get(),
+          mockIndexRateLimiter.borrowedSlotCount.get() > 0);
+    }
   }
 
-  private void processTest(CloudSolrClient client, int numDocuments, int numQueries)
-      throws Exception {
+  private void processTest(SolrClient client, int numDocuments, int numQueries) throws Exception {
 
     for (int i = 0; i < numDocuments; i++) {
       SolrInputDocument doc = new SolrInputDocument();

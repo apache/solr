@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.jose4j.jwk.JsonWebKeySet;
@@ -168,7 +167,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
   @Test
   public void wellKnownConfigFromString() throws IOException {
     Path configJson = JWT_TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
-    String configString = StringUtils.join(Files.readAllLines(configJson), "\n");
+    String configString = String.join("\n", Files.readAllLines(configJson));
     JWTIssuerConfig.WellKnownDiscoveryConfig config =
         JWTIssuerConfig.WellKnownDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());

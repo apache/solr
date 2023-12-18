@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.IOFunction;
@@ -405,7 +404,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase
           break;
         }
       } catch (Exception e) {
-        SolrException.log(log, "Error during auto-warming of key:" + entry.getKey(), e);
+        log.error("Error during auto-warming of key: {}", entry.getKey(), e);
       }
     }
 

@@ -29,9 +29,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.solr.common.cloud.Replica.Type;
+import org.apache.solr.common.util.CollectionUtil;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,12 +47,12 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public final String collection;
 
-  private DocCollection.PrsSupplier prsSupplier;
+  private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
-  void setPrsSupplier(DocCollection.PrsSupplier prsSupplier) {
-    this.prsSupplier = prsSupplier;
+  void setPerReplicaStatesRef(AtomicReference<PerReplicaStates> perReplicaStatesRef) {
+    this.perReplicaStatesRef = perReplicaStatesRef;
     for (Replica r : replicas.values()) {
-      r.setPrsSupplier(prsSupplier);
+      r.setPerReplicaStatesRef(perReplicaStatesRef);
     }
     if (leader == null) {
       leader = findLeader();
@@ -64,7 +66,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   public static Map<String, Slice> loadAllFromMap(
       String collection, Map<String, Object> genericSlices) {
     if (genericSlices == null) return Collections.emptyMap();
-    Map<String, Slice> result = new LinkedHashMap<>(genericSlices.size());
+    Map<String, Slice> result = CollectionUtil.newLinkedHashMap(genericSlices.size());
     for (Map.Entry<String, Object> entry : genericSlices.entrySet()) {
       String name = entry.getKey();
       Object val = entry.getValue();
@@ -159,7 +161,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public Slice(
       String name, Map<String, Replica> replicas, Map<String, Object> props, String collection) {
-    super(props == null ? new LinkedHashMap<>(2) : new LinkedHashMap<>(props));
+    super(props == null ? CollectionUtil.newLinkedHashMap(2) : new LinkedHashMap<>(props));
     this.name = name;
     this.collection = collection;
 
@@ -221,8 +223,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @SuppressWarnings({"unchecked"})
   private Map<String, Replica> makeReplicas(
       String collection, String slice, Map<String, Object> genericReplicas) {
-    if (genericReplicas == null) return new HashMap<>(1);
-    Map<String, Replica> result = new LinkedHashMap<>(genericReplicas.size());
+    if (genericReplicas == null) return CollectionUtil.newHashMap(1);
+    Map<String, Replica> result = CollectionUtil.newLinkedHashMap(genericReplicas.size());
     for (Map.Entry<String, Object> entry : genericReplicas.entrySet()) {
       String name = entry.getKey();
       Object val = entry.getValue();
@@ -285,7 +287,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
   public Replica getLeader() {
-    if (prsSupplier != null) {
+    if (perReplicaStatesRef != null) {
       // this  is a PRS collection. leader may keep changing
       return findLeader();
     } else {

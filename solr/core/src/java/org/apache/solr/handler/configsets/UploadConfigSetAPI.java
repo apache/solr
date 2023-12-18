@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -94,8 +93,7 @@ public class UploadConfigSetAPI extends ConfigSetAPIBase {
         String filePath = zipEntry.getName();
         filesToDelete.remove(filePath);
         if (!zipEntry.isDirectory()) {
-          configSetService.uploadFileToConfig(
-              configSetName, filePath, IOUtils.toByteArray(zis), true);
+          configSetService.uploadFileToConfig(configSetName, filePath, zis.readAllBytes(), true);
         }
       }
       if (!hasEntry) {

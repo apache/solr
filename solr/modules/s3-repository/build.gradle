@@ -78,7 +78,6 @@ dependencies {
   }
 
   testImplementation 'commons-io:commons-io'
-  testImplementation 'org.apache.commons:commons-lang3'
 
   testRuntimeOnly 'org.eclipse.jetty:jetty-webapp'
 }

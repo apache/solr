@@ -107,10 +107,6 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-function coreNameToLabel(name) {
-  return name.replace(/(.*?)_shard((\d+_?)+)_replica_?[ntp]?(\d+)/, '\$1_s\$2r\$4');
-}
-
 var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
@@ -198,10 +194,13 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           for (var replicaName in replicas) {
             var core = replicas[replicaName];
             core.name = replicaName;
-            core.label = coreNameToLabel(core['core']);
+            core.replica = core['core'].replace(/.*_(replica_.*)$/, '\$1');
             core.collection = collection.name;
             core.shard = shard.name;
             core.shard_state = shard.state;
+            core.label = core['collection'] + "_"
+              + (core['shard'] + "_").replace(/shard(\d+)_/, 's\$1')
+              + core['replica'].replace(/replica_?[ntp]?(\d+)/, 'r\$1');
 
             var node_name = core['node_name'];
             var node = getOrCreateObj(node_name, nodes);
@@ -433,7 +432,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
                   core['label'] += "_(" + labelState + ")";
                 }
-                var coreMetricName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica.*?)/, '\$1.\$2.\$4');
+                var coreMetricName = "solr.core." + core['collection'] + "." + core['shard'] + "." + core['replica'];
                 var coreMetric = m.metrics[coreMetricName];
                 // we may not actually get metrics back for every expected core (the core may be down)
                 if (coreMetric) {

@@ -18,21 +18,20 @@ package org.apache.solr.hdfs;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
@@ -52,10 +51,10 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -132,18 +131,12 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   private static Boolean kerberosInit;
 
   // we use this cache for FileSystem instances when we don't have access to a long lived instance
-  private com.google.common.cache.Cache<String, FileSystem> tmpFsCache =
-      CacheBuilder.newBuilder()
-          .concurrencyLevel(10)
+  private final com.github.benmanes.caffeine.cache.Cache<String, FileSystem> tmpFsCache =
+      Caffeine.newBuilder()
           .maximumSize(1000)
           .expireAfterAccess(5, TimeUnit.MINUTES)
           .removalListener(
-              new RemovalListener<String, FileSystem>() {
-                @Override
-                public void onRemoval(RemovalNotification<String, FileSystem> rn) {
-                  IOUtils.closeQuietly(rn.getValue());
-                }
-              })
+              (String key, FileSystem fs, RemovalCause cause) -> IOUtils.closeQuietly(fs))
           .build();
 
   private static final class MetricsHolder {
@@ -193,7 +186,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     if (kerberosEnabled) {
       initKerberos();
     }
-    if (StringUtils.isEmpty(System.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
+    if (StrUtils.isNullOrEmpty(
+        System.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
       System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
     }
   }
@@ -472,9 +466,10 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     String path;
     if (cd.getCloudDescriptor() != null) {
       path =
-          URLEncoder.encode(cd.getCloudDescriptor().getCollectionName(), "UTF-8")
+          URLEncoder.encode(cd.getCloudDescriptor().getCollectionName(), StandardCharsets.UTF_8)
               + "/"
-              + URLEncoder.encode(cd.getCloudDescriptor().getCoreNodeName(), "UTF-8");
+              + URLEncoder.encode(
+                  cd.getCloudDescriptor().getCoreNodeName(), StandardCharsets.UTF_8);
     } else {
       path = cd.getName();
     }
@@ -517,13 +512,17 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   }
 
   private FileSystem getCachedFileSystem(String pathStr) {
-    try {
-      // no need to close the fs, the cache will do it
-      Path path = new Path(pathStr);
-      return tmpFsCache.get(pathStr, () -> FileSystem.get(path.toUri(), getConf(path)));
-    } catch (ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+    // no need to close the fs, the cache will do it
+    Path path = new Path(pathStr);
+    return tmpFsCache.get(
+        pathStr,
+        k -> {
+          try {
+            return FileSystem.get(path.toUri(), getConf(path));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   public String getConfDir() {

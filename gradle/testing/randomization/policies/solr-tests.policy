@@ -84,6 +84,11 @@ grant {
   permission java.lang.RuntimePermission "getStackWalkerWithClassReference";
   // needed by bytebuddy
   permission java.lang.RuntimePermission "defineClass";
+  permission java.lang.RuntimePermission "net.bytebuddy.createJavaDispatcher";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.method";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.type";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.dynamic.loading";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.utility";
   // needed by mockito
   permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
   permission java.lang.RuntimePermission "reflectionFactoryAccess";
@@ -143,6 +148,9 @@ grant {
   permission java.lang.RuntimePermission "setFactory";
 
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
+
+  // needed by s3mock
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
 
   // SSL related properties for Solr tests
   permission javax.net.ssl.SSLPermission "setDefaultSSLContext";
@@ -231,4 +239,6 @@ grant {
   permission java.io.FilePermission "${gradle.user.home}${/}-", "read";
   // Allow read access to Lucene jars if "-Plucene.dev.version=" or "-Plucene.dev.path=" is used
   permission java.io.FilePermission "${lucene-dev-path.dir}${/}-", "read";
+  // Allow testing effects of customized or bug-fixed dependencies locally (also need to add mavenLocal() to build)
+  permission java.io.FilePermission "${user.home}${/}.m2${/}repository${/}-", "read";
 };

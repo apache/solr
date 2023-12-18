@@ -19,9 +19,9 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 
 public class TestRestoreCoreUtil {
@@ -35,11 +35,9 @@ public class TestRestoreCoreUtil {
             + ReplicationHandler.CMD_RESTORE_STATUS;
     final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 
-    InputStream stream = null;
-    try {
-      URL url = new URL(leaderUrl);
-      stream = url.openStream();
-      String response = IOUtils.toString(stream, "UTF-8");
+    URL url = new URL(leaderUrl);
+    try (InputStream stream = url.openStream()) {
+      String response = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
       Matcher matcher = pException.matcher(response);
       if (matcher.find()) {
         Assert.fail("Failed to complete restore action with exception " + matcher.group(1));
@@ -49,9 +47,6 @@ public class TestRestoreCoreUtil {
       } else if (response.contains("<str name=\"status\">failed</str>")) {
         Assert.fail("Restore Failed");
       }
-      stream.close();
-    } finally {
-      IOUtils.closeQuietly(stream);
     }
     return false;
   }

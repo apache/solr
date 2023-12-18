@@ -28,11 +28,15 @@ The official image uses the binary release directly, so the xref:#directory-layo
 Solr is available from the Solr website.
 Download the latest release https://solr.apache.org/downloads.html.
 
-There are two separate packages:
+There are three separate packages:
 
-* `solr-{solr-full-version}.tgz` the binary package, for all operating systems.
+* `solr-{solr-full-version}.tgz` the full binary package, for all operating systems. This package includes all first-party Solr modules and accessories (e.g. the `prometheus-exporter`).
+* `solr-{solr-full-version}-slim.tgz` the slim binary package, for all operating systems. This package only includes what is necessary to run Solr. Modules and accessories (e.g. the `prometheus-exporter`) are not included.
 * `solr-{solr-full-version}-src.tgz` the package Solr source code.
 This is useful if you want to develop on Solr without using the official Git repository.
+
+Two docker images are provided that utilize the full and slim binaries.
+Please refer to the xref:solr-in-docker.adoc[] page for information on how to use them.
 
 == Preparing for Installation
 
@@ -96,10 +100,12 @@ It is described in more detail in the section xref:taking-solr-to-production.ado
 modules/::
 Solr's `modules` directory includes 1st-party add-ons for specialized features that enhance Solr.
 See the section xref:configuration-guide:solr-modules.adoc[] for more information.
+*This is not included in the `slim` distribution.*
 
 prometheus-exporter/::
 A standalone application, included under `bin/`, that monitors Solr instances and produces Prometheus metrics.
 See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc[] for more information.
+*This is not included in the `slim` distribution.*
 
 docker/::
 This contains a Dockerfile to build a Docker image from the binary distribution, that is compatible with the official image.
@@ -121,7 +127,7 @@ The `example` directory includes several types of examples that demonstrate vari
 See the section <<Solr Examples>> below for more details on what is in this directory.
 
 licenses/::
-The `licenses` directory includes all of the licenses for 3rd party libraries used by Solr.
+The `licenses` directory includes all of the licenses for 3rd party libraries used by that distribution of Solr.
 
 server/::
 This directory is where the heart of the Solr application resides.
@@ -134,7 +140,7 @@ See the section xref:configuring-logging.adoc[] for more details on how to custo
 
 == Solr Examples
 
-Solr includes a number of example documents and configurations to use when getting started.
+The full Solr distribution includes a number of example documents and configurations to use when getting started.
 If you ran through the xref:getting-started:solr-tutorial.adoc[], you have already interacted with some of these files.
 
 Here are the examples included with Solr:

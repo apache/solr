@@ -18,6 +18,7 @@ package org.apache.solr.opentelemetry;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import io.opentracing.util.GlobalTracer;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -26,7 +27,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-@ThreadLeakLingering(linger = 10)
+@ThreadLeakLingering(linger = 10000)
 public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
   private OtelTracerConfigurator instance;
 
@@ -93,6 +94,8 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInjected() throws Exception {
+    System.setProperty("otel.resource.attributes", "foo=bar,ILLEGAL-LACKS-VALUE,");
+    System.setProperty("host", "my.solr.host");
     // Make sure the batch exporter times out before our thread lingering time of 10s
     instance.setDefaultIfNotConfigured("OTEL_BSP_SCHEDULE_DELAY", "1000");
     instance.setDefaultIfNotConfigured("OTEL_BSP_EXPORT_TIMEOUT", "2000");
@@ -105,8 +108,13 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
       assertTrue(
           "Tracer shim not registered with GlobalTracer",
           GlobalTracer.get().toString().contains("ClosableTracerShim"));
+      assertEquals(
+          List.of("host.name=my.solr.host", "foo=bar"),
+          List.of(System.getProperty("otel.resource.attributes").split(",")));
     } finally {
       cluster.shutdown();
+      System.clearProperty("otel.resource.attributes");
+      System.clearProperty("host");
     }
   }
 }

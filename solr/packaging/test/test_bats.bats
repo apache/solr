@@ -30,6 +30,7 @@ setup_file() {
 teardown_file() {
   # set up paths, not preserved from setup
   common_setup
+  sleep 3
 
   # Conversely, on shutdown, we do need this to execute strictly
   # because using "run" will eat filing test exit codes

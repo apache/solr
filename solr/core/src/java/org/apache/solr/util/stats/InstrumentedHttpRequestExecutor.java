@@ -22,7 +22,6 @@ import static org.apache.solr.metrics.SolrMetricManager.mkName;
 import com.codahale.metrics.Timer;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.http.HttpClientConnection;
@@ -34,6 +33,7 @@ import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 
@@ -100,7 +100,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
       };
 
   public static final Map<String, HttpClientMetricNameStrategy> KNOWN_METRIC_NAME_STRATEGIES =
-      new HashMap<>(3);
+      CollectionUtil.newHashMap(3);
 
   static {
     KNOWN_METRIC_NAME_STRATEGIES.put("queryLessURLAndMethod", QUERYLESS_URL_AND_METHOD);

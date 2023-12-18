@@ -509,7 +509,7 @@ public class SchemaManager {
         // use current schema
         return (ManagedIndexSchema) core.getLatestSchema();
       }
-      schemaResourceName = managedSchemaPath.substring(managedSchemaPath.lastIndexOf("/") + 1);
+      schemaResourceName = managedSchemaPath.substring(managedSchemaPath.lastIndexOf('/') + 1);
       InputStream in = resourceLoader.openResource(schemaResourceName);
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();

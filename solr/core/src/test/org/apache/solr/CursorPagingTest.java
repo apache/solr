@@ -35,7 +35,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.mutable.MutableValueInt;
@@ -62,9 +61,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /** schema.xml file name, shared with other cursor related tests */
   public static final String TEST_SCHEMAXML_NAME = "schema-sorts.xml";
   /** values from enumConfig.xml */
-  public static final String[] SEVERITY_ENUM_VALUES = {
-    "Not Available", "Low", "Medium", "High", "Critical"
-  };
+  public static final List<String> SEVERITY_ENUM_VALUES =
+      List.of("Not Available", "Low", "Medium", "High", "Critical");
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -849,7 +847,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                       "forceElevation",
                       "true",
                       "elevateIds",
-                      StringUtils.join(expectedElevated, ',')),
+                      Arrays.stream(expectedElevated)
+                          .mapToObj(String::valueOf)
+                          .collect(Collectors.joining(","))),
                   main),
               ids);
       for (int expected : expectedElevated) {
@@ -1273,7 +1273,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   private static String randomEnumValue() {
-    return SEVERITY_ENUM_VALUES[random().nextInt(SEVERITY_ENUM_VALUES.length)];
+    return SEVERITY_ENUM_VALUES.get(random().nextInt(SEVERITY_ENUM_VALUES.size()));
   }
 
   /**

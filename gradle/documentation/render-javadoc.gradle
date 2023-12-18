@@ -116,17 +116,6 @@ configure(project(":solr:modules:analysis-extras")) {
   }
 }
 
-configure(project(":solr:modules:analytics")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages SOLR-15604
-    javadocMissingIgnore = [
-        "org.apache.solr.handler",
-        "org.apache.solr.handler.component",
-        "org.apache.solr.response"
-    ]
-  }
-}
-
 configure(project(":solr:modules:langid")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages SOLR-15604
@@ -160,6 +149,7 @@ configure(project(":solr:test-framework")) {
         "org.apache.solr",
         "org.apache.solr.analysis",
         "org.apache.solr.cloud",
+        "org.apache.solr.cloud.api.collections",
         "org.apache.solr.common.cloud",
         "org.apache.solr.core",
         "org.apache.solr.handler",

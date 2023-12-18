@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SE
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,14 +40,11 @@ import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
-import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -59,6 +57,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * This class is experimental and subject to change.
@@ -792,7 +791,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CollectionParams.SOURCE_NODE, sourceNode);
-      if (!StringUtils.isEmpty(targetNode)) {
+      if (StrUtils.isNotNullOrEmpty(targetNode)) {
         params.set(CollectionParams.TARGET_NODE, targetNode);
       }
       if (parallel != null) params.set("parallel", parallel.toString());
@@ -1111,6 +1110,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Optional<String> indexBackupStrategy = Optional.empty();
     protected boolean incremental = true;
     protected Optional<Integer> maxNumBackupPoints = Optional.empty();
+    protected boolean backupConfigset = true;
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
@@ -1189,6 +1189,22 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
+    /**
+     * Indicates weather the Backup operation should also backup the configset files (such as
+     * schema.xml, solrconfig.xml. etc).
+     *
+     * <p>Note that the configset is needed to restore the collection, so only set this to false if
+     * you know the cluster will have the configset available before restoring.
+     *
+     * @param backupConfigset {@code true} if you want to backup configsets (default). {@code false}
+     *     to skip configset files.
+     * @return {@code this} builder
+     */
+    public Backup setBackupConfigset(boolean backupConfigset) {
+      this.backupConfigset = backupConfigset;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1196,7 +1212,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       params.set(CoreAdminParams.NAME, name);
       params.set(CoreAdminParams.BACKUP_LOCATION, location); // note: optional
       if (repositoryName.isPresent()) {
-        params.set(CoreAdminParams.BACKUP_REPOSITORY, repositoryName.get());
+        params.set(BACKUP_REPOSITORY, repositoryName.get());
       }
       if (commitName.isPresent()) {
         params.set(CoreAdminParams.COMMIT_NAME, commitName.get());
@@ -1208,6 +1224,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints.get());
       }
       params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
+      params.set(CoreAdminParams.BACKUP_CONFIGSET, backupConfigset);
       return params;
     }
   }
@@ -1344,8 +1361,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
-    // TODO support rule, snitch
-
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1374,7 +1389,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         addProperties(params, properties);
       }
       if (repositoryName.isPresent()) {
-        params.set(CoreAdminParams.BACKUP_REPOSITORY, repositoryName.get());
+        params.set(BACKUP_REPOSITORY, repositoryName.get());
       }
       if (createNodeSet.isPresent()) {
         params.set(CREATE_NODE_SET_PARAM, createNodeSet.get());
@@ -1385,6 +1400,56 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (backupId != null) {
         params.set(CoreAdminParams.BACKUP_ID, backupId);
       }
+
+      return params;
+    }
+  }
+
+  /**
+   * Install index data to a specific shard of a specific collection
+   *
+   * @param collection the collection to install data to
+   * @param shard the specific shard within to install data to
+   * @param location a URI-string pointing to location of the index data within a particular backup
+   *     repository
+   * @param backupRepository the backup repository to lookup and install the index data from
+   */
+  public static InstallShard installDataToShard(
+      String collection, String shard, String location, String backupRepository) {
+    return new InstallShard(collection, shard, location, backupRepository);
+  }
+
+  /**
+   * Install index data to a specific shard of a specific collection
+   *
+   * <p>Will use Solr's "default" backup repository for locating and accessing the index data.
+   *
+   * @param collection the collection to install data to
+   * @param shard the specific shard within to install data to
+   * @param location a URI-string pointing to location of the index data within a particular backup
+   *     repository
+   */
+  public static InstallShard installDataToShard(String collection, String shard, String location) {
+    return new InstallShard(collection, shard, location, null);
+  }
+
+  public static class InstallShard extends AsyncShardSpecificAdminRequest {
+
+    protected String repositoryName;
+    protected String location;
+
+    public InstallShard(String collection, String shard, String location, String backupRepository) {
+      super(CollectionAction.INSTALLSHARDDATA, collection, shard);
+
+      this.repositoryName = backupRepository;
+      this.location = location;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, repositoryName);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, location);
 
       return params;
     }
@@ -1567,7 +1632,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Boolean splitByPrefix;
     protected Integer numSubShards;
     protected Float splitFuzz;
-    protected Boolean setPreferredLeaders;
 
     private Properties properties;
     protected String createNodeSet;
@@ -1650,11 +1714,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
-    public SplitShard shouldSetPreferredLeaders(Boolean setPreferredLeaders) {
-      this.setPreferredLeaders = setPreferredLeaders;
-      return this;
-    }
-
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1675,17 +1734,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (splitFuzz != null) {
         params.set(CommonAdminParams.SPLIT_FUZZ, String.valueOf(splitFuzz));
       }
+
       if (splitByPrefix != null) {
         params.set(CommonAdminParams.SPLIT_BY_PREFIX, splitByPrefix);
       }
+
       if (properties != null) {
         addProperties(params, properties);
       }
       if (createNodeSet != null) {
         params.set(CREATE_NODE_SET_PARAM, createNodeSet);
-      }
-      if (setPreferredLeaders != null) {
-        params.set(CommonAdminParams.SPLIT_SET_PREFERRED_LEADERS, setPreferredLeaders);
       }
       return params;
     }
@@ -1900,7 +1958,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     public SetAliasProperty addProperty(String key, String value) {
-      properties.put(key, value);
+      if (value == null) {
+        properties.put(key, "");
+      } else {
+        properties.put(key, value);
+      }
       return this;
     }
 
@@ -3020,13 +3082,18 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
    * "incremental=false" flag).
    */
   public static class DeleteBackup extends CollectionAdminRequest<CollectionAdminResponse> {
-    private final DeleteBackupPayload deleteBackupPayload;
+
+    private final String name;
+    private String repository;
+    private String location;
+    private Integer backupId;
+    private Integer maxNumBackupPoints;
+    private Boolean purgeUnused;
 
     private DeleteBackup(String backupName) {
       super(CollectionAction.DELETEBACKUP);
 
-      deleteBackupPayload = new DeleteBackupPayload();
-      deleteBackupPayload.name = backupName;
+      this.name = backupName;
     }
 
     /**
@@ -3034,7 +3101,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     information. Defaults to 'LocalFileSystemRepository' if not specified.
      */
     public DeleteBackup setRepositoryName(String backupRepository) {
-      deleteBackupPayload.repository = backupRepository;
+      this.repository = backupRepository;
       return this;
     }
 
@@ -3046,7 +3113,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     thrown.
      */
     public DeleteBackup setLocation(String backupLocation) {
-      deleteBackupPayload.location = backupLocation;
+      location = backupLocation;
       return this;
     }
 
@@ -3057,7 +3124,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @see #deleteBackupById(String, int)
      */
     protected DeleteBackup setBackupId(int backupId) {
-      deleteBackupPayload.backupId = backupId;
+      this.backupId = backupId;
       return this;
     }
 
@@ -3068,7 +3135,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @see #deleteBackupByRecency(String, int)
      */
     protected DeleteBackup setMaxNumBackupPoints(int backupPointsToRetain) {
-      deleteBackupPayload.maxNumBackupPoints = backupPointsToRetain;
+      this.maxNumBackupPoints = backupPointsToRetain;
       return this;
     }
 
@@ -3081,20 +3148,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @see #deleteBackupPurgeUnusedFiles(String)
      */
     protected DeleteBackup setPurgeUnused() {
-      deleteBackupPayload.purgeUnused = true;
+      this.purgeUnused = true;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CoreAdminParams.NAME, deleteBackupPayload.name);
-      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, deleteBackupPayload.location);
-      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, deleteBackupPayload.repository);
-      params.setNonNull(CoreAdminParams.BACKUP_ID, deleteBackupPayload.backupId);
-      params.setNonNull(
-          CoreAdminParams.MAX_NUM_BACKUP_POINTS, deleteBackupPayload.maxNumBackupPoints);
-      params.setNonNull(CoreAdminParams.BACKUP_PURGE_UNUSED, deleteBackupPayload.purgeUnused);
+      params.set(CoreAdminParams.NAME, name);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, location);
+      params.setNonNull(BACKUP_REPOSITORY, repository);
+      params.setNonNull(CoreAdminParams.BACKUP_ID, backupId);
+      params.setNonNull(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints);
+      params.setNonNull(CoreAdminParams.BACKUP_PURGE_UNUSED, purgeUnused);
       return params;
     }
 
@@ -3123,13 +3189,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
    * "incremental=false" flag).
    */
   public static class ListBackup extends CollectionAdminRequest<CollectionAdminResponse> {
-    private final ListBackupPayload listPayload;
+    private final String backupName;
+    private String location;
+    private String repositoryName;
 
     private ListBackup(String backupName) {
       super(CollectionAction.LISTBACKUP);
 
-      this.listPayload = new ListBackupPayload();
-      this.listPayload.name = backupName;
+      this.backupName = backupName;
     }
 
     /**
@@ -3137,7 +3204,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     information. Defaults to 'LocalFileSystemRepository' if not specified.
      */
     public ListBackup setBackupRepository(String backupRepository) {
-      listPayload.repository = backupRepository;
+      this.repositoryName = backupRepository;
       return this;
     }
 
@@ -3149,16 +3216,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     thrown.
      */
     public ListBackup setBackupLocation(String backupLocation) {
-      listPayload.location = backupLocation;
+      this.location = backupLocation;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CoreAdminParams.NAME, listPayload.name);
-      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, listPayload.location);
-      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, listPayload.repository);
+      params.set(CoreAdminParams.NAME, backupName);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, this.location);
+      params.setNonNull(BACKUP_REPOSITORY, this.repositoryName);
 
       return params;
     }

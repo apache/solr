@@ -204,14 +204,14 @@ public final class DefaultSolrCoreState extends SolrCoreState
           log.debug("Closing old IndexWriter... core= {}", coreName);
           iw.close();
         } catch (Exception e) {
-          SolrException.log(log, "Error closing old IndexWriter. core=" + coreName, e);
+          log.error("Error closing old IndexWriter. core={}", coreName, e);
         }
       } else {
         try {
           log.debug("Rollback old IndexWriter... core={}", coreName);
           iw.rollback();
         } catch (Exception e) {
-          SolrException.log(log, "Error rolling back old IndexWriter. core=" + coreName, e);
+          log.error("Error rolling back old IndexWriter. core={}", coreName, e);
         }
       }
     }

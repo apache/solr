@@ -22,6 +22,7 @@ import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 import java.util.function.Supplier;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.jersey.CatchAllExceptionMapper;
 import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.servlet.HttpSolrCall;
@@ -94,5 +95,12 @@ public class JerseyResource {
       containerRequestContext.setProperty(SOLR_JERSEY_RESPONSE, instance);
     }
     return instance;
+  }
+
+  protected void ensureRequiredParameterProvided(String parameterName, Object parameterValue) {
+    if (parameterValue == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Missing required parameter: " + parameterName);
+    }
   }
 }

@@ -20,10 +20,7 @@ package org.noggit;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.CharBuffer;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.NotThreadSafe;
 
-@NotThreadSafe
 public class CharArr implements CharSequence, Appendable {
   protected char[] buf;
   protected int start;
@@ -220,7 +217,6 @@ public class CharArr implements CharSequence, Appendable {
     return this;
   }
 
-  @Immutable
   static class NullCharArr extends CharArr {
     public NullCharArr() {
       super(new char[1], 0, 0);

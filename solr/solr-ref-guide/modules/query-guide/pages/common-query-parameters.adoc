@@ -320,7 +320,7 @@ This value is only checked at the time of:
 
 As this check is periodically performed, the actual time for which a request can be processed before it is aborted would be marginally greater than or equal to the value of `timeAllowed`.
 If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request.
-Regular search, JSON Facet and the Analytics component abandon requests in accordance with this parameter.
+Regular search and the JSON Facet component abandon requests in accordance with this parameter.
 
 == segmentTerminateEarly Parameter
 
@@ -352,9 +352,12 @@ If you do not define the `wt` parameter in your queries, JSON will be returned a
 
 == logParamsList Parameter
 
-By default, Solr logs all parameters of requests.
-Set this parameter to restrict which parameters of a request are logged.
+By default, Solr logs all query parameters on each request.
+This parameter allows users to override this behavior, by specifying a comma-separated "allowlist" of parameter names that should be logged.
 This may help control logging to only those parameters considered important to your organization.
+
+NOTE: `logParamsList` only governs the logging of query parameters.
+It does not apply to parameters specified in the request path, body, etc.
 
 For example, you could define this like:
 

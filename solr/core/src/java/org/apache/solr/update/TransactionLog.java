@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
@@ -295,7 +296,7 @@ public class TransactionLog implements Closeable {
 
     synchronized (this) {
       globalStringList = (List<String>) header.get("strings");
-      globalStringMap = new HashMap<>(globalStringList.size());
+      globalStringMap = CollectionUtil.newHashMap(globalStringList.size());
       for (int i = 0; i < globalStringList.size(); i++) {
         globalStringMap.put(globalStringList.get(i), i + 1);
       }

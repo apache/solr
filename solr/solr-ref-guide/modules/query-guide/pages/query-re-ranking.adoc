@@ -67,9 +67,38 @@ This number will be treated as a minimum, and may be increased internally automa
 |Optional |Default: `2.0`
 |===
 +
-A multiplicative factor that will be applied to the score from the reRankQuery for each of the top matching documents, before that score is added to the original score.
+A multiplicative factor that will be applied to the score from the reRankQuery for each of the top matching documents, before that score is combined with the original score.
 
-In the example below, the top 1000 documents matching the query "greetings" will be re-ranked using the query "(hi hello hey hiya)".
+`reRankScale`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Scales the rerank scores between min and max values. The format of this parameter value is `min-max` where
+min and max are positive integers. Example `reRankScale=0-1` rescales the rerank scores between 0 and 1.
+
+`reRankMainScale`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Scales the main query scores between min and max values. The format of this parameter value is `min-max` where
+min and max are positive integers. Example `reRankMainScale=0-1` rescales the main query scores between 0 and 1.
+
+`reRankOperator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `add`
+|===
++
+By default the score from the reRankQuery multiplied by the `reRankWeight` is added to the original score.
+
+In the example below using the default `add` behaviour, the top 1000 documents matching the query "greetings" will be re-ranked using the query "(hi hello hey hiya)".
 The resulting scores for each of those 1000 documents will be 3 times their score from the "(hi hello hey hiya)", plus the score from the original "greetings" query:
 
 [source,text]
@@ -78,6 +107,25 @@ q=greetings&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=3}&rqq=(hi
 ----
 
 If a document matches the original query, but does not match the re-ranking query, the document's original score will remain.
+
+Setting `reRankOperator` to `multiply` will multiply the three numbers instead. This means that other multiplying operations such as xref:edismax-query-parser.adoc#extended-dismax-parameters[eDisMax `boost` functions] can be converted to Re-Rank operations.
+
+In the example below, the scores for the top 1000 documents matching the query "phone" will be multiplied by a function of the `price` field.
+
+[source,text]
+----
+q=phone&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=1 reRankOperator=multiply}&rqq={!func v=div(1,sum(1,price))}
+----
+
+Setting `reRankOperator` to `replace` will replace the score, so the final scores can be independent of documents' original scores.
+
+In the example below, the scores for the top 1000 documents matching the query "phone" will be replaced with a function of the `price` field.
+
+[source,text]
+----
+q=phone&rq={!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=1 reRankOperator=replace}&rqq={!func v=div(1,sum(1,price))}
+----
+
 
 === LTR Query Parser
 

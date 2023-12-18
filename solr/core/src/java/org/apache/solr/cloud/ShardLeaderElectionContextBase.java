@@ -18,7 +18,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -100,7 +99,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     synchronized (lock) {
       if (leaderZkNodeParentVersion != null) {
         // no problem
-        // no problem
         try {
           // We need to be careful and make sure we *only* delete our own leader registration node.
           // We do this by using a multi and ensuring the parent znode of the leader registration
@@ -110,15 +108,14 @@ class ShardLeaderElectionContextBase extends ElectionContext {
               "Removing leader registration node on cancel: {} {}",
               leaderPath,
               leaderZkNodeParentVersion);
-          List<Op> ops = new ArrayList<>(2);
           String parent = ZkMaintenanceUtils.getZkParent(leaderPath);
-          ops.add(Op.check(parent, leaderZkNodeParentVersion));
-          ops.add(Op.delete(leaderPath, -1));
+          List<Op> ops =
+              List.of(Op.check(parent, leaderZkNodeParentVersion), Op.delete(leaderPath, -1));
           zkClient.multi(ops, true);
         } catch (InterruptedException e) {
           throw e;
         } catch (IllegalArgumentException e) {
-          SolrException.log(log, e);
+          log.error("Illegal argument", e);
         }
         leaderZkNodeParentVersion = null;
       } else {

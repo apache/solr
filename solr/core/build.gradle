@@ -79,6 +79,7 @@ dependencies {
   implementation 'org.glassfish.hk2:hk2-api'
   implementation 'org.glassfish.hk2.external:jakarta.inject'
   implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
+  implementation 'jakarta.annotation:jakarta.annotation-api'
 
   // Non-API below; although there are exceptions
 
@@ -96,7 +97,6 @@ dependencies {
   implementation "org.apache.lucene:lucene-join"
   implementation "org.apache.lucene:lucene-misc"
   implementation "org.apache.lucene:lucene-queryparser"
-  implementation "org.apache.lucene:lucene-sandbox"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
 
@@ -107,7 +107,6 @@ dependencies {
   implementation 'org.apache.commons:commons-math3'
   implementation 'commons-io:commons-io'
   implementation 'com.carrotsearch:hppc'
-  implementation 'org.apache.commons:commons-collections4'
 
   implementation('com.github.ben-manes.caffeine:caffeine') { transitive = false }
 
@@ -121,6 +120,7 @@ dependencies {
   implementation 'com.fasterxml.jackson.core:jackson-core'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
+  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor'
 
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
@@ -199,6 +199,9 @@ dependencies {
 
 
   testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
 }

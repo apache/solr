@@ -140,14 +140,15 @@ allprojects { prj ->
             '-Xep:IdentityHashMapBoxing:ERROR',
             // '-Xep:IgnoredPureGetter:OFF', // we don't use these annotations
             // '-Xep:Immutable:OFF', // we don't use this annotation
+            // '-Xep:ImpossibleNullComparison:OFF', // we don't use protobuf
             '-Xep:Incomparable:ERROR',
             // '-Xep:IncompatibleArgumentType:OFF', // we don't use this annotation
             // '-Xep:IncompatibleModifiers:OFF', // we don't use this annotation
             '-Xep:IndexOfChar:ERROR',
             '-Xep:InexactVarargsConditional:ERROR',
             '-Xep:InfiniteRecursion:ERROR',
-            '-Xep:InjectMoreThanOneScopeAnnotationOnClass:ERROR', // todo - check if we use this annotation?
-            '-Xep:InjectOnMemberAndConstructor:ERROR', // todo - check if we use this annotation?
+            '-Xep:InjectMoreThanOneScopeAnnotationOnClass:ERROR',
+            '-Xep:InjectOnMemberAndConstructor:ERROR',
             // '-Xep:InlineMeValidator:OFF', // we don't use this annotation
             '-Xep:InstantTemporalUnit:ERROR',
             '-Xep:InvalidJavaTimeConstant:ERROR',
@@ -167,6 +168,7 @@ allprojects { prj ->
             '-Xep:JUnitParameterMethodNotFound:ERROR',
             '-Xep:JavaxInjectOnAbstractMethod:ERROR',
             '-Xep:JodaToSelf:ERROR',
+            // '-Xep:LenientFormatStringValidation:OFF' // we don't use these google libraries
             '-Xep:LiteByteStringUtf8:ERROR',
             '-Xep:LocalDateTemporalAmount:ERROR',
             '-Xep:LockOnBoxedPrimitive:ERROR',
@@ -174,7 +176,7 @@ allprojects { prj ->
             '-Xep:LossyPrimitiveCompare:ERROR',
             '-Xep:MathRoundIntLong:ERROR',
             // '-Xep:MislabeledAndroidString:OFF', // we don't use android
-            '-Xep:MisplacedScopeAnnotations:ERROR', // todo - check if we use this annotation?
+            '-Xep:MisplacedScopeAnnotations:ERROR',
             // '-Xep:MissingSuperCall:OFF', // we don't use this annotation
             // '-Xep:MissingTestCall:OFF', // we don't use this annotation
             '-Xep:MisusedDayOfYear:ERROR',
@@ -182,7 +184,7 @@ allprojects { prj ->
             '-Xep:MixedDescriptors:ERROR',
             '-Xep:MockitoUsage:ERROR',
             '-Xep:ModifyingCollectionWithItself:ERROR',
-            '-Xep:MoreThanOneInjectableConstructor:ERROR', // todo - check if we use this annotation?
+            '-Xep:MoreThanOneInjectableConstructor:ERROR',
             // '-Xep:MustBeClosedChecker:OFF', // we don't use this annotation
             '-Xep:NCopiesOfChar:ERROR',
             '-Xep:NoCanIgnoreReturnValueOnClasses:ERROR',
@@ -195,7 +197,7 @@ allprojects { prj ->
             '-Xep:OptionalEquality:ERROR',
             '-Xep:OptionalMapUnusedValue:ERROR',
             '-Xep:OptionalOfRedundantMethod:ERROR',
-            '-Xep:OverlappingQualifierAndScopeAnnotation:ERROR', // todo - check if we use this annotation?
+            '-Xep:OverlappingQualifierAndScopeAnnotation:ERROR',
             '-Xep:OverridesJavaxInjectableMethod:ERROR',
             '-Xep:PackageInfo:ERROR',
             '-Xep:ParametersButNotParameterized:ERROR',
@@ -216,7 +218,7 @@ allprojects { prj ->
             // '-Xep:RectIntersectReturnValueIgnored:OFF', // we don't use android
             // '-Xep:RequiredModifiers:OFF', // we don't use this annotation
             // '-Xep:RestrictedApiChecker:OFF', // we don't use this annotation
-            // '-Xep:ReturnValueIgnored:OFF', // todo check if useful or comment why not
+            // '-Xep:ReturnValueIgnored:OFF', // todo there are problems that should be fixed
             '-Xep:SelfAssignment:ERROR',
             '-Xep:SelfComparison:ERROR',
             '-Xep:SelfEquals:ERROR',
@@ -249,6 +251,7 @@ allprojects { prj ->
 
             // On by Default : WARNING
 
+            // '-Xep:ASTHelpersSuggestions:OFF', // we don't use ASTHelpers
             '-Xep:AlmostJavadoc:WARN',
             // '-Xep:AlreadyChecked:OFF', // todo check if useful or comment why not
             // '-Xep:AmbiguousMethodReference:OFF', // todo check if useful or comment why not
@@ -258,7 +261,7 @@ allprojects { prj ->
             '-Xep:AssertEqualsArgumentOrderChecker:WARN',
             '-Xep:AssertThrowsMultipleStatements:WARN',
             '-Xep:AssertionFailureIgnored:WARN',
-            '-Xep:AssistedInjectAndInjectOnSameConstructor:WARN', // todo - check if we use this annotation?
+            '-Xep:AssistedInjectAndInjectOnSameConstructor:WARN',
             // '-Xep:AutoValueFinalMethods:OFF', // we don't use autovalue
             // '-Xep:AutoValueImmutableFields:OFF', // we don't use autovalue
             // '-Xep:AutoValueSubclassLeaked:OFF', // we don't use autovalue
@@ -310,7 +313,8 @@ allprojects { prj ->
             // '-Xep:ExtendingJUnitAssert:OFF', // we inherit from LuceneTestCase which extends Assert
             '-Xep:ExtendsObject:WARN',
             '-Xep:FallThrough:WARN',
-            // '-Xep:Finally:OFF', // todo check if useful or comment why not
+            '-Xep:Finalize:WARN', // catches actual finalizers that don't call super
+            //'-Xep:Finally:OFF', // todo there are problems that should be fixed
             '-Xep:FloatCast:WARN',
             '-Xep:FloatingPointAssertionWithinEpsilon:WARN',
             '-Xep:FloatingPointLiteralPrecision:WARN',
@@ -318,7 +322,7 @@ allprojects { prj ->
             // '-Xep:FloggerStringConcatenation:OFF', // we don't use flogger
             // '-Xep:FragmentInjection:OFF', // we don't use android
             // '-Xep:FragmentNotInstantiable:OFF', // we don't use android
-            // '-Xep:FutureReturnValueIgnored:OFF', // todo check if useful or comment why not
+            // '-Xep:FutureReturnValueIgnored:OFF', // todo there are problems that should be fixed
             '-Xep:GetClassOnEnum:WARN',
             '-Xep:HidingField:WARN',
             '-Xep:IdentityHashMapUsage:WARN',
@@ -326,9 +330,11 @@ allprojects { prj ->
             '-Xep:ImmutableEnumChecker:WARN',
             '-Xep:InconsistentCapitalization:WARN',
             '-Xep:InconsistentHashCode:WARN',
+            // '-Xep:IgnoredPureGetter:OFF', // we don't use these google libraries
             '-Xep:IncorrectMainMethod:WARN',
             '-Xep:IncrementInForLoopAndHeader:WARN',
             '-Xep:InheritDoc:WARN',
+            // '-Xep:InjectOnBugCheckers:OFF', // we don't use this annotation
             // '-Xep:InjectInvalidTargetingOnScopingAnnotation:OFF', // we don't use this annotation
             '-Xep:InjectOnConstructorOfAbstractClass:WARN',
             '-Xep:InjectScopeAnnotationOnInterfaceOrAbstractClass:WARN',
@@ -369,6 +375,7 @@ allprojects { prj ->
             '-Xep:JodaPlusMinusLong:WARN',
             '-Xep:JodaTimeConverterManager:WARN',
             '-Xep:JodaWithDurationAddedLong:WARN',
+            // '-Xep:LabelledBreakTarget:OFF', // stylistic
             '-Xep:LiteEnumValueOf:WARN',
             '-Xep:LiteProtoToString:WARN',
             '-Xep:LockNotBeforeTry:WARN',
@@ -377,7 +384,7 @@ allprojects { prj ->
             '-Xep:LongFloatConversion:WARN',
             '-Xep:LoopOverCharArray:WARN',
             '-Xep:MalformedInlineTag:WARN',
-            '-Xep:MathAbsoluteRandom:WARN',
+            '-Xep:MathAbsoluteNegative:WARN',
             // '-Xep:MemoizeConstantVisitorStateLookups:OFF', // we don't use this class
             '-Xep:MissingCasesInEnumSwitch:WARN',
             '-Xep:MissingFail:WARN',
@@ -391,13 +398,14 @@ allprojects { prj ->
             '-Xep:ModifySourceCollectionInStream:WARN',
             '-Xep:MultipleParallelOrSequentialCalls:WARN',
             '-Xep:MultipleUnaryOperatorsInMethodCall:WARN',
-            // '-Xep:MutablePublicArray:OFF', // todo check if useful or comment why not - this should be possible...
+            '-Xep:MutablePublicArray:WARN',
             '-Xep:NarrowCalculation:WARN',
             '-Xep:NarrowingCompoundAssignment:WARN',
             // '-Xep:NegativeCharLiteral:OFF', // todo check if useful or comment why not
             '-Xep:NestedInstanceOfConditions:WARN',
+            '-Xep:NewFileSystem:WARN',
             // '-Xep:NonAtomicVolatileUpdate:OFF', // todo check if useful or comment why not
-            // '-Xep:NonCanonicalType:OFF', // todo check if useful or comment why not
+            '-Xep:NonCanonicalType:WARN',
             '-Xep:NonOverridingEquals:WARN',
             '-Xep:NullOptional:WARN',
             // '-Xep:NullableConstructor:OFF', // we don't use this annotation
@@ -465,10 +473,12 @@ allprojects { prj ->
             '-Xep:UnnecessaryMethodInvocationMatcher:WARN',
             '-Xep:UnnecessaryMethodReference:WARN',
             // '-Xep:UnnecessaryParentheses:OFF', // style preference that we don't want to enforce
+            // '-Xep:UnqualifiedYield:OFF', // javac takes care
             '-Xep:UnrecognisedJavadocTag:WARN',
             '-Xep:UnsafeFinalization:WARN',
             '-Xep:UnsafeReflectiveConstructionCast:WARN',
             '-Xep:UnsynchronizedOverridesSynchronized:WARN',
+            '-Xep:UnusedLabel:WARN',
             // '-Xep:UnusedMethod:OFF', // todo check if useful or comment why not
             '-Xep:UnusedNestedClass:WARN',
             '-Xep:UnusedTypeParameter:WARN',

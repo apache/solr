@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
@@ -100,7 +101,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
 
     if (collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = collectionName.replace("\"", "").replace(" ", "");
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -138,7 +139,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     if (bucketXExpression != null) {
       if (bucketXExpression.getParameter() instanceof StreamExpressionValue) {
         String keyX = ((StreamExpressionValue) bucketXExpression.getParameter()).getValue();
-        if (keyX != null && !keyX.equals("")) {
+        if (keyX != null && !keyX.isEmpty()) {
           x = new Bucket(keyX.trim());
         }
       }
@@ -147,7 +148,7 @@ public class Facet2DStream extends TupleStream implements Expressible {
     if (bucketYExpression != null) {
       if (bucketYExpression.getParameter() instanceof StreamExpressionValue) {
         String keyY = ((StreamExpressionValue) bucketYExpression.getParameter()).getValue();
-        if (keyY != null && !keyY.equals("")) {
+        if (keyY != null && !keyY.isEmpty()) {
           y = new Bucket(keyY.trim());
         }
       }
@@ -328,8 +329,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
       hosts.add(zkHost);
       cloudSolrClient =
           new CloudLegacySolrClient.Builder(hosts, Optional.empty())
-              .withSocketTimeout(30000)
-              .withConnectionTimeout(15000)
+              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
               .build();
     }
     FieldComparator[] adjustedSorts = adjustSorts(x, y, bucketSort);

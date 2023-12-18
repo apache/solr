@@ -180,8 +180,8 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
               .withLBHttpSolrClientBuilder(
                   new LBHttpSolrClient.Builder()
                       .withResponseParser(client.getParser())
-                      .withSocketTimeout(30000)
-                      .withConnectionTimeout(15000)
+                      .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+                      .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
                       .withHttpSolrClientBuilder(
                           new HttpSolrClient.Builder().withKerberosDelegationToken(token)))
               .build();

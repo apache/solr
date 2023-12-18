@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -70,7 +71,7 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
                 .withThreadCount(2)
                 .build()) {
       int docId = 42;
-      for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
+      for (AbstractUpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
         for (boolean waitSearch : Arrays.asList(true, false)) {
           for (boolean waitFlush : Arrays.asList(true, false)) {
             UpdateRequest updateRequest = new UpdateRequest();

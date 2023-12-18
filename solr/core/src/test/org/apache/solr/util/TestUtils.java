@@ -23,7 +23,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.NUM_SHARDS_PROP;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
-import com.google.common.collect.ImmutableList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
@@ -353,9 +352,7 @@ public class TestUtils extends SolrTestCaseJ4 {
             sink,
             (Map<String, Object>)
                 Utils.fromJSONString("collectionDefaults:{numShards:3 , nrtReplicas:2}")));
-    assertEquals(
-        3L, Utils.getObjectByPath(sink, true, ImmutableList.of(COLLECTION_DEF, NUM_SHARDS_PROP)));
-    assertEquals(
-        2L, Utils.getObjectByPath(sink, true, ImmutableList.of(COLLECTION_DEF, NRT_REPLICAS)));
+    assertEquals(3L, Utils.getObjectByPath(sink, true, List.of(COLLECTION_DEF, NUM_SHARDS_PROP)));
+    assertEquals(2L, Utils.getObjectByPath(sink, true, List.of(COLLECTION_DEF, NRT_REPLICAS)));
   }
 }

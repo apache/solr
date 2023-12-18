@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -63,16 +62,12 @@ public final class HTMLStripFieldUpdateProcessorFactory
           if (src instanceof CharSequence) {
             CharSequence s = (CharSequence) src;
             StringWriter result = new StringWriter(s.length());
-            Reader in = null;
-            try {
-              in = new HTMLStripCharFilter(new StringReader(s.toString()));
+            try (Reader in = new HTMLStripCharFilter(new StringReader(s.toString()))) {
               in.transferTo(result);
               return result.toString();
             } catch (IOException e) {
               // we tried and failed
               return s;
-            } finally {
-              IOUtils.closeQuietly(in);
             }
           }
           return src;

@@ -132,10 +132,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       if (collName == null) collName = message.getStr(NAME);
 
       if (collName == null) {
-        SolrException.log(log, "Operation " + operation + " failed", e);
+        log.error("Operation {} failed", operation, e);
       } else {
-        SolrException.log(
-            log, "Collection: " + collName + " operation: " + operation + " failed", e);
+        log.error("Collection {}}, operation {} failed", collName, operation, e);
       }
 
       results.add("Operation " + operation + " caused exception:", e);

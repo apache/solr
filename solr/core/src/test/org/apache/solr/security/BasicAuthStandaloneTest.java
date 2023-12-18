@@ -100,7 +100,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       // Write security.json locally. Should cause security to be initialized
       securityConfHandler.persistConf(
           new SecurityConfHandler.SecurityConfig()
-              .setData(Utils.fromJSONString(STD_CONF.replaceAll("'", "\""))));
+              .setData(Utils.fromJSONString(STD_CONF.replace("'", "\""))));
       securityConfHandler.securityConfEdited();
       verifySecurityStatus(
           httpClient, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
@@ -175,7 +175,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       throws IOException {
     HttpPost httpPost = new HttpPost(url);
     httpPost.setHeader(header);
-    httpPost.setEntity(new ByteArrayEntity(jsonCommand.replaceAll("'", "\"").getBytes(UTF_8)));
+    httpPost.setEntity(new ByteArrayEntity(jsonCommand.replace("'", "\"").getBytes(UTF_8)));
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     HttpResponse r = cl.execute(httpPost);
     int statusCode = r.getStatusLine().getStatusCode();

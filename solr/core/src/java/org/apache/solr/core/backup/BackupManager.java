@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core.backup;
 
-import com.google.common.base.Preconditions;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -254,7 +253,9 @@ public class BackupManager {
       String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
-    Preconditions.checkState(repository.exists(source), "Path %s does not exist", source);
+    if (!repository.exists(source)) {
+      throw new IllegalArgumentException("Configset expected at " + source + " does not exist");
+    }
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
 
@@ -269,7 +270,6 @@ public class BackupManager {
   public void downloadConfigDir(String configName, ConfigSetService configSetService)
       throws IOException {
     URI dest = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, configName);
-    repository.createDirectory(getZkStateDir());
     repository.createDirectory(repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
@@ -402,5 +402,9 @@ public class BackupManager {
       zkStateDir = repository.resolveDirectory(backupPath, ZK_STATE_DIR);
     }
     return zkStateDir;
+  }
+
+  public void createZkStateDir() throws IOException {
+    repository.createDirectory(getZkStateDir());
   }
 }

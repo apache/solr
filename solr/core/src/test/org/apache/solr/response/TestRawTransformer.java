@@ -16,7 +16,6 @@
  */
 package org.apache.solr.response;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -72,16 +70,14 @@ public class TestRawTransformer extends SolrCloudTestCase {
 
   private static void initStandalone() throws Exception {
     initCore("solrconfig-minimal.xml", "schema_latest.xml");
-    File homeDir = createTempDir().toFile();
-    final File collDir = new File(homeDir, "collection1");
-    final File confDir = collDir.toPath().resolve("conf").toFile();
-    confDir.mkdirs();
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
+    Path homeDir = createTempDir();
+    final Path collDir = homeDir.resolve("collection1");
+    final Path confDir = collDir.resolve("conf");
+    Files.createDirectories(confDir);
+    Files.copy(Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), homeDir.resolve("solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(src_dir, "schema_latest.xml"), new File(confDir, "schema.xml"));
-    FileUtils.copyFile(
-        new File(src_dir, "solrconfig-minimal.xml"), new File(confDir, "solrconfig.xml"));
+    Files.copy(Path.of(src_dir, "schema_latest.xml"), confDir.resolve("schema.xml"));
+    Files.copy(Path.of(src_dir, "solrconfig-minimal.xml"), confDir.resolve("solrconfig.xml"));
     for (String file :
         new String[] {
           "solrconfig.snippet.randomindexconfig.xml",
@@ -90,12 +86,14 @@ public class TestRawTransformer extends SolrCloudTestCase {
           "protwords.txt",
           "currency.xml"
         }) {
-      FileUtils.copyFile(new File(src_dir, file), new File(confDir, file));
+      Files.copy(Path.of(src_dir, file), confDir.resolve(file));
     }
-    Files.createFile(collDir.toPath().resolve("core.properties"));
+    Files.createFile(collDir.resolve("core.properties"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", h.getCore().getDataDir());
-    JSR = new JettySolrRunner(homeDir.getAbsolutePath(), nodeProperties, buildJettyConfig("/solr"));
+    JSR =
+        new JettySolrRunner(
+            homeDir.toAbsolutePath().toString(), nodeProperties, buildJettyConfig("/solr"));
   }
 
   private static void initCloud() throws Exception {

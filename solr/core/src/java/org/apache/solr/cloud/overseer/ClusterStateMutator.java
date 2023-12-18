@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +95,7 @@ public class ClusterStateMutator {
       for (int i = 0; i < shardNames.size(); i++) {
         String sliceName = shardNames.get(i);
 
-        Map<String, Object> sliceProps = new LinkedHashMap<>(1);
+        Map<String, Object> sliceProps = CollectionUtil.newLinkedHashMap(1);
         sliceProps.put(SliceStateProps.RANGE, ranges == null ? null : ranges.get(i));
 
         slices.put(sliceName, new Slice(sliceName, null, sliceProps, cName));
@@ -126,7 +127,7 @@ public class ClusterStateMutator {
 
     assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
     DocCollection newCollection =
-        new DocCollection(
+        DocCollection.create(
             cName, slices, collectionProps, router, -1, stateManager.getPrsSupplier(cName));
 
     return new ZkWriteCommand(cName, newCollection);

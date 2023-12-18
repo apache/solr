@@ -36,10 +36,4 @@ public interface CommonAdminParams {
   String TIMEOUT = "timeout";
   /** Inexact shard splitting factor. */
   String SPLIT_FUZZ = "splitFuzz";
-  /**
-   * Boolean param to set the preferred leader property on one replica of each sub-shard,
-   * automatically when splitting a shard. The preferred leaders are distributed evenly among the
-   * nodes.
-   */
-  String SPLIT_SET_PREFERRED_LEADERS = "split.setPreferredLeaders";
 }

@@ -18,9 +18,13 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,23 +32,27 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.BalancePlan;
 import org.apache.solr.cluster.placement.Builders;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementException;
 import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
+import org.apache.solr.cluster.placement.impl.BalanceRequestImpl;
 import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.Before;
@@ -53,7 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Unit test for {@link AffinityPlacementFactory} */
-public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
+public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PlacementPlugin plugin;
@@ -249,6 +257,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
             List.of("NRT 1", "NRT 3", "TLOG 2")); // shard 2
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
@@ -357,6 +366,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             List.of("NRT " + AZ1_NRT_HIGHCORES, "TLOG " + AZ3_TLOGPULL), // shard 1
             List.of("TLOG " + AZ2_TLOGPULL)); // shard 2
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
@@ -424,6 +434,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
     List<List<String>> shardsReplicas = List.of(List.of());
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
@@ -487,6 +498,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             List.of("NRT 10", "TLOG 11"), // shard 1
             List.of()); // shard 2
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
@@ -519,95 +531,6 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     expectedPlacements = Set.of("2 PULL 0");
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
-  }
-
-  /**
-   * Verifies that a computed set of placements does match the expected placement on nodes.
-   *
-   * @param expectedPlacements a set of strings of the form {@code "1 NRT 3"} where 1 would be the
-   *     shard index, NRT the replica type and 3 the node on which the replica is placed. Shards are
-   *     1-based. Nodes 0-based.
-   *     <p>Read carefully: <b>shard index</b> and not shard name. Index in the <b>order</b> of
-   *     shards as defined for the collection in the call to {@link
-   *     org.apache.solr.cluster.placement.Builders.CollectionBuilder#customCollectionSetup(List,
-   *     List)}
-   * @param shardBuilders the shard builders are passed here to get the shard names by index
-   *     (1-based) rather than by parsing the shard names (which would break if we change the shard
-   *     naming scheme).
-   */
-  private static void verifyPlacements(
-      Set<String> expectedPlacements,
-      PlacementPlan placementPlan,
-      List<Builders.ShardBuilder> shardBuilders,
-      List<Node> liveNodes) {
-    Set<ReplicaPlacement> computedPlacements = placementPlan.getReplicaPlacements();
-
-    // Prepare structures for looking up shard name index and node index
-    Map<String, Integer> shardNumbering = new HashMap<>();
-    int index = 1; // first shard is 1 not 0
-    for (Builders.ShardBuilder sb : shardBuilders) {
-      shardNumbering.put(sb.getShardName(), index++);
-    }
-    Map<Node, Integer> nodeNumbering = new HashMap<>();
-    index = 0;
-    for (Node n : liveNodes) {
-      nodeNumbering.put(n, index++);
-    }
-
-    if (expectedPlacements.size() != computedPlacements.size()) {
-      fail(
-          "Wrong number of placements, expected "
-              + expectedPlacements.size()
-              + " computed "
-              + computedPlacements.size()
-              + ". "
-              + getExpectedVsComputedPlacement(
-                  expectedPlacements, computedPlacements, shardNumbering, nodeNumbering));
-    }
-
-    Set<String> expected = new HashSet<>(expectedPlacements);
-    for (ReplicaPlacement p : computedPlacements) {
-      String lookUpPlacementResult =
-          shardNumbering.get(p.getShardName())
-              + " "
-              + p.getReplicaType().name()
-              + " "
-              + nodeNumbering.get(p.getNode());
-      if (!expected.remove(lookUpPlacementResult)) {
-        fail(
-            "Computed placement ["
-                + lookUpPlacementResult
-                + "] not expected. "
-                + getExpectedVsComputedPlacement(
-                    expectedPlacements, computedPlacements, shardNumbering, nodeNumbering));
-      }
-    }
-  }
-
-  private static String getExpectedVsComputedPlacement(
-      Set<String> expectedPlacements,
-      Set<ReplicaPlacement> computedPlacements,
-      Map<String, Integer> shardNumbering,
-      Map<Node, Integer> nodeNumbering) {
-
-    StringBuilder sb = new StringBuilder("Expected placement: ");
-    for (String placement : expectedPlacements) {
-      sb.append("[").append(placement).append("] ");
-    }
-
-    sb.append("Computed placement: ");
-    for (ReplicaPlacement placement : computedPlacements) {
-      String lookUpPlacementResult =
-          shardNumbering.get(placement.getShardName())
-              + " "
-              + placement.getReplicaType().name()
-              + " "
-              + nodeNumbering.get(placement.getNode());
-
-      sb.append("[").append(lookUpPlacementResult).append("] ");
-    }
-
-    return sb.toString();
   }
 
   @Test
@@ -810,6 +733,84 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testFreeDiskConstraintsWithNewReplicas() throws Exception {
+    String collectionName = "freeDiskWithReplicasCollection";
+    int NUM_NODES = 3;
+    Builders.ClusterBuilder clusterBuilder =
+        Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
+    Node smallNode = null;
+    for (int i = 0; i < NUM_NODES; i++) {
+      Builders.NodeBuilder nodeBuilder = clusterBuilder.getLiveNodeBuilders().get(i);
+      // Act as if the two replicas were placed on nodes 1 and 2
+      nodeBuilder.setCoreCount(0);
+      nodeBuilder.setFreeDiskGB(100.0);
+    }
+
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    collectionBuilder.initializeShardsReplicas(
+        3,
+        1,
+        0,
+        0,
+        clusterBuilder.getLiveNodeBuilders(), // .subList(1, 3),
+        List.of(33, 33, 60));
+    clusterBuilder.addCollection(collectionBuilder);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
+
+    SolrCollection solrCollection = cluster.getCollection(collectionName);
+
+    // Test when an additional replicaType makes the projected indexSize go over the limit
+    // Add two replicas (different types) to the first shard, the second replica should fail
+    PlacementRequestImpl badReplicaPlacementRequest =
+        new PlacementRequestImpl(
+            solrCollection,
+            StreamSupport.stream(solrCollection.shards().spliterator(), false)
+                .map(Shard::getShardName)
+                .findFirst()
+                .map(Set::of)
+                .orElseGet(Collections::emptySet),
+            cluster.getLiveNodes(),
+            0,
+            1,
+            1);
+
+    assertThrows(
+        PlacementException.class,
+        () -> plugin.computePlacement(badReplicaPlacementRequest, placementContext));
+
+    // Test when an additional shard makes the projected indexSize go over the limit
+    // Add one replica to each shard, the third shard should fail
+    PlacementRequest badShardPlacementRequest =
+        new PlacementRequestImpl(
+            solrCollection,
+            StreamSupport.stream(solrCollection.shards().spliterator(), false)
+                .map(Shard::getShardName)
+                .collect(Collectors.toSet()),
+            cluster.getLiveNodes(),
+            0,
+            1,
+            1);
+
+    assertThrows(
+        PlacementException.class,
+        () -> plugin.computePlacement(badShardPlacementRequest, placementContext));
+  }
+
+  @Test(expected = SolrException.class)
+  public void testWithCollectionDisjointWithShards() {
+    AffinityPlacementConfig config =
+        new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(primaryCollectionName, secondaryCollectionName),
+            Map.of(primaryCollectionName, secondaryCollectionName),
+            Map.of());
+    configurePlugin(config);
+  }
+
+  @Test
   public void testWithCollectionPlacement() throws Exception {
     AffinityPlacementConfig config =
         new AffinityPlacementConfig(
@@ -865,6 +866,96 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     } catch (PlacementException pe) {
       assertTrue(pe.toString().contains("Not enough eligible nodes"));
     }
+  }
+
+  @Test
+  public void testWithCollectionShardsPlacement() throws Exception {
+    AffinityPlacementConfig config =
+        new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(),
+            Map.of(primaryCollectionName, secondaryCollectionName),
+            Map.of());
+    configurePlugin(config);
+
+    int NUM_NODES = 3;
+    Builders.ClusterBuilder clusterBuilder =
+        Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
+    Builders.CollectionBuilder collectionBuilder =
+        Builders.newCollectionBuilder(secondaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(2, 1, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
+
+    SolrCollection secondaryCollection = cluster.getCollection(secondaryCollectionName);
+    SolrCollection primaryCollection = cluster.getCollection(primaryCollectionName);
+
+    Set<Node> secondaryNodes = new HashSet<>();
+    secondaryCollection
+        .shards()
+        .forEach(s -> s.replicas().forEach(r -> secondaryNodes.add(r.getNode())));
+
+    final List<Node> liveNodes = new ArrayList<>(cluster.getLiveNodes());
+    Collections.shuffle(liveNodes, random());
+    PlacementRequestImpl placementRequest =
+        new PlacementRequestImpl(
+            primaryCollection,
+            shuffle(Arrays.asList("shard2", "shard1")),
+            shuffle(cluster.getLiveNodes()),
+            1,
+            0,
+            0);
+
+    PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
+    assertEquals(2, pp.getReplicaPlacements().size());
+    // verify that all placements are on nodes with the secondary replica
+    pp.getReplicaPlacements()
+        .forEach(
+            placement -> {
+              assertTrue(
+                  "placement node " + placement.getNode() + " not in secondary=" + secondaryNodes,
+                  secondaryNodes.contains(placement.getNode()));
+              boolean collocated = false;
+              final Shard shard = secondaryCollection.getShard(placement.getShardName());
+              StringBuilder msg = new StringBuilder();
+              for (Iterator<Replica> secReplicas = shard.iterator();
+                  secReplicas.hasNext() && !collocated; ) {
+                final Replica secReplica = secReplicas.next();
+                collocated |= placement.getNode().getName().equals(secReplica.getNode().getName());
+                msg.append(secReplica.getReplicaName());
+                msg.append("@");
+                msg.append(secReplica.getNode().getName());
+                msg.append(", ");
+              }
+              assertTrue(placement + " is expected to be collocated with " + msg, collocated);
+            });
+
+    placementRequest =
+        new PlacementRequestImpl(
+            primaryCollection, Set.of("shard3"), cluster.getLiveNodes(), 1, 0, 0);
+    try {
+      pp = plugin.computePlacement(placementRequest, placementContext);
+      fail("should generate 'has no replicas on eligible nodes' failure here");
+    } catch (PlacementException pe) {
+      assertTrue(pe.toString(), pe.toString().contains("Not enough eligible nodes"));
+    }
+  }
+
+  private <T> Set<T> shuffle(Set<T> liveNodes) {
+    final List<T> nodes = new ArrayList<>(liveNodes);
+    return shuffle(nodes);
+  }
+
+  private static <T> Set<T> shuffle(List<T> nodes) {
+    Collections.shuffle(nodes, random());
+    return new LinkedHashSet<>(nodes);
   }
 
   @Test
@@ -938,6 +1029,101 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       fail("should have failed: " + deleteReplicasRequest);
     } catch (PlacementException pe) {
     }
+  }
+
+  @Test
+  public void testWithCollectionShardsModificationRejected() throws Exception {
+    AffinityPlacementConfig config =
+        new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(),
+            Map.of(primaryCollectionName, secondaryCollectionName),
+            Map.of());
+    configurePlugin(config);
+
+    int NUM_NODES = 2;
+    Builders.ClusterBuilder clusterBuilder =
+        Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
+    Builders.CollectionBuilder collectionBuilder =
+        Builders.newCollectionBuilder(secondaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(2, 3, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(
+        2, random().nextBoolean() ? 1 : 2, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
+
+    SolrCollection secondaryCollection = cluster.getCollection(secondaryCollectionName);
+    SolrCollection primaryCollection = cluster.getCollection(primaryCollectionName);
+
+    final ArrayList<Node> nodes = new ArrayList<>(cluster.getLiveNodes());
+    Collections.shuffle(nodes, random());
+    Set<Replica> toRemove = new HashSet<>();
+    DeleteReplicasRequest deleteReplicasRequest;
+    for (Node node : nodes) {
+      Set<String> seen = new HashSet<>();
+      final Set<String> mustHaveShards =
+          replicas(primaryCollection)
+              .filter(r -> r.getNode().getName().equals(node.getName()))
+              .map(r -> r.getShard().getShardName())
+              .collect(Collectors.toSet());
+
+      replicas(secondaryCollection)
+          .filter(r -> r.getNode().getName().equals(node.getName()))
+          .forEach(
+              r -> {
+                final String secRepShard = r.getShard().getShardName();
+                if (mustHaveShards.contains(secRepShard)) {
+                  if (seen.contains(secRepShard)) {
+                    toRemove.add(r);
+                  } else {
+                    seen.add(secRepShard);
+                  }
+                } else {
+                  toRemove.add(r);
+                }
+              });
+
+      assertFalse(toRemove.isEmpty());
+      deleteReplicasRequest =
+          ModificationRequestImpl.createDeleteReplicasRequest(secondaryCollection, toRemove);
+      try {
+        plugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
+      } catch (PlacementException pe) {
+        fail("should have succeeded: " + pe);
+      }
+    }
+    final List<Replica> remainingReplicas =
+        replicas(secondaryCollection)
+            .filter(r -> !toRemove.contains(r))
+            .collect(Collectors.toList());
+    Collections.shuffle(remainingReplicas, random());
+    toRemove.add(remainingReplicas.iterator().next());
+
+    deleteReplicasRequest =
+        ModificationRequestImpl.createDeleteReplicasRequest(secondaryCollection, toRemove);
+    try {
+      plugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
+      fail("should have failed: " + deleteReplicasRequest);
+    } catch (PlacementException pe) {
+    }
+  }
+
+  private Stream<Replica> replicas(SolrCollection primaryCollection) {
+    return shards(primaryCollection).flatMap(shard -> replicas(shard));
+  }
+
+  private Stream<Replica> replicas(Shard shard) {
+    return StreamSupport.stream(shard.replicas().spliterator(), false);
+  }
+
+  private static Stream<Shard> shards(SolrCollection primaryCollection) {
+    return StreamSupport.stream(primaryCollection.shards().spliterator(), false);
   }
 
   @Test
@@ -1076,40 +1262,63 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     int pullReplicas = TEST_NIGHTLY ? 20 : 2;
 
     log.info("==== numNodes ====");
-    runTestScalability(1000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(2000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(5000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(10000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(20000, numShards, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(1000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
+    runTestScalability(2000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
+    runTestScalability(5000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
+    runTestScalability(10000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
+    runTestScalability(20000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
 
     log.info("==== numShards ====");
     int numNodes = TEST_NIGHTLY ? 5000 : 500;
-    runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas);
-    runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas);
+    runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas, false);
+    runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas, false);
+    runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas, false);
     if (TEST_NIGHTLY) {
-      runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas);
-      runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas);
+      runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas, false);
+      runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas, false);
     }
 
     log.info("==== numReplicas ====");
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0);
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 200 : 20, 0, 0);
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 500 : 50, 0, 0);
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 1000 : 30, 0, 0);
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 2000 : 50, 0, 0);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0, false);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 200 : 20, 0, 0, false);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 500 : 50, 0, 0, false);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 1000 : 30, 0, 0, false);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 2000 : 50, 0, 0, false);
+
+    log.info("==== spread domains ====");
+    runTestScalability(numNodes, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
+    runTestScalability(numNodes, numShards, nrtReplicas, tlogReplicas, pullReplicas, true);
   }
 
   private void runTestScalability(
-      int numNodes, int numShards, int nrtReplicas, int tlogReplicas, int pullReplicas)
+      int numNodes,
+      int numShards,
+      int nrtReplicas,
+      int tlogReplicas,
+      int pullReplicas,
+      boolean useSpreadDomains)
       throws Exception {
     String collectionName = "scaleCollection";
+
+    if (useSpreadDomains) {
+      defaultConfig.spreadAcrossDomains = true;
+      configurePlugin(defaultConfig);
+    } else {
+      defaultConfig.spreadAcrossDomains = false;
+      configurePlugin(defaultConfig);
+    }
+
+    int numSpreadDomains = 5;
 
     Builders.ClusterBuilder clusterBuilder =
         Builders.newClusterBuilder().initializeLiveNodes(numNodes);
     List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < numNodes; i++) {
       nodeBuilders.get(i).setCoreCount(0).setFreeDiskGB((double) numNodes);
+      nodeBuilders
+          .get(i)
+          .setSysprop(
+              AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, String.valueOf(i % numSpreadDomains));
     }
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
@@ -1118,6 +1327,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
     SolrCollection solrCollection = collectionBuilder.build();
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+    Set<Node> setNodes = new HashSet<>(liveNodes);
+    assertEquals(setNodes.size(), liveNodes.size());
 
     // Place replicas for all the shards of the (newly created since it has no replicas yet)
     // collection
@@ -1138,10 +1349,11 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     final int TOTAL_REPLICAS = numShards * REPLICAS_PER_SHARD;
 
     log.info(
-        "ComputePlacement: {} nodes, {} shards, {} total replicas, elapsed time {} ms.",
+        "ComputePlacement: {} nodes, {} shards, {} total replicas, spread-domains={}, elapsed time {} ms.",
         numNodes,
         numShards,
         TOTAL_REPLICAS,
+        useSpreadDomains,
         TimeUnit.NANOSECONDS.toMillis(end - start)); // nowarn
     assertEquals(
         "incorrect number of calculated placements",
@@ -1169,16 +1381,492 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     int perNode = TOTAL_REPLICAS > numNodes ? TOTAL_REPLICAS / numNodes : 1;
     replicasPerNode.forEach(
         (node, count) -> {
-          assertEquals(count.get(), perNode);
+          assertEquals(
+              "Wrong number of replicas for node: " + node.getName(), perNode, count.get());
         });
     shardsPerNode.forEach(
         (node, names) -> {
-          assertEquals(names.size(), perNode);
+          assertEquals("Wrong number of shards for node: " + node.getName(), perNode, names.size());
         });
 
     replicasPerShard.forEach(
         (shard, count) -> {
-          assertEquals(count.get(), REPLICAS_PER_SHARD);
+          assertEquals(REPLICAS_PER_SHARD, count.get());
         });
+  }
+
+  @Test
+  public void testAntiAffinityIsSoft() throws Exception {
+    defaultConfig.spreadAcrossDomains = true;
+    configurePlugin(defaultConfig);
+    String collectionName = "basicCollection";
+
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(2);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    // Anti-affinity can't be achieved, since all nodes in the cluster have the same value
+    nodeBuilders
+        .get(0)
+        .setCoreCount(1)
+        .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
+    nodeBuilders
+        .get(1)
+        .setCoreCount(2)
+        .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
+
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+
+    SolrCollection solrCollection = collectionBuilder.build();
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    {
+      // Place a new replica for the (only) existing shard of the collection
+      PlacementRequestImpl placementRequest =
+          new PlacementRequestImpl(
+              solrCollection,
+              Set.of(solrCollection.shards().iterator().next().getShardName()),
+              new HashSet<>(liveNodes),
+              1,
+              0,
+              0);
+
+      PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
+
+      assertEquals(1, pp.getReplicaPlacements().size());
+      ReplicaPlacement rp = pp.getReplicaPlacements().iterator().next();
+      assertEquals(liveNodes.get(0), rp.getNode());
+    }
+    {
+      // Place a new replica for the (only) existing shard of the collection
+      PlacementRequestImpl placementRequest =
+          new PlacementRequestImpl(
+              solrCollection,
+              Set.of(solrCollection.shards().iterator().next().getShardName()),
+              new HashSet<>(liveNodes),
+              2,
+              0,
+              0);
+
+      PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
+
+      assertEquals(2, pp.getReplicaPlacements().size());
+      assertEquals(
+          Set.of(liveNodes.get(0), liveNodes.get(1)),
+          pp.getReplicaPlacements().stream()
+              .map(ReplicaPlacement::getNode)
+              .collect(Collectors.toSet()));
+    }
+  }
+
+  @Test
+  public void testSpreadDomainsWithExistingCollection() throws Exception {
+    testSpreadDomains(true);
+  }
+
+  @Test
+  public void testSpreadDomainsWithEmptyCluster() throws Exception {
+    testSpreadDomains(false);
+  }
+
+  private void testSpreadDomains(boolean hasExistingCollection) throws Exception {
+    defaultConfig.spreadAcrossDomains = true;
+    configurePlugin(defaultConfig);
+    String collectionName = "basicCollection";
+
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    nodeBuilders
+        .get(0)
+        .setCoreCount(1)
+        .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
+    nodeBuilders
+        .get(1)
+        .setCoreCount(2)
+        .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
+    nodeBuilders
+        .get(2)
+        .setCoreCount(3)
+        .setFreeDiskGB((double) (PRIORITIZED_FREE_DISK_GB + 1))
+        .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "B");
+
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+
+    if (hasExistingCollection) {
+      // Existing collection has replicas for its shards and is visible in the cluster state
+      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, nodeBuilders);
+      clusterBuilder.addCollection(collectionBuilder);
+    } else {
+      // New collection to create has the shards defined but no replicas and is not present in
+      // cluster state
+      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
+    }
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+
+    SolrCollection solrCollection = collectionBuilder.build();
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    {
+      // Place a new replica for the (only) existing shard of the collection
+      PlacementRequestImpl placementRequest =
+          new PlacementRequestImpl(
+              solrCollection,
+              Set.of(solrCollection.shards().iterator().next().getShardName()),
+              new HashSet<>(liveNodes),
+              1,
+              0,
+              0);
+
+      PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
+
+      assertEquals(1, pp.getReplicaPlacements().size());
+      ReplicaPlacement rp = pp.getReplicaPlacements().iterator().next();
+      assertEquals(hasExistingCollection ? liveNodes.get(2) : liveNodes.get(0), rp.getNode());
+    }
+    {
+      // Place a new replica for the (only) existing shard of the collection
+      PlacementRequestImpl placementRequest =
+          new PlacementRequestImpl(
+              solrCollection,
+              Set.of(solrCollection.shards().iterator().next().getShardName()),
+              new HashSet<>(liveNodes),
+              2,
+              0,
+              0);
+
+      PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
+
+      assertEquals(2, pp.getReplicaPlacements().size());
+      assertEquals(
+          hasExistingCollection
+              ? Set.of(liveNodes.get(1), liveNodes.get(2))
+              : Set.of(liveNodes.get(0), liveNodes.get(2)),
+          pp.getReplicaPlacements().stream()
+              .map(ReplicaPlacement::getNode)
+              .collect(Collectors.toSet()));
+    }
+  }
+
+  @Test
+  public void testSpreadDomainsWithDownNode() throws Exception {
+    defaultConfig.spreadAcrossDomains = true;
+    defaultConfig.maxReplicasPerShardInDomain = -1;
+    configurePlugin(defaultConfig);
+    String collectionName = "basicCollection";
+
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    nodeBuilders.get(0).setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
+    nodeBuilders.get(1).setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "B");
+    nodeBuilders.get(2).setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
+
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    collectionBuilder.initializeShardsReplicas(1, 2, 0, 0, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+    clusterBuilder.getLiveNodeBuilders().remove(0);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    SolrCollection solrCollection = collectionBuilder.build();
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    {
+      // Place a new replica for the (only) existing shard of the collection
+      PlacementRequestImpl placementRequest =
+          new PlacementRequestImpl(
+              solrCollection,
+              Set.of(solrCollection.shards().iterator().next().getShardName()),
+              new HashSet<>(liveNodes),
+              1,
+              0,
+              0);
+
+      PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
+
+      assertEquals(1, pp.getReplicaPlacements().size());
+      ReplicaPlacement rp = pp.getReplicaPlacements().iterator().next();
+      assertEquals(liveNodes.get(1), rp.getNode());
+    }
+  }
+
+  /** Tests replica balancing across all nodes in a cluster */
+  @Test
+  public void testBalancingBareMetrics() throws Exception {
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas =
+        List.of(
+            List.of("NRT 0", "TLOG 0", "NRT 2"), // shard 1
+            List.of("NRT 1", "NRT 4", "TLOG 3")); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    // Add another collection
+    collectionBuilder = Builders.newCollectionBuilder("b");
+    shardsReplicas =
+        List.of(
+            List.of("NRT 1", "TLOG 0", "NRT 3"), // shard 1
+            List.of("NRT 1", "NRT 3", "TLOG 0")); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    BalanceRequestImpl balanceRequest =
+        new BalanceRequestImpl(new HashSet<>(clusterBuilder.buildLiveNodes()));
+    BalancePlan balancePlan =
+        plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+
+    // Each expected placement is represented as a string "col shard replica-type fromNode ->
+    // toNode"
+    Set<String> expectedPlacements = Set.of("b 1 TLOG 0 -> 2", "b 1 NRT 3 -> 4");
+    verifyBalancing(
+        expectedPlacements,
+        balancePlan,
+        collectionBuilder.getShardBuilders(),
+        clusterBuilder.buildLiveNodes());
+  }
+
+  /** Tests replica balancing across all nodes in a cluster */
+  @Test
+  public void testBalancingExistingMetrics() throws Exception {
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    int coresOnNode = 10;
+    for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
+      nodeBuilder.setCoreCount(coresOnNode);
+      coresOnNode += 10;
+    }
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas =
+        List.of(
+            List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
+            List.of("NRT 1", "NRT 3", "TLOG 2")); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    BalanceRequestImpl balanceRequest =
+        new BalanceRequestImpl(new HashSet<>(clusterBuilder.buildLiveNodes()));
+    BalancePlan balancePlan =
+        plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+
+    // Each expected placement is represented as a string "col shard replica-type fromNode ->
+    // toNode"
+    Set<String> expectedPlacements = Set.of("a 1 NRT 3 -> 1", "a 2 NRT 3 -> 0");
+    verifyBalancing(
+        expectedPlacements,
+        balancePlan,
+        collectionBuilder.getShardBuilders(),
+        clusterBuilder.buildLiveNodes());
+  }
+
+  /** Tests that balancing works across a subset of nodes */
+  @Test
+  public void testBalancingWithNodeSubset() throws Exception {
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    int coresOnNode = 10;
+    for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
+      nodeBuilder.setCoreCount(coresOnNode);
+      coresOnNode += 10;
+    }
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas =
+        List.of(
+            List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
+            List.of("NRT 1", "NRT 3", "TLOG 2")); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    // Only balance over node 1 and 2
+    List<Node> overNodes = clusterBuilder.buildLiveNodes();
+    overNodes.remove(0);
+
+    BalanceRequestImpl balanceRequest = new BalanceRequestImpl(new HashSet<>(overNodes));
+    BalancePlan balancePlan =
+        plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+
+    // Each expected placement is represented as a string "col shard replica-type fromNode ->
+    // toNode"
+    Set<String> expectedPlacements = Set.of("a 1 NRT 3 -> 1");
+    verifyBalancing(
+        expectedPlacements,
+        balancePlan,
+        collectionBuilder.getShardBuilders(),
+        clusterBuilder.buildLiveNodes());
+  }
+
+  /**
+   * Tests balancing with multiple criteria: Replica type restricted nodes, Availability zones +
+   * existing collection
+   */
+  @Test
+  public void testBalancingMultiCriteria() throws Exception {
+    String collectionName = "a";
+
+    // Note node numbering is in purpose not following AZ structure
+    final int AZ1_NRT_LOWCORES = 0;
+    final int AZ1_NRT_HIGHCORES = 3;
+    final int AZ1_TLOGPULL_LOWFREEDISK = 5;
+
+    final int AZ2_NRT_MEDCORES = 2;
+    final int AZ2_NRT_HIGHCORES = 1;
+    final int AZ2_TLOGPULL = 7;
+
+    final int AZ3_NRT_LOWCORES = 4;
+    final int AZ3_NRT_HIGHCORES = 6;
+    final int AZ3_TLOGPULL = 8;
+
+    final String AZ1 = "AZ1";
+    final String AZ2 = "AZ2";
+    final String AZ3 = "AZ3";
+
+    final int LOW_CORES = 10;
+    final int MED_CORES = 50;
+    final int HIGH_CORES = 100;
+
+    final String TLOG_PULL_REPLICA_TYPE = "TLOG, PULL";
+    final String NRT_REPLICA_TYPE = "Nrt";
+
+    // Cluster nodes and their attributes.
+    // 3 AZ's with three nodes each, 2 of which can only take NRT, one that can take TLOG or PULL
+    // One of the NRT has fewer cores than the other
+    // The TLOG/PULL replica on AZ1 doesn't have much free disk space
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    for (int i = 0; i < 9; i++) {
+      final String az;
+      final int numcores;
+      final double freedisk;
+      final String acceptedReplicaType;
+
+      if (i == AZ1_NRT_LOWCORES || i == AZ1_NRT_HIGHCORES || i == AZ1_TLOGPULL_LOWFREEDISK) {
+        az = AZ1;
+      } else if (i == AZ2_NRT_HIGHCORES || i == AZ2_NRT_MEDCORES || i == AZ2_TLOGPULL) {
+        az = AZ2;
+      } else {
+        az = AZ3;
+      }
+
+      if (i == AZ1_NRT_LOWCORES || i == AZ3_NRT_LOWCORES) {
+        numcores = LOW_CORES;
+      } else if (i == AZ2_NRT_MEDCORES) {
+        numcores = MED_CORES;
+      } else {
+        numcores = HIGH_CORES;
+      }
+
+      if (i == AZ1_TLOGPULL_LOWFREEDISK) {
+        freedisk = PRIORITIZED_FREE_DISK_GB - 10;
+      } else {
+        freedisk = PRIORITIZED_FREE_DISK_GB + 10;
+      }
+
+      if (i == AZ1_TLOGPULL_LOWFREEDISK || i == AZ2_TLOGPULL || i == AZ3_TLOGPULL) {
+        acceptedReplicaType = TLOG_PULL_REPLICA_TYPE;
+      } else {
+        acceptedReplicaType = NRT_REPLICA_TYPE;
+      }
+
+      nodeBuilders
+          .get(i)
+          .setSysprop(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP, az)
+          .setSysprop(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP, acceptedReplicaType)
+          .setCoreCount(numcores)
+          .setFreeDiskGB(freedisk);
+    }
+
+    // The collection already exists with shards and replicas.
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    List<List<String>> shardsReplicas =
+        List.of(
+            List.of(
+                "NRT " + AZ1_NRT_HIGHCORES,
+                "TLOG " + AZ3_TLOGPULL,
+                "NRT " + AZ3_NRT_HIGHCORES,
+                "NRT " + AZ3_NRT_LOWCORES,
+                "TLOG " + AZ2_TLOGPULL), // shard 1
+            List.of(
+                "TLOG " + AZ2_TLOGPULL,
+                "NRT " + AZ2_NRT_HIGHCORES,
+                "NRT " + AZ3_NRT_LOWCORES,
+                "TLOG " + AZ3_TLOGPULL)); // shard 2
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    BalanceRequestImpl balanceRequest = new BalanceRequestImpl(new HashSet<>(liveNodes));
+    BalancePlan bp =
+        plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+    Set<String> expectedMovements =
+        Set.of(
+            "a 2 NRT " + AZ2_NRT_HIGHCORES + " -> " + AZ1_NRT_LOWCORES,
+            "a 1 NRT " + AZ3_NRT_HIGHCORES + " -> " + AZ1_NRT_LOWCORES,
+            "a 1 NRT " + AZ1_NRT_HIGHCORES + " -> " + AZ2_NRT_MEDCORES);
+    verifyBalancing(expectedMovements, bp, collectionBuilder.getShardBuilders(), liveNodes);
+  }
+
+  @Test
+  public void testWithCollectionBalancing() throws Exception {
+    AffinityPlacementConfig config =
+        new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(primaryCollectionName, secondaryCollectionName),
+            Map.of());
+    configurePlugin(config);
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(6);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder =
+        Builders.newCollectionBuilder(primaryCollectionName);
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas = List.of(List.of("NRT 0", "NRT 1", "NRT 3")); // shard 1
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    // Add another collection
+    collectionBuilder = Builders.newCollectionBuilder(secondaryCollectionName);
+    shardsReplicas = List.of(List.of("NRT 0", "NRT 2", "NRT 4")); // shard 1
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
+
+    BalanceRequestImpl balanceRequest = new BalanceRequestImpl(cluster.getLiveNodes());
+
+    BalancePlan bp = plugin.computeBalancing(balanceRequest, placementContext);
+    assertEquals(
+        "No movements expected, single movable replica requires co-placement",
+        0,
+        bp.getReplicaMovements().size());
   }
 }

@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.4</luceneMatchVersion>
+  <luceneMatchVersion>9.7</luceneMatchVersion>
 
   <!-- <lib/> directives can be used to instruct Solr to load any Jars
        identified and use them to resolve any "plugins" specified in
@@ -618,9 +618,6 @@
          what restrictions may be placed on the ContentStreams from
          those requests
 
-         enableRemoteStreaming - enables use of the stream.file
-         and stream.url parameters for specifying remote streams.
-
          multipartUploadLimitInKB - specifies the max size (in KiB) of
          Multipart File Uploads that Solr will allow in a Request.
 
@@ -636,12 +633,7 @@
          Solr components, but may be useful when developing custom
          plugins.
 
-         *** WARNING ***
-         Before enabling remote streaming, you should make sure your
-         system has authentication enabled.
-
-    <requestParsers enableRemoteStreaming="false"
-                    multipartUploadLimitInKB="-1"
+    <requestParsers multipartUploadLimitInKB="-1"
                     formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
       -->

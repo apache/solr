@@ -18,13 +18,13 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.LongIterator;
@@ -81,11 +81,10 @@ public class UniqueAgg extends StrAggValueSource {
       sumUnique += unique;
 
       int valsListed = 0;
-      @SuppressWarnings("unchecked")
       List<?> vals = (List<?>) map.get(VALS);
       if (vals != null) {
         if (values == null) {
-          values = new HashSet<>(vals.size() * 4);
+          values = CollectionUtil.newHashSet(vals.size() * 4);
         }
         values.addAll(vals);
         valsListed = vals.size();

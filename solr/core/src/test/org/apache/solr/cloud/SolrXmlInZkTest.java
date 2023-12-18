@@ -19,10 +19,10 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -47,9 +47,8 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     Path solrHome = tmpDir.resolve("home");
     copyMinConf(new File(solrHome.toFile(), "myCollect"));
     if (leaveOnLocal) {
-      FileUtils.copyFile(
-          new File(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"),
-          new File(solrHome.toFile(), "solr.xml"));
+      Files.copy(
+          Path.of(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"), solrHome.resolve("solr.xml"));
     }
 
     ignoreException("No UpdateLog found - cannot sync");

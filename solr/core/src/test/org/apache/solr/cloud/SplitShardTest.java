@@ -17,23 +17,22 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.handler.admin.CollectionsHandler.AUTO_PREFERRED_LEADERS;
 import static org.hamcrest.core.StringContains.containsString;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -45,11 +44,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,51 +59,27 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   private final String COLLECTION_NAME = "splitshardtest-collection";
 
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+  }
+
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+  }
+
   @After
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
     cluster.deleteAllCollections();
-    shutdownCluster();
   }
 
   @Test
-  public void testSplitOneHostTwoSubShardsTwoReplicas() throws Exception {
-    setupCluster(1);
-    innerTestSplitTwoSubShardsTwoReplicas();
-  }
-
-  @Test
-  public void testSplitTwoHostsTwoSubShardsTwoReplicas() throws Exception {
-    setupCluster(2);
-    innerTestSplitTwoSubShardsTwoReplicas();
-  }
-
-  @Test
-  public void testSplitThreeHostsTwoSubShardsTwoReplicas() throws Exception {
-    setupCluster(3);
-    innerTestSplitTwoSubShardsTwoReplicas();
-  }
-
-  private void innerTestSplitTwoSubShardsTwoReplicas() throws Exception {
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 2)
-        .process(cluster.getSolrClient());
-
-    cluster.waitForActiveCollection(COLLECTION_NAME, 1, 2);
-
-    CollectionAdminRequest.SplitShard splitShard =
-        CollectionAdminRequest.splitShard(COLLECTION_NAME)
-            .setNumSubShards(2)
-            .setShardName("shard1");
-    splitShard.process(cluster.getSolrClient());
-    waitForState(
-        "Timed out waiting for sub shards to be active", COLLECTION_NAME, activeClusterShape(2, 6));
-  }
-
-  @Test
-  public void testSplitOneHostFiveSubShardsOneReplica() throws Exception {
-    setupCluster(1);
-
+  public void doTest() throws IOException, SolrServerException {
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
         .process(cluster.getSolrClient());
 
@@ -154,8 +130,7 @@ public class SplitShardTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void multipleOptionsSplitTest() throws Exception {
-    setupCluster(1);
+  public void multipleOptionsSplitTest() {
     CollectionAdminRequest.SplitShard splitShard =
         CollectionAdminRequest.splitShard(COLLECTION_NAME)
             .setNumSubShards(5)
@@ -170,7 +145,6 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   @Test
   public void testSplitFuzz() throws Exception {
-    setupCluster(1);
     String collectionName = "splitFuzzCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
         .process(cluster.getSolrClient());
@@ -202,23 +176,6 @@ public class SplitShardTest extends SolrCloudTestCase {
     assertEquals("wrong range in s1_1", expected1, delta1);
   }
 
-  private void setupCluster(int nodeCount) throws Exception {
-    setupCluster(nodeCount, null, null);
-  }
-
-  private void setupCluster(int nodeCount, Integer connectionTimeout, Integer socketTimeout)
-      throws Exception {
-    MiniSolrCloudCluster.Builder builder =
-        configureCluster(nodeCount).addConfig("conf", configset("cloud-minimal"));
-    if (connectionTimeout != null) {
-      builder.withConnectionTimeout(connectionTimeout);
-    }
-    if (socketTimeout != null) {
-      builder.withSocketTimeout(socketTimeout);
-    }
-    builder.configure();
-  }
-
   private CloudSolrClient createCollection(String collectionName, int repFactor) throws Exception {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, repFactor)
@@ -226,13 +183,10 @@ public class SplitShardTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collectionName, 1, repFactor);
 
-    CloudSolrClient client = cluster.getSolrClient();
-    client.setDefaultCollection(collectionName);
-    return client;
+    return cluster.getSolrClient();
   }
 
-  private long getNumDocs(CloudSolrClient client) throws Exception {
-    String collectionName = client.getDefaultCollection();
+  long getNumDocs(CloudSolrClient client, String collectionName) throws Exception {
     DocCollection collection = client.getClusterState().getCollection(collectionName);
     Collection<Slice> slices = collection.getSlices();
 
@@ -243,7 +197,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       for (Replica replica : slice.getReplicas()) {
         SolrClient replicaClient =
             getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
-        long numFound = 0;
+        long numFound;
         try {
           numFound =
               replicaClient
@@ -262,44 +216,20 @@ public class SplitShardTest extends SolrCloudTestCase {
       totCount += lastReplicaCount;
     }
 
-    long cloudClientDocs = client.query(new SolrQuery("*:*")).getResults().getNumFound();
+    long cloudClientDocs =
+        client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
     assertEquals(
         "Sum of shard count should equal distrib query doc count", totCount, cloudClientDocs);
     return totCount;
   }
 
-  @Test
-  public void testConcurrentSplitOneHostRepFactorOne() throws Exception {
-    setupCluster(1);
-    // Debugging tips: if this fails, it may be easier to debug by lowering the number fo threads to
-    // 1 and looping the test until you get another failure.
-    // You may need to further instrument things like DistributedZkUpdateProcessor to display the
-    // cluster state for the collection, etc. Using more threads increases the chance to hit a
-    // concurrency bug, but too many threads can overwhelm single-threaded buffering replay after
-    // the low level index split and result in subShard leaders that can't catch up and become
-    // active (a known issue that still needs to be resolved.)
-    splitWithConcurrentUpdates("livesplit-1-1", 1, 4, false);
-  }
-
-  @Test
-  public void testConcurrentSplitThreeHostsRepFactorTwo() throws Exception {
-    // Increase the default mini-cluster timeouts (see MiniSolrCloudCluster.buildSolrClient)
-    // because this split test on three hosts takes quite some time during the split
-    // on some test envs.
-    setupCluster(3, 30000, 120000);
-    splitWithConcurrentUpdates("livesplit-3-2", 2, 4, true);
-  }
-
-  private void splitWithConcurrentUpdates(
-      String collectionName, int repFactor, int nThreads, boolean setPreferredLeaders)
-      throws Exception {
+  void doLiveSplitShard(String collectionName, int repFactor, int nThreads) throws Exception {
     final CloudSolrClient client = createCollection(collectionName, repFactor);
 
     final ConcurrentHashMap<String, Long> model =
         new ConcurrentHashMap<>(); // what the index should contain
     final AtomicBoolean doIndex = new AtomicBoolean(true);
-    final AtomicInteger numDocsAdded = new AtomicInteger();
-    final AtomicInteger numDocsDeleted = new AtomicInteger();
+    final AtomicInteger docsIndexed = new AtomicInteger();
     Thread[] indexThreads = new Thread[nThreads];
     try {
 
@@ -307,38 +237,23 @@ public class SplitShardTest extends SolrCloudTestCase {
         indexThreads[i] =
             new Thread(
                 () -> {
-                  Random random = random();
-                  List<Integer> threadDocIndexes = new ArrayList<>();
                   while (doIndex.get()) {
                     try {
                       // Thread.sleep(10);  // cap indexing rate at 100 docs per second, per thread
-                      int currDoc = numDocsAdded.incrementAndGet();
+                      int currDoc = docsIndexed.incrementAndGet();
                       String docId = "doc_" + currDoc;
 
                       // Try all docs in the same update request
-                      UpdateRequest addReq = new UpdateRequest();
-                      addReq.add(sdoc("id", docId));
+                      UpdateRequest updateReq = new UpdateRequest();
+                      updateReq.add(sdoc("id", docId));
                       // UpdateResponse ursp = updateReq.commit(client, collectionName);
                       // uncomment this if you want a commit each time
-                      UpdateResponse ursp = addReq.process(client, collectionName);
+                      UpdateResponse ursp = updateReq.process(client, collectionName);
                       assertEquals(0, ursp.getStatus()); // for now, don't accept any failures
                       if (ursp.getStatus() == 0) {
                         // in the future, keep track of a version per document and reuse ids to keep
                         // index from growing too large
                         model.put(docId, 1L);
-                        threadDocIndexes.add(currDoc);
-                      }
-
-                      if (currDoc % 20 == 0) {
-                        int docIndex =
-                            threadDocIndexes.remove(random.nextInt(threadDocIndexes.size()));
-                        docId = "doc_" + docIndex;
-                        UpdateRequest deleteReq = new UpdateRequest();
-                        deleteReq.deleteById(docId);
-                        ursp = deleteReq.process(client, collectionName);
-                        assertEquals(0, ursp.getStatus()); // for now, don't accept any failures
-                        model.remove(docId);
-                        numDocsDeleted.incrementAndGet();
                       }
                     } catch (Exception e) {
                       fail(e.getMessage());
@@ -357,22 +272,13 @@ public class SplitShardTest extends SolrCloudTestCase {
 
       CollectionAdminRequest.SplitShard splitShard =
           CollectionAdminRequest.splitShard(collectionName).setShardName("shard1");
-      // Set the preferred leaders param either with a request param, or with a system property.
-      if (random().nextBoolean()) {
-        splitShard.shouldSetPreferredLeaders(setPreferredLeaders);
-      } else {
-        System.setProperty(AUTO_PREFERRED_LEADERS, Boolean.toString(setPreferredLeaders));
-      }
-      try {
-        splitShard.process(client);
-        waitForState(
-            "Timed out waiting for sub shards to be active.",
-            collectionName,
-            // 2 repFactor for the new split shards, 1 repFactor for old replicas
-            activeClusterShape(2, 3 * repFactor));
-      } finally {
-        System.clearProperty(AUTO_PREFERRED_LEADERS);
-      }
+      splitShard.process(client);
+      waitForState(
+          "Timed out waiting for sub shards to be active.",
+          collectionName,
+          activeClusterShape(
+              2,
+              3 * repFactor)); // 2 repFactor for the new split shards, 1 repFactor for old replicas
 
       // make sure that docs were indexed during the split
       assertTrue(model.size() > docCount);
@@ -387,9 +293,9 @@ public class SplitShardTest extends SolrCloudTestCase {
       }
     }
 
-    client.commit(); // final commit is needed for visibility
+    client.commit(collectionName); // final commit is needed for visibility
 
-    long numDocs = getNumDocs(client);
+    long numDocs = getNumDocs(client, collectionName);
     if (numDocs != model.size()) {
       SolrDocumentList results =
           client
@@ -403,47 +309,11 @@ public class SplitShardTest extends SolrCloudTestCase {
       log.error("MISSING DOCUMENTS: {}", leftover);
     }
 
-    assertEquals(
-        "Documents are missing!"
-            + " numDocsAdded="
-            + numDocsAdded.get()
-            + " numDocsDeleted="
-            + numDocsDeleted.get()
-            + " numDocs="
-            + numDocs,
-        numDocsAdded.get() - numDocsDeleted.get(),
-        numDocs);
-    if (log.isInfoEnabled()) {
-      log.info("{} docs added, {} docs deleted", numDocsAdded.get(), numDocsDeleted.get());
-    }
-
-    if (setPreferredLeaders) {
-      DocCollection collection =
-          cluster.getSolrClient().getClusterState().getCollection(collectionName);
-      for (Slice slice : collection.getSlices()) {
-        if (!slice.getState().equals(Slice.State.ACTIVE)) {
-          continue;
-        }
-        boolean preferredLeaderFound = false;
-        for (Replica replica : slice.getReplicas()) {
-          if (replica.getBool(CollectionAdminParams.PROPERTY_PREFIX + "preferredleader", false)) {
-            preferredLeaderFound = true;
-            assertEquals(
-                "Replica "
-                    + replica.getName()
-                    + " is the preferred leader but not the leader of shard "
-                    + slice.getName(),
-                slice.getLeader(),
-                replica);
-          }
-        }
-        assertTrue("No preferred leader found for shard " + slice.getName(), preferredLeaderFound);
-      }
-    }
+    assertEquals("Documents are missing!", docsIndexed.get(), numDocs);
+    log.info("Number of documents indexed and queried : {}", numDocs);
   }
 
   public void testShardSplitWithNodeset() throws Exception {
-    setupCluster(1);
     String COLL = "shard_split_nodeset";
 
     CollectionAdminRequest.createCollection(COLL, "conf", 2, 2).process(cluster.getSolrClient());
@@ -498,5 +368,17 @@ public class SplitShardTest extends SolrCloudTestCase {
         });
 
     return set.isEmpty();
+  }
+
+  @Test
+  public void testLiveSplit() throws Exception {
+    // Debugging tips: if this fails, it may be easier to debug by lowering the number of threads to
+    // 1 and looping the test until you get another failure. You may need to further instrument
+    // things like DistributedZkUpdateProcessor to display the cluster state for the collection,
+    // etc. Using more threads increases the chance of hitting a concurrency bug, but too many
+    // threads can overwhelm single-threaded buffering replay after the low level index split and
+    // result in subShard leaders that can't catch up and become active (a known issue that still
+    // needs to be resolved.)
+    doLiveSplitShard("livesplit1", 1, 4);
   }
 }

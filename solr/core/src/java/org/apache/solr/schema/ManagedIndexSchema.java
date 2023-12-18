@@ -65,6 +65,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -1149,7 +1150,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   private Map<String, List<CopyField>> cloneCopyFieldsMap(Map<String, List<CopyField>> original) {
-    Map<String, List<CopyField>> clone = new HashMap<>(original.size());
+    Map<String, List<CopyField>> clone = CollectionUtil.newHashMap(original.size());
     Iterator<Map.Entry<String, List<CopyField>>> iterator = original.entrySet().iterator();
     while (iterator.hasNext()) {
       Map.Entry<String, List<CopyField>> entry = iterator.next();

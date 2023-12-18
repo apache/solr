@@ -323,9 +323,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       int lastDocId,
       Set<Integer> deletedDocs)
       throws Exception {
-    SolrClient leaderSolr = getSolrClient(leader);
+    SolrClient leaderSolr = getHttpSolrClient(leader.getCoreUrl());
     List<SolrClient> replicas = new ArrayList<SolrClient>(notLeaders.size());
-    for (Replica r : notLeaders) replicas.add(getSolrClient(r));
+    for (Replica r : notLeaders) replicas.add(getHttpSolrClient(r.getCoreUrl()));
 
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
@@ -346,10 +346,6 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         replicaSolr.close();
       }
     }
-  }
-
-  protected SolrClient getSolrClient(Replica replica) {
-    return getHttpSolrClient(replica.getCoreUrl());
   }
 
   protected void sendDoc(int docId) throws Exception {

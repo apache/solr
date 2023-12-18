@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -46,7 +45,7 @@ import org.junit.BeforeClass;
 public class TestSortableTextField extends SolrTestCaseJ4 {
 
   protected static final String BIG_CONST =
-      StringUtils.repeat("x", SortableTextField.DEFAULT_MAX_CHARS_FOR_DOC_VALUES);
+      "x".repeat(SortableTextField.DEFAULT_MAX_CHARS_FOR_DOC_VALUES);
 
   @BeforeClass
   public static void create() throws Exception {

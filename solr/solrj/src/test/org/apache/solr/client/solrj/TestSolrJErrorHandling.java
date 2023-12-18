@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -320,7 +319,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       }
     }
 
-    String rbody = IOUtils.toString(is, StandardCharsets.UTF_8);
+    String rbody = new String(is.readAllBytes(), StandardCharsets.UTF_8);
     log.info("RESPONSE BODY:{}", rbody);
   }
 
