@@ -87,7 +87,16 @@ public class LocalFileSystemRepository implements BackupRepository {
     if (override == null) {
       return baseLocation.toString();
     }
-    Path overridePath = Path.of(override);
+    URI overrideUri = null;
+    try {
+      overrideUri = new URI(override);
+      if (!overrideUri.isAbsolute()) {
+        overrideUri = Path.of(override).toUri();
+      }
+    } catch (URISyntaxException ex) {
+      overrideUri = Path.of(override).toUri();
+    }
+    Path overridePath = Path.of(overrideUri.getPath());
     if (!overridePath.isAbsolute()) {
       overridePath = baseLocation.resolve(overridePath);
     }
