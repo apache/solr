@@ -507,8 +507,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       FieldWriter writer;
 
       if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
-        if (solrReturnFields.getRequestedFieldNames() != null && solrReturnFields.getRequestedFieldNames().contains(field)) {
-          // Explicitly requested field cannot be used due to not having useDocValuesAsStored=true, throw exception
+        if (solrReturnFields.getRequestedFieldNames() != null
+            && solrReturnFields.getRequestedFieldNames().contains(field)) {
+          // Explicitly requested field cannot be used due to not having useDocValuesAsStored=true,
+          // throw exception
           throw new IOException(
               schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
         } else {
