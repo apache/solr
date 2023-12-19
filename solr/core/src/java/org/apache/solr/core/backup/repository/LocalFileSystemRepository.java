@@ -57,6 +57,9 @@ public class LocalFileSystemRepository implements BackupRepository {
     baseLocation =
         Optional.<String>ofNullable(getConfigProperty(CoreAdminParams.BACKUP_LOCATION))
             .map(Path::of)
+            .or(
+                () -> Optional.ofNullable(System.getProperty("solr.backups.path")).map(Path::of)
+            )
             .orElseThrow(
                 () ->
                     new SolrException(

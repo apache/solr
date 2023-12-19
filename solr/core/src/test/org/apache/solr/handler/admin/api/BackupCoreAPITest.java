@@ -19,8 +19,11 @@ package org.apache.solr.handler.admin.api;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCoreBackupRequestBody;
 import org.apache.solr.common.SolrException;
@@ -42,10 +45,21 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
   private CreateCoreBackup backupCoreAPI;
   private static final String backupName = "my-new-backup";
 
+  private static Path backupLocation;
+
   @BeforeClass
   public static void initializeCoreAndRequestFactory() throws Exception {
+    backupLocation = createTempDir().toAbsolutePath();
+    System.setProperty("solr.backups.path", backupLocation.toString());
+    System.setProperty("solr.allowPaths", backupLocation.toString());
     initCore("solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("/api", 0, 10);
+  }
+
+  @AfterClass
+  public static void removeSysProps() throws Exception {
+    System.setProperty("solr.backups.path", "");
+    System.setProperty("solr.allowPaths", "");
   }
 
   @Before
@@ -76,26 +90,6 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     assertEquals("snapshot." + backupName, response.directoryName);
     assertEquals(1, response.fileCount);
     assertEquals(1, response.indexFileCount);
-  }
-
-  @Test
-  public void testMissingLocationParameter() throws Exception {
-    CreateCoreBackupRequestBody backupCoreRequestBody = createBackupCoreRequestBody();
-    backupCoreRequestBody.location = null;
-    backupCoreRequestBody.incremental = false;
-    backupCoreRequestBody.backupName = backupName;
-    final SolrException solrException =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              backupCoreAPI.createBackup(coreName, backupCoreRequestBody);
-            });
-    assertEquals(500, solrException.code());
-    assertTrue(
-        "Exception message differed from expected: " + solrException.getMessage(),
-        solrException
-            .getMessage()
-            .contains("'location' parameter is not specified in the request body"));
   }
 
   @Test
@@ -151,8 +145,10 @@ public class BackupCoreAPITest extends SolrTestCaseJ4 {
     deleteCore();
   }
 
-  private Path createBackupLocation() {
-    return createTempDir().toAbsolutePath();
+  private static Path createBackupLocation() throws IOException {
+    Path locationPath = backupLocation.resolve(random().nextLong() + "");
+    Files.createDirectory(locationPath);
+    return locationPath;
   }
 
   private URI bootstrapBackupLocation(Path locationPath) throws IOException {

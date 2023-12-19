@@ -18,6 +18,8 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.lucene.index.DirectoryReader;
@@ -37,14 +39,26 @@ import org.junit.Before;
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
+
+  private static Path backupLocation;
+
   @Before // unique core per test
   public void coreInit() throws Exception {
+    backupLocation = createTempDir().toAbsolutePath();
+    System.setProperty("solr.backups.path", backupLocation.toString());
     initCore("solrconfig.xml", "schema.xml");
   }
 
   @After // unique core per test
   public void coreDestroy() {
     deleteCore();
+    System.setProperty("solr.backups.path", "");
+  }
+
+  private static Path createBackupLocation() throws IOException {
+    Path locationPath = backupLocation.resolve(random().nextLong() + "");
+    Files.createDirectory(locationPath);
+    return locationPath;
   }
 
   public void testBackupWithDocsNotSearchable() throws Exception {
@@ -61,7 +75,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     assertQ(req("q", "id:2"), "//result[@numFound='0']");
 
     // call backup
-    String location = createTempDir().toFile().getAbsolutePath();
+    String location = createBackupLocation().toString();
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
 
     final CoreContainer cores = h.getCoreContainer();
@@ -108,7 +122,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    final File backupDir = createTempDir().toFile();
+    final File backupDir = createBackupLocation().toFile();
     cores.getAllowPaths().add(backupDir.toPath());
 
     { // first a backup before we've ever done *anything*...
@@ -237,7 +251,7 @@ public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    final File backupDir = createTempDir().toFile();
+    final File backupDir = createBackupLocation().toFile();
     cores.getAllowPaths().add(backupDir.toPath());
 
     { // take an initial 'backup1a' containing our 1 document
