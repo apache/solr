@@ -35,23 +35,28 @@ public class ClusterPluginsSourceConfigurator implements NamedListInitializedPlu
   private static final String DEFAULT_CLASS_NAME =
       System.getProperty("solr.clusterPluginsSource", ZkClusterPluginsSource.class.getName());
 
+  /**
+   * Resolves the name of the class that will be used to provide cluster plugins
+   *
+   * @param pluginInfo The clusterPluginsSource plugin from the NodeConfig
+   * @return The name of the class to use as the {@link ClusterPluginsSource}
+   */
+  public static String resolveClassName(final PluginInfo pluginInfo) {
+    return pluginInfo != null && pluginInfo.isEnabled() ? pluginInfo.className : DEFAULT_CLASS_NAME;
+  }
+
   public static ClusterPluginsSource loadClusterPluginsSource(
       CoreContainer cc, SolrResourceLoader loader, PluginInfo info) {
-    ClusterPluginsSource clusterPluginsSource;
-    if (info != null && info.isEnabled()) {
-      clusterPluginsSource = newInstance(loader, info.className, cc);
-      if (info.initArgs != null) {
-        Map<String, Object> config = new HashMap<>();
-        info.initArgs.toMap(config);
-        try {
-          ContainerPluginsRegistry.configure(clusterPluginsSource, config, null);
-        } catch (IOException e) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR, "Invalid " + info.type + " configuration", e);
-        }
+    ClusterPluginsSource clusterPluginsSource = newInstance(loader, resolveClassName(info), cc);
+    if (info != null && info.isEnabled() && info.initArgs != null) {
+      Map<String, Object> config = new HashMap<>();
+      info.initArgs.toMap(config);
+      try {
+        ContainerPluginsRegistry.configure(clusterPluginsSource, config, null);
+      } catch (IOException e) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Invalid " + info.type + " configuration", e);
       }
-    } else {
-      clusterPluginsSource = newInstance(loader, DEFAULT_CLASS_NAME, cc);
     }
     return clusterPluginsSource;
   }

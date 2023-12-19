@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.api.ClusterPluginsSourceConfigurator;
 import org.apache.solr.api.NodeConfigClusterPluginsSource;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
@@ -222,10 +223,8 @@ public class NodeConfig {
 
     if (this.clusterSingletonPlugins != null
         && this.clusterSingletonPlugins.length > 0
-        && (this.clusterPluginsSource == null
-            || !NodeConfigClusterPluginsSource.class
-                .getName()
-                .equals(this.clusterPluginsSource.className))) {
+        && !ClusterPluginsSourceConfigurator.resolveClassName(this.clusterPluginsSource)
+            .equals(NodeConfigClusterPluginsSource.class.getName())) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
           "clusterSingleton section found in solr.xml but clusterPluginsSource is not NodeConfigClusterPluginsSource");

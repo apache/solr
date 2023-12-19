@@ -156,6 +156,8 @@ However, their start/stop life-cycle, as defined in the interface, is controlled
 Any plugin can implement this interface to indicate to Solr that
 it requires this cluster singleton behavior.
 
+`ClusterSingleton` plugins can also be configured by declaring them in xref:configuring-solr-xml.adoc[solr.xml].
+
 === ClusterEventProducer Plugins
 
 In order to support the generation of cluster-level events an implementation of

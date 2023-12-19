@@ -64,7 +64,7 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
    */
   public void testClusterSingletonsRegistered() {
 
-    CoreContainer cc = cluster.getOpenOverseer().getCoreContainer();
+    CoreContainer cc = cluster.getJettySolrRunners().get(0).getCoreContainer();
     assertEquals(
         "expected 2 plugins to be installed to the container plugins registry",
         2,

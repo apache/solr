@@ -676,7 +676,7 @@ public class SolrXmlConfig {
               + "' found in solr.xml");
     }
 
-    return plugins.toArray(new PluginInfo[nodes.size()]);
+    return plugins.toArray(new PluginInfo[0]);
   }
 
   private static MetricsConfig getMetricsConfig(ConfigNode metrics) {

@@ -20,6 +20,8 @@ Improvements
 
 * SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
 
+* SOLR-17096: Support for Cluster Singleton plugins with immutable deployments (Paul McArthur)
+
 Optimizations
 ---------------------
 (No changes)
