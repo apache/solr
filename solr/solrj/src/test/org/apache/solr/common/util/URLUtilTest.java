@@ -32,4 +32,54 @@ public class URLUtilTest extends SolrTestCase {
     assertEquals("http://", URLUtil.getScheme("http://host:1928"));
     assertEquals("https://", URLUtil.getScheme("https://host:1928"));
   }
+
+  @Test
+  public void testCanExtractBaseUrl() {
+    assertEquals(
+        "http://localhost:8983/solr",
+        URLUtil.extractBaseUrl("http://localhost:8983/solr/techproducts"));
+    assertEquals(
+        "http://localhost:8983/solr",
+        URLUtil.extractBaseUrl("http://localhost:8983/solr/techproducts/"));
+
+    assertEquals(
+        "http://localhost/solr", URLUtil.extractBaseUrl("http://localhost/solr/techproducts"));
+    assertEquals(
+        "http://localhost/solr", URLUtil.extractBaseUrl("http://localhost/solr/techproducts/"));
+
+    assertEquals(
+        "http://localhost:8983/root/solr",
+        URLUtil.extractBaseUrl("http://localhost:8983/root/solr/techproducts"));
+    assertEquals(
+        "http://localhost:8983/root/solr",
+        URLUtil.extractBaseUrl("http://localhost:8983/root/solr/techproducts/"));
+  }
+
+  @Test
+  public void testCanExtractCoreNameFromCoreUrl() {
+    assertEquals(
+        "techproducts", URLUtil.extractCoreFromCoreUrl("http://localhost:8983/solr/techproducts"));
+    assertEquals(
+        "techproducts", URLUtil.extractCoreFromCoreUrl("http://localhost:8983/solr/techproducts/"));
+
+    assertEquals(
+        "techproducts", URLUtil.extractCoreFromCoreUrl("http://localhost/solr/techproducts"));
+    assertEquals(
+        "techproducts", URLUtil.extractCoreFromCoreUrl("http://localhost/solr/techproducts/"));
+
+    assertEquals(
+        "techproducts",
+        URLUtil.extractCoreFromCoreUrl("http://localhost:8983/root/solr/techproducts"));
+    assertEquals(
+        "techproducts",
+        URLUtil.extractCoreFromCoreUrl("http://localhost:8983/root/solr/techproducts/"));
+
+    // Exercises most of the edge cases that SolrIdentifierValidator allows
+    assertEquals(
+        "sTrAnGe-name.for_core",
+        URLUtil.extractCoreFromCoreUrl("http://localhost:8983/solr/sTrAnGe-name.for_core"));
+    assertEquals(
+        "sTrAnGe-name.for_core",
+        URLUtil.extractCoreFromCoreUrl("http://localhost:8983/solr/sTrAnGe-name.for_core/"));
+  }
 }
