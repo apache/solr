@@ -23,7 +23,6 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -82,9 +81,11 @@ import org.slf4j.MDC;
 public class LBHttp2SolrClient extends LBSolrClient {
   private final Http2SolrClient solrClient;
 
-  private LBHttp2SolrClient(Http2SolrClient solrClient, List<String> baseSolrUrls) {
-    super(baseSolrUrls);
-    this.solrClient = solrClient;
+  private LBHttp2SolrClient(Builder builder) {
+    super(Arrays.asList(builder.baseSolrUrls));
+    this.solrClient = builder.http2SolrClient;
+    this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   @Override
@@ -253,6 +254,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     private final Http2SolrClient http2SolrClient;
     private final String[] baseSolrUrls;
 
+
     //Boolean parameter to make zombie ping checks configurable. If true, zombie ping checks are enabled.
     // If false, zombieServers are monitored to check for servers that have spent at least minZombieReleaseTimeMillis as zombies and release them
     private boolean enableZombiePingChecks;
@@ -303,6 +305,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
+
     /**
      * With this parameter, zombie checking (ping dead servers at fixed interval) or zombie tracking (monitor zombieServers to check who can be released as zombies, minus the pings) is supported
      * @param enableZombiePingChecks If set to true, this would enable zombie ping checks, else only do zombie tracking, thereby holding a server as zombie for atleast minZombieReleaseTimeMillis
@@ -324,8 +327,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
-
-
     public LBHttp2SolrClient build() {
       LBHttp2SolrClient solrClient =
           new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
@@ -333,6 +334,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
       solrClient.zombieCheckIntervalMillis = this.enableZombiePingChecks ? this.zombiePingIntervalMillis: this.zombieStateMonitoringIntervalMillis;
       solrClient.minZombieReleaseTimeMillis = this.minZombieReleaseTimeMillis;
       return solrClient;
+      
+      
+    /** Sets a default collection for collection-based requests. */
+    public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCollection) {
+      this.defaultCollection = defaultCollection;
+      return this;
+    }
+
     }
   }
 }
