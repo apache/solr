@@ -147,7 +147,7 @@ Note that the default logic is changed when <<Limiting Facet with Certain Terms>
 |Optional |Default: `100`
 |===
 +
-The number of facets for a field that are returned.
+The number of facet counts returned.
 A negative value means that Solr will return unlimited number of constraint counts.
 
 `facet.offset`::
@@ -392,7 +392,7 @@ To ensure you avoid double-counting, do not choose both `lower` and `upper`, do 
 |Optional |Default: none
 |===
 +
-In addition to the counts for each range constraint between `facet.range.start` and `facet.range.end`, counts should also be computed for these options:
+In addition to the counts for each range constraint between `facet.range.start` and `facet.range.end`, counts will also be computed for these options:
 
 * `before`: All records with field values lower than lower bound of the first range.
 * `after`: All records with field values greater than the upper bound of the last range.
