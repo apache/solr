@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import java.util.List;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -30,9 +29,7 @@ import org.apache.solr.util.ThreadStats;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Test that cpuTime is generated a
- */
+/** Test that cpuTime is generated a */
 public class CpuTimeTestCase extends SolrCloudTestCase {
   private static final String COLLECTION = "cpuTimeCollection1shard";
   private static final String COLLECTIONWITHSHARDS = "cpuTimeCollection2shard";
@@ -42,7 +39,7 @@ public class CpuTimeTestCase extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
 
     System.setProperty(ThreadStats.ENABLE_CPU_TIME, "true");
-    
+
     // create and configure cluster
     configureCluster(2).addConfig("conf", configset("cloud-dynamic")).configure();
 
@@ -71,13 +68,13 @@ public class CpuTimeTestCase extends SolrCloudTestCase {
   public static void clearSettings() throws Exception {
     System.clearProperty(ThreadStats.ENABLE_CPU_TIME);
   }
-  
+
   @Test
   public void testCpuTimeInResponse() throws Exception {
     checkCpuTimeInResponseOnCollection(COLLECTION);
     checkCpuTimeInResponseOnCollection(COLLECTIONWITHSHARDS);
   }
-  
+
   public void checkCpuTimeInResponseOnCollection(String collection) throws Exception {
     final SolrQuery solrQuery =
         new SolrQuery(
@@ -85,7 +82,7 @@ public class CpuTimeTestCase extends SolrCloudTestCase {
     System.setProperty(ThreadStats.ENABLE_CPU_TIME, "true");
 
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();
-    
+
     final QueryResponse rsp = cloudSolrClient.query(collection, solrQuery);
     NamedList<Object> header = rsp.getHeader();
     List<Object> localCpuTimes = header.getAll(ThreadStats.LOCAL_CPU_TIME);
