@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-_Note: this article dates from Jan 2016. While this approach would still work, in Jan 2019 this would typically done with Docker cluster and orchestration tools like Kubernetes. See for example https://lucidworks.com/2019/02/07/running-solr-on-kubernetes-part-1/[this blog post]._
+_Note: this article dates from Jan 2016. While this approach would still work, in Jan 2019 this would typically done with Docker cluster and orchestration tools like Kubernetes. See for example https://lucidworks.com/post/running-solr-on-kubernetes-part-1/[this blog post]._
 
 In this example I'll create a cluster with 3 ZooKeeper nodes and 3 Solr nodes, distributed over 3 machines (trinity10, trinity20, trinity30).
 I'll use an overlay network, specify fixed IP addresses when creating containers, and I'll pass in explicit `/etc/hosts` entries to make sure they are available even when nodes are down.
