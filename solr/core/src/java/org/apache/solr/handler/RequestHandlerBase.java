@@ -258,7 +258,10 @@ public abstract class RequestHandlerBase
         if (cpuTime.isPresent()) {
           NamedList<Object> header = rsp.getResponseHeader();
           if (header != null) {
-            header.add(ThreadStats.LOCAL_CPU_TIME, cpuTime.get());
+            Object distributedCpuTime = header.get(ThreadStats.CPU_TIME);
+            if (distributedCpuTime == null) {
+              header.add(ThreadStats.CPU_TIME, cpuTime.get());
+            }
           }
           rsp.addToLog(ThreadStats.LOCAL_CPU_TIME, cpuTime.get());
         }

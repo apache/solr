@@ -617,7 +617,7 @@ public class SearchHandler extends RequestHandlerBase
                             .getResponse()
                             .get(SolrQueryResponse.RESPONSE_HEADER_KEY);
                 if (header != null) {
-                  Long shardCpuTime = (Long) header.get(ThreadStats.LOCAL_CPU_TIME);
+                  Long shardCpuTime = (Long) header.get(ThreadStats.CPU_TIME);
                   if (shardCpuTime != null) {
                     totalShardCpuTime += shardCpuTime;
                   }
@@ -635,8 +635,8 @@ public class SearchHandler extends RequestHandlerBase
       } while (nextStage != Integer.MAX_VALUE);
 
       if (publishCpuTime) {
-        rsp.getResponseHeader().add(ThreadStats.SHARDS_CPU_TIME, totalShardCpuTime);
-        rsp.addToLog(ThreadStats.SHARDS_CPU_TIME, totalShardCpuTime);
+        rsp.getResponseHeader().add(ThreadStats.CPU_TIME, totalShardCpuTime);
+        rsp.addToLog(ThreadStats.CPU_TIME, totalShardCpuTime);
       }
     }
 

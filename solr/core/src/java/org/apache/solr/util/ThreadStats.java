@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ThreadStats {
   private static final long UNSUPPORTED = -1;
-  public static final String SHARDS_CPU_TIME = "cpuTime";
+  public static final String CPU_TIME = "cpuTime";
   public static final String LOCAL_CPU_TIME = "localCpuTime";
   public static final String ENABLE_CPU_TIME = "solr.enableCpuTime";
 
