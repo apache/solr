@@ -285,6 +285,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     public long getTimestamp() {
       return timestamp;
     }
+
     /**
      * Package protected method for test purposes
      *

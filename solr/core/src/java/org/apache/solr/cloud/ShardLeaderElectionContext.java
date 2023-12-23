@@ -21,6 +21,7 @@ import java.util.EnumSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -46,6 +47,8 @@ import org.slf4j.LoggerFactory;
 
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final EnumSet<Replica.Type> leaderEligibleReplicaTypes =
+      CollectionHandlingUtils.leaderEligibleReplicaTypes();
 
   private final CoreContainer cc;
   private final SyncStrategy syncStrategy;
@@ -88,8 +91,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public ElectionContext copy() {
-    return new ShardLeaderElectionContext(
-        leaderElector, shardId, collection, id, leaderProps, zkController, cc);
+    ShardLeaderElectionContext context =
+        new ShardLeaderElectionContext(
+            leaderElector, shardId, collection, id, leaderProps, zkController, cc);
+    context.leaderSeqPath = this.leaderSeqPath;
+    context.leaderZkNodeParentVersion = this.leaderZkNodeParentVersion;
+    return context;
   }
 
   /*
@@ -456,16 +463,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
 
         // on startup and after connection timeout, wait for all known shards
-        if (found >= slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT)).size()) {
+        if (found >= slices.getReplicas(leaderEligibleReplicaTypes).size()) {
           log.info("Enough replicas found to continue.");
           return true;
         } else {
           if (cnt % 40 == 0) {
             if (log.isInfoEnabled()) {
               log.info(
-                  "Waiting until we see more replicas up for shard {}: total={} found={} timeoute in={}ms",
+                  "Waiting until we see more replicas up for shard {}: total={} found={} timeout in={}ms",
                   shardId,
-                  slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT)).size(),
+                  slices.getReplicas(leaderEligibleReplicaTypes).size(),
                   found,
                   TimeUnit.MILLISECONDS.convert(
                       timeoutAt - System.nanoTime(), TimeUnit.NANOSECONDS));

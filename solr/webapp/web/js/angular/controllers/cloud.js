@@ -423,9 +423,10 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
               var cores = nodes[node]['cores'];
               var indexSizeTotal = 0;
+              var indexSizeMax = 0;
               var docsTotal = 0;
               var graphData = [];
-              for (coreId in cores) {
+              for (let coreId in cores) {
                 var core = cores[coreId];
                 if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
                   // If core state is not active, display the real state, or if shard is inactive, display that
@@ -440,7 +441,8 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  indexSizeTotal += size;
+                  indexSizeTotal = indexSizeTotal + size;
+                  indexSizeMax = size > indexSizeMax ? size : indexSizeMax;
                   var numDocs = coreMetric['SEARCHER.searcher.numDocs'];
                   numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
                   core['numDocs'] = numDocs;
@@ -455,12 +457,14 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   core['warmupTime'] = warmupTime;
                   docsTotal += core['numDocs'];
                 }
-
+              }
+              for (let coreId in cores) {
+                var core = cores[coreId];
                 var graphObj = {};
                 graphObj['label'] = core['label'];
                 graphObj['size'] = core['sizeInBytes'];
                 graphObj['sizeHuman'] = core['size'];
-                graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
+                graphObj['pct'] = (core['sizeInBytes'] / indexSizeMax) * 100;
                 graphData.push(graphObj);
               }
               if (cores) {

@@ -85,6 +85,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
+/** Supports export command in the bin/solr script. */
 public class ExportTool extends ToolBase {
   @Override
   public String getName() {
@@ -93,11 +94,45 @@ public class ExportTool extends ToolBase {
 
   @Override
   public List<Option> getOptions() {
-    return OPTIONS;
+    return List.of(
+        Option.builder("url")
+            .hasArg()
+            .required()
+            .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
+            .build(),
+        Option.builder("out")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
+            .build(),
+        Option.builder("format")
+            .hasArg()
+            .required(false)
+            .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
+            .build(),
+        Option.builder("compress").required(false).desc("Compress the output.").build(),
+        Option.builder("limit")
+            .hasArg()
+            .required(false)
+            .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
+            .build(),
+        Option.builder("query")
+            .hasArg()
+            .required(false)
+            .desc("A custom query, default is '*:*'.")
+            .build(),
+        Option.builder("fields")
+            .hasArg()
+            .required(false)
+            .desc("Comma separated list of fields to export. By default all fields are fetched.")
+            .build(),
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   public abstract static class Info {
     String baseurl;
+    String credentials;
     String format;
     boolean compress;
     String query;
@@ -112,8 +147,9 @@ public class ExportTool extends ToolBase {
     CloudSolrClient solrClient;
     DocsSink sink;
 
-    public Info(String url) {
+    public Info(String url, String credentials) {
       setUrl(url);
+      setCredentials(credentials);
       setOutFormat(null, "jsonl", false);
     }
 
@@ -122,6 +158,10 @@ public class ExportTool extends ToolBase {
       baseurl = url.substring(0, idx);
       coll = url.substring(idx + 1);
       query = "*:*";
+    }
+
+    public void setCredentials(String credentials) {
+      this.credentials = credentials;
     }
 
     public void setLimit(String maxDocsStr) {
@@ -169,7 +209,13 @@ public class ExportTool extends ToolBase {
     abstract void exportDocs() throws Exception;
 
     void fetchUniqueKey() throws SolrServerException, IOException {
-      solrClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl)).build();
+      Http2SolrClient.Builder builder =
+          new Http2SolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
+
+      solrClient =
+          new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl))
+              .withInternalClientBuilder(builder)
+              .build();
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
@@ -201,7 +247,8 @@ public class ExportTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
-    Info info = new MultiThreadedRunner(url);
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    Info info = new MultiThreadedRunner(url, credentials);
     info.query = cli.getOptionValue("query", "*:*");
     info.setOutFormat(
         cli.getOptionValue("out"), cli.getOptionValue("format"), cli.hasOption("compress"));
@@ -228,41 +275,6 @@ public class ExportTool extends ToolBase {
 
     void end() throws IOException {}
   }
-
-  private static final List<Option> OPTIONS =
-      List.of(
-          Option.builder("url")
-              .hasArg()
-              .required()
-              .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
-              .build(),
-          Option.builder("out")
-              .hasArg()
-              .required(false)
-              .desc(
-                  "Path to output the exported data, and optionally the file name, defaults to 'collection-name'.")
-              .build(),
-          Option.builder("format")
-              .hasArg()
-              .required(false)
-              .desc("Output format for exported docs (json, jsonl or javabin), defaulting to json.")
-              .build(),
-          Option.builder("compress").required(false).desc("Compress the output.").build(),
-          Option.builder("limit")
-              .hasArg()
-              .required(false)
-              .desc("Maximum number of docs to download. Default is 100, use -1 for all docs.")
-              .build(),
-          Option.builder("query")
-              .hasArg()
-              .required(false)
-              .desc("A custom query, default is '*:*'.")
-              .build(),
-          Option.builder("fields")
-              .hasArg()
-              .required(false)
-              .desc("Comma separated list of fields to export. By default all fields are fetched.")
-              .build());
 
   static class JsonWithLinesSink extends DocsSink {
     private final CharArr charArr = new CharArr(1024 * 2);
@@ -493,8 +505,8 @@ public class ExportTool extends ToolBase {
     private final long startTime;
 
     @SuppressForbidden(reason = "Need to print out time")
-    public MultiThreadedRunner(String url) {
-      super(url);
+    public MultiThreadedRunner(String url, String credentials) {
+      super(url, credentials);
       startTime = System.currentTimeMillis();
     }
 
@@ -606,7 +618,7 @@ public class ExportTool extends ToolBase {
 
       boolean exportDocsFromCore() throws IOException, SolrServerException {
 
-        try (SolrClient client = new Http2SolrClient.Builder(baseurl).build()) {
+        try (SolrClient client = SolrCLI.getSolrClient(baseurl, credentials)) {
           expectedDocs = getDocCount(replica.getCoreName(), client, query);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();

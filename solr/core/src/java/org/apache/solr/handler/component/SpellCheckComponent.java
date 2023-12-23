@@ -438,10 +438,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
     if (collate) {
       SpellCheckCollation[] sortedCollations =
-          mergeData
-              .collations
-              .values()
-              .toArray(new SpellCheckCollation[mergeData.collations.size()]);
+          mergeData.collations.values().toArray(new SpellCheckCollation[0]);
       Arrays.sort(sortedCollations);
 
       NamedList<Object> collations = new NamedList<>();

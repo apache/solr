@@ -92,7 +92,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     SolrClient solrClient = null;
     try {
       httpClient = HttpClientUtil.createClient(null);
-      String baseUrl = buildUrl(jetty.getLocalPort(), "/solr");
+      String baseUrl = buildUrl(jetty.getLocalPort());
       solrClient = getHttpSolrClient(baseUrl);
 
       verifySecurityStatus(httpClient, baseUrl + authcPrefix, "/errorMessages", null, 20);
@@ -201,8 +201,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir().toString());
     JettySolrRunner jetty =
-        new JettySolrRunner(
-            instance.getHomeDir().toString(), nodeProperties, buildJettyConfig("/solr"));
+        new JettySolrRunner(instance.getHomeDir().toString(), nodeProperties, buildJettyConfig());
     jetty.start();
     return jetty;
   }

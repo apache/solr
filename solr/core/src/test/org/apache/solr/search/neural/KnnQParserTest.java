@@ -20,6 +20,7 @@ import static org.apache.solr.search.neural.KnnQParser.DEFAULT_TOP_K;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -38,7 +39,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   @Before
   public void prepareIndex() throws Exception {
     /* vectorDimension="4" similarityFunction="cosine" */
-    initCore("solrconfig-basic.xml", "schema-densevector.xml");
+    initCore("solrconfig_codec.xml", "schema-densevector.xml");
 
     List<SolrInputDocument> docsToIndex = this.prepareDocs();
     for (SolrInputDocument doc : docsToIndex) {
@@ -212,6 +213,92 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.='11']",
         "//result/doc[2]/str[@name='id'][.='13']",
         "//result/doc[3]/str[@name='id'][.='12']");
+  }
+
+  @Test
+  public void highDimensionFloatVectorField_shouldSearchOnThatField() {
+    int highDimension = 2048;
+    List<SolrInputDocument> docsToIndex = this.prepareHighDimensionFloatVectorsDocs(highDimension);
+    for (SolrInputDocument doc : docsToIndex) {
+      assertU(adoc(doc));
+    }
+    assertU(commit());
+
+    float[] highDimensionalityQueryVector = new float[highDimension];
+    for (int i = 0; i < highDimension; i++) {
+      highDimensionalityQueryVector[i] = i;
+    }
+    String vectorToSearch = Arrays.toString(highDimensionalityQueryVector);
+
+    assertQ(
+        req(CommonParams.Q, "{!knn f=2048_float_vector topK=1}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='1']");
+  }
+
+  @Test
+  public void highDimensionByteVectorField_shouldSearchOnThatField() {
+    int highDimension = 2048;
+    List<SolrInputDocument> docsToIndex = this.prepareHighDimensionByteVectorsDocs(highDimension);
+    for (SolrInputDocument doc : docsToIndex) {
+      assertU(adoc(doc));
+    }
+    assertU(commit());
+
+    byte[] highDimensionalityQueryVector = new byte[highDimension];
+    for (int i = 0; i < highDimension; i++) {
+      highDimensionalityQueryVector[i] = (byte) (i % 127);
+    }
+    String vectorToSearch = Arrays.toString(highDimensionalityQueryVector);
+
+    assertQ(
+        req(CommonParams.Q, "{!knn f=2048_byte_vector topK=1}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='1']");
+  }
+
+  private List<SolrInputDocument> prepareHighDimensionFloatVectorsDocs(int highDimension) {
+    int docsCount = 13;
+    String field = "2048_float_vector";
+    List<SolrInputDocument> docs = new ArrayList<>(docsCount);
+
+    for (int i = 1; i < docsCount + 1; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField(IDField, i);
+      docs.add(doc);
+    }
+
+    for (int i = 0; i < docsCount; i++) {
+      List<Integer> highDimensionalityVector = new ArrayList<>();
+      for (int j = i * highDimension; j < highDimension; j++) {
+        highDimensionalityVector.add(j);
+      }
+      docs.get(i).addField(field, highDimensionalityVector);
+    }
+    Collections.reverse(docs);
+    return docs;
+  }
+
+  private List<SolrInputDocument> prepareHighDimensionByteVectorsDocs(int highDimension) {
+    int docsCount = 13;
+    String field = "2048_byte_vector";
+    List<SolrInputDocument> docs = new ArrayList<>(docsCount);
+
+    for (int i = 1; i < docsCount + 1; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField(IDField, i);
+      docs.add(doc);
+    }
+
+    for (int i = 0; i < docsCount; i++) {
+      List<Integer> highDimensionalityVector = new ArrayList<>();
+      for (int j = i * highDimension; j < highDimension; j++) {
+        highDimensionalityVector.add(j % 127);
+      }
+      docs.get(i).addField(field, highDimensionalityVector);
+    }
+    Collections.reverse(docs);
+    return docs;
   }
 
   @Test

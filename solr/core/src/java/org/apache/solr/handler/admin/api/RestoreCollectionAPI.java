@@ -24,11 +24,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
-import static org.apache.solr.common.params.CollectionAdminParams.NRT_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
-import static org.apache.solr.common.params.CollectionAdminParams.PULL_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
@@ -41,13 +38,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import org.apache.solr.client.api.model.CreateCollectionRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -56,8 +59,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
-import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -70,14 +71,14 @@ import org.apache.solr.response.SolrQueryResponse;
 public class RestoreCollectionAPI extends BackupAPIBase {
 
   private static final Set<String> CREATE_PARAM_ALLOWLIST =
-      Set.of(
-          COLL_CONF,
-          REPLICATION_FACTOR,
-          NRT_REPLICAS,
-          TLOG_REPLICAS,
-          PULL_REPLICAS,
-          CREATE_NODE_SET_PARAM,
-          CREATE_NODE_SET_SHUFFLE_PARAM);
+      Stream.concat(
+              CollectionHandlingUtils.numReplicasProperties().stream(),
+              Stream.of(
+                  COLL_CONF,
+                  REPLICATION_FACTOR,
+                  CREATE_NODE_SET_PARAM,
+                  CREATE_NODE_SET_SHUFFLE_PARAM))
+          .collect(Collectors.toUnmodifiableSet());
 
   @Inject
   public RestoreCollectionAPI(
@@ -108,8 +109,8 @@ public class RestoreCollectionAPI extends BackupAPIBase {
     }
 
     final String collectionName = requestBody.collection;
-    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
     SolrIdentifierValidator.validateCollectionName(collectionName);
+    recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
     if (coreContainer.getAliases().hasAlias(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -121,8 +122,8 @@ public class RestoreCollectionAPI extends BackupAPIBase {
 
     final var createRequestBody = requestBody.createCollectionParams;
     if (createRequestBody != null) {
-      CreateCollectionAPI.populateDefaultsIfNecessary(coreContainer, createRequestBody);
-      createRequestBody.validate();
+      CreateCollection.populateDefaultsIfNecessary(coreContainer, createRequestBody);
+      CreateCollection.validateRequestBody(createRequestBody);
       if (Boolean.FALSE.equals(createRequestBody.createReplicas)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -143,10 +144,14 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       throw remoteResponse.getException();
     }
 
+    if (requestBody.async != null) {
+      response.requestId = requestBody.async;
+      return response;
+    }
+
     // Values fetched from remoteResponse may be null
     response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
     response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
-
     return response;
   }
 
@@ -160,7 +165,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       // RESTORE only supports a subset of collection-creation params, so filter by those when
       // constructing the remote message
       remoteMessage.remove("create-collection");
-      CreateCollectionAPI.createRemoteMessage(createReqBody).getProperties().entrySet().stream()
+      CreateCollection.createRemoteMessage(createReqBody).getProperties().entrySet().stream()
           .filter(
               e ->
                   CREATE_PARAM_ALLOWLIST.contains(e.getKey())
@@ -204,7 +209,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
     @JsonProperty public Integer backupId;
 
     @JsonProperty(CREATE_COLLECTION_KEY)
-    public CreateCollectionAPI.CreateCollectionRequestBody createCollectionParams;
+    public CreateCollectionRequestBody createCollectionParams;
 
     @JsonProperty public String async;
 
@@ -217,7 +222,7 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       restoreBody.async = solrParams.get(ASYNC);
 
       restoreBody.createCollectionParams =
-          CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(solrParams, false);
+          CreateCollection.createRequestBodyFromV1Params(solrParams, false);
 
       return restoreBody;
     }

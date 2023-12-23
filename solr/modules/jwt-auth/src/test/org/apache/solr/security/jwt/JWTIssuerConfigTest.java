@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONUtil;
 
+@SuppressWarnings("HttpUrlsUsage")
 public class JWTIssuerConfigTest extends SolrTestCase {
   private JWTIssuerConfig testIssuer;
   private Map<String, Object> testIssuerConfigMap;
@@ -53,15 +54,19 @@ public class JWTIssuerConfigTest extends SolrTestCase {
             .setAud("audience")
             .setClientId("clientid")
             .setWellKnownUrl("wellknown")
-            .setAuthorizationEndpoint("https://issuer/authz");
+            .setAuthorizationEndpoint("https://issuer/authz")
+            .setTokenEndpoint("https://issuer/token")
+            .setAuthorizationFlow("code_pkce");
 
     testIssuerConfigMap = testIssuer.asConfig();
 
     testIssuerJson =
         "{\n"
             + "  \"aud\":\"audience\",\n"
+            + "  \"tokenEndpoint\":\"https://issuer/token\",\n"
             + "  \"wellKnownUrl\":\"wellknown\",\n"
             + "  \"clientId\":\"clientid\",\n"
+            + "  \"authorizationFlow\":\"code_pkce\",\n"
             + "  \"jwksUrl\":[\"https://issuer/path\"],\n"
             + "  \"name\":\"name\",\n"
             + "  \"iss\":\"issuer\",\n"
@@ -87,6 +92,11 @@ public class JWTIssuerConfigTest extends SolrTestCase {
   public void parseConfigMapNoName() {
     testIssuerConfigMap.remove("name"); // Will fail validation
     new JWTIssuerConfig(testIssuerConfigMap).isValid();
+  }
+
+  @Test(expected = SolrException.class)
+  public void setInvalidAuthorizationFlow() {
+    new JWTIssuerConfig("name").setAuthorizationFlow("invalid_flow");
   }
 
   @Test
@@ -144,7 +154,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
 
     JWTIssuerConfig issuerConfig = new JWTIssuerConfig(issuerConfigMap);
 
-    SolrException e = expectThrows(SolrException.class, () -> issuerConfig.getHttpsJwks());
+    SolrException e = expectThrows(SolrException.class, issuerConfig::getHttpsJwks);
     assertEquals(400, e.code());
     assertEquals(
         "jwksUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.",
@@ -173,6 +183,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
     assertEquals("http://acmepaymentscorp", config.getIssuer());
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", config.getAuthorizationEndpoint());
+    assertEquals("http://acmepaymentscorp/oauth/oauth20/token", config.getTokenEndpoint());
     assertEquals(
         Arrays.asList(
             "READ", "WRITE", "DELETE", "openid", "scope", "profile", "email", "address", "phone"),

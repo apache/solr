@@ -212,7 +212,7 @@ The default of `-1` causes a heuristic to be applied based on other options spec
 |`mincount` |Only return buckets with a count of at least this number. Defaults to `1`.
 |`missing` |A boolean that specifies if a special “missing” bucket should be returned that is defined by documents without a value in the field. Defaults to `false`.
 |`numBuckets` |A boolean. If `true`, adds “numBuckets” to the response, an integer representing the number of buckets for the facet (as opposed to the number of buckets returned). Defaults to `false`.
-|`allBuckets` |A boolean. If `true`, adds an “allBuckets” bucket to the response, representing the union of all of the buckets. For multi-valued fields, this is different than a bucket for all of the documents in the domain since a single document can belong to multiple buckets. Defaults to `false`.
+|`allBuckets` |A boolean. If `true`, adds an “allBuckets” bucket to the response, representing the union of all of the buckets. For multi-valued fields, this is different from a bucket for all of the documents in the domain since a single document can belong to multiple buckets. Defaults to `false`.
 |`prefix` |Only produce buckets for terms starting with the specified prefix.
 |`facet` |Aggregations, metrics or nested facets that will be calculated for every returned bucket
 |`method` a|
@@ -388,8 +388,8 @@ For example "start" here corresponds to "facet.range.start" in a facet.range com
 |other a|
 This parameter indicates that in addition to the counts for each range constraint between `start` and `end`, counts should also be computed for…
 
-* "before" all records with field values lower then lower bound of the first range
-* "after" all records with field values greater then the upper bound of the last range
+* "before" all records with field values lower than lower bound of the first range
+* "after" all records with field values greater than the upper bound of the last range
 * "between" all records with field values between the start and end bounds of all ranges
 * "none" compute none of this information
 * "all" shortcut for before, between, and after
@@ -626,7 +626,7 @@ include::example$JsonRequestApiTest.java[tag=solrj-json-metrics-facet-simple]
 --
 
 An expanded form allows for xref:local-params.adoc[] to be specified.
-These may be used explicitly by some specialized aggregations such as <<relatedness-options,`relatedness()`>>, but can also be used as parameter references to make aggregation expressions more readable, with out needing to use (global) request parameters:
+These may be used explicitly by some specialized aggregations such as <<relatedness-options,`relatedness()`>>, but can also be used as parameter references to make aggregation expressions more readable, without needing to use (global) request parameters:
 
 [.dynamic-tabs]
 --
@@ -930,7 +930,7 @@ ____
 
 The `relatedness(...)` function is used to "score" these relationships, relative to "Foreground" and "Background" sets of documents, specified in the function params as queries.
 
-Unlike most aggregation functions, the `relatedness(...)` function is aware of whether and how it's used in <<nested-facets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from its parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
+Unlike most aggregation functions, the `relatedness(...)` function is aware of whether and how it's used in <<nested-facets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ of its parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
 
 NOTE: The semantics of `relatedness(...)` in an `allBuckets` context is currently undefined.
 Accordingly, although the `relatedness(...)` stat may be specified for a facet request that also specifies `allBuckets:true`, the `allBuckets` bucket itself will not include a relatedness calculation.
@@ -1067,7 +1067,7 @@ curl -sS -X POST http://localhost:8983/solr/gettingstarted/query -d 'rows=0&q=*:
 <1> Even though `hobbies:golf` has a lower total facet `count` then `hobbies:painting`, it has a higher `relatedness` score, indicating that relative to the Background Set (the entire collection) Golf has a stronger correlation to our Foreground Set (people age 35+) then Painting.
 <2> The number of documents matching `age:[35 TO *]` _and_ `hobbies:golf` is 31.25% of the total number of documents in the Background Set
 <3> 37.5% of the documents in the Background Set match `hobbies:golf`
-<4> The state of Arizona (AZ) has a _positive_ relatedness correlation with the _nested_ Foreground Set (people ages 35+ who play Golf) compared to the Background Set -- i.e., "People in Arizona are statistically more likely to be '35+ year old Golfers' then the country as a whole."
+<4> The state of Arizona (AZ) has a _positive_ relatedness correlation with the _nested_ Foreground Set (people ages 35+ who play Golf) compared to the Background Set -- i.e., "People in Arizona are statistically more likely to be '35+ year old Golfers' than the country as a whole."
 <5> The state of Colorado (CO) has a _negative_ correlation with the nested Foreground Set -- i.e., "People in Colorado are statistically less likely to be '35+ year old Golfers' then the country as a whole."
 <6> The number documents matching `age:[35 TO *]` _and_ `hobbies:golf` _and_ `state:AZ` is 18.75% of the total number of documents in the Background Set
 <7> 50% of the documents in the Background Set match `state:AZ`

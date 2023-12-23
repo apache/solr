@@ -17,7 +17,10 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -36,6 +39,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -55,6 +59,7 @@ import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -203,8 +208,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(
-                jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)
+        getHttp2SolrClientBuilder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
@@ -217,8 +221,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void test0IdleTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(
-                jetty.getBaseUrl().toString() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+        getHttp2SolrClientBuilder(getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
             .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
@@ -231,8 +234,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testRequestTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(
-                jetty.getBaseUrl().toString() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+        getHttp2SolrClientBuilder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
             .withRequestTimeout(500, TimeUnit.MILLISECONDS)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
@@ -256,7 +258,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         SolrException.ErrorCode.getErrorCode(status));
 
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo").build()) {
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
       DebugServlet.setErrorCode(status);
       try {
         SolrQuery q = new SolrQuery("foo");
@@ -288,13 +290,13 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       try {
         // if client base url is null, request url will be used in exception message
         SolrPing ping = new SolrPing();
-        ping.setBasePath(jetty.getBaseUrl().toString() + "/debug/foo");
+        ping.setBasePath(getBaseUrl() + "/debug/foo");
         client.request(ping);
 
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {
         assertEquals("Unexpected exception status code", status, e.code());
-        assertTrue(e.getMessage().contains(jetty.getBaseUrl().toString()));
+        assertTrue(e.getMessage().contains(getBaseUrl()));
       }
     } finally {
       DebugServlet.clear();
@@ -304,7 +306,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testQuery() throws Exception {
     DebugServlet.clear();
-    String url = jetty.getBaseUrl().toString() + "/debug/foo";
+    String url = getBaseUrl() + "/debug/foo";
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", "\u1234");
     try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
@@ -434,7 +436,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testDelete() throws Exception {
     DebugServlet.clear();
-    String url = jetty.getBaseUrl().toString() + "/debug/foo";
+    String url = getBaseUrl() + "/debug/foo";
     try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
       try {
         client.deleteById("id");
@@ -479,7 +481,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testGetById() throws Exception {
     DebugServlet.clear();
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo").build()) {
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
       Collection<String> ids = Collections.singletonList("a");
       try {
         client.getById("a");
@@ -506,7 +508,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testUpdate() throws Exception {
     DebugServlet.clear();
-    String url = jetty.getBaseUrl().toString() + "/debug/foo";
+    String url = getBaseUrl() + "/debug/foo";
     UpdateRequest req = new UpdateRequest();
     req.add(new SolrInputDocument());
     req.setParam("a", "\u1234");
@@ -586,7 +588,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testFollowRedirect() throws Exception {
-    final String clientUrl = jetty.getBaseUrl().toString() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + "/redirect/foo";
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(clientUrl).withFollowRedirects(true).build()) {
       SolrQuery q = new SolrQuery("*:*");
@@ -596,7 +598,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testDoNotFollowRedirect() throws Exception {
-    final String clientUrl = jetty.getBaseUrl().toString() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + "/redirect/foo";
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(clientUrl).withFollowRedirects(false).build()) {
       SolrQuery q = new SolrQuery("*:*");
@@ -608,7 +610,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testRedirectSwapping() throws Exception {
-    final String clientUrl = jetty.getBaseUrl().toString() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + "/redirect/foo";
     SolrQuery q = new SolrQuery("*:*");
 
     // default for follow redirects is false
@@ -636,8 +638,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testCollectionParameters() throws IOException, SolrServerException {
 
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString()).build()) {
+    try (Http2SolrClient client = new Http2SolrClient.Builder(getBaseUrl()).build()) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "collection");
       client.add("collection1", doc);
@@ -648,7 +649,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
           client.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
     }
 
-    final String collection1Url = jetty.getBaseUrl().toString() + "/collection1";
+    final String collection1Url = getCoreUrl();
     try (Http2SolrClient client = new Http2SolrClient.Builder(collection1Url).build()) {
       assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
     }
@@ -687,7 +688,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testQueryString() throws Exception {
 
-    final String clientUrl = jetty.getBaseUrl().toString() + "/debug/foo";
+    final String clientUrl = getBaseUrl() + "/debug/foo";
     UpdateRequest req = new UpdateRequest();
 
     try (Http2SolrClient client =
@@ -772,25 +773,25 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");
 
-    System.setProperty("solr.jetty.ssl.verifyClientHostName", "true");
+    System.setProperty("solr.ssl.checkPeerName", "true");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
     System.setProperty("javax.net.ssl.trustStoreType", "bar");
     SslContextFactory.Client sslContextFactory2 = Http2SolrClient.getDefaultSslContextFactory();
     assertEquals("HTTPS", sslContextFactory2.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory2.getKeyStoreType());
     assertEquals("bar", sslContextFactory2.getTrustStoreType());
-    System.clearProperty("solr.jetty.ssl.verifyClientHostName");
+    System.clearProperty("solr.ssl.checkPeerName");
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");
 
-    System.setProperty("solr.jetty.ssl.verifyClientHostName", "false");
+    System.setProperty("solr.ssl.checkPeerName", "false");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
     System.setProperty("javax.net.ssl.trustStoreType", "bar");
     SslContextFactory.Client sslContextFactory3 = Http2SolrClient.getDefaultSslContextFactory();
     assertNull(sslContextFactory3.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory3.getKeyStoreType());
     assertEquals("bar", sslContextFactory3.getTrustStoreType());
-    System.clearProperty("solr.jetty.ssl.verifyClientHostName");
+    System.clearProperty("solr.ssl.checkPeerName");
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");
   }
@@ -820,7 +821,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testSetCredentialsExplicitly() {
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
             .withBasicAuthCredentials("foo", "explicit")
             .build(); ) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
@@ -854,7 +855,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(
         new PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver().defaultParams);
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo").build(); ) {
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build(); ) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
       DebugServlet.addResponseHeader(
           WWWAuthenticationProtocolHandler.NAME, "Basic realm=\"Debug Servlet\"");
@@ -883,7 +884,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testPerRequestCredentialsWin() {
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo")
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
             .withBasicAuthCredentials("foo2", "explicit")
             .build(); ) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
@@ -913,7 +914,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testNoCredentials() {
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo").build(); ) {
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build(); ) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
       try {
         ignoreException("Error from server");
@@ -929,10 +930,75 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
+  public void testUseOptionalCredentials() {
+    // username foo, password with embedded colon separator is "expli:cit".
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
+            .withOptionalBasicAuthCredentials("foo:expli:cit")
+            .build(); ) {
+      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
+      try {
+        ignoreException("Error from server");
+        client.request(r);
+      } catch (Exception e) {
+        // expected
+      }
+      unIgnoreException("Error from server");
+      assertTrue(DebugServlet.headers.size() > 0);
+      String authorizationHeader = DebugServlet.headers.get("authorization");
+      assertNotNull(
+          "No authorization information in headers found. Headers: " + DebugServlet.headers,
+          authorizationHeader);
+      assertEquals(
+          "Basic "
+              + Base64.getEncoder()
+                  .encodeToString("foo:expli:cit".getBytes(StandardCharsets.UTF_8)),
+          authorizationHeader);
+    }
+  }
+
+  @Test
+  public void testUseOptionalCredentialsWithNull() {
+    // username foo, password with embedded colon separator is "expli:cit".
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
+            .withOptionalBasicAuthCredentials(null)
+            .build(); ) {
+      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
+      try {
+        ignoreException("Error from server");
+        client.request(r);
+      } catch (Exception e) {
+        // expected
+      }
+      unIgnoreException("Error from server");
+      assertTrue(DebugServlet.headers.size() > 0);
+      String authorizationHeader = DebugServlet.headers.get("authorization");
+      assertNull(
+          "No authorization headers expected. Headers: " + DebugServlet.headers,
+          authorizationHeader);
+    }
+  }
+
+  @Test
+  public void testMalformedOptionalCredentials() {
+
+    expectThrowsAndMessage(
+        IllegalStateException.class,
+        () -> new Http2SolrClient.Builder().withOptionalBasicAuthCredentials("usernamepassword"),
+        "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
+
+    expectThrowsAndMessage(
+        IllegalStateException.class,
+        () -> new Http2SolrClient.Builder().withOptionalBasicAuthCredentials("username password"),
+        "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
+  }
+
+  @Test
   public void testBadHttpFactory() {
     System.setProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
     try {
-      client = new Http2SolrClient.Builder(jetty.getBaseUrl().toString() + "/debug/foo").build();
+      SolrClient client = new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build();
       fail("Expecting exception");
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().contains("Unable to instantiate"));
@@ -944,15 +1010,16 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     DebugServlet.clear();
     try (Http2SolrClient client =
         getHttp2SolrClientBuilder(
-                jetty.getBaseUrl().toString() + "/debug/foo",
-                DEFAULT_CONNECTION_TIMEOUT,
-                DEFAULT_CONNECTION_TIMEOUT)
+                getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .build()) {
       GenericSolrRequest req =
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params("q", "*:*"));
       req.setResponseParser(new InputStreamResponseParser("xml"));
       SimpleSolrResponse rsp = req.process(client);
-      assertNotNull(rsp.getResponse().get("stream"));
+      Object stream = rsp.getResponse().get("stream");
+      assertNotNull(stream);
+      MatcherAssert.assertThat(stream, instanceOf(InputStream.class));
+      org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
     }
   }
 
@@ -963,33 +1030,36 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
             .withBasicAuthCredentials("testu", "testp")
             .build()) {
 
-      Http2SolrClient clone1 =
-          new Http2SolrClient.Builder("baseSolrUrl").withHttpClient(seed).build();
-      String expected1 =
-          Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu", "testp");
-      assertEquals(expected1, clone1.basicAuthAuthorizationStr);
+      try (Http2SolrClient clone1 =
+          new Http2SolrClient.Builder("baseSolrUrl").withHttpClient(seed).build()) {
+        String expected1 =
+            Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu", "testp");
+        assertEquals(expected1, clone1.basicAuthAuthorizationStr);
+      }
 
       // test overwrite seed value
-      Http2SolrClient clone2 =
+      try (Http2SolrClient clone2 =
           new Http2SolrClient.Builder("baseSolrUrl")
               .withHttpClient(seed)
               .withBasicAuthCredentials("testu2", "testp2")
-              .build();
-      String expected2 =
-          Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu2", "testp2");
-      assertEquals(expected2, clone2.basicAuthAuthorizationStr);
+              .build()) {
+        String expected2 =
+            Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu2", "testp2");
+        assertEquals(expected2, clone2.basicAuthAuthorizationStr);
+      }
 
       // test overwrite seed value, order of builder method calls reversed
-      Http2SolrClient clone3 =
+      try (Http2SolrClient clone3 =
           new Http2SolrClient.Builder("baseSolrUrl")
               .withBasicAuthCredentials("testu3", "testp3")
               .withHttpClient(seed)
-              .build();
-      String expected3 =
-          Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu3", "testp3");
-      assertEquals(expected3, clone3.basicAuthAuthorizationStr);
+              .build()) {
+        String expected3 =
+            Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu3", "testp3");
+        assertEquals(expected3, clone3.basicAuthAuthorizationStr);
+      }
     }
   }
 
-  /** Missed tests : - set cookies via interceptor - invariant params - compression */
+  /* Missed tests : - set cookies via interceptor - invariant params - compression */
 }

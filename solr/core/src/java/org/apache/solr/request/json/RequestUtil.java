@@ -33,6 +33,7 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.search.QueryParsing;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
@@ -217,6 +218,11 @@ public class RequestUtil {
         if ("query".equals(key)) {
           out = "q";
           isQuery = true;
+          // if the value is not a String, then it'll get converted to a localParams query String.
+          // Only the "lucene" query parser can parse it.  Ignore anything else that may exist.
+          if (!(entry.getValue() instanceof String)) {
+            newMap.put(QueryParsing.DEFTYPE, new String[] {"lucene"});
+          }
         } else if ("filter".equals(key)) {
           out = "fq";
           arr = true;

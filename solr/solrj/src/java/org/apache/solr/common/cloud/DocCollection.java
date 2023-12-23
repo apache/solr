@@ -18,13 +18,13 @@ package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,8 +34,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
-import org.apache.solr.common.util.CollectionUtil;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,9 +58,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final String znode;
 
   private final Integer replicationFactor;
-  private final Integer numNrtReplicas;
-  private final Integer numTlogReplicas;
-  private final Integer numPullReplicas;
+  private final ReplicaCount numReplicas;
   private final Boolean readOnly;
   private final Boolean perReplicaState;
   private final Map<String, Replica> replicaMap = new HashMap<>();
@@ -89,6 +85,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       int zkVersion) {
     this(name, slices, props, router, zkVersion, null);
   }
+
   /**
    * @param name The name of the collection
    * @param slices The logical shards of the collection. This is used directly and a copy is not
@@ -116,16 +113,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.nodeNameLeaderReplicas = new HashMap<>();
     this.nodeNameReplicas = new HashMap<>();
     this.replicationFactor = (Integer) verifyProp(props, CollectionStateProps.REPLICATION_FACTOR);
-    this.numNrtReplicas = (Integer) verifyProp(props, CollectionStateProps.NRT_REPLICAS, 0);
-    this.numTlogReplicas = (Integer) verifyProp(props, CollectionStateProps.TLOG_REPLICAS, 0);
-    this.numPullReplicas = (Integer) verifyProp(props, CollectionStateProps.PULL_REPLICAS, 0);
+    this.numReplicas = ReplicaCount.fromProps(props);
     this.perReplicaState =
         (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     if (this.perReplicaState) {
       if (perReplicaStatesRef == null || perReplicaStatesRef.get() == null) {
         throw new RuntimeException(
             CollectionStateProps.PER_REPLICA_STATE
-                + " = true , but perReplicatStates param is not provided");
+                + " = true , but perReplicaStates param is not provided");
       }
       this.perReplicaStatesRef = perReplicaStatesRef;
       for (Slice s : this.slices.values()) { // set the same reference to all slices too
@@ -149,7 +144,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         }
       }
     }
-    this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
+    this.activeSlicesArr = activeSlices.values().toArray(new Slice[0]);
     this.router = router;
     this.znode = getCollectionPath(name);
     assert name != null && slices != null;
@@ -263,18 +258,24 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public static Object verifyProp(Map<String, Object> props, String propName, Object def) {
     Object o = props.get(propName);
-    if (o == null) return def;
+    if (o == null) {
+      return def;
+    }
     switch (propName) {
       case CollectionStateProps.REPLICATION_FACTOR:
-      case CollectionStateProps.NRT_REPLICAS:
-      case CollectionStateProps.PULL_REPLICAS:
-      case CollectionStateProps.TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
       case CollectionStateProps.PER_REPLICA_STATE:
       case CollectionStateProps.READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
+        return o;
       default:
+        // Properties associated with a number of replicas are parsed as integers.
+        for (Replica.Type replicaType : Replica.Type.values()) {
+          if (replicaType.numReplicasPropertyName.equals(propName)) {
+            return Integer.parseInt(o.toString());
+          }
+        }
         return o;
     }
   }
@@ -291,6 +292,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         new DocCollection(getName(), slices, propMap, router, znodeVersion, perReplicaStatesRef);
     return result;
   }
+
   /** Return collection name. */
   public String getName() {
     return name;
@@ -398,11 +400,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   @Override
-  public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, Object> all = CollectionUtil.newLinkedHashMap(slices.size() + 1);
-    all.putAll(propMap);
-    all.put(CollectionStateProps.SHARDS, slices);
-    jsonWriter.write(all);
+  public void writeMap(EntryWriter ew) throws IOException {
+    propMap.forEach(ew.getBiConsumer());
+    ew.put(CollectionStateProps.SHARDS, slices);
   }
 
   public Replica getReplica(String coreNodeName) {
@@ -515,7 +515,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *     this collection was created with
    */
   public Integer getNumNrtReplicas() {
-    return numNrtReplicas;
+    return getNumReplicas(Replica.Type.NRT);
   }
 
   /**
@@ -523,7 +523,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *     this collection was created with
    */
   public Integer getNumTlogReplicas() {
-    return numTlogReplicas;
+    return getNumReplicas(Replica.Type.TLOG);
   }
 
   /**
@@ -531,7 +531,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *     this collection was created with
    */
   public Integer getNumPullReplicas() {
-    return numPullReplicas;
+    return getNumReplicas(Replica.Type.PULL);
+  }
+
+  /**
+   * @return the number of replicas of a given type this collection was created with
+   */
+  public Integer getNumReplicas(Replica.Type type) {
+    return numReplicas.get(type);
   }
 
   public boolean isPerReplicaState() {
@@ -542,19 +549,18 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return perReplicaStatesRef != null ? perReplicaStatesRef.get() : null;
   }
 
+  @Deprecated
   public int getExpectedReplicaCount(Replica.Type type, int def) {
-    Integer result = null;
-    if (type == Replica.Type.NRT) result = numNrtReplicas;
-    if (type == Replica.Type.PULL) result = numPullReplicas;
-    if (type == Replica.Type.TLOG) result = numTlogReplicas;
-    return result == null ? def : result;
+    // def is kept for backwards compatibility.
+    return numReplicas.get(type);
+  }
+
+  public int getExpectedReplicaCount(Replica.Type type) {
+    return numReplicas.get(type);
   }
 
   /** JSON properties related to a collection's state. */
   public interface CollectionStateProps {
-    String NRT_REPLICAS = "nrtReplicas";
-    String PULL_REPLICAS = "pullReplicas";
-    String TLOG_REPLICAS = "tlogReplicas";
     String REPLICATION_FACTOR = "replicationFactor";
     String READ_ONLY = "readOnly";
     String CONFIGNAME = "configName";

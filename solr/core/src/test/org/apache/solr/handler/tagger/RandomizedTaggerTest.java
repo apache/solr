@@ -69,12 +69,19 @@ public class RandomizedTaggerTest extends TaggerTestCase {
         } else { // existing word (possible multi-word from prev iteration)
           buf.append(RandomPicks.randomFrom(R, names));
         }
+
+        // This loop has an exponential effect, because we add existing an name to a new name. In
+        // case we generate a too long name, the test will fail because of a too big automaton.
+        // Stop at 500 chars to prevent this.
+        if (buf.length() > 500) {
+          break;
+        }
       }
       names.add(buf.toString());
     }
 
     // BUILD NAMES
-    buildNames(names.toArray(new String[names.size()]));
+    buildNames(names.toArray(new String[0]));
 
     // QUERY LOOP
     for (int tTries = 0; tTries < 10 * RANDOM_MULTIPLIER; tTries++) {
@@ -130,7 +137,7 @@ public class RandomizedTaggerTest extends TaggerTestCase {
     }
 
     // assert
-    assertTags(reqDoc(input), testTags.toArray(new TestTag[testTags.size()]));
+    assertTags(reqDoc(input), testTags.toArray(new TestTag[0]));
   }
 
   private String randomString() {

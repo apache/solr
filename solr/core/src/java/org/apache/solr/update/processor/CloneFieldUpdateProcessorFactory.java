@@ -177,6 +177,7 @@ public class CloneFieldUpdateProcessorFactory extends UpdateRequestProcessorFact
    * @see #pattern
    */
   private String dest = null;
+
   /**
    * @see #dest
    */

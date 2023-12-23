@@ -152,7 +152,7 @@ public class TestDocTermOrds extends SolrTestCase {
         terms.add(new BytesRef(s));
       }
     }
-    final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
+    final BytesRef[] termsArray = terms.toArray(new BytesRef[0]);
     Arrays.sort(termsArray);
 
     final int NUM_DOCS = atLeast(100);
@@ -240,7 +240,7 @@ public class TestDocTermOrds extends SolrTestCase {
       prefixes.add(TestUtil.randomRealisticUnicodeString(random()));
       // prefixes.add(_TestUtil.randomSimpleString(random));
     }
-    final String[] prefixesArray = prefixes.toArray(new String[prefixes.size()]);
+    final String[] prefixesArray = prefixes.toArray(new String[0]);
 
     final int NUM_TERMS = atLeast(20);
     final Set<BytesRef> terms = new HashSet<>();
@@ -254,7 +254,7 @@ public class TestDocTermOrds extends SolrTestCase {
         terms.add(new BytesRef(s));
       }
     }
-    final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
+    final BytesRef[] termsArray = terms.toArray(new BytesRef[0]);
     Arrays.sort(termsArray);
 
     final int NUM_DOCS = atLeast(100);

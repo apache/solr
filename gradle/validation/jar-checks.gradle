@@ -122,17 +122,24 @@ subprojects {
       }
 
       def visited = new HashSet<>()
+      def seenDeps = new HashSet<>()
       def infos = []
 
       while (!queue.isEmpty()) {
         def dep = queue.removeFirst()
+        seenDeps.add(dep)
 
         // Skip any artifacts from other Solr Modules (they will be resolved there).
         if (dep.moduleGroup == "org.apache.solr") {
           continue
         }
 
-        queue.addAll(dep.children)
+        // Make sure we don't keep visiting the same children over and over again
+        dep.children.each { child ->
+          if (!seenDeps.contains(child)) {
+            queue.add(child)
+          }
+        }
         dep.moduleArtifacts.each { resolvedArtifact ->
           def file = resolvedArtifact.file
           if (visited.add(file)) {

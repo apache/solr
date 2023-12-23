@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
@@ -313,5 +314,36 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     assertEquals("arrmap", JSONWriter.JSON_NL_ARROFMAP);
     assertEquals("arrntv", JSONWriter.JSON_NL_ARROFNTV);
     assertEquals("json.wrf", JSONWriter.JSON_WRAPPER_FUNCTION);
+  }
+
+  @Test
+  public void testWfrJacksonJsonWriter() throws IOException {
+    SolrQueryRequest req = req("wt", "json", JSONWriter.JSON_WRAPPER_FUNCTION, "testFun");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.add("param0", "v0");
+    rsp.add("param1", 42);
+
+    JacksonJsonWriter w = new JacksonJsonWriter();
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    w.write(baos, req, rsp);
+    String received = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+    String expected = "testFun( {\n  \"param0\":\"v0\",\n  \"param1\":42\n} )";
+    jsonEq(expected, received);
+    req.close();
+  }
+
+  @Test
+  public void testWfrJSONWriter() throws IOException {
+    SolrQueryRequest req = req("wt", "json", JSONWriter.JSON_WRAPPER_FUNCTION, "testFun");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.add("param0", "v0");
+    rsp.add("param1", 42);
+
+    JSONResponseWriter w = new JSONResponseWriter();
+    StringWriter buf = new StringWriter();
+    w.write(buf, req, rsp);
+    String expected = "testFun({\n  \"param0\":\"v0\",\n  \"param1\":42})";
+    jsonEq(expected, buf.toString());
+    req.close();
   }
 }

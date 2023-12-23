@@ -284,6 +284,19 @@ If you also want to bootstrap ZooKeeper with existing `solr_home`, you can inste
 See xref:zookeeper-utilities.adoc[] for more info.
 ====
 
+==== Unknown core deletion
+
+When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper. If no corresponding entry exists the core will be skipped and a warning will be logged.
+This protects against misconfiguration (e.g. connecting to the wrong ZooKeeper instance or chroot) where the index would still be valid once the configuration is corrected. However you may
+need to manually delete unwanted cores that have not been removed successfully as part of intentional deletion of a collection.
+
+If you would prefer to automatically remove the orphaned files you can edit your include file to set `SOLR_DELETE_UNKNOWN_CORES` to `true`.
+
+[source,bash]
+----
+SOLR_DELETE_UNKNOWN_CORES=true
+----
+
 === Solr Hostname
 
 Use the `SOLR_HOST` variable in the include file to set the hostname of the Solr server.
@@ -318,7 +331,7 @@ For instance, in `solrconfig.xml`, the default auto soft commit settings are set
 [source,xml]
 ----
 <autoSoftCommit>
-  <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
+  <maxTime>${solr.autoSoftCommit.maxTime:3000}</maxTime>
 </autoSoftCommit>
 ----
 

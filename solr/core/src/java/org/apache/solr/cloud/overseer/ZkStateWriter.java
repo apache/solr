@@ -30,7 +30,7 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.Utils;
@@ -222,6 +222,7 @@ public class ZkStateWriter {
   public ClusterState writePendingUpdates() throws KeeperException, InterruptedException {
     return writePendingUpdates(updates, true);
   }
+
   /**
    * Writes all pending updates to ZooKeeper and returns the modified cluster state
    *
@@ -273,7 +274,7 @@ public class ZkStateWriter {
                 clusterState.copyWith(
                     name,
                     cmd.collection.setPerReplicaStates(
-                        PerReplicaStatesFetcher.fetch(
+                        PerReplicaStatesOps.fetch(
                             cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
 
@@ -302,7 +303,7 @@ public class ZkStateWriter {
                       c.getProperties(),
                       c.getRouter(),
                       stat.getVersion(),
-                      PerReplicaStatesFetcher.getZkClientPrsSupplier(reader.getZkClient(), path));
+                      PerReplicaStatesOps.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
@@ -314,7 +315,7 @@ public class ZkStateWriter {
                       c.getProperties(),
                       c.getRouter(),
                       0,
-                      PerReplicaStatesFetcher.getZkClientPrsSupplier(reader.getZkClient(), path));
+                      PerReplicaStatesOps.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             }
           }
@@ -326,7 +327,7 @@ public class ZkStateWriter {
                   clusterState.copyWith(
                       name,
                       currentCollState.setPerReplicaStates(
-                          PerReplicaStatesFetcher.fetch(
+                          PerReplicaStatesOps.fetch(
                               currentCollState.getZNode(), reader.getZkClient(), null)));
             }
           }

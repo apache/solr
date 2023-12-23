@@ -23,6 +23,7 @@ import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
 import org.junit.Test;
@@ -69,6 +70,16 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
         throw e;
       }
       // else test passses
+    }
+  }
+
+  @Test
+  public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
+    try (SolrClient createdClient =
+        new ConcurrentUpdateSolrClient.Builder("someurl")
+            .withDefaultCollection("aCollection")
+            .build()) {
+      assertEquals("aCollection", createdClient.getDefaultCollection());
     }
   }
 }

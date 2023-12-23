@@ -29,15 +29,14 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
-/** Unit tests for {@link DeleteCollectionAPI} */
+/** Unit tests for {@link DeleteCollection} */
 public class DeleteCollectionAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testConstructsValidOverseerMessage() {
     // Only required properties provided
     {
-      final ZkNodeProps message =
-          DeleteCollectionAPI.createRemoteMessage("someCollName", null, null);
+      final ZkNodeProps message = DeleteCollection.createRemoteMessage("someCollName", null, null);
       final Map<String, Object> rawMessage = message.getProperties();
       assertEquals(2, rawMessage.size());
       MatcherAssert.assertThat(rawMessage.keySet(), containsInAnyOrder(QUEUE_OPERATION, NAME));
@@ -48,7 +47,7 @@ public class DeleteCollectionAPITest extends SolrTestCaseJ4 {
     // Optional properties ('followAliases' and 'async') also provided
     {
       final ZkNodeProps message =
-          DeleteCollectionAPI.createRemoteMessage("someCollName", Boolean.TRUE, "someAsyncId");
+          DeleteCollection.createRemoteMessage("someCollName", Boolean.TRUE, "someAsyncId");
       final Map<String, Object> rawMessage = message.getProperties();
       assertEquals(4, rawMessage.size());
       MatcherAssert.assertThat(

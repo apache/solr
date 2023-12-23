@@ -221,6 +221,7 @@ public class QueryParsing {
 
   private static int FLAG_BOOSTED = 0x01;
   private static int FLAG_IS_CLAUSE = 0x02;
+
   /**
    * @see #toString(Query,IndexSchema)
    */

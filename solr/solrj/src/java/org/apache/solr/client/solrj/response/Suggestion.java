@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
+
 /**
  * This class models a Suggestion coming from Solr Suggest Component. It is a direct mapping fo the
  * Json object Solr is returning.

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.ltr.store.rest;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -138,6 +140,24 @@ public class TestModelManagerPersistence extends TestRerankBase {
   }
 
   @Test
+  public void testFeaturesAndModelAreStoredCompact() throws Exception {
+    loadFeature("feature", ValueFeature.class.getName(), "test", "{\"value\":2}");
+    loadModel(
+        "test-model",
+        LinearModel.class.getName(),
+        new String[] {"feature"},
+        "test",
+        "{\"weights\":{\"feature\":1.0}}");
+
+    final String fstorecontent = Files.readString(fstorefile, StandardCharsets.UTF_8);
+    final String mstorecontent = Files.readString(mstorefile, StandardCharsets.UTF_8);
+    Object fStoreObject = Utils.fromJSONString(fstorecontent);
+    Object mStoreObject = Utils.fromJSONString(mstorecontent);
+    assertEquals(new String(Utils.toJSON(fStoreObject, -1), UTF_8), fstorecontent);
+    assertEquals(new String(Utils.toJSON(mStoreObject, -1), UTF_8), mstorecontent);
+  }
+
+  @Test
   public void testFilePersistence() throws Exception {
     // check whether models and features are empty
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
@@ -170,8 +190,8 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/features/[1]/name=='description'");
 
     // check persistence after restart
-    jetty.stop();
-    jetty.start();
+    getJetty().stop();
+    getJetty().start();
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/[0]/name=='" + modelName + "'");
     assertJQ(
         ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
@@ -197,8 +217,8 @@ public class TestModelManagerPersistence extends TestRerankBase {
         "/error/msg=='Missing feature store: " + FeatureStore.DEFAULT_FEATURE_STORE_NAME + "'");
 
     // check persistence after restart
-    jetty.stop();
-    jetty.start();
+    getJetty().stop();
+    getJetty().start();
     assertJQ(ManagedModelStore.REST_END_POINT, "/models/==[]");
     assertJQ(
         ManagedFeatureStore.REST_END_POINT + "/" + FeatureStore.DEFAULT_FEATURE_STORE_NAME,
@@ -269,8 +289,8 @@ public class TestModelManagerPersistence extends TestRerankBase {
     doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getFileName().toString());
 
     // check persistence after restart
-    jetty.stop();
-    jetty.start();
+    getJetty().stop();
+    getJetty().start();
     doWrapperModelPersistenceChecks(modelName, FS_NAME, baseModelFile.getFileName().toString());
 
     // delete test settings

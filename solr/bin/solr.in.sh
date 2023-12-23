@@ -83,6 +83,12 @@
 # By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 #SOLR_WAIT_FOR_ZK="30"
 
+# By default Solr will log a warning for cores that are not registered in Zookeeper at startup
+# but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
+# wrong Zookeeper instance or chroot), however you need to manually delete the cores if
+# they are no longer required. Set to "true" to have Solr automatically delete unknown cores.
+#SOLR_DELETE_UNKNOWN_CORES=false
+
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"
 
@@ -148,6 +154,8 @@
 # environments where security is not a concern, 0.0.0.0 can be used to allow
 # Solr to accept connections on all network interfaces.
 #SOLR_JETTY_HOST="127.0.0.1"
+# Sets the network interface the Embedded ZK binds to.
+#SOLR_ZK_EMBEDDED_HOST="127.0.0.1"
 
 # Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 # to enable https module with custom jetty configuration.
@@ -165,11 +173,13 @@
 # Verify client's hostname during SSL handshake
 #SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 # SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-# this to false can be useful to disable these checks when re-using a certificate on many hosts
+# this to false can be useful to disable these checks when re-using a certificate on many hosts.
+# This will also be used for the default value of whether SNI Host checking should be enabled.
 #SOLR_SSL_CHECK_PEER_NAME=true
 # Override Key/Trust Store types if necessary
 #SOLR_SSL_KEY_STORE_TYPE=PKCS12
 #SOLR_SSL_TRUST_STORE_TYPE=PKCS12
+#SOLR_SSL_RELOAD_ENABLED=true
 
 # Uncomment if you want to override previously defined SSL values for HTTP client
 # otherwise keep them commented and the above values will automatically be set for HTTP clients
@@ -267,12 +277,12 @@
 # When using this feature, it is recommended to have an external service monitoring the given dir.
 # If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
 # See https://docs.oracle.com/en/java/javase/11/troubleshoot/command-line-options1.html
-# You can test this behaviour by setting SOLR_HEAP=25m
+# You can test this behavior by setting SOLR_HEAP=25m
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps
 
 # Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
-# To restore the old behaviour, set the variable below to true
+# To restore the old behavior, set the variable below to true
 #SOLR_SOLRXML_REQUIRED=false
 
 # Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0

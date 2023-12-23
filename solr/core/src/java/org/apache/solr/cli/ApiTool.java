@@ -23,14 +23,19 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
+/**
+ * Supports api command in the bin/solr script.
+ *
+ * <p>Used to send an arbitrary HTTP request to a Solr API endpoint.
+ */
 public class ApiTool extends ToolBase {
-  /** Used to send an arbitrary HTTP request to a Solr API endpoint. */
   public ApiTool() {
     this(CLIO.getOutStream());
   }
@@ -52,34 +57,48 @@ public class ApiTool extends ToolBase {
             .hasArg()
             .required(true)
             .desc("Send a GET request to a Solr API endpoint.")
-            .build());
+            .build(),
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    String response = null;
     String getUrl = cli.getOptionValue("get");
     if (getUrl != null) {
-      getUrl = getUrl.replace("+", "%20");
-      URI uri = new URI(getUrl);
-      String solrUrl = getSolrUrlFromUri(uri);
-      String path = uri.getPath();
-      try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
-        NamedList<Object> response =
-            solrClient.request(
-                // For path parameter we need the path without the root so from the second / char
-                // (because root can be configured)
-                // E.g URL is http://localhost:8983/solr/admin/info/system path is
-                // /solr/admin/info/system and the path without root is /admin/info/system
-                new GenericSolrRequest(
-                    SolrRequest.METHOD.GET,
-                    path.substring(path.indexOf("/", path.indexOf("/") + 1)),
-                    getSolrParamsFromUri(uri)));
+      response = callGet(getUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
+    }
+    if (response != null) {
+      // pretty-print the response to stdout
+      echo(response);
+    }
+  }
 
-        // pretty-print the response to stdout
-        CharArr arr = new CharArr();
-        new JSONWriter(arr, 2).write(response.asMap());
-        echo(arr.toString());
-      }
+  protected String callGet(String url, String credentials) throws Exception {
+    URI uri = new URI(url.replace("+", "%20"));
+    String solrUrl = getSolrUrlFromUri(uri);
+    String path = uri.getPath();
+    try (var solrClient = SolrCLI.getSolrClient(solrUrl, credentials)) {
+      // For path parameter we need the path without the root so from the second / char
+      // (because root can be configured)
+      // E.g URL is http://localhost:8983/solr/admin/info/system path is
+      // /solr/admin/info/system and the path without root is /admin/info/system
+      var req =
+          new GenericSolrRequest(
+              SolrRequest.METHOD.GET,
+              path.substring(path.indexOf("/", path.indexOf("/") + 1)),
+              getSolrParamsFromUri(uri) // .add("indent", "true")
+              );
+      // Using the "smart" solr parsers won't work, because they decode into Solr objects.
+      // When trying to re-write into JSON, the JSONWriter doesn't have the right info to print it
+      // correctly.
+      // All we want to do is pass the JSON response to the user, so do that.
+      req.setResponseParser(new JsonMapResponseParser());
+      NamedList<Object> response = solrClient.request(req);
+      // pretty-print the response to stdout
+      CharArr arr = new CharArr();
+      new JSONWriter(arr, 2).write(response.asMap());
+      return arr.toString();
     }
   }
 

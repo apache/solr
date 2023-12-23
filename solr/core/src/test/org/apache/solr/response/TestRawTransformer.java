@@ -93,7 +93,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
     nodeProperties.setProperty("solr.data.dir", h.getCore().getDataDir());
     JSR =
         new JettySolrRunner(
-            homeDir.toAbsolutePath().toString(), nodeProperties, buildJettyConfig("/solr"));
+            homeDir.toAbsolutePath().toString(), nodeProperties, buildJettyConfig());
   }
 
   private static void initCloud() throws Exception {
@@ -118,10 +118,14 @@ public class TestRawTransformer extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
+    if (CLIENT != null) {
+      org.apache.solr.common.util.IOUtils.closeQuietly(CLIENT);
+      CLIENT = null;
+    }
     if (JSR != null) {
       JSR.stop();
+      JSR = null;
     }
-    // NOTE: CLOUD_CLIENT should be stopped automatically in `SolrCloudTestCase.shutdownCluster()`
   }
 
   @After

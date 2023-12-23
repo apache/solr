@@ -24,9 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -36,8 +37,12 @@ import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
+/**
+ * Supports status command in the bin/solr script.
+ *
+ * <p>Get the status of a Solr server.
+ */
 public class StatusTool extends ToolBase {
-  /** Get the status of a Solr server. */
   public StatusTool() {
     this(CLIO.getOutStream());
   }
@@ -51,37 +56,52 @@ public class StatusTool extends ToolBase {
     return "status";
   }
 
-  // These options are not exposed to the end user, and are
-  // used directly by the bin/solr status CLI.
+  public static final Option OPTION_MAXWAITSECS =
+      Option.builder("maxWaitSecs")
+          .argName("SECS")
+          .hasArg()
+          .required(false)
+          .desc("Wait up to the specified number of seconds to see Solr running.")
+          .build();
+
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("solr")
+        // The solrUrl option is not exposed to the end user, and is
+        // created by the bin/solr script and passed into this too.
+        Option.builder("solrUrl")
             .argName("URL")
             .hasArg()
             .required(false)
-            .desc(
-                "Address of the Solr Web application, defaults to: "
-                    + SolrCLI.DEFAULT_SOLR_URL
-                    + '.')
+            .desc("Property set by calling scripts, not meant for user configuration.")
             .build(),
-        Option.builder("maxWaitSecs")
-            .argName("SECS")
-            .hasArg()
-            .required(false)
-            .desc("Wait up to the specified number of seconds to see Solr running.")
-            .build());
+        OPTION_MAXWAITSECS);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    // Override the default help behaviour to put out a customized message that only list user
+    // settable Options.
+    if ((cli.getOptions().length == 0 && cli.getArgs().length == 0)
+        || cli.hasOption("h")
+        || cli.hasOption("help")) {
+      final Options options = new Options();
+      options.addOption(OPTION_MAXWAITSECS);
+      new HelpFormatter().printHelp("status", options);
+      return;
+    }
+
     int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
-    String solrUrl = cli.getOptionValue("solr", SolrCLI.DEFAULT_SOLR_URL);
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();
       echo("Waiting up to " + maxWaitSecs + " seconds to see Solr running on port " + solrPort);
       try {
-        waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
+        waitToSeeSolrUp(
+            solrUrl,
+            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()),
+            maxWaitSecs,
+            TimeUnit.SECONDS);
         echo("Started Solr server on port " + solrPort + ". Happy searching!");
       } catch (TimeoutException timeout) {
         throw new Exception(
@@ -90,7 +110,8 @@ public class StatusTool extends ToolBase {
     } else {
       try {
         CharArr arr = new CharArr();
-        new JSONWriter(arr, 2).write(getStatus(solrUrl));
+        new JSONWriter(arr, 2)
+            .write(getStatus(solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt())));
         echo(arr.toString());
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {
@@ -107,14 +128,13 @@ public class StatusTool extends ToolBase {
     }
   }
 
-  public Map<String, Object> waitToSeeSolrUp(String solrUrl, long maxWait, TimeUnit unit)
-      throws Exception {
+  public Map<String, Object> waitToSeeSolrUp(
+      String solrUrl, String credentials, long maxWait, TimeUnit unit) throws Exception {
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(maxWait, unit);
     while (System.nanoTime() < timeout) {
+
       try {
-        return getStatus(solrUrl);
-      } catch (SSLPeerUnverifiedException exc) {
-        throw exc;
+        return getStatus(solrUrl, credentials);
       } catch (Exception exc) {
         if (SolrCLI.exceptionIsAuthRelated(exc)) {
           throw exc;
@@ -134,18 +154,20 @@ public class StatusTool extends ToolBase {
             + " seconds!");
   }
 
-  public Map<String, Object> getStatus(String solrUrl) throws Exception {
+  public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
+    try (var solrClient = SolrCLI.getSolrClient(solrUrl, credentials)) {
+      return getStatus(solrClient);
+    }
+  }
+
+  public Map<String, Object> getStatus(SolrClient solrClient) throws Exception {
     Map<String, Object> status;
 
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
-
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
-      NamedList<Object> systemInfo =
-          solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-      // convert raw JSON into user-friendly output
-      status = reportStatus(systemInfo, solrClient);
-    }
+    NamedList<Object> systemInfo =
+        solrClient.request(
+            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+    // convert raw JSON into user-friendly output
+    status = reportStatus(systemInfo, solrClient);
 
     return status;
   }
@@ -189,7 +211,7 @@ public class StatusTool extends ToolBase {
     cloudStatus.put("liveNodes", String.valueOf(liveNodes.size()));
 
     Map<String, Object> collections =
-        ((NamedList) json.findRecursive("cluster", "collections")).asMap();
+        ((NamedList<Object>) json.findRecursive("cluster", "collections")).asMap();
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;

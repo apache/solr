@@ -41,6 +41,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   protected int socketTimeoutMillis = 120000; // 120 seconds
   private boolean socketTimeoutMillisUpdate = false;
   protected boolean followRedirects = false;
+  protected String defaultCollection;
   protected Set<String> urlParamNames;
 
   /** The solution for the unchecked cast warning. */
@@ -97,6 +98,11 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
     return getThis();
   }
 
+  public B withDefaultCollection(String defaultCollection) {
+    this.defaultCollection = defaultCollection;
+    return getThis();
+  }
+
   /**
    * Tells {@link Builder} that created clients should obey the following timeout when connecting to
    * Solr servers.
@@ -127,6 +133,10 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
     return getThis();
   }
 
+  public int getConnectionTimeoutMillis() {
+    return this.connectionTimeoutMillis;
+  }
+
   /**
    * Tells {@link Builder} that created clients should set the following read timeout on all
    * sockets.
@@ -154,5 +164,9 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
     this.socketTimeoutMillis = Math.toIntExact(TimeUnit.MILLISECONDS.convert(socketTimeout, unit));
     socketTimeoutMillisUpdate = true;
     return getThis();
+  }
+
+  public int getSocketTimeoutMillis() {
+    return this.socketTimeoutMillis;
   }
 }

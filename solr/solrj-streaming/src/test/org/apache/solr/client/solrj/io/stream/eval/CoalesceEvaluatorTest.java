@@ -36,6 +36,7 @@ public class CoalesceEvaluatorTest extends SolrTestCase {
     factory = new StreamFactory().withFunctionName("coalesce", CoalesceEvaluator.class);
     values = new HashMap<>();
   }
+
   /*
   @Test(expected = IOException.class)
   public void twoFieldsWithMissingField() throws Exception{

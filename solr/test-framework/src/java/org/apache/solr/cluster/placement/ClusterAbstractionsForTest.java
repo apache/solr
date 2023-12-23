@@ -109,6 +109,7 @@ class ClusterAbstractionsForTest {
 
   static class SolrCollectionImpl implements SolrCollection {
     private final String collectionName;
+
     /** Map from {@link Shard#getShardName()} to {@link Shard} */
     private Map<String, Shard> shards;
 
@@ -230,6 +231,11 @@ class ClusterAbstractionsForTest {
     @Override
     public int hashCode() {
       return Objects.hash(shardName, collection, shardState);
+    }
+
+    @Override
+    public String toString() {
+      return "ShardImpl{" + "shardName='" + shardName + '\'' + '}';
     }
   }
 

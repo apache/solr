@@ -54,12 +54,14 @@ apply from: buildscript.sourceFile.toPath().resolveSibling("source-release.gradl
 // Set up the HTML-rendered "changes" distribution artifact by linking to documentation's output.
 configurations {
   changesHtml
+  openApiSpecFile
   docker
 }
 
 dependencies {
   changesHtml project(path: ":solr:documentation", configuration: "changesHtml")
-  docker project(path: ':solr:docker', configuration: project.ext.withSignedArtifacts ? 'packagingOfficial' : 'packagingLocal')
+  openApiSpecFile project(path: ":solr:api", configuration: "openapiSpec")
+  docker project(path: ':solr:docker', configuration: 'packagingOfficial')
 }
 
 def fullDistTarTask = rootProject.getTasksByName("fullDistTar", true)[0]
@@ -73,11 +75,13 @@ task computeChecksums(type: Checksum) {
   [
       tasks.assembleSourceTgz,
       fullDistTarTask,
-      slimDistTarTask,
+      slimDistTarTask
   ].each { dep ->
     dependsOn dep
     files += dep.outputs.files
   }
+  dependsOn configurations.openApiSpecFile
+  files += configurations.openApiSpecFile
 
   outputDir = file("${buildDir}/checksums")
 }
@@ -93,11 +97,19 @@ task signSourceTgz(type: Sign) {
   dependsOn tasks.assembleSourceTgz
   sign tasks.assembleSourceTgz.destination
 }
+task signOpenApiSpec(type: Sign) {
+  dependsOn configurations.openApiSpecFile
+  // This is not an artifact, so we need to use "file" not "configuration" signing
+  doFirst {
+    sign configurations.openApiSpecFile.singleFile
+  }
+}
 
 task signReleaseArchives(type: Sync) {
   from tasks.signFullBinaryTgz
   from tasks.signSlimBinaryTgz
   from tasks.signSourceTgz
+  from tasks.signOpenApiSpec
 
   into "${buildDir}/signatures"
 }
@@ -125,8 +137,12 @@ task assembleRelease(type: Sync) {
     into "changes"
   })
 
+  from(configurations.openApiSpecFile, {
+    into "openApi"
+  })
+
   from(configurations.docker, {
-    include 'Dockerfile.*'
+    include 'Dockerfile.official*'
     into "docker"
   })
 
@@ -139,11 +155,24 @@ task assembleRelease(type: Sync) {
   from fullDistTarTask
   from slimDistTarTask
 
-  from tasks.computeChecksums
+  from(tasks.computeChecksums, {
+    exclude { it.file.getName().contains("openapi") }
+  })
+  from(tasks.computeChecksums, {
+    include { it.file.getName().contains("openapi") }
+    into "openApi"
+  })
 
   // Conditionally, attach signatures of all the release archives.
   if (project.ext.withSignedArtifacts) {
-    from tasks.signReleaseArchives
+    from(tasks.signReleaseArchives, {
+      exclude { it.file.getName().contains("openapi") }
+    })
+
+    from(tasks.signReleaseArchives, {
+      include { it.file.getName().contains("openapi") }
+      into "openApi"
+    })
   }
 
   into releaseDir

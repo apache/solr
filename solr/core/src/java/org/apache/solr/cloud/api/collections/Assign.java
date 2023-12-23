@@ -41,14 +41,12 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
-import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
-import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
-import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -325,20 +323,18 @@ public class Assign {
       ClusterState clusterState,
       String collectionName,
       String shard,
-      int nrtReplicas,
-      int tlogReplicas,
-      int pullReplicas,
+      ReplicaCount numReplicas,
       Object createNodeSet,
       SolrCloudManager cloudManager,
       CoreContainer coreContainer)
       throws IOException, InterruptedException, AssignmentException {
-    log.debug(
-        "getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}",
-        shard,
-        nrtReplicas,
-        tlogReplicas,
-        pullReplicas,
-        createNodeSet);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "getNodesForNewReplicas() shard={}, {} , createNodeSet={}",
+          shard,
+          numReplicas,
+          createNodeSet);
+    }
     List<String> createNodeList;
 
     if (createNodeSet instanceof List) {
@@ -361,9 +357,7 @@ public class Assign {
         new AssignRequestBuilder()
             .forCollection(collectionName)
             .forShard(Collections.singletonList(shard))
-            .assignNrtReplicas(nrtReplicas)
-            .assignTlogReplicas(tlogReplicas)
-            .assignPullReplicas(pullReplicas)
+            .assignReplicas(numReplicas)
             .onNodes(createNodeList)
             .build();
     AssignStrategy assignStrategy = createAssignStrategy(coreContainer);
@@ -452,6 +446,21 @@ public class Assign {
         throws AssignmentException, IOException, InterruptedException;
 
     /**
+     * Balance replicas across nodes.
+     *
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param nodes to compute replica balancing across.
+     * @param maxBalanceSkew to ensure strictness of replica balancing.
+     * @return Map from Replica to the Node where that Replica should be moved.
+     * @throws AssignmentException when balance request cannot produce any valid assignments.
+     */
+    default Map<Replica, String> computeReplicaBalancing(
+        SolrCloudManager solrCloudManager, Set<String> nodes, int maxBalanceSkew)
+        throws AssignmentException, IOException, InterruptedException {
+      return Collections.emptyMap();
+    }
+
+    /**
      * Verify that deleting a collection doesn't violate the replica assignment constraints.
      *
      * @param solrCloudManager current instance of {@link SolrCloudManager}.
@@ -486,23 +495,17 @@ public class Assign {
     public final String collectionName;
     public final List<String> shardNames;
     public final List<String> nodes;
-    public final int numNrtReplicas;
-    public final int numTlogReplicas;
-    public final int numPullReplicas;
+    public final ReplicaCount numReplicas;
 
     public AssignRequest(
         String collectionName,
         List<String> shardNames,
         List<String> nodes,
-        int numNrtReplicas,
-        int numTlogReplicas,
-        int numPullReplicas) {
+        ReplicaCount numReplicas) {
       this.collectionName = collectionName;
       this.shardNames = shardNames;
       this.nodes = nodes;
-      this.numNrtReplicas = numNrtReplicas;
-      this.numTlogReplicas = numTlogReplicas;
-      this.numPullReplicas = numPullReplicas;
+      this.numReplicas = numReplicas;
     }
   }
 
@@ -510,9 +513,11 @@ public class Assign {
     private String collectionName;
     private List<String> shardNames;
     private List<String> nodes;
-    private int numNrtReplicas;
-    private int numTlogReplicas;
-    private int numPullReplicas;
+    private ReplicaCount numReplicas;
+
+    public AssignRequestBuilder() {
+      this.numReplicas = ReplicaCount.empty();
+    }
 
     public AssignRequestBuilder forCollection(String collectionName) {
       this.collectionName = collectionName;
@@ -529,26 +534,15 @@ public class Assign {
       return this;
     }
 
-    public AssignRequestBuilder assignNrtReplicas(int numNrtReplicas) {
-      this.numNrtReplicas = numNrtReplicas;
-      return this;
-    }
-
-    public AssignRequestBuilder assignTlogReplicas(int numTlogReplicas) {
-      this.numTlogReplicas = numTlogReplicas;
-      return this;
-    }
-
-    public AssignRequestBuilder assignPullReplicas(int numPullReplicas) {
-      this.numPullReplicas = numPullReplicas;
+    public AssignRequestBuilder assignReplicas(ReplicaCount numReplicas) {
+      this.numReplicas = numReplicas;
       return this;
     }
 
     public AssignRequest build() {
       Objects.requireNonNull(collectionName, "The collectionName cannot be null");
       Objects.requireNonNull(shardNames, "The shard names cannot be null");
-      return new AssignRequest(
-          collectionName, shardNames, nodes, numNrtReplicas, numTlogReplicas, numPullReplicas);
+      return new AssignRequest(collectionName, shardNames, nodes, numReplicas);
     }
   }
 
@@ -564,40 +558,6 @@ public class Assign {
     // placement plugin)
     PlacementPlugin placementPlugin =
         coreContainer.getPlacementPluginFactory().createPluginInstance();
-    if (placementPlugin == null) {
-      // Otherwise use the default
-      String defaultPluginId = System.getProperty(PLACEMENTPLUGIN_DEFAULT_SYSPROP);
-      if (defaultPluginId != null) {
-        switch (defaultPluginId.toLowerCase(Locale.ROOT)) {
-          case "simple":
-            placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
-            break;
-          case "affinity":
-            placementPlugin = (new AffinityPlacementFactory()).createPluginInstance();
-            break;
-          case "minimizecores":
-            placementPlugin = (new MinimizeCoresPlacementFactory()).createPluginInstance();
-            break;
-          case "random":
-            placementPlugin = (new RandomPlacementFactory()).createPluginInstance();
-            break;
-          default:
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "Invalid value for system property '"
-                    + PLACEMENTPLUGIN_DEFAULT_SYSPROP
-                    + "'. Supported values are 'simple', 'random', 'affinity' and 'minimizecores'");
-        }
-        log.info(
-            "Default replica placement plugin set in {} to {}",
-            PLACEMENTPLUGIN_DEFAULT_SYSPROP,
-            defaultPluginId);
-      } else {
-        // TODO: Consider making the ootb default AffinityPlacementFactory, see
-        // https://issues.apache.org/jira/browse/SOLR-16492
-        placementPlugin = (new SimplePlacementFactory()).createPluginInstance();
-      }
-    }
     return new PlacementPluginAssignStrategy(placementPlugin);
   }
 }

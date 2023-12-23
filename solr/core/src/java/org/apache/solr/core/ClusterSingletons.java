@@ -99,8 +99,8 @@ public class ClusterSingletons {
           @Override
           public void modified(
               ContainerPluginsRegistry.ApiInfo old, ContainerPluginsRegistry.ApiInfo replacement) {
-            added(replacement);
             deleted(old);
+            added(replacement);
           }
         };
   }

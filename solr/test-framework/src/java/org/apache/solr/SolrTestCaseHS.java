@@ -510,7 +510,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         JettyConfig jettyConfig =
             JettyConfig.builder()
                 .stopAtShutdown(true)
-                .setContext("/solr")
                 .setPort(port)
                 .withSSLConfig(sslConfig.buildServerSSLConfig())
                 .build();

@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +39,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -60,20 +60,13 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Control;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** The base class for Solr JMH benchmarks that operate against a {@code MiniSolrCloudCluster}. */
 public class MiniClusterState {
 
-  /** The constant DEBUG_OUTPUT. */
-  public static final boolean DEBUG_OUTPUT = false;
-
   /** The constant PROC_COUNT. */
   public static final int PROC_COUNT =
       ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** The type Mini cluster bench state. */
   @State(Scope.Benchmark)
@@ -84,6 +77,8 @@ public class MiniClusterState {
 
     /** The Nodes. */
     public List<String> nodes;
+
+    public String zkHost;
 
     /** The Cluster. */
     MiniSolrCloudCluster cluster;
@@ -115,7 +110,7 @@ public class MiniClusterState {
     private SplittableRandom random;
     private String workDir;
 
-    private boolean useHttp1 = false;
+    private boolean useHttp1 = Boolean.getBoolean("solr.http1");
 
     /**
      * Tear down.
@@ -160,14 +155,30 @@ public class MiniClusterState {
     @TearDown(Level.Trial)
     public void shutdownMiniCluster(BenchmarkParams benchmarkParams, BaseBenchState baseBenchState)
         throws Exception {
-
-      log.info("MiniClusterState tear down - baseBenchState is {}", baseBenchState);
-
       BaseBenchState.dumpHeap(benchmarkParams);
 
-      if (DEBUG_OUTPUT) log("closing client and shutting down minicluster");
       IOUtils.closeQuietly(client);
       cluster.shutdown();
+      logClusterDirectorySize();
+    }
+
+    private void logClusterDirectorySize() throws IOException {
+      log("");
+      Files.list(miniClusterBaseDir.toAbsolutePath())
+          .forEach(
+              (node) -> {
+                try {
+                  long clusterSize =
+                      Files.walk(node)
+                          .filter(Files::isRegularFile)
+                          .map(Path::toFile)
+                          .mapToLong(File::length)
+                          .sum();
+                  log("mini cluster node size (bytes) " + node + " " + clusterSize);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              });
     }
 
     /**
@@ -188,7 +199,6 @@ public class MiniClusterState {
 
       workDir = System.getProperty("workBaseDir", "build/work");
 
-      log("");
       Path currentRelativePath = Paths.get("");
       String s = currentRelativePath.toAbsolutePath().toString();
       log("current relative path is: " + s);
@@ -276,6 +286,7 @@ public class MiniClusterState {
       for (JettySolrRunner runner : jetties) {
         nodes.add(runner.getBaseUrl().toString());
       }
+      zkHost = cluster.getZkServer().getZkAddress();
 
       client = new Http2SolrClient.Builder().useHttp1_1(useHttp1).build();
 
@@ -331,6 +342,11 @@ public class MiniClusterState {
       this.useHttp1 = useHttp1;
     }
 
+    @SuppressForbidden(reason = "This module does not need to deal with logging context")
+    public void index(String collection, Docs docs, int docCount) throws Exception {
+      index(collection, docs, docCount, true);
+    }
+
     /**
      * Index.
      *
@@ -339,64 +355,15 @@ public class MiniClusterState {
      * @param docCount the doc count
      * @throws Exception the exception
      */
-    @SuppressForbidden(reason = "This module does not need to deal with logging context")
-    public void index(String collection, Docs docs, int docCount) throws Exception {
+    public void index(String collection, Docs docs, int docCount, boolean parallel)
+        throws Exception {
       if (createCollectionAndIndex) {
-
         log("indexing data for benchmark...");
-        Meter meter = new Meter();
-        ExecutorService executorService =
-            Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors(),
-                new SolrNamedThreadFactory("SolrJMH Indexer"));
-        ScheduledExecutorService scheduledExecutor =
-            Executors.newSingleThreadScheduledExecutor(
-                new SolrNamedThreadFactory("SolrJMH Indexer Progress"));
-        scheduledExecutor.scheduleAtFixedRate(
-            () -> {
-              if (meter.getCount() == docCount) {
-                scheduledExecutor.shutdown();
-              } else {
-                log(meter.getCount() + " docs at " + meter.getMeanRate() + " doc/s");
-              }
-            },
-            10,
-            10,
-            TimeUnit.SECONDS);
-        for (int i = 0; i < docCount; i++) {
-          executorService.submit(
-              new Runnable() {
-                final SplittableRandom threadRandom = random.split();
-
-                @Override
-                public void run() {
-                  UpdateRequest updateRequest = new UpdateRequest();
-                  updateRequest.setBasePath(
-                      nodes.get(threadRandom.nextInt(cluster.getJettySolrRunners().size())));
-                  SolrInputDocument doc = docs.inputDocument();
-                  // log("add doc " + doc);
-                  updateRequest.add(doc);
-                  meter.mark();
-
-                  try {
-                    client.request(updateRequest, collection);
-                  } catch (Exception e) {
-                    throw new RuntimeException(e);
-                  }
-                }
-              });
+        if (parallel) {
+          indexParallel(collection, docs, docCount);
+        } else {
+          indexBatch(collection, docs, docCount, 10000);
         }
-
-        log("done adding docs, waiting for executor to terminate...");
-
-        executorService.shutdown();
-        boolean result = false;
-        while (!result) {
-          result = executorService.awaitTermination(600, TimeUnit.MINUTES);
-        }
-
-        scheduledExecutor.shutdown();
-
         log("done indexing data for benchmark");
 
         log("committing data ...");
@@ -413,13 +380,95 @@ public class MiniClusterState {
       queryRequest.setBasePath(nodes.get(random.nextInt(cluster.getJettySolrRunners().size())));
 
       NamedList<Object> result = client.request(queryRequest, collection);
-
-      if (DEBUG_OUTPUT) log("result: " + result);
-
+      log("sanity check of single row query result: " + result);
       log("");
 
       log("Dump Core Info");
       dumpCoreInfo();
+    }
+
+    @SuppressForbidden(reason = "This module does not need to deal with logging context")
+    private void indexParallel(String collection, Docs docs, int docCount)
+        throws InterruptedException {
+      Meter meter = new Meter();
+      ExecutorService executorService =
+          Executors.newFixedThreadPool(
+              Runtime.getRuntime().availableProcessors(),
+              new SolrNamedThreadFactory("SolrJMH Indexer"));
+      ScheduledExecutorService scheduledExecutor =
+          Executors.newSingleThreadScheduledExecutor(
+              new SolrNamedThreadFactory("SolrJMH Indexer Progress"));
+      scheduledExecutor.scheduleAtFixedRate(
+          () -> {
+            if (meter.getCount() == docCount) {
+              scheduledExecutor.shutdown();
+            } else {
+              log(meter.getCount() + " docs at " + meter.getMeanRate() + " doc/s");
+            }
+          },
+          10,
+          10,
+          TimeUnit.SECONDS);
+      for (int i = 0; i < docCount; i++) {
+        executorService.submit(
+            new Runnable() {
+              final SplittableRandom threadRandom = random.split();
+
+              @Override
+              public void run() {
+                UpdateRequest updateRequest = new UpdateRequest();
+                updateRequest.setBasePath(
+                    nodes.get(threadRandom.nextInt(cluster.getJettySolrRunners().size())));
+                SolrInputDocument doc = docs.inputDocument();
+                // log("add doc " + doc);
+                updateRequest.add(doc);
+                meter.mark();
+
+                try {
+                  client.request(updateRequest, collection);
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
+              }
+            });
+      }
+
+      log("done adding docs, waiting for executor to terminate...");
+
+      executorService.shutdown();
+      boolean result = false;
+      while (!result) {
+        result = executorService.awaitTermination(600, TimeUnit.MINUTES);
+      }
+
+      scheduledExecutor.shutdown();
+    }
+
+    private void indexBatch(String collection, Docs docs, int docCount, int batchSize)
+        throws SolrServerException, IOException {
+      Meter meter = new Meter();
+      List<SolrInputDocument> batch = new ArrayList<>(batchSize);
+      for (int i = 1; i <= docCount; i++) {
+        batch.add(docs.inputDocument());
+        if (i % batchSize == 0) {
+          UpdateRequest updateRequest = new UpdateRequest();
+          updateRequest.setBasePath(nodes.get(0));
+          updateRequest.add(batch);
+          client.request(updateRequest, collection);
+          meter.mark(batch.size());
+          batch.clear();
+          log(meter.getCount() + " docs at " + (long) meter.getMeanRate() + " doc/s");
+        }
+      }
+      if (!batch.isEmpty()) {
+        UpdateRequest updateRequest = new UpdateRequest();
+        updateRequest.setBasePath(nodes.get(0));
+        updateRequest.add(batch);
+        client.request(updateRequest, collection);
+        meter.mark(batch.size());
+        batch = null;
+      }
+      log(meter.getCount() + " docs at " + (long) meter.getMeanRate() + " doc/s");
     }
 
     /**

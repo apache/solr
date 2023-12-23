@@ -27,6 +27,7 @@ public interface GroupParams {
 
   /** the limit for the number of documents in each group */
   public static final String GROUP_LIMIT = GROUP + ".limit";
+
   /** the offset for the doclist of each group */
   public static final String GROUP_OFFSET = GROUP + ".offset";
 

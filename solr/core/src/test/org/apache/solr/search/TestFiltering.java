@@ -539,7 +539,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
           }
         }
 
-        SolrQueryRequest sreq = req(params.toArray(new String[params.size()]));
+        SolrQueryRequest sreq = req(params.toArray(new String[0]));
         long expected = model.answer.cardinality();
         long expectedMultiSelect = model.multiSelect.cardinality();
         long expectedFacetQuery = model.facetQuery.cardinality();

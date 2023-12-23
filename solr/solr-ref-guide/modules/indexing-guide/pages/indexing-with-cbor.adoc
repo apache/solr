@@ -1,0 +1,161 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+= Indexing with Update CBOR data format
+
+Solr supports http://cbor.io/[CBOR] format for indexing as well as querying. It supports most popular languages and platforms. It's much faster and efficient compared to JSON.
+
+== Python example
+
+Save the following as `cbor_post.py`
+[,python]
+----
+import json
+import requests
+import cbor2
+
+# JSON data to send (list of dictionaries)
+json_data = [
+    {
+        "id" : "1",
+        "name_s": "John Doe",
+        "age_i": 30,
+        "city_s": "New York"
+    },
+    {
+        "id": "2",
+        "name_s": "Jane Smith",
+        "age_i": 25,
+        "city_s": "London"
+    }
+]
+# If there is only a single doc you can use the following
+# json_data =    {
+#         "id" : "6",
+#         "name_s": "John Doe",
+#         "age_i": 30,
+#         "city_s": "New York"
+#     }
+
+
+# Convert JSON data to CBOR
+cbor_data = cbor2.dumps(json_data)
+
+# Set the endpoint URL
+# ensure that the collection 'coll1' is already created
+url = "http://localhost:8983/solr/coll1/update/cbor?commit=true"
+
+# Send a POST request with CBOR data
+response = requests.post(url, data=cbor_data, headers={"Content-Type": "application/cbor"})
+
+# Check the response status
+if response.status_code == 200:
+    print("POST request sent successfully!")
+    print("Response Body:", response.text)
+else:
+    print("Unexpected response status:", response.status_code)
+----
+
+=== Running the program
+
+1. Install Python
+2. Ensure that the dependencies are installed
+
+   pip install requests cbor2
+
+3. Run the program
+
+   python3 cbor_post.py
+
+4. Check the output
+
+   POST request sent successfully!
+   Response Body: {
+   "responseHeader":{
+   "rf":1,
+   "status":0,
+   "QTime":70
+   }
+   }
+
+== Node.js example
+
+Save the following program into a a file called `script.js`
+
+[,javascript]
+----
+const cbor = require('cbor');
+const axios = require('axios');
+
+async function main() {
+// JSON data to send (list of JSON objects)
+const jsonData = [
+{
+"id" : "1",
+"name_s": "John Doe",
+"age_i": 30,
+"city_s": "New York"
+},
+{
+"id": "2",
+"name_s": "Jane Smith",
+"age_i": 25,
+"city_s": "London"
+},
+];
+
+  // Convert JSON data to CBOR
+  const cborData = cbor.encode(jsonData);
+
+  // Set the endpoint URL
+  const url = "http://localhost:8983/solr/coll1/update/cbor?commit=true"
+
+  try {
+    // Send a POST request with CBOR data
+    const response = await axios.post(url, cborData, {
+      headers: {
+        'Content-Type': 'application/cbor',
+      },
+    });
+
+    // Process the response
+    console.log('POST request sent successfully!');
+    console.log('Response:', response.data);
+  } catch (error) {
+    console.error('Error sending POST request:', error.message);
+  }
+}
+
+main();
+----
+[]
+
+=== Running the program
+
+1. Install Node.js
+2. Ensure that the dependencies are installed
+
+ npm install cbor axios
+
+3. Execute the script
+
+ node script.js
+
+4. Check the output
+
+ POST request sent successfully!
+ Response: { responseHeader: { rf: 1, status: 0, QTime: 187 } }

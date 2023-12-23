@@ -272,12 +272,12 @@ public class SolrPackageLoader implements Closeable {
         List<Path> paths = new ArrayList<>();
 
         List<String> errs = new ArrayList<>();
-        coreContainer.getPackageStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
+        coreContainer.getFileStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
         if (!errs.isEmpty()) {
           throw new RuntimeException("Cannot load package: " + errs);
         }
         for (String file : version.files) {
-          paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
+          paths.add(coreContainer.getFileStoreAPI().getFileStore().getRealpath(file));
         }
 
         loader =

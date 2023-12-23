@@ -16,7 +16,9 @@
  */
 package org.apache.solr.common;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * Represent a list of SolrDocuments returned from a search. This includes position and offset
@@ -24,7 +26,24 @@ import java.util.ArrayList;
  *
  * @since solr 1.3
  */
-public class SolrDocumentList extends ArrayList<SolrDocument> {
+public class SolrDocumentList extends ArrayList<SolrDocument> implements MapWriter {
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("numFound", numFound);
+    ew.put("start", start);
+
+    if (maxScore != null) {
+      ew.put("maxScore", maxScore);
+    }
+
+    if (numFoundExact != null) {
+      ew.put("numFoundExact", numFoundExact);
+    }
+    final Iterator<SolrDocument> docs = iterator();
+    ew.put("docs", (IteratorWriter) iw -> docs.forEachRemaining(iw::addNoEx));
+  }
+
   private long numFound = 0;
   private long start = 0;
   private Float maxScore = null;

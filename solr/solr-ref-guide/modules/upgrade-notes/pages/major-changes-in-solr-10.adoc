@@ -32,6 +32,19 @@ Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like Zoo
 
 === Deprecation removals
 
-The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.
+* The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.
 
-The `analytics` module, which was deprecated in 9.2, is removed.
+* `OpenTracing` libraries were removed and replaced with `OpenTelemetry` libraries. Any Java agents providing `OpenTracing` tracers will no longer work. Telemetry tags `http.status_code` and `http.method` have been deprecated, newer version of the tags have been added to the span data: `http.response.status_code`, `http.request.method`.
+
+* The `analytics` module, which was deprecated in 9.2, is removed.
+
+* The sysProp `-Dsolr.redaction.system.pattern`, which allows users to provide a pattern to match sysProps that should be redacted for sensitive information,
+has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` instead.
+
+* The `<hiddenSysProps>` solr.xml element under `<metrics>` has been removed. Instead use the `<hiddenSysProps>` tag under `<solr>`, which accepts a comma-separated string.
+Please see `-Dsolr.redaction.system.pattern`, which allows users to provide a pattern to match sysProps that should be redacted for sensitive information,
+has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` instead.
+
+* The node configuration file `/solr.xml` can no longer be loaded from Zookeeper. Solr startup will fail if it is present.
+
+* The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please use individual Circuit Breaker plugins instead.

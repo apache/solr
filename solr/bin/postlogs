@@ -31,6 +31,7 @@
 #
 ############################################################################################
 
+echo "This script has been deprecated in favour of 'bin/solr postlogs' command."
 
 SOLR_TIP="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"/..
 java -classpath "$SOLR_TIP/server/lib/ext/*:$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib/*" org.apache.solr.cli.SolrLogPostTool $1 $2

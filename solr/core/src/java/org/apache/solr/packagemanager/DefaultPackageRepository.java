@@ -23,7 +23,9 @@ import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -106,13 +108,15 @@ public class DefaultPackageRepository extends PackageRepository {
 
   private void initPackages() {
     // We need http 1.1 protocol here because we are talking to the repository server and not to
-    // solr actually.
+    // an actual Solr server.
     // We use an Http2SolrClient so that we do not need a raw jetty http client for this GET.
+    // We may get a text/plain mimetype for the repository.json (for instance when looking up a repo
+    // on Github), so use custom ResponseParser.
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(repositoryURL).useHttp1_1(true).build()) {
       GenericSolrRequest request =
           new GenericSolrRequest(SolrRequest.METHOD.GET, "/repository.json");
-      request.setResponseParser(new JsonMapResponseParser());
+      request.setResponseParser(new TalkToRepoResponseParser());
       NamedList<Object> resp = client.request(request);
       SolrPackage[] items =
           PackageUtils.getMapper().readValue("[" + resp.jsonStr() + "]", SolrPackage[].class);
@@ -126,6 +130,18 @@ public class DefaultPackageRepository extends PackageRepository {
     }
     if (log.isDebugEnabled()) {
       log.debug("Found {} packages in repository '{}'", packages.size(), name);
+    }
+  }
+
+  /**
+   * Github links for repository.json are returned in JSON format but with text/plain mimetype, so
+   * this works around that issue.
+   */
+  private static class TalkToRepoResponseParser extends JsonMapResponseParser {
+
+    @Override
+    public Collection<String> getContentTypes() {
+      return Set.of("application/json", "text/plain");
     }
   }
 }

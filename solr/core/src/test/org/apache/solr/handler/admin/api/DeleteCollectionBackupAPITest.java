@@ -27,10 +27,11 @@ import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.PurgeUnusedFilesRequestBody;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
-/** Unit tests for {@link DeleteCollectionBackupAPI} */
+/** Unit tests for {@link DeleteCollectionBackup} */
 public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfBackupNameMissing() {
@@ -40,7 +41,7 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
           expectThrows(
               SolrException.class,
               () -> {
-                final var api = new DeleteCollectionBackupAPI(null, null, null);
+                final var api = new DeleteCollectionBackup(null, null, null);
                 api.deleteSingleBackupById(
                     null, "someBackupId", "someLocation", "someRepository", "someAsyncId");
               });
@@ -55,7 +56,7 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
           expectThrows(
               SolrException.class,
               () -> {
-                final var api = new DeleteCollectionBackupAPI(null, null, null);
+                final var api = new DeleteCollectionBackup(null, null, null);
                 api.deleteMultipleBackupsByRecency(
                     null, 123, "someLocation", "someRepository", "someAsyncId");
               });
@@ -66,15 +67,15 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
 
     // Garbage collect unused files
     {
-      final var requestBody = new DeleteCollectionBackupAPI.PurgeUnusedFilesRequestBody();
+      final var requestBody = new PurgeUnusedFilesRequestBody();
       requestBody.location = "someLocation";
       requestBody.repositoryName = "someRepository";
-      requestBody.asyncId = "someAsyncId";
+      requestBody.async = "someAsyncId";
       final SolrException thrown =
           expectThrows(
               SolrException.class,
               () -> {
-                final var api = new DeleteCollectionBackupAPI(null, null, null);
+                final var api = new DeleteCollectionBackup(null, null, null);
                 api.garbageCollectUnusedBackupFiles(null, requestBody);
               });
 
@@ -89,7 +90,7 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new DeleteCollectionBackupAPI(null, null, null);
+              final var api = new DeleteCollectionBackup(null, null, null);
               api.deleteSingleBackupById(
                   "someBackupName", null, "someLocation", "someRepository", "someAsyncId");
             });
@@ -104,7 +105,7 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> {
-              final var api = new DeleteCollectionBackupAPI(null, null, null);
+              final var api = new DeleteCollectionBackup(null, null, null);
               api.deleteMultipleBackupsByRecency(
                   "someBackupName", null, "someLocation", "someRepository", "someAsyncId");
             });
@@ -118,7 +119,7 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
   @Test
   public void testCreateRemoteMessageAllParams() {
     final var remoteMessage =
-        DeleteCollectionBackupAPI.createRemoteMessage(
+        DeleteCollectionBackup.createRemoteMessage(
                 "someBackupName",
                 "someBackupId",
                 123,
@@ -142,7 +143,7 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
   @Test
   public void testCreateRemoteMessageOnlyRequiredParams() {
     final var remoteMessage =
-        DeleteCollectionBackupAPI.createRemoteMessage(
+        DeleteCollectionBackup.createRemoteMessage(
                 "someBackupName", "someBackupId", null, null, null, null, null)
             .getProperties();
 

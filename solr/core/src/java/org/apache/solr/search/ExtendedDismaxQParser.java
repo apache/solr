@@ -193,7 +193,7 @@ public class ExtendedDismaxQParser extends QParser {
     Query topQuery = QueryUtils.build(query, this);
     List<ValueSource> boosts = getMultiplicativeBoosts();
     if (boosts.size() > 1) {
-      ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[boosts.size()]));
+      ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[0]));
       topQuery = FunctionScoreQuery.boostByValue(topQuery, prod.asDoubleValuesSource());
     } else if (boosts.size() == 1) {
       topQuery = FunctionScoreQuery.boostByValue(topQuery, boosts.get(0).asDoubleValuesSource());
@@ -1567,13 +1567,12 @@ public class ExtendedDismaxQParser extends QParser {
       if (!userFieldsMap.containsKey(MagicFieldName.QUERY.field)) {
         userFieldsMap.put("-" + MagicFieldName.QUERY.field, null);
       }
-      dynamicUserFields = dynUserFields.toArray(new DynamicField[dynUserFields.size()]);
+      dynamicUserFields = dynUserFields.toArray(new DynamicField[0]);
       Arrays.sort(dynamicUserFields);
       // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
       // rather than Collections.sort() then converting to an array, since Collections.sort()
       // copies to an array first, then sets each collection member from the array.
-      negativeDynamicUserFields =
-          negDynUserFields.toArray(new DynamicField[negDynUserFields.size()]);
+      negativeDynamicUserFields = negDynUserFields.toArray(new DynamicField[0]);
       Arrays.sort(negativeDynamicUserFields);
     }
 
@@ -1768,6 +1767,7 @@ public class ExtendedDismaxQParser extends QParser {
           solrParams.getBool(
               QueryParsing.SPLIT_ON_WHITESPACE, SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE);
     }
+
     /**
      * @return true if there are valid multiplicative boost queries
      */
@@ -1781,6 +1781,7 @@ public class ExtendedDismaxQParser extends QParser {
     public boolean hasBoostFunctions() {
       return null != boostFuncs && 0 != boostFuncs.length;
     }
+
     /**
      * @return true if there are valid boost params
      */
