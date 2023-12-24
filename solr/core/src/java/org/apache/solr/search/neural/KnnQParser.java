@@ -78,24 +78,6 @@ public class KnnQParser extends QParser {
     DenseVectorField denseVectorType = (DenseVectorField) fieldType;
 
     return denseVectorType.getKnnVectorQuery(
-        schemaField.getName(), vectorToSearch, topK, getFilterQuery());
-  }
-
-  private Query getFilterQuery() throws SolrException, SyntaxError {
-    boolean isSubQuery = recurseCount != 0;
-    if (!isFilter() && !isSubQuery) {
-      String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
-      if (filterQueries != null && filterQueries.length != 0) {
-        try {
-          List<Query> filters = QueryUtils.parseFilterQueries(req);
-          SolrIndexSearcher.ProcessedFilter processedFilter =
-              req.getSearcher().getProcessedFilter(filters);
-          return processedFilter.filter;
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
-      }
-    }
-    return null;
+        schemaField.getName(), vectorToSearch, topK, null);
   }
 }

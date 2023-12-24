@@ -29,6 +29,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.KnnVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
@@ -216,7 +217,11 @@ public class QueryUtils {
     } else {
       if (filterQuery == null || filterQuery instanceof MatchAllDocsQuery) {
         return scoreQuery;
-      } else {
+      } else if(scoreQuery instanceof KnnVectorQuery) {
+        KnnVectorQuery knn = (KnnVectorQuery) scoreQuery;
+        return new KnnVectorQuery(knn.getField(), knn.getTargetCopy(), knn.getK(), filterQuery);
+      }
+      else {
         return new BooleanQuery.Builder()
             .add(scoreQuery, Occur.MUST)
             .add(filterQuery, Occur.FILTER)
