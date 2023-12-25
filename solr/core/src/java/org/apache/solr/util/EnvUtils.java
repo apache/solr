@@ -43,7 +43,7 @@ public class EnvUtils {
   private static final SortedMap<String, String> ENV = new TreeMap<>(System.getenv());
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
   private static Map<String, String> camelCaseToDotsMap = new HashMap<>();
-  private static boolean initialized = false;
+  private static boolean initialized = true;
 
   static {
     try {
