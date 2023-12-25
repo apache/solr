@@ -65,7 +65,7 @@ The example below is using the `isNull` function inside of `select` function to 
 The `if` function takes 3 parameters.
 The first is a boolean expression, in this case `isNull`.
 The `if` function returns the second parameter if the boolean function returns true, and the third parameter if it returns false.
-In this case `isNull` is always true because its checking for a field in the tuples that is not included in the result set.
+In this case `isNull` is always true because it's checking for a field in the tuples that is not included in the result set.
 
 image::math-expressions/select2.png[]
 
@@ -100,7 +100,7 @@ image::math-expressions/search-resort.png[]
 == Rollups
 
 The `rollup` and `hashRollup` functions can be used to perform aggregations over result sets.
-This is different then the `facet`, `facet2D` and `timeseries` aggregation functions which push the aggregations into the search engine using the JSON facet API.
+This is different from the `facet`, `facet2D` and `timeseries` aggregation functions which push the aggregations into the search engine using the JSON facet API.
 
 The `rollup` function performs map-reduce style rollups, which requires the result stream be sorted by the grouping fields.
 This allows for aggregations over very high cardinality fields.

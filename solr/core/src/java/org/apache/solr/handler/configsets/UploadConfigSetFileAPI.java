@@ -27,6 +27,7 @@ import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.FileTypeMagicUtil;
 
 /**
  * V2 API for adding or updating a single file within a configset.
@@ -67,11 +68,13 @@ public class UploadConfigSetFileAPI extends ConfigSetAPIBase {
     if (fixedSingleFilePath.charAt(0) == '/') {
       fixedSingleFilePath = fixedSingleFilePath.substring(1);
     }
+    byte[] data = inputStream.readAllBytes();
     if (fixedSingleFilePath.isEmpty()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file path provided for upload, '" + singleFilePath + "', is not valid.");
-    } else if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fixedSingleFilePath)) {
+    } else if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fixedSingleFilePath)
+        || FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The file type provided for upload, '"
@@ -87,8 +90,7 @@ public class UploadConfigSetFileAPI extends ConfigSetAPIBase {
       // For creating the baseNode, the cleanup parameter is only allowed to be true when
       // singleFilePath is not passed.
       createBaseNode(configSetService, overwritesExisting, requestIsTrusted, configSetName);
-      configSetService.uploadFileToConfig(
-          configSetName, fixedSingleFilePath, inputStream.readAllBytes(), allowOverwrite);
+      configSetService.uploadFileToConfig(configSetName, fixedSingleFilePath, data, allowOverwrite);
     }
   }
 }

@@ -401,7 +401,7 @@ This is ignored if `spellcheck.collate` is false.
 +
 This parameter specifies the maximum number of documents that should be collected when testing potential collations against the index.
 A value of `0` indicates that all documents should be collected, resulting in exact hit-counts.
-Otherwise an estimation is provided as a performance optimization in cases where exact hit-counts are unnecessary – the higher the value specified, the more precise the estimation.
+Otherwise, an estimation is provided as a performance optimization in cases where exact hit-counts are unnecessary – the higher the value specified, the more precise the estimation.
 +
 When `spellcheck.collateExtendedResults` is `false`, the optimization is always used as if `1` had been specified.
 
