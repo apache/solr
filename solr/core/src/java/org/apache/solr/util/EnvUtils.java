@@ -42,8 +42,7 @@ import org.apache.solr.common.util.Utils;
 public class EnvUtils {
   private static final SortedMap<String, String> ENV = new TreeMap<>(System.getenv());
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
-  private static Map<String, String> camelCaseToDotsMap = new HashMap<>();
-  private static boolean initialized = true;
+  private static final Map<String, String> camelCaseToDotsMap = new HashMap<>();
 
   static {
     try {
@@ -130,11 +129,8 @@ public class EnvUtils {
     ENV.putAll(env);
   }
 
-  /**
-   * Get all Solr system properties as a sorted map. It will block until initialization is complete.
-   */
+  /** Get all Solr system properties as a sorted map */
   public static SortedMap<String, String> getProps() {
-    ensureInitialized();
     return System.getProperties().entrySet().stream()
         .collect(
             Collectors.toMap(
@@ -144,30 +140,9 @@ public class EnvUtils {
                 TreeMap::new));
   }
 
-  /** Get a property as string. It will block until initialization is complete. */
+  /** Get a property as string */
   public static String getProp(String key) {
     return getProp(key, null);
-  }
-
-  /**
-   * Get a property as string with a fallback value. It will block until initialization is complete.
-   *
-   * @param key property key, which treats 'camelCase' the same as 'camel.case'
-   * @param defaultValue fallback value if property is not found
-   */
-  public static String getProp(String key, String defaultValue) {
-    return getProp(key, defaultValue, true);
-  }
-
-  /**
-   * Get a property as string with a fallback value, without waiting for initialization. This method
-   * is intended used internally during initialization.
-   *
-   * @param key property key, which treats 'camelCase' the same as 'camel.case'
-   * @param defaultValue fallback value if property is not found
-   */
-  private static String getPropNonBlocking(String key, String defaultValue) {
-    return getProp(key, defaultValue, false);
   }
 
   /**
@@ -175,13 +150,8 @@ public class EnvUtils {
    *
    * @param key property key, which treats 'camelCase' the same as 'camel.case'
    * @param defaultValue fallback value if property is not found
-   * @param waitForInit if true, wait for initialization to complete before returning. When calling
-   *     from init(), this should be false to avoid a deadlock.
    */
-  private static String getProp(String key, String defaultValue, boolean waitForInit) {
-    if (waitForInit) {
-      ensureInitialized(); // Avoid race condition with init()
-    }
+  public static String getProp(String key, String defaultValue) {
     String value = getPropWithCamelCaseFallback(key);
     return value != null ? value : defaultValue;
   }
@@ -276,12 +246,11 @@ public class EnvUtils {
       if (key.startsWith("SOLR_") || CUSTOM_MAPPINGS.containsKey(key)) {
         String sysPropKey = envNameToSyspropName(key);
         // Existing system properties take precedence
-        if (!sysPropKey.isBlank() && (overwrite || getPropNonBlocking(sysPropKey, null) == null)) {
+        if (!sysPropKey.isBlank() && (overwrite || getProp(sysPropKey, null) == null)) {
           setProp(sysPropKey, ENV.get(key));
         }
       }
     }
-    initialized = true;
   }
 
   protected static String envNameToSyspropName(String envName) {
@@ -303,19 +272,6 @@ public class EnvUtils {
       return StrUtils.splitSmart(string, ",", true).stream()
           .map(String::trim)
           .collect(Collectors.toList());
-    }
-  }
-
-  private static synchronized void ensureInitialized() {
-    while (!initialized) {
-      try {
-        //noinspection BusyWait
-        Thread.sleep(10);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "EnvUtils not initialized", e);
-      }
     }
   }
 }
