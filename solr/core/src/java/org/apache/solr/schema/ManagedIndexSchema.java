@@ -16,8 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import static org.apache.solr.core.SolrResourceLoader.informAware;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -40,14 +38,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharFilterFactory;
-import org.apache.lucene.analysis.TokenFilterFactory;
-import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.util.Version;
-import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -1307,37 +1299,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
 
-  /** Informs analyzers used by a fieldType. */
-  private void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
-    // must inform any sub-components used in the
-    // tokenizer chain if they are ResourceLoaderAware
-    if (!fieldType.supportsAnalyzers()) return;
-
-    Analyzer indexAnalyzer = fieldType.getIndexAnalyzer();
-    if (indexAnalyzer != null && indexAnalyzer instanceof TokenizerChain)
-      informResourceLoaderAwareObjectsInChain((TokenizerChain) indexAnalyzer);
-
-    Analyzer queryAnalyzer = fieldType.getQueryAnalyzer();
-    // ref comparison is correct here (vs. equals) as they may be the same
-    // object in which case, we don't need to inform twice ... however, it's
-    // actually safe to call inform multiple times on an object anyway
-    if (queryAnalyzer != null
-        && queryAnalyzer != indexAnalyzer
-        && queryAnalyzer instanceof TokenizerChain)
-      informResourceLoaderAwareObjectsInChain((TokenizerChain) queryAnalyzer);
-
-    // if fieldType is a TextField, it might have a multi-term analyzer
-    if (fieldType instanceof TextField) {
-      TextField textFieldType = (TextField) fieldType;
-      Analyzer multiTermAnalyzer = textFieldType.getMultiTermAnalyzer();
-      if (multiTermAnalyzer != null
-          && multiTermAnalyzer != indexAnalyzer
-          && multiTermAnalyzer != queryAnalyzer
-          && multiTermAnalyzer instanceof TokenizerChain)
-        informResourceLoaderAwareObjectsInChain((TokenizerChain) multiTermAnalyzer);
-    }
-  }
-
   @Override
   public SchemaField newField(String fieldName, String fieldType, Map<String, ?> options) {
     SchemaField sf;
@@ -1434,44 +1395,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     if (!schemaAwareList.isEmpty()) schemaAware.addAll(schemaAwareList);
 
     return ft;
-  }
-
-  /**
-   * After creating a new FieldType, it may contain components that implement the
-   * ResourceLoaderAware interface, which need to be informed after they are loaded (as they depend
-   * on this callback to complete initialization work)
-   */
-  private void informResourceLoaderAwareObjectsInChain(TokenizerChain chain) {
-    CharFilterFactory[] charFilters = chain.getCharFilterFactories();
-    for (CharFilterFactory next : charFilters) {
-      if (next instanceof ResourceLoaderAware) {
-        try {
-          informAware(loader, (ResourceLoaderAware) next);
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-      }
-    }
-
-    TokenizerFactory tokenizerFactory = chain.getTokenizerFactory();
-    if (tokenizerFactory instanceof ResourceLoaderAware) {
-      try {
-        informAware(loader, (ResourceLoaderAware) tokenizerFactory);
-      } catch (IOException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
-    }
-
-    TokenFilterFactory[] filters = chain.getTokenFilterFactories();
-    for (TokenFilterFactory next : filters) {
-      if (next instanceof ResourceLoaderAware) {
-        try {
-          informAware(loader, (ResourceLoaderAware) next);
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-      }
-    }
   }
 
   private ManagedIndexSchema(

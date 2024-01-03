@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.ConfigNode;
@@ -286,9 +285,6 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
           @Override
           protected void init(CharFilterFactory plugin, ConfigNode node) throws Exception {
             if (plugin != null) {
-              if (plugin instanceof ResourceLoaderAware) {
-                ((ResourceLoaderAware) plugin).inform(schema.getResourceLoader());
-              }
               charFilters.add(plugin);
             }
           }
@@ -357,9 +353,6 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
                   SolrException.ErrorCode.SERVER_ERROR,
                   "The schema defines multiple tokenizers for: " + node);
             }
-            if (plugin instanceof ResourceLoaderAware) {
-              ((ResourceLoaderAware) plugin).inform(schema.getResourceLoader());
-            }
             tokenizers.add(plugin);
           }
 
@@ -427,9 +420,6 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
           @Override
           protected void init(TokenFilterFactory plugin, ConfigNode node) throws Exception {
             if (plugin != null) {
-              if (plugin instanceof ResourceLoaderAware) {
-                ((ResourceLoaderAware) plugin).inform(schema.getResourceLoader());
-              }
               filters.add(plugin);
             }
           }
