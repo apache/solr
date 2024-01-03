@@ -161,6 +161,8 @@ Bug Fixes
 * SOLR-17098: ZK Credentials and ACLs are no longer sent to all ZK Servers when using Streaming Expressions.
   They will only be used when sent to the default ZK Host. (Houston Putman, Jan Høydahl, David Smiley, Gus Heck, Qing Xu)
 
+* SOLR-16203: Properly initialize schema plugins loaded by SPI name (janhoy, hossman, Uwe Schindler)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
