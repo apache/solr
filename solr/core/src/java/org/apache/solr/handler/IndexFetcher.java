@@ -354,8 +354,10 @@ public class IndexFetcher {
       }
     }
     this.leaderCoreUrl = leaderCoreUrl;
-    this.leaderBaseUrl = URLUtil.extractBaseUrl(leaderCoreUrl);
-    this.leaderCoreName = URLUtil.extractCoreFromCoreUrl(leaderCoreUrl);
+    if (leaderCoreUrl != null) {
+      this.leaderBaseUrl = URLUtil.extractBaseUrl(leaderCoreUrl);
+      this.leaderCoreName = URLUtil.extractCoreFromCoreUrl(leaderCoreUrl);
+    }
   }
 
   protected <T> T getParameter(

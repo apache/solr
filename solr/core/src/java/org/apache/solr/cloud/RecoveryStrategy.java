@@ -919,7 +919,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         conflictWaitMs
             + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
     try (HttpSolrClient client =
-        recoverySolrClientBuilder(leaderBaseUrl, leaderCoreName)
+        recoverySolrClientBuilder(
+                leaderBaseUrl,
+                null) // leader core omitted since client only used for 'admin' request
             .withSocketTimeout(readTimeout, TimeUnit.MILLISECONDS)
             .build()) {
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
