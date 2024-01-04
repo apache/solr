@@ -56,6 +56,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
+import org.apache.solr.handler.admin.api.CreateCore;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.CreateCoreBackup;
 import org.apache.solr.handler.admin.api.InstallCoreData;
@@ -287,32 +288,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   protected static Map<String, String> buildCoreParams(SolrParams params) {
-
-    Map<String, String> coreParams = new HashMap<>();
-
-    // standard core create parameters
-    for (Map.Entry<String, String> entry : paramToProp.entrySet()) {
-      String value = params.get(entry.getKey(), null);
-      if (StrUtils.isNotNullOrEmpty(value)) {
-        coreParams.put(entry.getValue(), value);
-      }
-    }
-
-    // extra properties
-    Iterator<String> paramsIt = params.getParameterNamesIterator();
-    while (paramsIt.hasNext()) {
-      String param = paramsIt.next();
-      if (param.startsWith(CoreAdminParams.PROPERTY_PREFIX)) {
-        String propName = param.substring(CoreAdminParams.PROPERTY_PREFIX.length());
-        String propValue = params.get(param);
-        coreParams.put(propName, propValue);
-      }
-      if (param.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
-        coreParams.put(param, params.get(param));
-      }
-    }
-
-    return coreParams;
+    return CreateCore.buildCoreParams(params.toMap(new HashMap<String, Object>()));
   }
 
   protected static String normalizePath(String path) {

@@ -98,11 +98,11 @@ public enum CoreAdminOperation implements CoreAdminOp {
       CREATE,
       it -> {
         assert TestInjection.injectRandomDelayInCoreCreation();
-
         SolrParams params = it.req.getParams();
         log().info("core create command {}", params);
         String coreName = params.required().get(CoreAdminParams.NAME);
-        Map<String, String> coreParams = buildCoreParams(params);
+
+        /*Map<String, String> coreParams = buildCoreParams(params);
         CoreContainer coreContainer = it.handler.coreContainer;
         Path instancePath;
 
@@ -122,7 +122,7 @@ public enum CoreAdminOperation implements CoreAdminOp {
 
         coreContainer.create(coreName, instancePath, coreParams, newCollection);
 
-        it.rsp.add("core", coreName);
+        it.rsp.add("core", coreName);*/
       }),
   UNLOAD_OP(
       UNLOAD,
