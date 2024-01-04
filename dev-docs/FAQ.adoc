@@ -95,5 +95,5 @@ If you don't yet have an account, you have to ask for one in the 'users' or 'dev
 === Where can I find information about test history?
 
 * https://ge.apache.org/scans/tests?search.relativeStartTime=P90D&search.rootProjectNames=solr-root
-* https://lists.apache.org/list.html?builds@solr.apache.org
+* https://lists.apache.org/list.html?builds@solr.apache.org[builds@solr.apache.org mailing archive]
 
