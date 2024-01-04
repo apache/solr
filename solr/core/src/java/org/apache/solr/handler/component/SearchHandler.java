@@ -669,11 +669,8 @@ public class SearchHandler extends RequestHandlerBase
           && (response.getSolrResponse().getResponse().get("responseHeader") != null)) {
         @SuppressWarnings("unchecked")
         SimpleOrderedMap<Object> header =
-        (SimpleOrderedMap<Object>)
-        response
-        .getSolrResponse()
-        .getResponse()
-        .get(SolrQueryResponse.RESPONSE_HEADER_KEY);
+            (SimpleOrderedMap<Object>)
+                response.getSolrResponse().getResponse().get(SolrQueryResponse.RESPONSE_HEADER_KEY);
         if (header != null) {
           Long shardCpuTime = (Long) header.get(ThreadStats.CPU_TIME);
           if (shardCpuTime != null) {
@@ -684,7 +681,7 @@ public class SearchHandler extends RequestHandlerBase
     }
     return totalShardCpuTime;
   }
-  
+
   private void tagRequestWithRequestId(ResponseBuilder rb) {
     final boolean ridTaggingDisabled =
         rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, DISABLE_REQUEST_ID_DEFAULT);
