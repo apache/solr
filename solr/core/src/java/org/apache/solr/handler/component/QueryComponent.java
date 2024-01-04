@@ -42,6 +42,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
@@ -497,7 +498,8 @@ public class QueryComponent extends SearchComponent {
           // :TODO: would be simpler to always serialize every position of SortField[]
           if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
 
-          FieldComparator<?> comparator = sortField.getComparator(1, true);
+          FieldComparator<?> comparator =
+              sortField.getComparator(1, Pruning.GREATER_THAN_OR_EQUAL_TO);
           LeafFieldComparator leafComparator = null;
           Object[] vals = new Object[nDocs];
 
