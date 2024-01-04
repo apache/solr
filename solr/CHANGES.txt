@@ -128,6 +128,8 @@ Improvements
   using the `withDefaultCollection` method.  This is preferable to including the collection
   in the base URL accepted by certain client implementations. (Jason Gerlowski)
 
+* SOLR-15960: Unified use of system properties and environment variables (janhoy)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
