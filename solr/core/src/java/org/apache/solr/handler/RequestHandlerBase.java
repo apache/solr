@@ -76,7 +76,7 @@ public abstract class RequestHandlerBase
 
   private PluginInfo pluginInfo;
 
-  private Boolean publishCpuTime = null;
+  protected boolean publishCpuTime = Boolean.getBoolean(ThreadStats.ENABLE_CPU_TIME);
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -217,9 +217,6 @@ public abstract class RequestHandlerBase
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     ThreadStats cpuStats = null;
-    if (publishCpuTime == null) {
-      publishCpuTime = Boolean.getBoolean(ThreadStats.ENABLE_CPU_TIME);
-    }
     if (publishCpuTime) {
       cpuStats = new ThreadStats();
     }

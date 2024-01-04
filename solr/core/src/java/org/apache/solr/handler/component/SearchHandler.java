@@ -85,7 +85,6 @@ public class SearchHandler extends RequestHandlerBase
   static final String INIT_LAST_COMPONENTS = "last-components";
 
   protected static final String SHARD_HANDLER_SUFFIX = "[shard]";
-  private boolean publishCpuTime = Boolean.getBoolean(ThreadStats.ENABLE_CPU_TIME);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -516,7 +515,7 @@ public class SearchHandler extends RequestHandlerBase
       rb.finished = new ArrayList<>();
 
       int nextStage = 0;
-      Long totalShardCpuTime = 0L;
+      long totalShardCpuTime = 0L;
       do {
         rb.stage = nextStage;
         nextStage = ResponseBuilder.STAGE_DONE;
@@ -604,25 +603,8 @@ public class SearchHandler extends RequestHandlerBase
             }
 
             // Compute total CpuTime used by all shards.
-            List<ShardResponse> responses = srsp.getShardRequest().responses;
-            for (ShardResponse response : responses) {
-              if ((response.getSolrResponse() != null)
-                  && (response.getSolrResponse().getResponse() != null)
-                  && (response.getSolrResponse().getResponse().get("responseHeader") != null)) {
-                @SuppressWarnings("unchecked")
-                SimpleOrderedMap<Object> header =
-                    (SimpleOrderedMap<Object>)
-                        response
-                            .getSolrResponse()
-                            .getResponse()
-                            .get(SolrQueryResponse.RESPONSE_HEADER_KEY);
-                if (header != null) {
-                  Long shardCpuTime = (Long) header.get(ThreadStats.CPU_TIME);
-                  if (shardCpuTime != null) {
-                    totalShardCpuTime += shardCpuTime;
-                  }
-                }
-              }
+            if (publishCpuTime) {
+              totalShardCpuTime += computeShardCpuTime(srsp.getShardRequest().responses);
             }
           }
         }
@@ -679,6 +661,30 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
+  private long computeShardCpuTime(List<ShardResponse> responses) {
+    long totalShardCpuTime = 0;
+    for (ShardResponse response : responses) {
+      if ((response.getSolrResponse() != null)
+          && (response.getSolrResponse().getResponse() != null)
+          && (response.getSolrResponse().getResponse().get("responseHeader") != null)) {
+        @SuppressWarnings("unchecked")
+        SimpleOrderedMap<Object> header =
+        (SimpleOrderedMap<Object>)
+        response
+        .getSolrResponse()
+        .getResponse()
+        .get(SolrQueryResponse.RESPONSE_HEADER_KEY);
+        if (header != null) {
+          Long shardCpuTime = (Long) header.get(ThreadStats.CPU_TIME);
+          if (shardCpuTime != null) {
+            totalShardCpuTime += shardCpuTime;
+          }
+        }
+      }
+    }
+    return totalShardCpuTime;
+  }
+  
   private void tagRequestWithRequestId(ResponseBuilder rb) {
     final boolean ridTaggingDisabled =
         rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, DISABLE_REQUEST_ID_DEFAULT);

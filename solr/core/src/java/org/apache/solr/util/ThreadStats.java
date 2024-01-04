@@ -42,7 +42,7 @@ public class ThreadStats {
 
   static {
     try {
-      java.lang.management.ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+      ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
       if (!threadBean.isThreadCpuTimeEnabled()) {
         threadBean.setThreadCpuTimeEnabled(true);
       }
