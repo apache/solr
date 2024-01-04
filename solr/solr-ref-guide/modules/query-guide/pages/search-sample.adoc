@@ -161,9 +161,9 @@ The `facet` function supports any combination of the following aggregate functio
 
 === facet2D
 
-The `facet2D` function performs two dimensional aggregations that can be visualized as heat maps or pivoted into matrices and operated on by machine learning functions.
+The `facet2D` function performs two-dimensional aggregations that can be visualized as heat maps or pivoted into matrices and operated on by machine learning functions.
 
-`facet2D` has different syntax and behavior then a two dimensional `facet` function which does not control the number of unique facets of each dimension.
+`facet2D` has different syntax and behavior then a two-dimensional `facet` function which does not control the number of unique facets of each dimension.
 The `facet2D` function has the `dimensions` parameter which controls the number of unique facets for the *x* and *y* dimensions.
 
 The example below visualizes the output of the `facet2D` function.
@@ -201,7 +201,7 @@ The `significantTerms` function can often provide insights that cannot be gleane
 The example below illustrates the difference between the `facet` function and the `significantTerms` function.
 
 In the first example the `facet` function aggregates the top 5 complaint types in Brooklyn.
-This returns the five most common complaint types in Brooklyn, but it's not clear that these terms appear more frequently in Brooklyn then then the other boroughs.
+This returns the five most common complaint types in Brooklyn, but it's not clear that these terms appear more frequently in Brooklyn than the other boroughs.
 
 image::math-expressions/significantTermsCompare.png[]
 
@@ -242,11 +242,11 @@ The `gather` parameter tells the nodes expression to gather the `ticker_s` symbo
 The `count(*)` parameter counts the occurrences of the tickers.
 This will count the number of times each ticker appears in the breadth first search.
 
-Finally the `top` function selects the top 5 tickers by count and returns them.
+Finally, the `top` function selects the top 5 tickers by count and returns them.
 
 The result below shows the ticker symbols in the `nodes` field and the counts for each node.
 Notice *jpm* is first, which shows how many days *jpm* had a change greater then .25 in this time period.
-The next set of ticker symbols (*mtb*, *slvb*, *gs* and *pnc*) are the symbols with highest number of days with a change greater then .25 on the same days that *jpm* had a change greater then .25.
+The next set of ticker symbols (*mtb*, *slvb*, *gs* and *pnc*) are the symbols with the highest number of days with a change greater then .25 on the same days that *jpm* had a change greater then .25.
 
 image::math-expressions/nodestab.png[]
 

@@ -350,7 +350,7 @@ teardown() {
       export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 
       run ! solr api -verbose -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*&rows=0"
-      assert_output --regexp '(bad_certificate|Server refused connection)'
+      assert_output --regexp '(bad_certificate|java.nio.channels.ClosedChannelException|Server refused connection)'
     )
   )
 

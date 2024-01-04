@@ -124,6 +124,10 @@ Improvements
 
 * SOLR-17063: Do not retain log param references in LogWatcher (Michael Gibney)
 
+* SOLR-17066: SolrClient builders now allow users to specify a "default" collection or core
+  using the `withDefaultCollection` method.  This is preferable to including the collection
+  in the base URL accepted by certain client implementations. (Jason Gerlowski)
+
 * SOLR-16397: The MERGEINDEXES v2 endpoint has been updated to be more REST-ful.
   MERGEINDEXES is now available at `POST /api/cores/coreName/merge-indices` (Sanjay Dutt via Jason Gerlowski)
 
@@ -155,6 +159,11 @@ Bug Fixes
 * SOLR-17057: JSON Query regression: If "query" is specified with a String (not JSON structure),
   "defType" should parse it.  Since 9.4 defType was ignored.  (David Smiley)
 
+* SOLR-17060: CoreContainer#create may deadlock with concurrent requests for metrics (Alex Deparvu, David Smiley)
+
+* SOLR-17098: ZK Credentials and ACLs are no longer sent to all ZK Servers when using Streaming Expressions.
+  They will only be used when sent to the default ZK Host. (Houston Putman, Jan Høydahl, David Smiley, Gus Heck, Qing Xu)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
@@ -171,6 +180,11 @@ Other Changes
 
 * SOLR-17091: dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz file it was not expecting
   cloud.sh has been updated to ignore the -slim.tgz version of the tarball.
+
+* SOLR-16949: Restrict certain file types from being uploaded to or downloaded from Config Sets (janhoy, Houston Putman)
+
+* SOLR-16880: Solr now produces an OpenAPI Specification artifact on releases ("solr-openapi-x.y.z.json") that covers
+  Solr's v2 APIs. (Jason Gerlowski, Houston Putman)
 
 ==================  9.4.0 ==================
 New Features
