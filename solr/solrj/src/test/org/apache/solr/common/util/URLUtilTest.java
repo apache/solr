@@ -82,4 +82,17 @@ public class URLUtilTest extends SolrTestCase {
         "sTrAnGe-name.for_core",
         URLUtil.extractCoreFromCoreUrl("http://localhost:8983/solr/sTrAnGe-name.for_core/"));
   }
+
+  @Test
+  public void testCanBuildCoreUrl() {
+    assertEquals(
+        "http://localhost:8983/solr/techproducts",
+        URLUtil.buildCoreUrl("http://localhost:8983/solr", "techproducts"));
+    assertEquals(
+        "http://localhost:8983/solr/techproducts",
+        URLUtil.buildCoreUrl("http://localhost:8983/solr/", "techproducts"));
+    assertEquals(
+        "http://localhost:8983/solr/sTrAnGe-name.for_core",
+        URLUtil.buildCoreUrl("http://localhost:8983/solr", "sTrAnGe-name.for_core"));
+  }
 }

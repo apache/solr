@@ -68,8 +68,7 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
   }
 
   public void testAlmostAllMethodsAreFinal() {
-    final var expectedNonFinals =
-        Set.of("getReplicateLeaderUrl", "getReplicateLeaderBaseUrl", "getReplicateLeaderCoreName");
+    final var expectedNonFinals = Set.of("getReplicateLeaderUrl");
     for (Method m : RecoveryStrategy.class.getDeclaredMethods()) {
       if (Modifier.isStatic(m.getModifiers()) || Modifier.isPrivate(m.getModifiers())) continue;
       final String methodName = m.getName();

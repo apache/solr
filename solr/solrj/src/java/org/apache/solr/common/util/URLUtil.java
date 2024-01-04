@@ -64,6 +64,17 @@ public class URLUtil {
     return coreUrl.substring(coreUrl.lastIndexOf("/") + 1);
   }
 
+  /**
+   * Create a core URL (e.g. "http://localhost:8983/solr/myCore") from its individual components
+   *
+   * @param baseUrl a Solr "base URL" (e.g. "http://localhost:8983/solr/")
+   * @param coreName the name of a Solr core or collection (with no leading or trailing slashes)
+   */
+  public static String buildCoreUrl(String baseUrl, String coreName) {
+    baseUrl = removeTrailingSlashIfPresent(baseUrl);
+    return baseUrl + "/" + coreName;
+  }
+
   private static String removeTrailingSlashIfPresent(String url) {
     if (url.endsWith("/")) {
       return url.substring(0, url.length() - 1);

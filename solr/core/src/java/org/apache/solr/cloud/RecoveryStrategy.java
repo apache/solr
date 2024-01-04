@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -217,22 +218,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
     return new ZkCoreNodeProps(leaderprops).getCoreUrl();
   }
 
-  protected String getReplicateLeaderBaseUrl(ZkNodeProps leaderProps) {
-    return new ZkCoreNodeProps(leaderProps).getBaseUrl();
-  }
-
-  protected String getReplicateLeaderCoreName(ZkNodeProps leaderProps) {
-    return new ZkCoreNodeProps(leaderProps).getCoreName();
-  }
-
   private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops)
       throws SolrServerException, IOException {
 
-    final String leaderBaseUrl = getReplicateLeaderBaseUrl(leaderprops);
-    final String leaderCore = getReplicateLeaderCoreName(leaderprops);
-    final String leaderUrl = getReplicateLeaderUrl(leaderprops);
+    final String leaderBaseUrl = URLUtil.extractBaseUrl(getReplicateLeaderUrl(leaderprops));
+    final String leaderCore = URLUtil.extractCoreFromCoreUrl(getReplicateLeaderUrl(leaderprops));
 
-    log.info("Attempting to replicate from [{}].", leaderUrl);
+    log.info("Attempting to replicate from core [{}] on node [{}].", leaderCore, leaderBaseUrl);
 
     // send commit if replica could be a leader
     if (replicaType.leaderEligible) {
@@ -250,7 +242,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.set(ReplicationHandler.LEADER_URL, leaderUrl);
+    solrParams.set(ReplicationHandler.LEADER_URL, URLUtil.buildCoreUrl(leaderBaseUrl, leaderCore));
     solrParams.set(
         ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, replicaType == Replica.Type.TLOG);
 
@@ -272,10 +264,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
           final IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
           if (log.isDebugEnabled()) {
             log.debug(
-                "{} replicated {} from {} gen: {} data: {} index: {} newIndex: {} files: {}",
+                "{} replicated {} from core {} on node {} gen: {} data: {} index: {} newIndex: {} files: {}",
                 core.getCoreContainer().getZkController().getNodeName(),
                 searcher.count(new MatchAllDocsQuery()),
-                leaderUrl,
+                leaderCore,
+                leaderBaseUrl,
                 (null == commit ? "null" : commit.getGeneration()),
                 core.getDataDir(),
                 core.getIndexDir(),

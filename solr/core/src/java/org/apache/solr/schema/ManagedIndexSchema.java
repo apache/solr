@@ -68,6 +68,7 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -282,7 +283,8 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
 
         if (vers == -1) {
-          String coreUrl = concurrentTasks.get(f).baseUrl;
+          final String coreUrl =
+              URLUtil.buildCoreUrl(concurrentTasks.get(f).baseUrl, concurrentTasks.get(f).coreName);
           log.warn(
               "Core {} version mismatch! Expected {} but got {}", coreUrl, schemaZkVersion, vers);
           if (failedList == null) failedList = new ArrayList<>();
