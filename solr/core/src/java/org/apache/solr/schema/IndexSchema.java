@@ -657,8 +657,6 @@ public class IndexSchema {
       loadCopyFields(rootNode);
 
       postReadInform();
-      fieldTypes.values().forEach(this::informResourceLoaderAwareObjectsForFieldType);
-
     } catch (SolrException e) {
       throw new SolrException(
           ErrorCode.getErrorCode(e.code()),
@@ -683,6 +681,8 @@ public class IndexSchema {
     for (SchemaAware aware : schemaAware) {
       aware.inform(this);
     }
+    // Make sure all analyzers have resource loaders, even SPI loaded ones
+    fieldTypes.values().forEach(this::informResourceLoaderAwareObjectsForFieldType);
   }
 
   /**
@@ -1998,7 +1998,7 @@ public class IndexSchema {
   }
 
   /** Informs analyzers used by a fieldType. */
-  protected void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
+  private void informResourceLoaderAwareObjectsForFieldType(FieldType fieldType) {
     // must inform any sub-components used in the
     // tokenizer chain if they are ResourceLoaderAware
     if (!fieldType.supportsAnalyzers()) return;

@@ -1292,14 +1292,6 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  protected void postReadInform() {
-    super.postReadInform();
-    for (FieldType fieldType : fieldTypes.values()) {
-      informResourceLoaderAwareObjectsForFieldType(fieldType);
-    }
-  }
-
-  @Override
   public SchemaField newField(String fieldName, String fieldType, Map<String, ?> options) {
     SchemaField sf;
     if (isMutable) {
