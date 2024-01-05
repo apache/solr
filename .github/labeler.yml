@@ -1,0 +1,166 @@
+# Add 'dependencies' label to any PR updating dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+        - versions.props
+        - versions.lock
+        - solr/licenses/**
+
+# Add 'documentation' label to any changes within ref-guide or dev-docs
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+        - dev-docs/**
+        - solr/solr-ref-guide/**
+        - solr/documentation/**
+        - help/**
+        - solr/README.adoc
+        - CONTRIBUTING.md
+        - README.md
+
+# Add 'example' label to examples
+example:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/example/**
+
+# Add 'bats-tests' label
+bats-tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/packaging/tests/**
+
+# Add 'tool:docker' label for changes to docker
+tool:docker:
+  - changed-files:
+      - any-glob-to-any-file:
+        - solr/docker/**
+
+# Add 'tool:build' label for changes to gradle build files
+tool:build:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.gradle'
+          - settings.gradle
+          - build.gradle
+          - gradle/**
+          - buildSrc/**
+
+# Add 'start-scripts' label for changes to start scripts
+start-scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/bin/**
+
+# Add 'tools' label for changes to dev tools
+tool:scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - dev-tools/**
+          - solr/server/scripts/cloud-scripts/**
+
+# Add jetty related labels
+jetty-server:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/server/etc/**
+          - solr/server/contexts/**
+          - solr/server/resources/**
+          - solr/server/modules/**
+
+# Add 'config-sets' label
+configs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/server/solr/**
+
+# Add 'solrj' labels
+solrj:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/solrj/**
+          - solr/solrj-*/**
+
+# Add 'test-framework' label
+test-framework:
+    - changed-files:
+        - any-glob-to-any-file:
+            - solr/test-framework/**
+
+# Add 'admin-ui' label
+admin-ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/webapp/**
+
+# Add 'prometheus-exporter' label
+prometheus-exporter:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/prometheus-exporter/**
+
+# Add labels for changes to solr modules
+module:analysis-extras:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/analytics-extras/**
+
+module:clustering:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/clustering/**
+
+module:extraction:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/extraction/**
+
+module:gcs-repository:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/gcs-repository/**
+
+module:hadoop-auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/hadoop-auth/**
+
+module:hdfs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/hdfs/**
+
+module:jwt-auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/jwt-auth/**
+
+module:langid:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/langid/**
+
+module:ltr:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/ltr/**
+
+module:opentelemetry:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/opentelemetry/**
+
+module:s3-repository:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/s3-repository/**
+
+module:scripting:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/scripting/**
+
+module:sql:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/modules/sql/**
