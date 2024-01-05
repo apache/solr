@@ -112,6 +112,13 @@ elif [ -r "$SOLR_INCLUDE" ]; then
   . "$SOLR_INCLUDE"
 fi
 
+# Export variables we want to make visible to Solr sub-process
+for var in $(compgen -e); do
+  if [[ "$var" =~ ^(SOLR_.*|DEFAULT_CONFDIR|ZK_.*|GCS_BUCKET|GCS_.*|S3_.*|OTEL_.*|AWS_.*)$ ]]; then
+    export "${var?}"
+  fi
+done
+
 # if pid dir is unset, default to $solr_tip/bin
 : "${SOLR_PID_DIR:=$SOLR_TIP/bin}"
 
@@ -1833,12 +1840,10 @@ if [ $# -gt 0 ]; then
         ;;
         -v)
             SOLR_LOG_LEVEL=DEBUG
-            PASS_TO_RUN_EXAMPLE+=("-Dsolr.log.level=$SOLR_LOG_LEVEL")
             shift
         ;;
         -q)
             SOLR_LOG_LEVEL=WARN
-            PASS_TO_RUN_EXAMPLE+=("-Dsolr.log.level=$SOLR_LOG_LEVEL")
             shift
         ;;
         -all)
@@ -1872,15 +1877,6 @@ if [ $# -gt 0 ]; then
   done
 fi
 
-if [[ -n ${SOLR_LOG_LEVEL:-} ]] ; then
-  SOLR_LOG_LEVEL_OPT="-Dsolr.log.level=$SOLR_LOG_LEVEL"
-fi
-
-# Solr modules option
-if [[ -n "${SOLR_MODULES:-}" ]] ; then
-  SCRIPT_SOLR_OPTS+=("-Dsolr.modules=$SOLR_MODULES")
-fi
-
 # Default placement plugin
 if [[ -n "${SOLR_PLACEMENTPLUGIN_DEFAULT:-}" ]] ; then
   SCRIPT_SOLR_OPTS+=("-Dsolr.placementplugin.default=$SOLR_PLACEMENTPLUGIN_DEFAULT")
@@ -1892,26 +1888,6 @@ if [ "${SOLR_ENABLE_REMOTE_STREAMING:-false}" == "true" ]; then
 fi
 if [ "${SOLR_ENABLE_STREAM_BODY:-false}" == "true" ]; then
   SCRIPT_SOLR_OPTS+=("-Dsolr.enableStreamBody=true")
-fi
-
-# Parse global circuit breaker env vars and convert to dot separated, lowercase properties
-if [ -n "${SOLR_CIRCUITBREAKER_UPDATE_CPU:-}" ]; then
-  SOLR_OPTS+=("-Dsolr.circuitbreaker.update.cpu=$SOLR_CIRCUITBREAKER_UPDATE_CPU")
-fi
-if [ -n "${SOLR_CIRCUITBREAKER_UPDATE_MEM:-}" ]; then
-  SOLR_OPTS+=("-Dsolr.circuitbreaker.update.mem=$SOLR_CIRCUITBREAKER_UPDATE_MEM")
-fi
-if [ -n "${SOLR_CIRCUITBREAKER_UPDATE_LOADAVG:-}" ]; then
-  SOLR_OPTS+=("-Dsolr.circuitbreaker.update.loadavg=$SOLR_CIRCUITBREAKER_UPDATE_LOADAVG")
-fi
-if [ -n "${SOLR_CIRCUITBREAKER_QUERY_CPU:-}" ]; then
-  SOLR_OPTS+=("-Dsolr.circuitbreaker.query.cpu=$SOLR_CIRCUITBREAKER_QUERY_CPU")
-fi
-if [ -n "${SOLR_CIRCUITBREAKER_QUERY_MEM:-}" ]; then
-  SOLR_OPTS+=("-Dsolr.circuitbreaker.query.mem=$SOLR_CIRCUITBREAKER_QUERY_MEM")
-fi
-if [ -n "${SOLR_CIRCUITBREAKER_QUERY_LOADAVG:-}" ]; then
-  SOLR_OPTS+=("-Dsolr.circuitbreaker.query.loadavg=$SOLR_CIRCUITBREAKER_QUERY_LOADAVG")
 fi
 
 : ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
@@ -2391,7 +2367,7 @@ function start_solr() {
   fi
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" ${SOLR_LOG_LEVEL_OPT:-} -Dsolr.log.dir="$SOLR_LOGS_DIR" \
+    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
