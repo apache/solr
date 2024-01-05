@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -238,5 +239,17 @@ public class ClientUtils {
       if (multiCollection) key = collectionName + "_" + key;
       target.put(key, slice);
     }
+  }
+
+  /**
+   * Determines whether any SolrClient "default" collection should applied to the specified request
+   *
+   * @param providedCollection a collection/core explicitly provided to the SolrClient (typically
+   *     through {@link org.apache.solr.client.solrj.SolrClient#request(SolrRequest, String)}
+   * @param request the {@link SolrRequest} being executed
+   */
+  public static boolean shouldApplyDefaultDataStore(
+      String providedCollection, SolrRequest request) {
+    return providedCollection == null && request.requiresDataStore();
   }
 }
