@@ -25,10 +25,10 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import javax.inject.Singleton;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
 import org.apache.solr.client.api.model.ListConfigsetsResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.util.NamedList;

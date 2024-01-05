@@ -31,7 +31,7 @@ dependencies {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
 
-  implementation 'io.swagger.core.v3:swagger-annotations'
+  implementation 'io.swagger.core.v3:swagger-annotations-jakarta'
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
