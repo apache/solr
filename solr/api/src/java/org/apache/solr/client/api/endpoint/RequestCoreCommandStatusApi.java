@@ -26,7 +26,7 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
 /**
  * V2 API for checking the status of a core-level asynchronous command.
  *
- * <p>This API (GET /api/cores/command-status/someId is analogous to the v1
+ * <p>This API (GET /api/cores/command-status/someId) is analogous to the v1
  * /admin/cores?action=REQUESTSTATUS command. It is not to be confused with the more robust
  * asynchronous command support offered under the v2 `/cluster/command-status` path (or the
  * corresponding v1 path `/solr/admin/collections?action=REQUESTSTATUS`). Async support at the core

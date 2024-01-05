@@ -48,6 +48,7 @@ public class ZkClientClusterStateProvider
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
   private final String zkHost;
+  private final boolean canUseZkACLs;
   private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
   private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
 
@@ -65,14 +66,22 @@ public class ZkClientClusterStateProvider
     this.zkStateReader = zkStateReader;
     this.closeZkStateReader = false;
     this.zkHost = null;
+    this.canUseZkACLs = true;
   }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
+    this(zkHosts, chroot, true);
+  }
+
+  public ZkClientClusterStateProvider(
+      Collection<String> zkHosts, String chroot, boolean canUseZkACLs) {
     zkHost = buildZkHostString(zkHosts, chroot);
+    this.canUseZkACLs = canUseZkACLs;
   }
 
   public ZkClientClusterStateProvider(String zkHost) {
     this.zkHost = zkHost;
+    this.canUseZkACLs = true;
   }
 
   /**
@@ -212,7 +221,7 @@ public class ZkClientClusterStateProvider
         if (zkStateReader == null) {
           ZkStateReader zk = null;
           try {
-            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
+            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout, canUseZkACLs);
             zk.createClusterStateWatchersAndUpdate();
             log.info("Cluster at {} ready", zkHost);
             zkStateReader = zk;

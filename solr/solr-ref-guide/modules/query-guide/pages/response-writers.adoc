@@ -39,7 +39,7 @@ The list below describe shows the most common settings for the `wt` parameter, w
 
 == JSON Response Writer
 
-The default Solr Response Writer is the `JsonResponseWriter`, which formats output in JavaScript Object Notation (JSON), a lightweight data interchange format specified in specified in RFC 4627.
+The default Solr Response Writer is the `JsonResponseWriter`, which formats output in JavaScript Object Notation (JSON), a lightweight data interchange format specified in RFC 4627.
 The default response writer is used when:
 
 * the `wt` parameter is not specified in the request, or
@@ -88,7 +88,7 @@ The default mime type for the JSON writer is `application/json`, however this ca
 </queryResponseWriter>
 ----
 
-WARNING: If you using the JSON formatted response with JSONP to query across boundaries, having Solr respond with `text/plain` mime type when the
+WARNING: If you are using the JSON formatted response with JSONP to query across boundaries, having Solr respond with `text/plain` mime type when the
 browser expects `application/json` will trigger the browser to block the request.
 
 === JSON-Specific Parameters
@@ -245,7 +245,7 @@ For production you probably want a much higher value.
     <language>en-us</language>
     <docs>http://localhost:8983/solr</docs>
     <item>
-      <title>iPod & iPod Mini USB 2.0 Cable</title>
+      <title>iPod &amp; iPod Mini USB 2.0 Cable</title>
       <link>
         http://localhost:8983/solr/select?q=id:IW-02
       </link>
