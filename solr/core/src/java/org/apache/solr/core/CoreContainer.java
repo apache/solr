@@ -31,6 +31,7 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.trace.Tracer;
+import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -53,7 +54,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.inject.Singleton;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;

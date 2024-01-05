@@ -19,12 +19,12 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import javax.inject.Inject;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.logging.LogWatcher;
 

@@ -21,6 +21,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PER
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -28,7 +29,6 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
-import javax.inject.Inject;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.JacksonReflectMapWriter;

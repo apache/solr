@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import jakarta.inject.Inject;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.Response;
@@ -28,7 +29,6 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import javax.inject.Inject;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;

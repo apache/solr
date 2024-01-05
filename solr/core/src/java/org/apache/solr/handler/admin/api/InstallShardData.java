@@ -20,8 +20,8 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.InstallShardDataApi;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;

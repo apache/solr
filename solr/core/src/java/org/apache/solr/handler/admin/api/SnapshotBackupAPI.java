@@ -23,6 +23,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PER
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -30,7 +31,6 @@ import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.function.Consumer;
-import javax.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
