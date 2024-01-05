@@ -41,7 +41,9 @@ public interface MergeIndexesApi {
       summary = "The MERGEINDEXES action merges one or more indexes to another index.",
       tags = {"cores"})
   SolrJerseyResponse mergeIndexes(
-      @Parameter(description = "The name of the target core.", required = true)
+      @Parameter(
+              description = "The core that the specified indices are merged into.",
+              required = true)
           @PathParam("coreName")
           String coreName,
       @RequestBody(description = "Additional properties for merge indexes.")

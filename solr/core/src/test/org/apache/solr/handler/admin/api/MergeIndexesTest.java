@@ -16,6 +16,10 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.solr.SolrTestCaseJ4;
@@ -31,7 +35,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 public class MergeIndexesTest extends SolrTestCaseJ4 {
   private MergeIndexesApi mergeIndexesApi;
@@ -61,8 +64,8 @@ public class MergeIndexesTest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfBothIndexDirAndSrcCoreAreEmpty() throws Exception {
     var requestBody = new MergeIndexesRequestBody();
-    requestBody.indexDir = null;
-    requestBody.srcCore = null;
+    requestBody.indexDirs = null;
+    requestBody.srcCores = null;
     var ex =
         assertThrows(
             SolrException.class, () -> mergeIndexesApi.mergeIndexes(coreName, requestBody));
@@ -74,7 +77,7 @@ public class MergeIndexesTest extends SolrTestCaseJ4 {
   public void testReportsErrorIfSrcCoreMissing() throws Exception {
     final var INVALID_CORE = "INVALID_CORE";
     var requestBody = new MergeIndexesRequestBody();
-    requestBody.srcCore = Arrays.asList(INVALID_CORE);
+    requestBody.srcCores = Arrays.asList(INVALID_CORE);
     var ex =
         assertThrows(
             SolrException.class, () -> mergeIndexesApi.mergeIndexes(coreName, requestBody));
@@ -84,21 +87,21 @@ public class MergeIndexesTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReportsErrorIfPathNotAllowed() throws Exception {
-    CoreContainer mockCoreContainer = Mockito.mock(CoreContainer.class);
+    CoreContainer mockCoreContainer = mock(CoreContainer.class);
     CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
-        Mockito.mock(CoreAdminHandler.CoreAdminAsyncTracker.class);
-    SolrCore mockSolrCore = Mockito.mock(SolrCore.class);
+        mock(CoreAdminHandler.CoreAdminAsyncTracker.class);
+    SolrCore mockSolrCore = mock(SolrCore.class);
 
     final var requestBody = new MergeIndexesRequestBody();
     final var path_not_allowed = "INVALID_PATH";
-    requestBody.indexDir = Arrays.asList(path_not_allowed);
+    requestBody.indexDirs = Arrays.asList(path_not_allowed);
 
     var mergeIndexes =
         new MergeIndexes(mockCoreContainer, coreAdminAsyncTracker, req(), new SolrQueryResponse());
 
-    Mockito.when(mockCoreContainer.getCore(coreName)).thenReturn(mockSolrCore);
-    Mockito.when(mockSolrCore.getCoreContainer()).thenReturn(mockCoreContainer);
-    Mockito.doThrow(IndexOutOfBoundsException.class)
+    when(mockCoreContainer.getCore(coreName)).thenReturn(mockSolrCore);
+    when(mockSolrCore.getCoreContainer()).thenReturn(mockCoreContainer);
+    doThrow(IndexOutOfBoundsException.class)
         .when(mockCoreContainer)
         .assertPathAllowed(Paths.get(path_not_allowed));
     var exp =

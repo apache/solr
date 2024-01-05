@@ -38,9 +38,9 @@ class MergeIndexesOp implements CoreAdminHandler.CoreAdminOp {
     String cname = params.required().get(CoreAdminParams.CORE);
     final var requestBody = new MergeIndexesRequestBody();
     Optional.ofNullable(params.getParams(CoreAdminParams.INDEX_DIR))
-        .ifPresent(val -> requestBody.indexDir = Arrays.asList(val));
+        .ifPresent(val -> requestBody.indexDirs = Arrays.asList(val));
     Optional.ofNullable(params.getParams(CoreAdminParams.SRC_CORE))
-        .ifPresent(val -> requestBody.srcCore = Arrays.asList(val));
+        .ifPresent(val -> requestBody.srcCores = Arrays.asList(val));
     requestBody.updateChain = params.get(UpdateParams.UPDATE_CHAIN);
     final var mergeIndexesApi =
         new MergeIndexes(
