@@ -14,32 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.request.schema;
+package org.apache.solr.client.solrj.request;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.DataStoreSolrRequest;
-import org.apache.solr.common.params.SolrParams;
 
-public abstract class AbstractSchemaRequest<T extends SolrResponse>
-    extends DataStoreSolrRequest<T> {
-  private SolrParams params = null;
-
-  public AbstractSchemaRequest(METHOD m, String path) {
+public abstract class DataStoreSolrRequest<T extends SolrResponse> extends SolrRequest<T> {
+  public DataStoreSolrRequest(METHOD m, String path) {
     super(m, path);
   }
 
-  public AbstractSchemaRequest(METHOD m, String path, SolrParams params) {
-    this(m, path);
-    this.params = params;
-  }
-
   @Override
-  public SolrParams getParams() {
-    return params;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.ADMIN.toString();
+  public boolean requiresDataStore() {
+    return false;
   }
 }

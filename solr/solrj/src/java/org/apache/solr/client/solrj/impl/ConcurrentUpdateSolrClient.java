@@ -476,7 +476,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
-    if (collection == null) collection = defaultCollection;
+    if (collection == null && request.requiresDataStore()) collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       return client.request(request, collection);
     }

@@ -243,7 +243,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   public NamedList<Object> request(
       final SolrRequest<?> request, final ResponseParser processor, String collection)
       throws SolrServerException, IOException {
-    if (collection == null) collection = defaultCollection;
+    if (collection == null && request.requiresDataStore()) collection = defaultCollection;
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
     if (request.getHeaders() != null) {

@@ -52,6 +52,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.DataStoreSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -352,7 +353,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     return activeReplicaCoreUrls;
   }
 
-  private static class GetZkSchemaVersionCallable extends SolrRequest<SolrResponse>
+  private static class GetZkSchemaVersionCallable extends DataStoreSolrRequest<SolrResponse>
       implements Callable<Integer> {
 
     private final ZkController zkController;
