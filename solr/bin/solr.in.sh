@@ -105,7 +105,10 @@
 # -a option on start script, those options will be appended as well. Examples:
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoSoftCommit.maxTime=3000"
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoCommit.maxTime=60000"
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.clustering.enabled=true"
+
+# Most properties have an environment variable equivalent.
+# A naming convention is that SOLR_FOO_BAR maps to solr.foo.bar
+#SOLR_CLUSTERING_ENABLED=true
 
 # Location where the bin/solr script will save PID files for running instances
 # If not set, the script will create PID files in $SOLR_TIP/bin
