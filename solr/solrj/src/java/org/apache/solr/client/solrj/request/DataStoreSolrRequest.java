@@ -26,6 +26,6 @@ public abstract class DataStoreSolrRequest<T extends SolrResponse> extends SolrR
 
   @Override
   public boolean requiresDataStore() {
-    return false;
+    return true;
   }
 }
