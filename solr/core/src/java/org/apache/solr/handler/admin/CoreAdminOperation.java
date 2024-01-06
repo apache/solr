@@ -239,12 +239,14 @@ public enum CoreAdminOperation implements CoreAdminOp {
       it -> {
         final var params = it.req.getParams();
         final String requestId = params.required().get(CoreAdminParams.REQUESTID);
+        final String cname = params.get(CoreAdminParams.NAME);
         log().info("Checking request status for : " + requestId);
 
         final var requestCoreCommandStatusApi =
             new RequestCoreCommandStatus(
                 it.handler.coreContainer, it.handler.coreAdminAsyncTracker, it.req, it.rsp);
-        final SolrJerseyResponse response = requestCoreCommandStatusApi.getCommandStatus(requestId);
+        final SolrJerseyResponse response =
+            requestCoreCommandStatusApi.getCommandStatus(requestId, cname);
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
 

@@ -50,7 +50,7 @@ public class RequestCoreCommandStatus extends CoreAdminAPIBase
 
   @Override
   @PermissionName(PermissionNameProvider.Name.CORE_READ_PERM)
-  public SolrJerseyResponse getCommandStatus(String requestId) {
+  public SolrJerseyResponse getCommandStatus(String requestId, String coreName) {
     ensureRequiredParameterProvided(CoreAdminParams.REQUESTID, requestId);
     var requestStatusResponse = new RequestCoreCommandStatusResponseBody();
     if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(requestId)) {

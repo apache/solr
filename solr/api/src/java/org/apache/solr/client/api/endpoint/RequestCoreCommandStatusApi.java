@@ -35,7 +35,7 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
  *
  * @see org.apache.solr.client.api.model.RequestCoreCommandStatusResponseBody
  */
-@Path("/cores/command-status/")
+@Path("/cores/{coreName}/command-status/")
 public interface RequestCoreCommandStatusApi {
   @Path("/{requestId}")
   @GET
@@ -47,5 +47,6 @@ public interface RequestCoreCommandStatusApi {
               description = "The user defined request-id for the asynchronous request.",
               required = true)
           @PathParam("requestId")
-          String id);
+          String id,
+      @PathParam("coreName") String coreName);
 }

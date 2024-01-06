@@ -119,7 +119,7 @@ public class RequestCoreCommandStatusTest extends JerseyTest {
   public void testRequestStatusCoreCommandTaskNotFound() {
     final var taskNotFound = "NOTFOUND-1";
     final Response response =
-        target("/cores/command-status/" + taskNotFound).request("application/json").get();
+        target("/cores/core1/command-status/" + taskNotFound).request("application/json").get();
     final var responseStr = response.readEntity(String.class);
     assertTrue(SC_OK == response.getStatus());
     assertTrue(responseStr.contains("notfound"));
@@ -131,7 +131,7 @@ public class RequestCoreCommandStatusTest extends JerseyTest {
     when(coreAdminAsyncTracker.getRequestStatusMap(CoreAdminHandler.CoreAdminAsyncTracker.RUNNING))
         .thenReturn(Map.of(runningTaskId, taskObject));
     final Response response =
-        target("/cores/command-status/" + runningTaskId).request("application/json").get();
+        target("/cores/core1/command-status/" + runningTaskId).request("application/json").get();
     final var responseStr = response.readEntity(String.class);
     assertTrue(SC_OK == response.getStatus());
     assertTrue(responseStr.contains("running"));
@@ -144,7 +144,7 @@ public class RequestCoreCommandStatusTest extends JerseyTest {
             CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED))
         .thenReturn(Map.of(completedTaskId, taskObject));
     final Response response =
-        target("/cores/command-status/" + completedTaskId).request("application/json").get();
+        target("/cores/core1/command-status/" + completedTaskId).request("application/json").get();
     final var responseStr = response.readEntity(String.class);
     assertTrue(SC_OK == response.getStatus());
     assertTrue(responseStr.contains("completed"));
@@ -156,7 +156,7 @@ public class RequestCoreCommandStatusTest extends JerseyTest {
     when(coreAdminAsyncTracker.getRequestStatusMap(CoreAdminHandler.CoreAdminAsyncTracker.FAILED))
         .thenReturn(Map.of(failedTaskId, taskObject));
     final Response response =
-        target("/cores/command-status/" + failedTaskId).request("application/json").get();
+        target("/cores/core1/command-status/" + failedTaskId).request("application/json").get();
     final var responseStr = response.readEntity(String.class);
     assertTrue(SC_OK == response.getStatus());
     assertTrue(responseStr.contains("failed"));
