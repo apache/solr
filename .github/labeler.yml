@@ -18,8 +18,8 @@ documentation:
         - CONTRIBUTING.md
         - README.md
 
-# Add 'example' label to examples
-example:
+# Add 'examples' label to examples
+examples:
   - changed-files:
       - any-glob-to-any-file:
           - solr/example/**
@@ -30,8 +30,8 @@ bats-tests:
       - any-glob-to-any-file:
           - solr/packaging/tests/**
 
-# Add 'tool:docker' label for changes to docker
-tool:docker:
+# Add 'docker' label for changes to docker
+docker:
   - changed-files:
       - any-glob-to-any-file:
         - solr/docker/**
@@ -45,12 +45,6 @@ tool:build:
           - build.gradle
           - gradle/**
           - buildSrc/**
-
-# Add 'start-scripts' label for changes to start scripts
-start-scripts:
-  - changed-files:
-      - any-glob-to-any-file:
-          - solr/bin/**
 
 # Add 'tools' label for changes to dev tools
 tool:scripts:
@@ -68,14 +62,26 @@ jetty-server:
           - solr/server/resources/**
           - solr/server/modules/**
 
-# Add 'config-sets' label
+# Add 'start-scripts' label for changes to start scripts
+start-scripts:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/bin/**
+
+# Add 'configs' label
 configs:
   - changed-files:
       - any-glob-to-any-file:
           - solr/server/solr/**
 
-# Add 'solrj' labels
-solrj:
+# Add 'api' label
+api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - solr/api/**
+
+# Add 'client:solrj' labels
+client:solrj:
   - changed-files:
       - any-glob-to-any-file:
           - solr/solrj/**
