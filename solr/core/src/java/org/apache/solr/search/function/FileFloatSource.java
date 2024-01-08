@@ -307,7 +307,7 @@ public class FileFloatSource extends ValueSource {
         } catch (Exception e) {
           if (++otherErrors <= 10) {
             log.error(
-                "Error loading external value source: {}{}{}",
+                "Error loading external value source: {} {}{}",
                 fname,
                 e,
                 (otherErrors < 10 ? "" : "\tSkipping future errors for this file."));
