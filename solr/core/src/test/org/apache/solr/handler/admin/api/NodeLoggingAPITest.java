@@ -18,41 +18,27 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import jakarta.inject.Singleton;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.Application;
-import jakarta.ws.rs.core.Response;
 import java.util.List;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.jersey.InjectionFactories;
-import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.test.JerseyTest;
-import org.glassfish.jersey.test.TestProperties;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Unit tests for the functionality offered in {@link NodeLoggingAPI} */
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class NodeLoggingAPITest extends JerseyTest {
+public class NodeLoggingAPITest extends SolrTestCase {
 
   private CoreContainer mockCoreContainer;
   private LogWatcher mockLogWatcher;
@@ -62,27 +48,8 @@ public class NodeLoggingAPITest extends JerseyTest {
     assumeWorkingMockito();
   }
 
-  @Override
-  protected Application configure() {
-    forceSet(TestProperties.CONTAINER_PORT, "0");
-    setUpMocks();
-    final ResourceConfig config = new ResourceConfig();
-    config.register(NodeLoggingAPI.class);
-    config.register(SolrJacksonMapper.class);
-    config.register(
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindFactory(new InjectionFactories.SingletonFactory<>(mockCoreContainer))
-                .to(CoreContainer.class)
-                .in(Singleton.class);
-          }
-        });
-
-    return config;
-  }
-
-  private void setUpMocks() {
+  @Before
+  public void setUpMocks() {
     mockCoreContainer = mock(CoreContainer.class);
     mockLogWatcher = mock(LogWatcher.class);
     when(mockCoreContainer.getLogging()).thenReturn(mockLogWatcher);
@@ -94,8 +61,7 @@ public class NodeLoggingAPITest extends JerseyTest {
         .thenReturn(List.of("ERROR", "WARN", "INFO", "DEBUG", "TRACE"));
     when(mockLogWatcher.getAllLoggers())
         .thenReturn(List.of(logInfo("org.a.s.Foo", "WARN", true), logInfo("org", null, false)));
-    final Response response = target("/node/logging/levels").request().get();
-    final var responseBody = response.readEntity(NodeLoggingAPI.ListLevelsResponse.class);
+    final var responseBody = new NodeLoggingAPI(mockCoreContainer).listAllLoggersAndLevels();
 
     assertEquals(5, responseBody.levels.size());
     assertThat(responseBody.levels, containsInAnyOrder("ERROR", "WARN", "INFO", "DEBUG", "TRACE"));
@@ -113,11 +79,9 @@ public class NodeLoggingAPITest extends JerseyTest {
 
   @Test
   public void testReliesOnLogWatcherToModifyLogLevels() {
-    final Response response =
-        target("/node/logging/levels")
-            .request()
-            .put(Entity.json("[{\"logger\": \"o.a.s.Foo\", \"level\": \"WARN\"}]"));
-    final var responseBody = response.readEntity(NodeLoggingAPI.LoggingResponse.class);
+    final var responseBody =
+        new NodeLoggingAPI(mockCoreContainer)
+            .modifyLocalLogLevel(List.of(new NodeLoggingAPI.LogLevelChange("o.a.s.Foo", "WARN")));
 
     assertNotNull(responseBody);
     assertNull("Expected error to be null but was " + responseBody.error, responseBody.error);
@@ -141,8 +105,7 @@ public class NodeLoggingAPITest extends JerseyTest {
     when(mockLogWatcher.getLastEvent()).thenReturn(123456L);
     when(mockLogWatcher.getHistorySize()).thenReturn(321);
 
-    final var response = target("/node/logging/messages").queryParam("since", 123L).request().get();
-    final var responseBody = response.readEntity(NodeLoggingAPI.LogMessagesResponse.class);
+    final var responseBody = new NodeLoggingAPI(mockCoreContainer).fetchLocalLogMessages(123L);
 
     assertNotNull(responseBody);
     assertNull("Expected error to be null but was " + responseBody.error, responseBody.error);
@@ -157,11 +120,9 @@ public class NodeLoggingAPITest extends JerseyTest {
 
   @Test
   public void testReliesOnLogWatcherToSetMessageThreshold() {
-    final var response =
-        target("/node/logging/messages/threshold")
-            .request()
-            .put(Entity.json("{\"level\": \"WARN\"}"));
-    final var responseBody = response.readEntity(NodeLoggingAPI.LoggingResponse.class);
+    final var responseBody =
+        new NodeLoggingAPI(mockCoreContainer)
+            .setMessageThreshold(new NodeLoggingAPI.SetThresholdRequestBody("WARN"));
 
     assertNotNull(responseBody);
     assertNull("Expected error to be null but was " + responseBody.error, responseBody.error);
