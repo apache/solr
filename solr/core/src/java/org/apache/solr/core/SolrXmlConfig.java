@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
@@ -166,9 +167,8 @@ public class SolrXmlConfig {
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
-    configBuilder.setClusterPluginsSource(getPluginInfo(root.get("clusterPluginsSource")));
     configBuilder.setClusterSingletonPlugins(
-        getClusterSingletonPluginInfos(root.getAll("clusterSingleton")));
+        getClusterSingletonPluginInfos(loader, root.getAll("clusterSingleton")));
     // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
     // <hiddenSysProps> is not provided under <solr>.
     // Remove this line in 10.0
@@ -651,7 +651,8 @@ public class SolrXmlConfig {
     return configs;
   }
 
-  private static PluginInfo[] getClusterSingletonPluginInfos(List<ConfigNode> nodes) {
+  private static PluginInfo[] getClusterSingletonPluginInfos(
+      SolrResourceLoader loader, List<ConfigNode> nodes) {
     if (nodes == null || nodes.isEmpty()) {
       return new PluginInfo[0];
     }
@@ -674,6 +675,18 @@ public class SolrXmlConfig {
           "Multiple clusterSingleton sections with name '"
               + String.join("', '", duplicateNames)
               + "' found in solr.xml");
+    }
+
+    try {
+      plugins.forEach(
+          p -> {
+            loader.findClass(p.className, ClusterSingleton.class);
+          });
+    } catch (ClassCastException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "clusterSingleton plugins must implement the interface "
+              + ClusterSingleton.class.getName());
     }
 
     return plugins.toArray(new PluginInfo[0]);

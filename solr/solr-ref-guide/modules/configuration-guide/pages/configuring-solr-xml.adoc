@@ -670,24 +670,10 @@ A default xref:replica-placement-plugins.adoc[replica placement plugin] can be d
 The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `PlacementPluginFactory`.
 Sub-elements are specific to the implementation.
 
-=== The <clusterPluginsSource> Element
-The `<clusterPluginsSource>` element allows you to specify the class used to load cluster plugins.
-
-[source,xml]
-----
-<clusterPluginsSource class="org.apache.solr.api.ZkClusterPluginsSource"/>
-----
-
-The default cluster plugin source is `ZkClusterPluginsSource`, which allows the cluster plugins API to be used to maintain plugins.
-
-The `org.apache.solr.api.NodeConfigClusterPluginsSource` is also provided by solr, allowing cluster plugins to be declared in `solr.xml`.
-If this implementation is used, the `/custer/plugin` API can't be used to add, update or remove cluster plugins.
-
-The `NodeConfigClusterPluginsSource` only supports declaring `clusterSingleton` plugins in `solr.xml` at this time.
-
-
 === The <clusterSingleton> Element
-If the `clusterPluginsSource` is set to `NodeConfigClusterPluginsSource` then one or more `clusterSingleton` elements can be declared.
+One or more `clusterSingleton` elements may be declared in solr.xml.
+To allow this, the `disable.configEdit` System Property must be set to true. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
+
 Each `clusterSingleton` element specifies a cluster plugin that should be loaded when Solr stars, along with it's associated configuration.
 
 [source,xml]

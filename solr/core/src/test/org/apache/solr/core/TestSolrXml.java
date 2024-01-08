@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.exec.OS;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
@@ -56,6 +57,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
     System.setProperty(
         "solr.allowPaths", OS.isFamilyWindows() ? "C:\\tmp,C:\\home\\john" : "/tmp,/home/john");
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
     CloudConfig ccfg = cfg.getCloudConfig();
     UpdateShardHandlerConfig ucfg = cfg.getUpdateShardHandlerConfig();
@@ -147,22 +149,19 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals(1, replicaPlacementFactoryConfig.initArgs.size());
     assertEquals(10, replicaPlacementFactoryConfig.initArgs.get("minimalFreeDiskGB"));
 
-    PluginInfo clusterPluginSource = cfg.getClusterPluginsSource();
-    assertEquals(
-        "org.apache.solr.api.NodeConfigClusterPluginsSource", clusterPluginSource.className);
-
     PluginInfo cs1 = cfg.getClusterSingletonPlugins()[0];
     assertEquals("testSingleton1", cs1.name);
-    assertEquals("my.singleton.class", cs1.className);
+    assertEquals(CS.class.getName(), cs1.className);
 
     PluginInfo cs2 = cfg.getClusterSingletonPlugins()[1];
     assertEquals("testSingleton2", cs2.name);
-    assertEquals("my.other.singleton.class", cs2.className);
+    assertEquals(CS.class.getName(), cs2.className);
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
   public void testPropertySub() throws IOException {
 
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
     System.setProperty("coreRootDirectory", "myCoreRoot" + File.separator);
     System.setProperty("hostPort", "8888");
     System.setProperty("shareSchema", "false");
@@ -497,6 +496,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   }
 
   public void testFailAtConfigParseTimeWhenClusterSingletonHasNoName() {
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
     String solrXml =
         "<solr><clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/><clusterSingleton class=\"k1\"/></solr>";
     RuntimeException thrown =
@@ -507,6 +507,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   }
 
   public void testFailAtConfigParseTimeWhenClusterSingletonHasDuplicateName() {
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
     String solrXml =
         "<solr><clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/><clusterSingleton name=\"a\" class=\"k1\"/><clusterSingleton name=\"a\" class=\"k2\"/></solr>";
     SolrException thrown =
@@ -516,6 +517,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   }
 
   public void testFailAtConfigParseTimeWhenClusterSingletonHasNoClass() {
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
     String solrXml =
         "<solr><clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/><clusterSingleton name=\"a\"/></solr>";
     RuntimeException thrown =
@@ -526,11 +528,52 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   }
 
   public void testFailAtConfigParseTimeWhenClusterSingletonWithWrongPluginsSource() {
-    String solrXml = "<solr><clusterSingleton name=\"a\" class=\"k1\"/></solr>";
+    String solrXml =
+        "<solr><clusterSingleton name=\"a\" class=\"" + CS.class.getName() + "\"/></solr>";
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
     assertEquals(
-        "clusterSingleton section found in solr.xml but clusterPluginsSource is not NodeConfigClusterPluginsSource",
+        "clusterSingleton section found in solr.xml but the property disable.configEdit is set to false. clusterSingleton plugins may only be declared in solr.xml with immutable configs.",
         thrown.getMessage());
   }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonClassNotFound() {
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
+    String solrXml = "<solr><clusterSingleton name=\"a\" class=\"class.not.found.Class\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(" Error loading class 'class.not.found.Class'", thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonClassHierarchyIllegal() {
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
+    String solrXml =
+        "<solr><clusterSingleton name=\"a\" class=\"" + NotCS.class.getName() + "\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "clusterSingleton plugins must implement the interface " + ClusterSingleton.class.getName(),
+        thrown.getMessage());
+  }
+
+  public static class CS implements ClusterSingleton {
+
+    @Override
+    public String getName() {
+      return null;
+    }
+
+    @Override
+    public void start() throws Exception {}
+
+    @Override
+    public State getState() {
+      return null;
+    }
+
+    @Override
+    public void stop() {}
+  }
+
+  public static class NotCS {}
 }

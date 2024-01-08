@@ -16,12 +16,8 @@
  */
 package org.apache.solr.api;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -32,39 +28,21 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public class ClusterPluginsSourceConfigurator implements NamedListInitializedPlugin {
 
-  private static final String DEFAULT_CLASS_NAME =
-      System.getProperty("solr.clusterPluginsSource", ZkClusterPluginsSource.class.getName());
-
   /**
-   * Resolves the name of the class that will be used to provide cluster plugins
+   * Resolves the name of the class that will be used to provide cluster plugins.
    *
-   * @param pluginInfo The clusterPluginsSource plugin from the NodeConfig
    * @return The name of the class to use as the {@link ClusterPluginsSource}
    */
-  public static String resolveClassName(final PluginInfo pluginInfo) {
-    return pluginInfo != null && pluginInfo.isEnabled() ? pluginInfo.className : DEFAULT_CLASS_NAME;
+  public static String resolveClassName() {
+    return NodeConfig.isImmutableConfigSet()
+        ? NodeConfigClusterPluginsSource.class.getName()
+        : ZkClusterPluginsSource.class.getName();
   }
 
   public static ClusterPluginsSource loadClusterPluginsSource(
-      CoreContainer cc, SolrResourceLoader loader, PluginInfo info) {
-    ClusterPluginsSource clusterPluginsSource = newInstance(loader, resolveClassName(info), cc);
-    if (info != null && info.isEnabled() && info.initArgs != null) {
-      Map<String, Object> config = new HashMap<>();
-      info.initArgs.toMap(config);
-      try {
-        ContainerPluginsRegistry.configure(clusterPluginsSource, config, null);
-      } catch (IOException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Invalid " + info.type + " configuration", e);
-      }
-    }
-    return clusterPluginsSource;
-  }
-
-  private static ClusterPluginsSource newInstance(
-      SolrResourceLoader loader, String className, CoreContainer cc) {
+      CoreContainer cc, SolrResourceLoader loader) {
     return loader.newInstance(
-        className,
+        resolveClassName(),
         ClusterPluginsSource.class,
         new String[0],
         new Class<?>[] {CoreContainer.class},

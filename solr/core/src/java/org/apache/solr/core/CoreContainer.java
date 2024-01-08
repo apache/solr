@@ -774,8 +774,7 @@ public class CoreContainer {
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     ClusterPluginsSource pluginsSource =
-        ClusterPluginsSourceConfigurator.loadClusterPluginsSource(
-            this, loader, cfg.getClusterPluginsSource());
+        ClusterPluginsSourceConfigurator.loadClusterPluginsSource(this, loader);
     containerPluginsRegistry =
         new ContainerPluginsRegistry(this, containerHandlers.getApiBag(), pluginsSource);
 

@@ -31,27 +31,25 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Tests that verify initialization of container plugins that are declared in solr.xml */
 public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
 
-  private static final String NODE_CONFIG_PLUGINS_SOURCE_XML =
-      "<clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/>";
-
   // Any random value for the config parameter
   private static int CFG_VAL;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
     CFG_VAL = random().nextInt();
     configureCluster(1)
         .withSolrXml(
             MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
                 "</solr>",
-                NODE_CONFIG_PLUGINS_SOURCE_XML
-                    + SingletonNoConfig.configXml()
+                SingletonNoConfig.configXml()
                     + SingletonWithConfig.configXml(new SingletonConfig(CFG_VAL))
                     + "</solr>"))
         .addConfig(

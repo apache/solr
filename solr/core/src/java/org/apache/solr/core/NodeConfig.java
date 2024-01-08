@@ -52,6 +52,8 @@ import org.slf4j.LoggerFactory;
 public class NodeConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String CONFIG_EDITING_DISABLED_ARG = "disable.configEdit";
+
   // all Path fields here are absolute and normalized.
 
   private final String nodeName;
@@ -119,8 +121,6 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
-  private final PluginInfo clusterPluginsSource;
-
   private final PluginInfo[] clusterSingletonPlugins;
 
   private final String defaultZkHost;
@@ -157,7 +157,6 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
-      PluginInfo clusterPluginsSource,
       PluginInfo[] clusterSingletonPlugins,
       String defaultZkHost,
       Set<Path> allowPaths,
@@ -198,7 +197,6 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
     this.tracerConfig = tracerConfig;
-    this.clusterPluginsSource = clusterPluginsSource;
     this.clusterSingletonPlugins = clusterSingletonPlugins;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
@@ -223,15 +221,21 @@ public class NodeConfig {
 
     if (this.clusterSingletonPlugins != null
         && this.clusterSingletonPlugins.length > 0
-        && !ClusterPluginsSourceConfigurator.resolveClassName(this.clusterPluginsSource)
+        && !ClusterPluginsSourceConfigurator.resolveClassName()
             .equals(NodeConfigClusterPluginsSource.class.getName())) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
-          "clusterSingleton section found in solr.xml but clusterPluginsSource is not NodeConfigClusterPluginsSource");
+          "clusterSingleton section found in solr.xml but the property "
+              + CONFIG_EDITING_DISABLED_ARG
+              + " is set to false. clusterSingleton plugins may only be declared in solr.xml with immutable configs.");
     }
 
     setupSharedLib();
     initModules();
+  }
+
+  public static boolean isImmutableConfigSet() {
+    return Boolean.getBoolean(CONFIG_EDITING_DISABLED_ARG);
   }
 
   /**
@@ -436,10 +440,6 @@ public class NodeConfig {
     return tracerConfig;
   }
 
-  public PluginInfo getClusterPluginsSource() {
-    return clusterPluginsSource;
-  }
-
   public PluginInfo[] getClusterSingletonPlugins() {
     return clusterSingletonPlugins;
   }
@@ -618,7 +618,6 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
-    private PluginInfo clusterPluginsSource;
     private PluginInfo[] clusterSingletonPlugins;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
@@ -818,11 +817,6 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setClusterPluginsSource(PluginInfo clusterPluginsSource) {
-      this.clusterPluginsSource = clusterPluginsSource;
-      return this;
-    }
-
     public NodeConfigBuilder setClusterSingletonPlugins(PluginInfo[] clusterSingletonPlugins) {
       this.clusterSingletonPlugins = clusterSingletonPlugins;
       return this;
@@ -940,7 +934,6 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
-          clusterPluginsSource,
           clusterSingletonPlugins,
           defaultZkHost,
           allowPaths,
