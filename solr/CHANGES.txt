@@ -136,6 +136,9 @@ Optimizations
   instead of the full list of cores.  This list is potentially as long as the number of cores.  When there are many
   cores, this leads to high CPU and memory usage. (Gilles Bellaton, David Smiley)
 
+* SOLR-17036: UpdateLog lazy creates VersionBucket large array, and VersionBucket do not keep the highest version anymore.
+  This optimization reduces the memory usage, specially when the SolrCore is not used for indexing (Bruno Roustant)
+
 Bug Fixes
 ---------------------
 * SOLR-6853: Allow '/' characters in the text managed by Managed Resources API. (Nikita Rusetskii via Eric Pugh)
