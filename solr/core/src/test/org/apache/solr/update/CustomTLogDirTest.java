@@ -24,6 +24,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.SolrClientTestRule;
 import org.junit.ClassRule;
@@ -162,5 +163,8 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
     assertNotNull(list);
     assertEquals(1, list.length);
+    CoreContainer cc = ((EmbeddedSolrServer) client).getCoreContainer();
+    cc.unload(collectionName, true, true, true);
+    assertFalse(resolvedTlogDir.toFile().exists());
   }
 }
