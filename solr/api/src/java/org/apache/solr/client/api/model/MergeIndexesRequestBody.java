@@ -23,11 +23,11 @@ import java.util.List;
 /** Request body for endpoints {@link org.apache.solr.client.api.endpoint.MergeIndexesApi} */
 public class MergeIndexesRequestBody {
   @Schema(description = "Multi-valued, directories that would be merged.", name = "indexDirs")
-  @JsonProperty("indexDir")
+  @JsonProperty
   public List<String> indexDirs;
 
   @Schema(description = "Multi-valued, source cores that would be merged.", name = "srcCores")
-  @JsonProperty("srcCore")
+  @JsonProperty
   public List<String> srcCores;
 
   @Schema(description = "Request ID to track this action which will be processed asynchronously.")

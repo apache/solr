@@ -589,18 +589,18 @@ curl -X GET "http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core=tar
 ----
 curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
 {
-  "indexDir":["path/to/core1/data/index","path/to/core2/data/index"]
+  "indexDirs": ["path/to/core1/data/index","path/to/core2/data/index"]
 }
 '
 ----
 ====
 --
 
-In this example, we use the `indexDir` parameter to define the index locations of the source cores.
+In this example, we use the `indexDir` parameter (`indexDirs` in the v2 API) to define the index locations of the source cores.
 The `core` parameter defines the target index.
 A benefit of this approach is that we can merge any Lucene-based index that may not be associated with a Solr core.
 
-Alternatively, we can instead use a `srcCore` parameter, as in this example:
+Alternatively, we can instead use a `srcCore` parameter (`srcCores` in the v2 API), as in the example below:
 --
 [example.tab-pane#v1coreadmin-mergeindexes]
 ====
@@ -617,7 +617,7 @@ curl -X GET "http://localhost:8983/solr/admin/cores?action=mergeindexes&core=tar
 ----
 curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
 {
-  "srcCore":["core1","core2"]
+  "srcCores": ["core1","core2"]
 }
 '
 ----

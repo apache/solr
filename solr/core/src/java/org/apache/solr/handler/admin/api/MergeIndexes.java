@@ -73,6 +73,11 @@ public class MergeIndexes extends CoreAdminAPIBase implements MergeIndexesApi {
   }
 
   @Override
+  public boolean isExpensive() {
+    return true;
+  }
+
+  @Override
   @PermissionName(PermissionNameProvider.Name.CORE_EDIT_PERM)
   public SolrJerseyResponse mergeIndexes(String coreName, MergeIndexesRequestBody requestBody)
       throws Exception {
