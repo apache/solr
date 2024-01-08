@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -86,7 +87,6 @@ import org.junit.Test;
  */
 @SolrTestCaseJ4.SuppressSSL
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
-  private final String COLLECTION = "jwtColl";
 
   private static String mockOAuthToken;
   private static Path pemFilePath;
@@ -103,6 +103,14 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
+    Path tempDir = Files.createTempDirectory(JWTAuthPluginIntegrationTest.class.getSimpleName());
+    tempDir.toFile().deleteOnExit();
+    Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
+    new KeystoreGenerator()
+        .generateKeystore(
+            p12Cert, modifiedP12Cert, InetAddress.getLoopbackAddress().getCanonicalHostName());
+    p12Cert = modifiedP12Cert;
+
     mockOAuth2Server = createMockOAuthServer(p12Cert, "secret");
     mockOAuth2Server.start();
     mockOAuthToken =
@@ -113,7 +121,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (mockOAuth2Server != null) {
       mockOAuth2Server.shutdown();
     }
@@ -143,7 +151,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  public void mockOAuth2ServerWrongPEMInTruststore() throws Exception {
+  public void mockOAuth2ServerWrongPEMInTruststore() {
     // JWTAuthPlugin throws SSLHandshakeException when fetching JWK, so this trips cluster init
     assertThrows(Exception.class, () -> configureClusterMockOauth(2, wrongPemFilePath, 2000));
   }
@@ -209,6 +217,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     CloseableHttpClient cl = HttpClientUtil.createClient(null);
 
+    String COLLECTION = "jwtColl";
     createCollection(cluster, COLLECTION);
 
     // Missing token
@@ -485,11 +494,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    * and trusting its SSL
    */
   private static String createMockOAuthSecurityJson(Path pemFilePath) throws IOException {
-    String wellKnown =
-        mockOAuth2Server
-            .wellKnownUrl("default")
-            .toString()
-            .replace(".localdomain", ""); // Use only 'localhost' to match our SSL cert
+    String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
     String pemCert =
         CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
             .replace("\\n", "\\\\n"); // Use literal \n to play well with JSON
@@ -524,8 +529,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
           TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       trustManagerFactory.init(keystore);
 
-      MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper();
-      MockWebServer mockWebServer = mockWebServerWrapper.getMockWebServer();
+      MockWebServer mockWebServer;
+      try (MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper()) {
+        mockWebServer = mockWebServerWrapper.getMockWebServer();
+      }
       SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
       sslContext.init(
           keyManagerFactory.getKeyManagers(), /*trustManagerFactory.getTrustManagers()*/

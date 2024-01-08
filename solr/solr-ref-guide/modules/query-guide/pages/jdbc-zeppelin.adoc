@@ -81,7 +81,7 @@ Instructions on how to bind the JDBC interpreter to a notebook are available htt
 .Results of Solr query
 image::jdbc-zeppelin/zeppelin_solrjdbc_6.png[image,width=481,height=400]
 
-The below code block assumes that the Apache Solr driver is setup as the default JDBC interpreter driver.
+The below code block assumes that the Apache Solr driver is set up as the default JDBC interpreter driver.
 If that is not the case, instructions for using a different prefix is available https://zeppelin.apache.org/docs/latest/interpreter/jdbc.html#how-to-use[here].
 
 [source,text]

@@ -72,6 +72,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
+
   /** one SolrClient for each server */
   private static List<SolrClient> NODE_CLIENTS;
 
@@ -276,7 +277,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       assertUpdateTolerantErrors(
           client.toString() + " => " + expectedErrors,
           rsp,
-          expectedErrors.toArray(new ExpectedErr[expectedErrors.size()]));
+          expectedErrors.toArray(new ExpectedErr[0]));
 
       if (log.isInfoEnabled()) {
         log.info("END ITER #{}, expecting #docs: {}", i, expectedDocIds.cardinality());

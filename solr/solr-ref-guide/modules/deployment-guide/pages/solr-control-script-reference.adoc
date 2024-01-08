@@ -51,7 +51,7 @@ If no nodes are already running, restart will skip the step to stop and proceed 
 The `bin/solr` script provides many options to allow you to customize the server in common ways, such as changing the listening port.
 However, most of the defaults are adequate for most Solr installations, especially when just getting started.
 
-`-a "<jvmParams>"`::
+`-a <jvmParams>`::
 +
 [%autowidth,frame=none]
 |===
@@ -69,7 +69,7 @@ If you are passing JVM parameters that begin with `-D`, you can omit the `-a` op
 [source,bash]
 bin/solr start -a "-Xdebug -Xrunjdwp:transport=dt_socket, server=y,suspend=n,address=1044"
 
-`-j "<jettyParams>"`::
+`-j <jettyParams>`::
 +
 [%autowidth,frame=none]
 |===
@@ -301,6 +301,12 @@ For example, to set the auto soft-commit frequency to 3 seconds, you can do:
 
 `bin/solr start -Dsolr.autoSoftCommit.maxTime=3000`
 
+Solr will also convert any environment variable on the format `SOLR_FOO_BAR` to
+system property `solr.foo.bar`, making it possible to inject most properties
+through the environment, e.g:
+
+`SOLR_LOG_LEVEL=debug bin/solr start`
+
 The `SOLR_OPTS` environment variable is also available to set additional System Properties for Solr.
 
 In order to set custom System Properties when running any Solr utility other than `start` (e.g. `stop`, `create`, `auth`, `status`, `api`),
@@ -484,7 +490,7 @@ Solr process 39827 running on port 8865
 
 === Assert
 
-The `assert` command sanity checks common issues with Solr installations.
+The `assert` command checks common issues with Solr installations.
 These include checking the ownership/existence of particular directories, and ensuring Solr is available on the expected URL.
 The command can either output a specified error message, or change its exit code to indicate errors.
 
@@ -530,6 +536,7 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
  -x,--exists <directory>       Asserts that directory <directory> exists.
  -X,--not-exists <directory>   Asserts that directory <directory> does NOT
                                exist.
+ --credentials <user:pass>     Username and password for Basic authentication.                               
 ----
 
 === Healthcheck
@@ -576,6 +583,16 @@ By default, this will be the Solr port + 1000.
 This parameter is unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `bin/solr healthcheck -z localhost:2181`
+
+`-u <user:pass>` or `--credentials <user:pass>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password separated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 Below is an example healthcheck request and response using a non-standard ZooKeeper connect string, with 2 nodes running:
 
@@ -734,6 +751,16 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
+`-u <user:pass>` or `--credentials <user:pass>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password separated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
+
 ==== Configuration Directories and SolrCloud
 
 Before creating a collection in SolrCloud, the configuration directory used by the collection must be uploaded to ZooKeeper.
@@ -843,13 +870,25 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
+`-u <user:pass>` or `--credentials <user:pass>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password separated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
+
 == Authentication
 
-The `bin/solr` script allows enabling or disabling Basic Authentication, allowing you to configure authentication from the command line.
+The `bin/solr` script allows enabling or disabling Authentication, allowing you to configure authentication from the command line.
 
-Currently, this script only enables Basic Authentication, and is only available when using SolrCloud mode.
+Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.  
 
-Must be run on the machine hosting Solr.
+For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/resources/security.json[user roles and permission mappings], and maps the created user to the `superadmin` role.
+For Kerberos it only enables the security.json, it doesn't set up any users or role mappings.  
+
 
 === Enabling Basic Authentication
 
@@ -860,28 +899,8 @@ For more information on Basic Authentication support specifically, see the secti
 
 The `bin/solr auth enable` command makes several changes to enable Basic Authentication:
 
-* Creates a `security.json` file and uploads it to ZooKeeper.
-The `security.json` file will look similar to:
+* Take the base https://github.com/apache/solr/blob/main/solr/core/resources/security.json[security.json] file, evolves it using `auth` command parameters, and uploads the new file to ZooKeeper.
 +
-[source,json]
-----
-{
-  "authentication":{
-   "blockUnknown": false,
-   "class":"solr.BasicAuthPlugin",
-   "credentials":{"user":"vgGVo69YJeUg/O6AcFiowWsdyOUdqfQvOLsrpIPMCzk= 7iTnaKOWe+Uj5ZfGoKKK2G6hrcF10h6xezMQK+LBvpI="}
-  },
-  "authorization":{
-   "class":"solr.RuleBasedAuthorizationPlugin",
-   "permissions":[
- {"name":"security-edit", "role":"admin"},
- {"name":"collection-admin-edit", "role":"admin"},
- {"name":"core-admin-edit", "role":"admin"}
-   ],
-   "user-role":{"user":"admin"}
-  }
-}
-----
 * Adds two lines to `bin/solr.in.sh` or `bin\solr.in.cmd` to set the authentication type, and the path to `basicAuth.conf`:
 +
 [source,subs="attributes"]
@@ -898,7 +917,7 @@ Here are some example usages:
 ----
 Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>] [-V]
        solr auth enable [-type basicAuth] -prompt <true|false> [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>] [-V]
-       solr auth enable -type kerberos -config "<kerberos configs>" [-updateIncludeFileOnly <true|false>] [-V]
+       solr auth enable -type kerberos -config <kerberos configs> [-updateIncludeFileOnly <true|false>] [-V]
        solr auth disable [-updateIncludeFileOnly <true|false>] [-V]
 ----
 
@@ -906,7 +925,7 @@ Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown 
 
 The command takes the following parameters:
 
-`-credentials <user:pass>`::
+`-u <user:pass>` or `--credentials <user:pass>`::
 +
 [%autowidth,frame=none]
 |===
@@ -949,13 +968,14 @@ When `false`, unauthenticated users will still be able to access Solr, but only 
 +
 Specify the full path to the include file in the environment.
 If not specified this script looks for an include file named solr.in.sh to set environment variables. Specifically, the following locations are searched in this order:
-    <script location>/.
-    $HOME/.solr.in.sh
-    /usr/share/solr
-    /usr/local/share/solr
-    /etc/default
-    /var/solr
-    /opt/solr
++
+* `<script location>/.`
+* `$HOME/.solr.in.sh`
+* `/usr/share/solr`
+* `/usr/local/share/solr`
+* `/etc/default`
+* `/var/solr`
+* `/opt/solr`
 
 `-updateIncludeFileOnly <true|false>`::
 +
@@ -1104,6 +1124,16 @@ Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper co
 |===
 +
 The scheme for accessing Solr. Accepted values: http or https.  Default is 'http'
+
+`-u <user:pass>` or `--credentials <user:pass>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password separated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
 
 == ZooKeeper Operations
@@ -1631,6 +1661,16 @@ By default all fields are fetched.
 Maximum number of docs to download.
 The value `-1` will export all documents.
 
+`-u <user:pass>` or `--credentials <user:pass>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password separated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
+
 *Examples*
 
 Export all documents from a collection `gettingstarted`:
@@ -1688,6 +1728,7 @@ $ curl -X POST --header "Content-Type: application/javabin" --data-binary @getti
 == Interacting with API
 
 The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
+If you have configured basicAuth or TLS with your Solr you may find this easier than using a separate tool like `curl`.
 
 `bin/solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
 
@@ -1706,18 +1747,27 @@ Send a GET request to a Solr API endpoint.
 +
 *Example*: `bin/solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
 
-=== API
+`-u <user:pass>` or `--credentials <username:user:pass>`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: none
+|===
++
+Basic authentication username and password separated by a `:` character.
+This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or `solr.in.cmd`.
 
-The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
-If you have configured basicAuth or TLS with your Solr you may find this easier than using a separate tool like `curl`.
+*Examples*
+
+Simple search passing in Basic authentication credentials:
 
 [source,bash]
-$ bin/solr api api -get http://localhost:8983/solr/techproducts/select?q=*:*
+$ bin/solr api -get http://localhost:8983/solr/techproducts/select?q=*:* -u user:password
 
 
-Here is an example of sending a SQL query to the techproducts /sql end point (assumes you started Solr in Cloud mode with the SQL module enabled):
+Here is an example of sending a SQL query to the techproducts `/sql` end point (assumes you started Solr in Cloud mode with the SQL module enabled):
 
 [source,bash]
-$ bin/solr api api -get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
+$ bin/solr api -get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
 
 Results are streamed to the terminal.

@@ -28,6 +28,7 @@
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.tests.allowUrls:}</str>
+  <bool name="hideStackTrace">${solr.hideStackTrace:true}</bool>
 
   <shardHandlerFactory name="shardHandlerFactory" class="HttpShardHandlerFactory">
     <str name="urlScheme">${urlScheme:}</str>

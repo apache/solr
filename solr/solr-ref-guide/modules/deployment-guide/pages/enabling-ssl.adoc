@@ -90,7 +90,8 @@ SOLR_SSL_NEED_CLIENT_AUTH=false
 # Enable clients to authenticate (but not require)
 SOLR_SSL_WANT_CLIENT_AUTH=false
 # SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-# this to false can be useful to disable these checks when re-using a certificate on many hosts
+# this to false can be useful to disable these checks when re-using a certificate on many hosts.
+# This will also be used for the default value of whether SNI Host checking should be enabled.
 SOLR_SSL_CHECK_PEER_NAME=true
 ----
 ====
@@ -114,7 +115,8 @@ set SOLR_SSL_NEED_CLIENT_AUTH=false
 REM Enable clients to authenticate (but not require)
 set SOLR_SSL_WANT_CLIENT_AUTH=false
 REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-REM this to false can be useful to disable these checks when re-using a certificate on many hosts
+REM this to false can be useful to disable these checks when re-using a certificate on many hosts.
+REM This will also be used for the default value of whether SNI Host checking should be enabled.
 set SOLR_SSL_CHECK_PEER_NAME=true
 ----
 ====
@@ -123,7 +125,7 @@ set SOLR_SSL_CHECK_PEER_NAME=true
 .Client Authentication Settings
 WARNING: Enable either `SOLR_SSL_NEED_CLIENT_AUTH` or `SOLR_SSL_WANT_CLIENT_AUTH` but not both at the same time.
 They are mutually exclusive and Jetty will select one of them which may not be what you expect.
-`SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` should be set to false if you want to disable hostname verification.
+`SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` should be set to false if you want to disable hostname verification for client certificates.
 
 When you start Solr, the `bin/solr` script includes these settings and will pass them as system properties to the JVM.
 
@@ -320,6 +322,23 @@ C:\> bin\solr.cmd -cloud -s cloud\node1 -z server1:2181,server2:2181,server3:218
 ----
 ====
 --
+
+== Automatically reloading KeyStore/TrustStore
+=== Solr Server
+Solr can automatically reload KeyStore/TrustStore when certificates are updated without restarting. This is enabled by default
+when using SSL, but can be disabled by setting the environment variable `SOLR_SSL_RELOAD_ENABLED` to `false`. By
+default, Solr will check for updates in the KeyStore every 30 seconds, but this interval can be updated by passing the
+system property `solr.jetty.sslContext.reload.scanInterval` with the new interval in seconds on startup.
+Note that the truststore file is not actively monitored, so if you need to apply changes to the truststore, you need
+to update it and after that touch the keystore to trigger a reload.
+
+=== SolrJ client
+Http2SolrClient builder has a method `withKeyStoreReloadInterval(long interval, TimeUnit unit)` to initialize a scanner
+that will watch and update the keystore and truststore for changes. If you are using CloudHttp2SolrClient, you can use
+the `withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder)` to configure the internal http client
+with a keystore reload interval. The minimum reload interval is 1 second. If not set (or set to 0 or a negative value),
+the keystore/truststore won't be updated in the client.
+
 
 == Example Client Actions
 

@@ -47,6 +47,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
    * clusters)
    */
   private static final String EXPLICIT_CLUSTER_KEY = "explicitCluster";
+
   /**
    * The cluster with this key will not include an explicit list of host allowed, will rely on
    * live_nodes

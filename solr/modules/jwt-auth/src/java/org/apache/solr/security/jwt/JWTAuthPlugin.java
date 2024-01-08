@@ -257,9 +257,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     issuerConfigs.addAll(parseIssuers(pluginConfig));
     verificationKeyResolver = new JWTVerificationkeyResolver(issuerConfigs, requireIssuer);
 
-    if (issuerConfigs.size() > 0 && getPrimaryIssuer().getAuthorizationEndpoint() != null) {
+    if (!issuerConfigs.isEmpty() && getPrimaryIssuer().getAuthorizationEndpoint() != null) {
       adminUiScope = (String) pluginConfig.get(PARAM_ADMINUI_SCOPE);
-      if (adminUiScope == null && requiredScopes.size() > 0) {
+      if (adminUiScope == null && !requiredScopes.isEmpty()) {
         adminUiScope = requiredScopes.get(0);
         log.warn(
             "No adminUiScope given, using first scope in 'scope' list as required scope for accessing Admin UI");
@@ -384,7 +384,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
    * @return JWTIssuerConfig object for the primary issuer
    */
   JWTIssuerConfig getPrimaryIssuer() {
-    if (issuerConfigs.size() == 0) {
+    if (issuerConfigs.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No issuers configured");
     }
     return issuerConfigs.get(0);
@@ -690,7 +690,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
                 }
               }
             }
-            if (finalRoles.size() > 0) {
+            if (!finalRoles.isEmpty()) {
               return new JWTAuthenticationResponse(
                   AuthCode.AUTHENTICATED,
                   new JWTPrincipalWithUserRoles(
@@ -972,7 +972,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
     if (userToken instanceof JWTPrincipal) {
       JWTPrincipal jwtPrincipal = (JWTPrincipal) userToken;
-      request.header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
+      request.headers(h -> h.put(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken()));
       return true;
     }
     return false;

@@ -33,14 +33,15 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.api.model.BalanceReplicasRequestBody;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.admin.api.BalanceReplicasAPI;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -101,7 +102,7 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
     postDataAndGetResponse(
         cluster.getSolrClient(),
         "/api/cluster/replicas/balance",
-        BalanceReplicasAPI.BalanceReplicasRequestBody.EMPTY);
+        new MapWriterMap(Collections.emptyMap()));
 
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After balancing: {}", collection);
@@ -149,8 +150,8 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
     postDataAndGetResponse(
         cluster.getSolrClient(),
         "/api/cluster/replicas/balance",
-        new BalanceReplicasAPI.BalanceReplicasRequestBody(
-            new HashSet<>(l.subList(1, 4)), true, null));
+        Utils.getReflectWriter(
+            new BalanceReplicasRequestBody(new HashSet<>(l.subList(1, 4)), true, null)));
 
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After balancing: {}", collection);

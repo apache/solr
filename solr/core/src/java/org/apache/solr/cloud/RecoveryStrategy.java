@@ -224,7 +224,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     log.info("Attempting to replicate from [{}].", leaderUrl);
 
     // send commit if replica could be a leader
-    if (Replica.Type.isLeaderType(replicaType)) {
+    if (replicaType.leaderEligible) {
       commitOnLeader(leaderUrl);
     }
 
@@ -365,7 +365,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Cloud state still says we are leader.");
         }
         if (cloudDesc.isLeader()) {
-          assert cloudDesc.getReplicaType() != Replica.Type.PULL;
+          assert cloudDesc.getReplicaType().leaderEligible;
           // we are now the leader - no one else must have been suitable
           log.warn("We have not yet recovered - but we are now the leader!");
           log.info("Finished recovery process.");
@@ -749,13 +749,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
       if (!successfulRecovery) {
         if (waitBetweenRecoveries(core.getName())) break;
       }
-    }
-
-    // if replay was skipped (possibly to due pulling a full index from the leader),
-    // then we still need to update version bucket seeds after recovery
-    if (successfulRecovery && replayFuture == null) {
-      log.info("Updating version bucket highest from index after successful recovery.");
-      core.seedVersionBuckets();
     }
 
     if (log.isInfoEnabled()) {

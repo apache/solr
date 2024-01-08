@@ -61,6 +61,8 @@ public abstract class SolrClientTestRule extends ExternalResource {
     private String configSet;
     private String configFile;
     private String schemaFile;
+    private String basicAuthUser;
+    private String basicAuthPwd;
 
     public NewCollectionBuilder(String name) {
       this.name = name;
@@ -93,6 +95,12 @@ public abstract class SolrClientTestRule extends ExternalResource {
       return this;
     }
 
+    public NewCollectionBuilder withBasicAuthCredentials(String user, String password) {
+      this.basicAuthUser = user;
+      this.basicAuthPwd = password;
+      return this;
+    }
+
     public String getName() {
       return name;
     }
@@ -112,6 +120,14 @@ public abstract class SolrClientTestRule extends ExternalResource {
     public void create() throws SolrServerException, IOException {
       SolrClientTestRule.this.create(this);
     }
+
+    public String getBasicAuthUser() {
+      return basicAuthUser;
+    }
+
+    public String getBasicAuthPwd() {
+      return basicAuthPwd;
+    }
   }
 
   protected void create(NewCollectionBuilder b) throws SolrServerException, IOException {
@@ -130,6 +146,10 @@ public abstract class SolrClientTestRule extends ExternalResource {
 
     if (b.getSchemaFile() != null) {
       req.setSchemaName(b.getSchemaFile());
+    }
+
+    if (b.getBasicAuthUser() != null) {
+      req.setBasicAuthCredentials(b.getBasicAuthUser(), b.getBasicAuthPwd());
     }
 
     req.process(getAdminClient());

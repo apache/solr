@@ -37,8 +37,8 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,6 +49,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -449,7 +450,7 @@ public class HttpSolrCall {
   }
 
   protected void extractRemotePath(String collectionName, String origCorename)
-      throws UnsupportedEncodingException, KeeperException, InterruptedException, SolrException {
+      throws KeeperException, InterruptedException, SolrException {
     assert core == null;
     coreUrl = getRemoteCoreUrl(collectionName, origCorename);
     // don't proxy for internal update requests
@@ -460,7 +461,7 @@ public class HttpSolrCall {
         // it does not make sense to send the request to a remote node
         throw new SolrException(
             SolrException.ErrorCode.INVALID_STATE,
-            new String(Utils.toJSON(invalidStates), org.apache.lucene.util.IOUtils.UTF_8));
+            new String(Utils.toJSON(invalidStates), StandardCharsets.UTF_8));
       }
       action = REMOTEQUERY;
     } else {
@@ -637,10 +638,7 @@ public class HttpSolrCall {
   // called after init().
   protected void populateTracingSpan(Span span) {
     // Set db.instance
-    String coreOrColName = HttpSolrCall.this.origCorename;
-    if (coreOrColName == null && getCore() != null) {
-      coreOrColName = getCore().getName();
-    }
+    String coreOrColName = getCoreOrColName();
     TraceUtils.setDbInstance(span, coreOrColName);
 
     // Set operation name.
@@ -656,6 +654,14 @@ public class HttpSolrCall {
     String verb =
         getQueryParams().get(CoreAdminParams.ACTION, req.getMethod()).toLowerCase(Locale.ROOT);
     span.updateName(verb + ":" + path);
+  }
+
+  protected String getCoreOrColName() {
+    String coreOrColName = HttpSolrCall.this.origCorename;
+    if (coreOrColName == null && getCore() != null) {
+      coreOrColName = getCore().getName();
+    }
+    return coreOrColName;
   }
 
   public boolean shouldAudit() {
@@ -837,7 +843,12 @@ public class HttpSolrCall {
       try {
         if (exp != null) {
           SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-          int code = ResponseUtils.getErrorInfo(ex, info, log);
+          int code =
+              ResponseUtils.getErrorInfo(
+                  ex,
+                  info,
+                  log,
+                  localCore != null && localCore.getCoreContainer().hideStackTrace());
           sendError(code, info.toString());
         }
       } finally {
@@ -971,7 +982,12 @@ public class HttpSolrCall {
 
       if (solrRsp.getException() != null) {
         NamedList<Object> info = new SimpleOrderedMap<>();
-        int code = ResponseUtils.getErrorInfo(solrRsp.getException(), info, log);
+        int code =
+            ResponseUtils.getErrorInfo(
+                solrRsp.getException(),
+                info,
+                log,
+                core != null && core.getCoreContainer().hideStackTrace());
         solrRsp.add("error", info);
         response.setStatus(code);
       }
@@ -1154,11 +1170,11 @@ public class HttpSolrCall {
             || (liveNodes.contains(replica.getNodeName())
                 && replica.getState() == Replica.State.ACTIVE)) {
 
-          if (byCoreName && !origCorename.equals(replica.getStr(CORE_NAME_PROP))) {
+          if (byCoreName && !Objects.equals(origCorename, replica.getStr(CORE_NAME_PROP))) {
             // if it's by core name, make sure they match
             continue;
           }
-          if (replica.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
+          if (Objects.equals(replica.getBaseUrl(), cores.getZkController().getBaseUrl())) {
             // don't count a local core
             continue;
           }

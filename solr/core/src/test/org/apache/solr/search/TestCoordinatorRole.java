@@ -35,10 +35,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -51,6 +54,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZkStateReaderAccessor;
 import org.apache.solr.common.params.CommonParams;
@@ -585,18 +589,74 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     }
   }
 
+  public void testConfigset() throws Exception {
+    final int DATA_NODE_COUNT = 1;
+    MiniSolrCloudCluster cluster =
+        configureCluster(DATA_NODE_COUNT)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .addConfig("conf2", configset("cache-control"))
+            .configure();
+
+    List<String> dataNodes =
+        cluster.getJettySolrRunners().stream()
+            .map(JettySolrRunner::getNodeName)
+            .collect(Collectors.toUnmodifiableList());
+
+    try {
+      CollectionAdminRequest.createCollection("c1", "conf1", 2, 1).process(cluster.getSolrClient());
+      cluster.waitForActiveCollection("c1", 2, 2);
+      CollectionAdminRequest.createCollection("c2", "conf2", 2, 1).process(cluster.getSolrClient());
+      cluster.waitForActiveCollection("c2", 2, 2);
+
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      JettySolrRunner coordinatorJetty;
+      try {
+        coordinatorJetty = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+
+      // Tricky to test configset, since operation such as collection status would direct it to the
+      // OS node.
+      // So we use query and check the cache response header, which is determined by the
+      // solr-config.xml in the configset
+      // However using solr client would drop cache response header, hence we need to use the
+      // underlying httpClient which has SSL correctly configured
+
+      try (HttpSolrClient solrClient =
+          new HttpSolrClient.Builder(coordinatorJetty.getBaseUrl().toString()).build()) {
+        HttpResponse response =
+            solrClient
+                .getHttpClient()
+                .execute(new HttpGet(coordinatorJetty.getBaseUrl() + "/c1/select?q=*:*"));
+        // conf1 has no cache-control
+        assertNull(response.getFirstHeader("cache-control"));
+
+        response =
+            solrClient
+                .getHttpClient()
+                .execute(new HttpGet(coordinatorJetty.getBaseUrl() + "/c2/select?q=*:*"));
+        // conf2 has cache-control defined
+        assertTrue(response.getFirstHeader("cache-control").getValue().contains("max-age=30"));
+      }
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
   public void testWatch() throws Exception {
-    final int DATA_NODE_COUNT = 2;
+    final int DATA_NODE_COUNT = 1;
     MiniSolrCloudCluster cluster =
         configureCluster(DATA_NODE_COUNT)
             .addConfig("conf1", configset("cloud-minimal"))
             .configure();
-    final String TEST_COLLECTION = "c1";
+    final String TEST_COLLECTION_1 = "c1";
+    final String TEST_COLLECTION_2 = "c2";
 
     try {
       CloudSolrClient client = cluster.getSolrClient();
-      CollectionAdminRequest.createCollection(TEST_COLLECTION, "conf1", 1, 2).process(client);
-      cluster.waitForActiveCollection(TEST_COLLECTION, 1, 2);
+      CollectionAdminRequest.createCollection(TEST_COLLECTION_1, "conf1", 1, 2).process(client);
+      cluster.waitForActiveCollection(TEST_COLLECTION_1, 1, 2);
       System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
       JettySolrRunner coordinatorJetty;
       try {
@@ -610,26 +670,37 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       ZkStateReaderAccessor zkWatchAccessor = new ZkStateReaderAccessor(zkStateReader);
 
       // no watch at first
-      assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+      assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION_1));
       new QueryRequest(new SolrQuery("*:*"))
           .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
-          .process(client, TEST_COLLECTION); // ok no exception thrown
+          .process(client, TEST_COLLECTION_1); // ok no exception thrown
 
       // now it should be watching it after the query
-      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION_1));
 
-      CollectionAdminRequest.deleteReplica(TEST_COLLECTION, "shard1", 1).process(client);
-      cluster.waitForActiveCollection(TEST_COLLECTION, 1, 1);
+      // add another collection
+      CollectionAdminRequest.createCollection(TEST_COLLECTION_2, "conf1", 1, 2).process(client);
+      cluster.waitForActiveCollection(TEST_COLLECTION_2, 1, 2);
       new QueryRequest(new SolrQuery("*:*"))
           .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
-          .process(client, TEST_COLLECTION); // ok no exception thrown
+          .process(client, TEST_COLLECTION_2);
+      // watch both collections
+      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION_1));
+      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION_2));
+
+      CollectionAdminRequest.deleteReplica(TEST_COLLECTION_1, "shard1", 1).process(client);
+      cluster.waitForActiveCollection(TEST_COLLECTION_1, 1, 1);
+      new QueryRequest(new SolrQuery("*:*"))
+          .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+          .process(client, TEST_COLLECTION_1); // ok no exception thrown
 
       // still one replica left, should not remove the watch
-      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION_1));
 
-      CollectionAdminRequest.deleteCollection(TEST_COLLECTION).process(client);
-      zkStateReader.waitForState(TEST_COLLECTION, 30, TimeUnit.SECONDS, Objects::isNull);
-      assertNull(zkStateReader.getCollection(TEST_COLLECTION)); // check the cluster state
+      // now delete c1 and ensure it's cleared from various logic
+      CollectionAdminRequest.deleteCollection(TEST_COLLECTION_1).process(client);
+      zkStateReader.waitForState(TEST_COLLECTION_1, 30, TimeUnit.SECONDS, Objects::isNull);
+      assertNull(zkStateReader.getCollection(TEST_COLLECTION_1)); // check the cluster state
 
       // ensure querying throws exception
       assertExceptionThrownWithMessageContaining(
@@ -638,10 +709,170 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           () ->
               new QueryRequest(new SolrQuery("*:*"))
                   .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
-                  .process(client, TEST_COLLECTION));
+                  .process(client, TEST_COLLECTION_1));
 
-      // watch should be removed after collection deletion
-      assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION));
+      // watch should be removed after c1 deletion
+      assertTrue(!zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION_1));
+      // still watching c2
+      assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION_2));
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  public void testSplitShard() throws Exception {
+    final int DATA_NODE_COUNT = 1;
+    MiniSolrCloudCluster cluster =
+        configureCluster(DATA_NODE_COUNT)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .configure();
+
+    try {
+
+      final String COLLECTION_NAME = "c1";
+      CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 1, 1)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
+
+      int DOC_PER_COLLECTION_COUNT = 1000;
+      UpdateRequest ur = new UpdateRequest();
+      for (int i = 0; i < DOC_PER_COLLECTION_COUNT; i++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField("id", COLLECTION_NAME + "-" + i);
+        ur.add(doc);
+      }
+      CloudSolrClient client = cluster.getSolrClient();
+      ur.commit(client, COLLECTION_NAME);
+
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      JettySolrRunner coordinatorJetty;
+      try {
+        coordinatorJetty = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+
+      QueryResponse response =
+          new QueryRequest(new SolrQuery("*:*"))
+              .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+              .process(client, COLLECTION_NAME);
+
+      assertEquals(DOC_PER_COLLECTION_COUNT, response.getResults().getNumFound());
+
+      // now split the shard
+      CollectionAdminRequest.splitShard(COLLECTION_NAME).setShardName("shard1").process(client);
+      waitForState(
+          "Failed to wait for child shards after split",
+          COLLECTION_NAME,
+          (liveNodes, collectionState) ->
+              collectionState.getSlice("shard1_0") != null
+                  && collectionState.getSlice("shard1_0").getState() == Slice.State.ACTIVE
+                  && collectionState.getSlice("shard1_1") != null
+                  && collectionState.getSlice("shard1_1").getState() == Slice.State.ACTIVE);
+
+      // delete the parent shard
+      CollectionAdminRequest.deleteShard(COLLECTION_NAME, "shard1").process(client);
+      waitForState(
+          "Parent shard is not yet deleted after split",
+          COLLECTION_NAME,
+          (liveNodes, collectionState) -> collectionState.getSlice("shard1") == null);
+
+      response =
+          new QueryRequest(new SolrQuery("*:*"))
+              .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+              .process(client, COLLECTION_NAME);
+
+      assertEquals(DOC_PER_COLLECTION_COUNT, response.getResults().getNumFound());
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  public void testMoveReplica() throws Exception {
+    final int DATA_NODE_COUNT = 2;
+    MiniSolrCloudCluster cluster =
+        configureCluster(DATA_NODE_COUNT)
+            .addConfig("conf1", configset("cloud-minimal"))
+            .configure();
+
+    List<String> dataNodes =
+        cluster.getJettySolrRunners().stream()
+            .map(JettySolrRunner::getNodeName)
+            .collect(Collectors.toUnmodifiableList());
+    try {
+
+      final String COLLECTION_NAME = "c1";
+      String fromNode = dataNodes.get(0); // put the shard on first data node
+      CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 1, 1)
+          .setCreateNodeSet(fromNode)
+          .process(cluster.getSolrClient());
+      // ensure replica is placed on the expected node
+      waitForState(
+          "Cannot find replica on first node yet",
+          COLLECTION_NAME,
+          (liveNodes, collectionState) -> {
+            if (collectionState.getReplicas().size() == 1) {
+              Replica replica = collectionState.getReplicas().get(0);
+              return fromNode.equals(replica.getNodeName())
+                  && replica.getState() == Replica.State.ACTIVE;
+            }
+            return false;
+          });
+
+      int DOC_PER_COLLECTION_COUNT = 1000;
+      UpdateRequest ur = new UpdateRequest();
+      for (int i = 0; i < DOC_PER_COLLECTION_COUNT; i++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField("id", COLLECTION_NAME + "-" + i);
+        ur.add(doc);
+      }
+      CloudSolrClient client = cluster.getSolrClient();
+      ur.commit(client, COLLECTION_NAME);
+
+      System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
+      JettySolrRunner coordinatorJetty;
+      try {
+        coordinatorJetty = cluster.startJettySolrRunner();
+      } finally {
+        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
+      }
+
+      QueryResponse response =
+          new QueryRequest(new SolrQuery("*:*"))
+              .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+              .process(client, COLLECTION_NAME);
+
+      assertEquals(DOC_PER_COLLECTION_COUNT, response.getResults().getNumFound());
+
+      // now move the shard/replica
+      String replicaName = getCollectionState(COLLECTION_NAME).getReplicas().get(0).getName();
+      String toNodeName = dataNodes.get(1);
+      CollectionAdminRequest.moveReplica(COLLECTION_NAME, replicaName, toNodeName).process(client);
+      waitForState(
+          "Cannot find replica on second node yet after repliac move",
+          COLLECTION_NAME,
+          (liveNodes, collectionState) -> {
+            if (collectionState.getReplicas().size() == 1) {
+              Replica replica = collectionState.getReplicas().get(0);
+              return toNodeName.equals(replica.getNodeName())
+                  && replica.getState() == Replica.State.ACTIVE;
+            }
+            return false;
+          });
+
+      // We must stop the first node to ensure that query directs to the correct node from
+      // coordinator.
+      // In case if coordinator node has the wrong info (replica on first node), it might still
+      // return valid result if
+      // we do not stop the first node as first node might forward the query to second node.
+      cluster.getJettySolrRunners().get(0).stop();
+
+      response =
+          new QueryRequest(new SolrQuery("*:*"))
+              .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
+              .process(client, COLLECTION_NAME);
+
+      assertEquals(DOC_PER_COLLECTION_COUNT, response.getResults().getNumFound());
     } finally {
       cluster.shutdown();
     }

@@ -48,10 +48,12 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   private static String addDoc(int id) {
     return adoc("id", Integer.toString(id));
   }
+
   // Given an ID, returns an XML string for a "delete document" request
   private static String delDoc(int id) {
     return delI(Integer.toString(id));
   }
+
   // max TLOG file size
   private static final int MAX_FILE_SIZE = 1000;
 

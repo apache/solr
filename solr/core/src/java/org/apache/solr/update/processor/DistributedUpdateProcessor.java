@@ -87,6 +87,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   static final int MAX_RETRIES_ON_FORWARD_DEAULT =
       Integer.getInteger("solr.retries.on.forward", 25);
+
   /** Requests from leader to it's followers will be retried this amount of times by default */
   static final int MAX_RETRIES_TO_FOLLOWERS_DEFAULT =
       Integer.getInteger("solr.retries.to.followers", 3);
@@ -148,6 +149,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   /** Number of times requests forwarded to some other shard's leader can be retried */
   protected final int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD_DEAULT;
+
   /** Number of times requests from leaders to followers can be retried */
   protected final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
 
@@ -388,8 +390,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       if (versionsStored) {
 
-        long bucketVersion = bucket.highest;
-
         if (leaderLogic) {
 
           if (forwardedFromCollection && ulog.getState() == UpdateLog.State.ACTIVE) {
@@ -447,7 +447,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           long version = vinfo.getNewClock();
           cmd.setVersion(version);
           cmd.getSolrInputDocument().setField(CommonParams.VERSION_FIELD, version);
-          bucket.updateHighest(version);
         } else {
           // The leader forwarded us this update.
           cmd.setVersion(versionOnUpdate);
@@ -496,7 +495,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 assert cmd.isInPlaceUpdate() == false;
               }
             } else {
-              if (lastVersion != null && Math.abs(lastVersion) > prev) {
+              if (Math.abs(lastVersion) > prev) {
                 // this means we got a newer full doc update and in that case it makes no sense to
                 // apply the older inplace update. Drop this update
                 log.info(
@@ -505,29 +504,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                     lastVersion);
                 return true;
               } else {
-                // We're good, we should apply this update. First, update the bucket's highest.
-                if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-                  bucket.updateHighest(versionOnUpdate);
-                }
+                // We're good, we should apply this update.
               }
             }
           } else {
             // if we aren't the leader, then we need to check that updates were not re-ordered
-            if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-              // we're OK... this update has a version higher than anything we've seen
-              // in this bucket so far, so we know that no reordering has yet occurred.
-              bucket.updateHighest(versionOnUpdate);
-            } else {
-              // there have been updates higher than the current update. we need to check
-              // the specific version for this id.
-              Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-              if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-                // This update is a repeat, or was reordered. We need to drop this update.
-                if (log.isDebugEnabled()) {
-                  log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
-                }
-                return true;
+            // we need to check the specific version for this id.
+            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+              // This update is a repeat, or was reordered. We need to drop this update.
+              if (log.isDebugEnabled()) {
+                log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
               }
+              return true;
             }
           }
           if (!isSubShardLeader
@@ -1105,7 +1094,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     try {
       BytesRef idBytes = cmd.getIndexedId();
       if (versionsStored) {
-        long bucketVersion = bucket.highest;
 
         if (leaderLogic) {
 
@@ -1154,7 +1142,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
           long version = vinfo.getNewClock();
           cmd.setVersion(-version);
-          bucket.updateHighest(version);
         } else {
           cmd.setVersion(-versionOnUpdate);
 
@@ -1166,21 +1153,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
 
           // if we aren't the leader, then we need to check that updates were not re-ordered
-          if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-            // we're OK... this update has a version higher than anything we've seen
-            // in this bucket so far, so we know that no reordering has yet occurred.
-            bucket.updateHighest(versionOnUpdate);
-          } else {
-            // there have been updates higher than the current update. we need to check
-            // the specific version for this id.
-            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-            if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-              // This update is a repeat, or was reordered. We need to drop this update.
-              if (log.isDebugEnabled()) {
-                log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
-              }
-              return true;
+          // we need to check the specific version for this id.
+          Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+          if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+            // This update is a repeat, or was reordered. We need to drop this update.
+            if (log.isDebugEnabled()) {
+              log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
             }
+            return true;
           }
 
           if (!isSubShardLeader

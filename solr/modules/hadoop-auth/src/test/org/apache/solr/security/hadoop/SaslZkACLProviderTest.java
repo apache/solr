@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.client.ZooKeeperSaslClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -66,13 +67,14 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     assumeFalse(
         "FIXME: SOLR-7040: This test fails under IBM J9", Constants.JAVA_VENDOR.startsWith("IBM"));
     System.setProperty("solrcloud.skip.autorecovery", "true");
-    System.setProperty("hostName", "localhost");
+    System.setProperty("hostName", "127.0.0.1");
   }
 
   @AfterClass
   public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("hostName");
+    System.clearProperty(ZKClientConfig.ZOOKEEPER_SERVER_PRINCIPAL);
   }
 
   @Override
@@ -226,7 +228,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         System.setProperty("zookeeper.kerberos.removeHostFromPrincipal", "true");
         File keytabFile = kdcDir.resolve("keytabs").toFile();
         String zkClientPrincipal = "solr";
-        String zkServerPrincipal = "zookeeper/localhost";
+        String zkServerPrincipal = "zookeeper/127.0.0.1";
+        System.setProperty(ZKClientConfig.ZOOKEEPER_SERVER_PRINCIPAL, zkServerPrincipal);
 
         kerberosTestServices =
             KerberosTestServices.builder()

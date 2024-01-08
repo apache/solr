@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -349,8 +350,16 @@ public class BackupManager {
           if (data == null) {
             data = new byte[0];
           }
-          try (OutputStream os = repository.createOutput(uri)) {
-            os.write(data);
+          if (!FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+            try (OutputStream os = repository.createOutput(uri)) {
+              os.write(data);
+            }
+          } else {
+            String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+            log.warn(
+                "Not including zookeeper file {} in backup, as it matched the MAGIC signature of a forbidden mime type {}",
+                filePath,
+                mimeType);
           }
         }
       } else {
@@ -379,7 +388,15 @@ public class BackupManager {
                 // probably ok since the config file should be small.
                 byte[] arr = new byte[(int) is.length()];
                 is.readBytes(arr, 0, (int) is.length());
-                configSetService.uploadFileToConfig(configName, filePath, arr, false);
+                if (!FileTypeMagicUtil.isFileForbiddenInConfigset(arr)) {
+                  configSetService.uploadFileToConfig(configName, filePath, arr, false);
+                } else {
+                  String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(arr);
+                  log.warn(
+                      "Not including zookeeper file {} in restore, as it matched the MAGIC signature of a forbidden mime type {}",
+                      filePath,
+                      mimeType);
+                }
               }
             }
             break;

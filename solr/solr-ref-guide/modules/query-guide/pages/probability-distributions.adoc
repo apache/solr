@@ -114,7 +114,7 @@ image::math-expressions/poisson.png[]
 
 ==== binomialDistribution
 
-The visualization below shows a binomial distribution with a 100 trials and .15 probability of success.
+The visualization below shows a binomial distribution with 100 trials and .15 probability of success.
 
 image::math-expressions/binomial.png[]
 
@@ -326,7 +326,7 @@ The covariance matrix describes the covariance between `filesize_d` and `respons
 The `multivariateNormalDistribution` function is then called with the array of means for the two fields and the covariance matrix.
 The model for the multivariate normal distribution is assigned to variable `g`.
 
-Finally five samples are drawn from the multivariate normal distribution.
+Finally, five samples are drawn from the multivariate normal distribution.
 
 [source,text]
 ----

@@ -618,6 +618,13 @@ https://github.com/yonik/noggit
 This product includes the Angular UI UI Grid JavaScript library.
 Copyright (c) 2015 the AngularUI Team, http://angular-ui.github.com
 
+=========================================================================
+==         jsSHA notice                                                ==
+=========================================================================
+
+This product includes the jsSHA library.
+Copyright (c) 2008-2023 Brian Turek, 1998-2009 Paul Johnston & Contributors
+https://github.com/Caligatio/jsSHA
 
 =========================================================================
 ==         grpc notice                                                 ==

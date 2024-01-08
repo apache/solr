@@ -1522,7 +1522,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "6");
     params.add("df", "text");
-    params.add("debugQuery", "true");
+    params.add("debug", "true");
     assertQ(
         req(params),
         "*[count(//doc)=6]",

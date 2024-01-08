@@ -100,7 +100,10 @@ REM start command line as-is, in ADDITION to other options. If you specify the
 REM -a option on start script, those options will be appended as well. Examples:
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoSoftCommit.maxTime=3000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.clustering.enabled=true
+
+REM Most properties have an environment variable equivalent.
+REM A naming convention is that SOLR_FOO_BAR maps to solr.foo.bar
+REM SOLR_CLUSTERING_ENABLED=true
 
 REM Path to a directory for Solr to store cores and their data. By default, Solr will use server\solr
 REM If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
@@ -159,7 +162,8 @@ REM set SOLR_SSL_WANT_CLIENT_AUTH=false
 REM Verify client hostname during SSL handshake
 REM set SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-REM this to false can be useful to disable these checks when re-using a certificate on many hosts
+REM this to false can be useful to disable these checks when re-using a certificate on many hosts.
+REM This will also be used for the default value of whether SNI Host checking should be enabled.
 REM set SOLR_SSL_CHECK_PEER_NAME=true
 REM Override Key/Trust Store types if necessary
 REM set SOLR_SSL_KEY_STORE_TYPE=PKCS12

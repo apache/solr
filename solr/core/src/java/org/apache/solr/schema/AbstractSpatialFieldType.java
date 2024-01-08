@@ -80,6 +80,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
    * ({@link DistanceUnits#getSupportedUnits()}.
    */
   public static final String SCORE_PARAM = "score";
+
   /**
    * A local-param boolean that can be set to false to only return the FunctionQuery (score), and
    * thus not do filtering.

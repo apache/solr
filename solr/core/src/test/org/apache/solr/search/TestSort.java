@@ -311,7 +311,7 @@ public class TestSort extends SolrTestCaseJ4 {
         }
         if (r.nextBoolean()) sfields.add(new SortField(null, SortField.Type.SCORE));
 
-        Sort sort = new Sort(sfields.toArray(new SortField[sfields.size()]));
+        Sort sort = new Sort(sfields.toArray(new SortField[0]));
 
         final String nullRep =
             luceneSort || (sortMissingFirst && !reverse) || (sortMissingLast && reverse)

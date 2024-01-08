@@ -25,7 +25,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
@@ -94,6 +93,11 @@ public class TestHarness extends BaseTestHarness {
     return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
   }
 
+  public TestHarness(CoreContainer coreContainer) {
+    this.container = coreContainer;
+    this.coreName = SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
+  }
+
   /**
    * @param coreName to initialize
    * @param dataDirectory path for index data, will not be cleaned up
@@ -117,6 +121,7 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness(String dataDirectory, SolrConfig solrConfig, String schemaFile) {
     this(dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
   }
+
   /**
    * @param dataDirectory path for index data, will not be cleaned up
    * @param solrConfig solrconfig instance
@@ -171,7 +176,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public TestHarness(NodeConfig nodeConfig) {
-    this(nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
+    this(nodeConfig, new CorePropertiesLocator(nodeConfig));
   }
 
   /**
@@ -187,9 +192,6 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public static NodeConfig buildTestNodeConfig(Path solrHome) {
-    if ("true".equals(System.getProperty("solr.tests.loadSolrXml"))) {
-      return SolrXmlConfig.fromSolrHome(solrHome, new Properties());
-    }
     CloudConfig cloudConfig =
         (null == System.getProperty("zkHost"))
             ? null
@@ -431,6 +433,7 @@ public class TestHarness extends BaseTestHarness {
     public Map<String, String> args = new HashMap<>();
 
     public LocalRequestFactory() {}
+
     /**
      * Creates a LocalSolrQueryRequest based on variable args; for historical reasons, this method
      * has some peculiar behavior:
