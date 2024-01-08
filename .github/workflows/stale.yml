@@ -29,7 +29,8 @@ jobs:
 
           stale-pr-message: >
             This PR has not had activity in the past 2 weeks, labeling it as stale.
-            If the PR is waiting for review, notify the dev@solr.apache.org list.
+            Any new activity will remove the stale label. To attract more reviewers, tag
+            someone or notify the dev@solr.apache.org mailing list.
             Thank you for your contribution!
 
           # TODO: Adjust budget and debug after initial testing
