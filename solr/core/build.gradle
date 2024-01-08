@@ -68,7 +68,7 @@ dependencies {
   implementation 'org.glassfish.jersey.core:jersey-common'
   implementation 'org.glassfish.jersey.core:jersey-server'
   implementation 'org.glassfish.hk2:hk2-api'
-  implementation 'org.glassfish.hk2.external:jakarta.inject'
+  implementation 'jakarta.inject:jakarta.inject-api'
   implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
   implementation 'jakarta.annotation:jakarta.annotation-api'
 
