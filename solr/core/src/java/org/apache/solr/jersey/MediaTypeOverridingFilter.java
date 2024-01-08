@@ -55,7 +55,8 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
 
     // Some endpoints have their own media-type logic and opt out of the overriding behavior this
     // filter provides.
-    if (EXEMPTED_RESOURCES.contains(resourceInfo.getResourceClass())) {
+    if (resourceInfo.getResourceClass() == null
+        || EXEMPTED_RESOURCES.contains(resourceInfo.getResourceClass())) {
       return;
     }
 

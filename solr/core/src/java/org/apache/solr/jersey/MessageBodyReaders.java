@@ -17,6 +17,7 @@
 
 package org.apache.solr.jersey;
 
+import com.fasterxml.jackson.core.JsonParser;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -47,7 +48,7 @@ public class MessageBodyReaders {
       implements MessageBodyReader<Object> {
     @Override
     public MessageBodyReader<Object> getDelegate() {
-      return new JacksonJsonProvider();
+      return new JacksonJsonProvider().configure(JsonParser.Feature.ALLOW_COMMENTS, true);
     }
   }
 
