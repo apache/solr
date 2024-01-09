@@ -415,7 +415,7 @@ public class SolrMetricManager {
     for (String pattern : patterns) {
       compiled.add(Pattern.compile(pattern));
     }
-    return registryNames(compiled.toArray(new Pattern[compiled.size()]));
+    return registryNames(compiled.toArray(new Pattern[0]));
   }
 
   public Set<String> registryNames(Pattern... patterns) {

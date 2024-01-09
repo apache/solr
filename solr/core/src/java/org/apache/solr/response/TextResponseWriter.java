@@ -94,6 +94,7 @@ public abstract class TextResponseWriter implements TextWriter {
       this.rawReturnFields = returnFields;
     }
   }
+
   // only for test purposes
   TextResponseWriter(Writer writer, boolean indent) {
     this.writer = writer == null ? null : FastWriter.wrap(writer);
@@ -212,6 +213,7 @@ public abstract class TextResponseWriter implements TextWriter {
       TextWriter.super.writeVal(name, val, raw);
     }
   }
+
   // names are passed when writing primitives like writeInt to allow many different
   // types of formats, including those where the name may come after the value (like
   // some XML formats).

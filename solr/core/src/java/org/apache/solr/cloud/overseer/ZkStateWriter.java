@@ -222,6 +222,7 @@ public class ZkStateWriter {
   public ClusterState writePendingUpdates() throws KeeperException, InterruptedException {
     return writePendingUpdates(updates, true);
   }
+
   /**
    * Writes all pending updates to ZooKeeper and returns the modified cluster state
    *

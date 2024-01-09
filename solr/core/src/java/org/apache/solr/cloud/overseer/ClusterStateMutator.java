@@ -125,6 +125,13 @@ public class ClusterStateMutator {
       collectionProps.put(ZkStateReader.CONFIGNAME_PROP, configName);
     }
 
+    // add user-defined properties
+    for (String prop : message.keySet()) {
+      if (prop.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
+        collectionProps.put(prop, message.get(prop));
+      }
+    }
+
     assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
     DocCollection newCollection =
         DocCollection.create(

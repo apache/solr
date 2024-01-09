@@ -111,7 +111,7 @@ public class LukeRequest extends SolrRequest<LukeResponse> {
   public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (fields != null && fields.size() > 0) {
-      params.add(CommonParams.FL, fields.toArray(new String[fields.size()]));
+      params.add(CommonParams.FL, fields.toArray(new String[0]));
     }
     if (numTerms >= 0) {
       params.add("numTerms", numTerms + "");

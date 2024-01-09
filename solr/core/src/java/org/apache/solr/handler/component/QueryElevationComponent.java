@@ -122,6 +122,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
    * configured order (so-called priority).
    */
   public static final String BOOSTED = "BOOSTED";
+
   /** Key to {@link SolrQueryRequest#getContext()} for a {@code Set<BytesRef>} of excluded IDs. */
   public static final String EXCLUDED = "EXCLUDED";
 
@@ -137,29 +138,35 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
   protected Analyzer queryAnalyzer;
   protected SchemaField uniqueKeyField;
+
   /**
    * @see QueryElevationParams#FORCE_ELEVATION
    */
   protected boolean forceElevation;
+
   /**
    * @see QueryElevationParams#USE_CONFIGURED_ELEVATED_ORDER
    */
   protected boolean useConfiguredElevatedOrder;
+
   /** If {@link #inform(SolrCore)} completed without error. */
   protected boolean initialized;
 
   private final Object LOCK = new Object(); // for cache*
+
   /**
    * Cached IndexReader associated with {@link #cacheElevationProvider}. Must be accessed under
    * lock.
    */
   private WeakReference<IndexReader> cacheIndexReader = NULL_REF;
+
   /**
    * Cached elevation provider. Must be accessed under lock. {@link
    * #handleConfigLoadingException(Exception)} has the lock when called and may access this if it
    * wishes to return a previous good result.
    */
   protected ElevationProvider cacheElevationProvider = null; // keep null
+
   /**
    * Cached version / timestamp of the data underlying {@link #cacheElevationProvider}. -1 means
    * unsupported. Must be accessed under lock.
@@ -1134,6 +1141,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
      * null</code>. The order is retained.
      */
     private LinkedHashSet<BytesRef> elevatedIds;
+
     /**
      * The ids of the excluded documents that should not appear in search results; can be <code>null
      * </code>.

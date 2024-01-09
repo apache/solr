@@ -36,6 +36,7 @@ import org.apache.http.protocol.HttpRequestExecutor;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.util.tracing.TraceUtils;
 
 /**
  * Sub-class of HttpRequestExecutor which tracks metrics interesting to solr Inspired and partially
@@ -138,6 +139,7 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
     if (solrMetricsContext != null) {
       timerContext = timer(request).time();
     }
+    TraceUtils.injectTraceContext(request);
     try {
       return super.execute(request, conn, context);
     } finally {

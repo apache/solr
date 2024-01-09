@@ -61,7 +61,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -104,7 +103,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
-import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
@@ -165,6 +163,7 @@ public class ReplicationHandler extends RequestHandlerBase
       generation = g;
       version = v;
     }
+
     /**
      * builds a CommitVersionInfo data for the specified IndexCommit. Will never be null, ut version
      * and generation may be zero if there are problems extracting them from the commit data
@@ -727,18 +726,6 @@ public class ReplicationHandler extends RequestHandlerBase
     rsp.status = OK_STATUS;
 
     return rsp;
-  }
-
-  /**
-   * Retrieves the maximum version number from an index commit. NOTE: The commit <b>MUST</b> be
-   * reserved before calling this method
-   */
-  private long getMaxVersion(IndexCommit commit) throws IOException {
-    try (DirectoryReader reader = DirectoryReader.open(commit)) {
-      IndexSearcher searcher = new IndexSearcher(reader);
-      VersionInfo vinfo = core.getUpdateHandler().getUpdateLog().getVersionInfo();
-      return Math.abs(vinfo.getMaxVersionFromIndex(searcher));
-    }
   }
 
   /**

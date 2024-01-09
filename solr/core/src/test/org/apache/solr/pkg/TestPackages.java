@@ -21,9 +21,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.core.TestSolrConfigHandler.getFileContent;
-import static org.apache.solr.filestore.TestDistribPackageStore.checkAllNodesForFile;
-import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
-import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
+import static org.apache.solr.filestore.TestDistribFileStore.checkAllNodesForFile;
+import static org.apache.solr.filestore.TestDistribFileStore.readFile;
+import static org.apache.solr.filestore.TestDistribFileStore.uploadKey;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -68,8 +68,8 @@ import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.filestore.PackageStoreAPI;
-import org.apache.solr.filestore.TestDistribPackageStore;
+import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.TestDistribFileStore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -121,7 +121,7 @@ public class TestPackages extends SolrCloudTestCase {
     String FILE1 = "/mypkg/runtimelibs.jar";
     String COLLECTION_NAME = "testCoreReloadingPluginColl";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     postFileAndWait(
         cluster,
         "runtimecode/runtimelibs.jar.bin",
@@ -140,7 +140,7 @@ public class TestPackages extends SolrCloudTestCase {
             .build();
 
     req.process(cluster.getSolrClient());
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         10,
         () ->
             new V2Request.Builder("/cluster/package")
@@ -162,7 +162,7 @@ public class TestPackages extends SolrCloudTestCase {
 
     add.version = "2.0";
     req.process(cluster.getSolrClient());
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         10,
         () ->
             new V2Request.Builder("/cluster/package")
@@ -190,7 +190,7 @@ public class TestPackages extends SolrCloudTestCase {
     String EXPR1 = "/mypkg/expressible.jar";
     String COLLECTION_NAME = "testPluginLoadingColl";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     postFileAndWait(
         cluster,
         "runtimecode/runtimelibs.jar.bin",
@@ -226,7 +226,7 @@ public class TestPackages extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         10,
         () ->
             new V2Request.Builder("/cluster/package")
@@ -287,7 +287,7 @@ public class TestPackages extends SolrCloudTestCase {
     verifyComponent(
         cluster.getSolrClient(), COLLECTION_NAME, "expressible", "mincopy", "mypkg", "1.0");
 
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         10,
         cluster.getSolrClient(),
         new GenericSolrRequest(
@@ -525,7 +525,7 @@ public class TestPackages extends SolrCloudTestCase {
       Map<String, Object> expected)
       throws Exception {
     try (HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
-      TestDistribPackageStore.assertResponseValues(
+      TestDistribFileStore.assertResponseValues(
           10,
           () -> {
             Object o = Utils.executeGET(client.getHttpClient(), jetty.getBaseUrl() + uri, parser);
@@ -559,7 +559,7 @@ public class TestPackages extends SolrCloudTestCase {
 
     GenericSolrRequest req1 =
         new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/" + componentType, params);
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         10,
         client,
         req1,
@@ -597,7 +597,7 @@ public class TestPackages extends SolrCloudTestCase {
     expectError(req, cluster.getSolrClient(), errPath, FILE1 + " has no signature");
     // now we upload the keys
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     // and upload the same file with a different name, but it has proper signature
     postFileAndWait(
         cluster,
@@ -617,7 +617,7 @@ public class TestPackages extends SolrCloudTestCase {
     req.process(cluster.getSolrClient());
 
     // Now verify the data in ZK
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         1,
         () ->
             new MapWriterMap(
@@ -641,7 +641,7 @@ public class TestPackages extends SolrCloudTestCase {
     // this request should succeed
     req.process(cluster.getSolrClient());
     // no verify the data (/packages.json) in ZK
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         1,
         () ->
             new MapWriterMap(
@@ -667,7 +667,7 @@ public class TestPackages extends SolrCloudTestCase {
     delVersion.version = "0.12"; // correct version. Should succeed
     req.process(cluster.getSolrClient());
     // Verify with ZK that the data is correct
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         1,
         () ->
             new MapWriterMap(
@@ -681,7 +681,7 @@ public class TestPackages extends SolrCloudTestCase {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       String path =
           jetty.getBaseUrl().toString().replace("/solr", "/api") + "/cluster/package?wt=javabin";
-      TestDistribPackageStore.assertResponseValues(
+      TestDistribFileStore.assertResponseValues(
           10,
           new Callable<NavigableObject>() {
             @Override
@@ -744,7 +744,7 @@ public class TestPackages extends SolrCloudTestCase {
 
     String FILE1 = "/schemapkg/schema-plugins.jar";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, PackageStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     postFileAndWait(
         cluster,
         "runtimecode/schema-plugins.jar.bin",
@@ -770,7 +770,7 @@ public class TestPackages extends SolrCloudTestCase {
             .build();
     req.process(cluster.getSolrClient());
 
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         10,
         () ->
             new V2Request.Builder("/cluster/package")
@@ -811,7 +811,7 @@ public class TestPackages extends SolrCloudTestCase {
             .build();
     req.process(cluster.getSolrClient());
 
-    TestDistribPackageStore.assertResponseValues(
+    TestDistribFileStore.assertResponseValues(
         10,
         () ->
             new V2Request.Builder("/cluster/package")
@@ -844,7 +844,7 @@ public class TestPackages extends SolrCloudTestCase {
         new MapSolrParams(Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "meta", "true"));
 
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
-    TestDistribPackageStore.assertResponseValues(10, client, req, expected);
+    TestDistribFileStore.assertResponseValues(10, client, req, expected);
   }
 
   public static void postFileAndWait(
@@ -853,10 +853,10 @@ public class TestPackages extends SolrCloudTestCase {
     @SuppressWarnings("ByteBufferBackingArray") // this is the result of a call to wrap()
     String sha512 = DigestUtils.sha512Hex(fileContent.array());
 
-    TestDistribPackageStore.postFile(
+    TestDistribFileStore.postFile(
         cluster.getSolrClient(), fileContent, path, sig); // has file, but no signature
 
-    TestDistribPackageStore.checkAllNodesForFile(
+    TestDistribFileStore.checkAllNodesForFile(
         cluster, path, Map.of(":files:" + path + ":sha512", sha512), false);
   }
 

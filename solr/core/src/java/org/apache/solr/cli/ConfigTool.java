@@ -79,7 +79,8 @@ public class ConfigTool extends ToolBase {
             .desc("Set the property to this value; accepts JSON objects and strings.")
             .build(),
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_ZKHOST);
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -108,7 +109,9 @@ public class ConfigTool extends ToolBase {
     echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
     echo(jsonBody);
 
-    try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
+    try (SolrClient solrClient =
+        SolrCLI.getSolrClient(
+            solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
       NamedList<Object> result = SolrCLI.postJsonToSolr(solrClient, updatePath, jsonBody);
       Integer statusCode = (Integer) result.findRecursive("responseHeader", "status");
       if (statusCode == 0) {
