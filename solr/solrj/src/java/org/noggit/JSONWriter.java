@@ -31,6 +31,8 @@ public class JSONWriter {
     public void write(JSONWriter writer);
   }
 
+  public static final int DEFAULT_INDENT = 2;
+
   protected int level;
   protected int indent;
   protected final CharArr out;
@@ -46,7 +48,7 @@ public class JSONWriter {
   }
 
   public JSONWriter(CharArr out) {
-    this(out, 2);
+    this(out, DEFAULT_INDENT);
   }
 
   public void setIndentSize(int indentSize) {

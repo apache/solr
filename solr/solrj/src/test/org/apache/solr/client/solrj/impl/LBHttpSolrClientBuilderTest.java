@@ -77,4 +77,15 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
     }
     HttpClientUtil.close(httpClient);
   }
+
+  @Test
+  public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
+    try (LBHttpSolrClient createdClient =
+        new LBHttpSolrClient.Builder()
+            .withBaseSolrUrl(ANY_BASE_SOLR_URL)
+            .withDefaultDataStore("aCollection")
+            .build()) {
+      assertEquals("aCollection", createdClient.getDefaultCollection());
+    }
+  }
 }

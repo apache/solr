@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.EnvUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -37,10 +38,10 @@ import org.slf4j.LoggerFactory;
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   public static final boolean TRACE_ID_GEN_ENABLED =
-      Boolean.parseBoolean(System.getProperty("solr.alwaysOnTraceId", "true"));
+      Boolean.parseBoolean(EnvUtils.getProp("solr.alwaysOnTraceId", "true"));
 
   private static final String DEFAULT_CLASS_NAME =
-      System.getProperty(
+      EnvUtils.getProp(
           "solr.otelDefaultConfigurator", "org.apache.solr.opentelemetry.OtelTracerConfigurator");
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -41,6 +41,7 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
   protected int socketTimeoutMillis = 120000; // 120 seconds
   private boolean socketTimeoutMillisUpdate = false;
   protected boolean followRedirects = false;
+  protected String defaultDataStore;
   protected Set<String> urlParamNames;
 
   /** The solution for the unchecked cast warning. */
@@ -94,6 +95,12 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
   public B withFollowRedirects(boolean followRedirects) {
     this.followRedirects = followRedirects;
+    return getThis();
+  }
+
+  /** Sets a default data store for core- or collection-based requests. */
+  public B withDefaultDataStore(String defaultCoreOrCollection) {
+    this.defaultDataStore = defaultCoreOrCollection;
     return getThis();
   }
 

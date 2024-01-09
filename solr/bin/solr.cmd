@@ -84,11 +84,29 @@ IF NOT DEFINED SOLR_SSL_ENABLED (
   )
 )
 
+IF NOT DEFINED SOLR_SSL_RELOAD_ENABLED (
+  set "SOLR_SSL_RELOAD_ENABLED=true"
+)
+
+REM Enable java security manager by default (limiting filesystem access and other things)
+IF NOT DEFINED SOLR_SECURITY_MANAGER_ENABLED (
+  set SOLR_SECURITY_MANAGER_ENABLED=true
+)
+
 IF "%SOLR_SSL_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=--module=https --lib="%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*""
   set SOLR_URL_SCHEME=https
+  IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
+    set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=ssl-reload"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.keyStoreReload.enabled=true"
+  )
   IF DEFINED SOLR_SSL_KEY_STORE (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
+    IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
+      IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
+        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystoreParentPath=%SOLR_SSL_KEY_STORE%/.."
+      )
+    )
   )
 
   IF DEFINED SOLR_SSL_KEY_STORE_TYPE (
@@ -121,6 +139,11 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
 
     IF DEFINED SOLR_SSL_CLIENT_KEY_STORE_TYPE (
       set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStoreType=%SOLR_SSL_CLIENT_KEY_STORE_TYPE%"
+    )
+    IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
+      IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
+        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Djavax.net.ssl.keyStoreParentPath=%SOLR_SSL_CLIENT_KEY_STORE_TYPE%/.."
+      )
     )
   ) ELSE (
     IF DEFINED SOLR_SSL_KEY_STORE (
@@ -559,13 +582,11 @@ goto parse_args
 
 :set_debug
 set SOLR_LOG_LEVEL=DEBUG
-set "PASS_TO_RUN_EXAMPLE=!PASS_TO_RUN_EXAMPLE! -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 SHIFT
 goto parse_args
 
 :set_warn
 set SOLR_LOG_LEVEL=WARN
-set "PASS_TO_RUN_EXAMPLE=!PASS_TO_RUN_EXAMPLE! -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 SHIFT
 goto parse_args
 
@@ -806,11 +827,6 @@ IF NOT "%SOLR_HOST%"=="" (
 )
 
 set SCRIPT_SOLR_OPTS=
-
-REM Solr modules option
-IF DEFINED SOLR_MODULES (
-  set "SCRIPT_SOLR_OPTS=%SCRIPT_SOLR_OPTS% -Dsolr.modules=%SOLR_MODULES%"
-)
 
 REM Default placement plugin
 IF DEFINED SOLR_PLACEMENTPLUGIN_DEFAULT (
@@ -1077,11 +1093,6 @@ IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
   set REMOTE_JMX_OPTS=
 )
 
-REM Enable java security manager by default (limiting filesystem access and other things)
-IF NOT DEFINED SOLR_SECURITY_MANAGER_ENABLED (
-  set SOLR_SECURITY_MANAGER_ENABLED=true
-)
-
 IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
   set SECURITY_MANAGER_OPTS=-Djava.security.manager ^
 -Djava.security.policy="%SOLR_SERVER_DIR%\etc\security.policy" ^
@@ -1220,7 +1231,6 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT%"
   set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
 )
-IF NOT "%SOLR_LOG_LEVEL%"=="" set "START_OPTS=%START_OPTS% -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 
 set SOLR_LOGS_DIR_QUOTED="%SOLR_LOGS_DIR%"
 set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"

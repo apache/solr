@@ -16,22 +16,24 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.apache.solr.common.SolrCloseable;
 
 /** Simple object cache with a type-safe accessor. */
 public class ObjectCache extends MapBackedCache<String, Object> implements SolrCloseable {
 
-  private volatile boolean isClosed;
+  private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
   public ObjectCache() {
     super(new ConcurrentHashMap<>());
   }
 
   private void ensureNotClosed() {
-    if (isClosed) {
+    if (isClosed.get()) {
       throw new RuntimeException("This ObjectCache is already closed.");
     }
   }
@@ -78,12 +80,22 @@ public class ObjectCache extends MapBackedCache<String, Object> implements SolrC
 
   @Override
   public boolean isClosed() {
-    return isClosed;
+    return isClosed.get();
   }
 
   @Override
   public void close() throws IOException {
-    isClosed = true;
-    map.clear();
+    if (isClosed.compareAndSet(false, true)) {
+      // Close any Closeable object which may have been stored into this cache.
+      // This allows to tie some objects to the lifecycle of the object which
+      // owns this ObjectCache, which is useful for plugins to register objects
+      // which should be closed before being garbage-collected.
+      for (Object value : map.values()) {
+        if (value instanceof Closeable) {
+          ((Closeable) value).close();
+        }
+      }
+      map.clear();
+    }
   }
 }

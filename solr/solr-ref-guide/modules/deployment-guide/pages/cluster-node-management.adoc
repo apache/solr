@@ -567,19 +567,17 @@ curl -X POST http://localhost:8983/api/cluster/replicas/migrate -H 'Content-Type
 +
 [%autowidth,frame=none]
 |===
-|Required |Default: `[]`
+|Required |Default: none
 |===
 +
 The nodes over which replicas will be balanced.
 Replicas that live outside this set of nodes will not be included in the balancing.
-+
-If this parameter is not provided, all live data nodes will be used.
 
 `targetNodes`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `[]`
+|Optional |Default: none
 |===
 +
 The nodes which the migrated replicas will be moved to.

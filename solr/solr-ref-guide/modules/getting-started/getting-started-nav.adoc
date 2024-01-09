@@ -30,6 +30,8 @@
 ** xref:tutorial-techproducts.adoc[]
 ** xref:tutorial-films.adoc[]
 ** xref:tutorial-diy.adoc[]
+** xref:tutorial-paramsets.adoc[]
+** xref:tutorial-vectors.adoc[]
 ** xref:tutorial-solrcloud.adoc[]
 ** xref:tutorial-aws.adoc[]
 
