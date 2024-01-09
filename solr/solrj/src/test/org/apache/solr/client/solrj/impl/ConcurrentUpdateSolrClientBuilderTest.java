@@ -77,7 +77,7 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
   public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
     try (SolrClient createdClient =
         new ConcurrentUpdateSolrClient.Builder("someurl")
-            .withDefaultCollection("aCollection")
+            .withDefaultDataStore("aCollection")
             .build()) {
       assertEquals("aCollection", createdClient.getDefaultCollection());
     }

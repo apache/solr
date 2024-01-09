@@ -322,8 +322,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /** Sets the default collection for request. */
-    public Builder withDefaultCollection(String collection) {
-      this.defaultCollection = collection;
+    public Builder withDefaultCollection(String defaultCollection) {
+      this.defaultCollection = defaultCollection;
       return this;
     }
 

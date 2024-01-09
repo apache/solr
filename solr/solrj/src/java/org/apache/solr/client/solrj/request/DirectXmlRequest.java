@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWriter;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -28,7 +27,8 @@ import org.apache.solr.common.params.SolrParams;
  *
  * @since solr 1.3
  */
-public class DirectXmlRequest extends SolrRequest<UpdateResponse> implements IsUpdateRequest {
+public class DirectXmlRequest extends DataStoreSolrRequest<UpdateResponse>
+    implements IsUpdateRequest {
 
   final String xml;
   private SolrParams params;
