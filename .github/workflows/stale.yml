@@ -30,7 +30,7 @@ jobs:
 
           stale-pr-message: >
             This PR had no visible activity in the past 2 weeks, labeling it as stale.
-            Any new activity will remove the stale label. To attract more reviewers, tag
+            Any new activity will remove the stale label. To attract more reviewers, please tag
             someone or notify the dev@solr.apache.org mailing list.
             Thank you for your contribution!
 
