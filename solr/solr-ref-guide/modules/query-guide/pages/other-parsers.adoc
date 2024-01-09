@@ -73,7 +73,18 @@ For a BooleanQuery with no `must` queries, one or more `should` queries must mat
 A list of queries that *must* appear in matching documents.
 However, unlike `must`, the score of filter queries is ignored.
 Also, these queries are cached in filter cache.
-To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
+To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to the underlying Query DSL Object.
+
+`mm`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
++
+The number of optional clauses that must match. By default, no optional clauses are necessary for a match
+(unless there are no required clauses). If this parameter is set, then the specified number of `should` clauses is required.
+If this parameter is not set, the usual rules about boolean queries still apply at search time - that is, a boolean query containing no required clauses must still match at least one optional clause.
 
 `excludeTags`::
 +
@@ -95,6 +106,11 @@ See explanation below.
 [source,text]
 ----
 {!bool filter=foo should=bar}
+----
+
+[source,text]
+----
+{!bool should=foo should=bar should=qux mm=2}
 ----
 
 Parameters might also be multivalue references.
@@ -124,7 +140,7 @@ q={!bool must=foo}
 
 `BoostQParser` extends the `QParserPlugin` and creates a boosted query from the input value.
 The main value is any query to be "wrapped" and "boosted" -- only documents which match that query will match the final query produced by this parser.
-Parameter `b` is a xref:function-queries.adoc#available-functions[function] to be evaluated against each document that matches the original query, and the result of the function will be multiplied into into the final score for that document.
+Parameter `b` is a xref:function-queries.adoc#available-functions[function] to be evaluated against each document that matches the original query, and the result of the function will be multiplied into the final score for that document.
 
 === Boost Query Parser Examples
 
@@ -135,7 +151,7 @@ Creates a query `name:foo` which is boosted (scores are multiplied) by the funct
 q={!boost b=log(popularity)}name:foo
 ----
 
-Creates a query `name:foo` which has it's scores multiplied by the _inverse_ of the numeric `price` field -- effectively "demoting" documents which have a high `price` by lowering their final score:
+Creates a query `name:foo` which has its scores multiplied by the _inverse_ of the numeric `price` field -- effectively "demoting" documents which have a high `price` by lowering their final score:
 
 [source,text]
 ----
@@ -500,7 +516,7 @@ http://localhost:8983/solr/my_graph/query?fl=id&q={!graph+from=in_edge+to=out_ed
 ----
 
 The examples shown so far have all used a query for a single document (`"id:A"`) as the root node for the graph traversal, but any query can be used to identify multiple documents to use as root nodes.
-The next example demonstrates using the `maxDepth` parameter to find all nodes that are at most one edge away from an root node with a value in the `foo` field less then or equal to 10:
+The next example demonstrates using the `maxDepth` parameter to find all nodes that are at most one edge away from a root node with a value in the `foo` field less than or equal to 10:
 
 [source,text]
 ----
@@ -670,7 +686,7 @@ The queries measure Jaccard similarity between the query string and MinHash fiel
 The parser supports two modes of operation.
 The first, when tokens are generated from text by normal analysis; and the second, when explicit tokens are provided.
 
-Currently the score returned by the query reflects the number of top level elements that match and is *not* normalised between 0 and 1.
+Currently, the score returned by the query reflects the number of top level elements that match and is *not* normalised between 0 and 1.
 
 `sim`::
 +
@@ -850,7 +866,7 @@ In this case, generating a score of 1 if one hash matches and a score of 512 if 
 A banded query mixes conjunctions and disjunctions.
 We could have 256 bands each of two queries ANDed together, 128 with 4 hashes ANDed together etc.
 With fewer bands query performance increases but we may miss some matches.
-There is a trade off between speed and accuracy.
+There is a trade-off between speed and accuracy.
 With 64 bands the score will range from 0 to 64 (the number of bands ORed together)
 
 Given the required similarity and an acceptable true positive rate, the query parser computes the appropriate band size^[1]^.
@@ -870,7 +886,7 @@ Even a single match may indicate some kind of similarity either in meaning, styl
 
 For a general introduction see "Mining of Massive Datasets"^[1]^.
 
-For documents of ~1500 words expect an index size overhead of ~10%; your milage will vary.
+For documents of ~1500 words expect an index size overhead of ~10%; your mileage will vary.
 512 hashes would be expected to represent ~2500 words well.
 
 Using a set of MinHash values was proposed in the initial paper^[2]^ but provides a biased estimate of Jaccard similarity.
@@ -1054,7 +1070,7 @@ Find all documents with the phrase "foo bar" where term "foo" has a payload grea
 == Prefix Query Parser
 
 `PrefixQParser` extends the `QParserPlugin` by creating a prefix query from the input value.
-Currently no analysis or value transformation is done to create this prefix query.
+Currently, no analysis or value transformation is done to create this prefix query.
 
 The parameter is `f`, the field.
 The string after the prefix declaration is treated as a wildcard query.
@@ -1215,7 +1231,7 @@ The non-unary operators (everything but `NOT`) support both infix `(a AND b AND 
 
 `SwitchQParser` is a `QParserPlugin` that acts like a "switch" or "case" statement.
 
-The primary input string is trimmed and then prefixed with `case.` for use as a key to lookup a "switch case" in the parser's local params.
+The primary input string is trimmed and then prefixed with `case.` for use as a key to look up a "switch case" in the parser's local params.
 If a matching local param is found the resulting parameter value will then be parsed as a subquery, and returned as the parse result.
 
 The `case` local param can be optionally be specified as a switch case to match missing (or blank) input strings.
@@ -1235,7 +1251,7 @@ In the examples below, the result of each query is "XXX":
 {!switch case.foo=qqq case.bar=XXX case.yak=zzz} bar
 ----
 
-.The result will fallback to the default.
+.The result will fall back to the default.
 [source,text]
 ----
 {!switch case.foo=qqq case.bar=zzz default=XXX}asdf
@@ -1273,7 +1289,7 @@ Using the example configuration below, clients can optionally specify the custom
 == Term Query Parser
 
 `TermQParser` extends the `QParserPlugin` by creating a single term query from the input value equivalent to `readableToIndexed()`.
-This is useful for generating filter queries from the external human readable terms returned by the faceting or terms components.
+This is useful for generating filter queries from the external human-readable terms returned by the faceting or terms components.
 The only parameter is `f`, for the field.
 
 Example:
@@ -1292,7 +1308,7 @@ If no analysis or transformation is desired for any type of field, see the <<Raw
 
 `TermsQParser` functions similarly to the <<Term Query Parser,Term Query Parser>> but takes in multiple values separated by commas and returns documents matching any of the specified values.
 
-This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the xref:standard-query-parser.adoc[] to generate a boolean query since the default implementation `method` avoids scoring.
+This can be useful for generating filter queries from the external human-readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the xref:standard-query-parser.adoc[] to generate a boolean query since the default implementation `method` avoids scoring.
 
 This query parser takes the following parameters:
 

@@ -582,16 +582,25 @@ public class SearchHandler extends RequestHandlerBase
               // If things are not tolerant, abort everything and rethrow
               if (!tolerant) {
                 shardHandler1.cancelAll();
-                if (srsp.getException() instanceof SolrException) {
-                  throw (SolrException) srsp.getException();
-                } else {
-                  throw new SolrException(
-                      SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
-                }
+                throwSolrException(srsp.getException());
               } else {
-                rsp.getResponseHeader()
-                    .asShallowMap()
-                    .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+                // Check if the purpose includes 'PURPOSE_GET_TOP_IDS'
+                boolean includesTopIdsPurpose =
+                    (srsp.getShardRequest().purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0;
+                // Check if all responses have exceptions
+                boolean allResponsesHaveExceptions =
+                    srsp.getShardRequest().responses.stream()
+                        .allMatch(response -> response.getException() != null);
+                // Check if all shards have failed for PURPOSE_GET_TOP_IDS
+                boolean allShardsFailed = includesTopIdsPurpose && allResponsesHaveExceptions;
+                // if all shards fail, fail the request despite shards.tolerant
+                if (allShardsFailed) {
+                  throwSolrException(srsp.getException());
+                } else {
+                  rsp.getResponseHeader()
+                      .asShallowMap()
+                      .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+                }
               }
             }
 
@@ -680,6 +689,14 @@ public class SearchHandler extends RequestHandlerBase
       }
     }
     return totalShardCpuTime;
+  }
+  
+  private static void throwSolrException(Throwable shardResponseException) throws SolrException {
+    if (shardResponseException instanceof SolrException) {
+      throw (SolrException) shardResponseException;
+    } else {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, shardResponseException);
+    }
   }
 
   private void tagRequestWithRequestId(ResponseBuilder rb) {

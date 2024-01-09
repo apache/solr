@@ -358,7 +358,10 @@ public abstract class LBSolrClient extends SolrClient {
       }
     }
     throw new SolrServerException(
-        "No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
+        "No live SolrServers available to handle this request. (Tracking "
+            + zombieServers.size()
+            + " not live)",
+        ex);
   }
 
   /**
@@ -571,6 +574,7 @@ public abstract class LBSolrClient extends SolrClient {
     final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
     int numServersTried = 0;
     Map<String, ServerWrapper> justFailed = null;
+    if (collection == null) collection = defaultCollection;
 
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(request);
