@@ -22,6 +22,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
@@ -81,6 +82,14 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
     try (HttpSolrClient createdClient = new Builder(ANY_BASE_SOLR_URL).build()) {
       final ResponseParser usedParser = createdClient.getParser();
       assertTrue(usedParser instanceof BinaryResponseParser);
+    }
+  }
+
+  @Test
+  public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
+    try (final SolrClient createdClient =
+        new Builder(ANY_BASE_SOLR_URL).withDefaultDataStore("aCollection").build()) {
+      assertEquals("aCollection", createdClient.getDefaultCollection());
     }
   }
 }

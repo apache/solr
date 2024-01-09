@@ -49,7 +49,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   protected LeaderElector leaderElector;
   protected ZkStateReader zkStateReader;
   protected ZkController zkController;
-  private Integer leaderZkNodeParentVersion;
+  protected Integer leaderZkNodeParentVersion;
 
   // Prevents a race between cancelling and becoming leader.
   private final Object lock = new Object();

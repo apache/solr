@@ -123,7 +123,8 @@ public class SolrZkClient implements Closeable {
         builder.beforeReconnect,
         builder.higherLevelIsClosed,
         builder.compressor,
-        builder.solrClassLoader);
+        builder.solrClassLoader,
+        builder.useDefaultCredsAndACLs);
   }
 
   private SolrZkClient(
@@ -136,7 +137,8 @@ public class SolrZkClient implements Closeable {
       BeforeReconnect beforeReconnect,
       IsClosed higherLevelIsClosed,
       Compressor compressor,
-      SolrClassLoader solrClassLoader) {
+      SolrClassLoader solrClassLoader,
+      boolean useDefaultCredsAndACLs) {
 
     if (zkServerAddress == null) {
       // only tests should create one without server address
@@ -158,7 +160,6 @@ public class SolrZkClient implements Closeable {
 
     this.higherLevelIsClosed = higherLevelIsClosed;
     this.solrClassLoader = solrClassLoader;
-
     if (zkCredentialsProvider == null) {
       zkCredentialsInjector = createZkCredentialsInjector();
       zkCredentialsProvider = createZkCredentialsToAddAutomatically();
@@ -220,6 +221,12 @@ public class SolrZkClient implements Closeable {
     }
 
     assert ObjectReleaseTracker.track(this);
+    if (aclProvider == null) {
+      this.aclProvider =
+          useDefaultCredsAndACLs ? createACLProvider() : new DefaultZkACLProvider();
+    } else {
+      this.aclProvider = aclProvider;
+    }
 
     if (compressor == null) {
       this.compressor = new ZLibCompressor();
@@ -1202,6 +1209,7 @@ public class SolrZkClient implements Closeable {
     public ACLProvider aclProvider;
     public IsClosed higherLevelIsClosed;
     public SolrClassLoader solrClassLoader;
+    public boolean useDefaultCredsAndACLs = true;
 
     public Compressor compressor;
 
@@ -1264,6 +1272,11 @@ public class SolrZkClient implements Closeable {
 
     public Builder withSolrClassLoader(SolrClassLoader solrClassLoader) {
       this.solrClassLoader = solrClassLoader;
+      return this;
+    }
+
+    public Builder withUseDefaultCredsAndACLs(boolean useDefaultCredsAndACLs) {
+      this.useDefaultCredsAndACLs = useDefaultCredsAndACLs;
       return this;
     }
 

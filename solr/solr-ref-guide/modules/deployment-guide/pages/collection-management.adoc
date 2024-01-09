@@ -1710,7 +1710,7 @@ Valid options are `copy-files` (which backs up both the collection configset and
 |Optional |Default: none
 |===
 +
-The name of a the collection "snapshot" to create a backup from.
+The name of the collection "snapshot" to create a backup from.
 If not provided, Solr will create the backup from the current collection state (instead of a previous snapshotted state).
 
 [example.tab-pane#backup-response-incremental]

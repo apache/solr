@@ -379,13 +379,17 @@ public class LeaderElector {
   void retryElection(ElectionContext context, boolean joinAtHead)
       throws KeeperException, InterruptedException {
     ElectionWatcher watcher = this.watcher;
+    if (watcher != null) watcher.cancel();
+    this.context.cancelElection();
+    this.context.close();
+
+    // Create a new context for the retried election
+    // This must be done *after* we canceled the previous context, so we drop stale version for
+    // leader registration node
     ElectionContext ctx = context.copy();
     if (electionContexts != null) {
       electionContexts.put(contextKey, ctx);
     }
-    if (watcher != null) watcher.cancel();
-    this.context.cancelElection();
-    this.context.close();
     this.context = ctx;
     joinElection(ctx, true, joinAtHead);
   }

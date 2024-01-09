@@ -169,6 +169,8 @@ dependencies {
 
   compileOnly 'com.github.stephenc.jcip:jcip-annotations'
 
+  implementation 'com.j256.simplemagic:simplemagic'
+
   // -- Test Dependencies
 
   testRuntimeOnly 'org.slf4j:jcl-over-slf4j'
