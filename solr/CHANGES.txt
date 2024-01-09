@@ -134,7 +134,7 @@ Improvements
 * SOLR-16397: The MERGEINDEXES v2 endpoint has been updated to be more REST-ful.
   MERGEINDEXES is now available at `POST /api/cores/coreName/merge-indices` (Sanjay Dutt via Jason Gerlowski)
 
-* PR#2183: Include the external file name in the log instead of the hard-coded value in FileFloatSource.java. (Hamzeh Aldmour via Uwe Schindler)
+* PR#2186: Include the external file name in the log instead of the hard-coded value in FileFloatSource.java. (Hamzeh Aldmour via Uwe Schindler)
 
 Optimizations
 ---------------------
