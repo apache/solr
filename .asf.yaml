@@ -18,6 +18,18 @@ github:
     merge:  false
     rebase: false
 
+  protected_branches:
+    main: {}
+
+  protected_tags:
+    - "releases/*"
+
+  autolink_jira:
+    - SOLR
+
+  collaborators:
+    - solrbot
+
 notifications:
   commits:      commits@solr.apache.org
   issues:       issues@solr.apache.org
