@@ -88,7 +88,7 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
   @Test
   public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
     try (final SolrClient createdClient =
-        new Builder(ANY_BASE_SOLR_URL).withDefaultCollection("aCollection").build()) {
+        new Builder(ANY_BASE_SOLR_URL).withDefaultDataStore("aCollection").build()) {
       assertEquals("aCollection", createdClient.getDefaultCollection());
     }
   }

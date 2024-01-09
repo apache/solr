@@ -116,7 +116,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.soTimeout = builder.socketTimeoutMillis;
     this.pollQueueTimeMillis = builder.pollQueueTime;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
-    this.defaultCollection = builder.defaultCollection;
+    this.defaultCollection = builder.defaultDataStore;
 
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change

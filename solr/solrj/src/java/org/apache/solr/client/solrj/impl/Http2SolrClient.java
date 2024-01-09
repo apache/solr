@@ -191,7 +191,7 @@ public class Http2SolrClient extends SolrClient {
       this.parser = builder.responseParser;
     }
     updateDefaultMimeTypeForParser();
-    this.defaultCollection = builder.defaultCollection;
+    this.defaultCollection = builder.defaultDataStore;
     if (builder.requestTimeoutMillis != null) {
       this.requestTimeoutMillis = builder.requestTimeoutMillis;
     } else {
@@ -1072,7 +1072,7 @@ public class Http2SolrClient extends SolrClient {
     private ExecutorService executor;
     protected RequestWriter requestWriter;
     protected ResponseParser responseParser;
-    protected String defaultCollection;
+    protected String defaultDataStore;
     private Set<String> urlParamNames;
     private CookieStore cookieStore = getDefaultCookieStore();
     private String proxyHost;
@@ -1197,9 +1197,9 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    /** Sets a default collection for collection-based requests. */
-    public Builder withDefaultCollection(String defaultCollection) {
-      this.defaultCollection = defaultCollection;
+    /** Sets a default data store for core- or collection-based requests. */
+    public Builder withDefaultDataStore(String defaultCoreOrCollection) {
+      this.defaultDataStore = defaultCoreOrCollection;
       return this;
     }
 

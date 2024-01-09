@@ -83,7 +83,7 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
     try (LBHttpSolrClient createdClient =
         new LBHttpSolrClient.Builder()
             .withBaseSolrUrl(ANY_BASE_SOLR_URL)
-            .withDefaultCollection("aCollection")
+            .withDefaultDataStore("aCollection")
             .build()) {
       assertEquals("aCollection", createdClient.getDefaultCollection());
     }

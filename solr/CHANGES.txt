@@ -125,8 +125,9 @@ Improvements
 * SOLR-17063: Do not retain log param references in LogWatcher (Michael Gibney)
 
 * SOLR-17066: SolrClient builders now allow users to specify a "default" collection or core
-  using the `withDefaultCollection` method.  This is preferable to including the collection
-  in the base URL accepted by certain client implementations. (Jason Gerlowski)
+  using the `withDefaultDataStore` method  ("Cloud" client builders retain the more specific
+  `withDefaultCollection`).  Use of the Builder methods is preferable to including the
+  collection in the base URL accepted by certain client implementations. (Jason Gerlowski)
 
 Optimizations
 ---------------------
