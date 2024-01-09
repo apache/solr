@@ -161,8 +161,14 @@ public class SolrZkClient implements Closeable {
     this.higherLevelIsClosed = higherLevelIsClosed;
     this.solrClassLoader = solrClassLoader;
     if (zkCredentialsProvider == null) {
-      zkCredentialsInjector = createZkCredentialsInjector();
-      zkCredentialsProvider = createZkCredentialsToAddAutomatically();
+      zkCredentialsInjector =
+          useDefaultCredsAndACLs
+              ? createZkCredentialsInjector()
+              : new DefaultZkCredentialsInjector();
+      zkCredentialsProvider =
+          useDefaultCredsAndACLs
+              ? createZkCredentialsToAddAutomatically()
+              : new DefaultZkCredentialsProvider();
     }
     if (aclProvider == null) {
       aclProvider = createACLProvider();
@@ -222,8 +228,7 @@ public class SolrZkClient implements Closeable {
 
     assert ObjectReleaseTracker.track(this);
     if (aclProvider == null) {
-      this.aclProvider =
-          useDefaultCredsAndACLs ? createACLProvider() : new DefaultZkACLProvider();
+      this.aclProvider = useDefaultCredsAndACLs ? createACLProvider() : new DefaultZkACLProvider();
     } else {
       this.aclProvider = aclProvider;
     }
