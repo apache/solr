@@ -85,6 +85,7 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
    * @see #pattern
    */
   private String dest = null;
+
   /**
    * @see #dest
    */
@@ -129,7 +130,7 @@ public class DocumentCategorizerUpdateProcessorFactory extends UpdateRequestProc
       throw new SolrException(SERVER_ERROR, "Init param '" + MODEL_PARAM + "' must be a <str>");
     }
     model = modelParam.toString();
-    System.out.println("In OpenNLP doccat - model: " + model);
+    log.info("In OpenNLP doccat - model: {}");
 
     Object vocabParam = args.remove(VOCAB_PARAM);
     if (null == vocabParam) {
