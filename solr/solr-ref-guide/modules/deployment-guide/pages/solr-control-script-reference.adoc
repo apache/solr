@@ -330,7 +330,7 @@ For example, if Solr is running on port 8983, then the embedded ZooKeeper will l
 [IMPORTANT]
 ====
 If your ZooKeeper connection string uses a chroot, such as `localhost:2181/solr`, then you need to create the /solr znode before launching SolrCloud using the `bin/solr` script.
-+
+
 To do this use the `mkroot` command outlined below, for example: `bin/solr zk mkroot /solr -z 192.168.1.4:2181`
 ====
 
