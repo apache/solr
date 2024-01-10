@@ -35,7 +35,7 @@ import org.apache.solr.core.NodeConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Tests that verify initialization of container plugins that are declared in solr.xml */
+/** Tests that verify initialization of cluster plugins that are declared in solr.xml */
 public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
 
   // Any random value for the config parameter
@@ -66,7 +66,7 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
     assertEquals(
         "expected 2 plugins to be installed to the container plugins registry",
         2,
-        cc.getNodeConfig().getClusterSingletonPlugins().length);
+        cc.getNodeConfig().getClusterPlugins().length);
 
     ContainerPluginsRegistry registry = cc.getContainerPluginsRegistry();
     registry.refresh();

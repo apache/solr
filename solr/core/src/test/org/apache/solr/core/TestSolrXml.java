@@ -31,6 +31,7 @@ import org.apache.commons.exec.OS;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ClusterSingleton;
+import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
@@ -142,20 +143,23 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertTrue("hideStackTrace", cfg.hideStackTraces());
     System.clearProperty("solr.allowPaths");
 
-    PluginInfo replicaPlacementFactoryConfig = cfg.getReplicaPlacementFactoryConfig();
+    PluginInfo[] clusterPlugins = cfg.getClusterPlugins();
+    assertEquals(3, clusterPlugins.length);
+
+    PluginInfo cs1 = cfg.getClusterPlugins()[0];
+    assertEquals("testSingleton1", cs1.name);
+    assertEquals(CS.class.getName(), cs1.className);
+
+    PluginInfo cs2 = cfg.getClusterPlugins()[1];
+    assertEquals("testSingleton2", cs2.name);
+    assertEquals(CS.class.getName(), cs2.className);
+
+    PluginInfo replicaPlacementFactoryConfig = cfg.getClusterPlugins()[2];
     assertEquals(
         "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
         replicaPlacementFactoryConfig.className);
     assertEquals(1, replicaPlacementFactoryConfig.initArgs.size());
     assertEquals(10, replicaPlacementFactoryConfig.initArgs.get("minimalFreeDiskGB"));
-
-    PluginInfo cs1 = cfg.getClusterSingletonPlugins()[0];
-    assertEquals("testSingleton1", cs1.name);
-    assertEquals(CS.class.getName(), cs1.className);
-
-    PluginInfo cs2 = cfg.getClusterSingletonPlugins()[1];
-    assertEquals("testSingleton2", cs2.name);
-    assertEquals(CS.class.getName(), cs2.className);
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
@@ -533,7 +537,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
     assertEquals(
-        "clusterSingleton section found in solr.xml but the property disable.configEdit is set to false. clusterSingleton plugins may only be declared in solr.xml with immutable configs.",
+        "Cluster plugins found in solr.xml but the property disable.configEdit is set to false. Cluster plugins may only be declared in solr.xml with immutable configs.",
         thrown.getMessage());
   }
 
@@ -553,6 +557,32 @@ public class TestSolrXml extends SolrTestCaseJ4 {
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
     assertEquals(
         "clusterSingleton plugins must implement the interface " + ClusterSingleton.class.getName(),
+        thrown.getMessage());
+  }
+
+  /**
+   * It is not necessary to set the name attribute, but if it is set, ".placement-plugin" is
+   * acceptable
+   */
+  public void testReplicaPlacementFactoryNameCanBeSet() {
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
+    String solrXml =
+        "<solr><replicaPlacementFactory name=\".placement-plugin\" class=\""
+            + AffinityPlacementFactory.class.getName()
+            + "\"/></solr>";
+    SolrXmlConfig.fromString(solrHome, solrXml);
+  }
+
+  public void testFailAtConfigParseTimeWhenReplicaPlacementFactoryNameIsInvalid() {
+    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
+    String solrXml =
+        "<solr><replicaPlacementFactory name=\".must-be-placement-plugin\" class=\""
+            + AffinityPlacementFactory.class.getName()
+            + "\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "The replicaPlacementFactory name attribute must be .placement-plugin",
         thrown.getMessage());
   }
 

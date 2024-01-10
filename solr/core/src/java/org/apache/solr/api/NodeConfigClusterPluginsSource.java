@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
@@ -70,13 +71,14 @@ public class NodeConfigClusterPluginsSource implements ClusterPluginsSource {
 
   private static Map<String, Object> readPlugins(final NodeConfig cfg) {
     Map<String, Object> pluginInfos = new HashMap<>();
-    PluginInfo[] clusterSingletons = cfg.getClusterSingletonPlugins();
+    PluginInfo[] clusterSingletons = cfg.getClusterPlugins();
     if (clusterSingletons != null) {
       Arrays.stream(clusterSingletons)
           .forEach(
               p -> {
                 Map<String, Object> pluginMap = new HashMap<>();
-                pluginMap.put("name", p.name);
+                final String pluginName = getPluginName(p);
+                pluginMap.put("name", pluginName);
                 pluginMap.put("class", p.className);
 
                 if (p.initArgs.size() > 0) {
@@ -85,9 +87,24 @@ public class NodeConfigClusterPluginsSource implements ClusterPluginsSource {
                   pluginMap.put("config", config);
                 }
 
-                pluginInfos.put(p.name, pluginMap);
+                pluginInfos.put(pluginName, pluginMap);
               });
     }
     return pluginInfos;
+  }
+
+  /**
+   * Get the correct name for a plugin. Custom plugins must have a name set already, but built-in
+   * plugins may omit the name in solr.xml and require inference here
+   */
+  private static String getPluginName(final PluginInfo pluginInfo) {
+
+    if (pluginInfo.name == null) {
+      if (pluginInfo.type.equals("replicaPlacementFactory")) {
+        return PlacementPluginFactory.PLUGIN_NAME;
+      }
+    }
+
+    return pluginInfo.name;
   }
 }

@@ -34,7 +34,7 @@ public class ClusterPluginsSourceConfigurator implements NamedListInitializedPlu
    * @return The name of the class to use as the {@link ClusterPluginsSource}
    */
   public static String resolveClassName() {
-    return NodeConfig.isImmutableConfigSet()
+    return NodeConfig.isImmutableConfig()
         ? NodeConfigClusterPluginsSource.class.getName()
         : ZkClusterPluginsSource.class.getName();
   }

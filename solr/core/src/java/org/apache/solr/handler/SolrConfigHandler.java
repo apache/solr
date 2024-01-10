@@ -132,9 +132,9 @@ public class SolrConfigHandler extends RequestHandlerBase
     String httpMethod = (String) req.getContext().get("httpMethod");
     Command command = new Command(req, rsp, httpMethod);
     if ("POST".equals(httpMethod)) {
-      if (NodeConfig.isImmutableConfigSet() || isImmutableConfigSet) {
+      if (NodeConfig.isImmutableConfig() || isImmutableConfigSet) {
         final String reason =
-            NodeConfig.isImmutableConfigSet()
+            NodeConfig.isImmutableConfig()
                 ? "due to " + NodeConfig.CONFIG_EDITING_DISABLED_ARG
                 : "because ConfigSet is immutable";
         throw new SolrException(

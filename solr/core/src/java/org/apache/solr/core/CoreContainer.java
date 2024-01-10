@@ -783,7 +783,7 @@ public class CoreContainer {
 
     placementPluginFactory =
         new DelegatingPlacementPluginFactory(
-            PlacementPluginFactoryLoader.getDefaultPlacementPluginFactory(cfg, loader));
+            PlacementPluginFactoryLoader.getDefaultPlacementPluginFactory());
 
     containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
     containerPluginsRegistry.registerListener(

@@ -83,7 +83,6 @@ public class NodeConfig {
 
   private final PluginInfo shardHandlerFactoryConfig;
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
-  private final PluginInfo replicaPlacementFactoryConfig;
 
   private final String configSetServiceClass;
 
@@ -121,7 +120,7 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
-  private final PluginInfo[] clusterSingletonPlugins;
+  private final PluginInfo[] clusterPlugins;
 
   private final String defaultZkHost;
 
@@ -136,7 +135,6 @@ public class NodeConfig {
       String sharedLibDirectory,
       PluginInfo shardHandlerFactoryConfig,
       UpdateShardHandlerConfig updateShardHandlerConfig,
-      PluginInfo replicaPlacementFactoryConfig,
       String coreAdminHandlerClass,
       Map<String, String> coreAdminHandlerActions,
       String collectionsAdminHandlerClass,
@@ -157,7 +155,7 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
-      PluginInfo[] clusterSingletonPlugins,
+      PluginInfo[] clusterPlugins,
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
@@ -176,7 +174,6 @@ public class NodeConfig {
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
-    this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
     this.coreAdminHandlerActions = coreAdminHandlerActions;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
@@ -197,7 +194,7 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
     this.tracerConfig = tracerConfig;
-    this.clusterSingletonPlugins = clusterSingletonPlugins;
+    this.clusterPlugins = clusterPlugins;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
@@ -219,22 +216,22 @@ public class NodeConfig {
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
 
-    if (this.clusterSingletonPlugins != null
-        && this.clusterSingletonPlugins.length > 0
+    if (this.clusterPlugins != null
+        && this.clusterPlugins.length > 0
         && !ClusterPluginsSourceConfigurator.resolveClassName()
             .equals(NodeConfigClusterPluginsSource.class.getName())) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
-          "clusterSingleton section found in solr.xml but the property "
+          "Cluster plugins found in solr.xml but the property "
               + CONFIG_EDITING_DISABLED_ARG
-              + " is set to false. clusterSingleton plugins may only be declared in solr.xml with immutable configs.");
+              + " is set to false. Cluster plugins may only be declared in solr.xml with immutable configs.");
     }
 
     setupSharedLib();
     initModules();
   }
 
-  public static boolean isImmutableConfigSet() {
+  public static boolean isImmutableConfig() {
     return Boolean.getBoolean(CONFIG_EDITING_DISABLED_ARG);
   }
 
@@ -329,10 +326,6 @@ public class NodeConfig {
 
   public UpdateShardHandlerConfig getUpdateShardHandlerConfig() {
     return updateShardHandlerConfig;
-  }
-
-  public PluginInfo getReplicaPlacementFactoryConfig() {
-    return replicaPlacementFactoryConfig;
   }
 
   public int getCoreLoadThreadCount(boolean zkAware) {
@@ -440,8 +433,8 @@ public class NodeConfig {
     return tracerConfig;
   }
 
-  public PluginInfo[] getClusterSingletonPlugins() {
-    return clusterSingletonPlugins;
+  public PluginInfo[] getClusterPlugins() {
+    return clusterPlugins;
   }
 
   /**
@@ -598,7 +591,6 @@ public class NodeConfig {
     private String hiddenSysProps;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
-    private PluginInfo replicaPlacementFactoryConfig;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
@@ -618,7 +610,7 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
-    private PluginInfo[] clusterSingletonPlugins;
+    private PluginInfo[] clusterPlugins;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
@@ -717,12 +709,6 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setReplicaPlacementFactoryConfig(
-        PluginInfo replicaPlacementFactoryConfig) {
-      this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
-      return this;
-    }
-
     public NodeConfigBuilder setCoreAdminHandlerClass(String coreAdminHandlerClass) {
       this.coreAdminHandlerClass = coreAdminHandlerClass;
       return this;
@@ -817,8 +803,8 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setClusterSingletonPlugins(PluginInfo[] clusterSingletonPlugins) {
-      this.clusterSingletonPlugins = clusterSingletonPlugins;
+    public NodeConfigBuilder setClusterPlugins(PluginInfo[] clusterPlugins) {
+      this.clusterPlugins = clusterPlugins;
       return this;
     }
 
@@ -913,7 +899,6 @@ public class NodeConfig {
           sharedLibDirectory,
           shardHandlerFactoryConfig,
           updateShardHandlerConfig,
-          replicaPlacementFactoryConfig,
           coreAdminHandlerClass,
           coreAdminHandlerActions,
           collectionsAdminHandlerClass,
@@ -934,7 +919,7 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
-          clusterSingletonPlugins,
+          clusterPlugins,
           defaultZkHost,
           allowPaths,
           allowUrls,

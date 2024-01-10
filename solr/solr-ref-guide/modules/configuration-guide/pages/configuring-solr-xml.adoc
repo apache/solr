@@ -658,6 +658,7 @@ If only `dividend` routing is desired, `hash` may be explicitly set to the empty
 === The <replicaPlacementFactory> Element
 
 A default xref:replica-placement-plugins.adoc[replica placement plugin] can be defined in `solr.xml`.
+To allow this, the `disable.configEdit` System Property must be set to true. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
 
 [source,xml]
 ----
