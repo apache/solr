@@ -499,7 +499,11 @@ public class QueryComponent extends SearchComponent {
           if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
 
           FieldComparator<?> comparator =
-              sortField.getComparator(1, Pruning.GREATER_THAN_OR_EQUAL_TO);
+              sortField.getComparator(
+                  1,
+                  schemaFields.size() > 1
+                      ? Pruning.GREATER_THAN
+                      : Pruning.GREATER_THAN_OR_EQUAL_TO);
           LeafFieldComparator leafComparator = null;
           Object[] vals = new Object[nDocs];
 
