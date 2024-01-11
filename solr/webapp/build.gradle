@@ -32,6 +32,7 @@ configurations {
 
 ext {
   jsClientWorkspace = layout.buildDirectory.dir("jsClientWorkspace").get()
+  jsClientBuildDir = layout.buildDirectory.dir("jsClientBuild").get()
   jsClientBundleDir = layout.buildDirectory.dir("jsClientBundle").get()
   browserifyVersion = "17.0.0"
 }
@@ -45,7 +46,7 @@ dependencies {
 
   generatedJSClient project(path: ":solr:api", configuration: "jsClient")
   generatedJSClientBundle files(jsClientBundleDir) {
-    builtBy "generateJsClientBundle"
+    builtBy "finalizeJsBundleDir"
   }
 }
 
@@ -53,7 +54,12 @@ task syncJSClientSourceCode(type: Sync) {
   group = 'Solr JS Client'
   from configurations.generatedJSClient
 
-  into project.jsClientWorkspace
+  into jsClientWorkspace
+
+  // Keep the node modules, so that they don't need to be re-downloaded
+  preserve {
+    include "node_modules/**"
+  }
 }
 
 task jsClientDownloadDeps(type: NpmTask) {
@@ -61,7 +67,7 @@ task jsClientDownloadDeps(type: NpmTask) {
   dependsOn tasks.syncJSClientSourceCode
 
   args = ["install"]
-  workingDir = file(project.jsClientWorkspace)
+  workingDir = file(jsClientWorkspace)
 
   inputs.dir("${jsClientWorkspace}/src")
   inputs.file("${jsClientWorkspace}/package.json")
@@ -73,7 +79,7 @@ task jsClientBuild(type: NpmTask) {
   dependsOn tasks.jsClientDownloadDeps
 
   args = ["run", "build"]
-  workingDir = file(project.jsClientWorkspace)
+  workingDir = file(jsClientWorkspace)
 
   inputs.dir("${jsClientWorkspace}/src")
   inputs.file("${jsClientWorkspace}/package.json")
@@ -83,36 +89,40 @@ task jsClientBuild(type: NpmTask) {
 
 task downloadBrowserify(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "browserify@${project.browserifyVersion}"]
+  args = ["install", "browserify@${browserifyVersion}"]
 
-  inputs.property("browserify version", project.browserifyVersion)
-  outputs.dir("${project.nodeProjectDir}/node_modules/browserify")
-}
-
-task setupJsBundleDir(type: Sync) {
-  group = 'Solr JS Client'
-  dependsOn tasks.syncJSClientSourceCode
-
-  from configurations.generatedJSClient
-
-  include "README.md"
-  include "docs/**"
-
-  into project.jsClientBundleDir
+  inputs.property("browserify version", browserifyVersion)
+  outputs.dir("${nodeProjectDir}/node_modules/browserify")
 }
 
 task generateJsClientBundle(type: NpxTask) {
   group = 'Solr JS Client'
   dependsOn tasks.downloadBrowserify
   dependsOn tasks.jsClientBuild
-  dependsOn tasks.setupJsBundleDir
 
   command = 'browserify'
-  args = ['dist/index.js', '-s', 'solrApi', '-o', "${jsClientBundleDir}/index.js"]
-  workingDir = file(project.jsClientWorkspace)
+  args = ['dist/index.js', '-s', 'solrApi', '-o', "${jsClientBuildDir}/index.js"]
+  workingDir = file(jsClientWorkspace)
 
+  inputs.dir(jsClientWorkspace)
+  inputs.property("browserify version", browserifyVersion)
 
-  outputs.dir("${jsClientBundleDir}")
+  outputs.file("${jsClientBuildDir}/index.js")
+}
+
+task finalizeJsBundleDir(type: Sync) {
+  group = 'Solr JS Client'
+
+  from configurations.generatedJSClient {
+    include "README.md"
+    include "docs/**"
+  }
+
+  from tasks.generateJsClientBundle {
+    include "index.js"
+  }
+
+  into jsClientBundleDir
 }
 
 war {

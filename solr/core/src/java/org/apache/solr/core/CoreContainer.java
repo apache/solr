@@ -36,7 +36,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -49,9 +48,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -837,6 +834,7 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
+      solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
       zkSys.getZkMetricsProducer().initializeMetrics(solrMetricsContext, "zkClient");
       pkiAuthenticationSecurityBuilder =
@@ -1032,7 +1030,6 @@ public class CoreContainer {
             null,
             new Class<?>[] {CoreContainer.class},
             new Object[] {this});
-    final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
       cds = coreSorter.sort(cds);
@@ -1046,29 +1043,34 @@ public class CoreContainer {
           solrCores.markCoreAsLoading(cd);
         }
         if (cd.isLoadOnStartup()) {
-          futures.add(
-              coreLoadExecutor.submit(
-                  () -> {
-                    SolrCore core;
-                    try {
-                      if (zkSys.getZkController() != null) {
-                        zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
-                      }
-                      solrCores.waitAddPendingCoreOps(cd.getName());
-                      core = createFromDescriptor(cd, false, false);
-                    } finally {
-                      solrCores.removeFromPendingOps(cd.getName());
-                      if (asyncSolrCoreLoad) {
-                        solrCores.markCoreAsNotLoading(cd);
-                      }
-                    }
-                    try {
-                      zkSys.registerInZk(core, true, false);
-                    } catch (RuntimeException e) {
-                      log.error("Error registering SolrCore", e);
-                    }
-                    return core;
-                  }));
+          coreLoadExecutor.submit(
+              () -> {
+                SolrCore core;
+                try {
+                  if (zkSys.getZkController() != null) {
+                    zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+                  }
+                  MDCLoggingContext.setCoreDescriptor(this, cd);
+                  solrCores.waitAddPendingCoreOps(cd.getName());
+                  core = createFromDescriptor(cd, false, false);
+                } catch (Exception e) {
+                  log.error("SolrCore failed to load on startup", e);
+                  MDCLoggingContext.clear();
+                  return;
+                } finally {
+                  solrCores.removeFromPendingOps(cd.getName());
+                  if (asyncSolrCoreLoad) {
+                    solrCores.markCoreAsNotLoading(cd);
+                  }
+                }
+                try {
+                  zkSys.registerInZk(core, true, false);
+                } catch (RuntimeException e) {
+                  log.error("Error registering SolrCore", e);
+                } finally {
+                  MDCLoggingContext.clear();
+                }
+              });
         }
       }
 
@@ -1077,24 +1079,9 @@ public class CoreContainer {
       backgroundCloser.start();
 
     } finally {
-      if (asyncSolrCoreLoad && futures != null) {
-
+      if (asyncSolrCoreLoad) {
         coreContainerWorkExecutor.submit(
-            () -> {
-              try {
-                for (Future<SolrCore> future : futures) {
-                  try {
-                    future.get();
-                  } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                  } catch (ExecutionException e) {
-                    log.error("Error waiting for SolrCore to be loaded on startup", e);
-                  }
-                }
-              } finally {
-                ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
-              }
-            });
+            () -> ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor));
       } else {
         ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
       }
@@ -1316,7 +1303,11 @@ public class CoreContainer {
         }
       }
 
-      objectCache.clear();
+      try {
+        objectCache.close();
+      } catch (IOException e) {
+        log.warn("Exception while closing ObjectCache.", e);
+      }
 
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it
       // up if so. Since all the pending operations queues have been drained, there should be

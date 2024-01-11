@@ -18,7 +18,7 @@
 
 Several query parsers share supported query parameters.
 
-The following sections describe Solr's common query parameters, which are supported by the xref:configuration-guide:requesthandlers-searchcomponents#search-handlers[search request handlers].
+The following sections describe Solr's common query parameters, which are supported by the xref:configuration-guide:requesthandlers-searchcomponents.adoc#search-handlers[search request handlers].
 
 == defType Parameter
 
@@ -40,7 +40,7 @@ Solr can sort query responses according to:
 
 * Document scores
 * xref:function-queries.adoc#sort-by-function[Function results]
-* The value of any primitive field (numerics, string, boolean, dates, etc.) which has `docValues="true"` (or `multiValued="false"` and `indexed="true"`, in which case the indexed terms will used to build DocValue like structures on the fly at runtime)
+* The value of any primitive field (numerics, string, boolean, dates, etc.) which has `docValues="true"` (or `multiValued="false"` and `indexed="true"`, in which case the indexed terms will be used to build DocValue like structures on the fly at runtime)
 * A SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
 * A single-valued TextField that uses an analyzer (such as the KeywordTokenizer) that produces only a single term per document.
 TextField does not support `docValues="true"`, but a DocValue-like structure will be built on the fly at runtime.
@@ -73,7 +73,7 @@ If there is a third entry, it will only be used if the first AND second entries 
 And so on.
 ** If documents tie in all of the explicit sort criteria, Solr uses each document's Lucene document ID as the final tie-breaker.
 This internal property is subject to change during segment merges and document updates, which can lead to unexpected result ordering changes.
-Users looking to avoid this behavior can add an additional sort criteria on a unique or rarely-shared field such as `id` to prevent ties from occurring (e.g., `price desc,id asc`).
+Users looking to avoid this behavior can define an additional sort criteria on a unique or rarely-shared field such as `id` to prevent ties from occurring (e.g., `price desc,id asc`).
 
 == start Parameter
 
@@ -122,7 +122,7 @@ When using the `fq` parameter, keep in mind the following:
 
 * The `fq` parameter can be specified multiple times in a query.
 Documents will only be included in the result if they are in the intersection of the document sets resulting from each instance of the parameter.
-In the example below, only documents which have a popularity greater then 10 and have a section of 0 will match.
+In the example below, only documents which have a popularity greater than 10 and have a section of 0 will match.
 +
 [source,text]
 ----
@@ -142,7 +142,7 @@ Thus, concerning the previous examples: use a single `fq` containing two mandato
 (To learn about tuning cache sizes and making sure a filter cache actually exists, see xref:configuration-guide:caches-warming.adoc#caches[Caches].)
 * It is also possible to use xref:standard-query-parser.adoc#differences-between-lucenes-classic-query-parser-and-solrs-standard-query-parser[filter(condition) syntax] inside the `fq` to cache clauses individually and - among other things - to achieve union of cached filter queries.
 
-* As with all parameters: special characters in an URL need to be properly escaped and encoded as hex values.
+* As with all parameters: special characters in a URL need to be properly escaped and encoded as hex values.
 Online tools are available to help you with URL-encoding.
 For example: http://meyerweb.com/eric/tools/dencoder/.
 
@@ -277,7 +277,7 @@ For example:
 
 [source,text]
 ----
-q=supervillians&debugQuery=on&explainOther=id:juggernaut
+q=supervillains&debugQuery=on&explainOther=id:juggernaut
 ----
 
 The query above allows you to examine the scoring explain info of the top matching documents, compare it to the explain info for documents matching `id:juggernaut`, and determine why the rankings are not as you expect.

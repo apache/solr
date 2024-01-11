@@ -29,14 +29,11 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQU
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -123,6 +120,8 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
+import org.apache.solr.client.api.model.CreateCollectionSnapshotRequestBody;
+import org.apache.solr.client.api.model.CreateCollectionSnapshotResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -137,6 +136,7 @@ import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.common.SolrException;
@@ -170,13 +170,13 @@ import org.apache.solr.handler.admin.api.AddReplicaProperty;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
 import org.apache.solr.handler.admin.api.AliasProperty;
 import org.apache.solr.handler.admin.api.BalanceReplicas;
-import org.apache.solr.handler.admin.api.BalanceShardUniqueAPI;
+import org.apache.solr.handler.admin.api.BalanceShardUnique;
 import org.apache.solr.handler.admin.api.CollectionProperty;
 import org.apache.solr.handler.admin.api.CollectionStatusAPI;
 import org.apache.solr.handler.admin.api.CreateAliasAPI;
 import org.apache.solr.handler.admin.api.CreateCollection;
-import org.apache.solr.handler.admin.api.CreateCollectionBackupAPI;
-import org.apache.solr.handler.admin.api.CreateCollectionSnapshotAPI;
+import org.apache.solr.handler.admin.api.CreateCollectionBackup;
+import org.apache.solr.handler.admin.api.CreateCollectionSnapshot;
 import org.apache.solr.handler.admin.api.CreateReplica;
 import org.apache.solr.handler.admin.api.CreateShard;
 import org.apache.solr.handler.admin.api.DeleteAlias;
@@ -587,9 +587,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               ReindexCollectionCmd.TARGET,
               ZkStateReader.CONFIGNAME_PROP,
               NUM_SLICES,
-              NRT_REPLICAS,
-              PULL_REPLICAS,
-              TLOG_REPLICAS,
               REPLICATION_FACTOR,
               CREATE_NODE_SET,
               CREATE_NODE_SET_SHUFFLE,
@@ -598,6 +595,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               CommonParams.Q,
               CommonParams.FL,
               FOLLOW_ALIASES);
+          copy(req.getParams(), m, CollectionHandlingUtils.numReplicasProperties());
           if (req.getParams().get("collection." + ZkStateReader.CONFIGNAME_PROP) != null) {
             m.put(
                 ZkStateReader.CONFIGNAME_PROP,
@@ -1022,7 +1020,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     BALANCESHARDUNIQUE_OP(
         BALANCESHARDUNIQUE,
         (req, rsp, h) -> {
-          BalanceShardUniqueAPI.invokeFromV1Params(h.coreContainer, req, rsp);
+          BalanceShardUnique.invokeFromV1Params(h.coreContainer, req, rsp);
           return null;
         }),
     REBALANCELEADERS_OP(
@@ -1055,15 +1053,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             DocCollection.verifyProp(m, prop);
           }
           if (m.get(REPLICATION_FACTOR) != null) {
-            m.put(NRT_REPLICAS, m.get(REPLICATION_FACTOR));
+            m.put(Replica.Type.defaultType().numReplicasPropertyName, m.get(REPLICATION_FACTOR));
           }
           return m;
         }),
     BACKUP_OP(
         BACKUP,
         (req, rsp, h) -> {
-          final var response =
-              CreateCollectionBackupAPI.invokeFromV1Params(req, rsp, h.coreContainer);
+          final var response = CreateCollectionBackup.invokeFromV1Params(req, rsp, h.coreContainer);
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
           return null;
         }),
@@ -1114,16 +1111,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final String commitName = req.getParams().get(CoreAdminParams.COMMIT_NAME);
           final String asyncId = req.getParams().get(ASYNC);
 
-          final CreateCollectionSnapshotAPI createCollectionSnapshotAPI =
-              new CreateCollectionSnapshotAPI(h.coreContainer, req, rsp);
+          final CreateCollectionSnapshot createCollectionSnapshotAPI =
+              new CreateCollectionSnapshot(h.coreContainer, req, rsp);
 
-          final CreateCollectionSnapshotAPI.CreateSnapshotRequestBody requestBody =
-              new CreateCollectionSnapshotAPI.CreateSnapshotRequestBody();
+          final CreateCollectionSnapshotRequestBody requestBody =
+              new CreateCollectionSnapshotRequestBody();
           requestBody.followAliases = followAliases;
-          requestBody.asyncId = asyncId;
+          requestBody.async = asyncId;
 
-          final CreateCollectionSnapshotAPI.CreateSnapshotResponse createSnapshotResponse =
-              createCollectionSnapshotAPI.createSnapshot(
+          final CreateCollectionSnapshotResponse createSnapshotResponse =
+              createCollectionSnapshotAPI.createCollectionSnapshot(
                   extCollectionName, commitName, requestBody);
 
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, createSnapshotResponse);
@@ -1144,7 +1141,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               new DeleteCollectionSnapshot(h.coreContainer, req, rsp);
 
           final var deleteSnapshotResponse =
-              deleteCollectionSnapshotAPI.deleteSnapshot(
+              deleteCollectionSnapshotAPI.deleteCollectionSnapshot(
                   extCollectionName, commitName, followAliases, asyncId);
 
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteSnapshotResponse);
@@ -1362,10 +1359,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     return List.of(
         CreateReplica.class,
         AddReplicaProperty.class,
-        BalanceShardUniqueAPI.class,
+        BalanceShardUnique.class,
         CreateAliasAPI.class,
         CreateCollection.class,
-        CreateCollectionBackupAPI.class,
+        CreateCollectionBackup.class,
         CreateShard.class,
         DeleteAlias.class,
         DeleteCollectionBackup.class,
@@ -1389,7 +1386,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListAliases.class,
         AliasProperty.class,
         ListCollectionSnapshotsAPI.class,
-        CreateCollectionSnapshotAPI.class,
+        CreateCollectionSnapshot.class,
         DeleteCollectionSnapshot.class);
   }
 

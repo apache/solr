@@ -20,6 +20,8 @@ Improvements
 
 * SOLR-16536: Replace OpenTracing instrumentation with OpenTelemetry (Alex Deparvu, janhoy)
 
+* SOLR-17077: When a shard rejoins leader election, leave previous election only once to save unneeded calls to Zookeeper. (Pierre Salagnac)
+
 * SOLR-17096: Support for Cluster Singleton plugins with immutable deployments (Paul McArthur)
 
 Optimizations

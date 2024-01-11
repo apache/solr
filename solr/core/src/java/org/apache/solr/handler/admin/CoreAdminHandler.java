@@ -55,11 +55,11 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
-import org.apache.solr.handler.admin.api.BackupCoreAPI;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
+import org.apache.solr.handler.admin.api.CreateCoreBackup;
 import org.apache.solr.handler.admin.api.InstallCoreData;
-import org.apache.solr.handler.admin.api.MergeIndexesAPI;
+import org.apache.solr.handler.admin.api.MergeIndexes;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
 import org.apache.solr.handler.admin.api.PrepareCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
@@ -383,7 +383,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new MergeIndexesAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RequestCoreCommandStatusAPI(this)));
     // Internal APIs
@@ -401,12 +400,13 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     return List.of(
         CoreSnapshot.class,
         InstallCoreData.class,
-        BackupCoreAPI.class,
+        CreateCoreBackup.class,
         RestoreCore.class,
         ReloadCore.class,
         UnloadCore.class,
         SwapCores.class,
-        RenameCore.class);
+        RenameCore.class,
+        MergeIndexes.class);
   }
 
   public interface CoreAdminOp {

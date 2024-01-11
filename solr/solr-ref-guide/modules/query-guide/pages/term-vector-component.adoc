@@ -18,7 +18,7 @@
 
 The TermVectorComponent is a search component designed to return additional information about documents matching your search.
 
-For each document in the response, the TermVectorCcomponent can return the term vector, the term frequency, inverse document frequency, position, and offset information.
+For each document in the response, the TermVectorComponent can return the term vector, the term frequency, inverse document frequency, position, and offset information.
 
 == Term Vector Component Configuration
 

@@ -348,6 +348,7 @@ public class ZkMaintenanceUtils {
                   USE_FORBIDDEN_FILE_TYPES);
               return FileVisitResult.CONTINUE;
             }
+            // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
             String zkNode = createZkNodeName(zkPath, rootPath, file);
             try {
               // if the path exists (and presumably we're uploading data to it) just set its data
@@ -437,6 +438,7 @@ public class ZkMaintenanceUtils {
         if (isFileForbiddenInConfigSets(zkPath)) {
           log.warn("Skipping download of file from ZK, as it is a forbidden type: {}", zkPath);
         } else {
+          // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
           if (copyDataDown(zkClient, zkPath, file) == 0) {
             Files.createFile(file);
           }

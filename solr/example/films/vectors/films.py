@@ -20,7 +20,7 @@ import csv
 from lxml import etree
 from sentence_transformers import SentenceTransformer
 
-PATH_FILMS_DATASET      = "./data/films.json"
+PATH_FILMS_DATASET      = "../films.json"
 PATH_FILMS_MODEL        = "./models/films-model-size_10"
 PATH_FILMS_VECTORS_JSON = "./data/films-vectors.json"
 PATH_FILMS_VECTORS_XML  = "./data/films-vectors.xml"

@@ -161,4 +161,15 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     // it's external, should be NOT closed when closing CloudSolrClient
     verify(http2Client, never()).close();
   }
+
+  @Test
+  public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
+    try (CloudHttp2SolrClient createdClient =
+        new CloudHttp2SolrClient.Builder(
+                Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withDefaultCollection("aCollection")
+            .build()) {
+      assertEquals("aCollection", createdClient.getDefaultCollection());
+    }
+  }
 }

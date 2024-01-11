@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -423,6 +424,14 @@ public class JWTIssuerConfig {
     return jwkConfigured > 0;
   }
 
+  private static void disableHostVerificationIfLocalhost(URL url, Get httpGet) {
+    InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
+    if (loopbackAddress.getCanonicalHostName().equals(url.getHost())
+        || loopbackAddress.getHostName().equals(url.getHost())) {
+      httpGet.setHostnameVerifier((hostname, session) -> true);
+    }
+  }
+
   public void setTrustedCerts(Collection<X509Certificate> trustedCerts) {
     this.trustedCerts = trustedCerts;
   }
@@ -472,9 +481,7 @@ public class JWTIssuerConfig {
       if (trustedCerts != null) {
         Get getWithCustomTrust = new Get();
         getWithCustomTrust.setTrustedCertificates(trustedCerts);
-        if ("localhost".equals(jwksUrl.getHost())) {
-          getWithCustomTrust.setHostnameVerifier((hostname, session) -> true);
-        }
+        disableHostVerificationIfLocalhost(jwksUrl, getWithCustomTrust);
         httpsJkws.setSimpleHttpGet(getWithCustomTrust);
       }
       return httpsJkws;
@@ -525,9 +532,7 @@ public class JWTIssuerConfig {
           Get httpGet = new Get();
           if (trustedCerts != null) {
             httpGet.setTrustedCertificates(trustedCerts);
-            if ("localhost".equals(url.getHost())) {
-              httpGet.setHostnameVerifier((hostname, session) -> true);
-            }
+            disableHostVerificationIfLocalhost(url, httpGet);
           }
           SimpleResponse resp = httpGet.get(url.toString());
           return parse(new ByteArrayInputStream(resp.getBody().getBytes(StandardCharsets.UTF_8)));
