@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.api.ClusterPluginsSourceConfigurator;
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.NodeConfigClusterPluginsSource;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
@@ -51,8 +52,6 @@ import org.slf4j.LoggerFactory;
 
 public class NodeConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  public static final String CONFIG_EDITING_DISABLED_ARG = "disable.configEdit";
 
   // all Path fields here are absolute and normalized.
 
@@ -223,16 +222,12 @@ public class NodeConfig {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
           "Cluster plugins found in solr.xml but the property "
-              + CONFIG_EDITING_DISABLED_ARG
-              + " is set to false. Cluster plugins may only be declared in solr.xml with immutable configs.");
+              + ContainerPluginsRegistry.MUTABLE_CLUSTER_PLUGINS
+              + " is set to true. Cluster plugins may only be declared in solr.xml with immutable configs.");
     }
 
     setupSharedLib();
     initModules();
-  }
-
-  public static boolean isImmutableConfig() {
-    return Boolean.getBoolean(CONFIG_EDITING_DISABLED_ARG);
   }
 
   /**

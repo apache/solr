@@ -23,18 +23,18 @@ import java.util.function.Function;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 
-/** A source for Container Plugin configurations */
+/** A source for Cluster Plugin configurations */
 public interface ClusterPluginsSource {
 
   /**
-   * Get the Container Plugins Read Api for this plugin source
+   * Get the Read Api for this plugin source
    *
    * @return A {@link ContainerPluginsApi} Read Api for this plugin source
    */
   ContainerPluginsApi.Read getReadApi();
 
   /**
-   * Get the Container Plugins Edit Api for this plugin source, if it supports edit operations
+   * Get the Edit Api for this plugin source, if it supports edit operations
    *
    * @return A {@link ContainerPluginsApi} Edit Api for this plugin source, or null if the plugin
    *     source does not support editing the plugin configs
@@ -42,7 +42,7 @@ public interface ClusterPluginsSource {
   ContainerPluginsApi.Edit getEditApi();
 
   /**
-   * Get a map of container plugin configurations from this source, where keys are plugin names and
+   * Get a map of cluster plugin configurations from this source, where keys are plugin names and
    * values are {@link PluginMeta} plugin metadata.
    *
    * @return An immutable map of plugin configurations

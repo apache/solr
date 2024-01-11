@@ -23,7 +23,7 @@ Cluster plugins are pluggable components that are defined and instantiated at th
 These components usually provide admin-level functionality and APIs for additional functionality at the Solr node level.
 
 === Plugin Configurations
-If the `disable.configEdit` property is set to false, then plugin configurations can be maintained using `/cluster/plugin` API.
+If the `solr.cluster.plugin.mutable` property is set to true (the default), then plugin configurations can be maintained using `/cluster/plugin` API.
 
 This API endpoint allows adding, removing and updating plugin configurations.
 

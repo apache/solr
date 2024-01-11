@@ -658,7 +658,7 @@ If only `dividend` routing is desired, `hash` may be explicitly set to the empty
 === The <replicaPlacementFactory> Element
 
 A default xref:replica-placement-plugins.adoc[replica placement plugin] can be defined in `solr.xml`.
-To allow this, the `disable.configEdit` System Property must be set to true. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
+To allow this, the `solr.cluster.plugin.mutable` System Property must be set to false. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
 
 [source,xml]
 ----
@@ -673,7 +673,7 @@ Sub-elements are specific to the implementation.
 
 === The <clusterSingleton> Element
 One or more `clusterSingleton` elements may be declared in solr.xml.
-To allow this, the `disable.configEdit` System Property must be set to true. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
+To allow this, the `solr.cluster.plugin.mutable` System Property must be set to false. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
 
 Each `clusterSingleton` element specifies a cluster plugin that should be loaded when Solr stars, along with it's associated configuration.
 

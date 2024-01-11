@@ -8,6 +8,7 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 
 New Features
 ---------------------
+* SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
 
 * SOLR-16943: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient (Alex Deparvu, David Smiley)
 
@@ -22,7 +23,7 @@ Improvements
 
 * SOLR-17077: When a shard rejoins leader election, leave previous election only once to save unneeded calls to Zookeeper. (Pierre Salagnac)
 
-* SOLR-17096: Support for Cluster Singleton plugins with immutable deployments (Paul McArthur)
+* SOLR-17096: solr.xml now supports declaring clusterSingleton plugins (Paul McArthur, David Smiley)
 
 Optimizations
 ---------------------
@@ -80,8 +81,6 @@ Other Changes
 ==================  9.5.0 ==================
 New Features
 ---------------------
-* SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
-
 * SOLR-17006: Collection creation & adding replicas: User-defined properties are persisted to state.json and
   applied to new replicas, available for use as property substitution in configuration files.  (Vincent Primault)
 
@@ -98,6 +97,8 @@ Improvements
   REQUESTAPPLYUPDATES call in Collection restore.  (Julia Maimone, David Smiley)
 
 * SOLR-16907: Fail when parsing an invalid custom permission definition from security.json (janhoy, Uwe Schindler)
+
+* SOLR-13748: Add support for mm (min should match) parameter to bool query parser (Andrey Bozhko)
 
 * SOLR-17046: SchemaCodecFactory is now the implicit default codec factory.  (hossman)
 
@@ -121,11 +122,30 @@ Improvements
 
 * SOLR-17094: Close objects contained inside an ObjectCache.  (Vincent Primault)
 
+* SOLR-16577: Ensure core load failures are always logged. (Haythem Khiri, David Smiley)
+
+* SOLR-17063: Do not retain log param references in LogWatcher (Michael Gibney)
+
+* SOLR-17066: SolrClient builders now allow users to specify a "default" collection or core
+  using the `withDefaultDataStore` method  ("Cloud" client builders retain the more specific
+  `withDefaultCollection`).  Use of the Builder methods is preferable to including the
+  collection in the base URL accepted by certain client implementations. (Jason Gerlowski)
+
+* SOLR-15960: Unified use of system properties and environment variables (janhoy)
+
+* SOLR-16397: The MERGEINDEXES v2 endpoint has been updated to be more REST-ful.
+  MERGEINDEXES is now available at `POST /api/cores/coreName/merge-indices` (Sanjay Dutt via Jason Gerlowski)
+
+* PR#2186: Include the external file name in the log instead of the hard-coded value in FileFloatSource.java. (Hamzeh Aldmour via Uwe Schindler)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
   instead of the full list of cores.  This list is potentially as long as the number of cores.  When there are many
   cores, this leads to high CPU and memory usage. (Gilles Bellaton, David Smiley)
+
+* SOLR-17036: UpdateLog lazy creates VersionBucket large array, and VersionBucket do not keep the highest version anymore.
+  This optimization reduces the memory usage, specially when the SolrCore is not used for indexing (Bruno Roustant)
 
 Bug Fixes
 ---------------------
@@ -146,6 +166,16 @@ Bug Fixes
 
 * SOLR-17090: The v2 "delete alias" API no longer errantly returns a 405 status code (Jason Gerlowski)
 
+* SOLR-17057: JSON Query regression: If "query" is specified with a String (not JSON structure),
+  "defType" should parse it.  Since 9.4 defType was ignored.  (David Smiley)
+
+* SOLR-17060: CoreContainer#create may deadlock with concurrent requests for metrics (Alex Deparvu, David Smiley)
+
+* SOLR-17098: ZK Credentials and ACLs are no longer sent to all ZK Servers when using Streaming Expressions.
+  They will only be used when sent to the default ZK Host. (Houston Putman, Jan Høydahl, David Smiley, Gus Heck, Qing Xu)
+
+* SOLR-16203: Properly initialize schema plugins loaded by SPI name (janhoy, hossman, Uwe Schindler)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
@@ -162,6 +192,11 @@ Other Changes
 
 * SOLR-17091: dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz file it was not expecting
   cloud.sh has been updated to ignore the -slim.tgz version of the tarball.
+
+* SOLR-16949: Restrict certain file types from being uploaded to or downloaded from Config Sets (janhoy, Houston Putman)
+
+* SOLR-16880: Solr now produces an OpenAPI Specification artifact on releases ("solr-openapi-x.y.z.json") that covers
+  Solr's v2 APIs. (Jason Gerlowski, Houston Putman)
 
 ==================  9.4.0 ==================
 New Features

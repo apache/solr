@@ -79,7 +79,6 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
@@ -106,6 +105,9 @@ import org.slf4j.LoggerFactory;
 public class SolrConfigHandler extends RequestHandlerBase
     implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String CONFIGSET_EDITING_DISABLED_ARG = "disable.configEdit";
+  public static final boolean configEditing_disabled =
+      Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
   private static final Map<String, SolrConfig.SolrPluginInfo> namedPlugins;
   private final Lock reloadLock = new ReentrantLock(true);
 
@@ -133,10 +135,10 @@ public class SolrConfigHandler extends RequestHandlerBase
     String httpMethod = (String) req.getContext().get("httpMethod");
     Command command = new Command(req, rsp, httpMethod);
     if ("POST".equals(httpMethod)) {
-      if (NodeConfig.isImmutableConfig() || isImmutableConfigSet) {
+      if (configEditing_disabled || isImmutableConfigSet) {
         final String reason =
-            NodeConfig.isImmutableConfig()
-                ? "due to " + NodeConfig.CONFIG_EDITING_DISABLED_ARG
+            configEditing_disabled
+                ? "due to " + CONFIGSET_EDITING_DISABLED_ARG
                 : "because ConfigSet is immutable";
         throw new SolrException(
             SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
@@ -210,9 +212,10 @@ public class SolrConfigHandler extends RequestHandlerBase
             resp.add(
                 ZNODEVER,
                 Map.of(
-                    ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().getVersion(),
+                    ConfigOverlay.NAME,
+                    req.getCore().getSolrConfig().getOverlay().getVersion(),
                     RequestParams.NAME,
-                        req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
+                    req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
             boolean isStale = false;
             int expectedVersion = req.getParams().getInt(ConfigOverlay.NAME, -1);
             int actualVersion = req.getCore().getSolrConfig().getOverlay().getVersion();

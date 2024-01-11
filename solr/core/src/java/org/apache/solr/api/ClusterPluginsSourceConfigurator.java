@@ -17,16 +17,15 @@
 package org.apache.solr.api;
 
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.apache.solr.util.EnvUtils;
 
 /**
  * Loads the {@link ClusterPluginsSource} depending on the declared implementation. The default
- * implementation is {@link ZkClusterPluginsSource}, but can be overridden by a system property, or
- * by declaring the implementation class in solr.xml
+ * implementation is {@link ZkClusterPluginsSource}, but can be overridden by teh {@link
+ * ContainerPluginsRegistry#MUTABLE_CLUSTER_PLUGINS} property
  */
-public class ClusterPluginsSourceConfigurator implements NamedListInitializedPlugin {
+public class ClusterPluginsSourceConfigurator {
 
   /**
    * Resolves the name of the class that will be used to provide cluster plugins.
@@ -34,9 +33,9 @@ public class ClusterPluginsSourceConfigurator implements NamedListInitializedPlu
    * @return The name of the class to use as the {@link ClusterPluginsSource}
    */
   public static String resolveClassName() {
-    return NodeConfig.isImmutableConfig()
-        ? NodeConfigClusterPluginsSource.class.getName()
-        : ZkClusterPluginsSource.class.getName();
+    return EnvUtils.getPropAsBool(ContainerPluginsRegistry.MUTABLE_CLUSTER_PLUGINS, true)
+        ? ZkClusterPluginsSource.class.getName()
+        : NodeConfigClusterPluginsSource.class.getName();
   }
 
   public static ClusterPluginsSource loadClusterPluginsSource(

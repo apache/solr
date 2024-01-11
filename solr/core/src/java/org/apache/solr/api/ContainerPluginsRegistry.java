@@ -73,6 +73,8 @@ import org.slf4j.LoggerFactory;
 public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String MUTABLE_CLUSTER_PLUGINS = "solr.cluster.plugin.mutable";
+
   private static final ObjectMapper mapper =
       SolrJacksonAnnotationInspector.createObjectMapper()
           .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)

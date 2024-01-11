@@ -19,12 +19,12 @@ package org.apache.solr.cluster.placement.impl;
 
 import static org.hamcrest.Matchers.instanceOf;
 
+import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementConfig;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
 import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,7 +33,7 @@ public class NodeConfigPlacementPluginTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
+    System.setProperty(ContainerPluginsRegistry.MUTABLE_CLUSTER_PLUGINS, "false");
     String pluginXml =
         "<replicaPlacementFactory class=\"org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory\"><int name=\"minimalFreeDiskGB\">10</int><int name=\"prioritizedFreeDiskGB\">200</int></replicaPlacementFactory>";
 

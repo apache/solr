@@ -31,7 +31,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,7 +42,7 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty(NodeConfig.CONFIG_EDITING_DISABLED_ARG, "true");
+    System.setProperty(ContainerPluginsRegistry.MUTABLE_CLUSTER_PLUGINS, "false");
     CFG_VAL = random().nextInt();
     configureCluster(1)
         .withSolrXml(

@@ -18,7 +18,6 @@
 package org.apache.solr.api;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -71,24 +70,21 @@ public class NodeConfigClusterPluginsSource implements ClusterPluginsSource {
 
   private static Map<String, Object> readPlugins(final NodeConfig cfg) {
     Map<String, Object> pluginInfos = new HashMap<>();
-    PluginInfo[] clusterSingletons = cfg.getClusterPlugins();
-    if (clusterSingletons != null) {
-      Arrays.stream(clusterSingletons)
-          .forEach(
-              p -> {
-                Map<String, Object> pluginMap = new HashMap<>();
-                final String pluginName = getPluginName(p);
-                pluginMap.put("name", pluginName);
-                pluginMap.put("class", p.className);
+    PluginInfo[] clusterPlugins = cfg.getClusterPlugins();
+    if (clusterPlugins != null) {
+      for (PluginInfo p : clusterPlugins) {
+        Map<String, Object> pluginMap = new HashMap<>();
+        final String pluginName = getPluginName(p);
+        pluginMap.put("name", pluginName);
+        pluginMap.put("class", p.className);
 
-                if (p.initArgs.size() > 0) {
-                  Map<String, Object> config = new HashMap<>();
-                  p.initArgs.toMap(config);
-                  pluginMap.put("config", config);
-                }
+        if (p.initArgs.size() > 0) {
+          Map<String, Object> config = p.initArgs.toMap(new HashMap<>());
+          pluginMap.put("config", config);
+        }
 
-                pluginInfos.put(pluginName, pluginMap);
-              });
+        pluginInfos.put(pluginName, pluginMap);
+      }
     }
     return pluginInfos;
   }
