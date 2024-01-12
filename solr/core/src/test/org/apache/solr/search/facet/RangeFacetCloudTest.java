@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -37,7 +38,9 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.FacetParams.FacetRangeOther;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -70,6 +73,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
    * number of docs that will have that value.
    */
   private static final int[] RANGE_MODEL = new int[NUM_RANGE_VALUES];
+
   /**
    * the array indexes represent values in our numeric field, while the array values track the
    * mapping from string field terms to facet counts for docs that have that numeric value
@@ -77,6 +81,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   @SuppressWarnings({"unchecked"})
   private static final Map<String, Integer>[] TERM_MODEL =
       (Map<String, Integer>[]) Array.newInstance(Map.class, NUM_RANGE_VALUES);
+
+  /** A basic client for operations at the cloud level, default collection will be set */
+  private static CloudSolrClient CLOUD_CLIENT;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -96,7 +103,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                 .process(cluster.getSolrClient()))
             .getStatus());
 
-    cluster.getSolrClient().setDefaultCollection(COLLECTION);
+    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION).build();
 
     final int numDocs = atLeast(1000);
     final int maxTermId = atLeast(TERM_VALUES_RANDOMIZER);
@@ -117,9 +124,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       RANGE_MODEL[rangeVal]++;
       TERM_MODEL[rangeVal].merge(termVal, 1, Integer::sum);
 
-      assertEquals(0, (new UpdateRequest().add(doc)).process(cluster.getSolrClient()).getStatus());
+      assertEquals(0, (new UpdateRequest().add(doc)).process(CLOUD_CLIENT).getStatus());
     }
-    assertEquals(0, cluster.getSolrClient().commit().getStatus());
+    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
   }
 
   public void testInclude_Lower() throws Exception {
@@ -145,7 +152,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -197,7 +204,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -243,7 +250,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -277,7 +284,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
             "true",
             "json.facet",
             "{unique_foo:\"unique(" + STR_FIELD + ")\"}");
-    final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+    final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
     // response shouldn't contain header as omitHeader is set to true
     assertNull(rsp.getResponseHeader());
   }
@@ -303,7 +310,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                     + subFacet
                     + " } }");
 
-        final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+        final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
         try {
           @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo =
@@ -346,7 +353,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                     + subFacet
                     + " } }");
 
-        final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+        final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
         try {
           @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo =
@@ -390,7 +397,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                     + subFacet
                     + " } }");
 
-        final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+        final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
         try {
           @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo =
@@ -442,7 +449,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -492,7 +499,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -542,7 +549,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -595,7 +602,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -659,7 +666,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+          QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -711,7 +718,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          rsp = cluster.getSolrClient().query(solrQuery);
+          rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -772,7 +779,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                       + subFacet
                       + " } }");
 
-          final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+          final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
           try {
             @SuppressWarnings({"unchecked"})
             final NamedList<Object> foo =
@@ -825,7 +832,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                     + subFacet
                     + " } }");
 
-        final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+        final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
         try {
           @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo =
@@ -875,7 +882,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                     + subFacet
                     + " } }");
 
-        final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+        final QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
         try {
           @SuppressWarnings({"unchecked"})
           final NamedList<Object> foo =
@@ -919,7 +926,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                   + subFacet
                   + " } }");
 
-      QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+      QueryResponse rsp = CLOUD_CLIENT.query(solrQuery);
       try {
         @SuppressWarnings({"unchecked"})
         final NamedList<Object> foo =
@@ -966,7 +973,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                   + subFacet
                   + " } }");
 
-      rsp = cluster.getSolrClient().query(solrQuery);
+      rsp = CLOUD_CLIENT.query(solrQuery);
       try {
         @SuppressWarnings({"unchecked"})
         final NamedList<Object> foo =
@@ -1111,6 +1118,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   private static final class ModelRange {
     public final int lower;
     public final int upper;
+
     /** Don't use, use the convenience methods */
     public ModelRange(int lower, int upper) {
       if (lower < 0 || upper < 0) {
@@ -1146,6 +1154,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     int result = TestUtil.nextInt(random(), -10, atLeast(TERM_VALUES_RANDOMIZER));
     return (result <= 0) ? -1 : result;
   }
+
   /** randomized helper */
   private static CharSequence makeSubFacet(final Integer subFacetLimit) {
     if (null == subFacetLimit) {
@@ -1210,5 +1219,10 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       val = val.replaceAll("\\[|\\]", "'");
     }
     return ", other:" + val;
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    IOUtils.closeQuietly(CLOUD_CLIENT);
   }
 }

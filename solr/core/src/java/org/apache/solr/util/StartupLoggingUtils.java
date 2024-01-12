@@ -28,9 +28,9 @@ import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * Handles programmatic modification of logging during startup
@@ -40,17 +40,17 @@ import org.slf4j.impl.StaticLoggerBinder;
  */
 public final class StartupLoggingUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final StaticLoggerBinder binder = StaticLoggerBinder.getSingleton();
+  private static final ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
 
   /** Checks whether mandatory log dir is given */
   public static void checkLogDir() {
-    if (System.getProperty("solr.log.dir") == null) {
+    if (EnvUtils.getProp("solr.log.dir") == null) {
       log.error("Missing Java Option solr.log.dir. Logging may be missing or incomplete.");
     }
   }
 
   public static String getLoggerImplStr() { // nowarn
-    return binder.getLoggerFactoryClassStr();
+    return loggerFactory.getClass().getName();
   }
 
   /**
@@ -119,7 +119,7 @@ public final class StartupLoggingUtils {
       Class.forName("org.apache.logging.log4j.LogManager");
       // Make sure that log4j is really selected as logger in slf4j - we could have LogManager in
       // the bridge class :)
-      return binder.getLoggerFactoryClassStr().contains("Log4jLoggerFactory");
+      return getLoggerImplStr().contains("Log4jLoggerFactory");
     } catch (Exception e) {
       return false;
     }

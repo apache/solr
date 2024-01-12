@@ -23,9 +23,6 @@ import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CoreAdminParams.CORE;
 import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.OTHER;
 import static org.apache.solr.common.params.CoreAdminParams.RANGES;
@@ -36,7 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
 import org.junit.Test;
@@ -67,11 +63,7 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new ReloadCoreAPI(handler));
-    apiBag.registerObject(new SwapCoresAPI(handler));
     apiBag.registerObject(new RenameCoreAPI(handler));
-    apiBag.registerObject(new UnloadCoreAPI(handler));
-    apiBag.registerObject(new MergeIndexesAPI(handler));
     apiBag.registerObject(new SplitCoreAPI(handler));
     apiBag.registerObject(new RequestCoreRecoveryAPI(handler));
     apiBag.registerObject(new PrepareCoreRecoveryAPI(handler));
@@ -79,26 +71,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     apiBag.registerObject(new RequestSyncShardAPI(handler));
     apiBag.registerObject(new RequestBufferUpdatesAPI(handler));
     apiBag.registerObject(new RequestCoreCommandStatusAPI(handler));
-  }
-
-  @Test
-  public void testReloadCoreAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params("/cores/coreName", "POST", "{\"reload\": {}}");
-
-    assertEquals("reload", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-  }
-
-  @Test
-  public void testSwapCoresAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName", "POST", "{\"swap\": {\"with\": \"otherCore\"}}");
-
-    assertEquals("swap", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals("otherCore", v1Params.get(OTHER));
   }
 
   @Test
@@ -110,52 +82,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals("rename", v1Params.get(ACTION));
     assertEquals("coreName", v1Params.get(CORE));
     assertEquals("otherCore", v1Params.get(OTHER));
-  }
-
-  @Test
-  public void testUnloadCoreAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName",
-            "POST",
-            "{"
-                + "\"unload\": {"
-                + "\"deleteIndex\": true, "
-                + "\"deleteDataDir\": true, "
-                + "\"deleteInstanceDir\": true, "
-                + "\"async\": \"someRequestId\"}}");
-
-    assertEquals("unload", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals(true, v1Params.getBool(DELETE_INDEX));
-    assertEquals(true, v1Params.getBool(DELETE_DATA_DIR));
-    assertEquals(true, v1Params.getBool(DELETE_INSTANCE_DIR));
-    assertEquals("someRequestId", v1Params.get(ASYNC));
-  }
-
-  @Test
-  public void testMergeIndexesAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName",
-            "POST",
-            "{"
-                + "\"merge-indexes\": {"
-                + "\"indexDir\": [\"dir1\", \"dir2\"], "
-                + "\"srcCore\": [\"core1\", \"core2\"], "
-                + "\"updateChain\": \"someUpdateChain\", "
-                + "\"async\": \"someRequestId\"}}");
-
-    assertEquals("mergeindexes", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals("someUpdateChain", v1Params.get(UpdateParams.UPDATE_CHAIN));
-    assertEquals("someRequestId", v1Params.get(ASYNC));
-    final List<String> indexDirs = Arrays.asList(v1Params.getParams("indexDir"));
-    assertEquals(2, indexDirs.size());
-    assertTrue(indexDirs.containsAll(List.of("dir1", "dir2")));
-    final List<String> srcCores = Arrays.asList(v1Params.getParams("srcCore"));
-    assertEquals(2, srcCores.size());
-    assertTrue(srcCores.containsAll(List.of("core1", "core2")));
   }
 
   @Test

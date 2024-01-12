@@ -19,10 +19,10 @@ package org.apache.solr.search.facet;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
@@ -107,7 +107,7 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
     }
     Map<String, Object> bucketRefinement = bucket.getRefinement(mcontext, tagsWithPartial);
     if (bucketRefinement != null) {
-      refinement = refinement == null ? new HashMap<>(2) : refinement;
+      refinement = refinement == null ? CollectionUtil.newHashMap(2) : refinement;
       refinement.put(label, bucketRefinement);
     }
     return refinement;

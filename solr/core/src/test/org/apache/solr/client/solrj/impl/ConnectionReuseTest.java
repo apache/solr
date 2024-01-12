@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -81,19 +83,31 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     switch (random().nextInt(3)) {
       case 0:
         // currently, only testing with 1 thread
-        return getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
+        return new ConcurrentUpdateSolrClient.Builder(url.toString() + "/" + COLLECTION)
+            .withHttpClient(httpClient)
+            .withQueueSize(6)
+            .withThreadCount(1)
+            .build();
       case 1:
-        return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
+        return new HttpSolrClient.Builder(url.toString() + "/" + COLLECTION)
+            .withHttpClient(httpClient)
+            .build();
       case 2:
-        CloudSolrClient client =
-            getCloudSolrClient(
-                cluster.getZkServer().getZkAddress(),
-                random().nextBoolean(),
-                httpClient,
-                30000,
-                60000);
-        client.setDefaultCollection(COLLECTION);
-        return client;
+        var builder =
+            new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
+        boolean shardLeadersOnly = random().nextBoolean();
+        if (shardLeadersOnly) {
+          builder.sendUpdatesOnlyToShardLeaders();
+        } else {
+          builder.sendUpdatesToAllReplicasInShard();
+        }
+        builder.withDefaultCollection(COLLECTION);
+        return builder
+            .withHttpClient(httpClient)
+            .withConnectionTimeout(30000)
+            .withSocketTimeout(60000)
+            .build();
     }
     throw new RuntimeException("impossible");
   }

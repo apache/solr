@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
@@ -46,7 +45,6 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.ClusterAPI;
-import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -81,9 +79,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     ApiBag apiBag;
     try (MockCollectionsHandler collectionsHandler = new MockCollectionsHandler()) {
       apiBag = new ApiBag(false);
-      final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
-      apiBag.registerObject(new CollectionsAPI(collectionsHandler));
-      apiBag.registerObject(collectionsAPI.collectionsCommands);
       for (Api api : collectionsHandler.getApis()) {
         apiBag.register(api);
       }
@@ -92,69 +87,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       apiBag.registerObject(clusterAPI);
       apiBag.registerObject(clusterAPI.commands);
     }
-    // test a simple create collection call
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}",
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
-
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2 }}",
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', collection.configName:schemaless, numShards:'2', operation:create}");
-
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2, tlogReplicas:2, pullReplicas:2 }}",
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
-
-    // test a create collection operation with custom properties
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2, properties:{prop1:'prop1val', prop2: prop2val} }}",
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create, property.prop1:prop1val, property.prop2:prop2val}");
-
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{create-alias:{name: aliasName , collections:[c1,c2] }}",
-        "{operation : createalias, name: aliasName, collections:\"c1,c2\" }");
-
-    compareOutput(
-        apiBag,
-        "/collections",
-        POST,
-        "{delete-alias:{ name: aliasName}}",
-        "{operation : deletealias, name: aliasName}");
-
-    compareOutput(
-        apiBag, "/collections/collName", POST, "{reload:{}}", "{name:collName, operation :reload}");
-
-    compareOutput(
-        apiBag, "/collections/collName", DELETE, null, "{name:collName, operation :delete}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards/shard1",
-        DELETE,
-        null,
-        "{collection:collName, shard: shard1 , operation :deleteshard }");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards/shard1/replica1?deleteDataDir=true&onlyIfDown=true",
-        DELETE,
-        null,
-        "{collection:collName, shard: shard1, replica :replica1 , deleteDataDir:'true', onlyIfDown: 'true', operation :deletereplica }");
 
     compareOutput(
         apiBag,
@@ -167,44 +99,8 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         apiBag,
         "/collections/collName/shards",
         POST,
-        "{add-replica:{shard: shard1, node: 'localhost_8978' , coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
-        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, property.prop1:prop1Val, property.prop2: prop2Val}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards",
-        POST,
         "{split:{ splitKey:id12345, coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
         "{collection: collName , split.key : id12345 , operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards",
-        POST,
-        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'TLOG' }}",
-        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: TLOG}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards",
-        POST,
-        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'PULL' }}",
-        "{collection: collName , shard : shard1, node :'localhost_8978', operation : addreplica, type: PULL}");
-
-    // TODO annotation-based v2 APIs still miss enum support to validate the 'type' parameter as
-    // this test requires.
-    // Uncomment this test after fixing SOLR-15796
-    //    assertErrorContains(apiBag, "/collections/collName/shards", POST,
-    //        "{add-replica:{shard: shard1, node: 'localhost_8978' , type:'foo' }}", null,
-    //        "Value of enum must be one of"
-    //    );
-
-    compareOutput(
-        apiBag,
-        "/collections/collName",
-        POST,
-        "{delete-replica-property : {property: propA , shard: shard1, replica:replica1} }",
-        "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : deletereplicaprop}");
 
     compareOutput(
         apiBag,
@@ -224,22 +120,8 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         apiBag,
         "/collections/coll1",
         POST,
-        "{balance-shard-unique : {property: preferredLeader} }",
-        "{operation : balanceshardunique ,collection : coll1, property : preferredLeader}");
-
-    compareOutput(
-        apiBag,
-        "/collections/coll1",
-        POST,
         "{migrate-docs : {forwardTimeout: 1800, target: coll2, splitKey: 'a123!'} }",
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}");
-
-    compareOutput(
-        apiBag,
-        "/collections/coll1",
-        POST,
-        "{set-collection-property : {name: 'foo', value:'bar'} }",
-        "{operation : collectionprop, name : coll1, propertyName:'foo', propertyValue:'bar'}");
   }
 
   static ZkNodeProps compareOutput(
@@ -320,9 +202,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     protected CoreContainer checkErrors() {
       return null;
     }
-
-    @Override
-    protected void copyFromClusterProp(Map<String, Object> props, String prop) {}
 
     @Override
     void invokeAction(

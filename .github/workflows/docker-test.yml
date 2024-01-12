@@ -20,6 +20,7 @@ jobs:
     env:
       SOLR_DOCKER_IMAGE_REPO: github-pr/solr
       SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
 
     steps:
     # Setup
@@ -42,8 +43,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-docker-
           ${{ runner.os }}-gradle-
-    - name: Initialize gradle settings
-      run: ./gradlew localSettings
     - name: Build Docker image with Gradle
       run: ./gradlew solr:docker:docker
     - name: Run tests on Docker image

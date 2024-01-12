@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.mockito.Mockito.mock;
 
-import com.google.common.collect.Maps;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +90,7 @@ public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
     final Api api = apiBag.lookup(path, "POST", parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
     final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, Maps.newHashMap()) {
+        new LocalSolrQueryRequest(null, Map.of()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
             return Collections.emptyList();

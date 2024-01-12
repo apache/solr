@@ -185,7 +185,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
     if (field.stored()) {
       String storedValue = externalVal.toString().trim();
-      if (storedValue.indexOf(",") < 0) {
+      if (!storedValue.contains(",")) {
         storedValue += "," + defaultCurrency;
       }
       f.add(createField(field.getName(), storedValue, StoredField.TYPE));
@@ -610,6 +610,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
             return currencies.strVal(doc);
           }
         }
+
         /** throws a (Server Error) SolrException if the code is not valid */
         private Currency getDocCurrency(int doc, int currencyOrd) throws IOException {
           String code = getDocCurrencyCode(doc, currencyOrd);

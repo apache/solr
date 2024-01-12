@@ -32,81 +32,7 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void doTest() {
-    String id = "id";
-    String FIELD1 = "lowerfilt";
-    String FIELD2 = "lowerfilt1";
-    delQ("*:*");
-    assertU(adoc(id, "1", FIELD1, "toyota"));
-    assertU(adoc(id, "2", FIELD1, "chevrolet"));
-    assertU(adoc(id, "3", FIELD1, "suzuki"));
-    assertU(adoc(id, "4", FIELD1, "ford"));
-    assertU(adoc(id, "5", FIELD1, "ferrari"));
-    assertU(adoc(id, "6", FIELD1, "jaguar"));
-    assertU(
-        adoc(
-            id,
-            "7",
-            FIELD1,
-            "mclaren moon or the moon and moon moon shine "
-                + "and the moon but moon was good foxes too"));
-    assertU(adoc(id, "8", FIELD1, "sonata"));
-    assertU(
-        adoc(
-            id,
-            "9",
-            FIELD1,
-            "The quick red fox jumped over the lazy big " + "and large brown dogs."));
-    assertU(adoc(id, "10", FIELD1, "blue"));
-    assertU(adoc(id, "12", FIELD1, "glue"));
-    assertU(adoc(id, "13", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "14", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "15", FIELD1, "The fat red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "16", FIELD1, "The slim red fox jumped over the lazy brown dogs."));
-    assertU(
-        adoc(
-            id,
-            "17",
-            FIELD1,
-            "The quote red fox jumped moon over the lazy "
-                + "brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon"));
-    assertU(adoc(id, "18", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "19", FIELD1, "The hose red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "20", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "21", FIELD1, "The court red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "22", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "23", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "24", FIELD1, "The file red fox jumped over the lazy brown dogs."));
-    assertU(adoc(id, "25", FIELD1, "rod fix"));
-    assertU(adoc(id, "26", FIELD1, "bmw usa 328i"));
-    assertU(adoc(id, "27", FIELD1, "bmw usa 535i"));
-    assertU(adoc(id, "28", FIELD1, "bmw 750Li"));
-    assertU(adoc(id, "29", FIELD1, "bmw usa", FIELD2, "red green blue"));
-    assertU(
-        adoc(
-            id,
-            "30",
-            FIELD1,
-            "The quote red fox jumped over the lazy brown dogs.",
-            FIELD2,
-            "red green yellow"));
-    assertU(
-        adoc(
-            id,
-            "31",
-            FIELD1,
-            "The fat red fox jumped over the lazy brown dogs.",
-            FIELD2,
-            "green blue yellow"));
-    assertU(
-        adoc(
-            id,
-            "32",
-            FIELD1,
-            "The slim red fox jumped over the lazy brown dogs.",
-            FIELD2,
-            "yellow white black"));
-
-    assertU(commit());
+    setupDocsForMLT();
 
     // for score tiebreaker, use doc ID order
     final SolrParams sortParams = params("sort", "score desc, id asc");
@@ -187,5 +113,83 @@ public class SimpleMLTQParserTest extends SolrTestCaseJ4 {
             CommonParams.Q, "{!mlt qf=lowerfilt minwl=4 mintf=1 mindf=1}26",
             CommonParams.DEBUG, "true"),
         "//result[@numFound='0']");
+  }
+
+  public static void setupDocsForMLT() {
+    String id = "id";
+    String FIELD1 = "lowerfilt";
+    String FIELD2 = "lowerfilt1";
+    delQ("*:*");
+    assertU(adoc(id, "1", FIELD1, "toyota"));
+    assertU(adoc(id, "2", FIELD1, "chevrolet"));
+    assertU(adoc(id, "3", FIELD1, "suzuki"));
+    assertU(adoc(id, "4", FIELD1, "ford"));
+    assertU(adoc(id, "5", FIELD1, "ferrari"));
+    assertU(adoc(id, "6", FIELD1, "jaguar"));
+    assertU(
+        adoc(
+            id,
+            "7",
+            FIELD1,
+            "mclaren moon or the moon and moon moon shine "
+                + "and the moon but moon was good foxes too"));
+    assertU(adoc(id, "8", FIELD1, "sonata"));
+    assertU(
+        adoc(
+            id,
+            "9",
+            FIELD1,
+            "The quick red fox jumped over the lazy big " + "and large brown dogs."));
+    assertU(adoc(id, "10", FIELD1, "blue"));
+    assertU(adoc(id, "12", FIELD1, "glue"));
+    assertU(adoc(id, "13", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "14", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "15", FIELD1, "The fat red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "16", FIELD1, "The slim red fox jumped over the lazy brown dogs."));
+    assertU(
+        adoc(
+            id,
+            "17",
+            FIELD1,
+            "The quote red fox jumped moon over the lazy "
+                + "brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon"));
+    assertU(adoc(id, "18", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "19", FIELD1, "The hose red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "20", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "21", FIELD1, "The court red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "22", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "23", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "24", FIELD1, "The file red fox jumped over the lazy brown dogs."));
+    assertU(adoc(id, "25", FIELD1, "rod fix"));
+    assertU(adoc(id, "26", FIELD1, "bmw usa 328i"));
+    assertU(adoc(id, "27", FIELD1, "bmw usa 535i"));
+    assertU(adoc(id, "28", FIELD1, "bmw 750Li"));
+    assertU(adoc(id, "29", FIELD1, "bmw usa", FIELD2, "red green blue"));
+    assertU(
+        adoc(
+            id,
+            "30",
+            FIELD1,
+            "The quote red fox jumped over the lazy brown dogs.",
+            FIELD2,
+            "red green yellow"));
+    assertU(
+        adoc(
+            id,
+            "31",
+            FIELD1,
+            "The fat red fox jumped over the lazy brown dogs.",
+            FIELD2,
+            "green blue yellow"));
+    assertU(
+        adoc(
+            id,
+            "32",
+            FIELD1,
+            "The slim red fox jumped over the lazy brown dogs.",
+            FIELD2,
+            "yellow white black"));
+
+    assertU(commit());
   }
 }

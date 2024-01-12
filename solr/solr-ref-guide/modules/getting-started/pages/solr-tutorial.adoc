@@ -42,17 +42,17 @@ For best results, please run the browser showing this tutorial and the Solr serv
 
 == Unpack Solr
 
-Begin by unzipping the Solr release and changing your working directory to the subdirectory where Solr was installed.
+Begin by unzipping the full Solr release and changing your working directory to the subdirectory where Solr was installed.
 For example, with a shell in UNIX, Cygwin, or MacOS:
 
-[source,bash,subs="verbatim,attributes+"]
+[,console]
 ----
-~$ ls solr*
+$ ls solr*
 solr-{solr-full-version}.tgz
 
-~$ tar -xzf solr-{solr-full-version}.tgz
+$ tar -xzf solr-{solr-full-version}.tgz
 
-~$ cd solr-{solr-full-version}/
+$ cd solr-{solr-full-version}/
 ----
 
 If you'd like to know more about Solr's directory layout before moving to the first exercise, see the section xref:deployment-guide:installing-solr.adoc#directory-layout[Directory Layout] for details.
@@ -84,9 +84,10 @@ Nice work!
 As you work through this tutorial, you may want to stop Solr and reset the environment back to the starting point.
 The following command line will stop Solr and remove the directories for each of the two nodes that were created all the way back in Exercise 1:
 
-[source,bash]
+[,console]
 ----
-bin/solr stop -all ; rm -Rf example/cloud/
+$ bin/solr stop -all
+$ rm -Rf example/cloud/
 ----
 
 == Where to next?

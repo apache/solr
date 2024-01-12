@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
+import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
+
 import com.codahale.metrics.Metric;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -26,9 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -42,6 +43,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.Before;
@@ -322,9 +324,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         @Override
         public SolrParams getParams() {
           ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-          params.set("source", sourceNode);
-          if (!StringUtils.isEmpty(targetNode)) {
-            params.setNonNull("target", targetNode);
+          params.set(SOURCE_NODE, sourceNode);
+          if (targetNode != null && !targetNode.isEmpty()) {
+            params.setNonNull(TARGET_NODE, targetNode);
           }
           if (parallel != null) params.set("parallel", parallel.toString());
           return params;

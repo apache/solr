@@ -16,6 +16,7 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import java.io.IOException;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.DocumentDictionary;
 import org.apache.solr.core.SolrCore;
@@ -33,7 +34,7 @@ public class DocumentDictionaryFactory extends DictionaryFactory {
   public static final String CONTEXT_FIELD = "contextField";
 
   @Override
-  public Dictionary create(SolrCore core, SolrIndexSearcher searcher) {
+  public Dictionary create(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     if (params == null) {
       // should not happen; implies setParams was not called
       throw new IllegalStateException("Value of params not set");

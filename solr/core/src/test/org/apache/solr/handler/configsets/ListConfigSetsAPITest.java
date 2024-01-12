@@ -29,6 +29,7 @@ import java.util.List;
 import javax.inject.Singleton;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
+import org.apache.solr.client.api.model.ListConfigsetsResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
@@ -39,11 +40,12 @@ import org.apache.solr.jersey.SolrJacksonMapper;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
+import org.glassfish.jersey.test.TestProperties;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Unit tests for {@link ListConfigSetsAPI}.
+ * Unit tests for {@link ListConfigSets}.
  *
  * <p>Serves primarily as a model and example of how to write unit tests using Jersey's test
  * framework.
@@ -59,9 +61,10 @@ public class ListConfigSetsAPITest extends JerseyTest {
 
   @Override
   protected Application configure() {
+    forceSet(TestProperties.CONTAINER_PORT, "0");
     resetMocks();
     final ResourceConfig config = new ResourceConfig();
-    config.register(ListConfigSetsAPI.class);
+    config.register(ListConfigSets.class);
     config.register(SolrJacksonMapper.class);
     config.register(
         new AbstractBinder() {
@@ -88,7 +91,7 @@ public class ListConfigSetsAPITest extends JerseyTest {
     when(mockCoreContainer.getConfigSetService()).thenReturn(configSetService);
     when(configSetService.listConfigs()).thenReturn(List.of("cs1", "cs2"));
 
-    final Response response = target("/cluster/configs").request().get();
+    final Response response = target("/cluster/configs").request("application/json").get();
     final String jsonBody = response.readEntity(String.class);
 
     assertEquals(200, response.getStatus());
@@ -105,8 +108,8 @@ public class ListConfigSetsAPITest extends JerseyTest {
     when(mockCoreContainer.getConfigSetService()).thenReturn(configSetService);
     when(configSetService.listConfigs()).thenReturn(List.of("cs1", "cs2"));
 
-    final ListConfigSetsAPI.ListConfigsetsResponse response =
-        target("/cluster/configs").request().get(ListConfigSetsAPI.ListConfigsetsResponse.class);
+    final var response =
+        target("/cluster/configs").request("application/json").get(ListConfigsetsResponse.class);
 
     assertNotNull(response.configSets);
     assertNull(response.error);
@@ -118,11 +121,11 @@ public class ListConfigSetsAPITest extends JerseyTest {
   /**
    * Test the v2 to v1 response mapping for /cluster/configs
    *
-   * <p>{@link org.apache.solr.handler.admin.ConfigSetsHandler} uses {@link ListConfigSetsAPI} (and
-   * its response class {@link ListConfigSetsAPI.ListConfigsetsResponse}) internally to serve the v1
-   * version of this functionality. So it's important to make sure that the v2 response stays
-   * compatible with SolrJ - both because that's important in its own right and because that ensures
-   * we haven't accidentally changed the v1 response format.
+   * <p>{@link org.apache.solr.handler.admin.ConfigSetsHandler} uses {@link ListConfigSets} (and its
+   * response class {@link ListConfigsetsResponse}) internally to serve the v1 version of this
+   * functionality. So it's important to make sure that the v2 response stays compatible with SolrJ
+   * - both because that's important in its own right and because that ensures we haven't
+   * accidentally changed the v1 response format.
    */
   @Test
   public void testListConfigsetsV1Compatibility() throws Exception {
@@ -130,8 +133,8 @@ public class ListConfigSetsAPITest extends JerseyTest {
     when(mockCoreContainer.getConfigSetService()).thenReturn(configSetService);
     when(configSetService.listConfigs()).thenReturn(List.of("cs1", "cs2"));
 
-    final ListConfigSetsAPI.ListConfigsetsResponse response =
-        target("/cluster/configs").request().get(ListConfigSetsAPI.ListConfigsetsResponse.class);
+    final var response =
+        target("/cluster/configs").request("application/json").get(ListConfigsetsResponse.class);
     final NamedList<Object> squashedResponse = new NamedList<>();
     V2ApiUtils.squashIntoNamedList(squashedResponse, response);
     final ConfigSetAdminResponse.List solrjResponse = new ConfigSetAdminResponse.List();

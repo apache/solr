@@ -24,6 +24,7 @@ import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationRespon
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PRINCIPAL_MISSING;
 import static org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -40,11 +41,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.VerifiedUserRoles;
+import org.apache.solr.servlet.LoadAdminUiServlet;
 import org.apache.solr.util.CryptoKeys;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
@@ -519,6 +520,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void xSolrAuthDataHeader() {
     testConfig.put("adminUiScope", "solr:admin");
     testConfig.put("authorizationEndpoint", "http://acmepaymentscorp/oauth/auz/authorize");
+    testConfig.put("tokenEndpoint", "http://acmepaymentscorp/oauth/oauth20/token");
+    testConfig.put("authorizationFlow", "code_pkce");
     testConfig.put("clientId", "solr-cluster");
     plugin.init(testConfig);
     String headerBase64 = plugin.generateAuthDataHeader();
@@ -528,6 +531,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals("solr:admin", parsed.get("scope"));
     assertEquals(
         "http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
+    assertEquals("http://acmepaymentscorp/oauth/oauth20/token", parsed.get("tokenEndpoint"));
+    assertEquals("code_pkce", parsed.get("authorization_flow"));
     assertEquals("solr-cluster", parsed.get("client_id"));
   }
 
@@ -631,17 +636,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     authConf.put("trustedCerts", trustedPemCert);
     authConf.put("trustedCertsFile", "/path/to/cert.pem");
     plugin = new JWTAuthPlugin();
-    expectThrows(
-        SolrException.class,
-        () -> {
-          plugin.init(authConf);
-        });
+    expectThrows(SolrException.class, () -> plugin.init(authConf));
   }
 
   @Test
   public void parsePemToX509() {
     Collection<X509Certificate> parsed =
-        CryptoKeys.parseX509Certs(IOUtils.toInputStream(trustedPemCert, StandardCharsets.UTF_8));
+        CryptoKeys.parseX509Certs(
+            new ByteArrayInputStream(trustedPemCert.getBytes(StandardCharsets.UTF_8)));
     assertEquals(2, parsed.size());
   }
 
@@ -650,12 +652,11 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     expectThrows(
         SolrException.class,
         CertificateException.class,
-        () -> {
-          CryptoKeys.parseX509Certs(
-              IOUtils.toInputStream(
-                  "-----BEGIN CERTIFICATE-----\n" + "foo\n" + "-----END CERTIFICATE-----\n",
-                  StandardCharsets.UTF_8));
-        });
+        () ->
+            CryptoKeys.parseX509Certs(
+                new ByteArrayInputStream(
+                    ("-----BEGIN CERTIFICATE-----\n" + "foo\n" + "-----END CERTIFICATE-----\n")
+                        .getBytes(StandardCharsets.UTF_8))));
   }
 
   @Test
@@ -663,6 +664,52 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     Path pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     String cert = CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath));
     assertEquals(
-        2, CryptoKeys.parseX509Certs(IOUtils.toInputStream(cert, StandardCharsets.UTF_8)).size());
+        2,
+        CryptoKeys.parseX509Certs(new ByteArrayInputStream(cert.getBytes(StandardCharsets.UTF_8)))
+            .size());
+  }
+
+  @Test
+  public void readSslCertsFromFileOrList() {
+    String pemWithTwoCerts =
+        JWT_TEST_PATH()
+            .resolve("security")
+            .resolve("jwt_plugin_idp_cert.pem")
+            .toAbsolutePath()
+            .toString();
+    String pemWithOneCert =
+        JWT_TEST_PATH()
+            .resolve("security")
+            .resolve("jwt_plugin_idp_wrongcert.pem")
+            .toAbsolutePath()
+            .toString();
+    assertEquals(
+        3, plugin.readSslCertsFromFileOrList(List.of(pemWithTwoCerts, pemWithOneCert)).size());
+  }
+
+  @Test(expected = SolrException.class)
+  public void readSslCertsFromFileNotFound() {
+    String pemFilePath = JWT_TEST_PATH().resolve("not_exist.pem").toAbsolutePath().toString();
+    plugin.readSslCertsFromFileOrList(pemFilePath);
+  }
+
+  @Test
+  public void parseCertsFromFile() throws IOException {
+    String pemFilePath =
+        JWT_TEST_PATH()
+            .resolve("security")
+            .resolve("jwt_plugin_idp_cert.pem")
+            .toAbsolutePath()
+            .toString();
+    assertEquals(2, plugin.parseCertsFromFile(pemFilePath).size());
+  }
+
+  @Test
+  public void testRegisterTokenEndpointForCsp() {
+    testConfig.put("tokenEndpoint", "http://acmepaymentscorp/oauth/oauth20/token");
+    plugin.init(testConfig);
+    assertEquals(
+        "http://acmepaymentscorp/oauth/oauth20/token",
+        System.getProperty(LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS));
   }
 }

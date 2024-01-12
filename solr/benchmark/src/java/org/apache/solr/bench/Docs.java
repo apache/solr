@@ -18,10 +18,8 @@ package org.apache.solr.bench;
 
 import static org.apache.solr.bench.BaseBenchState.log;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
@@ -34,12 +32,11 @@ import org.apache.solr.bench.generators.MultiString;
 import org.apache.solr.bench.generators.SolrGen;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.quicktheories.core.Gen;
 import org.quicktheories.impl.BenchmarkRandomSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A tool to generate controlled random data for a benchmark. {@link SolrInputDocument}s are created
@@ -50,12 +47,11 @@ import org.slf4j.LoggerFactory;
  * them via {@link #generatedDocsIterator}.
  */
 public class Docs {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private final ThreadLocal<SolrRandomnessSource> random;
   private final Queue<SolrInputDocument> docs = new ConcurrentLinkedQueue<>();
 
-  private final Map<String, Gen<?>> fields = Collections.synchronizedMap(new HashMap<>(16));
+  private final Map<String, Gen<?>> fields =
+      Collections.synchronizedMap(CollectionUtil.newHashMap(16));
 
   private ExecutorService executorService;
   private int stringFields;
@@ -103,7 +99,7 @@ public class Docs {
    */
   @SuppressForbidden(reason = "This module does not need to deal with logging context")
   public Iterator<SolrInputDocument> preGenerate(int numDocs) throws InterruptedException {
-    log("preGenerate docs " + numDocs + " ...");
+    log("preGenerate docs=" + numDocs + " ...");
     docs.clear();
     executorService =
         Executors.newFixedThreadPool(
@@ -113,14 +109,7 @@ public class Docs {
     for (int i = 0; i < numDocs; i++) {
       executorService.submit(
           () -> {
-            try {
-              SolrInputDocument doc = Docs.this.inputDocument();
-              docs.add(doc);
-            } catch (Exception e) {
-              log.error("error adding doc", e);
-              executorService.shutdownNow();
-              throw new RuntimeException(e);
-            }
+            docs.add(Docs.this.inputDocument());
           });
     }
 
@@ -143,12 +132,21 @@ public class Docs {
   }
 
   /**
-   * Generated docs iterator iterator.
+   * Generated docs iterator.
    *
    * @return the iterator
    */
   public Iterator<SolrInputDocument> generatedDocsIterator() {
     return docs.iterator();
+  }
+
+  /**
+   * Generated docs circular iterator.
+   *
+   * @return the iterator that never ends
+   */
+  public CircularIterator<SolrInputDocument> generatedDocsCircularIterator() {
+    return new CircularIterator<>(docs);
   }
 
   /**

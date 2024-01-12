@@ -31,7 +31,6 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -46,6 +45,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.MockStreamingSolrClients.Exp;
@@ -842,7 +842,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
       ZkNodeProps nodeProps =
           new ZkNodeProps(
-              ZkStateReader.BASE_URL_PROP, DEAD_HOST_1 + context, ZkStateReader.CORE_NAME_PROP, "");
+              ZkStateReader.BASE_URL_PROP, DEAD_HOST_1 + "/solr", ZkStateReader.CORE_NAME_PROP, "");
       ForwardNode retryNode =
           new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
             @Override

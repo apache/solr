@@ -24,13 +24,13 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -55,7 +55,6 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     waitForState(
         "Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
-    cluster.getSolrClient().setDefaultCollection(collection);
 
     List<SolrInputDocument> docs = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
@@ -64,8 +63,8 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
       docs.add(doc);
     }
 
-    cluster.getSolrClient().add(docs);
-    cluster.getSolrClient().commit();
+    cluster.getSolrClient().add(collection, docs);
+    cluster.getSolrClient().commit(collection);
 
     DocCollection state = getCollectionState(collection);
     leader = state.getLeader("shard1");

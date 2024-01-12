@@ -87,6 +87,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    */
   static final int MAX_RETRIES_ON_FORWARD_DEAULT =
       Integer.getInteger("solr.retries.on.forward", 25);
+
   /** Requests from leader to it's followers will be retried this amount of times by default */
   static final int MAX_RETRIES_TO_FOLLOWERS_DEFAULT =
       Integer.getInteger("solr.retries.to.followers", 3);
@@ -148,10 +149,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   /** Number of times requests forwarded to some other shard's leader can be retried */
   protected final int maxRetriesOnForward = MAX_RETRIES_ON_FORWARD_DEAULT;
+
   /** Number of times requests from leaders to followers can be retried */
   protected final int maxRetriesToFollowers = MAX_RETRIES_TO_FOLLOWERS_DEFAULT;
-
-  protected UpdateCommand updateCommand; // the current command this processor is working on.
 
   protected final Replica.Type replicaType;
 
@@ -196,7 +196,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         UpdateParams.OPTIMIZE,
         UpdateParams.MAX_OPTIMIZE_SEGMENTS,
         UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE,
-        ShardParams._ROUTE_);
+        ShardParams._ROUTE_,
+        CommonParams.FAIL_ON_VERSION_CONFLICTS);
 
     // this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
@@ -330,7 +331,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    boolean leaderLogic =
+        leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, isLeader, versionOnUpdate);
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
@@ -387,8 +389,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // there may be other reasons in the future for a version on the commands
 
       if (versionsStored) {
-
-        long bucketVersion = bucket.highest;
 
         if (leaderLogic) {
 
@@ -447,7 +447,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           long version = vinfo.getNewClock();
           cmd.setVersion(version);
           cmd.getSolrInputDocument().setField(CommonParams.VERSION_FIELD, version);
-          bucket.updateHighest(version);
         } else {
           // The leader forwarded us this update.
           cmd.setVersion(versionOnUpdate);
@@ -496,7 +495,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 assert cmd.isInPlaceUpdate() == false;
               }
             } else {
-              if (lastVersion != null && Math.abs(lastVersion) > prev) {
+              if (Math.abs(lastVersion) > prev) {
                 // this means we got a newer full doc update and in that case it makes no sense to
                 // apply the older inplace update. Drop this update
                 log.info(
@@ -505,29 +504,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                     lastVersion);
                 return true;
               } else {
-                // We're good, we should apply this update. First, update the bucket's highest.
-                if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-                  bucket.updateHighest(versionOnUpdate);
-                }
+                // We're good, we should apply this update.
               }
             }
           } else {
             // if we aren't the leader, then we need to check that updates were not re-ordered
-            if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-              // we're OK... this update has a version higher than anything we've seen
-              // in this bucket so far, so we know that no reordering has yet occurred.
-              bucket.updateHighest(versionOnUpdate);
-            } else {
-              // there have been updates higher than the current update. we need to check
-              // the specific version for this id.
-              Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-              if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-                // This update is a repeat, or was reordered. We need to drop this update.
-                if (log.isDebugEnabled()) {
-                  log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
-                }
-                return true;
+            // we need to check the specific version for this id.
+            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+              // This update is a repeat, or was reordered. We need to drop this update.
+              if (log.isDebugEnabled()) {
+                log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
               }
+              return true;
             }
           }
           if (!isSubShardLeader
@@ -823,8 +812,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     assert TestInjection.injectFailUpdateRequests();
 
-    updateCommand = cmd;
-
     if (!cmd.isDeleteById()) {
       doDeleteByQuery(cmd);
     } else {
@@ -967,16 +954,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
-
-    if (!leaderLogic && versionOnUpdate == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
-    }
+    boolean leaderLogic =
+        leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, isLeader, versionOnUpdate);
 
     vinfo.blockUpdates();
     try {
 
-      doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync);
+      doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync, leaderLogic);
 
       // since we don't know which documents were deleted, the easiest thing to do is to invalidate
       // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the
@@ -998,10 +982,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   private void doLocalDeleteByQuery(
-      DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync)
+      DeleteUpdateCommand cmd,
+      long versionOnUpdate,
+      boolean isReplayOrPeersync,
+      boolean leaderLogic)
       throws IOException {
     if (versionsStored) {
-      final boolean leaderLogic = isLeader & !isReplayOrPeersync;
       if (leaderLogic) {
         long version = vinfo.getNewClock();
         cmd.setVersion(-version);
@@ -1033,7 +1019,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // internal helper method to setup request by processors who use this class.
   // NOTE: not called by this class!
   void setupRequest(UpdateCommand cmd) {
-    updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
   }
 
@@ -1072,12 +1057,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     boolean isReplayOrPeersync =
         (cmd.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
-    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    boolean leaderLogic =
+        leaderLogicWithVersionIntegrityCheck(isReplayOrPeersync, isLeader, versionOnUpdate);
     boolean forwardedFromCollection = cmd.getReq().getParams().get(DISTRIB_FROM_COLLECTION) != null;
-
-    if (!leaderLogic && versionOnUpdate == 0) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "missing _version_ on update from leader");
-    }
 
     VersionBucket bucket = vinfo.bucket(bucketHash);
 
@@ -1112,7 +1094,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     try {
       BytesRef idBytes = cmd.getIndexedId();
       if (versionsStored) {
-        long bucketVersion = bucket.highest;
 
         if (leaderLogic) {
 
@@ -1161,7 +1142,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
           long version = vinfo.getNewClock();
           cmd.setVersion(-version);
-          bucket.updateHighest(version);
         } else {
           cmd.setVersion(-versionOnUpdate);
 
@@ -1173,21 +1153,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
 
           // if we aren't the leader, then we need to check that updates were not re-ordered
-          if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
-            // we're OK... this update has a version higher than anything we've seen
-            // in this bucket so far, so we know that no reordering has yet occurred.
-            bucket.updateHighest(versionOnUpdate);
-          } else {
-            // there have been updates higher than the current update. we need to check
-            // the specific version for this id.
-            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
-            if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
-              // This update is a repeat, or was reordered. We need to drop this update.
-              if (log.isDebugEnabled()) {
-                log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
-              }
-              return true;
+          // we need to check the specific version for this id.
+          Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+          if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
+            // This update is a repeat, or was reordered. We need to drop this update.
+            if (log.isDebugEnabled()) {
+              log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
             }
+            return true;
           }
 
           if (!isSubShardLeader
@@ -1205,12 +1178,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
+  private static boolean leaderLogicWithVersionIntegrityCheck(
+      boolean isReplayOrPeersync, boolean isLeader, long versionOnUpdate) {
+    boolean leaderLogic = isLeader && !isReplayOrPeersync;
+    if (!leaderLogic && versionOnUpdate == 0) {
+      throw new SolrException(ErrorCode.INVALID_STATE, "missing _version_ on update from leader");
+    }
+    return leaderLogic;
+  }
+
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
 
     assert TestInjection.injectFailUpdateRequests();
-
-    updateCommand = cmd;
 
     // replica type can only be NRT in standalone mode
     // NRT replicas will always commit

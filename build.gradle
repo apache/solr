@@ -19,15 +19,15 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 plugins {
-  id "base"
-  id "com.palantir.consistent-versions" version "2.11.0"
-  id "org.owasp.dependencycheck" version "7.2.0"
-  id 'ca.cutterslade.analyze' version "1.9.0"
-  id 'de.thetaphi.forbiddenapis' version '3.4' apply false
-  id "de.undercouch.download" version "5.2.0" apply false
-  id "net.ltgt.errorprone" version "2.0.2" apply false
-  id 'com.diffplug.spotless' version "6.5.2" apply false
-  id 'com.github.node-gradle.node' version '3.4.0' apply false
+  id 'base'
+  id 'com.palantir.consistent-versions' version '2.16.0'
+  id 'org.owasp.dependencycheck' version '8.4.0'
+  id 'ca.cutterslade.analyze' version '1.9.1'
+  id 'de.thetaphi.forbiddenapis' version '3.6' apply false
+  id 'de.undercouch.download' version '5.5.0' apply false
+  id 'net.ltgt.errorprone' version '3.1.0' apply false
+  id 'com.diffplug.spotless' version '6.5.2' apply false
+  id 'com.github.node-gradle.node' version '7.0.1' apply false
 }
 
 apply from: file('gradle/globals.gradle')
@@ -46,7 +46,11 @@ version = {
   //  -Dversion.suffix=jenkins123
   
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
-  return propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+  String v = propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
+  if (v.endsWith("-")) {
+    v = v.substring(0, v.length() - 1)
+  }
+  return v
 }()
 description = 'Grandparent project for Apache Solr'
 
@@ -102,15 +106,6 @@ ext {
   }
 }
 
-configurations {
-  groovy
-}
-
-dependencies {
-  // Use a newer groovy that doesn't have illegal reflective accesses.
-  groovy "org.codehaus.groovy:groovy-all:3.0.12"
-}
-
 apply from: file('buildSrc/scriptDepVersions.gradle')
 
 // Include smaller chunks configuring dedicated build areas.
@@ -132,6 +127,7 @@ apply from: file('gradle/java/javac.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
+apply from: file('gradle/testing/fail-on-unsupported-jdk.gradle')
 apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 

@@ -149,8 +149,7 @@ public class CommandHandler {
       collectors.addAll(command.create());
     }
 
-    ProcessedFilter filter =
-        searcher.getProcessedFilter(queryCommand.getFilter(), queryCommand.getFilterList());
+    ProcessedFilter filter = searcher.getProcessedFilter(queryCommand.getFilterList());
     Query query = QueryUtils.makeQueryable(queryCommand.getQuery());
 
     if (truncateGroups) {
@@ -203,7 +202,7 @@ public class CommandHandler {
     } else {
       collectors.add(allGroupHeadsCollector);
       searchWithTimeLimiter(
-          query, filter, MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()])));
+          query, filter, MultiCollector.wrap(collectors.toArray(new Collector[0])));
     }
 
     return new BitDocSet(allGroupHeadsCollector.retrieveGroupHeads(searcher.maxDoc()));

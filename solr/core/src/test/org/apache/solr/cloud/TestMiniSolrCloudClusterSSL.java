@@ -35,8 +35,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -45,6 +43,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.Before;
@@ -418,8 +418,6 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   /**
    * Generates an HttpSolrClient, either by using the test framework helper method or by direct
    * instantiation (determined randomly)
-   *
-   * @see #getHttpSolrClient
    */
   public static SolrClient getRandomizedHttpSolrClient(String url) {
     // NOTE: at the moment, SolrTestCaseJ4 already returns "new HttpSolrClient" most of the time,
@@ -430,6 +428,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     // ... so we are hopefully future proofing against possible changes to
     // SolrTestCaseJ4.getHttpSolrClient that "optimize" the test client construction in a way that
     // would prevent us from finding bugs with regular HttpSolrClient instantiation.
+    // This test fails if you return a Http2SolrClient
     if (random().nextBoolean()) {
       return (new HttpSolrClient.Builder(url)).build();
     } // else...

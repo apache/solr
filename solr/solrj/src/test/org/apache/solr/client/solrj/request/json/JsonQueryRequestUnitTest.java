@@ -380,7 +380,7 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
       // formatting) so we do it by default.  But we leave the option open in case the JSON fields
       // have spaces.
       if (trimWhitespace) {
-        return rawJsonString.replaceAll("\n", "").replaceAll(" ", "");
+        return rawJsonString.replace("\n", "").replace(" ", "");
       } else {
         return rawJsonString;
       }

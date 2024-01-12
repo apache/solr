@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -25,7 +24,7 @@ import org.apache.solr.common.params.SolrParams;
 /**
  * @since solr 1.3
  */
-public class QueryRequest extends SolrRequest<QueryResponse> {
+public class QueryRequest extends DataStoreSolrRequest<QueryResponse> {
 
   private SolrParams query;
 

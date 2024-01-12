@@ -22,7 +22,6 @@ import static org.apache.solr.client.solrj.io.stream.FacetStream.defaultTieredEn
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -31,7 +30,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -51,6 +49,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -69,9 +68,10 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
   private String zkHost;
   private SolrParams params;
   private String collection;
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
-  private StreamContext context;
+
+  private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
+  private transient StreamContext context;
   protected transient TupleStream parallelizedStream;
 
   public StatsStream(String zkHost, String collection, SolrParams params, Metric[] metrics)
@@ -84,7 +84,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     String collectionName = factory.getValueOperand(expression, 0);
 
     if (collectionName.indexOf('"') > -1) {
-      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+      collectionName = collectionName.replace("\"", "").replace(" ", "");
     }
 
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
@@ -216,7 +216,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
   @Override
   public void setStreamContext(StreamContext context) {
     this.context = context;
-    cache = context.getSolrClientCache();
+    this.clientCache = context.getSolrClientCache();
   }
 
   @Override
@@ -226,6 +226,12 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
 
   @Override
   public void open() throws IOException {
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
+    } else {
+      doCloseCache = false;
+    }
 
     @SuppressWarnings({"unchecked"})
     Map<String, List<String>> shardsMap = (Map<String, List<String>>) context.get("shards");
@@ -233,7 +239,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
     // Parallelize the stats stream across multiple collections for an alias using plist if possible
     if (shardsMap == null && params.getBool(TIERED_PARAM, defaultTieredEnabled)) {
       ClusterStateProvider clusterStateProvider =
-          cache.getCloudSolrClient(zkHost).getClusterStateProvider();
+          clientCache.getCloudSolrClient(zkHost).getClusterStateProvider();
       final List<String> resolved =
           clusterStateProvider != null ? clusterStateProvider.resolveAlias(collection) : null;
       if (resolved != null && resolved.size() > 1) {
@@ -255,7 +261,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
 
     if (shardsMap == null) {
       QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       try {
         NamedList<?> response = cloudSolrClient.request(request, collection);
         getTuples(response, metrics);
@@ -264,7 +270,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
       }
     } else {
       List<String> shards = shardsMap.get(collection);
-      SolrClient client = cache.getHttpSolrClient(shards.get(0));
+      SolrClient client = clientCache.getHttpSolrClient(shards.get(0));
 
       if (shards.size() > 1) {
         String shardsParam = getShardString(shards);
@@ -294,7 +300,11 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
   }
 
   @Override
-  public void close() throws IOException {}
+  public void close() throws IOException {
+    if (doCloseCache) {
+      clientCache.close();
+    }
+  }
 
   @Override
   public Tuple read() throws IOException {
@@ -421,7 +431,7 @@ public class StatsStream extends TupleStream implements Expressible, ParallelMet
   // Map the rollup metric to the original metric name so that we can project out the correct field
   // names in the tuple
   protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
-    Map<String, String> map = new HashMap<>(rollupMetrics.length * 2);
+    Map<String, String> map = CollectionUtil.newHashMap(rollupMetrics.length * 2);
     for (Metric m : rollupMetrics) {
       String[] cols = m.getColumns();
       map.put(m.getIdentifier(), cols != null && cols.length > 0 ? cols[0] : "*");

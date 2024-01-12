@@ -82,7 +82,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         fieldsAndValuesList.add("bday_drf");
         fieldsAndValuesList.add(fieldsAndValuesList.get(idx + 1)); // copy
       }
-      fieldsAndValues = fieldsAndValuesList.toArray(new String[fieldsAndValuesList.size()]);
+      fieldsAndValues = fieldsAndValuesList.toArray(new String[0]);
 
       pendingDocs.add(fieldsAndValues);
     } while (random().nextInt(100) <= random_dupe_percent);

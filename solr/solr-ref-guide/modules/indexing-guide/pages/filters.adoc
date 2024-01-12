@@ -263,8 +263,7 @@ The value `auto` will allow the filter to identify the language, or a comma-sepa
 ----
 <analyzer>
   <tokenizer name="standard"/>
-  <filter name="beiderMorse" nameType="GENERIC" ruleType="APPROX" concat="true" languageSet="auto">
-  </filter>
+  <filter name="beiderMorse" nameType="GENERIC" ruleType="APPROX" concat="true" languageSet="auto"/>
 </analyzer>
 ----
 ====
@@ -275,8 +274,7 @@ The value `auto` will allow the filter to identify the language, or a comma-sepa
 ----
 <analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.BeiderMorseFilterFactory" nameType="GENERIC" ruleType="APPROX" concat="true" languageSet="auto">
-  </filter>
+  <filter class="solr.BeiderMorseFilterFactory" nameType="GENERIC" ruleType="APPROX" concat="true" languageSet="auto"/>
 </analyzer>
 ----
 ====
@@ -327,7 +325,7 @@ This filter takes the output of the xref:tokenizers.adoc#classic-tokenizer[Class
 == Common Grams Filter
 
 This filter for use in `index` time analysis creates word shingles by combining common tokens such as stop words with regular tokens.
-This can result in an index with more unique terms, but is useful for creating phrase queries containing common words, such as "the cat", in a way that will typically be much faster then if the combined tokens are not used, because only the term positions of documents containg both terms in sequence have to be considered.
+This can result in an index with more unique terms, but is useful for creating phrase queries containing common words, such as "the cat", in a way that will typically be much faster than if the combined tokens are not used, because only the term positions of documents containing both terms in sequence have to be considered.
 Correct usage requires being paired with <<Common Grams Query Filter>> during `query` analysis.
 
 These filters can also be combined with <<Stop Filter>> so searching for `"the cat"` would match different documents then `"a cat"`, while pathological searches for either `"the"` or `"a"` would not match any documents.
@@ -409,7 +407,7 @@ If `true`, the filter ignores the case of words when comparing them to the commo
 
 == Common Grams Query Filter
 
-This filter is used for the `query` time analysis aspect of <<Common Grams Filter>> -- see that filer for a description of arguments, example configuration, and sample input/output.
+This filter is used for the `query` time analysis aspect of <<Common Grams Filter>> -- see that filter for a description of arguments, example configuration, and sample input/output.
 
 == Collation Key Filter
 
@@ -580,8 +578,8 @@ The character used to separate the token and the boost.
 [source,xml]
 ----
 <analyzer>
-<tokenizer name="standard"/>
-<filter name="delimitedBoost"/>
+  <tokenizer name="standard"/>
+  <filter name="delimitedBoost"/>
 </analyzer>
 ----
 ====
@@ -591,8 +589,8 @@ The character used to separate the token and the boost.
 [source,xml]
 ----
 <analyzer>
-<tokenizer class="solr.StandardTokenizerFactory"/>
-<filter class="solr.DelimitedBoostTokenFilterFactory"/>
+  <tokenizer class="solr.StandardTokenizerFactory"/>
+  <filter class="solr.DelimitedBoostTokenFilterFactory"/>
 </analyzer>
 ----
 ====
@@ -613,8 +611,8 @@ Using a different delimiter (`delimiter="/"`).
 [source,xml]
 ----
 <analyzer>
-<tokenizer name="standard"/>
-<filter name="delimitedBoost" delimiter="/"/>
+  <tokenizer name="standard"/>
+  <filter name="delimitedBoost" delimiter="/"/>
 </analyzer>
 ----
 
@@ -638,17 +636,17 @@ This filter generates edge n-gram tokens of sizes within the given range.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `1`
+|Required |Default: none
 |===
-The minimum gram size.
+The minimum gram size, must be > 0.
 
 `maxGramSize`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `1`
+|Required |Default: none
 |===
-The maximum gram size.
+The maximum gram size, must be >= `minGramSize`.
 
 `preserveOriginal`::
 +
@@ -672,7 +670,7 @@ Default behavior.
 ----
 <analyzer>
   <tokenizer name="standard"/>
-  <filter name="edgeNGram"/>
+  <filter name="edgeNGram" minGramSize="1" maxGramSize="1"/>
 </analyzer>
 ----
 ====
@@ -683,7 +681,7 @@ Default behavior.
 ----
 <analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.EdgeNGramFilterFactory"/>
+  <filter class="solr.EdgeNGramFilterFactory" minGramSize="1" maxGramSize="1"/>
 </analyzer>
 ----
 ====
@@ -947,6 +945,15 @@ The path of a rules file.
 +
 Controls whether matching is case sensitive or not.
 
+`longestOnly`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, only the longest term is emitted.
+
 `strictAffixParsing`::
 +
 [%autowidth,frame=none]
@@ -1108,7 +1115,7 @@ For detailed information on this normalization form, see http://www.unicode.org/
 
 == ICU Normalizer 2 Filter
 
-This filter factory normalizes text according to one of five Unicode Normalization Forms as described in http://unicode.org/reports/tr15/[Unicode Standard Annex #15]:
+This filter normalizes text according to one of five Unicode Normalization Forms as described in http://unicode.org/reports/tr15/[Unicode Standard Annex #15]:
 
 * NFC: (`name="nfc" mode="compose"`) Normalization Form C, canonical decomposition
 * NFD: (`name="nfc" mode="decompose"`) Normalization Form D, canonical decomposition, followed by canonical composition
@@ -1214,6 +1221,15 @@ s|Required |Default: none
 The identifier for the ICU System Transform you wish to apply with this filter.
 For a full list of ICU System Transforms, see http://demo.icu-project.org/icu-bin/translit?TEMPLATE_FILE=data/translit_rule_main.html.
 
+`direction`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `forward`
+|===
++
+The direction of the ICU transform. Valid options are `forward` and `reverse`.
+
 *Example:*
 
 [.dynamic-tabs]
@@ -1267,6 +1283,15 @@ s|Required |Default: none
 Path to a text file containing the list of keep words, one per line.
 Blank lines and lines that begin with `\#` are ignored.
 This may be an absolute path, or a simple filename in the Solr `conf` directory.
+
+`format`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+If the keepwords list has been formatted for Snowball, you can specify `format="snowball"` so Solr can read the keepwords file.
 
 `ignoreCase`::
 +
@@ -1467,12 +1492,14 @@ Tokens longer than this are discarded.
 This filter limits the number of accepted tokens, typically useful for index analysis.
 
 By default, this filter ignores any tokens in the wrapped `TokenStream` once the limit has been reached, which can result in `reset()` being called prior to `incrementToken()` returning `false`.
-For most `TokenStream` implementations this should be acceptable, and faster then consuming the full stream.
+For most `TokenStream` implementations this should be acceptable, and faster than consuming the full stream.
 If you are wrapping a `TokenStream` which requires that the full stream of tokens be exhausted in order to function properly, use the `consumeAllTokens="true"` option.
 
 *Factory class:* `solr.LimitTokenCountFilterFactory`
 
 *Arguments:*
+
+`maxTokenCount`::
 +
 [%autowidth,frame=none]
 |===
@@ -1534,14 +1561,21 @@ This filter limits tokens to those before a configured maximum start character o
 This can be useful to limit highlighting, for example.
 
 By default, this filter ignores any tokens in the wrapped `TokenStream` once the limit has been reached, which can result in `reset()` being called prior to `incrementToken()` returning `false`.
-For most `TokenStream` implementations this should be acceptable, and faster then consuming the full stream.
+For most `TokenStream` implementations this should be acceptable, and faster than consuming the full stream.
 If you are wrapping a `TokenStream` which requires that the full stream of tokens be exhausted in order to function properly, use the `consumeAllTokens="true"` option.
 
 *Factory class:* `solr.LimitTokenOffsetFilterFactory`
 
 *Arguments:*
 
-`maxStartOffset`:: (integer, required) Maximum token start character offset.
+`maxStartOffset`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+Maximum token start character offset.
 After this limit has been reached, tokens are discarded.
 
 `consumeAllTokens`::
@@ -1595,7 +1629,7 @@ See description above.
 This filter limits tokens to those before a configured maximum token position.
 
 By default, this filter ignores any tokens in the wrapped `TokenStream` once the limit has been reached, which can result in `reset()` being called prior to `incrementToken()` returning `false`.
-For most `TokenStream` implementations this should be acceptable, and faster then consuming the full stream.
+For most `TokenStream` implementations this should be acceptable, and faster than consuming the full stream.
 If you are wrapping a `TokenStream` which requires that the full stream of tokens be exhausted in order to function properly, use the `consumeAllTokens="true"` option.
 
 *Factory class:* `solr.LimitTokenPositionFilterFactory`
@@ -1628,7 +1662,7 @@ See description above.
 --
 [example.tab-pane#byname-filter-limittokenposition]
 ====
-[.tab-label]*With name)*
+[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer>
@@ -1832,7 +1866,7 @@ This filter would normally be preceded by a <<Shingle Filter>>, as shown in the 
 
 Each input token is hashed.
 It is subsequently "rehashed" `hashCount` times by combining with a set of precomputed hashes.
-For each of the resulting hashes, the hash space is divided in to `bucketCount` buckets.
+For each of the resulting hashes, the hash space is divided into `bucketCount` buckets.
 The lowest set of `hashSetSize` hashes (usually a set of one) is generated for each bucket.
 
 This filter generates one type of signature or sketch for the input tokens and can be used to compute Jaccard similarity between documents.
@@ -1881,6 +1915,24 @@ With the default settings for `withRotation`, the number of hashes generated is 
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-minhash]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="icu"/>
+  <filter name="icuFolding"/>
+  <filter name="shingle" minShingleSize="5" outputUnigrams="false" outputUnigramsIfNoShingles="false" maxShingleSize="5" tokenSeparator=" "/>
+  <filter name="minHash" bucketCount="512" hashSetSize="1" hashCount="1"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-minhash]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1890,6 +1942,8 @@ With the default settings for `withRotation`, the number of hashes generated is 
   <filter class="org.apache.lucene.analysis.minhash.MinHashFilterFactory" bucketCount="512" hashSetSize="1" hashCount="1"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "woof woof woof woof woof"
 
@@ -1910,18 +1964,18 @@ Note that tokens are ordered by position and then by gram size.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `1`
+|Required |Default: none
 |===
-The minimum gram size.
+The minimum gram size, must be > 0.
 
 `maxGramSize`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `2`
+|Required |Default: none
 |===
 +
-The maximum gram size.
+The maximum gram size, must be >= `minGramSize`.
 
 `preserveOriginal`::
 +
@@ -1945,7 +1999,7 @@ Default behavior.
 ----
 <analyzer>
   <tokenizer name="standard"/>
-  <filter name="nGram"/>
+  <filter name="nGram" minGramSize="1" maxGramSize="2"/>
 </analyzer>
 ----
 ====
@@ -1956,7 +2010,7 @@ Default behavior.
 ----
 <analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.NGramFilterFactory"/>
+  <filter class="solr.NGramFilterFactory" minGramSize="1" maxGramSize="2"/>
 </analyzer>
 ----
 ====
@@ -2087,7 +2141,7 @@ Tokens with a matching type name will have their payload set to the above floati
 == Pattern Replace Filter
 
 This filter applies a regular expression to each token and, for those that match, substitutes the given replacement string in place of the matched pattern.
-Tokens which do not match are passed though unchanged.
+Tokens which do not match are passed through unchanged.
 
 *Factory class:* `solr.PatternReplaceFilterFactory`
 
@@ -2450,7 +2504,7 @@ For all terms except those in `protectedTerms.txt`, synonyms are added, terms ar
           ignoreCase="true" protected="protectedTerms.txt"
           wrappedFilters="SynonymGraph-fwd,ReverseString,SynonymGraph-rev"
           synonymgraph-FWD.synonyms="fwd-syns.txt"
-          synonymgraph-FWD.synonyms="rev-syns.txt"/>
+          synonymgraph-REV.synonyms="rev-syns.txt"/>
 </analyzer>
 ----
 
@@ -3096,10 +3150,10 @@ If `false`, all equivalent synonyms will be reduced to the first in the list.
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Optional |Default: `solr`
 |===
 +
-(optional; default: `solr`) Controls how the synonyms will be parsed.
+Controls how the synonyms will be parsed.
 The short names `solr` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SolrSynonymParser.html[`SolrSynonymParser`] and `wordnet` (for {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/WordnetSynonymParser.html[`WordnetSynonymParser`] ) are supported.
 You may alternatively supply the name of your own {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/synonym/SynonymMap.Builder.html[`SynonymMap.Builder`] subclass.
 
@@ -3368,6 +3422,25 @@ This filter adds the token's type, as a token at the same position as the token,
 +
 The prefix to prepend to the token's type.
 
+`ignore`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A comma-separated list of types to ignore and not convert to synonyms.
+
+`synFlagsMask`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: see description
+|===
++
+A mask (provided as an integer) to control what flags are propagated to the synonyms.
+The default value is an integer `-1`, i.e., the mask `0xFFFFFFFF` - this mask propagates any flags as is.
+
 *Examples:*
 
 With the example below, each token's type will be emitted verbatim at the same position:
@@ -3613,6 +3686,15 @@ The path to a file that contains a list of protected words that should be passed
 |===
 +
 If `1`, strips the possessive `'s` from each subword.
+
+`adjustOffsets`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+If `true`, the offsets of partial terms are adjusted.
 
 `types`::
 +

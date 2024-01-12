@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -34,8 +35,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -46,6 +47,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -180,19 +182,20 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of shards and active replicas
+   * numbers of shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
       if (collectionState.getSlices().size() != expectedShards) return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(
+          expectedReplicas, liveNodes, collectionState.getSlices());
     };
   }
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of active shards and active replicas
+   * numbers of active shards and active replicas on these shards
    */
   public static CollectionStatePredicate activeClusterShape(
       int expectedShards, int expectedReplicas) {
@@ -205,7 +208,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
             expectedShards);
       }
       if (collectionState.getActiveSlices().size() != expectedShards) return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(
+          expectedReplicas, liveNodes, collectionState.getActiveSlices());
     };
   }
 
@@ -234,10 +238,19 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     };
   }
 
+  /**
+   * Checks if the actual count of active replicas on a set of nodes for a collection of shards
+   * matches the expected count
+   *
+   * @param expectedReplicas number of active replicas expected by the test
+   * @param liveNodes nodes on which the active replicas should be counted
+   * @param slices collection of slices whose replicas should be counted
+   * @return true if the actual count of active replicas matches the expected count
+   */
   private static boolean compareActiveReplicaCountsForShards(
-      int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
+      int expectedReplicas, Set<String> liveNodes, Collection<Slice> slices) {
     int activeReplicas = 0;
-    for (Slice slice : collectionState) {
+    for (Slice slice : slices) {
       for (Replica replica : slice) {
         if (replica.isActive(liveNodes)) {
           activeReplicas++;
@@ -293,9 +306,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       throws IOException, SolrServerException {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     try (SolrClient client =
-        getHttpSolrClient(
-            jetty.getBaseUrl().toString(),
-            ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())) {
+        new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
+            .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
+            .build()) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
   }

@@ -23,7 +23,8 @@ For details on how to configure `core.properties`, see the section xref:core-dis
 
 == Defining solr.xml
 
-You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`) or optionally in ZooKeeper when using SolrCloud. If `$SOLR_HOME/solr.xml` is not found, Solr will use the default `solr.xml` file.
+You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`).
+If `$SOLR_HOME/solr.xml` is not found, Solr will use the default `solr.xml` file.
 
 The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and looks like this:
 
@@ -36,12 +37,12 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
   <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.allowUrls:}</str>
+  <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
 
   <solrcloud>
 
     <str name="host">${host:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
-    <str name="hostContext">${hostContext:solr}</str>
 
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
 
@@ -53,6 +54,8 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <str name="zkCredentialsInjector">${zkCredentialsInjector:org.apache.solr.common.cloud.DefaultZkCredentialsInjector}</str>
     <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
     <bool name="distributedCollectionConfigSetExecution">${distributedCollectionConfigSetExecution:false}</bool>
+    <int name="minStateByteLenForCompression">${minStateByteLenForCompression:-1}</int>
+    <str name="stateCompressor">${stateCompressor:org.apache.solr.common.util.ZLibCompressor}</str>
 
   </solrcloud>
 
@@ -75,6 +78,7 @@ Unless the `-DzkHost` or `-DzkRun` are specified at startup time, this section i
 
 == Solr.xml Parameters
 
+[#the-solr-element]
 === The <solr> Element
 
 There are no attributes that you can specify in the `<solr>` tag, which is the root element of `solr.xml`.
@@ -89,7 +93,7 @@ The tables below list the child nodes of each XML element in `solr.xml`.
 +
 This attribute does not need to be set.
 +
-If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter which the type is `org.apache.solr.core.CoreContainer`.
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from `ConfigSetService`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
 For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
 +
 If this attribute isn't set, Solr uses the default `configSetService`, with zookeeper aware of `org.apache.solr.cloud.ZkConfigSetService`, without zookeeper aware of `org.apache.solr.core.FileSystemConfigSetService`.
@@ -183,6 +187,31 @@ The default value is equal to the number of processors.
 +
 The root of the core discovery tree, defaults to `$SOLR_HOME`.
 
+`coresLocator`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.core.CorePropertiesLocator`
+|===
++
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoresLocator`, and you must provide a constructor with one parameter of type `org.apache.solr.core.NodeConfig`.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom cores locator.
+
+`coreSorter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.core.CoreSorter`
+|===
++
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoreSorter`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
+This service is used when Solr is starting to prioritize which cores should be loaded first.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom core sorter.
+
 `managementPath`::
 +
 [%autowidth,frame=none]
@@ -249,6 +278,15 @@ In SolrCloud mode, the allow-list is automatically configured to include all liv
 The allow-list can also be configured with the `solr.allowUrls` system property in `solr.in.sh` / `solr.in.cmd`.
 If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.allowUrls=true`.
 
+`hideStackTrace`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+When this attribute is set to `true`, Solr will not return any stack traces in the HTTP response in case of errors.  By default (`false`), stack traces are hidden only for predictable Solr exceptions, but are returned in the response for unexpected exceptions (i.e.: HTTP 500)
+
 `shareSchema`::
 +
 [%autowidth,frame=none]
@@ -267,7 +305,8 @@ If you use this feature, make sure that no core-specific property is used in you
 |Optional |Default: none
 |===
 +
-Defines how many cores with `transient=true` that can be loaded before swapping the least recently used core for a new core.
+*Deprecated as of 9.2.*
+Defines how many Solr cores with `transient=true` that can be loaded before unloading an unused core for one that is needed.
 
 `configSetBaseDir`::
 +
@@ -298,6 +337,22 @@ This is the same system property used in the `_default` configset for the xref:c
 ----
 <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 ----
+
+[#hiddenSysProps]
+`hiddenSysProps`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+Comma-separated list of regex patterns to match sysProps that should be redacted to hide sensitive information.
++
+The allow-list can also be configured with the `solr.hiddenSysProps` system property,
+or via the `SOLR_HIDDEN_SYS_PROPS` environment variable.
++
+By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It will also hide any sysProp that contains
+"password" or "secret" in it.
 
 === The <solrcloud> Element
 
@@ -330,15 +385,6 @@ Used to set the underlying `socketTimeout` for intra-cluster updates.
 |===
 +
 The hostname Solr uses to access cores.
-
-`hostContext`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The url context path.
 
 `hostPort`::
 +
@@ -421,6 +467,24 @@ Optional parameters that can be specified if you are using xref:deployment-guide
 |===
 +
 If `true`, the internal behavior of SolrCloud is changed to not use the Overseer for collections' `state.json` updates but do this directly against ZooKeeper.
+
+`minStateByteLenForCompression`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: -1
+|===
++
+Optional parameter to enable compression of the state.json over the wire and stored in Zookeeper. The value provided is the minimum length of bytes to compress state.json, i.e. any state.json above that size in bytes will be compressed. The default is -1, meaning state.json is always uncompressed.
+
+`stateCompressor`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default:org.apache.solr.common.util.ZLibCompressor
+|===
++
+Optional parameter to provide a compression implementation for state.json over the wire and stored in Zookeeper. The value provided is the class to use for state compression. This is only used if minStateByteLenForCompression is set to a value above -1.
 
 === The <logging> Element
 
@@ -591,12 +655,47 @@ For configuring `stable` routing, the `hash` parameter implicitly defaults to a 
 The `dividend` parameter must be configured explicitly; there is no implicit default.
 If only `dividend` routing is desired, `hash` may be explicitly set to the empty string, entirely disabling implicit hash-based routing.
 
+=== The <replicaPlacementFactory> Element
+
+A default xref:replica-placement-plugins.adoc[replica placement plugin] can be defined in `solr.xml`.
+
+[source,xml]
+----
+<replicaPlacementFactory class="org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory">
+  <int name="minimalFreeDiskGB">10</int>
+  <int name="prioritizedFreeDiskGB">200</int>
+</replicaPlacementFactory>
+----
+
+The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `PlacementPluginFactory`.
+Sub-elements are specific to the implementation.
+
 === The <metrics> Element
 
 The `<metrics>` element in `solr.xml` allows you to customize the metrics reported by Solr.
 You can define system properties that should not be returned, or define custom suppliers and reporters.
 
 If you would like to customize the metrics for your installation, see the xref:deployment-guide:metrics-reporting.adoc#metrics-configuration[Metrics Configuration] section.
+
+=== The <caches> Element
+
+The `<caches>` element in `solr.xml` supports defining and configuring named node-level caches.
+
+These caches are analogous to xref:caches-warming.adoc#user-defined-caches[user-defined caches in `solrconfig.xml`], except that each named cache exists as a long-lived singleton at the node level. These node-level caches are accessible from application code via `CoreContainer.getCache(String cacheName)`.
+
+Note that because node-level caches exist above the context of an individual core, config parameters that hook into the lifecycle of a core/searcher (such as `autowarmCount` and `regenerator`) are irrelevant/ignored for node-level caches.
+
+[source,xml]
+----
+<solr>
+  <caches>
+    <cache name="myNodeLevelUserCache"
+           class="solr.CaffeineCache"
+           size="4096"
+           initialSize="1024" />
+  </caches>
+</solr>
+----
 
 == Substituting JVM System Properties in solr.xml
 

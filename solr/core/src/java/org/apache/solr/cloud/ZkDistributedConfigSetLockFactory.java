@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import com.google.common.base.Preconditions;
+import java.util.Objects;
 import org.apache.solr.common.cloud.SolrZkClient;
 
 /**
@@ -37,7 +37,7 @@ public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
 
   @Override
   public DistributedLock createLock(boolean isWriteLock, String configSetName) {
-    Preconditions.checkArgument(configSetName != null, "configSetName can't be null");
+    Objects.requireNonNull(configSetName, "configSetName can't be null");
 
     String lockPath = getLockPath(configSetName);
     return doCreateLock(isWriteLock, lockPath);

@@ -1,9 +1,10 @@
 # This file can configure Lift PR static analysis. 
 # Docs for adding, removing or changing checks can be found here:
-# https://help.sonatype.com/lift/configuration-reference
+# https://help.sonatype.com/lift/configuring-lift
 
 jdkVersion = "11"
 disableTools = [ "refactor-first" ]
+ignoreRules = [ "INTERFACE_NOT_THREAD_SAFE" ]
 ignoreFiles = '''
 **/test/**
 **/*.min.js

@@ -25,12 +25,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cluster.api.HashRange;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.noggit.JSONWriter;
 
 /**
  * Class to partition int range into n ranges.
@@ -39,7 +39,7 @@ import org.apache.solr.common.util.StrUtils;
  */
 public abstract class DocRouter {
   public static final String DEFAULT_NAME = CompositeIdRouter.NAME;
-  public static final DocRouter DEFAULT = new CompositeIdRouter();
+  public static final DocRouter DEFAULT;
 
   public static DocRouter getDocRouter(String routerName) {
     DocRouter router = routerMap.get(routerName);
@@ -79,17 +79,17 @@ public abstract class DocRouter {
     // to "plain" if it doesn't have any properties.
     routerMap.put(null, plain); // back compat with 4.0
     routerMap.put(PlainIdRouter.NAME, plain);
-    routerMap.put(
-        CompositeIdRouter.NAME,
-        DEFAULT_NAME.equals(CompositeIdRouter.NAME) ? DEFAULT : new CompositeIdRouter());
+    routerMap.put(CompositeIdRouter.NAME, new CompositeIdRouter());
     routerMap.put(ImplicitDocRouter.NAME, new ImplicitDocRouter());
     // NOTE: careful that the map keys (the static .NAME members) are filled in by making them final
+
+    DEFAULT = routerMap.get(DEFAULT_NAME);
   }
 
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
   // TODO: ranges may not be all contiguous in the future (either that or we will
   // need an extra class to model a collection of ranges)
-  public static class Range implements MapWriter.StringValue, Comparable<Range>, HashRange {
+  public static class Range implements JSONWriter.Writable, Comparable<Range>, HashRange {
     public int min; // inclusive
     public int max; // inclusive
 
@@ -139,6 +139,11 @@ public abstract class DocRouter {
       if (!(obj instanceof Range)) return false;
       Range other = (Range) obj;
       return this.min == other.min && this.max == other.max;
+    }
+
+    @Override
+    public void write(JSONWriter writer) {
+      writer.write(toString());
     }
 
     @Override

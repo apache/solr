@@ -51,6 +51,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
   @BeforeClass
   public static void beforeTests() throws Exception {
     systemSetPropertySolrDisableUrlAllowList("true");
+    System.setProperty("solr.enableStreamBody", "true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
@@ -222,6 +223,22 @@ public class TestJsonRequest extends SolrTestCaseHS {
             "{params:{sort:'where_s asc'}}"),
         "response/numFound==2",
         "response/docs==[{id:'4', x:5.5}]");
+
+    // test defType will parse the query string
+    client.testJQ(
+        params(
+            "json",
+            "{\n"
+                + "    'query': '+all:NY',\n"
+                + "    'fields': '*',\n"
+                + "    'offset': 0,\n"
+                + "    'limit': 10,\n"
+                + "    'params': {\n"
+                + "        'defType': 'edismax',\n"
+                + "        'f.all.qf': 'id cat_s where_s'\n"
+                + "   }\n"
+                + "}"),
+        "response/numFound==2");
 
     // test offset/limit/sort/fields
     client.testJQ(

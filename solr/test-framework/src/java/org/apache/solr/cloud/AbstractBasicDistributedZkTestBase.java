@@ -43,7 +43,6 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -78,6 +77,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TestInjection.Hook;
 import org.junit.BeforeClass;
@@ -1300,7 +1300,11 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     String collection = elements[elements.length - 1];
     String urlString = url.toString();
     urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
-    try (SolrClient client = getHttpSolrClient(urlString, 15000, 60000)) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(urlString)
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+            .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       // params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." +
       // collection);
@@ -1398,7 +1402,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     // now test that unloading a core gets us a new leader
     try (SolrClient unloadClient =
-        getHttpSolrClient(jettys.get(0).getBaseUrl().toString(), 15000, 60000)) {
+        new HttpSolrClient.Builder(jettys.get(0).getBaseUrl().toString())
+            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+            .build()) {
       Unload unloadCmd = new Unload(true);
       unloadCmd.setCoreName(props.getCoreName());
 
@@ -1589,22 +1596,20 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     indexDoc("collection2", getDoc(id, "10000000"));
     indexDoc("collection2", getDoc(id, "10000001"));
     indexDoc("collection2", getDoc(id, "10000003"));
-    getCommonCloudSolrClient().setDefaultCollection("collection2");
-    getCommonCloudSolrClient().add(getDoc(id, "10000004"));
-    getCommonCloudSolrClient().setDefaultCollection(null);
+
+    getSolrClient("collection2").add(getDoc(id, "10000004"));
 
     indexDoc("collection3", getDoc(id, "20000000"));
     indexDoc("collection3", getDoc(id, "20000001"));
-    getCommonCloudSolrClient().setDefaultCollection("collection3");
-    getCommonCloudSolrClient().add(getDoc(id, "10000005"));
-    getCommonCloudSolrClient().setDefaultCollection(null);
+
+    getSolrClient("collection3").add(getDoc(id, "10000005"));
 
     otherCollectionClients.get("collection2").get(0).commit();
     otherCollectionClients.get("collection3").get(0).commit();
 
-    getCommonCloudSolrClient().setDefaultCollection("collection1");
+    SolrClient clientForCollection1 = getSolrClient("collection1");
     long collection1Docs =
-        getCommonCloudSolrClient().query(new SolrQuery("*:*")).getResults().getNumFound();
+        clientForCollection1.query(new SolrQuery("*:*")).getResults().getNumFound();
 
     long collection2Docs =
         otherCollectionClients
@@ -1707,28 +1712,22 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
   @Override
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    try {
-      // setup the server...
-      SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
 
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
+
+    return client;
   }
 
   protected SolrClient createNewSolrClient(
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
-    try {
-      // setup the server...
-      SolrClient client =
-          getHttpSolrClient(
-              baseUrl + "/" + collection, connectionTimeoutMillis, socketTimeoutMillis);
 
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    SolrClient client =
+        new HttpSolrClient.Builder(baseUrl + "/" + collection)
+            .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
+            .build();
+
+    return client;
   }
 
   @Override

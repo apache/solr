@@ -26,7 +26,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -46,6 +45,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -67,8 +67,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
   private static final String COLLECTION_NAME = "test_col";
 
-  /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  /** A collection specific client for operations at the cloud level */
+  private static CloudSolrClient COLLECTION_CLIENT;
 
   /** A client for talking directly to the leader of shard1 */
   private static SolrClient S_ONE_LEADER_CLIENT;
@@ -100,14 +100,13 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
     configureCluster(NUM_SERVERS).addConfig(configName, configDir.toPath()).configure();
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
     CollectionAdminRequest.createCollection(
             COLLECTION_NAME, configName, NUM_SHARDS, REPLICATION_FACTOR)
         .withProperty("config", "solrconfig-distrib-update-processor-chains.xml")
         .withProperty("schema", "schema15.xml") // string id for doc routing prefix
-        .process(CLOUD_CLIENT);
+        .process(COLLECTION_CLIENT);
 
     cluster.waitForActiveCollection(COLLECTION_NAME, NUM_SHARDS, REPLICATION_FACTOR * NUM_SHARDS);
 
@@ -170,17 +169,17 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     // routing
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(doc(f("id", S_ONE_PRE + random().nextInt()), f("expected_shard_s", "shard1")))
             .getStatus());
     assertEquals(
         0,
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .add(doc(f("id", S_TWO_PRE + random().nextInt()), f("expected_shard_s", "shard2")))
             .getStatus());
-    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+    assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
     SolrDocumentList docs =
-        CLOUD_CLIENT
+        COLLECTION_CLIENT
             .query(
                 params(
                     "q", "*:*",
@@ -189,20 +188,19 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(2, docs.getNumFound());
     assertEquals(2, docs.size());
     for (SolrDocument doc : docs) {
-      String expected = COLLECTION_NAME + "_" + doc.getFirstValue("expected_shard_s") + "_replica";
+      String expected = doc.getFirstValue("expected_shard_s").toString();
       String docShard = doc.getFirstValue("[shard]").toString();
       assertTrue(
           "shard routing prefixes don't seem to be aligned anymore, "
               + "did someone change the default routing rules? "
-              + "and/or the the default core name rules? "
+              + "and/or the the default shard name rules? "
               + "and/or the numShards used by this test? ... "
-              + "couldn't find "
               + expected
-              + " as substring of [shard] == '"
+              + " is ot the same as [shard] == '"
               + docShard
               + "' ... for docId == "
               + doc.getFirstValue("id"),
-          docShard.contains(expected));
+          docShard.equals(expected));
     }
   }
 
@@ -218,8 +216,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     S_TWO_NON_LEADER_CLIENT = null;
     close(NO_COLLECTION_CLIENT);
     NO_COLLECTION_CLIENT = null;
-    close(CLOUD_CLIENT);
-    CLOUD_CLIENT = null;
+    close(COLLECTION_CLIENT);
+    COLLECTION_CLIENT = null;
   }
 
   private static void close(SolrClient client) throws IOException {
@@ -230,8 +228,8 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
   @Before
   public void clearCollection() throws Exception {
-    assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
-    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+    assertEquals(0, COLLECTION_CLIENT.deleteByQuery("*:*").getStatus());
+    assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
   }
 
   public void testSanity() throws Exception {
@@ -239,15 +237,17 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     // verify some basic sanity checking of indexing & querying across the collection
     // w/o using our custom update processor chain
 
-    assertEquals(0, CLOUD_CLIENT.add(doc(f("id", S_ONE_PRE + "1"), f("foo_i", 42))).getStatus());
-    assertEquals(0, CLOUD_CLIENT.add(doc(f("id", S_TWO_PRE + "2"), f("foo_i", 66))).getStatus());
-    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
+    assertEquals(
+        0, COLLECTION_CLIENT.add(doc(f("id", S_ONE_PRE + "1"), f("foo_i", 42))).getStatus());
+    assertEquals(
+        0, COLLECTION_CLIENT.add(doc(f("id", S_TWO_PRE + "2"), f("foo_i", 66))).getStatus());
+    assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
 
     for (SolrClient c :
         Arrays.asList(
             S_ONE_LEADER_CLIENT, S_TWO_LEADER_CLIENT,
             S_ONE_NON_LEADER_CLIENT, S_TWO_NON_LEADER_CLIENT,
-            NO_COLLECTION_CLIENT, CLOUD_CLIENT)) {
+            NO_COLLECTION_CLIENT, COLLECTION_CLIENT)) {
       assertQueryDocIds(c, true, S_ONE_PRE + "1", S_TWO_PRE + "2");
       assertQueryDocIds(c, false, "id_not_exists");
 
@@ -298,7 +298,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
   //
   public void testVariousDeletesViaCloudClient() throws Exception {
-    testVariousDeletes(CLOUD_CLIENT);
+    testVariousDeletes(COLLECTION_CLIENT);
   }
 
   public void testVariousDeletesViaShard1LeaderClient() throws Exception {
@@ -463,7 +463,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
   //
   public void testVariousAddsViaCloudClient() throws Exception {
-    testVariousAdds(CLOUD_CLIENT);
+    testVariousAdds(COLLECTION_CLIENT);
   }
 
   public void testVariousAddsViaShard1LeaderClient() throws Exception {
@@ -787,7 +787,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
               update(
                       params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
-                      docs.toArray(new SolrInputDocument[docs.size()]))
+                      docs.toArray(new SolrInputDocument[0]))
                   .process(client);
             });
 
@@ -895,7 +895,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
               update(
                       params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
-                      docs.toArray(new SolrInputDocument[docs.size()]))
+                      docs.toArray(new SolrInputDocument[0]))
                   .process(client);
             });
 
@@ -964,12 +964,12 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                     "update.chain", "tolerant-chain-max-errors-10",
                     "maxErrors", "-1",
                     "commit", "true"),
-                docs.toArray(new SolrInputDocument[docs.size()]))
+                docs.toArray(new SolrInputDocument[0]))
             .process(client);
     assertUpdateTolerantErrors(
         "many docs from shard2 fail, but req should succeed",
         rsp,
-        expectedErrs.toArray(new ExpectedErr[expectedErrs.size()]));
+        expectedErrs.toArray(new ExpectedErr[0]));
     assertQueryDocIds(
         client,
         true,
@@ -984,7 +984,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
   //
   public void testAddsMixedWithDeletesViaCloudClient() throws Exception {
-    testAddsMixedWithDeletes(CLOUD_CLIENT);
+    testAddsMixedWithDeletes(COLLECTION_CLIENT);
   }
 
   public void testAddsMixedWithDeletesViaShard1LeaderClient() throws Exception {
@@ -1208,10 +1208,10 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       assertEquals(
           client.toString() + " should " + (shouldExist ? "" : "not ") + "find id: " + id,
           (shouldExist ? 1 : 0),
-          CLOUD_CLIENT.query(params("q", "{!term f=id}" + id)).getResults().getNumFound());
+          COLLECTION_CLIENT.query(params("q", "{!term f=id}" + id)).getResults().getNumFound());
     }
-    if (!CLOUD_CLIENT.equals(client)) {
-      assertQueryDocIds(CLOUD_CLIENT, shouldExist, ids);
+    if (!COLLECTION_CLIENT.equals(client)) {
+      assertQueryDocIds(COLLECTION_CLIENT, shouldExist, ids);
     }
   }
 

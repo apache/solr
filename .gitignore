@@ -15,9 +15,10 @@ out/
 /dev-tools/missing-doclet/out/
 
 # Eclipse
-/.project
-/.classpath
-/.settings/
+**/.project
+**/.classpath
+**/.settings/
+/.metadata
 #    Eclipse Gradle oddity
 **/bin/default/
 
@@ -37,7 +38,7 @@ __pycache__
 *~
 
 # Ignore lucene included build
-lucene/
+/lucene
 
 # Ignore gradle wrapper
 gradle/wrapper/gradle-wrapper.jar

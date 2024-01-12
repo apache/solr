@@ -21,13 +21,16 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -38,7 +41,6 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -67,6 +69,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -148,10 +151,16 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         .waitForState(
             collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(1, 1));
 
+    var builder =
+        new RandomizingCloudSolrClientBuilder(
+            Collections.singletonList(zkServer.getZkAddress()), Optional.empty());
+
     try (CloudSolrClient client =
-        getCloudSolrClient(
-            zkServer.getZkAddress(), true, ((CloudLegacySolrClient) cloudClient).getHttpClient())) {
-      client.setDefaultCollection(collectionName);
+        builder
+            .withDefaultCollection(collectionName)
+            .sendUpdatesOnlyToShardLeaders()
+            .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
+            .build()) {
       StoppableIndexingThread thread =
           new StoppableIndexingThread(controlClient, client, "i1", true);
       try {
@@ -857,6 +866,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     }
     commit();
 
+    List<String> errors = new CopyOnWriteArrayList<>();
     Thread indexThread =
         new Thread(
             () -> {
@@ -871,21 +881,26 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   indexAndUpdateCount(
                       router, ranges, docCounts, String.valueOf(id), id, documentIds);
                   Thread.sleep(sleep);
-                  if (usually(random)) {
-                    String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
-                    if (deleted.contains(delId)) continue;
-                    try {
-                      deleteAndUpdateCount(router, ranges, docCounts, delId);
-                      deleted.add(delId);
-                      documentIds.remove(String.valueOf(delId));
-                    } catch (Exception e) {
-                      log.error("Exception while deleting docs", e);
-                    }
-                  }
                 } catch (Exception e) {
                   log.error("Exception while adding doc id = {}", id, e);
                   // do not select this id for deletion ever
                   deleted.add(String.valueOf(id));
+                  errors.add(e.getMessage());
+                }
+
+                if (usually(random)) {
+                  String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
+                  if (deleted.contains(delId)) {
+                    continue;
+                  }
+                  try {
+                    deleteAndUpdateCount(router, ranges, docCounts, delId);
+                    deleted.add(delId);
+                    documentIds.remove(delId);
+                  } catch (Exception e) {
+                    log.error("Exception while deleting doc id = {}", delId, e);
+                    errors.add(e.getMessage());
+                  }
                 }
               }
             });
@@ -915,6 +930,9 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         log.error("Indexing thread interrupted", e);
       }
     }
+
+    assertTrue(
+        "Errors present while concurrently adding and removing docs " + errors, errors.isEmpty());
 
     waitForRecoveriesToFinish(true);
     checkDocCountsAndShardStates(docCounts, numReplicas, documentIds);
@@ -1260,7 +1278,11 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    try (SolrClient baseServer = getHttpSolrClient(baseUrl, 30000, 60000 * 5)) {
+    try (SolrClient baseServer =
+        new HttpSolrClient.Builder(baseUrl)
+            .withConnectionTimeout(30, TimeUnit.SECONDS)
+            .withSocketTimeout(5, TimeUnit.MINUTES)
+            .build()) {
       NamedList<Object> rsp = baseServer.request(request);
       if (log.isInfoEnabled()) {
         log.info("Shard split response: {}", Utils.toJSONString(rsp));
@@ -1330,17 +1352,19 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     Map<String, SolrDocument> shard11Docs = new HashMap<>();
     for (int i = 0; i < response.getResults().size(); i++) {
       SolrDocument document = response.getResults().get(i);
-      idVsVersion.put(
-          document.getFieldValue("id").toString(), document.getFieldValue("_version_").toString());
-      SolrDocument old = shard10Docs.put(document.getFieldValue("id").toString(), document);
+      String id = document.getFieldValue("id").toString();
+      Object version = document.getFieldValue("_version_");
+      assertNotNull("doc " + id + " has null _version_ field", version);
+      idVsVersion.put(id, version.toString());
+      SolrDocument old = shard10Docs.put(id, document);
       if (old != null) {
         log.error(
             "EXTRA: ID: {} on shard1_0. Old version: {} new version: {}",
-            document.getFieldValue("id"),
+            id,
             old.getFieldValue("_version_"),
-            document.getFieldValue("_version_"));
+            version);
       }
-      found.add(document.getFieldValue("id").toString());
+      found.add(id);
     }
     for (int i = 0; i < response2.getResults().size(); i++) {
       SolrDocument document = response2.getResults().get(i);

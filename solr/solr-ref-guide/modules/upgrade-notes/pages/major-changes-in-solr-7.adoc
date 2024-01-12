@@ -61,7 +61,7 @@ At its core, Solr autoscaling provides users with a rule syntax to define prefer
 
 === Other Features & Enhancements
 
-* The xref:query-guide:analytics.adoc[] has been refactored.
+* The analytics query guide has been refactored.
 
 * There were several other new features released in earlier 6.x releases, which you may have missed:
 ** xref:query-guide:learning-to-rank.adoc[]

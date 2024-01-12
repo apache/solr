@@ -17,11 +17,13 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 /** Unit tests for {@link Builder}. */
@@ -56,6 +58,34 @@ public class LBHttpSolrClientBuilderTest extends SolrTestCase {
       final ResponseParser usedParser = createdClient.getParser();
 
       assertTrue(usedParser instanceof BinaryResponseParser);
+    }
+  }
+
+  @Test
+  public void testUsesTimeoutProvidedByHttpClient() throws IOException {
+
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
+    clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, 12345);
+    clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 67890);
+    HttpClient httpClient = HttpClientUtil.createClient(clientParams);
+
+    try (LBHttpSolrClient createdClient =
+        new Builder().withBaseSolrUrl(ANY_BASE_SOLR_URL).withHttpClient(httpClient).build()) {
+      assertEquals(createdClient.getHttpClient(), httpClient);
+      assertEquals(67890, createdClient.connectionTimeoutMillis);
+      assertEquals(12345, createdClient.soTimeoutMillis);
+    }
+    HttpClientUtil.close(httpClient);
+  }
+
+  @Test
+  public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
+    try (LBHttpSolrClient createdClient =
+        new LBHttpSolrClient.Builder()
+            .withBaseSolrUrl(ANY_BASE_SOLR_URL)
+            .withDefaultDataStore("aCollection")
+            .build()) {
+      assertEquals("aCollection", createdClient.getDefaultCollection());
     }
   }
 }

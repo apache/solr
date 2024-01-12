@@ -181,7 +181,7 @@ Use `buildOnCommit` to rebuild the dictionary with every soft commit, or `buildO
 +
 Some lookup implementations may take a long time to build, especially with large indexes.
 In such cases, using `buildOnCommit` or `buildOnOptimize`, particularly with a high frequency of soft commits is not recommended.
-Instead build the suggester at a lower frequency by manually issuing requests with `suggest.build=true`.
+Instead, build the suggester at a lower frequency by manually issuing requests with `suggest.build=true`.
 
 `buildOnStartup`::
 +

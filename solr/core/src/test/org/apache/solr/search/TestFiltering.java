@@ -24,7 +24,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -540,7 +539,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
           }
         }
 
-        SolrQueryRequest sreq = req(params.toArray(new String[params.size()]));
+        SolrQueryRequest sreq = req(params.toArray(new String[0]));
         long expected = model.answer.cardinality();
         long expectedMultiSelect = model.multiSelect.cardinality();
         long expectedFacetQuery = model.facetQuery.cardinality();
@@ -564,7 +563,6 @@ public class TestFiltering extends SolrTestCaseJ4 {
               facet ? "/facet_counts/facet_queries/facetQuery/==" + expectedFacetQuery : null);
         } catch (Exception e) {
           // show the indexIter and queryIter for easier debugging
-          SolrException.log(log, e);
           String s =
               "FAILURE: indexSize="
                   + model.indexSize
@@ -574,7 +572,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
                   + qiter
                   + " request="
                   + params;
-          log.error(s);
+          log.error(s, e);
           fail(s);
         }
       }

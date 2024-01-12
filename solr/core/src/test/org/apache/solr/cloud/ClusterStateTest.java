@@ -59,14 +59,20 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     Slice slice2 = new Slice("shard2", sliceToProps, null, "collection1");
     slices.put("shard2", slice2);
     collectionStates.put(
-        "collection1", new DocCollection("collection1", slices, props, DocRouter.DEFAULT));
+        "collection1",
+        DocCollection.create("collection1", slices, props, DocRouter.DEFAULT, 0, null));
     collectionStates.put(
-        "collection2", new DocCollection("collection2", slices, props, DocRouter.DEFAULT));
+        "collection2",
+        DocCollection.create("collection2", slices, props, DocRouter.DEFAULT, 0, null));
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
+    assertFalse(clusterState.getCollection("collection1").getProperties().containsKey("shards"));
+
     byte[] bytes = Utils.toJSON(clusterState);
-    // System.out.println("#################### " + new String(bytes));
-    ClusterState loadedClusterState = ClusterState.createFromJson(-1, bytes, liveNodes);
+
+    ClusterState loadedClusterState = ClusterState.createFromJson(-1, bytes, liveNodes, null);
+    assertFalse(
+        loadedClusterState.getCollection("collection1").getProperties().containsKey("shards"));
 
     assertEquals(
         "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());
@@ -90,13 +96,13 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
             .get("node1")
             .getStr("prop2"));
 
-    loadedClusterState = ClusterState.createFromJson(-1, new byte[0], liveNodes);
+    loadedClusterState = ClusterState.createFromJson(-1, new byte[0], liveNodes, null);
 
     assertEquals(
         "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());
     assertEquals("Should not have collections", 0, loadedClusterState.getCollectionsMap().size());
 
-    loadedClusterState = ClusterState.createFromJson(-1, (byte[]) null, liveNodes);
+    loadedClusterState = ClusterState.createFromJson(-1, (byte[]) null, liveNodes, null);
 
     assertEquals(
         "Provided liveNodes not used properly", 2, loadedClusterState.getLiveNodes().size());

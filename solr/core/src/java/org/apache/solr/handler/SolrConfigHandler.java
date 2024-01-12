@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.util.StrUtils.formatString;
@@ -32,7 +31,6 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
-import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -61,6 +59,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.request.DataStoreSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
@@ -213,13 +212,12 @@ public class SolrConfigHandler extends RequestHandlerBase
             resp.add(
                 ZNODEVER,
                 Map.of(
-                    ConfigOverlay.NAME,
-                        req.getCore().getSolrConfig().getOverlay().getZnodeVersion(),
+                    ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().getVersion(),
                     RequestParams.NAME,
                         req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
             boolean isStale = false;
             int expectedVersion = req.getParams().getInt(ConfigOverlay.NAME, -1);
-            int actualVersion = req.getCore().getSolrConfig().getOverlay().getZnodeVersion();
+            int actualVersion = req.getCore().getSolrConfig().getOverlay().getVersion();
             if (expectedVersion > actualVersion) {
               log.info(
                   "expecting overlay version {} but my version is {}",
@@ -438,7 +436,7 @@ public class SolrConfigHandler extends RequestHandlerBase
                 @SuppressWarnings({"rawtypes"})
                 Map val;
                 String key = entry.getKey();
-                if (isNullOrEmpty(key)) {
+                if (StrUtils.isNullOrEmpty(key)) {
                   op.addError("null key ");
                   continue;
                 }
@@ -589,7 +587,7 @@ public class SolrConfigHandler extends RequestHandlerBase
         int latestVersion =
             ZkController.persistConfigResourceToZooKeeper(
                 (ZkSolrResourceLoader) loader,
-                overlay.getZnodeVersion(),
+                overlay.getVersion(),
                 ConfigOverlay.RESOURCE_NAME,
                 overlay.toByteArray(),
                 true);
@@ -962,7 +960,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     }
   }
 
-  private static class PerReplicaCallable extends SolrRequest<SolrResponse>
+  private static class PerReplicaCallable extends DataStoreSolrRequest<SolrResponse>
       implements Callable<Boolean> {
     String coreUrl;
     String prop;
@@ -1041,7 +1039,7 @@ public class SolrConfigHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    final List<Api> apis = Lists.newArrayList();
+    final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new GetConfigAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyConfigComponentAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyParamSetAPI(this)));

@@ -18,7 +18,7 @@ package org.apache.solr.update.processor;
 
 import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
 
-import org.apache.commons.lang3.StringUtils;
+import java.util.stream.Collectors;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -79,7 +79,9 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
           if (src.getValueCount() <= 1) return src;
 
           SolrInputField result = new SolrInputField(src.getName());
-          result.setValue(StringUtils.join(src.getValues(), delimiter));
+
+          result.setValue(
+              src.getValues().stream().map(String::valueOf).collect(Collectors.joining(delimiter)));
           return result;
         });
   }

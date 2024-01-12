@@ -18,14 +18,15 @@
 
 If you use https://prometheus.io[Prometheus] and https://grafana.com[Grafana] for metrics storage and data visualization, Solr includes a Prometheus exporter to collect metrics and other data.
 
+The Prometheus exporter is included with the full Solr distribution, and is located under `prometheus-exporter/`.
+It is not included in the `slim` Solr distribution.
+
 A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from the xref:metrics-reporting.adoc#metrics-api[Metrics API], but also facet counts which come from xref:query-guide:faceting.adoc[] and responses to xref:configuration-guide:collections-api.adoc[] commands and xref:ping.adoc[] requests.
 
 This graphic provides a more detailed view:
 
 .solr-exporter Diagram
 image::monitoring-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
-
-The Prometheus exporter is included with the Solr distribution, and is located under `prometheus-exporter/`.
 
 There are three aspects to running `solr-exporter`:
 
@@ -38,6 +39,8 @@ See the section below <<Prometheus Configuration>>
 
 == Starting the Exporter
 You can start `solr-exporter` by running `./bin/solr-exporter` (Linux) or `.\bin\solr-exporter.cmd` (Windows) from the `prometheus-exporter/` directory.
+
+The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
 
 See the commands below depending on your operating system and Solr operating mode:
 
@@ -170,7 +173,15 @@ The freshness of the metrics can be improved by reducing the scrape interval but
 +
 A unique ID for the cluster to monitor. This ID will be added to all metrics as a label `cluster_id` and can be used as a filter in the Grafana dashboard if you operate multiple Solr clusters reporting to the same Prometheus instance. If this option is omitted, a hash of the `baseUrl` or `zkHost` will be used as ID by default.
 
-The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
+`-u`, `--credentials`, `$CREDENTIALS`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Specify the credentials in the format `username:password`. Example: `--credentials solr:SolrRocks`.
+
 
 === Environment Variable Options
 

@@ -34,8 +34,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
@@ -216,7 +215,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     }
 
     for (CommandOperation cmd : cmds) {
-      TraceUtils.ifNotNoop(req.getSpan(), (span) -> span.log("Command: " + cmd.name));
+      TraceUtils.ifNotNoop(req.getSpan(), (span) -> span.addEvent("Command: " + cmd.name));
       commands.get(cmd.name).invoke(req, rsp, cmd);
     }
 
@@ -339,14 +338,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
 
     @Override
     public int hashCode() {
-      return new HashCodeBuilder()
-          .append(command)
-          .append(method)
-          .append(obj)
-          .append(paramsCount)
-          .append(parameterClass)
-          .append(isWrappedInPayloadObj)
-          .toHashCode();
+      return Objects.hash(command, method, obj, paramsCount, parameterClass, isWrappedInPayloadObj);
     }
 
     @Override
@@ -356,14 +348,12 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
       if (!(rhs instanceof Cmd)) return false;
 
       final Cmd rhsCast = (Cmd) rhs;
-      return new EqualsBuilder()
-          .append(command, rhsCast.command)
-          .append(method, rhsCast.method)
-          .append(obj, rhsCast.obj)
-          .append(paramsCount, rhsCast.paramsCount)
-          .append(parameterClass, rhsCast.parameterClass)
-          .append(isWrappedInPayloadObj, rhsCast.isWrappedInPayloadObj)
-          .isEquals();
+      return Objects.equals(command, rhsCast.command)
+          && Objects.equals(method, rhsCast.method)
+          && Objects.equals(obj, rhsCast.obj)
+          && paramsCount == rhsCast.paramsCount
+          && Objects.equals(parameterClass, rhsCast.parameterClass)
+          && isWrappedInPayloadObj == rhsCast.isWrappedInPayloadObj;
     }
 
     private void checkForErrorInPayload(CommandOperation cmd) {

@@ -16,12 +16,16 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.SolrTestCaseJ4.params;
+import static org.apache.solr.SolrTestCaseJ4.sdoc;
+
 import java.util.Arrays;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,7 +34,9 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore();
+    solrClientTestRule.startSolr();
+
+    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Before
@@ -139,7 +145,9 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
   @Test
   public void testGetIdsWithParams() throws Exception {
     SolrDocumentList rsp =
-        getSolrClient().getById(Arrays.asList("0", "1", "2"), params(CommonParams.FL, "id"));
+        solrClientTestRule
+            .getSolrClient()
+            .getById(Arrays.asList("0", "1", "2"), params(CommonParams.FL, "id"));
     assertEquals(2, rsp.getNumFound());
 
     assertEquals("1", rsp.get(0).get("id"));

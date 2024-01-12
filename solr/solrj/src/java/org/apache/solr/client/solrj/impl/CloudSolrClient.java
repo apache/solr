@@ -52,7 +52,6 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -75,6 +74,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
@@ -90,7 +90,6 @@ public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private volatile String defaultCollection;
   // no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES =
       Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
@@ -99,34 +98,30 @@ public abstract class CloudSolrClient extends SolrClient {
   private final boolean updatesToLeaders;
   private final boolean directUpdatesToLeadersOnly;
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
-  boolean parallelUpdates; // TODO final
+  private final boolean parallelUpdates;
   private ExecutorService threadPool =
       ExecutorUtil.newMDCAwareCachedThreadPool(
           new SolrNamedThreadFactory("CloudSolrClient ThreadPool"));
 
   public static final String STATE_VERSION = "_stateVer_";
-  private long retryExpiryTime =
+  protected long retryExpiryTimeNano =
       TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
-  private final Set<String> NON_ROUTABLE_PARAMS;
+  private static final Set<String> NON_ROUTABLE_PARAMS =
+      Set.of(
+          UpdateParams.EXPUNGE_DELETES,
+          UpdateParams.MAX_OPTIMIZE_SEGMENTS,
+          UpdateParams.COMMIT,
+          UpdateParams.WAIT_SEARCHER,
+          UpdateParams.OPEN_SEARCHER,
+          UpdateParams.SOFT_COMMIT,
+          UpdateParams.PREPARE_COMMIT,
+          UpdateParams.OPTIMIZE
 
-  {
-    NON_ROUTABLE_PARAMS = new HashSet<>();
-    NON_ROUTABLE_PARAMS.add(UpdateParams.EXPUNGE_DELETES);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.MAX_OPTIMIZE_SEGMENTS);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.COMMIT);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.WAIT_SEARCHER);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.OPEN_SEARCHER);
+          // Not supported via SolrCloud
+          // UpdateParams.ROLLBACK
+          );
 
-    NON_ROUTABLE_PARAMS.add(UpdateParams.SOFT_COMMIT);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.PREPARE_COMMIT);
-    NON_ROUTABLE_PARAMS.add(UpdateParams.OPTIMIZE);
-
-    // Not supported via SolrCloud
-    // NON_ROUTABLE_PARAMS.add(UpdateParams.ROLLBACK);
-
-  }
-
-  private volatile List<Object> locks = objectList(3);
+  protected volatile Object[] locks = objectList(3);
 
   /** Constructs {@link CloudSolrClient} instances from provided configuration. */
   public static class Builder extends CloudHttp2SolrClient.Builder {
@@ -188,7 +183,7 @@ public abstract class CloudSolrClient extends SolrClient {
     final AtomicLong puts = new AtomicLong();
     final AtomicLong hits = new AtomicLong();
     final Lock evictLock = new ReentrantLock(true);
-    protected volatile long timeToLive = 60 * 1000L;
+    protected volatile long timeToLiveMs = 60 * 1000L;
 
     @Override
     public ExpiringCachedDocCollection get(Object key) {
@@ -199,7 +194,7 @@ public abstract class CloudSolrClient extends SolrClient {
         evictStale();
         return null;
       }
-      if (val.isExpired(timeToLive)) {
+      if (val.isExpired(timeToLiveMs)) {
         super.remove(key);
         return null;
       }
@@ -217,7 +212,7 @@ public abstract class CloudSolrClient extends SolrClient {
       if (!evictLock.tryLock()) return;
       try {
         for (Entry<String, ExpiringCachedDocCollection> e : entrySet()) {
-          if (e.getValue().isExpired(timeToLive)) {
+          if (e.getValue().isExpired(timeToLiveMs)) {
             super.remove(e.getKey());
           }
         }
@@ -227,38 +222,29 @@ public abstract class CloudSolrClient extends SolrClient {
     }
   }
 
-  /**
-   * This is the time to wait to refetch the state after getting the same state version from ZK
-   *
-   * <p>secs
-   */
-  public void setRetryExpiryTime(int secs) {
-    this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
-  }
-
   protected final StateCache collectionStateCache = new StateCache();
 
   class ExpiringCachedDocCollection {
     final DocCollection cached;
-    final long cachedAt;
+    final long cachedAtNano;
     // This is the time at which the collection is retried and got the same old version
-    volatile long retriedAt = -1;
+    volatile long retriedAtNano = -1;
     // flag that suggests that this is potentially to be rechecked
     volatile boolean maybeStale = false;
 
     ExpiringCachedDocCollection(DocCollection cached) {
       this.cached = cached;
-      this.cachedAt = System.nanoTime();
+      this.cachedAtNano = System.nanoTime();
     }
 
     boolean isExpired(long timeToLiveMs) {
-      return (System.nanoTime() - cachedAt)
+      return (System.nanoTime() - cachedAtNano)
           > TimeUnit.NANOSECONDS.convert(timeToLiveMs, TimeUnit.MILLISECONDS);
     }
 
     boolean shouldRetry() {
       if (maybeStale) { // we are not sure if it is stale so check with retry time
-        if ((retriedAt == -1 || (System.nanoTime() - retriedAt) > retryExpiryTime)) {
+        if ((retriedAtNano == -1 || (System.nanoTime() - retriedAtNano) > retryExpiryTimeNano)) {
           return true; // we retried a while back. and we could not get anything new.
           // it's likely that it is not going to be available now also.
         }
@@ -267,7 +253,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     void setRetriedAt() {
-      retriedAt = System.nanoTime();
+      retriedAtNano = System.nanoTime();
     }
   }
 
@@ -277,16 +263,6 @@ public abstract class CloudSolrClient extends SolrClient {
     this.parallelUpdates = parallelUpdates;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
     this.requestRLTGenerator = new RequestReplicaListTransformerGenerator();
-  }
-
-  /**
-   * Sets the cache ttl for DocCollection Objects cached.
-   *
-   * @param seconds ttl value in seconds
-   */
-  public void setCollectionCacheTTl(int seconds) {
-    assert seconds > 0;
-    this.collectionStateCache.timeToLive = seconds * 1000L;
   }
 
   protected abstract LBSolrClient getLbClient();
@@ -301,7 +277,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
   @Override
   public void close() throws IOException {
-    if (this.threadPool != null && !this.threadPool.isShutdown()) {
+    if (this.threadPool != null && !ExecutorUtil.isShutdown(this.threadPool)) {
       ExecutorUtil.shutdownAndAwaitTermination(this.threadPool);
       this.threadPool = null;
     }
@@ -311,33 +287,8 @@ public abstract class CloudSolrClient extends SolrClient {
     return getLbClient().getParser();
   }
 
-  /**
-   * Note: This setter method is <b>not thread-safe</b>.
-   *
-   * @param processor Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   */
-  public void setParser(ResponseParser processor) {
-    getLbClient().setParser(processor);
-  }
-
   public RequestWriter getRequestWriter() {
     return getLbClient().getRequestWriter();
-  }
-
-  public void setRequestWriter(RequestWriter requestWriter) {
-    getLbClient().setRequestWriter(requestWriter);
-  }
-
-  /** Sets the default collection for request */
-  public void setDefaultCollection(String collection) {
-    this.defaultCollection = collection;
-  }
-
-  /** Gets the default collection for request */
-  public String getDefaultCollection() {
-    return defaultCollection;
   }
 
   /** Gets whether direct updates are sent in parallel */
@@ -463,7 +414,8 @@ public abstract class CloudSolrClient extends SolrClient {
     long start = System.nanoTime();
 
     if (parallelUpdates) {
-      final Map<String, Future<NamedList<?>>> responseFutures = new HashMap<>(routes.size());
+      final Map<String, Future<NamedList<?>>> responseFutures =
+          CollectionUtil.newHashMap(routes.size());
       for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
         final String url = entry.getKey();
         final LBSolrClient.Req lbRequest = entry.getValue();
@@ -802,6 +754,7 @@ public abstract class CloudSolrClient extends SolrClient {
     } else if (collection == null) {
       collection = defaultCollection;
     }
+
     List<String> inputCollections =
         collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
     return requestWithRetryOnStaleState(request, 0, inputCollections);
@@ -825,18 +778,14 @@ public abstract class CloudSolrClient extends SolrClient {
     String stateVerParam = null;
     List<DocCollection> requestedCollections = null;
     boolean isCollectionRequestOfV2 = false;
-    if (request instanceof V2RequestSupport) {
-      request = ((V2RequestSupport) request).getV2Request();
-    }
     if (request instanceof V2Request) {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
     boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
-    boolean isUpdate = (request instanceof IsUpdateRequest) && (request instanceof UpdateRequest);
     if (!inputCollections.isEmpty()
         && !isAdmin
         && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
-      Set<String> requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
+      Set<String> requestedCollectionNames = resolveAliases(inputCollections);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
@@ -1033,11 +982,12 @@ public abstract class CloudSolrClient extends SolrClient {
     connect();
 
     boolean sendToLeaders = false;
-    boolean isUpdate = false;
 
     if (request instanceof IsUpdateRequest) {
-      if (request instanceof UpdateRequest) {
-        isUpdate = true;
+      sendToLeaders = ((IsUpdateRequest) request).isSendToLeaders() && this.isUpdatesToLeaders();
+
+      // Check if we can do a "directUpdate" ...
+      if (sendToLeaders && request instanceof UpdateRequest) {
         if (inputCollections.size() > 1) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
@@ -1054,7 +1004,6 @@ public abstract class CloudSolrClient extends SolrClient {
           return response;
         }
       }
-      sendToLeaders = true;
     }
 
     SolrParams reqParams = request.getParams();
@@ -1084,7 +1033,7 @@ public abstract class CloudSolrClient extends SolrClient {
       }
 
     } else { // Typical...
-      Set<String> collectionNames = resolveAliases(inputCollections, isUpdate);
+      Set<String> collectionNames = resolveAliases(inputCollections);
       if (collectionNames.isEmpty()) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -1133,8 +1082,9 @@ public abstract class CloudSolrClient extends SolrClient {
           String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
               || replica.getState()
-                  != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
-          continue;
+                  != Replica.State.ACTIVE) { // Must be an ACTIVE replica to continue
+            continue;
+          }
           if (sendToLeaders && replica.equals(leader)) {
             sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
           } else {
@@ -1157,8 +1107,14 @@ public abstract class CloudSolrClient extends SolrClient {
       sortedReplicas.forEach(
           replica -> {
             if (seenNodes.add(replica.getNodeName())) {
-              theUrlList.add(
-                  ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              if (inputCollections.size() == 1 && collectionNames.size() == 1) {
+                // If we have a single collection name (and not a alias to multiple collection),
+                // send the query directly to a replica of this collection.
+                theUrlList.add(replica.getCoreUrl());
+              } else {
+                theUrlList.add(
+                    ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              }
             }
           });
 
@@ -1179,7 +1135,7 @@ public abstract class CloudSolrClient extends SolrClient {
    * Resolves the input collections to their possible aliased collections. Doesn't validate
    * collection existence.
    */
-  private Set<String> resolveAliases(List<String> inputCollections, boolean isUpdate) {
+  private Set<String> resolveAliases(List<String> inputCollections) {
     if (inputCollections.isEmpty()) {
       return Collections.emptySet();
     }
@@ -1195,28 +1151,42 @@ public abstract class CloudSolrClient extends SolrClient {
     return uniqueNames;
   }
 
+  /**
+   * If true, this client has been configured such that it will generally prefer to send {@link
+   * IsUpdateRequest} requests to a shard leader, if and only if {@link
+   * IsUpdateRequest#isSendToLeaders} is also true. If false, then this client has been configured
+   * to obey normal routing preferences when dealing with {@link IsUpdateRequest} requests.
+   *
+   * @see #isDirectUpdatesToLeadersOnly
+   */
   public boolean isUpdatesToLeaders() {
     return updatesToLeaders;
   }
 
   /**
+   * If true, this client has been configured such that "direct updates" will <em>only</em> be sent
+   * to the current leader of the corrisponding shard, and will not be retried with other replicas.
+   * This method has no effect if {@link #isUpdatesToLeaders()} or {@link
+   * IsUpdateRequest#isSendToLeaders} returns false.
+   *
+   * <p>A "direct update" is any update that can be sent directly to a single shard, and does not
+   * need to be broadcast to every shard. (Example: document updates or "delete by id" when using
+   * the default router; non-direct updates are things like commits and "delete by query").
+   *
+   * <p>NOTE: If a single {@link UpdateRequest} contains multiple "direct updates" for different
+   * shards, this client may break the request up and merge th resposes.
+   *
    * @return true if direct updates are sent to shard leaders only
    */
   public boolean isDirectUpdatesToLeadersOnly() {
     return directUpdatesToLeadersOnly;
   }
 
-  /**
-   * If caches are expired they are refreshed after acquiring a lock. use this to set the number of
-   * locks
-   */
-  public void setParallelCacheRefreshes(int n) {
-    locks = objectList(n);
-  }
-
-  protected static ArrayList<Object> objectList(int n) {
-    ArrayList<Object> l = new ArrayList<>(n);
-    for (int i = 0; i < n; i++) l.add(new Object());
+  protected static Object[] objectList(int n) {
+    Object[] l = new Object[n];
+    for (int i = 0; i < n; i++) {
+      l[i] = new Object();
+    }
     return l;
   }
 
@@ -1239,12 +1209,10 @@ public abstract class CloudSolrClient extends SolrClient {
       // it is readily available just return it
       return ref.get();
     }
-    List<Object> locks = this.locks;
-    final Object lock =
-        locks.get(
-            Math.abs(
-                Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
-    DocCollection fetchedCol = null;
+    Object[] locks = this.locks;
+    int lockId =
+        Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.length);
+    final Object lock = locks[lockId];
     synchronized (lock) {
       /*we have waited for sometime just check once again*/
       cacheEntry = collectionStateCache.get(collection);
@@ -1254,7 +1222,7 @@ public abstract class CloudSolrClient extends SolrClient {
       }
       // We are going to fetch a new version
       // we MUST try to get a new version
-      fetchedCol = ref.get(); // this is a call to ZK
+      DocCollection fetchedCol = ref.get(); // this is a call to ZK
       if (fetchedCol == null) return null; // this collection no more exists
       if (col != null && fetchedCol.getZNodeVersion() == col.getZNodeVersion()) {
         cacheEntry.setRetriedAt(); // we retried and found that it is the same version

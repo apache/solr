@@ -32,7 +32,6 @@ import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.FETCH_FROM_LEADER;
 import static org.apache.solr.handler.ReplicationHandler.FILE;
 import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
-import static org.apache.solr.handler.ReplicationHandler.FileInfo;
 import static org.apache.solr.handler.ReplicationHandler.GENERATION;
 import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.LEADER_URL;
@@ -42,7 +41,6 @@ import static org.apache.solr.handler.ReplicationHandler.OFFSET;
 import static org.apache.solr.handler.ReplicationHandler.SIZE;
 import static org.apache.solr.handler.ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO;
 
-import com.google.common.base.Strings;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -116,11 +114,14 @@ import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler.FileInfo;
+import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -131,6 +132,7 @@ import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -264,11 +266,13 @@ public class IndexFetcher {
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
-
+    // no metrics, just tracing
+    InstrumentedHttpRequestExecutor executor = new InstrumentedHttpRequestExecutor(null);
     return HttpClientUtil.createClient(
         httpClientParams,
         core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyConnectionManager(),
-        true);
+        true,
+        executor);
   }
 
   public IndexFetcher(
@@ -373,8 +377,8 @@ public class IndexFetcher {
     try (SolrClient client =
         new Builder(leaderUrl)
             .withHttpClient(myHttpClient)
-            .withConnectionTimeout(connTimeout)
-            .withSocketTimeout(soTimeout)
+            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .build()) {
 
       return client.request(req);
@@ -400,8 +404,8 @@ public class IndexFetcher {
     try (SolrClient client =
         new HttpSolrClient.Builder(leaderUrl)
             .withHttpClient(myHttpClient)
-            .withConnectionTimeout(connTimeout)
-            .withSocketTimeout(soTimeout)
+            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .build()) {
       NamedList<?> response = client.request(req);
 
@@ -498,7 +502,7 @@ public class IndexFetcher {
         response = getLatestVersion();
       } catch (Exception e) {
         final String errorMsg = e.toString();
-        if (!Strings.isNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
+        if (StrUtils.isNotNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
           log.warn(
               "Leader at: {} is not available. Index fetch failed by interrupt. Exception: {}",
               leaderUrl,
@@ -546,7 +550,7 @@ public class IndexFetcher {
       }
 
       if (latestVersion == 0L) {
-        if (commit.getGeneration() != 0) {
+        if (IndexDeletionPolicyWrapper.getCommitTimestamp(commit) != 0L) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit
           log.info("New index in Leader. Deleting mine...");
@@ -843,7 +847,7 @@ public class IndexFetcher {
       markReplicationStop();
       dirFileFetcher = null;
       localFileFetcher = null;
-      if (fsyncService != null && !fsyncService.isShutdown()) fsyncService.shutdown();
+      if (fsyncService != null && !ExecutorUtil.isShutdown(fsyncService)) fsyncService.shutdown();
       fsyncService = null;
       stop = false;
       fsyncException = null;
@@ -855,24 +859,24 @@ public class IndexFetcher {
           core.getDirectoryFactory().remove(tmpIndexDir);
         }
       } catch (Exception e) {
-        SolrException.log(log, e);
+        log.error("Error cleaning up tmpIndexDir", e);
       } finally {
         try {
           if (tmpIndexDir != null) core.getDirectoryFactory().release(tmpIndexDir);
         } catch (Exception e) {
-          SolrException.log(log, e);
+          log.error("Error releasing tmpIndexDir", e);
         }
         try {
           if (indexDir != null) {
             core.getDirectoryFactory().release(indexDir);
           }
         } catch (Exception e) {
-          SolrException.log(log, e);
+          log.error("Error releasing indexDir", e);
         }
         try {
           if (tmpTlogDir != null) delTree(tmpTlogDir);
         } catch (Exception e) {
-          SolrException.log(log, e);
+          log.error("Error deleting tmpTlogDir", e);
         }
       }
     }
@@ -900,7 +904,7 @@ public class IndexFetcher {
    * terminate the fsync service and wait for all the tasks to complete. If it is already terminated
    */
   private void terminateAndWaitFsyncService() throws Exception {
-    if (fsyncService.isTerminated()) return;
+    if (ExecutorUtil.isTerminated(fsyncService)) return;
     fsyncService.shutdown();
     // give a long wait say 1 hr
     fsyncService.awaitTermination(3600, TimeUnit.SECONDS);
@@ -972,13 +976,10 @@ public class IndexFetcher {
 
       String tmpFileName = REPLICATION_PROPERTIES + "." + System.nanoTime();
       final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      Writer outFile =
-          new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
-      try {
+      try (Writer outFile =
+          new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8)) {
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(tmpFileName));
-      } finally {
-        IOUtils.closeQuietly(outFile);
       }
 
       solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);
@@ -1048,7 +1049,7 @@ public class IndexFetcher {
           try {
             waitSearcher[0].get();
           } catch (InterruptedException | ExecutionException e) {
-            SolrException.log(log, e);
+            log.error("Exception waiting for searcher", e);
           }
         }
         commitPoint = searcher.get().getIndexReader().getIndexCommit();
@@ -1221,6 +1222,7 @@ public class IndexFetcher {
   // -----------START----------------------
   static BooleanSupplier testWait = () -> true;
   static Function<String, Long> usableDiskSpaceProvider = dir -> getUsableSpace(dir);
+
   // ------------ END---------------------
 
   private static Long getUsableSpace(String dir) {
@@ -1435,7 +1437,7 @@ public class IndexFetcher {
         return false;
       }
     } catch (IOException e) {
-      SolrException.log(log, "could not check if a file exists", e);
+      log.error("could not check if a file exists", e);
       return false;
     }
     try {
@@ -1444,7 +1446,7 @@ public class IndexFetcher {
           .move(tmpIdxDir, indexDir, fname, DirectoryFactory.IOCONTEXT_NO_CACHE);
       success = true;
     } catch (IOException e) {
-      SolrException.log(log, "Could not move file", e);
+      log.error("Could not move file", e);
     }
     return success;
   }
@@ -1553,7 +1555,7 @@ public class IndexFetcher {
     try {
       Files.move(tlogDir, backupTlogDir, StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
-      SolrException.log(log, "Unable to rename: " + tlogDir + " to: " + backupTlogDir, e);
+      log.error("Unable to rename: {} to: {}", tlogDir, backupTlogDir, e);
       return false;
     }
 
@@ -1563,7 +1565,7 @@ public class IndexFetcher {
     try {
       Files.move(src, tlogDir, StandardCopyOption.ATOMIC_MOVE);
     } catch (IOException e) {
-      SolrException.log(log, "Unable to rename: " + src + " to: " + tlogDir, e);
+      log.error("Unable to rename: {} to: {}", src, tlogDir, e);
 
       // In case of error, try to revert back the original tlog directory
       try {
@@ -1609,14 +1611,14 @@ public class IndexFetcher {
       names.add(name, null);
     }
     // get the details of the local conf files with the same alias/name
-    List<Map<String, Object>> localFilesInfo =
+    List<CoreReplicationAPI.FileMetaData> localFilesInfo =
         replicationHandler.getConfFileInfoFromCache(names, confFileInfoCache);
     // compare their size/checksum to see if
-    for (Map<String, Object> fileInfo : localFilesInfo) {
-      String name = (String) fileInfo.get(NAME);
+    for (CoreReplicationAPI.FileMetaData fileInfo : localFilesInfo) {
+      String name = fileInfo.name;
       Map<String, Object> m = nameVsFile.get(name);
       if (m == null) continue; // the file is not even present locally (so must be downloaded)
-      if (m.get(CHECKSUM).equals(fileInfo.get(CHECKSUM))) {
+      if (m.get(CHECKSUM).equals(fileInfo.checksum)) {
         nameVsFile.remove(name); // checksums are same so the file need not be downloaded
       }
     }
@@ -1782,7 +1784,7 @@ public class IndexFetcher {
         fetch();
       } catch (Exception e) {
         if (!aborted) {
-          SolrException.log(IndexFetcher.log, "Error fetching file, doing one retry...", e);
+          IndexFetcher.log.error("Error fetching file, doing one retry...", e);
           // one retry
           fetch();
         } else {
@@ -1794,18 +1796,14 @@ public class IndexFetcher {
     private void fetch() throws Exception {
       try {
         while (true) {
-          final FastInputStream is = getStream();
           int result;
-          try {
+          try (FastInputStream is = getStream()) {
             // fetch packets one by one in a single request
             result = fetchPackets(is);
             if (result == 0 || result == NO_CONTENT) {
-
               return;
             }
             // if there is an error continue. But continue from the point where it got broken
-          } finally {
-            IOUtils.closeQuietly(is);
           }
         }
       } finally {
@@ -1959,7 +1957,6 @@ public class IndexFetcher {
 
     /** Open a new stream using HttpClient */
     private FastInputStream getStream() throws IOException {
-
       ModifiableSolrParams params = new ModifiableSolrParams();
 
       //    //the method is command=filecontent
@@ -1991,8 +1988,8 @@ public class IndexFetcher {
           new Builder(leaderUrl)
               .withHttpClient(myHttpClient)
               .withResponseParser(null)
-              .withConnectionTimeout(connTimeout)
-              .withSocketTimeout(soTimeout)
+              .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+              .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
               .build()) {
         QueryRequest req = new QueryRequest(params);
         response = client.request(req);
@@ -2003,7 +2000,7 @@ public class IndexFetcher {
         return new FastInputStream(is);
       } catch (Exception e) {
         // close stream on error
-        org.apache.commons.io.IOUtils.closeQuietly(is);
+        IOUtils.closeQuietly(is);
         throw new IOException("Could not download file '" + fileName + "'", e);
       }
     }
@@ -2123,8 +2120,8 @@ public class IndexFetcher {
     try (SolrClient client =
         new HttpSolrClient.Builder(leaderUrl)
             .withHttpClient(myHttpClient)
-            .withConnectionTimeout(connTimeout)
-            .withSocketTimeout(soTimeout)
+            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .build()) {
       QueryRequest request = new QueryRequest(params);
       return client.request(request);

@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -174,7 +175,11 @@ public class DatePointField extends PointField implements DateValueFieldType {
       values[i] = DateMathParser.parseMath(null, val).getTime();
       i++;
     }
-    return LongPoint.newSetQuery(field.getName(), values);
+    if (field.hasDocValues()) {
+      return LongField.newSetQuery(field.getName(), values);
+    } else {
+      return LongPoint.newSetQuery(field.getName(), values);
+    }
   }
 
   @Override

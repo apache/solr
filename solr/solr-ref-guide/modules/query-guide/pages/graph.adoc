@@ -635,7 +635,7 @@ In a lagged correlation an event occurs and following a *delay* another event oc
 The window parameter doesn't capture the delay as we only know that an event occurred somewhere within a prior window.
 
 The `lag` parameter can be used to start calculating the window parameter a number of ten second windows in the past.
-For example we could walk the graph in 20 second windows starting from 30 seconds prior to a set of root events.
+For example, we could walk the graph in 20 second windows starting from 30 seconds prior to a set of root events.
 By adjusting the lag and re-running the query we can determine which lagged window has the highest degree.
 From this we can determine the delay.
 
@@ -733,7 +733,7 @@ This score give us a good indication of where to begin our *root cause analysis*
 To switch to *day* or *weekday* time windows we must first index day truncated ISO 8601 timestamps in a string field with the log records.
 In the example below the field `time_day_s` contains the day truncated time stamps.
 
-Then its simply a matter of specifying -3DAYS in the window parameter. This will switch from the default ten second
+Then it's simply a matter of specifying -3DAYS in the window parameter. This will switch from the default ten second
 time windows to daily windows.
 
 [source,text]

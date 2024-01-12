@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.google.common.collect.Maps;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +32,7 @@ import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -111,12 +112,17 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
     final Api api = apiBag.lookup(v2Path, v2Method, parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
     final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, Maps.newHashMap()) {
+        new LocalSolrQueryRequest(null, Map.of()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
             if (v2RequestBody == null) return Collections.emptyList();
             return ApiBag.getCommandOperations(
                 new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
+          }
+
+          @Override
+          public Collection<ContentStream> getContentStreams() {
+            return List.of(new ContentStreamBase.StringStream(v2RequestBody));
           }
 
           @Override

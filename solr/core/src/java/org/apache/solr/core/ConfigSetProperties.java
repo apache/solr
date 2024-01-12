@@ -20,7 +20,6 @@ import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -50,9 +49,9 @@ public class ConfigSetProperties {
    * @return the properties in a NamedList
    */
   public static NamedList<Object> readFromResourceLoader(SolrResourceLoader loader, String name) {
-    InputStreamReader reader;
-    try {
-      reader = new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8);
+    try (InputStreamReader reader =
+        new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8)) {
+      return readFromInputStream(reader);
     } catch (SolrResourceNotFoundException ex) {
       if (log.isDebugEnabled()) {
         log.debug("Did not find ConfigSet properties, assuming default properties: ", ex);
@@ -61,12 +60,6 @@ public class ConfigSetProperties {
     } catch (Exception ex) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Unable to load reader for ConfigSet properties: " + name, ex);
-    }
-
-    try {
-      return readFromInputStream(reader);
-    } finally {
-      IOUtils.closeQuietly(reader);
     }
   }
 
@@ -83,8 +76,6 @@ public class ConfigSetProperties {
       return new NamedList<>(map);
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load ConfigSet properties", ex);
-    } finally {
-      IOUtils.closeQuietly(reader);
     }
   }
 }

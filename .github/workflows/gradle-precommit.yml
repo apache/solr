@@ -3,13 +3,16 @@ name: Gradle Precommit
 on: 
   pull_request:
     branches:
-    - '*'
+    - '**'
 
 jobs:
   test:
     name: gradle precommit w/ Java 11
 
     runs-on: ubuntu-latest
+
+    env:
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
 
     steps:
     # Setup
@@ -33,9 +36,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-precommit-
           ${{ runner.os }}-gradle-
-
-    - name: Initialize gradle settings
-      run: ./gradlew localSettings
 
     - name: Run gradle check (without tests)
       run: ./gradlew check -x test -Ptask.times=true

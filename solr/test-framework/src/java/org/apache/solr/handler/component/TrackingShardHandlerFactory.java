@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -33,6 +32,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.embedded.JettySolrRunner;
 
 /**
  * A ShardHandlerFactory that extends HttpShardHandlerFactory and tracks requests made to
@@ -145,7 +145,7 @@ public class TrackingShardHandlerFactory extends HttpShardHandlerFactory {
    * Sets the tracking queue for all nodes participating in this cluster. Once this method returns,
    * all search and core admin requests distributed to shards will be submitted to the given queue.
    *
-   * @param runners a list of {@link org.apache.solr.client.solrj.embedded.JettySolrRunner} nodes
+   * @param runners a list of {@link org.apache.solr.embedded.JettySolrRunner} nodes
    * @param queue an implementation of {@link java.util.Queue} which accepts {@link
    *     org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams}
    *     instances

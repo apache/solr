@@ -602,7 +602,7 @@ public class IndexSizeEstimator {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          mergeInstance.visitDocument(docId, visitor);
+          mergeInstance.document(docId, visitor);
         }
         if (mergeInstance != storedFieldsReader) {
           mergeInstance.close();

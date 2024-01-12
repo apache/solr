@@ -38,7 +38,6 @@ import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -49,6 +48,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -70,8 +70,9 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   private static final String COLLECTION_NAME = "test_col";
 
-  /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  /** A collection specific client for operations at the cloud level */
+  private static CloudSolrClient COLLECTION_CLIENT;
+
   /** one SolrClient for each server */
   private static List<SolrClient> NODE_CLIENTS;
 
@@ -98,12 +99,11 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-distrib-update-processor-chains.xml");
     collectionProperties.put("schema", "schema15.xml"); // string id
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .setProperties(collectionProperties)
-        .process(CLOUD_CLIENT);
+        .process(COLLECTION_CLIENT);
 
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards * repFactor);
 
@@ -124,8 +124,12 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   @Before
   public void deleteAllDocs() throws Exception {
     assertEquals(
-        0, update(params("commit", "true")).deleteByQuery("*:*").process(CLOUD_CLIENT).getStatus());
-    assertEquals("index should be empty", 0L, countDocs(CLOUD_CLIENT));
+        0,
+        update(params("commit", "true"))
+            .deleteByQuery("*:*")
+            .process(COLLECTION_CLIENT)
+            .getStatus());
+    assertEquals("index should be empty", 0L, countDocs(COLLECTION_CLIENT));
   }
 
   @AfterClass
@@ -136,10 +140,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       }
     }
     NODE_CLIENTS = null;
-    if (CLOUD_CLIENT != null) {
-      CLOUD_CLIENT.close();
+    if (COLLECTION_CLIENT != null) {
+      COLLECTION_CLIENT.close();
     }
-    CLOUD_CLIENT = null;
+    COLLECTION_CLIENT = null;
   }
 
   public void testRandomUpdates() throws Exception {
@@ -266,23 +270,23 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
       final SolrClient client =
           random().nextBoolean()
-              ? CLOUD_CLIENT
+              ? COLLECTION_CLIENT
               : NODE_CLIENTS.get(TestUtil.nextInt(random(), 0, NODE_CLIENTS.size() - 1));
 
       final UpdateResponse rsp = req.process(client);
       assertUpdateTolerantErrors(
           client.toString() + " => " + expectedErrors,
           rsp,
-          expectedErrors.toArray(new ExpectedErr[expectedErrors.size()]));
+          expectedErrors.toArray(new ExpectedErr[0]));
 
       if (log.isInfoEnabled()) {
         log.info("END ITER #{}, expecting #docs: {}", i, expectedDocIds.cardinality());
       }
 
-      assertEquals("post update commit failed?", 0, CLOUD_CLIENT.commit().getStatus());
+      assertEquals("post update commit failed?", 0, COLLECTION_CLIENT.commit().getStatus());
 
       for (int j = 0; j < 5; j++) {
-        if (expectedDocIds.cardinality() == countDocs(CLOUD_CLIENT)) {
+        if (expectedDocIds.cardinality() == countDocs(COLLECTION_CLIENT)) {
           break;
         }
         log.info("sleeping to give searchers a chance to re-open #{}", j);
@@ -290,7 +294,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       }
 
       // check the index contents against our expectations
-      final BitSet actualDocIds = allDocs(CLOUD_CLIENT, maxDocId);
+      final BitSet actualDocIds = allDocs(COLLECTION_CLIENT, maxDocId);
       if (expectedDocIds.cardinality() != actualDocIds.cardinality()) {
         log.error(
             "cardinality mismatch: expected {} BUT actual {}",

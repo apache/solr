@@ -25,7 +25,7 @@ import org.apache.zookeeper.data.Stat;
 public class MockSolrZkClient extends SolrZkClient {
 
   public MockSolrZkClient() {
-    super();
+    super(new Builder());
   }
 
   @Override

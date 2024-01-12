@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkShardTerms;
@@ -75,7 +74,6 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
       collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
       cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
     }
-    AtomicReference<String> errorMessage = new AtomicReference<>();
     try {
       coreContainer
           .getZkController()
@@ -201,9 +199,8 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                 return false;
               });
     } catch (TimeoutException | InterruptedException e) {
-      String error = errorMessage.get();
-      if (error == null) error = "Timeout waiting for collection state.";
-      throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+      throw new NotInClusterStateException(
+          ErrorCode.SERVER_ERROR, "Timeout waiting for collection state.");
     }
   }
 }

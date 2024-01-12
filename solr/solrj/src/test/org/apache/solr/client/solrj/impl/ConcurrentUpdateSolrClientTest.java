@@ -35,12 +35,12 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -140,7 +140,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
   public void testConcurrentUpdate() throws Exception {
     TestServlet.clear();
 
-    String serverUrl = jetty.getBaseUrl().toString() + "/cuss/foo";
+    String serverUrl = getBaseUrl() + "/cuss/foo";
 
     int cussThreadCount = 2;
     int cussQueueSize = 100;
@@ -156,9 +156,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
                 serverUrl, successCounter, errorCounter, errors)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
+            .withPollQueueTime(0)
             .build();
-
-    concurrentClient.setPollQueueTime(0);
 
     // ensure it doesn't block where there's nothing to do yet
     concurrentClient.blockUntilFinished();
@@ -209,7 +208,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int cussQueueSize = 10;
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString()))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {
@@ -228,7 +227,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString() + "/collection1"))
+        (new ConcurrentUpdateSolrClient.Builder(getCoreUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {
@@ -248,11 +247,11 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int expected = numDocs * numRunnables;
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString()))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
+            .withPollQueueTime(0)
             .build()) {
-      concurrentClient.setPollQueueTime(0);
 
       // ensure it doesn't block where there's nothing to do yet
       concurrentClient.blockUntilFinished();
@@ -284,7 +283,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString() + "/collection1"))
+        (new ConcurrentUpdateSolrClient.Builder(getCoreUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {

@@ -111,6 +111,31 @@ Note that while date math is most commonly used relative to `NOW` it can be appl
 
 `1972-05-20T17:33:18.772Z+6MONTHS+3DAYS/DAY`
 
+==== Date Math Unit Options ====
+The following units are valid for use in date math expressions. The first column is the value used in date math expressions in Solr. The second column is the chronological unit to which it maps, as multiple aliases exist for given units of time.
+
+|===
+|Date Math Expression Unit | Chronological Unit
+
+|YEAR | Years
+|YEARS | Years
+|MONTH | Months
+|MONTHS | Months
+|DAY | Days
+|DAYS | Days
+|DATE | Days
+|HOUR | Hours
+|HOURS | Hours
+|MINUTE | Minutes
+|MINUTES | Minutes
+|SECOND | Seconds
+|SECONDS | Seconds
+|MILLI | Milliseconds
+|MILLIS | Milliseconds
+|MILLISECOND | Milliseconds
+|MILLISECONDS | Milliseconds
+|===
+
 === Request Parameters That Affect Date Math
 
 ==== NOW

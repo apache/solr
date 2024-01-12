@@ -44,6 +44,8 @@ gradlew --write-locks
 
 ```
 gradlew updateLicenses
+
+git add solr/licenses
 ```
 
 ## Code

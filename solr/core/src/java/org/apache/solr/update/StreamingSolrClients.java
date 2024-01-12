@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -39,7 +40,8 @@ public class StreamingSolrClients {
 
   private final int runnerCount = Integer.getInteger("solr.cloud.replication.runners", 1);
   // should be less than solr.jetty.http.idleTimeout
-  private final int pollQueueTime = Integer.getInteger("solr.cloud.client.pollQueueTime", 10000);
+  private final int pollQueueTimeMillis =
+      Integer.getInteger("solr.cloud.client.pollQueueTime", 10000);
 
   private Http2SolrClient httpClient;
 
@@ -74,8 +76,10 @@ public class StreamingSolrClients {
               .withThreadCount(runnerCount)
               .withExecutorService(updateExecutor)
               .alwaysStreamDeletes()
+              .setPollQueueTime(
+                  pollQueueTimeMillis, TimeUnit.MILLISECONDS) // minimize connections created
               .build();
-      client.setPollQueueTime(pollQueueTime); // minimize connections created
+
       solrClients.put(url, client);
     }
 

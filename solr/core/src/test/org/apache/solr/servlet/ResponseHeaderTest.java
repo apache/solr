@@ -19,14 +19,14 @@ package org.apache.solr.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import org.apache.commons.io.FileUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.junit.AfterClass;
@@ -42,9 +42,10 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
     solrHomeDirectory = createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(
-        new File(top, "solrconfig-headers.xml"),
-        new File(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"));
+    Files.copy(
+        Path.of(top, "solrconfig-headers.xml"),
+        Path.of(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
     createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }
 
@@ -57,11 +58,9 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
 
   @Test
   public void testHttpResponse() throws IOException {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    HttpClient httpClient = client.getHttpClient();
-    URI uri = URI.create(client.getBaseURL() + "/withHeaders?q=*:*");
+    URI uri = URI.create(getBaseUrl() + "/collection1/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);
-    HttpResponse response = httpClient.execute(httpGet);
+    HttpResponse response = getHttpClient().execute(httpGet);
     Header[] headers = response.getAllHeaders();
     boolean containsWarningHeader = false;
     for (Header header : headers) {

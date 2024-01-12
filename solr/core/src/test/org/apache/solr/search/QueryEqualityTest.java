@@ -71,10 +71,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
    * @see #testParserCoverage
    */
   private static boolean doAssertParserCoverage = false;
+
   /**
    * @see #testParserCoverage
    */
   private static final Set<String> qParsersTested = new HashSet<>();
+
   /**
    * @see #testParserCoverage
    */
@@ -908,6 +910,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("vector(foo_i,sum(4,bar_i))", "vector(foo_i, sum(4,bar_i))");
   }
 
+  public void testFuncKnnVector() throws Exception {
+    assertFuncEquals(
+        "vectorSimilarity(FLOAT32,COSINE,[1,2,3],[4,5,6])",
+        "vectorSimilarity(FLOAT32, COSINE, [1, 2, 3], [4, 5, 6])");
+
+    assertFuncEquals(
+        "vectorSimilarity(BYTE, EUCLIDEAN, bar_i, [4,5,6])",
+        "vectorSimilarity(BYTE, EUCLIDEAN, field(bar_i), [4, 5,  6])");
+  }
+
   public void testFuncQuery() throws Exception {
     SolrQueryRequest req = req("myQ", "asdf");
     try {
@@ -1064,6 +1076,16 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "exists(field('field_t'))",
           "exists(field($myField))");
       assertFuncEquals(req, "exists(query($myQ))", "exists(query({!lucene v=$myQ}))");
+    } finally {
+      req.close();
+    }
+  }
+
+  public void testFuncIsnan() throws Exception {
+    SolrQueryRequest req = req("num", "12.3456", "zero", "0");
+    try {
+      assertFuncEquals(req, "isnan(12.3456)", "isnan(12.3456)", "isnan($num)");
+      assertFuncEquals(req, "isnan(div(0,0))", "isnan(div($zero,$zero))");
     } finally {
       req.close();
     }
@@ -1294,6 +1316,33 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testQueryMLTContent() throws Exception {
+    assertU(adoc("id", "1", "lowerfilt", "sample data", "standardfilt", "sample data"));
+    assertU(commit());
+    try {
+      assertQueryEquals(
+          "mlt_content",
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data",
+          "{!mlt_content qf=lowerfilt mindf=0 mintf=0 v='sample data'}",
+          "{!qf=lowerfilt mindf=0 mintf=0}sample data");
+      SolrQueryRequest req = req(new String[] {"df", "text"});
+      try {
+        QueryUtils.checkUnequal(
+            QParser.getParser("{!mlt_content qf=lowerfilt mindf=0 mintf=0}sample data", req)
+                .getQuery(),
+            QParser.getParser(
+                    "{!mlt_content qf=lowerfilt qf=standardfilt mindf=0 mintf=0}sample data", req)
+                .getQuery());
+      } finally {
+        req.close();
+      }
+
+    } finally {
+      delQ("*:*");
+      assertU(commit());
+    }
+  }
+
   public void testQueryKNN() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "0");
@@ -1473,6 +1522,25 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     } finally {
       req.close();
     }
+  }
+
+  public void testBoolMmQuery() throws Exception {
+    assertQueryEquals(
+        "lucene",
+        "{!bool should=foo_s:a should=foo_s:b}",
+        "{!bool should=foo_s:a should=foo_s:b mm=0}");
+    assertQueryEquals(
+        "lucene",
+        "{!bool should=foo_s:a should=foo_s:b mm=1}",
+        "{!bool should=foo_s:a should=foo_s:b mm=1}");
+    expectThrows(
+        AssertionError.class,
+        "queries should not have been equal",
+        () ->
+            assertQueryEquals(
+                "lucene",
+                "{!bool should=foo_s:a should=foo_s:b mm=1}",
+                "{!bool should=foo_s:a should=foo_s:b}"));
   }
 
   public void testBoolQuery() throws Exception {

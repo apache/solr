@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -66,11 +65,11 @@ public class SplitCoreAPI {
     v1Params.put(
         CoreAdminParams.CORE, obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE));
 
-    if (!CollectionUtils.isEmpty(v2Body.path)) {
-      v1Params.put(PATH, v2Body.path.toArray(new String[v2Body.path.size()]));
+    if (v2Body.path != null && !v2Body.path.isEmpty()) {
+      v1Params.put(PATH, v2Body.path.toArray(new String[0]));
     }
-    if (!CollectionUtils.isEmpty(v2Body.targetCore)) {
-      v1Params.put(TARGET_CORE, v2Body.targetCore.toArray(new String[v2Body.targetCore.size()]));
+    if (v2Body.targetCore != null && !v2Body.targetCore.isEmpty()) {
+      v1Params.put(TARGET_CORE, v2Body.targetCore.toArray(new String[0]));
     }
 
     if (v2Body.splitKey != null) {

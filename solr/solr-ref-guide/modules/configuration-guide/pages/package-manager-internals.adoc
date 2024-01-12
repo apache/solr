@@ -32,9 +32,11 @@ This document contains an overview of those APIs.
 == Classloaders
 
 At the heart of the system, we have classloader isolation.
-To achieve this, the system is simplified into two layered classloaders: the root classloader which has all the jars from Solr classpath.
-This requires Solr node restart to change anything.
-A set of named classloaders that inherit from the root classloader.
+To achieve this, the system is simplified into two layered classloaders:
+
+* The root classloader which has all the jars from Solr classpath. This requires Solr node restart to change anything.
+
+* A set of named classloaders that inherit from the root classloader.
 The life cycles of the named classloaders are tied to the package configuration in ZooKeeper.
 As soon as the configuration is modified, the corresponding classloaders are reloaded and components are asked to reload.
 
@@ -46,7 +48,7 @@ Start all your nodes with the system property `-Denable.packages=true` to use th
 [source,bash]
 ----
 
-$ bin/solr -c -Denable.packages=true
+bin/solr -c -Denable.packages=true
 ----
 
 === Upload Your Keys
@@ -55,11 +57,11 @@ Package binaries must be signed with your private keys and ensure your public ke
 *Example*
 [source,bash]
 ----
-$ openssl genrsa -out my_key.pem 512
+openssl genrsa -out my_key.pem 512
 # create the public key in .der format
-$ openssl rsa -in my_key.pem -pubout -outform DER -out my_key.der
+openssl rsa -in my_key.pem -pubout -outform DER -out my_key.der
 # upload key to package store
-$ bin/solr package add-key my_key.der
+bin/solr package add-key my_key.der
 ----
 
 == Package Store
@@ -67,15 +69,15 @@ Package store is a distributed file store which can store arbitrary files in the
 
 * This is a fully replicated file system based repository.
 * It lives at <solr.home>/filestore on each Solr node.
-* Every entry  is a file + metadata.
-The metadata is named .<filename>.json.
+* Every entry is a file + metadata.
+The metadata is named `.<filename>.json`.
 * The metadata file contains the sha256, signatures of the file.
 * Users can’t create files starting with period (.).
 * It is agnostic of content type of files.
-You may store jars as well as other files..
+You may store jars as well as other files.
 
 === How Does the Package Store Work?
-When a file is uploaded to the PackageStore, the following is true:
+When a file is uploaded to the Package Store, the following is true:
 
 * It’s saved to the local file system.
 * It’s saved along with the metadata.
@@ -95,32 +97,32 @@ The end points are:
 
 Use the following steps to upload a jar signed with your public key:
 
-. If you don't have a jar file with plugins, download a sample from github:
+. If you don't have a jar file with plugins, download a sample from GitHub:
 +
 [source, bash,subs="attributes"]
 ----
-$ curl -o runtimelibs.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
+curl -o runtimelibs.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
 ----
 
 . Sign the jar with your private key:
 +
 [source, bash]
 ----
-$ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
+openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 ----
 
 . Upload your jar with signature, replacing the `sig` parameter with the output from the previous command:
 +
 [source, bash]
 ----
-$ curl --data-binary @runtimelibs.jar -X PUT  http://localhost:7574/api/cluster/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
+curl --data-binary @runtimelibs.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
 ----
 
 . Verify your jar upload:
 +
 [source, bash]
 ----
-$ curl http://localhost:7574/api/node/files/mypkg/1.0?omitHeader=true
+curl http://localhost:8983/api/node/files/mypkg/1.0?omitHeader=true
 ----
 +
 [source, json]
@@ -134,7 +136,7 @@ $ curl http://localhost:7574/api/node/files/mypkg/1.0?omitHeader=true
 ----
 
 == Packages
-A Package have the following attributes:
+A Package has the following attributes:
 
 * A unique name
 * One or more versions with the following attributes:
@@ -144,12 +146,18 @@ A Package have the following attributes:
 For every package/version in the packages definition, there is a unique `SolrResourceLoader` instance.
 This is a child of the `CoreContainer` resource loader.
 
+NOTE: Solr does not require that the version string follows any particular format -
+it can be an arbitrary string or even an empty string.
+
 === packages.json
 
 The package configurations live in a file called `packages.json` in ZooKeeper.
 At any given moment we can have multiple versions of a given package in the package configuration.
 The system will always use the latest version.
-Versions are sorted by their numeric value and the highest is the latest.
+Versions are sorted by their values in lexicographic order, and the largest string is considered to be the latest.
+
+CAUTION: Lexicographic order for version strings means that for a package with versions *1.2.0*, *1.9.0*, *1.11.0*,
+Solr would pick *1.9.0* as the latest version.
 
 For example:
 
@@ -187,7 +195,7 @@ Use the `delete` command to delete the highest version and choose the next highe
 === Using Multiple Versions in Parallel
 
 We use `params.json` in the collection config to store a version of a package it uses.
-By default it is the `$LATEST`.
+By default, it is the `$LATEST`.
 
 [source, json]
 ----
@@ -202,6 +210,15 @@ By default it is the `$LATEST`.
 <2> For `pkg2`, use the latest.
 This is optional.
 The default is `$LATEST`.
+
+[NOTE]
+====
+The package version in `params.json` actually instructs Solr to pick the package with the
+largest version that is not greater than the provided value.
+
+So in the example above, if the only available versions for `mypkg` are *0.01* and *0.2*,
+the version *0.01* will be used.
+====
 
 === Workflow
 
@@ -258,12 +275,12 @@ The same result can be achieved by editing your `solrconfig.xml` as well:
 +
 [source,bash]
 ----
-curl  http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d  '{
+curl http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d  '{
           "create-requesthandler": { "name": "/test",
           "class": "mypkg:org.apache.solr.core.RuntimeLibReqHandler" }}'
 ----
 
-. Verify that the component is created and it is using the correct version of the package to load classes from:
+. Verify that the component is created, and it is using the correct version of the package to load classes from:
 +
 [source,bash]
 ----
@@ -286,7 +303,7 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
 +
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
+curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 ----
 +
 [source,json]
@@ -307,18 +324,18 @@ Get a new version of the jar, sign and upload it:
 +
 [source, bash,subs="attributes"]
 ----
-$ curl -o runtimelibs3.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
+curl -o runtimelibs3.jar   -LO https://github.com/apache/solr/blob/releases/solr/{solr-full-version}/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
 
-$ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
+openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 
-$ curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/2.0/myplugins.jar?sig=<signature>
+curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/2.0/myplugins.jar?sig=<signature>
 ----
 
 . Verify it:
 +
 [source, bash]
 ----
-$ curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
+curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
 ----
 +
 [source, json]
@@ -335,7 +352,7 @@ $ curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
 +
 [source,bash]
 ----
-$ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
+curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/json' -d  '
 {"add": {
          "package" : "mypkg",
          "version":"2.0",
@@ -346,7 +363,7 @@ $ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/j
 +
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
+curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
 ----
 +
 [source,json]
@@ -370,7 +387,7 @@ $ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?component
 +
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
+curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 ----
 +
 [source,json]
@@ -394,11 +411,13 @@ Note that the `Version` value is `"2"`, which means the plugin is updated.
 === How to Avoid Automatic Upgrade
 
 The default version used in any collection is always the latest.
-However, setting a per-collection property in `params.json` ensures that the versions are always fixed irrespective of the new versions added.
+However, setting a per-collection property in `params.json` ensures that the collection uses the same
+package version (i.e., version *2.0*), irrespective of any versions later than *2.0* that may be added to Solr
+at a later point.
 
 [source,bash]
 ----
-$ curl http://localhost:8983/solr/gettingstarted/config/params -H 'Content-type:application/json'  -d '{
+curl http://localhost:8983/solr/gettingstarted/config/params -H 'Content-type:application/json'  -d '{
   "set":{
     "PKG_VERSIONS":{
       "mypkg":"2.0"

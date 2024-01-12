@@ -144,7 +144,7 @@ You can also specify 'soft' autoCommits with the `autoSoftCommit` tag.
 [source,xml]
 ----
 <autoSoftCommit>
-  <maxTime>60000</maxTime>
+  <maxTime>5000</maxTime>
 </autoSoftCommit>
 ----
 
@@ -154,7 +154,7 @@ Determining the best `autoCommit` settings is a tradeoff between performance and
 Settings that cause frequent updates will improve the accuracy of searches because new content will be searchable more quickly, but performance may suffer because of the frequent updates.
 Less frequent updates may improve performance but it will take longer for updates to show up in queries.
 
-Here is an example NRT configuration for the two flavors of commit, a hard commit every 60 seconds and a soft commit every 30 seconds.
+Here is an example NRT configuration for the two flavors of commit, a hard commit every 60 seconds and a soft commit every 10 seconds.
 Note that these are _not_ the values in the examples shipped with Solr!
 
 [source,xml]
@@ -165,7 +165,7 @@ Note that these are _not_ the values in the examples shipped with Solr!
 </autoCommit>
 
 <autoSoftCommit>
-   <maxTime>${solr.autoSoftCommit.maxTime:30000}</maxTime>
+   <maxTime>${solr.autoSoftCommit.maxTime:10000}</maxTime>
  </autoSoftCommit>
 ----
 
@@ -279,6 +279,21 @@ The number of buckets used to keep track of maximum version values when checking
 Increase this value to reduce the cost of synchronizing access to version buckets during high-volume indexing.
 This requires `(8 bytes (long) * numVersionBuckets)` of heap space per Solr core.
 
+`syncLevel`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `FLUSH`
+|===
++
+The sync level of the transaction log files. Can be NONE, FLUSH or FSYNC, if nothing is set FLUSH is the default.
+
+These configuration options work in the following way:
+
+* FSYNC: Solr internal buffer is explicitly flushed to the underlying, file system specific buffer which is also flushed to the transaction log file. This is a more expensive operation but safer since the content is written to the transaction log file.
+* FLUSH: We only flush explicitly the Solr internal buffer to the underlying, file system specific buffer, but this buffer is not explicitly flushed to the transaction log file. This is less expensive but also less safe since if we have a crash before the file system specific buffer is also flushed, data from it is lost.
+* NONE: There is no explicit flush of the buffers. This configuration option is the least expensive, but the least safe as well.
+
 An example, to be included under `<updateHandler>` in `solrconfig.xml`, employing the above advanced settings:
 
 [source,xml]
@@ -288,6 +303,7 @@ An example, to be included under `<updateHandler>` in `solrconfig.xml`, employin
   <int name="numRecordsToKeep">500</int>
   <int name="maxNumLogsToKeep">20</int>
   <int name="numVersionBuckets">65536</int>
+  <str name="syncLevel">FSYNC</str>
 </updateLog>
 ----
 

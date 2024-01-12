@@ -38,7 +38,7 @@ import javax.script.ScriptEngineFactory;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -306,9 +306,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
       }
 
       scriptEngines.add(new EngineInfo((Invocable) engine, scriptFile));
-      try {
-        Reader scriptSrc = scriptFile.openReader(resourceLoader);
-
+      try (Reader scriptSrc = scriptFile.openReader(resourceLoader)) {
         try {
           try {
             AccessController.doPrivileged(
@@ -328,8 +326,6 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
               SolrException.ErrorCode.SERVER_ERROR,
               "Unable to evaluate script: " + scriptFile.getFileName(),
               e);
-        } finally {
-          IOUtils.closeQuietly(scriptSrc);
         }
       } catch (IOException ioe) {
         throw new SolrException(
@@ -512,7 +508,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
 
     public Reader openReader(SolrResourceLoader resourceLoader) throws IOException {
       InputStream input = resourceLoader.openResource(fileName);
-      return org.apache.lucene.util.IOUtils.getDecodingReader(input, StandardCharsets.UTF_8);
+      return IOUtils.getDecodingReader(input, StandardCharsets.UTF_8);
     }
   }
 

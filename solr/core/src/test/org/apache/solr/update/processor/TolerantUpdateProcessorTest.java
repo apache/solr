@@ -50,6 +50,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
   /** List of valid + invalid documents */
   private static List<SolrInputDocument> docs = null;
+
   /** IDs of the invalid documents in <code>docs</code> */
   private static String[] badIds = null;
 

@@ -18,12 +18,9 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -38,7 +35,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -61,6 +57,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -69,6 +66,7 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -103,8 +101,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       } else {
         RestoreOnANewCollection restoreOnANewCollection =
             new RestoreOnANewCollection(message, restoreContext.backupCollectionState);
-        restoreOnANewCollection.validate(
-            restoreContext.backupCollectionState, restoreContext.nodeList.size());
+        restoreOnANewCollection.validate();
         restoreOnANewCollection.process(results, restoreContext);
       }
     }
@@ -137,11 +134,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     }
     shardRequestTracker.processResponses(
         new NamedList<>(), shardHandler, true, "Could not restore core");
-  }
-
-  private int getInt(ZkNodeProps message, String propertyName, Integer count, int defaultValue) {
-    Integer value = message.getInt(propertyName, count);
-    return value != null ? value : defaultValue;
   }
 
   /** Encapsulates the parsing and access for common parameters restore parameters and values */
@@ -221,27 +213,12 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
    * @see RestoreOnExistingCollection
    */
   private class RestoreOnANewCollection {
-    private int numNrtReplicas;
-    private int numTlogReplicas;
-    private int numPullReplicas;
-    private ZkNodeProps message;
+    private final ReplicaCount numReplicas;
+    private final ZkNodeProps message;
 
     private RestoreOnANewCollection(ZkNodeProps message, DocCollection backupCollectionState) {
       this.message = message;
-
-      if (message.get(REPLICATION_FACTOR) != null) {
-        this.numNrtReplicas = message.getInt(REPLICATION_FACTOR, 0);
-      } else if (message.get(NRT_REPLICAS) != null) {
-        this.numNrtReplicas = message.getInt(NRT_REPLICAS, 0);
-      } else {
-        // replicationFactor and nrtReplicas is always in sync after SOLR-11676
-        // pick from cluster state of the backed up collection
-        this.numNrtReplicas = backupCollectionState.getReplicationFactor();
-      }
-      this.numTlogReplicas =
-          getInt(message, TLOG_REPLICAS, backupCollectionState.getNumTlogReplicas(), 0);
-      this.numPullReplicas =
-          getInt(message, PULL_REPLICAS, backupCollectionState.getNumPullReplicas(), 0);
+      this.numReplicas = ReplicaCount.fromMessage(message, backupCollectionState);
     }
 
     public void process(NamedList<Object> results, RestoreContext rc) throws Exception {
@@ -300,7 +277,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           rc.repo,
           rc.shardHandler,
           rc.asyncId);
-      requestReplicasToApplyBufferUpdates(restoreCollection, rc.asyncId, rc.shardHandler);
       markAllShardsAsActive(restoreCollection);
       addReplicasToShards(results, clusterState, restoreCollection, replicaPositions, rc.asyncId);
       restoringAlias(rc.backupProperties);
@@ -308,10 +284,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       log.info("Completed restoring collection={} backupName={}", restoreCollection, rc.backupName);
     }
 
-    private void validate(DocCollection backupCollectionState, int availableNodeCount) {
-      int numShards = backupCollectionState.getActiveSlices().size();
-      int totalReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
-      assert totalReplicasPerShard > 0;
+    private void validate() {
+      assert numReplicas.total() > 0;
     }
 
     private void uploadConfig(
@@ -321,12 +295,14 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         ConfigSetService configSetService)
         throws IOException {
       if (configSetService.checkConfigExists(restoreConfigName)) {
-        log.warn(
+        log.info(
             "Config with name {} already exists. Skipping upload to Zookeeper and using existing config.",
             restoreConfigName);
         // TODO add overwrite option?
       } else {
-        log.info("Uploading config {}", restoreConfigName);
+        log.info(
+            "Config with name {} does not already exist in ZooKeeper. Will restore from Backup.",
+            restoreConfigName);
 
         backupMgr.uploadConfigDir(configName, restoreConfigName, configSetService);
       }
@@ -342,10 +318,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
       // mostly true. Prevents autoCreated=true in the collection state.
       propMap.put("fromApi", "true");
-      propMap.put(REPLICATION_FACTOR, numNrtReplicas);
-      propMap.put(NRT_REPLICAS, numNrtReplicas);
-      propMap.put(TLOG_REPLICAS, numTlogReplicas);
-      propMap.put(PULL_REPLICAS, numPullReplicas);
+      propMap.put(REPLICATION_FACTOR, numReplicas.get(Replica.Type.defaultType()));
+      numReplicas.writeProps(propMap);
 
       // inherit settings from input API, defaulting to the backup's setting.  Ex: replicationFactor
       for (String collProp : CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.keySet()) {
@@ -380,7 +354,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         // instead of a list of names, and if so uses this instead of building it. We clear the
         // replica list.
         Collection<Slice> backupSlices = backupCollectionState.getActiveSlices();
-        Map<String, Slice> newSlices = new LinkedHashMap<>(backupSlices.size());
+        Map<String, Slice> newSlices = CollectionUtil.newLinkedHashMap(backupSlices.size());
         for (Slice backupSlice : backupSlices) {
           newSlices.put(
               backupSlice.getName(),
@@ -426,9 +400,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           new Assign.AssignRequestBuilder()
               .forCollection(restoreCollection)
               .forShard(sliceNames)
-              .assignNrtReplicas(numNrtReplicas)
-              .assignTlogReplicas(numTlogReplicas)
-              .assignPullReplicas(numPullReplicas)
+              .assignReplicas(numReplicas)
               .onNodes(nodeList)
               .build();
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
@@ -452,20 +424,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD);
         propMap.put(COLLECTION_PROP, restoreCollection.getName());
         propMap.put(SHARD_ID_PROP, sliceName);
-
-        if (numNrtReplicas >= 1) {
-          propMap.put(REPLICA_TYPE, Replica.Type.NRT.name());
-        } else if (numTlogReplicas >= 1) {
-          propMap.put(REPLICA_TYPE, Replica.Type.TLOG.name());
-        } else {
-          throw new SolrException(
-              ErrorCode.BAD_REQUEST,
-              "Unexpected number of replicas, replicationFactor, "
-                  + Replica.Type.NRT
-                  + " or "
-                  + Replica.Type.TLOG
-                  + " must be greater than 0");
-        }
+        propMap.put(REPLICA_TYPE, numReplicas.getLeaderType().name());
 
         // Get the first node matching the shard to restore in
         String node;
@@ -525,37 +484,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
 
-    private void requestReplicasToApplyBufferUpdates(
-        DocCollection restoreCollection, String asyncId, ShardHandler shardHandler) {
-      ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-
-      for (Slice s : restoreCollection.getSlices()) {
-        for (Replica r : s.getReplicas()) {
-          String nodeName = r.getNodeName();
-          String coreNodeName = r.getCoreName();
-          Replica.State stateRep = r.getState();
-
-          log.debug(
-              "Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}",
-              nodeName,
-              coreNodeName,
-              stateRep);
-
-          ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set(
-              CoreAdminParams.ACTION,
-              CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
-          params.set(CoreAdminParams.NAME, coreNodeName);
-
-          shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
-        }
-
-        shardRequestTracker.processResponses(
-            new NamedList<>(), shardHandler, true, "REQUESTAPPLYUPDATES calls did not succeed");
-      }
-    }
-
     // Mark all shards in ACTIVE STATE
     private void markAllShardsAsActive(DocCollection restoreCollection)
         throws KeeperException, InterruptedException {
@@ -584,7 +512,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         List<ReplicaPosition> replicaPositions,
         String asyncId)
         throws Exception {
-      int totalReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
+      int totalReplicasPerShard = numReplicas.total();
       if (totalReplicasPerShard > 1) {
         if (log.isInfoEnabled()) {
           log.info("Adding replicas to restored collection={}", restoreCollection.getName());
@@ -592,28 +520,19 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
         for (Slice slice : restoreCollection.getSlices()) {
 
           // Add the remaining replicas for each shard, considering it's type
-          int createdNrtReplicas = 0, createdTlogReplicas = 0, createdPullReplicas = 0;
-
-          // We already created either a NRT or an TLOG replica as leader
-          if (numNrtReplicas > 0) {
-            createdNrtReplicas++;
-          } else if (numTlogReplicas > 0) {
-            createdTlogReplicas++;
-          }
+          // We already created either a replica as leader.
+          ReplicaCount createdReplicas = ReplicaCount.of(numReplicas.getLeaderType(), 1);
 
           for (int i = 1; i < totalReplicasPerShard; i++) {
-            Replica.Type typeToCreate;
-            if (createdNrtReplicas < numNrtReplicas) {
-              createdNrtReplicas++;
-              typeToCreate = Replica.Type.NRT;
-            } else if (createdTlogReplicas < numTlogReplicas) {
-              createdTlogReplicas++;
-              typeToCreate = Replica.Type.TLOG;
-            } else {
-              createdPullReplicas++;
-              typeToCreate = Replica.Type.PULL;
-              assert createdPullReplicas <= numPullReplicas : "Unexpected number of replicas";
+            Replica.Type typeToCreate = null;
+            for (Replica.Type type : numReplicas.keySet()) {
+              if (createdReplicas.get(type) < numReplicas.get(type)) {
+                createdReplicas.increment(type);
+                typeToCreate = type;
+                break;
+              }
             }
+            assert null != typeToCreate : "Unexpected number of replicas";
 
             if (log.isDebugEnabled()) {
               log.debug(

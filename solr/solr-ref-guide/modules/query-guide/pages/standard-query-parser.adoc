@@ -211,7 +211,7 @@ This is a <<differences-between-lucenes-classic-query-parser-and-solrs-standard-
 .Matching `NaN` values with wildcards
 ====
 For most fields, unbounded range queries, `field:[* TO *]`, are equivalent to existence queries, `field: *` .
-However for float/double types that support `NaN` values, these two queries perform differently.
+However, for float/double types that support `NaN` values, these two queries perform differently.
 
 * `field:*` matches all existing values, including `NaN`
 * `field:[* TO *]` matches all real values, excluding `NaN`

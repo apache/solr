@@ -48,32 +48,6 @@ See the section xref:requesthandlers-searchcomponents.adoc[] for more informatio
 The `<requestParsers>` sub-element controls values related to parsing requests.
 This is an empty XML element that doesn't have any content, only attributes.
 
-`enableRemoteStreaming`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-Controls whether remote streaming of content is allowed.
-When set to `false`, streaming will not be allowed.
-Setting it to `true` lets you specify the location of content to be streamed using `stream.file` or `stream.url` parameters.
-
-`enableStreamBody`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: `false`
-|===
-+
-This attribute controls whether streaming content from the HTTP parameter `stream.body` is allowed.
-When set to `false`, streaming will not be allowed.
-Setting it to `true` lets you pass data in the `stream.body` parameter.
-+
-If you enable remote streaming, be sure that you have authentication enabled.
-Otherwise, someone could potentially gain access to your content by accessing arbitrary URLs.
-It's also a good idea to place Solr behind a firewall to prevent it from being accessed from untrusted clients.
-
 `multipartUploadLimitInKB`::
 +
 [%autowidth,frame=none]
@@ -107,44 +81,10 @@ This `HttpServletRequest` is not used by any Solr component, but may be useful w
 
 [source,xml]
 ----
-<requestParsers enableRemoteStreaming="false"
-                enableStreamBody="false"
-                multipartUploadLimitInKB="2048"
+<requestParsers multipartUploadLimitInKB="2048"
                 formdataUploadLimitInKB="2048"
                 addHttpRequestToContext="false" />
 ----
-
-The below command is an example of how to enable RemoteStreaming and BodyStreaming through the xref:config-api.adoc#commands-for-common-properties[Config API]:
-
-[.dynamic-tabs]
---
-[example.tab-pane#v1enablestreaming]
-====
-[.tab-label]*V1 API*
-[source,bash]
-----
-curl -H 'Content-type:application/json' -d '{"set-property": {"requestDispatcher.requestParsers.enableRemoteStreaming": true}, "set-property": {"requestDispatcher.requestParsers.enableStreamBody": true}}' http://localhost:8983/solr/gettingstarted/config
-----
-====
-
-[example.tab-pane#v2enablestreaming]
-====
-[.tab-label]*V2 API User-Managed / Single-Node*
-[source,bash]
-----
-curl -H 'Content-type:application/json' -d '{"set-property": {"requestDispatcher.requestParsers.enableRemoteStreaming": true}, "set-property":{"requestDispatcher.requestParsers.enableStreamBody": true}}' http://localhost:8983/api/cores/gettingstarted/config
-----
-====
-
-[example.tab-pane#v2enablestreamingcloud]
-====
-[.tab-label]*V2 API SolrCloud*
-[source,bash]
-----
-curl -H 'Content-type:application/json' -d '{"set-property": {"requestDispatcher.requestParsers.enableRemoteStreaming": true}, "set-property":{"requestDispatcher.requestParsers.enableStreamBody": true}}' http://localhost:8983/api/collections/gettingstarted/config
-----
-====
---
 
 == httpCaching Element
 

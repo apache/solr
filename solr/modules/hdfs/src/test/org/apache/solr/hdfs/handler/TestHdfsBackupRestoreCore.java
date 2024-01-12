@@ -24,7 +24,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -48,6 +47,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.handler.BackupRestoreUtils;
@@ -92,7 +92,6 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
           + "  <solrcloud>\n"
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-          + "    <str name=\"hostContext\">${hostContext:solr}</str>\n"
           + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
           + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
           + "    <int name=\"leaderVoteWait\">10000</int>\n"

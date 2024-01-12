@@ -100,3 +100,22 @@ To upload a file to a configset already stored on ZooKeeper, you can use xref:de
 
 CAUTION: By default, ZooKeeper's file size limit is 1MB.
 If your files are larger than this, you'll need to either xref:deployment-guide:zookeeper-ensemble.adoc#increasing-the-file-size-limit[increase the ZooKeeper file size limit] or store them xref:libs.adoc#lib-directives-in-solrconfig[on the filesystem] of every node in a cluster.
+
+=== Forbidden File Types
+
+Solr does not accept all file types when uploading or downloading configSets.
+By default the excluded file types are:
+
+- `class`
+- `java`
+- `jar`
+- `tgz`
+- `zip`
+- `tar`
+- `gz`
+
+However, users can impose stricter or looser limits on their systems by providing a comma separated list of file types
+(without the preceding dot, e.g. `jar,class,csv`), to either of the following settings:
+
+- System Property: `-DsolrConfigSetForbiddenFileTypes`
+- Environment Variable: `SOLR_CONFIG_SET_FORBIDDEN_FILE_TYPES`

@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.XML;
 
@@ -141,7 +142,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
     if (documents == null) {
       documents = new LinkedHashMap<>();
     }
-    Map<String, Object> params = new HashMap<>(2);
+    Map<String, Object> params = CollectionUtil.newHashMap(2);
     if (commitWithin != null) params.put(COMMIT_WITHIN, commitWithin);
     if (overwrite != null) params.put(OVERWRITE, overwrite);
 
@@ -182,7 +183,8 @@ public class UpdateRequest extends AbstractUpdateRequest {
     if (deleteById == null) {
       deleteById = new LinkedHashMap<>();
     }
-    Map<String, Object> params = (route == null && version == null) ? null : new HashMap<>(1);
+    Map<String, Object> params =
+        (route == null && version == null) ? null : CollectionUtil.newHashMap(1);
     if (version != null) params.put(VER, version);
     if (route != null) params.put(_ROUTE_, route);
     deleteById.put(id, params);
@@ -269,6 +271,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           updateRequest.setPath(getPath());
           updateRequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
           updateRequest.setResponseParser(getResponseParser());
+          updateRequest.addHeaders(getHeaders());
           request = reqSupplier.get(updateRequest, urls);
           routes.put(leaderUrl, request);
         }

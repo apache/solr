@@ -24,13 +24,13 @@ import static org.apache.solr.jersey.RequestContextKeys.TIMER;
 import com.codahale.metrics.Timer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import javax.inject.Inject;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -40,9 +40,18 @@ import org.slf4j.LoggerFactory;
 /**
  * A request and response filter used to initialize and report per-request metrics.
  *
- * <p>Currently, JAX-RS v2 APIs rely on a {@link
- * org.apache.solr.handler.RequestHandlerBase.HandlerMetrics} instance from an associated request
- * handler.
+ * <p>Currently, Jersey resources that have a corresponding v1 API produce the same metrics as their
+ * v1 equivalent and rely on the v1 requestHandler instance to do so. Solr facilitates this by
+ * building a map of the JAX-RS resources to requestHandler mapping (a {@link
+ * org.apache.solr.core.PluginBag.JaxrsResourceToHandlerMappings}), and using that to look up the
+ * associated request handler (if one exists) in pre- and post- filters
+ *
+ * <p>This isn't ideal, as requestHandler's don't really "fit" conceptually here. But it's
+ * unavoidable while we want our v2 APIs to exactly match the metrics produced by v1 calls, and
+ * while metrics are bundled in with requestHandlers as they are currently.
+ *
+ * @see RequestMetricHandling.PreRequestMetricsFilter
+ * @see RequestMetricHandling.PostRequestMetricsFilter
  */
 public class RequestMetricHandling {
 
@@ -58,16 +67,18 @@ public class RequestMetricHandling {
 
     @Context private ResourceInfo resourceInfo;
 
-    private PluginBag.JerseyMetricsLookupRegistry beanRegistry;
-
-    @Inject
-    public PreRequestMetricsFilter(PluginBag.JerseyMetricsLookupRegistry beanRegistry) {
-      this.beanRegistry = beanRegistry;
-    }
-
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-      final RequestHandlerBase handlerBase = beanRegistry.get(resourceInfo.getResourceClass());
+      final PluginBag.JaxrsResourceToHandlerMappings requestHandlerByJerseyResource =
+          (PluginBag.JaxrsResourceToHandlerMappings)
+              requestContext.getProperty(RequestContextKeys.RESOURCE_TO_RH_MAPPING);
+      if (requestHandlerByJerseyResource == null) {
+        log.debug("No jax-rs registry found for request {}", requestContext);
+        return;
+      }
+
+      final RequestHandlerBase handlerBase =
+          requestHandlerByJerseyResource.get(resourceInfo.getResourceClass());
       if (handlerBase == null) {
         log.debug("No handler found for request {}", requestContext);
         return;

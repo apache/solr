@@ -19,7 +19,7 @@ package org.apache.solr.handler.admin;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.Maps;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -78,7 +78,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testUnloadMissingCoreNameResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(Exception.class, () -> CoreAdminOperation.UNLOAD_OP.execute(callInfo));
@@ -97,7 +97,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReloadMissingCoreNameResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(Exception.class, () -> CoreAdminOperation.RELOAD_OP.execute(callInfo));
@@ -116,7 +116,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateMissingCoreNameResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(Exception.class, () -> CoreAdminOperation.CREATE_OP.execute(callInfo));
@@ -135,7 +135,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSwapMissingCoreParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("other", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
@@ -146,7 +146,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSwapMissingOtherParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("core", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
@@ -167,7 +167,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRenameMissingCoreParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("other", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
@@ -178,7 +178,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRenameMissingOtherParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("core", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
@@ -199,7 +199,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMergeMissingCoreParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("indexDir", "some/index/dir");
     whenCoreAdminOpHasParams(params);
 
@@ -220,7 +220,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSplitMissingCoreParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(Exception.class, () -> CoreAdminOperation.SPLIT_OP.execute(callInfo));
@@ -250,7 +250,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRequestRecoveryMissingCoreParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(
@@ -271,7 +271,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRequestSyncMissingCoreParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(
@@ -292,7 +292,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRequestBufferUpdatesMissingCoreParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(
@@ -313,7 +313,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRequestApplyUpdatesMissingCoreParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(
@@ -343,7 +343,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRequestStatusMissingRequestIdParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTSTATUS_OP.execute(callInfo));
@@ -373,7 +373,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBackupMissingCoreParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("name", "any-name-param");
     whenCoreAdminOpHasParams(params);
 
@@ -384,7 +384,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBackupMissingNameParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("core", "any-core-param");
     whenCoreAdminOpHasParams(params);
 
@@ -405,7 +405,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRestoreMissingCoreParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("name", "any-name-param");
     whenCoreAdminOpHasParams(params);
 
@@ -416,7 +416,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRestoreMissingNameParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("core", "any-core-param");
     whenCoreAdminOpHasParams(params);
 
@@ -437,7 +437,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateSnapshotMissingCoreParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("commitName", "anyCommitName");
     whenCoreAdminOpHasParams(params);
 
@@ -448,7 +448,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateSnapshotMissingCommitNameParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("core", "any-core-param");
     whenCoreAdminOpHasParams(params);
 
@@ -469,7 +469,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteSnapshotMissingCoreParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("commitName", "anyCommitName");
     whenCoreAdminOpHasParams(params);
 
@@ -480,7 +480,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteSnapshotMissingCommitNameParamResultsIn400SolrException() {
-    final Map<String, String> params = Maps.newHashMap();
+    final Map<String, String> params = new HashMap<>();
     params.put("core", "any-core-param");
     whenCoreAdminOpHasParams(params);
 
@@ -501,7 +501,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
 
   @Test
   public void testListSnapshotMissingCoreParamResultsIn400SolrException() {
-    whenCoreAdminOpHasParams(Maps.newHashMap());
+    whenCoreAdminOpHasParams(new HashMap<>());
 
     Exception ex =
         expectThrows(Exception.class, () -> CoreAdminOperation.LISTSNAPSHOTS_OP.execute(callInfo));

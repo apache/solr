@@ -16,10 +16,12 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
@@ -53,7 +54,7 @@ import org.junit.Test;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
-  /** Transient core cache max size defined in the test solr.xml */
+  /** Transient core cache max size defined in the test solr-transientCores.xml */
   private static final int TRANSIENT_CORE_CACHE_MAX_SIZE = 4;
 
   private File solrHomeDirectory;
@@ -81,7 +82,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       new ReadOnlyCoresLocator() {
         @Override
         public List<CoreDescriptor> discover(CoreContainer cc) {
-          return ImmutableList.of(
+          return List.of(
               makeCoreDescriptor(cc, "collection1", "false", "true"),
               makeCoreDescriptor(cc, "collection2", "true", "true"),
               makeCoreDescriptor(cc, "collection3", "on", "false"),
@@ -97,7 +98,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private CoreContainer init() throws Exception {
     solrHomeDirectory = createTempDir().toFile();
 
-    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
+    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr-transientCores.xml");
     for (int idx = 1; idx < 10; ++idx) {
       copyMinConf(new File(solrHomeDirectory, "collection" + idx));
     }
@@ -108,7 +109,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private CoreContainer initEmpty() throws IOException {
     solrHomeDirectory = createTempDir().toFile();
-    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
+    copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr-transientCores.xml");
     NodeConfig cfg = NodeConfig.loadNodeConfig(solrHomeDirectory.toPath(), null);
     return createCoreContainer(
         cfg,
@@ -676,14 +677,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private void writeCustomConfig(String coreName, String config, String schema, String rand_snip)
       throws IOException {
 
-    File coreRoot = new File(solrHomeDirectory, coreName);
-    File subHome = new File(coreRoot, "conf");
-    if (!coreRoot.exists()) {
-      assertTrue("Failed to make subdirectory ", coreRoot.mkdirs());
-    }
+    Path coreRoot = solrHomeDirectory.toPath().resolve(coreName);
+    Path subHome = coreRoot.resolve("conf");
+    Files.createDirectories(subHome);
     // Write the file for core discovery
-    FileUtils.writeStringToFile(
-        new File(coreRoot, "core.properties"),
+    Files.writeString(
+        coreRoot.resolve("core.properties"),
         "name="
             + coreName
             + System.getProperty("line.separator")
@@ -692,15 +691,14 @@ public class TestLazyCores extends SolrTestCaseJ4 {
             + "loadOnStartup=true",
         StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(
-        new File(subHome, "solrconfig.snippet.randomindexconfig.xml"),
+    Files.writeString(
+        subHome.resolve("solrconfig.snippet.randomindexconfig.xml"),
         rand_snip,
         StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(
-        new File(subHome, "solrconfig.xml"), config, StandardCharsets.UTF_8);
+    Files.writeString(subHome.resolve("solrconfig.xml"), config, StandardCharsets.UTF_8);
 
-    FileUtils.writeStringToFile(new File(subHome, "schema.xml"), schema, StandardCharsets.UTF_8);
+    Files.writeString(subHome.resolve("schema.xml"), schema, StandardCharsets.UTF_8);
   }
 
   // Write out the cores' config files, both bad schema files, bad config files and some good
@@ -721,13 +719,12 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
     // Collect the files that we'll write to the config directories.
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    String min_schema =
-        FileUtils.readFileToString(new File(top, "schema-tiny.xml"), StandardCharsets.UTF_8);
+    String min_schema = Files.readString(Path.of(top, "schema-tiny.xml"), StandardCharsets.UTF_8);
     String min_config =
-        FileUtils.readFileToString(new File(top, "solrconfig-minimal.xml"), StandardCharsets.UTF_8);
+        Files.readString(Path.of(top, "solrconfig-minimal.xml"), StandardCharsets.UTF_8);
     String rand_snip =
-        FileUtils.readFileToString(
-            new File(top, "solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
+        Files.readString(
+            Path.of(top, "solrconfig.snippet.randomindexconfig.xml"), StandardCharsets.UTF_8);
 
     // Now purposely mess up the config files, introducing stupid syntax errors.
     String bad_config = min_config.replace("<requestHandler", "<reqsthalr");
@@ -746,16 +743,17 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     NodeConfig config = SolrXmlConfig.fromString(solrHomeDirectory.toPath(), "<solr/>");
 
     // OK this should succeed, but at the end we should have recorded a series of errors.
-    return createCoreContainer(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
+    return createCoreContainer(config, new CorePropertiesLocator(config));
   }
 
   // We want to see that the core "heals itself" if an un-corrupted file is written to the
   // directory.
   private void copyGoodConf(String coreName, String srcName, String dstName) throws IOException {
-    File coreRoot = new File(solrHomeDirectory, coreName);
-    File subHome = new File(coreRoot, "conf");
+    Path coreRoot = solrHomeDirectory.toPath().resolve(coreName);
+    Path subHome = coreRoot.resolve("conf");
     String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(top, srcName), new File(subHome, dstName));
+    Files.copy(
+        Path.of(top, srcName), subHome.resolve(dstName), StandardCopyOption.REPLACE_EXISTING);
   }
 
   // If ok==true, we shouldn't be seeing any failure cases.

@@ -17,9 +17,7 @@
 
 package org.apache.solr.handler.export;
 
-import com.carrotsearch.hppc.IntObjectHashMap;
 import java.io.IOException;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
@@ -28,13 +26,14 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.search.DocValuesIteratorCache;
 
 class StringFieldWriter extends FieldWriter {
-  protected String field;
-  private FieldType fieldType;
+  protected final String field;
+  private final FieldType fieldType;
   private BytesRef lastRef;
   private int lastOrd = -1;
-  private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap<>();
+  private final DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache;
 
   protected CharsRefBuilder cref = new CharsRefBuilder();
   final ByteArrayUtf8CharSequence utf8 =
@@ -50,9 +49,13 @@ class StringFieldWriter extends FieldWriter {
         }
       };
 
-  public StringFieldWriter(String field, FieldType fieldType) {
+  public StringFieldWriter(
+      String field,
+      FieldType fieldType,
+      DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache) {
     this.field = field;
     this.fieldType = fieldType;
+    this.docValuesCache = docValuesCache;
   }
 
   @Override
@@ -82,23 +85,10 @@ class StringFieldWriter extends FieldWriter {
     }
 
     if (ref == null) {
-      // Reuse the last DocValues object if possible
-      int readerOrd = readerContext.ord;
-      SortedDocValues vals = null;
-      if (docValuesCache.containsKey(readerOrd)) {
-        SortedDocValues sortedDocValues = docValuesCache.get(readerOrd);
-        if (sortedDocValues.docID() < sortDoc.docId) {
-          // We have not advanced beyond the current docId so we can use this docValues.
-          vals = sortedDocValues;
-        }
-      }
-
+      SortedDocValues vals =
+          docValuesCache.getSortedDocValues(
+              sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (vals == null) {
-        vals = DocValues.getSorted(readerContext.reader(), this.field);
-        docValuesCache.put(readerOrd, vals);
-      }
-
-      if (vals.advance(sortDoc.docId) != sortDoc.docId) {
         return false;
       }
 

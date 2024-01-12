@@ -34,7 +34,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.DirectoryReader;
@@ -42,7 +41,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -52,9 +51,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -64,7 +60,6 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -75,8 +70,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.hamcrest.MatcherAssert;
@@ -92,7 +87,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.4
  */
-@Nightly
+@LuceneTestCase.Nightly
 @SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
@@ -102,8 +97,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   JettySolrRunner leaderJetty, followerJetty, repeaterJetty;
   SolrClient leaderClient, followerClient, repeaterClient;
   SolrInstance leader = null, follower = null, repeater = null;
-
-  static String context = "/solr";
 
   // number of docs to index... decremented for each test case to tell if we accidentally reuse
   // index from previous test method
@@ -130,7 +123,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderJetty = createAndStartJetty(leader);
     leaderClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(leaderJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     follower =
         new SolrInstance(
@@ -139,7 +132,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
@@ -178,23 +171,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"),
-        new File(instance.getHomeDir(), "solr.xml"));
-    Properties nodeProperties = new Properties();
-    nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
-    jetty.start();
-    return jetty;
+    return ReplicationTestHelper.createAndStartJetty(instance);
   }
 
-  static int index(SolrClient s, Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    for (int i = 0; i < fields.length; i += 2) {
-      doc.addField((String) (fields[i]), fields[i + 1]);
-    }
-    return s.add(doc).getStatus();
+  static int index(SolrClient client, Object... fields) throws Exception {
+    return ReplicationTestHelper.index(client, fields);
   }
 
   NamedList<Object> query(String query, SolrClient s) throws SolrServerException, IOException {
@@ -261,7 +242,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return res;
   }
 
-  private NamedList<Object> reloadCore(SolrClient s, String core) throws Exception {
+  private void reloadCore(JettySolrRunner jettySolrRunner, String core) throws Exception {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "reload");
@@ -269,15 +250,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     params.set("qt", "/admin/cores");
     QueryRequest req = new QueryRequest(params);
 
-    try (SolrClient adminClient = adminClient(s)) {
+    try (SolrClient adminClient = adminClient(jettySolrRunner)) {
       NamedList<Object> res = adminClient.request(req);
       assertNotNull("null response from server", res);
-      return res;
     }
   }
 
-  private SolrClient adminClient(SolrClient client) {
-    String adminUrl = ((HttpSolrClient) client).getBaseURL().replace("/collection1", "");
+  private SolrClient adminClient(JettySolrRunner client) {
+    String adminUrl =
+        client.getBaseUrl().toString().replace("/" + DEFAULT_TEST_COLLECTION_NAME, "");
     return getHttpSolrClient(adminUrl);
   }
 
@@ -319,10 +300,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderClient.close();
     leaderClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(leaderJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     clearIndexWithReplication();
     {
@@ -392,7 +373,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       repeaterJetty = createAndStartJetty(repeater);
       repeaterClient =
           ReplicationTestHelper.createNewSolrClient(
-              buildUrl(repeaterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+              buildUrl(repeaterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
       NamedList<Object> details = getDetails(repeaterClient);
 
@@ -426,7 +407,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       instanceJetty = createAndStartJetty(solrInstance);
       client =
           ReplicationTestHelper.createNewSolrClient(
-              buildUrl(instanceJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+              buildUrl(instanceJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
       NamedList<Object> details = getDetails(client);
 
@@ -829,7 +810,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerClient.close();
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
 
     leaderClient.deleteByQuery("*:*");
     followerClient.deleteByQuery("*:*");
@@ -1019,10 +1000,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         assertEquals(totalDocs, leaderQueryResult.getNumFound());
 
         // index fetch
-        Date followerCoreStart = watchCoreStartAt(followerClient, null);
+        Date followerCoreStart = watchCoreStartAt(followerJetty, null);
         pullFromTo(leaderJetty, followerJetty);
         if (confCoreReload) {
-          watchCoreStartAt(followerClient, followerCoreStart);
+          watchCoreStartAt(followerJetty, followerCoreStart);
         }
 
         // get docs from follower and check if number is equal to leader
@@ -1353,7 +1334,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     Object version = getIndexVersion(leaderClient).get("indexversion");
 
-    reloadCore(leaderClient, "collection1");
+    reloadCore(leaderJetty, DEFAULT_TEST_COLLECTION_NAME);
 
     assertEquals(version, getIndexVersion(leaderClient).get("indexversion"));
 
@@ -1433,7 +1414,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(0, "*:*", followerClient); // sanity check w/retry
 
     // record collection1's start time on follower
-    final Date followerStartTime = watchCoreStartAt(followerClient, null);
+    final Date followerStartTime = watchCoreStartAt(followerJetty, null);
 
     // add a doc with new field and commit on leader to trigger index fetch from follower.
     index(leaderClient, "id", "2000", "name", "name = " + 2000, "newname", "n2000");
@@ -1441,7 +1422,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     rQuery(1, "newname:n2000", leaderClient); // sanity check
 
     // wait for follower to reload core by watching updated startTime
-    watchCoreStartAt(followerClient, followerStartTime);
+    watchCoreStartAt(followerJetty, followerStartTime);
 
     NamedList<Object> leaderQueryRsp2 = rQuery(1, "id:2000", leaderClient);
     SolrDocumentList leaderQueryResult2 = (SolrDocumentList) leaderQueryRsp2.get("response");
@@ -1780,22 +1761,22 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   /**
-   * Polls the SolrCore stats using the specified client until the "startTime" time for collection
-   * is after the specified "min". Will loop for at most "timeout" milliseconds before throwing an
-   * assertion failure.
+   * Polls the SolrCore stats using the specified jettySolrRunner until the "startTime" time for
+   * collection is after the specified "min". Will loop for at most "timeout" milliseconds before
+   * throwing an assertion failure.
    *
-   * @param client The SolrClient to poll
+   * @param jettySolrRunner The JettySolrRunner to poll
    * @param min the startTime value must exceed this value before the method will return, if null
    *     this method will return the first startTime value encountered.
    * @return the startTime value of collection
    */
   @SuppressWarnings("unchecked")
-  private Date watchCoreStartAt(SolrClient client, final Date min)
+  private Date watchCoreStartAt(JettySolrRunner jettySolrRunner, final Date min)
       throws InterruptedException, IOException, SolrServerException {
     final long sleepInterval = 200;
     long timeSlept = 0;
 
-    try (SolrClient adminClient = adminClient(client)) {
+    try (SolrClient adminClient = adminClient(jettySolrRunner)) {
       SolrParams p = params("action", "status", "core", "collection1");
       while (timeSlept < TIMEOUT) {
         QueryRequest req = new QueryRequest(p);
@@ -1831,9 +1812,5 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertNotNull("null response from server", response);
     assertNotNull("Expected replication response to have 'status' field", response.get("status"));
     assertEquals("OK", response.get("status"));
-  }
-
-  public static String buildUrl(int port) {
-    return buildUrl(port, context);
   }
 }

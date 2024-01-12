@@ -19,12 +19,12 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

@@ -17,16 +17,13 @@
 
 package org.apache.solr.client.solrj.request.json;
 
-import java.io.File;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import static org.apache.solr.SolrTestCaseJ4.getFile;
+
 import java.util.List;
-import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -41,7 +38,7 @@ import org.junit.Test;
 @SuppressSSL
 public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServerTestBase {
 
-  private static final String COLLECTION_NAME = "techproducts";
+  private static final String COLLECTION_NAME = "collection1";
   private static final int NUM_TECHPRODUCTS_DOCS = 32;
   private static final int NUM_IN_STOCK = 17;
   private static final int NUM_ELECTRONICS = 12;
@@ -53,32 +50,15 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    final String sourceHome = ExternalPaths.SOURCE_HOME;
 
-    final File tempSolrHome = LuceneTestCase.createTempDir().toFile();
-    FileUtils.copyFileToDirectory(new File(sourceHome, "server/solr/solr.xml"), tempSolrHome);
-    final File collectionDir = new File(tempSolrHome, COLLECTION_NAME);
-    FileUtils.forceMkdir(collectionDir);
-    final File configSetDir =
-        new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
-    FileUtils.copyDirectoryToDirectory(configSetDir, collectionDir);
+    solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
 
-    final Properties props = new Properties();
-    props.setProperty("name", COLLECTION_NAME);
+    solrClientTestRule
+        .newCollection(COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
 
-    try (Writer writer =
-        new OutputStreamWriter(
-            FileUtils.openOutputStream(new File(collectionDir, "core.properties")), "UTF-8"); ) {
-      props.store(writer, null);
-    }
-
-    final String config =
-        tempSolrHome.getAbsolutePath() + "/" + COLLECTION_NAME + "/conf/solrconfig.xml";
-    final String schema =
-        tempSolrHome.getAbsolutePath() + "/" + COLLECTION_NAME + "/conf/managed-schema";
-    initCore(config, schema, tempSolrHome.getAbsolutePath(), COLLECTION_NAME);
-
-    client = new EmbeddedSolrServer(h.getCoreContainer(), COLLECTION_NAME);
+    SolrClient client = solrClientTestRule.getSolrClient(COLLECTION_NAME);
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
