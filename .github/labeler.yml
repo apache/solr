@@ -79,6 +79,9 @@ api:
   - changed-files:
       - any-glob-to-any-file:
           - solr/api/**
+          - solr/core/src/java/org/apache/solr/api/**
+          - solr/core/src/java/org/apache/solr/cloud/api/**
+          - solr/core/src/java/org/apache/solr/jersey/**
 
 # Add 'client:solrj' labels
 client:solrj:
@@ -170,3 +173,135 @@ module:sql:
   - changed-files:
       - any-glob-to-any-file:
           - solr/modules/sql/**
+
+# Any test source files
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/src/test/**'
+          - '**/src/test-files/**'
+
+# Add category labels based on java pacakges
+# In essence, for a package org.apache.solr.foo[.xxx], assign label cat:foo
+cat:analysis:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/analysis/**'
+
+cat:cli:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/cli/**'
+
+cat:cloud:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/cloud/**'
+
+cat:cluster:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/cluster/**'
+
+cat:backup:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/core/backup/**'
+          - '**/org/apache/solr/hdfs/backup/**'
+
+cat:core:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/core/**'
+
+cat:filestore:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/filestore/**'
+
+cat:handler:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/handler/**'
+
+cat:highlight:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/highlight/**'
+
+cat:index:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/index/**'
+          - '**/org/apache/solr/hdfs/index/**'
+
+cat:logging:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/logging/**'
+
+cat:metrics:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/metrics/**'
+
+cat:packagemanager:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/packagemanager/**'
+          - '**/org/apache/solr/pkg/**'
+
+cat:query:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/parser/**'
+          - '**/org/apache/solr/query/**'
+
+cat:request:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/request/**'
+
+cat:response:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/response/**'
+
+cat:schema:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/rest/**'
+          - '**/org/apache/solr/schema/**'
+
+cat:search:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/search/**'
+
+cat:security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/security/**'
+
+cat:servlet:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/servlet/**'
+
+cat:spelling:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/spelling/**'
+
+cat:update:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/update/**'
+          - '**/org/apache/solr/hdfs/update/**'
+          - '**/org/apache/solr/scripting/update/**'
+
+cat:util:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/org/apache/solr/util/**'
+          - '**/org/apache/solr/hdfs/util/**'
