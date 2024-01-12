@@ -128,7 +128,7 @@ public class EnvUtils {
   }
 
   /** Get all Solr system properties as a sorted map */
-  public static SortedMap<String, String> getProps() {
+  public static SortedMap<String, String> getProperties() {
     return System.getProperties().entrySet().stream()
         .collect(
             Collectors.toMap(
@@ -139,18 +139,18 @@ public class EnvUtils {
   }
 
   /** Get a property as string */
-  public static String getProp(String key) {
-    return getProp(key, null);
+  public static String getProperty(String key) {
+    return getProperty(key, null);
   }
 
   /**
-   * Get a property as string with a fallback value. All other getProp* methods use this.
+   * Get a property as string with a fallback value. All other getProperty* methods use this.
    *
    * @param key property key, which treats 'camelCase' the same as 'camel.case'
    * @param defaultValue fallback value if property is not found
    */
-  public static String getProp(String key, String defaultValue) {
-    String value = getPropWithCamelCaseFallback(key);
+  public static String getProperty(String key, String defaultValue) {
+    String value = getPropertyWithCamelCaseFallback(key);
     return value != null ? value : defaultValue;
   }
 
@@ -159,7 +159,7 @@ public class EnvUtils {
    *
    * @return property value or value of dot-separated alias key or null if not found
    */
-  private static String getPropWithCamelCaseFallback(String key) {
+  private static String getPropertyWithCamelCaseFallback(String key) {
     String value = System.getProperty(key);
     if (value != null) {
       return value;
@@ -182,13 +182,13 @@ public class EnvUtils {
   }
 
   /** Get property as integer */
-  public static Long getPropAsLong(String key) {
-    return getPropAsLong(key, null);
+  public static Long getPropertyAsLong(String key) {
+    return getPropertyAsLong(key, null);
   }
 
   /** Get property as long, or default value */
-  public static Long getPropAsLong(String key, Long defaultValue) {
-    String value = getProp(key);
+  public static Long getPropertyAsLong(String key, Long defaultValue) {
+    String value = getProperty(key);
     if (value == null) {
       return defaultValue;
     }
@@ -196,13 +196,13 @@ public class EnvUtils {
   }
 
   /** Get property as boolean */
-  public static Boolean getPropAsBool(String key) {
-    return getPropAsBool(key, null);
+  public static Boolean getPropertyAsBool(String key) {
+    return getPropertyAsBool(key, null);
   }
 
   /** Get property as boolean, or default value */
-  public static Boolean getPropAsBool(String key, Boolean defaultValue) {
-    String value = getProp(key);
+  public static Boolean getPropertyAsBool(String key, Boolean defaultValue) {
+    String value = getProperty(key);
     if (value == null) {
       return defaultValue;
     }
@@ -214,8 +214,8 @@ public class EnvUtils {
    *
    * @return list of strings, or null if not found
    */
-  public static List<String> getPropAsList(String key) {
-    return getPropAsList(key, null);
+  public static List<String> getPropertyAsList(String key) {
+    return getPropertyAsList(key, null);
   }
 
   /**
@@ -223,12 +223,12 @@ public class EnvUtils {
    *
    * @return list of strings, or provided default if not found
    */
-  public static List<String> getPropAsList(String key, List<String> defaultValue) {
-    return getProp(key) != null ? stringValueToList(getProp(key)) : defaultValue;
+  public static List<String> getPropertyAsList(String key, List<String> defaultValue) {
+    return getProperty(key) != null ? stringValueToList(getProperty(key)) : defaultValue;
   }
 
   /** Set a system property. Shim to {@link System#setProperty(String, String)} */
-  public static void setProp(String key, String value) {
+  public static void setProperty(String key, String value) {
     System.setProperty(key, value);
     System.setProperty(camelCaseToDotSeparated(key), value);
   }
@@ -244,8 +244,8 @@ public class EnvUtils {
       if (key.startsWith("SOLR_") || CUSTOM_MAPPINGS.containsKey(key)) {
         String sysPropKey = envNameToSyspropName(key);
         // Existing system properties take precedence
-        if (!sysPropKey.isBlank() && (overwrite || getProp(sysPropKey, null) == null)) {
-          setProp(sysPropKey, ENV.get(key));
+        if (!sysPropKey.isBlank() && (overwrite || getProperty(sysPropKey, null) == null)) {
+          setProperty(sysPropKey, ENV.get(key));
         }
       }
     }
