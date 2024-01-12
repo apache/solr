@@ -389,7 +389,9 @@ groups:
   - !Todo
     id: create_minor_branch
     title: Create a new minor branch off the stable branch
-    description: In our case we'll create {{ release_branch }}
+    description: |
+      In our case we'll create {{ release_branch }}.
+      Also edit `.asf.yaml` to add the new branch under `protected_branches`.
     types:
     - major
     - minor
