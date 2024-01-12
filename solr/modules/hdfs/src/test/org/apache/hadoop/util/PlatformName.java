@@ -19,6 +19,7 @@ package org.apache.hadoop.util;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.solr.client.solrj.util.Constants;
+import org.apache.solr.common.util.EnvUtils;
 
 /**
  * A helper class for getting build-info of the java-vm.
@@ -32,15 +33,15 @@ public class PlatformName {
    * per the java-vm.
    */
   public static final String PLATFORM_NAME =
-      (System.getProperty("os.name").startsWith("Windows")
-          ? System.getenv("os") : System.getProperty("os.name"))
-          + "-" + System.getProperty("os.arch")
-          + "-" + System.getProperty("sun.arch.data.model");
+      (EnvUtils.getProp("os.name").startsWith("Windows")
+          ? System.getenv("os") : EnvUtils.getProp("os.name"))
+          + "-" + EnvUtils.getProp("os.arch")
+          + "-" + EnvUtils.getProp("sun.arch.data.model");
 
   /**
    * The java vendor name used in this platform.
    */
-  public static final String JAVA_VENDOR_NAME = System.getProperty("java.vendor");
+  public static final String JAVA_VENDOR_NAME = EnvUtils.getProp("java.vendor");
 
   /**
    * A public static variable to indicate the current java vendor is

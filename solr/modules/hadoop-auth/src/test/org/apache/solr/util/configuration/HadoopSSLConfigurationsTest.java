@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.hadoop.HadoopSSLCredentialProvider;
@@ -80,7 +81,7 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD, SAMPLE_PW1)
         .init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
+    MatcherAssert.assertThat(EnvUtils.getProp(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
   }
 
   @Test
@@ -89,7 +90,7 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2)
         .init();
-    MatcherAssert.assertThat(System.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
+    MatcherAssert.assertThat(EnvUtils.getProp(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
   }
 
   @Test

@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.VerifiedUserRoles;
 import org.apache.solr.servlet.LoadAdminUiServlet;
@@ -710,6 +711,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     assertEquals(
         "http://acmepaymentscorp/oauth/oauth20/token",
-        System.getProperty(LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS));
+        EnvUtils.getProp(LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS));
   }
 }

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.EnumMap;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class HadoopSSLCredentialProvider extends AbstractSSLCredentialProvider {
   }
 
   public HadoopSSLCredentialProvider(Configuration hadoopConfigurationProvider) {
-    if (StrUtils.isNullOrEmpty(System.getProperty(CREDENTIAL_PROVIDER_PATH))) {
+    if (StrUtils.isNullOrEmpty(EnvUtils.getProp(CREDENTIAL_PROVIDER_PATH))) {
       throw new RuntimeException(
           "Cannot initialize Hadoop configuration provider without credential provider path. Use "
               + CREDENTIAL_PROVIDER_PATH
@@ -48,7 +49,7 @@ public class HadoopSSLCredentialProvider extends AbstractSSLCredentialProvider {
     }
     this.hadoopConfigurationProvider = hadoopConfigurationProvider;
     hadoopConfigurationProvider.set(
-        CREDENTIAL_PROVIDER_PATH, System.getProperty(CREDENTIAL_PROVIDER_PATH));
+        CREDENTIAL_PROVIDER_PATH, EnvUtils.getProp(CREDENTIAL_PROVIDER_PATH));
   }
 
   @Override

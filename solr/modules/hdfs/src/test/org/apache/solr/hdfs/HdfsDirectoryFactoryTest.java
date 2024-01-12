@@ -39,6 +39,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.SnapShooter;
@@ -96,8 +97,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
 
       assertTrue(dataHome.endsWith("/solr1/mock/data"));
       assertFalse(
-          Boolean.parseBoolean(
-              System.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED)));
+          Boolean.parseBoolean(EnvUtils.getProp(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED)));
 
       System.clearProperty(HdfsDirectoryFactory.HDFS_HOME);
 

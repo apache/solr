@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +49,7 @@ import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
 import org.apache.hadoop.util.DiskChecker;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.hdfs.HdfsDirectoryFactory;
@@ -100,7 +100,7 @@ public class HdfsTestUtil {
     if (System.getenv("HADOOP_HOME") != null) {
       SolrTestCaseJ4.fail("Ensure that HADOOP_HOME environment variable is not set.");
     }
-    if (System.getProperty("hadoop.home.dir") != null) {
+    if (EnvUtils.getProp("hadoop.home.dir") != null) {
       SolrTestCaseJ4.fail("Ensure that \"hadoop.home.dir\" Java property is not set.");
     }
   }
@@ -193,7 +193,7 @@ public class HdfsTestUtil {
     System.setProperty("socketTimeout", "90000");
 
     String blockcacheGlobal =
-        System.getProperty(
+        EnvUtils.getProp(
             "solr.hdfs.blockcache.global", Boolean.toString(SolrTestCaseJ4.random().nextBoolean()));
     System.setProperty("solr.hdfs.blockcache.global", blockcacheGlobal);
     // Limit memory usage for HDFS tests
@@ -352,13 +352,9 @@ public class HdfsTestUtil {
       System.clearProperty(SolrTestCaseJ4.UPDATELOG_SYSPROP);
 
       // Clear "solr.hdfs." system properties
-      Enumeration<?> propertyNames = System.getProperties().propertyNames();
-      while (propertyNames.hasMoreElements()) {
-        String propertyName = String.valueOf(propertyNames.nextElement());
-        if (propertyName.startsWith("solr.hdfs.")) {
-          System.clearProperty(propertyName);
-        }
-      }
+      EnvUtils.getProps().keySet().stream()
+          .filter(key -> key.startsWith("solr.hdfs."))
+          .forEach(System::clearProperty);
     }
   }
 

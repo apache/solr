@@ -24,6 +24,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -45,7 +46,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     if (!tzDisplayName.matches("[A-Za-z]{3,}([+-]\\d\\d(:\\d\\d)?)?")) {
       assertTrue(
           "Is some other JVM affected?  Or bad regex? TzDisplayName: " + tzDisplayName,
-          System.getProperty("java.version").startsWith("11"));
+          EnvUtils.getProp("java.version").startsWith("11"));
       assumeTrue(
           "SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.",
           false);

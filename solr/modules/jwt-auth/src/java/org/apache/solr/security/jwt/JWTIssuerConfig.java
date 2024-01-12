@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.jose4j.http.Get;
@@ -78,7 +79,7 @@ public class JWTIssuerConfig {
   private Collection<X509Certificate> trustedCerts;
 
   public static boolean ALLOW_OUTBOUND_HTTP =
-      Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
+      Boolean.parseBoolean(EnvUtils.getProp("solr.auth.jwt.allowOutboundHttp", "false"));
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG =
       "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
   private static final String DEFAULT_AUTHORIZATION_FLOW =

@@ -16,13 +16,12 @@
  */
 package org.apache.solr.s3;
 
-import java.util.Locale;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 
 /**
  * Class representing the {@code backup} S3 config bundle specified in solr.xml. All user-provided
- * config can be overridden via environment variables (use uppercase, with '_' instead of '.'), see
- * {@link S3BackupRepositoryConfig#toEnvVar}.
+ * config can be overridden via environment variables SOLR_FOO_BAR or system property solr.foo.bar.
  */
 public class S3BackupRepositoryConfig {
 
@@ -59,7 +58,7 @@ public class S3BackupRepositoryConfig {
   }
 
   private static String getStringConfig(NamedList<?> config, String property) {
-    String envProp = System.getenv().get(toEnvVar(property));
+    String envProp = EnvUtils.getProp(property);
     if (envProp == null) {
       Object configProp = config.get(property);
       return configProp == null ? null : configProp.toString();
@@ -73,7 +72,7 @@ public class S3BackupRepositoryConfig {
   }
 
   private static int getIntConfig(NamedList<?> config, String property, int def) {
-    String envProp = System.getenv().get(toEnvVar(property));
+    String envProp = EnvUtils.getProp(property);
     if (envProp == null) {
       Object configProp = config.get(property);
       return configProp instanceof Integer ? (int) configProp : def;
@@ -88,16 +87,12 @@ public class S3BackupRepositoryConfig {
   }
 
   private static boolean getBooleanConfig(NamedList<?> config, String property, boolean def) {
-    String envProp = System.getenv().get(toEnvVar(property));
+    String envProp = EnvUtils.getProp(property);
     if (envProp == null) {
       Boolean configProp = config.getBooleanArg(property);
       return configProp == null ? def : configProp;
     } else {
       return Boolean.parseBoolean(envProp);
     }
-  }
-
-  private static String toEnvVar(String property) {
-    return property.toUpperCase(Locale.ROOT).replace('.', '_');
   }
 }

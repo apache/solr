@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
+import org.apache.solr.common.util.EnvUtils;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.client.util.SPNEGOAuthentication;
@@ -51,7 +52,7 @@ public class Krb5HttpClientUtils {
             return this.getType().equals(type);
           }
         };
-    String clientAppName = System.getProperty("solr.kerberos.jaas.appname", "Client");
+    String clientAppName = EnvUtils.getProp("solr.kerberos.jaas.appname", "Client");
     AppConfigurationEntry[] entries = jaasConfig.getAppConfigurationEntry(clientAppName);
     if (entries == null) {
       log.warn(
