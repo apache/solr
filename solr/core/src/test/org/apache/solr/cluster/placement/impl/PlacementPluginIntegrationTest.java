@@ -18,6 +18,7 @@
 package org.apache.solr.cluster.placement.impl;
 
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.Matchers.instanceOf;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -51,19 +53,29 @@ import org.apache.solr.cluster.placement.ShardMetrics;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementConfig;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.RandomPlacementFactory;
+import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
+import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 /** Test for {@link MinimizeCoresPlacementFactory} using a {@link MiniSolrCloudCluster}. */
 @LogLevel("org.apache.solr.cluster.placement.impl=DEBUG")
 public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   private static final String COLLECTION =
       PlacementPluginIntegrationTest.class.getSimpleName() + "_collection";
+
+  @Rule
+  public TestRule sysPropRestore =
+      new TestRuleRestoreSystemProperties(
+          PlacementPluginFactoryLoader.PLACEMENTPLUGIN_DEFAULT_SYSPROP);
 
   private static SolrCloudManager cloudManager;
   private static CoreContainer cc;
@@ -91,6 +103,44 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
               .build();
       req.process(cluster.getSolrClient());
     }
+  }
+
+  @Test
+  public void testDefaultConfiguration() {
+    CoreContainer cc = createCoreContainer(TEST_PATH(), "<solr></solr>");
+    MatcherAssert.assertThat(
+        cc.getPlacementPluginFactory().createPluginInstance(),
+        instanceOf(SimplePlacementFactory.SimplePlacementPlugin.class));
+    cc.shutdown();
+  }
+
+  @Test
+  public void testConfigurationInSystemProps() {
+    System.setProperty(PlacementPluginFactoryLoader.PLACEMENTPLUGIN_DEFAULT_SYSPROP, "random");
+    CoreContainer cc = createCoreContainer(TEST_PATH(), "<solr></solr>");
+    MatcherAssert.assertThat(
+        cc.getPlacementPluginFactory().createPluginInstance(),
+        instanceOf(RandomPlacementFactory.RandomPlacementPlugin.class));
+    cc.shutdown();
+  }
+
+  @Test
+  public void testConfigurationInSolrXml() {
+    String solrXml =
+        "<solr><replicaPlacementFactory class=\"org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory\"><int name=\"minimalFreeDiskGB\">10</int><int name=\"prioritizedFreeDiskGB\">200</int></replicaPlacementFactory></solr>";
+    CoreContainer cc = createCoreContainer(TEST_PATH(), solrXml);
+
+    MatcherAssert.assertThat(
+        cc.getPlacementPluginFactory().createPluginInstance(),
+        instanceOf(AffinityPlacementFactory.AffinityPlacementPlugin.class));
+    MatcherAssert.assertThat(
+        cc.getPlacementPluginFactory().getConfig(), instanceOf(AffinityPlacementConfig.class));
+
+    AffinityPlacementConfig config =
+        (AffinityPlacementConfig) cc.getPlacementPluginFactory().getConfig();
+    assertEquals(config.minimalFreeDiskGB, 10);
+    assertEquals(config.prioritizedFreeDiskGB, 200);
+    cc.shutdown();
   }
 
   @Test

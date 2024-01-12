@@ -16,14 +16,11 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
@@ -163,8 +160,8 @@ public class ZkController implements Closeable {
 
   static class ContextKey {
 
-    private String collection;
-    private String coreNodeName;
+    private final String collection;
+    private final String coreNodeName;
 
     public ContextKey(String collection, String coreNodeName) {
       this.collection = collection;
@@ -376,7 +373,7 @@ public class ZkController implements Closeable {
             .withClosedCheck(cc::isShutDown)
             .withCompressor(compressor)
             .build();
-    // Refuse to start if ZK has a non empty /clusterstate.json
+    // Refuse to start if ZK has a non empty /clusterstate.json or a /solr.xml file
     checkNoOldClusterstate(zkClient);
 
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
@@ -529,12 +526,20 @@ public class ZkController implements Closeable {
 
   /**
    * Verifies if /clusterstate.json exists in Zookeepeer, and if it does and is not empty, refuses
-   * to start and outputs a helpful message regarding collection migration.
+   * to start and outputs a helpful message regarding collection migration. Also aborts if /solr.xml
+   * exists in zookeeper.
    *
    * <p>If /clusterstate.json exists and is empty, it is removed.
    */
   private void checkNoOldClusterstate(final SolrZkClient zkClient) throws InterruptedException {
     try {
+      if (zkClient.exists(UNSUPPORTED_SOLR_XML, true)) {
+        String message =
+            "solr.xml found in ZooKeeper. Loading solr.xml from ZooKeeper is no longer supported since Solr 10. "
+                + "Cannot start Solr. The file can be removed with command bin/solr zk rm /solr.xml -z host:port";
+        log.error(message);
+        throw new SolrException(ErrorCode.INVALID_STATE, message);
+      }
       if (!zkClient.exists(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, true)) {
         return;
       }
@@ -2373,10 +2378,9 @@ public class ZkController implements Closeable {
   public void rejoinShardLeaderElection(SolrParams params) {
 
     String collectionName = params.get(COLLECTION_PROP);
-    String shardId = params.get(SHARD_ID_PROP);
     String coreNodeName = params.get(CORE_NODE_NAME_PROP);
     String coreName = params.get(CORE_NAME_PROP);
-    String electionNode = params.get(ELECTION_NODE_PROP);
+    boolean rejoinAtHead = params.getBool(REJOIN_AT_HEAD_PROP, false);
 
     try {
       MDCLoggingContext.setCoreDescriptor(cc, cc.getCoreDescriptor(coreName));
@@ -2386,32 +2390,13 @@ public class ZkController implements Closeable {
       ContextKey contextKey = new ContextKey(collectionName, coreNodeName);
 
       ElectionContext prevContext = electionContexts.get(contextKey);
-      if (prevContext != null) prevContext.cancelElection();
 
       String baseUrl = zkStateReader.getBaseUrlForNodeName(getNodeName());
       String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-      ZkNodeProps zkProps =
-          new ZkNodeProps(
-              CORE_NAME_PROP,
-              coreName,
-              NODE_NAME_PROP,
-              getNodeName(),
-              CORE_NODE_NAME_PROP,
-              coreNodeName,
-              BASE_URL_PROP,
-              baseUrl);
 
       LeaderElector elect = ((ShardLeaderElectionContextBase) prevContext).getLeaderElector();
-      ShardLeaderElectionContext context =
-          new ShardLeaderElectionContext(
-              elect, shardId, collectionName, coreNodeName, zkProps, this, getCoreContainer());
 
-      context.leaderSeqPath =
-          context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
-      elect.setup(context);
-      electionContexts.put(contextKey, context);
-
-      elect.retryElection(context, params.getBool(REJOIN_AT_HEAD_PROP, false));
+      elect.retryElection(prevContext, rejoinAtHead);
 
       try (SolrCore core = cc.getCore(coreName)) {
         Replica.Type replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();

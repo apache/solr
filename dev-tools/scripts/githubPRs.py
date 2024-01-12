@@ -92,14 +92,16 @@ def main():
   out("============================")
   out("Number of open Pull Requests: %s" % open_prs.totalCount)
   result['open_count'] = open_prs.totalCount
+  active_prs = list(filter(lambda x: not x.draft and not x.user.login == 'solrbot', open_prs))
+  out("Number of active non-draft, non-solrbot Pull Requests: %s" % len(active_prs))
 
-  lack_jira = list(filter(lambda x: not re.match(r'.*\b(SOLR)-\d{3,6}\b', x.title), open_prs))
+  lack_jira = list(filter(lambda x: not re.match(r'.*\b(SOLR)-\d{3,6}\b', x.title), active_prs))
   result['no_jira_count'] = len(lack_jira)
   lack_jira_list = []
   for pr in lack_jira:
     lack_jira_list.append({'title': pr.title, 'number': pr.number, 'user': pr.user.login, 'created': pr.created_at.strftime("%Y-%m-%d")})
   result['no_jira'] = lack_jira_list
-  out("\nPRs lacking JIRA reference in title")
+  out("\nActive PRs lacking JIRA reference in title")
   for pr in lack_jira_list:
     out("  #%s: %s %s (%s)" % (pr['number'], pr['created'], pr['title'], pr['user'] ))
 

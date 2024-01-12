@@ -280,10 +280,11 @@ copyTarball() {
       curl -o "$RC_FILE" "$SMOKE_RC_URL"
       pushd
     else
-      if [[ ! -f $(ls "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz) ]]; then
+      TARBALL=$(find "$VCS_WORK" -regex '.*/solr-.*\.tgz' | grep -v slim)
+      if [[ ! -f "$TARBALL" ]]; then
         echo "No solr tarball found try again with -r"; popd; exit 10;
       fi
-      cp "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz ${CLUSTER_WD}
+      cp "$TARBALL" "${CLUSTER_WD}"
     fi
     pushd # back into cluster wd to unpack
     tar xzvf solr-*.tgz
@@ -315,7 +316,6 @@ start(){
     # Need a fresh root in zookeeper...
     "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd makepath "/solr_${SAFE_DEST}";
     "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd put "/solr_${SAFE_DEST}" "created by cloud.sh"; # so we can test for existence next time
-    "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd putfile "/solr_${SAFE_DEST}/solr.xml" "${SOLR}/server/solr/solr.xml";
   fi
 
   ACTUAL_NUM_NODES=$(ls -1 -d ${CLUSTER_WD}/n* | wc -l )

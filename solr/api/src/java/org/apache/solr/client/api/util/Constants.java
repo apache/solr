@@ -27,5 +27,7 @@ public class Constants {
   public static final String STORE_PATH_PREFIX =
       "/{" + STORE_TYPE_PATH_PARAMETER + ":cores|collections}/{" + STORE_NAME_PATH_PARAMETER + "}";
 
+  public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
+
   public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }

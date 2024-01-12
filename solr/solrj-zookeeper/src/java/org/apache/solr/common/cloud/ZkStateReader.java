@@ -87,7 +87,6 @@ public class ZkStateReader implements SolrCloseable {
   public static final String CORE_NAME_PROP = "core";
 
   public static final String COLLECTION_PROP = "collection";
-  public static final String ELECTION_NODE_PROP = "election_node";
   public static final String SHARD_ID_PROP = "shard";
   public static final String REPLICA_PROP = "replica";
   public static final String SHARD_RANGE_PROP = "shard_range";
@@ -124,6 +123,9 @@ public class ZkStateReader implements SolrCloseable {
    */
   public static final String UNSUPPORTED_CLUSTER_STATE = "/clusterstate.json";
 
+  // This zookeeper file was allowed until Solr 10
+  public static final String UNSUPPORTED_SOLR_XML = "/solr.xml";
+
   public static final String CLUSTER_PROPS = "/clusterprops.json";
   public static final String COLLECTION_PROPS_ZKNODE = "collectionprops.json";
   public static final String REJOIN_AT_HEAD_PROP = "rejoinAtHead";
@@ -148,7 +150,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private static final String SOLR_ENVIRONMENT = "environment";
 
-  public static final String REPLICA_TYPE = "type";
+  public static final String REPLICA_TYPE = CollectionAdminParams.REPLICA_TYPE;
 
   public static final String CONTAINER_PLUGINS = "plugin";
 
@@ -403,11 +405,20 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
-    this.zkClient =
+    this(zkServerAddress, zkClientTimeout, zkClientConnectTimeout, true);
+  }
+
+  public ZkStateReader(
+      String zkServerAddress,
+      int zkClientTimeout,
+      int zkClientConnectTimeout,
+      boolean canUseZkACLs) {
+    SolrZkClient.Builder builder =
         new SolrZkClient.Builder()
             .withUrl(zkServerAddress)
             .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
+            .withUseDefaultCredsAndACLs(canUseZkACLs)
             .withReconnectListener(
                 () -> {
                   // on reconnect, reload cloud info
@@ -423,8 +434,8 @@ public class ZkStateReader implements SolrCloseable {
                     log.error("Interrupted", e);
                     throw new ZooKeeperException(ErrorCode.SERVER_ERROR, "Interrupted", e);
                   }
-                })
-            .build();
+                });
+    this.zkClient = builder.build();
     this.closeClient = true;
     this.securityNodeWatcher = null;
 

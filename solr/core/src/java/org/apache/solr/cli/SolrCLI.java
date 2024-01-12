@@ -63,6 +63,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.EnvUtils;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
@@ -197,18 +198,9 @@ public class SolrCLI implements CLIO {
   }
 
   public static String getDefaultSolrUrl() {
-    String scheme = System.getenv("SOLR_URL_SCHEME");
-    if (scheme == null) {
-      scheme = "http";
-    }
-    String host = System.getenv("SOLR_TOOL_HOST");
-    if (host == null) {
-      host = "localhost";
-    }
-    String port = System.getenv("SOLR_PORT");
-    if (port == null) {
-      port = "8983";
-    }
+    String scheme = EnvUtils.getEnv("SOLR_URL_SCHEME", "http");
+    String host = EnvUtils.getEnv("SOLR_TOOL_HOST", "localhost");
+    String port = EnvUtils.getEnv("SOLR_PORT", "8983");
     return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
@@ -416,6 +408,7 @@ public class SolrCLI implements CLIO {
     Http2SolrClient.Builder builder =
         new Http2SolrClient.Builder(solrUrl)
             .withMaxConnectionsPerHost(32)
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
 
     return builder.build();
